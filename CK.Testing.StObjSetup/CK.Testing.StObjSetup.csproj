@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
+  <Import Project="..\Common\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <Description>Extends CK.Testing.StObjMap TestHelper to rebuild/compile generated assemblies thanks to CK.Testing.CKSetup.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.Testing.StObjMap\CK.Testing.StObjMap.csproj" />
+    <PackageReference Include="CK.Testing.CKSetup" />
+  </ItemGroup>
+</Project>

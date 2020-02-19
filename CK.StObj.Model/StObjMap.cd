@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
+  <Struct Name="CK.Core.VFeature">
+    <Position X="2" Y="2.75" Width="2.25" />
+    <Compartments>
+      <Compartment Name="Methods" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>IIAAAAAAAAAAAAQEgAgAAAQAAAAAAIAAAAAAAAAAAiA=</HashCode>
+      <FileName>VFeature.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Orientation="Left" Position="0.1" />
+  </Struct>
+  <Interface Name="CK.Core.IStObjMap">
+    <Position X="1.25" Y="0.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>gAAAAAAAAAAAAAAAAAABAAAAABAAAAAAAAAAAAAAAAg=</HashCode>
+      <FileName>IStObjMap.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.Core.IStObjServiceMap">
+    <Position X="5" Y="0.5" Width="4.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAIAAAAAAAAAAAAACAAAAAAAAAAAAAAAQA=</HashCode>
+      <FileName>StObjService\IStObjServiceMap.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.Core.IStObjObjectMap">
+    <Position X="5" Y="2.25" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAAAAAACAAAIAAAQAAAAAAAAAAAAAACAAAAAg=</HashCode>
+      <FileName>IStObjObjectMap.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

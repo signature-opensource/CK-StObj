@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
+  <Import Project="..\Common\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <Description>Extends TestHelper to exploit generated assemblies (loading, deletion, obtaining a IServiceProvider with the AutomaticServices, etc.).</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
+    <PackageReference Include="CK.Testing.Monitoring" />
+    <!-- This implements concrete ServiceCollection and DI engine itself. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

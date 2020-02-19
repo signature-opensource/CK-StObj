@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
+  <Import Project="..\Common\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.1;</TargetFrameworks>
+    <LangVersion>7.3</LangVersion>
+    <Description>
+      CK-Database helps to setup, construct, manages and build modular relationnal databases upon SqlServer.
+      CK.StObj.Engine supports actual generation of StObj implementation.
+    </Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
+    <PackageReference Include="CK.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>

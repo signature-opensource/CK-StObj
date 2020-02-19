@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
+  <Import Project="..\Common\Shared.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <Description>
+      CK-Database helps to setup, construct, manages and build modular relationnal databases upon SqlServer.
+      CK.StObj.Model is the central core component required by any CK-Database project.
+      It contains attributes and basic objects that enables StObj implementation to be defined and run.
+    </Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CSemVer" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>
