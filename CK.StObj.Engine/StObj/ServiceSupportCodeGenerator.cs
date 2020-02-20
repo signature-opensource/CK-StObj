@@ -34,31 +34,37 @@ namespace CK.Setup
 
         public sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
         {
-            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, bool s )
+            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, bool s, bool f )
             {
                 ClassType = t;
                 Assignments = a;
                 IsScoped = s;
+                IsFrontOnly = f;
             }
 
             public Type ClassType { get; }
 
             public bool IsScoped { get; }
+
+            public bool IsFrontOnly { get; }
 
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
         }
 
         public sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
         {
-            public StObjServiceClassDescriptor( Type t, bool s )
+            public StObjServiceClassDescriptor( Type t, bool s, bool f )
             {
                 ClassType = t;
                 IsScoped = s;
+                IsFrontOnly = f;
             }
 
             public Type ClassType { get; }
 
             public bool IsScoped { get; }
+
+            public bool IsFrontOnly { get; }
         }
 ";
         readonly ITypeScope _rootType;
@@ -109,6 +115,8 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                             .AppendTypeOf( map.Value.FinalType )
                             .Append( ", " )
                             .Append( map.Value.MustBeScopedLifetime.Value )
+                            .Append( ", " )
+                            .Append( map.Value.MustBeFrontOnly.Value )
                             .Append( ")" )
                        .Append( " );" )
                        .NewLine();
@@ -209,7 +217,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                 ctor.Append( "public S" ).Append( c.Number ).Append( "()" ).NewLine()
                     .Append( ": base( " ).AppendTypeOf( c.ClassType ).Append( ", " ).NewLine();
                 GenerateStObjServiceFactortInfoAssignments( ctor, c.Assignments );
-                ctor.Append( ", " ).Append( c.IsScoped ).Append( ")" );
+                ctor.Append( ", " ).Append( c.IsScoped ).Append( ", " ).Append( c.IsFrontOnly ).Append( ")" );
             } );
 
             t.CreateFunction( func =>

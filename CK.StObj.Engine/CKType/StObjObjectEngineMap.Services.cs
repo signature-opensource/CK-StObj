@@ -75,6 +75,8 @@ namespace CK.Setup
 
             public bool IsScoped => _c.IsScoped;
 
+            public bool IsFrontOnly => _c.IsFrontOnly;
+
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments => _c.Assignments;
 
             public object CreateInstance( IServiceProvider provider )

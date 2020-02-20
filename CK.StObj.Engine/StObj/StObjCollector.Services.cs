@@ -305,6 +305,15 @@ namespace CK.Setup
                 }
             }
 
+            bool IStObjServiceClassDescriptor.IsFrontOnly
+            {
+                get
+                {
+                    //TODO: waiting for implementation.
+                    return false;
+                }
+            }
+
 
             Type IStObjServiceClassDescriptor.ClassType => Class.Type;
 
@@ -319,7 +328,7 @@ namespace CK.Setup
                 if( !_finalMappingDone )
                 {
                     _finalMappingDone = true;
-                    Class.GetFinalMustBeScopedLifetime( m, typeKindDetector, ref success );
+                    Class.GetFinalMustBeScopedAndFrontOnly( m, typeKindDetector, ref success );
                     if( Assignments.Any() )
                     {
                         _finalMapping = engineMap.CreateServiceFinalManualMapping( this );
@@ -446,7 +455,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    final.GetFinalMustBeScopedLifetime( _monitor, _ambientTypeKindDetector, ref success );
+                    final.GetFinalMustBeScopedAndFrontOnly( _monitor, _ambientTypeKindDetector, ref success );
                     _monitor.Debug( $"Map '{t}' -> '{final}'." );
                     if( final.IsRealObject )
                     {

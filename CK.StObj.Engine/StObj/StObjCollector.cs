@@ -117,8 +117,10 @@ namespace CK.Setup
 
         /// <summary>
         /// Registers a type that may be a CK type (<see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>).
+        /// Once the first type is registered by this method, no more external defienitions are allowed (like <see cref="DefineAsExternalFrontOnly(IReadOnlyCollection{string})"/>,
+        /// <see cref="DefineAsExternalScoped(IReadOnlyCollection{Type})"/>, etc.).
         /// </summary>
-        /// <param name="t">Type to register. Must not be null/</param>
+        /// <param name="t">Type to register. Must not be null.</param>
         public void RegisterType( Type t )
         {
             using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
@@ -197,6 +199,26 @@ namespace CK.Setup
             DoDefineAsExternalScoped( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
         }
 
+        /// <summary>
+        /// Explicitly registers a set of types that are Front Only services.
+        /// </summary>
+        /// <param name="types">Types to register.</param>
+        public void DefineAsExternalFrontOnly( IReadOnlyCollection<Type> types )
+        {
+            if( types == null ) throw new ArgumentNullException( nameof( types ) );
+            DoDefineAsExternalFrontOnly( types, types.Count );
+        }
+
+        /// <summary>
+        /// Explicitly registers a set of types that are Front Only services.
+        /// </summary>
+        /// <param name="types">Assembly qualified names of the front only type services.</param>
+        public void DefineAsExternalFrontOnly( IReadOnlyCollection<string> typeNames )
+        {
+            if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
+            DoDefineAsExternalFrontOnly( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
+        }
+
         void DoDefineAsExternalSingletons( IEnumerable<Type> types, int count )
         {
             SafeTypesHandler( "Defining interfaces or classes as Singleton Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalSingleton( m, t ) );
@@ -207,27 +229,40 @@ namespace CK.Setup
             SafeTypesHandler( "Defining interfaces or classes as Singleton Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalScoped( m, t ) );
         }
 
-        void DoRegisterTypes( IEnumerable<Type> types, int count )
+        void DoDefineAsExternalFrontOnly( IEnumerable<Type> types, int count )
         {
-            SafeTypesHandler( "Explicitly registering IPoco interfaces, or Real Objects or Service classes", types, count, ( m, cc, t ) => cc.RegisterType( t ) );
+            SafeTypesHandler( "Defining interfaces or classes as Front Only Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalFrontOnly( m, t ) );
         }
 
-        void SafeTypesHandler( string registrationType, IEnumerable<Type> types, int count, Action<IActivityMonitor,CKTypeCollector,Type> a )
+        void DoRegisterTypes( IEnumerable<Type> types, int count )
+        {
+            SafeTypesHandler( "Explicitly registering IPoco interfaces, or Real Objects or Service classes", types, count, ( m, cc, t ) => cc.RegisterType( t ), false );
+        }
+
+        void SafeTypesHandler( string registrationType, IEnumerable<Type> types, int count, Action<IActivityMonitor,CKTypeCollector,Type> a, bool defineExternalCall = true )
         {
             Debug.Assert( types != null );
-            using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
-            using( _monitor.OpenTrace( $"{registrationType}: handling {count} type(s)." ) )
+            if( defineExternalCall && _cc.RegisteredTypeCount > 0 )
             {
-                try
+                ++_registerFatalOrErrorCount;
+                _monitor.Error( $"Defining external Singleton, Scoped or FrontOnly services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
+            }
+            else
+            {
+                using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
+                using( _monitor.OpenTrace( $"{registrationType}: handling {count} type(s)." ) )
                 {
-                    foreach( var t in types )
+                    try
                     {
-                        a( _monitor, _cc, t );
+                        foreach( var t in types )
+                        {
+                            a( _monitor, _cc, t );
+                        }
                     }
-                }
-                catch( Exception ex )
-                {
-                    _monitor.Error( ex );
+                    catch( Exception ex )
+                    {
+                        _monitor.Error( ex );
+                    }
                 }
             }
         }

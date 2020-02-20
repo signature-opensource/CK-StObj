@@ -110,7 +110,6 @@ namespace CK.Setup
             IServiceProvider serviceProvider,
             AutoServiceClassInfo parent,
             Type t,
-            CKTypeCollector collector,
             bool isExcluded,
             CKTypeKind lifetime,
             RealObjectClassInfo objectInfo )
@@ -128,6 +127,8 @@ namespace CK.Setup
             Debug.Assert( (lifetime == (CKTypeKind.RealObject | CKTypeKind.AutoSingleton)) == TypeInfo is RealObjectClassInfo );
 
 
+            // Forgets the IsFrontOnly flag: FrontOnly constraint is handled dynamically later.
+            lifetime &= ~CKTypeKind.IsFrontOnlyService;
             // Forgets the RealObject flag.
             if( lifetime == (CKTypeKind.RealObject|CKTypeKind.AutoSingleton) )
             {
@@ -135,6 +136,7 @@ namespace CK.Setup
                 // See below.
                 MustBeScopedLifetime = false;
             }
+
             Debug.Assert( lifetime == CKTypeKind.IsAutoService
                           || lifetime == CKTypeKind.AutoSingleton
                           || lifetime == CKTypeKind.AutoScoped );
@@ -198,6 +200,14 @@ namespace CK.Setup
         /// end of the process when class and interface mappings are about to be resolved.
         /// </summary>
         public bool? MustBeScopedLifetime { get; private set; }
+
+        /// <summary>
+        /// Gets whether this class must be <see cref="CKTypeKind.IsScoped"/> because of its dependencies.
+        /// If its <see cref="DeclaredLifetime"/> is <see cref="CKTypeKind.IsSingleton"/> an error is detected
+        /// either at the very beginning of the process based on the static parameter type information or at the
+        /// end of the process when class and interface mappings are about to be resolved.
+        /// </summary>
+        public bool? MustBeFrontOnly { get; private set; }
 
         /// <summary>
         /// Gets the generalization of this Service class, it is be null if no base class exists.
@@ -416,18 +426,25 @@ namespace CK.Setup
 
         bool IStObjServiceClassDescriptor.IsScoped => MustBeScopedLifetime.Value;
 
+        bool IStObjServiceClassDescriptor.IsFrontOnly => MustBeFrontOnly.Value;
+
         /// <summary>
-        /// Ensures that the final lifetime is computed: <see cref="MustBeScopedLifetime"/> will not be null
-        /// once called.
+        /// Ensures that the final lifetime and IsFrontOnly are computed: <see cref="MustBeScopedLifetime"/> and <see cref="MustBeFrontOnly"/>
+        /// will not be null once called.
         /// Returns the MustBeScopedLifetime (true if this Service implementation must be scoped and false for singleton).
         /// </summary>
         /// <param name="m">The monitor to use.</param>
         /// <param name="typeKindDetector">The type detector (used to check singleton life times and promote mere IAutoService to singletons).</param>
         /// <param name="success">Success reference token.</param>
-        /// <returns>True for scoped, false for singleton.</returns>
-        internal bool GetFinalMustBeScopedLifetime( IActivityMonitor m, CKTypeKindDetector typeKindDetector, ref bool success )
+        /// <returns>First is True for scoped, false for singleton. Second is true for FrontOnly.</returns>
+        internal (bool,bool) GetFinalMustBeScopedAndFrontOnly( IActivityMonitor m, CKTypeKindDetector typeKindDetector, ref bool success )
         {
-            if( !MustBeScopedLifetime.HasValue )
+            if( !MustBeFrontOnly.HasValue )
+            {
+                var kind = typeKindDetector.GetKind( m, Type );
+                if( (kind & CKTypeKind.IsFrontOnlyService) != 0 ) MustBeFrontOnly = true;
+            }
+            if( !MustBeScopedLifetime.HasValue || !MustBeFrontOnly.HasValue )
             {
                 Debug.Assert( (DeclaredLifetime & CKTypeKind.IsAutoService) != 0 );
                 foreach( var p in ConstructorParameters )
@@ -435,7 +452,8 @@ namespace CK.Setup
                     var c = p.ServiceClass?.MostSpecialized ?? p.ServiceInterface?.FinalResolved;
                     if( c != null )
                     {
-                        if( c.GetFinalMustBeScopedLifetime( m, typeKindDetector, ref success ) )
+                        var (scoped, front) = c.GetFinalMustBeScopedAndFrontOnly( m, typeKindDetector, ref success );
+                        if( scoped )
                         {
                             if( DeclaredLifetime == CKTypeKind.AutoSingleton )
                             {
@@ -447,6 +465,11 @@ namespace CK.Setup
                                 m.Info( $"Type '{Type}' must be Scoped since parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Scoped." );
                             }
                             MustBeScopedLifetime = true;
+                        }
+                        if( front && !MustBeFrontOnly.HasValue )
+                        {
+                            m.Info( $"Type '{Type}' must be FrontOnly since parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Front only." );
+                            MustBeFrontOnly = true;
                         }
                     }
                 }
@@ -475,8 +498,13 @@ namespace CK.Setup
                         }
                     }
                 }
+                if( !MustBeFrontOnly.HasValue )
+                {
+                    m.Debug( $"'{Type}' is not a front only service." );
+                    MustBeFrontOnly = false;
+                }
             }
-            return MustBeScopedLifetime.Value;
+            return (MustBeScopedLifetime.Value,MustBeFrontOnly.Value);
         }
 
         internal HashSet<AutoServiceClassInfo> GetCtorParametersClassClosure(
@@ -608,7 +636,7 @@ namespace CK.Setup
                     // We check here the Singleton to Scoped dependency error at the Type level.
                     // This must be done here since CtorParameters are not created for types that are external (those
                     // are considered as Scoped) or for ambient interfaces that have no implementation classes.
-                    // If the parameter knwn to be singleton, we have nothing to do.
+                    // If the parameter is known to be singleton, we have nothing to do.
                     if( param.Lifetime == CKTypeKind.None || (param.Lifetime & CKTypeKind.IsScoped) != 0 )
                     {
                         // Note: if this DeclaredLifetime is AutoScopedd nothing is done here: as a

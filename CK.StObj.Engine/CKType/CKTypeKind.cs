@@ -40,6 +40,11 @@ namespace CK.Setup
         AutoSingleton = IsAutoService | IsSingleton,
 
         /// <summary>
+        /// A front only auto service: <see cref="IsAutoService"/> | <see cref="IsFrontOnlyService"/>. 
+        /// </summary>
+        AutoFrontOnly = IsAutoService | IsFrontOnlyService,
+
+        /// <summary>
         /// A singleton front only auto service: <see cref="IsAutoService"/> | <see cref="IsSingleton"/> | <see cref="IsFrontOnlyService"/>. 
         /// </summary>
         AutoFrontOnlySingleton = AutoSingleton | IsFrontOnlyService,
@@ -134,6 +139,7 @@ namespace CK.Setup
                 case CKTypeKind.None: return "None";
                 case CKTypeKind.RealObject: return "RealObject";
                 case CKTypeKind.AutoSingleton: return "SingletonAutoService";
+                case CKTypeKind.AutoFrontOnly: return "FrontOnlyAutoService";
                 case CKTypeKind.AutoFrontOnlySingleton: return "SingletonFrontOnlyAutoService";
                 case CKTypeKind.AutoMarshallableSingleton: return "SingletonMarshallableAutoService";
                 case CKTypeKind.AutoScoped: return "ScopedAutoService";
@@ -208,6 +214,10 @@ namespace CK.Setup
             else if( isPoco && isAuto )
             {
                 conflict = "Poco and AutoService";
+            }
+            else if( isRealObject && isFrontOnly )
+            {
+                conflict = "RealObject and FrontService";
             }
             // This should not happen unless the enum value is externally manipulated.
             if( isMarshallable && isFrontOnly )

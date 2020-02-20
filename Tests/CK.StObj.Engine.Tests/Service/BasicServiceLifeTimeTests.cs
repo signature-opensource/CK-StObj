@@ -242,16 +242,16 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.DefineAsExternalSingletons( new[] { typeof( IExternalService ) } );
+            if( mode == "WithSingletonLifetimeOnExternalService" )
+            {
+                collector.DefineAsExternalSingletons( new[] { typeof( IOtherExternalService ) } );
+            }
             collector.RegisterType( typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService ) );
             collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
             collector.RegisterType( typeof( SampleRealObject ) );
             collector.RegisterType( typeof( AmbientThatDependsOnSingleton ) );
             collector.RegisterType( typeof( SimpleClassSingleton ) );
             collector.RegisterType( typeof( AmbientThatDependsOnAnotherExternalService ) );
-            if( mode == "WithSingletonLifetimeOnExternalService" )
-            {
-                collector.DefineAsExternalSingletons( new[] { typeof( IOtherExternalService ) } );
-            }
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector );
             bool isScoped = r.Services.SimpleMappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;

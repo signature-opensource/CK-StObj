@@ -95,6 +95,19 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Defines a type as being a Front Only Service.
+        /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
+        /// cannot be a Front Only service).
+        /// </summary>
+        /// <param name="m">The monitor.</param>
+        /// <param name="t">The type to register.</param>
+        /// <returns>The type kind on success, null on error.</returns>
+        public CKTypeKind? DefineAsExternalFrontOnly( IActivityMonitor m, Type t )
+        {
+            return SetLifetimeOrFrontType( m, t, CKTypeKind.AutoFrontOnly | IsFrontTypeReasonExternal );
+        }
+
+        /// <summary>
         /// Defines a type as being a <see cref="CKTypeKind.IsSingleton"/> because it is used
         /// as a ctor parameter of a Singleton Service.
         /// Can be called multiple times as long as lifetime is Singleton.
@@ -158,10 +171,12 @@ namespace CK.Setup
                           // If front type is set, it cannot be both Marshallable and FrontOnly.
                           && (!hasFrontType || (kind & CKTypeKind.FrontTypeMask) != CKTypeKind.FrontTypeMask) );
 
+            // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
+            // and then Defining lifetime or the reverse.
             var k = RawGet( m, t );
             if( (k & (IsDefiner|IsSuperDefiner)) != 0 )
             {
-                throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
+                throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind, t.IsClass )}." );
             }
             var kLifetime = k & CKTypeKind.LifetimeMask;
             var kFrontType = k & CKTypeKind.FrontTypeMask;
@@ -169,18 +184,27 @@ namespace CK.Setup
 
             // Lifetime, if already set, must be the same (scoped excludes singletons and vice versa), but
             // FrontType, if already set must be the same OR be IsMarshallableService: this resets the IsFrontOnlyService bit.
-            if( (kLifetime != CKTypeKind.None && kLifetime != (kind & CKTypeKind.LifetimeMask))
-                || (kFrontType != CKTypeKind.None
+            //            FrontType & RealObject invalidity is tested before to avoid cluttering the condition below...
+
+            if( (hasLifetime
+                    && kLifetime != CKTypeKind.None && kLifetime != (kind & CKTypeKind.LifetimeMask))
+                ||
+                (hasFrontType
+                    && (k & CKTypeKind.RealObject) == CKTypeKind.RealObject)
+                ||
+                (hasFrontType
+                    && kFrontType != CKTypeKind.None
                     && kFrontType != (kind & CKTypeKind.FrontTypeMask)
                     && (kind & CKTypeKind.FrontTypeMask) != CKTypeKind.IsMarshallableService) )
             {
-                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( k )}'. It can not be defined as {ToStringFull( kind )}." );
+                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( k, t.IsClass )}'. It can not be defined as {ToStringFull( kind, t.IsClass )}." );
                 return null;
             }
             k |= kind;
             if( (k & CKTypeKind.FrontTypeMask) == CKTypeKind.FrontTypeMask ) k &= ~CKTypeKind.IsFrontOnlyService;
             _cache[t] = k;
             Debug.Assert( (k & (IsDefiner | IsSuperDefiner)) == 0 );
+            Debug.Assert( CKTypeKindExtension.GetCKTypeKindCombinationError( (k & MaskPublicInfo), t.IsClass ) == null );
             return k & MaskPublicInfo;
         }
 
@@ -324,9 +348,9 @@ namespace CK.Setup
             return k;
         }
 
-        static string ToStringFull( CKTypeKind t )
+        static string ToStringFull( CKTypeKind t, bool realObjectCanBeSingletonService )
         {
-            var c = (t & MaskPublicInfo).ToStringClear();
+            var c = (t & MaskPublicInfo).ToStringClear( realObjectCanBeSingletonService );
             if( (t & IsDefiner) != 0 ) c += " [IsDefiner]";
             if( (t & IsSuperDefiner) != 0 ) c += " [IsSuperDefiner]";
             if( (t & IsReasonMarker) != 0 ) c += " [IsMarkerInterface]";

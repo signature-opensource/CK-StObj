@@ -20,6 +20,10 @@ namespace CK.Core
         /// </summary>
         bool IsScoped { get; }
 
+        /// <summary>
+        /// Gets whether this is a front only service.
+        /// </summary>
+        bool IsFrontOnly { get; }
     }
 
 }
