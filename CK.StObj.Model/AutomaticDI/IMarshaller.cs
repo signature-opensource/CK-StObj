@@ -10,8 +10,8 @@ namespace CK.StObj.Model
     /// thanks to any serialization/deserialization mechanism.
     /// Such marshaller implementations must be registered and available in the DI container as soon
     /// as the marshallable service is used from a remote/background context.
-    /// Whenever a marshaller interface is an Auto service, its registartion automatically declares the <typeparamref name="T"/>
-    /// to be a Marshallable service (even if T is not marked with any interface).
+    /// Whenever a marshaller interface is also marked as a <see cref="IAutoService"/>, its registartion automatically
+    /// declares the <typeparamref name="T"/> to be a Marshallable service (even if T is not marked with any interface).
     /// </summary>
     /// <typeparam name="T">Type of the service to marshall.</typeparam>
     public interface IMarshaller<T>

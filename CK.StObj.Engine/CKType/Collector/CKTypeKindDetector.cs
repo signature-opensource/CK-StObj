@@ -36,22 +36,8 @@ namespace CK.Setup
         // The front type reason is an external definition (applies to IsMarshallable and IsFrontOnly).
         const CKTypeKind IsFrontTypeReasonExternal = (CKTypeKind)16384;
 
-        // The service is Marshallable because a IAutoService class has been found.
+        // The service is Marshallable because a IAutoService Marshaller class has been found.
         const CKTypeKind IsMarshallableReasonMarshaller = (CKTypeKind)32768;
-
-        readonly struct Cache
-        {
-            public readonly Type Base;
-            public readonly Type[] Interfaces;
-            public readonly CKTypeKind Kind;
-
-            public Cache( Type b, Type[] i, CKTypeKind k )
-            {
-                Base = b;
-                Interfaces = i;
-                Kind = k;
-            }
-        }
 
         readonly Dictionary<Type, CKTypeKind> _cache;
 
@@ -340,6 +326,19 @@ namespace CK.Setup
                             var marshallable = marshaller.GetGenericArguments()[0];
                             m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
                             SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallableService | IsMarshallableReasonMarshaller );
+                            // The marshaller interface must be promoted to be an IAutoService since they must be mapped (and without ambiguities).
+                            var exists = RawGet( m, marshaller );
+                            if( (exists & CKTypeKind.IsAutoService) == 0 )
+                            {
+                                exists |= CKTypeKind.IsAutoService;
+                                var error = exists.GetCKTypeKindCombinationError( false );
+                                if( error != null ) m.Error( $"Unable to promote the IMarshaller interface as a IAutoService: {error}" );
+                                else
+                                {
+                                    m.Trace( $"Interface {marshaller.Name} is naw an IAutoService." );
+                                    _cache[marshaller] = exists;
+                                }
+                            }
                         }
                     }
                 }
