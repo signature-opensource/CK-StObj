@@ -9,6 +9,9 @@ namespace CK.Core
         /// <summary>
         /// Small helper that captures the minimal required context to configure a <see cref="IServiceCollection"/>.
         /// See <see cref="StObjServiceCollectionExtensions.AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/>.
+        /// <para>
+        /// Using this wrapper instead of the <see cref="Services"/> directly is more secure.
+        /// </para>
         /// </summary>
         public readonly struct ServiceRegister
         {
@@ -82,12 +85,12 @@ namespace CK.Core
                     try
                     {
                         if( map == null ) throw new ArgumentNullException( nameof( map ) );
-                        DoRegisterSingleton( typeof( IStObjMap ), map, true );
+                        DoRegisterSingleton( typeof( IStObjMap ), map, isRealObject: true );
+                        map.StObjs.ConfigureServices( this );
                         foreach( var kv in map.StObjs.Mappings )
                         {
                             DoRegisterSingleton( kv.Key, kv.Value, true );
                         }
-                        map.StObjs.ConfigureServices( this );
                         foreach( var kv in map.Services.ObjectMappings )
                         {
                             DoRegisterSingleton( kv.Key, kv.Value, false );

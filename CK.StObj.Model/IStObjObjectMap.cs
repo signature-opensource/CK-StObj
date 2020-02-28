@@ -45,9 +45,20 @@ namespace CK.Core
         IEnumerable<KeyValuePair<Type, object>> Mappings { get; }
 
         /// <summary>
-        /// Configures a <see cref="IServiceCollection"/> by calling first all <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/>
-        /// an then all <see cref="StObjContextRoot.ConfigureServicesMethodName"/> on all the <see cref="Implementations"/> that expose
-        /// such methods.
+        /// Configures a <see cref="IServiceCollection"/> with the registered services.
+        /// <para>
+        /// The first services that are added are the real objets (as singletons) from <see cref="IStObjObjectMap.Mappings"/>.
+        /// </para>
+        /// <para>
+        /// Once the real objects are registered, their <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods are called (so that startup services
+        /// can be registered in the <see cref="ISimpleServiceContainer"/>):
+        /// <c>void RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer );</c>
+        /// </para>
+        /// <para>
+        /// Once all the RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer ) methods have ran, then
+        /// all the <see cref="StObjContextRoot.ConfigureServicesMethodName"/> real objects' methods are called: 
+        /// <c>void ConfigureServices( in StObjContextRoot.ServiceRegister, ... any services previously registered in the ISimpleServiceContainer ... );</c>
+        /// </para>
         /// </summary>
         /// <param name="register">The service register.</param>
         void ConfigureServices( in StObjContextRoot.ServiceRegister register );

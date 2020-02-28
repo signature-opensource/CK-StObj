@@ -56,7 +56,7 @@ namespace CK.Setup
             {
                 bool success = true;
                 _params = new List<CtorParameter>();
-                foreach( var p in Class.ConstructorParameters )
+                foreach( var p in Class.ConstructorAutoServiceParameters )
                 {
                     if( p.ServiceInterface != null && Family.Interfaces.Contains( p.ServiceInterface ))
                     {
@@ -305,15 +305,16 @@ namespace CK.Setup
                 }
             }
 
-            bool IStObjServiceClassDescriptor.IsFrontOnly
+            FrontServiceKind IStObjServiceClassDescriptor.FrontServiceKind
             {
                 get
                 {
-                    //TODO: waiting for implementation.
-                    return false;
+                    Debug.Assert( Class.FinalFrontServiceKind.HasValue, "GetFinalMustBeScopedAndFrontKind must have ben called." );
+                    return Class.FinalFrontServiceKind.Value;
                 }
             }
 
+            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => Class.MarshallableFrontServiceTypes;
 
             Type IStObjServiceClassDescriptor.ClassType => Class.Type;
 
@@ -328,7 +329,7 @@ namespace CK.Setup
                 if( !_finalMappingDone )
                 {
                     _finalMappingDone = true;
-                    Class.GetFinalMustBeScopedAndFrontOnly( m, typeKindDetector, ref success );
+                    Class.GetFinalMustBeScopedAndFrontKind( m, typeKindDetector, ref success );
                     if( Assignments.Any() )
                     {
                         _finalMapping = engineMap.CreateServiceFinalManualMapping( this );
@@ -455,7 +456,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    final.GetFinalMustBeScopedAndFrontOnly( _monitor, _ambientTypeKindDetector, ref success );
+                    final.GetFinalMustBeScopedAndFrontKind( _monitor, _ambientTypeKindDetector, ref success );
                     _monitor.Debug( $"Map '{t}' -> '{final}'." );
                     if( final.IsRealObject )
                     {

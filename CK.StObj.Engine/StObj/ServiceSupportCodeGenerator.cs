@@ -1,12 +1,82 @@
 using CK.CodeGen;
 using CK.CodeGen.Abstractions;
 using CK.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
 namespace CK.Setup
 {
+    static class EEEEEEE
+    {
+        /// <summary>
+        /// Creates a segment of code inside this function.
+        /// </summary>
+        /// <typeparam name="T">The function scope type.</typeparam>
+        /// <param name="this">This function scope.</param>
+        /// <param name="part">The function part to use to inject code at this location (or at the top).</param>
+        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
+        /// <returns>This function scope writer to enable fluent syntax.</returns>
+        public static T CreatePart<T>( this T @this, out IFunctionScopePart part, bool top = false ) where T : IFunctionScope
+        {
+            part = @this.CreatePart( top );
+            return @this;
+        }
+
+        /// <summary>
+        /// Creates a segment of code inside this namespace.
+        /// </summary>
+        /// <typeparam name="T">The namespace scope type.</typeparam>
+        /// <param name="this">This namespace scope.</param>
+        /// <param name="part">The namespace part to use to inject code at this location (or at the top).</param>
+        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
+        /// <returns>This namespace scope writer to enable fluent syntax.</returns>
+        public static T CreatePart<T>( this T @this, out INamespaceScopePart part, bool top = false ) where T : INamespaceScope
+        {
+            part = @this.CreatePart( top );
+            return @this;
+        }
+
+        /// <summary>
+        /// Creates a segment of code inside this type.
+        /// </summary>
+        /// <typeparam name="T">The type scope type.</typeparam>
+        /// <param name="this">This type scope.</param>
+        /// <param name="part">The type part to use to inject code at this location (or at the top).</param>
+        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
+        /// <returns>This type scope writer to enable fluent syntax.</returns>
+        public static T CreatePart<T>( this T @this, out ITypeScopePart part, bool top = false ) where T : ITypeScope
+        {
+            part = @this.CreatePart( top );
+            return @this;
+        }
+
+        /// <summary>
+        /// Fluent function application.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="f">Fluent function to apply.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        public static T Apply<T>( this T @this, Func<T, T> f ) where T : ICodeWriter => f( @this );
+
+        /// <summary>
+        /// Fluent action application.
+        /// </summary>
+        /// <typeparam name="T">Actual type of the code writer.</typeparam>
+        /// <param name="this">This code writer.</param>
+        /// <param name="f">Actio to apply to this code writer.</param>
+        /// <returns>This code writer to enable fluent syntax.</returns>
+        public static T Apply<T>( this T @this, Action<T> f ) where T : ICodeWriter
+        {
+            f( @this );
+            return @this;
+        }
+
+    }
+
+
     class ServiceSupportCodeGenerator
     {
         static readonly string _sourceServiceSupport = @"
@@ -34,37 +104,45 @@ namespace CK.Setup
 
         public sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
         {
-            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, bool s, bool f )
+            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, bool s, FrontServiceKind k, IReadOnlyCollection<Type> marshallableTypes )
             {
                 ClassType = t;
                 Assignments = a;
                 IsScoped = s;
-                IsFrontOnly = f;
+                FrontServiceKind = k;
+                MarshallableFrontServiceTypes = marshallableTypes;
             }
 
             public Type ClassType { get; }
 
             public bool IsScoped { get; }
 
-            public bool IsFrontOnly { get; }
+            public FrontServiceKind FrontServiceKind { get; }
 
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
+
+            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+
         }
 
         public sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
         {
-            public StObjServiceClassDescriptor( Type t, bool s, bool f )
+            public StObjServiceClassDescriptor( Type t, bool s, FrontServiceKind k, IReadOnlyCollection<Type> marshallableTypes )
             {
                 ClassType = t;
                 IsScoped = s;
-                IsFrontOnly = f;
-            }
+                FrontServiceKind = k;
+                MarshallableFrontServiceTypes = marshallableTypes;
+           }
 
             public Type ClassType { get; }
 
             public bool IsScoped { get; }
 
-            public bool IsFrontOnly { get; }
+            public FrontServiceKind FrontServiceKind { get; }
+
+            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+
         }
 ";
         readonly ITypeScope _rootType;
@@ -116,7 +194,24 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                             .Append( ", " )
                             .Append( map.Value.MustBeScopedLifetime.Value )
                             .Append( ", " )
-                            .Append( map.Value.MustBeFrontOnly.Value )
+                            .Append( map.Value.FinalFrontServiceKind.Value )
+                            .Append( ", " )
+                                .Apply( w =>
+                                {
+                                    bool atLeastOne = false;
+                                    foreach( var t in map.Value.MarshallableFrontServiceTypes )
+                                    {
+                                        if( atLeastOne ) w.Append( ", " );
+                                        else
+                                        {
+                                            w.Append( "new[] {" );
+                                            atLeastOne = true;
+                                        }
+                                        w.AppendTypeOf( t );
+                                    }
+                                    if( atLeastOne ) w.Append( "}" );
+                                    else w.Append( "Type.EmptyTypes" );
+                                } )
                             .Append( ")" )
                        .Append( " );" )
                        .NewLine();
@@ -217,7 +312,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                 ctor.Append( "public S" ).Append( c.Number ).Append( "()" ).NewLine()
                     .Append( ": base( " ).AppendTypeOf( c.ClassType ).Append( ", " ).NewLine();
                 GenerateStObjServiceFactortInfoAssignments( ctor, c.Assignments );
-                ctor.Append( ", " ).Append( c.IsScoped ).Append( ", " ).Append( c.IsFrontOnly ).Append( ")" );
+                ctor.Append( ", " ).Append( c.IsScoped ).Append( ", FrontServiceKind." ).Append( c.FrontServiceKind ).Append( ")" );
             } );
 
             t.CreateFunction( func =>

@@ -56,10 +56,10 @@ namespace CK.Setup
         {
             Debug.Assert( t.IsInterface && lt == _kindDetector.GetKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
-            lt &= ~CKTypeKind.IsFrontOnlyService;
+            lt &= ~CKTypeKind.FrontTypeMask;
             Debug.Assert( lt == CKTypeKind.IsAutoService
-                          || lt == CKTypeKind.AutoSingleton
-                          || lt == CKTypeKind.AutoScoped );
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
             {
                 if( _typeFilter( _monitor, t ) )
@@ -74,7 +74,7 @@ namespace CK.Setup
             return info;
         }
 
-        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces )
+        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, AutoServiceClassInfo multipleImplementation = null )
         {
             foreach( var iT in interfaces )
             {
@@ -83,6 +83,14 @@ namespace CK.Setup
                 if( conflictMsg != null )
                 {
                     _monitor.Error( $"Interface '{iT.FullName}': {conflictMsg}" );
+                }
+                else if( multipleImplementation != null )
+                {
+                    if( (lt & CKTypeKind.IsMultipleService) != 0 ) multipleImplementation.AddMultipleInterfaceToRegister( iT );
+                    else if( (lt & CKTypeKind.IsAutoService) != 0 )
+                    {
+                        _monitor.Error( $"Interface {iT.FullName} is marked with '{lt.ToStringFlags()}'. It cannot be supported by class {multipleImplementation} that is a 'Multiple' service." );
+                    }
                 }
                 else if( (lt&CKTypeKind.IsAutoService) != 0 )
                 {

@@ -200,23 +200,27 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Explicitly registers a set of types that are Front Only services.
+        /// Explicitly registers a set of types that are Front services of a certain <see cref="FrontServiceKind"/> (that must
+        /// not be <see cref="FrontServiceKind.None"/>).
         /// </summary>
         /// <param name="types">Types to register.</param>
-        public void DefineAsExternalFrontOnly( IReadOnlyCollection<Type> types )
+        /// <param name="kind">The kind of Front service. Must not be <see cref="FrontServiceKind.None"/>.</param>
+        public void DefineAsExternalFrontService( IReadOnlyCollection<Type> types, FrontServiceKind kind )
         {
             if( types == null ) throw new ArgumentNullException( nameof( types ) );
-            DoDefineAsExternalFrontOnly( types, types.Count );
+            DoDefineAsExternalFrontService( types, types.Count, kind );
         }
 
         /// <summary>
-        /// Explicitly registers a set of types that are Front Only services.
+        /// Explicitly registers a set of types that are Front services of a certain <see cref="FrontServiceKind"/> (that must
+        /// not be <see cref="FrontServiceKind.None"/>).
         /// </summary>
-        /// <param name="types">Assembly qualified names of the front only type services.</param>
-        public void DefineAsExternalFrontOnly( IReadOnlyCollection<string> typeNames )
+        /// <param name="typeNames">Types to register.</param>
+        /// <param name="kind">The kind of Front service. Must not be <see cref="FrontServiceKind.None"/>.</param>
+        public void DefineAsExternalFrontService( IReadOnlyCollection<string> typeNames, FrontServiceKind kind )
         {
             if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-            DoDefineAsExternalFrontOnly( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
+            DoDefineAsExternalFrontService( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count, kind );
         }
 
         void DoDefineAsExternalSingletons( IEnumerable<Type> types, int count )
@@ -226,12 +230,12 @@ namespace CK.Setup
 
         void DoDefineAsExternalScoped( IEnumerable<Type> types, int count )
         {
-            SafeTypesHandler( "Defining interfaces or classes as Singleton Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalScoped( m, t ) );
+            SafeTypesHandler( "Defining interfaces or classes as Scoped Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalScoped( m, t ) );
         }
 
-        void DoDefineAsExternalFrontOnly( IEnumerable<Type> types, int count )
+        void DoDefineAsExternalFrontService( IEnumerable<Type> types, int count, FrontServiceKind kind )
         {
-            SafeTypesHandler( "Defining interfaces or classes as Front Only Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalFrontOnly( m, t ) );
+            SafeTypesHandler( "Defining interfaces or classes as Front Only Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalFrontService( m, t, kind ) );
         }
 
         void DoRegisterTypes( IEnumerable<Type> types, int count )
@@ -242,10 +246,11 @@ namespace CK.Setup
         void SafeTypesHandler( string registrationType, IEnumerable<Type> types, int count, Action<IActivityMonitor,CKTypeCollector,Type> a, bool defineExternalCall = true )
         {
             Debug.Assert( types != null );
+            if( count == 0 ) return;
             if( defineExternalCall && _cc.RegisteredTypeCount > 0 )
             {
                 ++_registerFatalOrErrorCount;
-                _monitor.Error( $"Defining external Singleton, Scoped or FrontOnly services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
+                _monitor.Error( $"External definition lifetime, cardinality or Front services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
             else
             {

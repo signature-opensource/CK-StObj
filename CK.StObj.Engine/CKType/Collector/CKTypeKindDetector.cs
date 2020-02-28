@@ -12,32 +12,39 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeKindDetector
     {
-        const CKTypeKind MaskPublicInfo = (CKTypeKind)127;
-        const CKTypeKind IsDefiner = (CKTypeKind)128;
-        const CKTypeKind IsSuperDefiner = (CKTypeKind)256;
+        const int PrivateStart = 512;
+
+        /// <summary>
+        /// Mask for public information defined in the <see cref="CKTypeKind"/> enumeration.
+        /// Internally other flags are used.
+        /// </summary>
+        public const CKTypeKind MaskPublicInfo = (CKTypeKind)(PrivateStart-1);
+
+        const CKTypeKind IsDefiner = (CKTypeKind)PrivateStart;
+        const CKTypeKind IsSuperDefiner = (CKTypeKind)(PrivateStart << 1);
 
         // The lifetime reason is the interface marker (applies to IsSingleton and IsScoped).
-        const CKTypeKind IsReasonMarker = (CKTypeKind)512;
+        const CKTypeKind IsReasonMarker = (CKTypeKind)(PrivateStart << 2);
 
         // The lifetime reason is an external definition (applies to IsSingleton and IsScoped).
-        const CKTypeKind IsLifetimeReasonExternal = (CKTypeKind)1024;
+        const CKTypeKind IsLifetimeReasonExternal = (CKTypeKind)(PrivateStart << 3);
 
         // The type is singleton because it is used as a:
         // - ctor parameter of a Singleton Service.
         // - property or StObjConstruct/StObjFinalize parameter of a Real Object.
-        const CKTypeKind IsSingletonReasonReference = (CKTypeKind)2048;
+        const CKTypeKind IsSingletonReasonReference = (CKTypeKind)(PrivateStart << 4);
 
         // The type is a singleton because nothing prevents it to be a singleton.
-        const CKTypeKind IsSingletonReasonFinal = (CKTypeKind)4096;
+        const CKTypeKind IsSingletonReasonFinal = (CKTypeKind)(PrivateStart << 5);
 
         // The type is a service that is scoped because its ctor references a scoped service.
-        const CKTypeKind IsScopedReasonReference = (CKTypeKind)8192;
+        const CKTypeKind IsScopedReasonReference = (CKTypeKind)(PrivateStart << 6);
 
         // The front type reason is an external definition (applies to IsMarshallable and IsFrontOnly).
-        const CKTypeKind IsFrontTypeReasonExternal = (CKTypeKind)16384;
+        const CKTypeKind IsFrontTypeReasonExternal = (CKTypeKind)(PrivateStart << 7);
 
         // The service is Marshallable because a IAutoService Marshaller class has been found.
-        const CKTypeKind IsMarshallableReasonMarshaller = (CKTypeKind)32768;
+        const CKTypeKind IsMarshallableReasonMarshaller = (CKTypeKind)(PrivateStart << 8);
 
         readonly Dictionary<Type, CKTypeKind> _cache;
 
@@ -81,16 +88,21 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Defines a type as being a Front Only Service.
+        /// Defines a type as being a Front service and specifies its <see cref="FrontServiceKind"/> (that must nor be <see cref="FrontServiceKind.None"/>).
         /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
-        /// cannot be a Front Only service).
+        /// cannot be a Front service).
         /// </summary>
         /// <param name="m">The monitor.</param>
         /// <param name="t">The type to register.</param>
+        /// <param name="kind">The kind of Front service. Must not be <see cref="FrontServiceKind.None"/>.</param>
         /// <returns>The type kind on success, null on error.</returns>
-        public CKTypeKind? DefineAsExternalFrontOnly( IActivityMonitor m, Type t )
+        public CKTypeKind? DefineAsExternalFrontService( IActivityMonitor m, Type t, FrontServiceKind kind )
         {
-            return SetLifetimeOrFrontType( m, t, CKTypeKind.AutoFrontOnly | IsFrontTypeReasonExternal );
+            if( kind == FrontServiceKind.None ) throw new ArgumentException( nameof( kind ) );
+            CKTypeKind k = CKTypeKind.IsFrontProcessService;
+            if( (kind & FrontServiceKind.IsEndPoint) != 0 ) k |= CKTypeKind.IsFrontEndPointService;
+            if( (kind & FrontServiceKind.IsMarshallable) != 0 ) k |= CKTypeKind.IsMarshallableService;
+            return SetLifetimeOrFrontType( m, t, k | IsFrontTypeReasonExternal );
         }
 
         /// <summary>
@@ -109,7 +121,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Defines a type as being a <see cref="CKTypeKind.IsMarshallableService"/>
-        /// Can be called multiple times as long as the type is not already known as a <see cref="CKTypeKind.IsFrontOnlyService"/>.
+        /// Can be called multiple times as long as the type is not already known as a <see cref="CKTypeKind.IsFrontEndPointService"/>.
         /// </summary>
         /// <param name="m">The monitor.</param>
         /// <param name="t">The type to register as a marshallable service.</param>
@@ -120,7 +132,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Defines a type as being a <see cref="CKTypeKind.IsFrontOnlyService"/>
+        /// Defines a type as being a <see cref="CKTypeKind.IsFrontEndPointService"/>
         /// Can be called multiple times as long as the type is not already known as a <see cref="CKTypeKind.IsMarshallableService"/>.
         /// </summary>
         /// <param name="m">The monitor.</param>
@@ -128,7 +140,7 @@ namespace CK.Setup
         /// <returns>The type kind on success, null on error.</returns>
         public CKTypeKind? DefineAsFrontOnly( IActivityMonitor m, Type t )
         {
-            return SetLifetimeOrFrontType( m, t, CKTypeKind.IsFrontOnlyService | IsFrontTypeReasonExternal );
+            return SetLifetimeOrFrontType( m, t, CKTypeKind.IsFrontEndPointService | IsFrontTypeReasonExternal );
         }
 
         /// <summary>
@@ -148,56 +160,39 @@ namespace CK.Setup
         {
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
             bool hasFrontType = (kind & CKTypeKind.FrontTypeMask) != 0;
+            bool isMultiple = (kind & CKTypeKind.IsMultipleService) != 0;
 
             Debug.Assert( (kind & (IsDefiner|IsSuperDefiner)) == 0
                           // At least, something must be set.
-                          && (hasLifetime || hasFrontType)
+                          && (hasLifetime || hasFrontType || isMultiple)
                           // If lifetime is set, it cannot be both Scoped and Singleton.
                           && (!hasLifetime || (kind & CKTypeKind.LifetimeMask) != CKTypeKind.LifetimeMask )
                           // If front type is set, it cannot be both Marshallable and FrontOnly.
                           && (!hasFrontType || (kind & CKTypeKind.FrontTypeMask) != CKTypeKind.FrontTypeMask) );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
-            // and then Defining lifetime or the reverse.
-            var k = RawGet( m, t );
-            if( (k & (IsDefiner|IsSuperDefiner)) != 0 )
+            // and then defining lifetime or the reverse.
+            var exist = RawGet( m, t );
+            if( (exist & (IsDefiner|IsSuperDefiner)) != 0 )
             {
-                throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind, t.IsClass )}." );
+                throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
-            var kLifetime = k & CKTypeKind.LifetimeMask;
-            var kFrontType = k & CKTypeKind.FrontTypeMask;
-            Debug.Assert( kLifetime != CKTypeKind.LifetimeMask && kFrontType != CKTypeKind.FrontTypeMask, "Existing registration is correct." );
-
-            // Lifetime, if already set, must be the same (scoped excludes singletons and vice versa), but
-            // FrontType, if already set must be the same OR be IsMarshallableService: this resets the IsFrontOnlyService bit.
-            //            FrontType & RealObject invalidity is tested before to avoid cluttering the condition below...
-
-            if( (hasLifetime
-                    && kLifetime != CKTypeKind.None && kLifetime != (kind & CKTypeKind.LifetimeMask))
-                ||
-                (hasFrontType
-                    && (k & CKTypeKind.RealObject) == CKTypeKind.RealObject)
-                ||
-                (hasFrontType
-                    && kFrontType != CKTypeKind.None
-                    && kFrontType != (kind & CKTypeKind.FrontTypeMask)
-                    && (kind & CKTypeKind.FrontTypeMask) != CKTypeKind.IsMarshallableService) )
+            var updated = exist | kind;
+            string error = (updated & MaskPublicInfo).GetCKTypeKindCombinationError( t.IsClass );
+            if( error != null )
             {
-                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( k, t.IsClass )}'. It can not be defined as {ToStringFull( kind, t.IsClass )}." );
+                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as {ToStringFull( kind )}. Error: {error}" );
                 return null;
             }
-            k |= kind;
-            if( (k & CKTypeKind.FrontTypeMask) == CKTypeKind.FrontTypeMask ) k &= ~CKTypeKind.IsFrontOnlyService;
-            _cache[t] = k;
-            Debug.Assert( (k & (IsDefiner | IsSuperDefiner)) == 0 );
-            Debug.Assert( CKTypeKindExtension.GetCKTypeKindCombinationError( (k & MaskPublicInfo), t.IsClass ) == null );
-            return k & MaskPublicInfo;
+            _cache[t] = updated;
+            Debug.Assert( (updated & (IsDefiner | IsSuperDefiner)) == 0 );
+            Debug.Assert( CKTypeKindExtension.GetCKTypeKindCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
+            return updated & MaskPublicInfo;
         }
 
         /// <summary>
         /// Checks whether the type supports a IAutoService, IScopedAutoService, ISingletonAutoService, IFrontAutoService, IMarshalledAutoService, 
-        /// or IRealObject interface or has been explicitly registered as a <see cref="CKTypeKind.IsScoped"/>
-        /// or <see cref="CKTypeKind.IsSingleton"/>.
+        /// or IRealObject interface or has been explicitly registered as a <see cref="CKTypeKind.IsScoped"/> or <see cref="CKTypeKind.IsSingleton"/>.
         /// <para>
         /// Only the interface name matters (namespace is ignored) and the interface
         /// must be a pure marker, there must be no declared members.
@@ -219,23 +214,27 @@ namespace CK.Setup
 
         CKTypeKind RawGet( IActivityMonitor m, Type t )
         {
-            if( !_cache.TryGetValue( t, out var k ) )
+            if( !_cache.TryGetValue( t, out CKTypeKind k ) )
             {
                 var allInterfaces = t.GetInterfaces();
                 var baseType = t.BaseType;
                 // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
                 // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IFrontAutoService are extending IAutoService...
-                // ...and unfortunaltely we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService.
+                // ...and unfortunaltely we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService
+                // ...and unfortunaltely we must also consider the ones with 2 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
+                // that extends IFrontAutoService. 
                 if( t.IsInterface
-                    && allInterfaces.Length <= 2
+                    && allInterfaces.Length <= 3
                     && t.GetMembers().Length == 0 )
                 {
                     if( t.Name == nameof( IRealObject ) ) k = CKTypeKind.RealObject | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.AutoScoped | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.AutoSingleton | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontOnlyService | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( IFrontProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontProcessService | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontEndPointService | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( IMarshallableAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsMarshallableService | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( IMultipleAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsMultipleService | IsDefiner | IsReasonMarker;
                     else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                 }
                 if( k == CKTypeKind.None )
@@ -306,14 +305,9 @@ namespace CK.Setup
                 }
                 if( k != CKTypeKind.None )
                 {
-                    if( (k & CKTypeKind.FrontTypeMask) == CKTypeKind.FrontTypeMask )
-                    {
-                        // IsMarshallableService cancels IsFrontOnlyService.
-                        k &= ~CKTypeKind.IsFrontOnlyService;
-                    }
                     if( !t.Assembly.IsDynamic && !(t.IsPublic || t.IsNestedPublic) )
                     {
-                        m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringClear( t.IsClass )}' must be public." );
+                        m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
                     }
                     if( (k & CKTypeKind.IsPoco) == CKTypeKind.IsPoco && t.IsClass )
                     {
@@ -335,7 +329,7 @@ namespace CK.Setup
                                 if( error != null ) m.Error( $"Unable to promote the IMarshaller interface as a IAutoService: {error}" );
                                 else
                                 {
-                                    m.Trace( $"Interface {marshaller.Name} is naw an IAutoService." );
+                                    m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
                                     _cache[marshaller] = exists;
                                 }
                             }
@@ -347,9 +341,9 @@ namespace CK.Setup
             return k;
         }
 
-        static string ToStringFull( CKTypeKind t, bool realObjectCanBeSingletonService )
+        static string ToStringFull( CKTypeKind t )
         {
-            var c = (t & MaskPublicInfo).ToStringClear( realObjectCanBeSingletonService );
+            var c = (t & MaskPublicInfo).ToStringFlags();
             if( (t & IsDefiner) != 0 ) c += " [IsDefiner]";
             if( (t & IsSuperDefiner) != 0 ) c += " [IsSuperDefiner]";
             if( (t & IsReasonMarker) != 0 ) c += " [IsMarkerInterface]";

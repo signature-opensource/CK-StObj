@@ -27,8 +27,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( Nop ) ).Should().Be( CKTypeKind.None );
             a.GetKind( TestHelper.Monitor, typeof( Obj ) ).Should().Be( CKTypeKind.RealObject );
             a.GetKind( TestHelper.Monitor, typeof( Serv ) ).Should().Be( CKTypeKind.IsAutoService );
-            a.GetKind( TestHelper.Monitor, typeof( Scoped ) ).Should().Be( CKTypeKind.AutoScoped );
-            a.GetKind( TestHelper.Monitor, typeof( Singleton ) ).Should().Be( CKTypeKind.AutoSingleton );
+            a.GetKind( TestHelper.Monitor, typeof( Scoped ) ).Should().Be( CKTypeKind.IsAutoService|CKTypeKind.IsScoped );
+            a.GetKind( TestHelper.Monitor, typeof( Singleton ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
         class SpecObj : Obj { }
@@ -42,8 +42,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             var a = new CKTypeKindDetector();
             a.GetKind( TestHelper.Monitor, typeof( SpecObj ) ).Should().Be( CKTypeKind.RealObject );
             a.GetKind( TestHelper.Monitor, typeof( SpecServ ) ).Should().Be( CKTypeKind.IsAutoService );
-            a.GetKind( TestHelper.Monitor, typeof( SpecScoped ) ).Should().Be( CKTypeKind.AutoScoped );
-            a.GetKind( TestHelper.Monitor, typeof( SpecSingleton ) ).Should().Be( CKTypeKind.AutoSingleton );
+            a.GetKind( TestHelper.Monitor, typeof( SpecScoped ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+            a.GetKind( TestHelper.Monitor, typeof( SpecSingleton ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
         [CKTypeDefiner] public class ObjDefiner : IRealObject { }
@@ -72,8 +72,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             var a = new CKTypeKindDetector();
             a.GetKind( TestHelper.Monitor, typeof( SpecObjDefiner ) ).Should().Be( CKTypeKind.RealObject );
             a.GetKind( TestHelper.Monitor, typeof( SpecServDefiner ) ).Should().Be( CKTypeKind.IsAutoService );
-            a.GetKind( TestHelper.Monitor, typeof( SpecScopedDefiner ) ).Should().Be( CKTypeKind.AutoScoped );
-            a.GetKind( TestHelper.Monitor, typeof( SpecSingletonDefiner ) ).Should().Be( CKTypeKind.AutoSingleton );
+            a.GetKind( TestHelper.Monitor, typeof( SpecScopedDefiner ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+            a.GetKind( TestHelper.Monitor, typeof( SpecSingletonDefiner ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
 
@@ -103,11 +103,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             var a = new CKTypeKindDetector();
             a.GetKind( TestHelper.Monitor, typeof( SpecObjDefinerLevel2 ) ).Should().Be( CKTypeKind.RealObject );
             a.GetKind( TestHelper.Monitor, typeof( SpecServDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService );
-            a.GetKind( TestHelper.Monitor, typeof( SpecScopedDefinerLevel2 ) ).Should().Be( CKTypeKind.AutoScoped );
-            a.GetKind( TestHelper.Monitor, typeof( SpecSingletonDefinerLevel2 ) ).Should().Be( CKTypeKind.AutoSingleton );
+            a.GetKind( TestHelper.Monitor, typeof( SpecScopedDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
+            a.GetKind( TestHelper.Monitor, typeof( SpecSingletonDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
-        public interface INotPossible0 : IAutoService, IRealObject { }
         public interface INotPossible1 : IScopedAutoService, ISingletonAutoService { }
         public interface INotPossible2 : IScopedAutoService, IPoco { }
         public interface INotPossible3 : IRealObject, IPoco { }
@@ -134,7 +133,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 (hasCombinationError | hasRegistrationError).Should().BeTrue();
             }
 
-            CheckNotPossible( typeof( INotPossible0 ) );
             CheckNotPossible( typeof( INotPossible1 ) );
             CheckNotPossible( typeof( INotPossible2 ) );
             CheckNotPossible( typeof( INotPossible3 ) );

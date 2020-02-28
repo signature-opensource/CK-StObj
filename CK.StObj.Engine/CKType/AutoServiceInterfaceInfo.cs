@@ -60,7 +60,9 @@ namespace CK.Setup
 
         internal AutoServiceInterfaceInfo( Type t, CKTypeKind lt, IEnumerable<AutoServiceInterfaceInfo> baseInterfaces )
         {
-            Debug.Assert( lt == CKTypeKind.IsAutoService || lt == CKTypeKind.AutoSingleton || lt == CKTypeKind.AutoScoped );
+            Debug.Assert( lt == CKTypeKind.IsAutoService
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             Type = t;
             DeclaredLifetime = lt;
             AutoServiceInterfaceInfo[] bases = Array.Empty<AutoServiceInterfaceInfo>();

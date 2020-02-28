@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CK.Core
 {
@@ -21,9 +22,18 @@ namespace CK.Core
         bool IsScoped { get; }
 
         /// <summary>
-        /// Gets whether this is a front only service.
+        /// Gets whether this is a front only service and if it's the case whether
+        /// it is <see cref="FrontServiceKind.IsEndPoint"/> and/or <see cref="FrontServiceKind.IsMarshallable"/>.
         /// </summary>
-        bool IsFrontOnly { get; }
+        FrontServiceKind FrontServiceKind { get; }
+
+        /// <summary>
+        /// Gets the types that must be marshalled for this service to be marshallable.
+        /// This is empty (if this service is not marshallable), it contains this <see cref="ClassType"/>
+        /// (if it is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available), or is a set of one or more types
+        /// that must have a marshaller.
+        /// </summary>
+        IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
     }
 
 }
