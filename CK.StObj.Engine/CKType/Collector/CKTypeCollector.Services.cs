@@ -84,13 +84,9 @@ namespace CK.Setup
                 {
                     _monitor.Error( $"Interface '{iT.FullName}': {conflictMsg}" );
                 }
-                else if( multipleImplementation != null )
+                else if( (lt & CKTypeKind.IsMultipleService) != 0 )
                 {
-                    if( (lt & CKTypeKind.IsMultipleService) != 0 ) multipleImplementation.AddMultipleInterfaceToRegister( iT );
-                    else if( (lt & CKTypeKind.IsAutoService) != 0 )
-                    {
-                        _monitor.Error( $"Interface {iT.FullName} is marked with '{lt.ToStringFlags()}'. It cannot be supported by class {multipleImplementation} that is a 'Multiple' service." );
-                    }
+                    multipleImplementation?.AddMultipleInterfaceToRegister( iT );
                 }
                 else if( (lt&CKTypeKind.IsAutoService) != 0 )
                 {

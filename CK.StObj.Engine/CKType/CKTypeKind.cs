@@ -19,55 +19,55 @@ namespace CK.Setup
         None,
 
         /// <summary>
-        /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
-        /// </summary>
-        IsAutoService = 1,
-
-        /// <summary>
-        /// Singleton flag.
-        /// External (Auto) services are flagged with this only (or with this and <see cref="IsMarshallableService"/> or <see cref="IsFrontEndPointService"/>).
-        /// </summary>
-        IsSingleton = 2,
-
-        /// <summary>
-        /// Scoped flag.
-        /// External (Auto) services are flagged with this only (or with this and <see cref="IsMarshallableService"/> or <see cref="IsFrontEndPointService"/>).
-        /// </summary>
-        IsScoped = 4,
-
-        /// <summary>
-        /// A real object is a singleton. 
-        /// </summary>
-        RealObject = IsSingleton | 8,
-
-        /// <summary>
-        /// A IPoco marked interface.
-        /// </summary>
-        IsPoco = 16,
-
-        /// <summary>
         /// Front process service.
         /// This flag has to be set for <see cref="IsFrontEndPointService"/> and/or <see cref="IsMarshallableService"/> to be set.
         /// </summary>
-        IsFrontProcessService = 32,
+        IsFrontProcessService = 1,
 
         /// <summary>
         /// Service is bound to the End Point. The service is necessarily bound to front
         /// process (<see cref="IsFrontProcessService"/> is also set).
         /// </summary>
-        IsFrontEndPointService = 64,
+        IsFrontEndPointService = 2,
 
         /// <summary>
         /// Marshallable service: this is set only if <see cref="IsFrontProcessService"/> is set.
         /// </summary>
-        IsMarshallableService = 128,
+        IsMarshallableService = 4,
+
+        /// <summary>
+        /// Singleton flag.
+        /// External (Auto) services are flagged with this only (or with this and <see cref="IsMarshallableService"/> or <see cref="IsFrontEndPointService"/>).
+        /// </summary>
+        IsSingleton = 8,
+
+        /// <summary>
+        /// Scoped flag.
+        /// External (Auto) services are flagged with this only (or with this and <see cref="IsMarshallableService"/> or <see cref="IsFrontEndPointService"/>).
+        /// </summary>
+        IsScoped = 16,
 
         /// <summary>
         /// Multiple registration flag (services must be registered with TryAddEnumerable instead of TryAdd).
-        /// See <see cref="IMultipleAutoService"/>. 
+        /// See <see cref="IsMultipleAttribute"/>. 
         /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
         /// </summary>
-        IsMultipleService = 256,
+        IsMultipleService = 32,
+
+        /// <summary>
+        /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
+        /// </summary>
+        IsAutoService = 64,
+
+        /// <summary>
+        /// A IPoco marked interface.
+        /// </summary>
+        IsPoco = 128,
+
+        /// <summary>
+        /// A real object is a singleton. 
+        /// </summary>
+        RealObject = IsSingleton | 256,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsFrontEndPointService"/> | <see cref="IsFrontProcessService"/> | <see cref="IsMarshallableService"/>.
@@ -86,22 +86,18 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
-        /// Gets the <see cref="FrontServiceKind"/>.
+        /// Gets the <see cref="AutoServiceKind"/>.
         /// </summary>
         /// <param name="this">This type kind.</param>
-        /// <returns>The Front service kind.</returns>
-        public static FrontServiceKind ToFrontServiceKind( this CKTypeKind @this )
+        /// <returns>The Auto service kind.</returns>
+        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this )
         {
-            Debug.Assert( (32 * (int)FrontServiceKind.IsProcess) == (int)CKTypeKind.IsFrontProcessService );
-            Debug.Assert( (32 * (int)FrontServiceKind.IsEndPoint) == (int)CKTypeKind.IsFrontEndPointService );
-            Debug.Assert( (32 * (int)FrontServiceKind.IsMarshallable) == (int)CKTypeKind.IsMarshallableService );
             if( (@this&(CKTypeKind.IsFrontEndPointService|CKTypeKind.IsMarshallableService)) != 0 && (@this & CKTypeKind.IsFrontProcessService) == 0 )
             {
                 throw new ArgumentException( $"Invalid CKTypeKind: IsFrontEndPointService|IsMarshallableService must imply IsFrontProcessService." );
             }
-            return (FrontServiceKind)((int)(@this & CKTypeKind.FrontTypeMask) >> 5);
+            return (AutoServiceKind)((int)@this & 63);
         }
-
 
         /// <summary>
         /// Returns a string that correctly handles flags and results to <see cref="GetCKTypeKindCombinationError(CKTypeKind,bool)"/>
@@ -169,8 +165,9 @@ namespace CK.Setup
                 Debug.Assert( isSingleton, "Checked above." );
                 if( @this != CKTypeKind.RealObject )
                 {
+                    // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
                     if( isScoped ) conflict = "RealObject cannot have a Scoped lifetime";
-                    else if( isMultiple ) conflict = "RealObject cannot be a Multiple service";
+                    else if( isMultiple ) conflict = "IRealObject interface cannot be marked as a Multiple service";
                     else if( isAuto && !realObjectCanBeSingletonService ) conflict = "IRealObject interface cannot be an IAutoService";
                     // Always handle Front service.
                     if( isFrontEndPoint | isFrontProcess | isMarshallable )

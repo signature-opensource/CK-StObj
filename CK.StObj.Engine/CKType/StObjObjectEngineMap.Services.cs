@@ -75,11 +75,13 @@ namespace CK.Setup
 
             public bool IsScoped => _c.IsScoped;
 
-            public FrontServiceKind FrontServiceKind => _c.FrontServiceKind;
+            public AutoServiceKind AutoServiceKind => _c.AutoServiceKind;
 
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments => _c.Assignments;
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => _c.MarshallableFrontServiceTypes;
+
+            public IReadOnlyCollection<Type> MultipleMappingTypes => _c.MultipleMappingTypes;
 
             public object CreateInstance( IServiceProvider provider )
             {

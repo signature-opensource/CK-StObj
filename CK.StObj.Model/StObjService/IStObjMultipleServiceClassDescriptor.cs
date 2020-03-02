@@ -7,7 +7,7 @@ namespace CK.Core
     /// Describes the final type that must be resolved and whether
     /// it is a scoped or a singleton service.
     /// </summary>
-    public interface IStObjServiceClassDescriptor
+    public interface IStObjMultipleServiceClassDescriptor
     {
         /// <summary>
         /// Gets the actual Type that must be instanciated.
@@ -25,7 +25,7 @@ namespace CK.Core
         /// Gets whether this is a front only service and if it's the case whether
         /// it is <see cref="AutoServiceKind.IsFrontService"/> and/or <see cref="AutoServiceKind.IsMarshallableService"/>.
         /// </summary>
-        AutoServiceKind AutoServiceKind { get; }
+        AutoServiceKind FrontServiceKind { get; }
 
         /// <summary>
         /// Gets the types that must be marshalled for this service to be marshallable.
@@ -34,14 +34,6 @@ namespace CK.Core
         /// that must have a marshaller.
         /// </summary>
         IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
-
-        /// <summary>
-        /// Gets the multiple interfaces or abstract classes that are marked with <see cref="CKTypeKind.IsMultipleService"/>
-        /// and that must be mapped to this <see cref="Type"/>.
-        /// This is null when <see cref="IsMultiple"/> is false.
-        /// </summary>
-        IReadOnlyCollection<Type> MultipleMappingTypes { get; }
-
     }
 
 }

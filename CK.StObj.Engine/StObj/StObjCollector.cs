@@ -200,24 +200,24 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Explicitly registers a set of types that are Front services of a certain <see cref="FrontServiceKind"/> (that must
-        /// not be <see cref="FrontServiceKind.None"/>).
+        /// Explicitly registers a set of types that are Front services of a certain <see cref="AutoServiceKind"/> (that must
+        /// not be <see cref="AutoServiceKind.None"/>).
         /// </summary>
         /// <param name="types">Types to register.</param>
-        /// <param name="kind">The kind of Front service. Must not be <see cref="FrontServiceKind.None"/>.</param>
-        public void DefineAsExternalFrontService( IReadOnlyCollection<Type> types, FrontServiceKind kind )
+        /// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
+        public void DefineAsExternalFrontService( IReadOnlyCollection<Type> types, AutoServiceKind kind )
         {
             if( types == null ) throw new ArgumentNullException( nameof( types ) );
             DoDefineAsExternalFrontService( types, types.Count, kind );
         }
 
         /// <summary>
-        /// Explicitly registers a set of types that are Front services of a certain <see cref="FrontServiceKind"/> (that must
-        /// not be <see cref="FrontServiceKind.None"/>).
+        /// Explicitly registers a set of types that are Front services of a certain <see cref="AutoServiceKind"/> (that must
+        /// not be <see cref="AutoServiceKind.None"/>).
         /// </summary>
         /// <param name="typeNames">Types to register.</param>
-        /// <param name="kind">The kind of Front service. Must not be <see cref="FrontServiceKind.None"/>.</param>
-        public void DefineAsExternalFrontService( IReadOnlyCollection<string> typeNames, FrontServiceKind kind )
+        /// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
+        public void DefineAsExternalFrontService( IReadOnlyCollection<string> typeNames, AutoServiceKind kind )
         {
             if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
             DoDefineAsExternalFrontService( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count, kind );
@@ -233,7 +233,7 @@ namespace CK.Setup
             SafeTypesHandler( "Defining interfaces or classes as Scoped Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalScoped( m, t ) );
         }
 
-        void DoDefineAsExternalFrontService( IEnumerable<Type> types, int count, FrontServiceKind kind )
+        void DoDefineAsExternalFrontService( IEnumerable<Type> types, int count, AutoServiceKind kind )
         {
             SafeTypesHandler( "Defining interfaces or classes as Front Only Services", types, count, ( m, cc, t ) => cc.AmbientKindDetector.DefineAsExternalFrontService( m, t, kind ) );
         }

@@ -305,7 +305,7 @@ namespace CK.Setup
                 }
             }
 
-            FrontServiceKind IStObjServiceClassDescriptor.FrontServiceKind
+            AutoServiceKind IStObjServiceClassDescriptor.AutoServiceKind
             {
                 get
                 {
@@ -315,6 +315,8 @@ namespace CK.Setup
             }
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => Class.MarshallableFrontServiceTypes;
+
+            public IReadOnlyCollection<Type> MultipleMappingTypes => Class.MultipleMappingTypes;
 
             Type IStObjServiceClassDescriptor.ClassType => Class.Type;
 

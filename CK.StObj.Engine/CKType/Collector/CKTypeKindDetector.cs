@@ -88,20 +88,20 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Defines a type as being a Front service and specifies its <see cref="FrontServiceKind"/> (that must nor be <see cref="FrontServiceKind.None"/>).
+        /// Defines a type as being a Front service and specifies its <see cref="AutoServiceKind"/> (that must nor be <see cref="AutoServiceKind.None"/>).
         /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
         /// cannot be a Front service).
         /// </summary>
         /// <param name="m">The monitor.</param>
         /// <param name="t">The type to register.</param>
-        /// <param name="kind">The kind of Front service. Must not be <see cref="FrontServiceKind.None"/>.</param>
+        /// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>The type kind on success, null on error.</returns>
-        public CKTypeKind? DefineAsExternalFrontService( IActivityMonitor m, Type t, FrontServiceKind kind )
+        public CKTypeKind? DefineAsExternalFrontService( IActivityMonitor m, Type t, AutoServiceKind kind )
         {
-            if( kind == FrontServiceKind.None ) throw new ArgumentException( nameof( kind ) );
+            if( kind == AutoServiceKind.None ) throw new ArgumentException( nameof( kind ) );
             CKTypeKind k = CKTypeKind.IsFrontProcessService;
-            if( (kind & FrontServiceKind.IsEndPoint) != 0 ) k |= CKTypeKind.IsFrontEndPointService;
-            if( (kind & FrontServiceKind.IsMarshallable) != 0 ) k |= CKTypeKind.IsMarshallableService;
+            if( (kind & AutoServiceKind.IsFrontService) != 0 ) k |= CKTypeKind.IsFrontEndPointService;
+            if( (kind & AutoServiceKind.IsMarshallableService) != 0 ) k |= CKTypeKind.IsMarshallableService;
             return SetLifetimeOrFrontType( m, t, k | IsFrontTypeReasonExternal );
         }
 
@@ -234,13 +234,13 @@ namespace CK.Setup
                     else if( t.Name == nameof( IFrontProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontProcessService | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontEndPointService | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( IMarshallableAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsMarshallableService | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IMultipleAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsMultipleService | IsDefiner | IsReasonMarker;
                     else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                 }
                 if( k == CKTypeKind.None )
                 {
                     Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                     Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
+                    Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
                     bool hasSuperDefiner = t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "CKTypeSuperDefinerAttribute" );
                     bool hasDefiner = t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "CKTypeDefinerAttribute" );
                     if( hasSuperDefiner )
@@ -254,9 +254,10 @@ namespace CK.Setup
                     if( hasDefiner )
                     {
                         // If this is a definer, we can skip any handling of potential Super Definer.
+                        // We also clear any IsMultipleService since this flag is transitive.
                         foreach( var i in allInterfaces )
                         {
-                            k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner);
+                            k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService);
                         }
                         k |= IsDefiner;
                         if( hasSuperDefiner ) k |= IsSuperDefiner;
@@ -268,6 +269,7 @@ namespace CK.Setup
                         if( baseType != null )
                         {
                             var kBase = RawGet( m, baseType );
+                            Debug.Assert( (kBase&CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
                             if( (kBase & IsSuperDefiner) != 0 )
                             {
                                 Debug.Assert( (kBase & IsDefiner) != 0 );
@@ -280,7 +282,7 @@ namespace CK.Setup
                             // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
                             foreach( var i in allInterfaces )
                             {
-                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner);
+                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService);
                             }
                         }
                         else
@@ -288,7 +290,7 @@ namespace CK.Setup
                             // We are not (yet?) a Definer.
                             foreach( var i in allInterfaces )
                             {
-                                var kI = RawGet( m, i ) & ~IsDefiner;
+                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService);
                                 if( (k & IsDefiner) == 0 // We are not yet a Definer...
                                     && (kI & IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
                                 {
@@ -302,6 +304,11 @@ namespace CK.Setup
                             }
                         }
                     }
+                    // Propagation from base and interfaces has been done.
+                    if( t.IsInterface && t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "IsMultipleAttribute" ) )
+                    {
+                        k |= CKTypeKind.IsMultipleService;
+                    }
                 }
                 if( k != CKTypeKind.None )
                 {
@@ -309,28 +316,32 @@ namespace CK.Setup
                     {
                         m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
                     }
-                    if( (k & CKTypeKind.IsPoco) == CKTypeKind.IsPoco && t.IsClass )
+                    if( t.IsClass )
                     {
-                        m.Error( $"Class '{t}' cannot be a IPoco: only interfaces can be IPoco." );
-                    }
-                    if( (k & CKTypeKind.IsAutoService) != 0 && t.IsClass )
-                    {
-                        foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
+                        Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
+                        if( (k & CKTypeKind.IsPoco) == CKTypeKind.IsPoco )
                         {
-                            var marshallable = marshaller.GetGenericArguments()[0];
-                            m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
-                            SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallableService | IsMarshallableReasonMarshaller );
-                            // The marshaller interface must be promoted to be an IAutoService since they must be mapped (and without ambiguities).
-                            var exists = RawGet( m, marshaller );
-                            if( (exists & CKTypeKind.IsAutoService) == 0 )
+                            m.Error( $"Class '{t}' cannot be a IPoco: only interfaces can be IPoco." );
+                        }
+                        if( (k & CKTypeKind.IsAutoService) != 0 )
+                        {
+                            foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
                             {
-                                exists |= CKTypeKind.IsAutoService;
-                                var error = exists.GetCKTypeKindCombinationError( false );
-                                if( error != null ) m.Error( $"Unable to promote the IMarshaller interface as a IAutoService: {error}" );
-                                else
+                                var marshallable = marshaller.GetGenericArguments()[0];
+                                m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
+                                SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallableService | IsMarshallableReasonMarshaller );
+                                // The marshaller interface must be promoted to be an IAutoService since they must be mapped (and without ambiguities).
+                                var exists = RawGet( m, marshaller );
+                                if( (exists & CKTypeKind.IsAutoService) == 0 )
                                 {
-                                    m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
-                                    _cache[marshaller] = exists;
+                                    exists |= CKTypeKind.IsAutoService;
+                                    var error = exists.GetCKTypeKindCombinationError( false );
+                                    if( error != null ) m.Error( $"Unable to promote the IMarshaller interface as a IAutoService: {error}" );
+                                    else
+                                    {
+                                        m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
+                                        _cache[marshaller] = exists;
+                                    }
                                 }
                             }
                         }

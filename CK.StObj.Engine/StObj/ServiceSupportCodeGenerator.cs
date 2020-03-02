@@ -59,7 +59,7 @@ namespace CK.Setup
         /// <param name="this">This code writer.</param>
         /// <param name="f">Fluent function to apply.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        public static T Apply<T>( this T @this, Func<T, T> f ) where T : ICodeWriter => f( @this );
+        public static T Append<T>( this T @this, Func<T, T> f ) where T : ICodeWriter => f( @this );
 
         /// <summary>
         /// Fluent action application.
@@ -68,7 +68,7 @@ namespace CK.Setup
         /// <param name="this">This code writer.</param>
         /// <param name="f">Actio to apply to this code writer.</param>
         /// <returns>This code writer to enable fluent syntax.</returns>
-        public static T Apply<T>( this T @this, Action<T> f ) where T : ICodeWriter
+        public static T Append<T>( this T @this, Action<T> f ) where T : ICodeWriter
         {
             f( @this );
             return @this;
@@ -104,44 +104,47 @@ namespace CK.Setup
 
         public sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
         {
-            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, bool s, FrontServiceKind k, IReadOnlyCollection<Type> marshallableTypes )
+            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> multipleMappingTypes )
             {
                 ClassType = t;
                 Assignments = a;
-                IsScoped = s;
-                FrontServiceKind = k;
+                AutoServiceKind = k;
                 MarshallableFrontServiceTypes = marshallableTypes;
+                MultipleMappingTypes = multipleMappingTypes;
             }
 
             public Type ClassType { get; }
 
-            public bool IsScoped { get; }
+            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
 
-            public FrontServiceKind FrontServiceKind { get; }
+            public AutoServiceKind AutoServiceKind { get; }
 
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
 
+            public IReadOnlyCollection<Type> MultipleMappingTypes { get; }
         }
 
         public sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
         {
-            public StObjServiceClassDescriptor( Type t, bool s, FrontServiceKind k, IReadOnlyCollection<Type> marshallableTypes )
+            public StObjServiceClassDescriptor( Type t, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> multipleMappingTypes )
             {
                 ClassType = t;
-                IsScoped = s;
-                FrontServiceKind = k;
+                AutoServiceKind = k;
                 MarshallableFrontServiceTypes = marshallableTypes;
+                MultipleMappingTypes = multipleMappingTypes;
            }
 
             public Type ClassType { get; }
 
-            public bool IsScoped { get; }
+            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
 
-            public FrontServiceKind FrontServiceKind { get; }
+            public AutoServiceKind AutoServiceKind { get; }
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+
+            public IReadOnlyCollection<Type> MultipleMappingTypes { get; }
 
         }
 ";
@@ -192,26 +195,11 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                        .Append( "new StObjServiceClassDescriptor(" )
                             .AppendTypeOf( map.Value.FinalType )
                             .Append( ", " )
-                            .Append( map.Value.MustBeScopedLifetime.Value )
-                            .Append( ", " )
                             .Append( map.Value.FinalFrontServiceKind.Value )
                             .Append( ", " )
-                                .Apply( w =>
-                                {
-                                    bool atLeastOne = false;
-                                    foreach( var t in map.Value.MarshallableFrontServiceTypes )
-                                    {
-                                        if( atLeastOne ) w.Append( ", " );
-                                        else
-                                        {
-                                            w.Append( "new[] {" );
-                                            atLeastOne = true;
-                                        }
-                                        w.AppendTypeOf( t );
-                                    }
-                                    if( atLeastOne ) w.Append( "}" );
-                                    else w.Append( "Type.EmptyTypes" );
-                                } )
+                            .Append( w => AppendTypes( w, map.Value.MarshallableFrontServiceTypes ) )
+                            .Append( ", " )
+                            .Append( w => AppendTypes( w, map.Value.MultipleMappingTypes ) )
                             .Append( ")" )
                        .Append( " );" )
                        .NewLine();
@@ -310,9 +298,16 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
             t.CreateFunction( ctor =>
             {
                 ctor.Append( "public S" ).Append( c.Number ).Append( "()" ).NewLine()
-                    .Append( ": base( " ).AppendTypeOf( c.ClassType ).Append( ", " ).NewLine();
-                GenerateStObjServiceFactortInfoAssignments( ctor, c.Assignments );
-                ctor.Append( ", " ).Append( c.IsScoped ).Append( ", FrontServiceKind." ).Append( c.FrontServiceKind ).Append( ")" );
+                    .Append( ": base( " )
+                        .AppendTypeOf( c.ClassType ).Append( ", " ).NewLine()
+                        .Append( x => GenerateStObjServiceFactortInfoAssignments( x, c.Assignments ) )
+                        .Append( ", " ).NewLine()
+                        .Append( c.AutoServiceKind )
+                        .Append( ", " ).NewLine()
+                        .Append( w => AppendTypes( w, c.MarshallableFrontServiceTypes ) )
+                        .Append( ", " ).NewLine()
+                        .Append( w => AppendTypes( w, c.MultipleMappingTypes ) )
+                        .Append( ")" );
             } );
 
             t.CreateFunction( func =>
@@ -397,5 +392,21 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
             }
         }
 
+        static void AppendTypes( ICodeWriter w, IEnumerable<Type> types )
+        {
+            bool atLeastOne = false;
+            foreach( var t in types )
+            {
+                if( atLeastOne ) w.Append( ", " );
+                else
+                {
+                    w.Append( "new[] {" );
+                    atLeastOne = true;
+                }
+                w.AppendTypeOf( t );
+            }
+            if( atLeastOne ) w.Append( "}" );
+            else w.Append( "Type.EmptyTypes" );
+        }
     }
 }
