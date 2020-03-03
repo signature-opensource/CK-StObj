@@ -22,7 +22,7 @@ namespace CK.Setup
         /// of the object (like readonly properties initalized by constructor) but care should be taken when accessing
         /// the final object since, depending of the current step in the process, it has not necessarily been constructed/initialized correctly yet.
         /// </summary>
-        object InitialObject { get; }
+        object Implementation { get; }
 
         /// <summary>
         /// Gets the type of the structure object.

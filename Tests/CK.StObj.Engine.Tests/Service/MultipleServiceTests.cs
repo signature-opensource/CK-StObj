@@ -57,8 +57,8 @@ namespace CK.StObj.Engine.Tests.Service
 
             var result = TestHelper.GetSuccessfulResult( collector );
             result.Services.SimpleMappings[typeof( IAuthProvider )].Should().BeNull();
-            IStObjFinalImplementation g = result.StObjs.Mappings.Single( kv => kv.Key == typeof( IUserGoogle ) ).Value;
-            IStObjFinalImplementation o = result.StObjs.Mappings.Single( kv => kv.Key == typeof( UserOffice ) ).Value;
+            IStObjFinalImplementation g = result.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
+            IStObjFinalImplementation o = result.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;
             g.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
             o.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
         }

@@ -160,7 +160,7 @@ namespace CK.Setup
         /// <returns>True if the type is mapped.</returns>
         public bool IsMapped( Type t ) => _map.ContainsKey( t );
 
-        public object Obtain( Type t ) => ToLeaf( t )?.InitialObject;
+        public object Obtain( Type t ) => ToLeaf( t )?.Implementation;
 
         /// <summary>
         /// Gets all types mapped by this contextual map.
@@ -175,15 +175,6 @@ namespace CK.Setup
             {
                 return _map.Where( kv => kv.Key is Type )
                             .Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
-            }
-        }
-
-        IEnumerable<KeyValuePair<Type, IStObjFinalImplementation>> IStObjObjectMap.Mappings
-        {
-            get
-            {
-                return _map.Where( kv => kv.Key is Type )
-                            .Select( kv => KeyValuePair.Create( (Type)kv.Key, kv.Value.FinalImplementation ) );
             }
         }
 

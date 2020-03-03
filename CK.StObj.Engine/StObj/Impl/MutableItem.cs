@@ -15,9 +15,9 @@ using System.Diagnostics;
 namespace CK.Setup
 {
 
-    partial class MutableItem : IStObjResult, IStObjMutableItem, IDependentItemContainerTyped, IDependentItemContainerRef
+    partial class MutableItem : IStObjResult, IStObjFinalImplementation, IStObjMutableItem, IDependentItemContainerTyped, IDependentItemContainerRef
     {
-        class LeafData : IStObjFinalImplementation
+        class LeafData
         {
             public LeafData( MutableItem leaf, List<MutableAmbientProperty> ap, MutableInjectObject[] ac )
             {
@@ -62,12 +62,6 @@ namespace CK.Setup
             /// </summary>
             public ImplementableTypeInfo ImplementableTypeInfo => LeafSpecialization.RealObjectType.ImplementableTypeInfo;
 
-            object IStObjFinalImplementation.Implementation => StructuredObject;
-
-            IReadOnlyCollection<Type> IStObjFinalImplementation.MultipleMappings => LeafSpecialization.RealObjectType.MultipleMappingTypes;
-
-            IReadOnlyCollection<Type> IStObjFinalImplementation.UniqueMappings => LeafSpecialization.RealObjectType.UniqueMappingTypes;
-
             /// <summary>
             /// Useless to store it at each level.
             /// </summary>
@@ -85,6 +79,10 @@ namespace CK.Setup
             }
         }
 
+        /// <summary>
+        ///  This is never null and shared by all the items on a path once the second step (InitializeBottomUp)
+        ///  has been called.
+        /// </summary>
         LeafData _leafData;
 
         // This is available at any level thanks to the ordering of ambient properties
@@ -693,7 +691,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final implementation.
         /// </summary>
-        public IStObjFinalImplementation FinalImplementation => _leafData;
+        public IStObjFinalImplementation FinalImplementation => this;
 
         /// <summary>
         /// Overridden to return the Type full name.
@@ -781,7 +779,7 @@ namespace CK.Setup
 
         #region IStObj Members
 
-        public object InitialObject => _leafData.StructuredObject; 
+        public object Implementation => _leafData.StructuredObject; 
 
         /// <summary>
         /// Gets the type of the structure object.
@@ -790,7 +788,13 @@ namespace CK.Setup
 
         IStObj IStObj.Generalization => Generalization; 
 
-        IStObj IStObj.Specialization => Specialization; 
+        IStObj IStObj.Specialization => Specialization;
+
+        object IStObjFinalImplementation.Implementation => _leafData.StructuredObject;
+
+        IReadOnlyCollection<Type> IStObjFinalImplementation.MultipleMappings => LeafSpecialization.RealObjectType.MultipleMappingTypes;
+
+        IReadOnlyCollection<Type> IStObjFinalImplementation.UniqueMappings => LeafSpecialization.RealObjectType.UniqueMappingTypes;
 
         IStObjResult IStObjResult.Generalization => Generalization; 
 

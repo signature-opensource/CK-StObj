@@ -36,8 +36,8 @@ namespace CK.StObj.Engine.Tests
             IServiceCollection services = new ServiceCollection();
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services );
 
-            reg.Register( typeof( IA ), typeof( A ), scoped );
-            reg.Register( typeof( IB ), typeof( A ), scoped );
+            reg.Register( typeof( IA ), typeof( A ), scoped, allowMultipleRegistration: false );
+            reg.Register( typeof( IB ), typeof( A ), scoped, allowMultipleRegistration: false );
 
             var sp = services.BuildServiceProvider();
 

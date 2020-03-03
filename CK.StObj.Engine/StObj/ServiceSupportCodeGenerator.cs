@@ -119,7 +119,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
             {
                 _rootCtor.Append( $"_objectServiceMappings.Add( " )
                        .AppendTypeOf( map.Key )
-                       .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].Leaf );" )
+                       .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].FinalImplementation );" )
                        .NewLine();
             }
             // Service mappings (Simple).
@@ -176,7 +176,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                              .AppendSourceString( StObjContextRoot.RegisterStartupServicesMethodName )
                              .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
                              .NewLine();
-                    configure.Append( $".Invoke( _stObjs[{m.IndexOrdered}].Leaf.Implementation, registerParam );" )
+                    configure.Append( $".Invoke( _stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, registerParam );" )
                              .NewLine();
 
                 }
@@ -217,7 +217,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                 return r;
             }" );
                     }
-                    configure.Append( "m.Invoke( s.Leaf.Implementation, new object[]{ register" );
+                    configure.Append( "m.Invoke( s.FinalImplementation.Implementation, new object[]{ register" );
                     foreach( var p in parameters.Skip( 1 ) )
                     {
                         configure.Append( $", Resolve<" ).AppendCSharpName( p.ParameterType, false ).Append( ">(" ).Append( p.HasDefaultValue ).Append( ')' );

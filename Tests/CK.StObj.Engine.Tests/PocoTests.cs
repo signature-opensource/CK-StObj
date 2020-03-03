@@ -19,7 +19,7 @@ namespace CK.StObj.Engine.Tests
             StObjCollectorResult result = BuildPocoSample();
 
             IStObjResult p = result.StObjs.ToStObj( typeof( PackageWithBasicPoco ) );
-            var package = (PackageWithBasicPoco)p.InitialObject;
+            var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
             IBasicPoco poco = package.Factory.Create();
             Assert.That( poco is IEAlternateBasicPoco );
             Assert.That( poco is IEBasicPoco );

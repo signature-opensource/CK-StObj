@@ -19,30 +19,22 @@ namespace CK.Core
         IStObj ToLeaf( Type t );
 
         /// <summary>
-        /// Gets the structured object final implementation or null if no mapping exists.
+        /// Gets the real object final implementation or null if no mapping exists.
         /// </summary>
         /// <param name="t">Key type (that must be a <see cref="IRealObject"/>).</param>
         /// <returns>Structured object instance or null if the type has not been mapped.</returns>
         object Obtain( Type t );
 
         /// <summary>
-        /// Gets all the structured object final implementations that exist in this context.
+        /// Gets all the real object final implementations that exist in this context.
         /// </summary>
         IEnumerable<IStObjFinalImplementation> FinalImplementations { get; }
 
         /// <summary>
         /// Gets all the <see cref="IStObj"/> and their final implementation that exist in this context.
         /// This contains only classes, not <see cref="IRealObject"/> interfaces. 
-        /// Use <see cref="Mappings"/> to dump all the types to implementation mappings.
         /// </summary>
         IEnumerable<StObjMapping> StObjs { get; }
-
-        /// <summary>
-        /// Gets all the <see cref="IRealObject"/> types to implementation objects that this
-        /// context contains.
-        /// The key types are interfaces (IRealObject) as well as classes.
-        /// </summary>
-        IEnumerable<KeyValuePair<Type, IStObjFinalImplementation>> Mappings { get; }
 
         /// <summary>
         /// Enables Real Objects to participate in the configuration of the <see cref="IServiceCollection"/>.

@@ -32,8 +32,13 @@ namespace CK.Core
 
         /// <summary>
         /// Gets the child <see cref="IStObj"/> in the inheritance chain.
-        /// May be null.
+        /// Null when this is the <see cref="FinalImplementation"/>.
         /// </summary>
         IStObj Specialization { get; }
+
+        /// <summary>
+        /// Gets the final implementation (the most specialized type).
+        /// </summary>
+        IStObjFinalImplementation FinalImplementation { get; }
     }
 }

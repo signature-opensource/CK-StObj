@@ -278,7 +278,7 @@ namespace CK.StObj.Engine.Tests.Service
             void ConfigureServices( StObjContextRoot.ServiceRegister register, TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem conf )
             {
                 var impl = conf.AlwaysUseAlice ? typeof( PrivateAlwaysAliceProvider ) : typeof( PrivateAliceOrBobProvider );
-                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true );
+                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true, allowMultipleRegistration: false );
             }
 
             [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]

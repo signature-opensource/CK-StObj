@@ -3,7 +3,7 @@ using System;
 namespace CK.Core
 {
     /// <summary>
-    /// Captures mapping in a <see cref="IStObjObjectMap"/>: associates a <see cref="IStObj"/> to its final implementation.
+    /// Captures mapping in a <see cref="IStObjObjectMap"/>: associates a <see cref="IStObj"/> to its <see cref="IStObjFinalImplementation"/>.
     /// </summary>
     public readonly struct StObjMapping
     {

@@ -140,9 +140,9 @@ class GStObj : IStObj
 
     public IStObj Specialization { get; internal set; }
 
-    internal IStObjFinalImplementation Leaf;
+    public IStObjFinalImplementation FinalImplementation { get; internal set; }
 
-    internal StObjMapping AsMapping => new StObjMapping( this, Leaf );
+    internal StObjMapping AsMapping => new StObjMapping( this, FinalImplementation );
 }";
         const string _sourceFinalGStObj = @"
 class GFinalStObj : GStObj, IStObjFinalImplementation
@@ -150,7 +150,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
     public GFinalStObj( IStObjRuntimeBuilder rb, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m )
             : base( t, g, m )
     {
-        Leaf = this;
+        FinalImplementation = this;
         Implementation = rb.CreateInstance( actualType );
         MultipleMappings = mult;
         UniqueMappings = uniq;
@@ -216,7 +216,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                        .Append( "  GStObj g = (GStObj)o.Generalization;" ).NewLine()
                        .Append( "  while( g != null ) {" ).NewLine()
                        .Append( "   g.Specialization = o;" ).NewLine()
-                       .Append( "   g.Leaf = oF;" ).NewLine()
+                       .Append( "   g.FinalImplementation = oF;" ).NewLine()
                        .Append( "   o = g;" ).NewLine()
                        .Append( "   g = (GStObj)o.Generalization;" ).NewLine()
                        .Append( "  }" ).NewLine()
@@ -250,7 +250,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                         }
                         rootCtor.Append( varName )
                                .Append( ".SetValue(_stObjs[" )
-                               .Append( m.IndexOrdered).Append( "].Leaf.Implementation," );
+                               .Append( m.IndexOrdered).Append( "].FinalImplementation.Implementation," );
                         GenerateValue( rootCtor, setter.Value );
                         rootCtor.Append( ");" ).NewLine();
                     }
@@ -280,7 +280,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                         Type decl = p.Property.DeclaringType;
                         rootCtor.AppendTypeOf( decl )
                                .Append( $".GetProperty( \"{p.Property.Name}\", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic )" )
-                               .Append( $".SetValue(_stObjs[{m.IndexOrdered}].Leaf.Implementation, " );
+                               .Append( $".SetValue(_stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, " );
                         GenerateValue( rootCtor, p.Value );
                         rootCtor.Append( ");" ).NewLine();
                     }
@@ -297,7 +297,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                             .AppendSourceString( StObjContextRoot.InitializeMethodName )
                             .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
                             .NewLine();
-                    rootCtor.Append( $".Invoke( _stObjs[{m.IndexOrdered}].Leaf.Implementation, new object[]{{ monitor, this }} );" )
+                    rootCtor.Append( $".Invoke( _stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, new object[]{{ monitor, this }} );" )
                             .NewLine();
                 }
             }
@@ -317,8 +317,6 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
             IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
 
-            IEnumerable<KeyValuePair<Type, IStObjFinalImplementation>> IStObjObjectMap.Mappings => _map.Select( v => new KeyValuePair<Type, IStObjFinalImplementation>( v.Key, v.Value ) );
-
             GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
             " );
 
@@ -334,14 +332,14 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootCtor.Append( ".GetMethod(" )
                     .AppendSourceString( StObjContextRoot.ConstructMethodName )
                     .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
-                    .Append( $".Invoke( _stObjs[{m.IndexOrdered}].Leaf.Implementation, new object[] {{" );
+                    .Append( $".Invoke( _stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, new object[] {{" );
             // Missing Value {get;} on IStObjMutableParameter and we need the BuilderValueIndex...
             // Hideous downcast for the moment.
             foreach( var p in parameters.Cast<MutableParameter>() )
             {
                 if( p.BuilderValueIndex < 0 )
                 {
-                    rootCtor.Append( $"_stObjs[{-(p.BuilderValueIndex + 1)}].Leaf.Implementation" );
+                    rootCtor.Append( $"_stObjs[{-(p.BuilderValueIndex + 1)}].FinalImplementation.Implementation" );
                 }
                 else GenerateValue( rootCtor, p.Value );
                 rootCtor.Append( ',' );
@@ -380,7 +378,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             }
             else if( o is MutableItem )
             {
-                b.Append( $"_stObjs[{((MutableItem)o).IndexOrdered}].Leaf.Implementation" );
+                b.Append( $"_stObjs[{((MutableItem)o).IndexOrdered}].FinalImplementation.Implementation" );
             }
             else
             {

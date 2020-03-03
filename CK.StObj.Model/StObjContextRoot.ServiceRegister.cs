@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CK.Core
 {
@@ -17,6 +18,11 @@ namespace CK.Core
         {
             enum RegType : byte
             {
+                None,
+                /// <summary>
+                /// The registration maps a type to multiple implementation.
+                /// </summary>
+                Multiple,
                 RealObject,
                 InternalMapping,
                 InternalImplementation,
@@ -40,7 +46,10 @@ namespace CK.Core
                 Services = services ?? throw new ArgumentNullException( nameof( services ) );
                 StartupServices = startupServices ?? new SimpleServiceContainer();
                 _registered = new Dictionary<Type, RegType>();
-                foreach( var r in services ) _registered[r.ServiceType] = RegType.PreviouslyRegistered;
+                foreach( var r in services )
+                {
+                    _registered[r.ServiceType] = RegType.PreviouslyRegistered;
+                }
                 AllowOverride = false;
             }
 
@@ -85,23 +94,27 @@ namespace CK.Core
                     try
                     {
                         if( map == null ) throw new ArgumentNullException( nameof( map ) );
-                        DoRegisterSingleton( typeof( IStObjMap ), map, isRealObject: true );
+                        RegisterSingletonInstance( typeof( IStObjMap ), map, isRealObject: true, isMultiple: false );
                         map.StObjs.ConfigureServices( this );
-                        foreach( var kv in map.StObjs.Mappings )
+                        foreach( var o in map.StObjs.FinalImplementations )
                         {
-                            DoRegisterSingleton( kv.Key, kv.Value.Implementation, true );
-                        }
-                        foreach( var kv in map.Services.ObjectMappings )
-                        {
-                            DoRegisterSingleton( kv.Key, kv.Value.Implementation, false );
+                            RegisterSingletonInstance( o.ObjectType, o.Implementation, isRealObject: true, isMultiple: false );
+                            foreach( var s in o.UniqueMappings )
+                            {
+                                RegisterSingletonInstance( s, o.Implementation, isRealObject: true, isMultiple: false );
+                            }
+                            foreach( var s in o.MultipleMappings )
+                            {
+                                RegisterSingletonInstance( s, o.Implementation, isRealObject: true, isMultiple: true );
+                            }
                         }
                         foreach( var kv in map.Services.SimpleMappings )
                         {
-                            Register( kv.Key, kv.Value.ClassType, kv.Value.IsScoped );
+                            Register( kv.Key, kv.Value.ClassType, kv.Value.IsScoped, allowMultipleRegistration: false );
                         }
                         foreach( var kv in map.Services.ManualMappings )
                         {
-                            Register( kv.Key, kv.Value.CreateInstance, kv.Value.IsScoped );
+                            Register( kv.Key, kv.Value.CreateInstance, kv.Value.IsScoped, allowMultipleRegistration: false );
                         }
                     }
                     catch( Exception ex )
@@ -117,9 +130,13 @@ namespace CK.Core
             /// </summary>
             /// <param name="serviceType">Service type.</param>
             /// <param name="implementation">Resolved singleton instance.</param>
-            public void RegisterSingleton( Type serviceType, object implementation )
+            /// <param name="allowMultipleRegistration">
+            /// True to allow the <paramref name="serviceType"/> to already be associated to another mapping.
+            /// False to log an error and return false.
+            /// </param>
+            public bool RegisterSingleton( Type serviceType, object implementation, bool allowMultipleRegistration )
             {
-                DoRegisterSingleton( serviceType, implementation, false );
+                return RegisterSingletonInstance( serviceType, implementation, false, allowMultipleRegistration );
             }
 
             /// <summary>
@@ -127,25 +144,41 @@ namespace CK.Core
             /// </summary>
             /// <typeparam name="T">Service type.</typeparam>
             /// <param name="implementation">Resolved singleton instance.</param>
-            public void RegisterSingleton<T>( T implementation ) => DoRegisterSingleton( typeof( T ), implementation, false );
+            public void RegisterSingleton<T>( T implementation ) => RegisterSingletonInstance( typeof( T ), implementation, false, false );
 
 
-            void DoRegisterSingleton( Type serviceType, object implementation, bool isRealObject )
+            bool RegisterSingletonInstance( Type serviceType, object implementation, bool isRealObject, bool isMultiple )
             {
-                if( !_registered.TryGetValue( serviceType, out var reg ) )
+                if( !_registered.TryGetValue( serviceType, out var reg )
+                    || (isMultiple && (reg == RegType.Multiple || reg == RegType.PreviouslyRegistered) ) )
                 {
-                    Monitor.Trace( $"Registering service mapping from '{serviceType}' to {(isRealObject ? $"real object '{implementation.GetType().Name}'" : "provided singleton instance")}." );
+                    Monitor.Trace( $"Registering {(isMultiple ? "multiple" : "unique")} mapping from '{serviceType}' to {(isRealObject ? $"real object '{implementation.GetType().Name}'" : "provided singleton instance")}." );
                     Services.Add( new ServiceDescriptor( serviceType, implementation ) );
-                    _registered.Add( serviceType, isRealObject ? RegType.RealObject : RegType.InternalMapping );
+                    if( reg == RegType.None )
+                    {
+                        _registered.Add( serviceType, isMultiple
+                                                        ? RegType.Multiple
+                                                        : (isRealObject
+                                                            ? RegType.RealObject
+                                                            : RegType.InternalMapping) );
+                    }
+                    return true;
                 }
-                else if( reg == RegType.PreviouslyRegistered )
+                if( reg == RegType.PreviouslyRegistered )
                 {
-                    Monitor.Warn( $"Service mapping '{serviceType}' is already registered in ServiceCollection. Skipped singleton instance registration." );
+                    Debug.Assert( !isMultiple );
+                    Monitor.Warn( $"Skipping unique mapping '{serviceType}' to {(isRealObject ? $"real object '{implementation.GetType().Name}'" : "provided singleton instance")} since it is already registered in ServiceCollection." );
+                    return true;
+                }
+                if( reg == RegType.Multiple )
+                {
+                    Monitor.Error( $"Invalid unique '{serviceType}' registration to {(isRealObject ? $"real object '{implementation.GetType().Name}'" : "provided singleton instance")}: already registered as a Multiple mapping." );
                 }
                 else
                 {
-                    Monitor.Error( $"Duplicate '{serviceType}' registration in ServiceCollection (singleton instance registration). ServiceRegister checks that registration occur at most once." );
+                    Monitor.Error( $"Duplicate '{serviceType}' registration in ServiceCollection (singleton instance registration)." );
                 }
+                return false;
             }
 
             /// <summary>
@@ -155,7 +188,7 @@ namespace CK.Core
             /// <param name="serviceType">Service type.</param>
             /// <param name="implementation">Implementation type.</param>
             /// <param name="isScoped">True for scope, false for singletons.</param>
-            public void Register( Type serviceType, Type implementation, bool isScoped )
+            public void Register( Type serviceType, Type implementation, bool isScoped, bool allowMultipleRegistration )
             {
                 ServiceLifetime lt = isScoped ? ServiceLifetime.Scoped : ServiceLifetime.Singleton;
                 if( !_registered.TryGetValue( serviceType, out var reg ) )
@@ -203,7 +236,7 @@ namespace CK.Core
             /// <typeparam name="T">Service type.</typeparam>
             /// <typeparam name="TImpl">Implementation type.</typeparam>
             /// <param name="isScoped">True for scope, false for singletons.</param>
-            public void Register<T, TImpl>( bool isScoped ) where TImpl : T => Register( typeof( T ), typeof( TImpl ), isScoped );
+            public void Register<T, TImpl>( bool isScoped, bool allowMultipleRegistration ) where TImpl : T => Register( typeof( T ), typeof( TImpl ), isScoped, allowMultipleRegistration );
 
             /// <summary>
             /// Registers a factory method.
@@ -211,7 +244,7 @@ namespace CK.Core
             /// <param name="serviceType">Service type.</param>
             /// <param name="factory">Instance factory.</param>
             /// <param name="isScoped">True for scope, false for singletons.</param>
-            public void Register( Type serviceType, Func<IServiceProvider, object> factory, bool isScoped )
+            public void Register( Type serviceType, Func<IServiceProvider, object> factory, bool isScoped, bool allowMultipleRegistration )
             {
                 ServiceLifetime lt = isScoped ? ServiceLifetime.Scoped : ServiceLifetime.Singleton;
                 // When there is a mapping (the serviceType is not the target implementation), we must register
@@ -239,7 +272,7 @@ namespace CK.Core
             /// <typeparam name="T">Service type.</typeparam>
             /// <param name="factory">Instance factory.</param>
             /// <param name="isScoped">True for scope, false for singletons.</param>
-            public void Register<T>( Func<IServiceProvider, object> factory, bool isScoped ) => Register( typeof( T ), factory, isScoped );
+            public void Register<T>( Func<IServiceProvider, object> factory, bool isScoped, bool allowMultipleRegistration ) => Register( typeof( T ), factory, isScoped, allowMultipleRegistration );
         }
     }
 }

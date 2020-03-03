@@ -67,8 +67,8 @@ namespace CK.Setup
                         resolved = t.CachedResolvedStObj;
                         if( resolved != null )
                         {
-                            Debug.Assert( resolved.InitialObject != System.Type.Missing );
-                            t.SetParameterValue( resolved.InitialObject );
+                            Debug.Assert( resolved.Implementation != System.Type.Missing );
+                            t.SetParameterValue( resolved.Implementation );
                         }
                     }
                     if( valueResolver != null ) valueResolver.ResolveParameterValue( monitor, t );
@@ -83,7 +83,7 @@ namespace CK.Setup
                         }
                         t.SetParameterValue( t.Type.IsValueType ? Activator.CreateInstance( t.Type ) : null );
                     }
-                    if( resolved != null && t.Value == resolved.InitialObject )
+                    if( resolved != null && t.Value == resolved.Implementation )
                     {
                         t.BuilderValueIndex = -(resolved.IndexOrdered + 1);
                     }
@@ -131,7 +131,7 @@ namespace CK.Setup
         {
             object o = p.Value;
             MutableItem m = o as MutableItem;
-            if( m != null ) o = m.InitialObject;
+            if( m != null ) o = m.Implementation;
             DoSetPropertyValue( monitor, p.Property, o );
         }
 

@@ -216,9 +216,9 @@ namespace CK.StObj.Engine.Tests
                 var result = collector.GetResult(  );
                 Assert.That( result.HasFatalError, Is.False );
 
-                IStObjResult theObject = result.StObjs.ToLeaf( typeof(CK.StObj.Engine.Tests.SimpleObjects.LoggerInjection.LoggerInjected) );
+                IStObjResult theObject = result.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) );
                 Assert.That( theObject, Is.Not.Null );
-                Assert.That( theObject.InitialObject, Is.Not.Null.And.InstanceOf<CK.StObj.Engine.Tests.SimpleObjects.LoggerInjection.LoggerInjected>() );
+                Assert.That( theObject.FinalImplementation.Implementation, Is.Not.Null.And.InstanceOf<SimpleObjects.LoggerInjection.LoggerInjected>() );
             }
         }
 
