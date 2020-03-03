@@ -59,6 +59,7 @@ namespace CK.Setup
         {
             Debug.Assert( t.IsClass );
             _map.Add( t, m );
+            if( t != m.RealObjectType.Type ) m.RealObjectType.AddUniqueMapping( t );
         }
 
         internal void AddInterfaceMapping( Type t, MutableItem m, MutableItem finalType )
@@ -66,6 +67,7 @@ namespace CK.Setup
             Debug.Assert( t.IsInterface );
             _map.Add( t, finalType );
             _map.Add( new RealObjectInterfaceKey( t ), m );
+            finalType.RealObjectType.AddUniqueMapping( t );
         }
 
         /// <summary>
@@ -91,7 +93,7 @@ namespace CK.Setup
         public Type ToLeafType( Type t )
         {
             MutableItem c = ToLeaf( t );
-            return c != null ? c.Type.Type : null;
+            return c != null ? c.RealObjectType.Type : null;
         }
 
         internal MutableItem ToLeaf( Type t )
@@ -117,7 +119,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="t">Any mapped type.</param>
         /// <returns>The most abstract, less specialized, associated type.</returns>
-        public Type ToHighestImplType( Type t ) => ToHighestImpl( t ).Type.Type;
+        public Type ToHighestImplType( Type t ) => ToHighestImpl( t ).RealObjectType.Type;
 
         internal MutableItem ToHighestImpl( Type t )
         {
@@ -125,7 +127,7 @@ namespace CK.Setup
             MutableItem c;
             if( _map.TryGetValue( t, out c ) )
             {
-                if( c.Type.Type != t )
+                if( c.RealObjectType.Type != t )
                 {
                     if( t.IsInterface )
                     {
@@ -135,7 +137,7 @@ namespace CK.Setup
                     {
                         while( (c = c.Generalization) != null )
                         {
-                            if( c.Type.Type == t ) break;
+                            if( c.RealObjectType.Type == t ) break;
                         }
                     }
                 }
@@ -165,23 +167,23 @@ namespace CK.Setup
         /// </summary>
         public IEnumerable<Type> Types => _map.Keys.OfType<Type>(); 
 
-        IEnumerable<object> IStObjObjectMap.Implementations => _allSpecializations.Select( m => m.InitialObject );
+        IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _allSpecializations.Select( m => m.FinalImplementation );
 
-        public IEnumerable<StObjImplementation> StObjs
+        public IEnumerable<StObjMapping> StObjs
         {
             get
             {
                 return _map.Where( kv => kv.Key is Type )
-                            .Select( kv => new StObjImplementation( kv.Value, kv.Value.InitialObject ) );
+                            .Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
             }
         }
 
-        IEnumerable<KeyValuePair<Type, object>> IStObjObjectMap.Mappings
+        IEnumerable<KeyValuePair<Type, IStObjFinalImplementation>> IStObjObjectMap.Mappings
         {
             get
             {
                 return _map.Where( kv => kv.Key is Type )
-                            .Select( kv => new KeyValuePair<Type, object>( (Type)kv.Key, kv.Value.InitialObject ) );
+                            .Select( kv => KeyValuePair.Create( (Type)kv.Key, kv.Value.FinalImplementation ) );
             }
         }
 

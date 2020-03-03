@@ -316,7 +316,9 @@ namespace CK.Setup
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => Class.MarshallableFrontServiceTypes;
 
-            public IReadOnlyCollection<Type> MultipleMappingTypes => Class.MultipleMappingTypes;
+            public IReadOnlyCollection<Type> MultipleMappings => Class.MultipleMappings;
+
+            public IReadOnlyCollection<Type> UniqueMappings => Class.UniqueMappings;
 
             Type IStObjServiceClassDescriptor.ClassType => Class.Type;
 
@@ -468,6 +470,7 @@ namespace CK.Setup
                     {
                         _engineMap.ServiceSimpleMappings.Add( t, final );
                     }
+                    if( t != final.Type ) final.TypeInfo.AddUniqueMapping( t );
                 }
             }
         }

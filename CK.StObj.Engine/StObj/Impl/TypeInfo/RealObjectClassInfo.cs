@@ -12,8 +12,7 @@ namespace CK.Setup
     /// </summary>
     internal class RealObjectClassInfo : CKTypeInfo, IStObjTypeInfoFromParent
     {
-        Type[] _ambientInterfaces;
-        Type[] _thisAmbientInterfaces;
+        IReadOnlyList<Type> _realObjectInterfaces;
 
         class TypeInfoForBaseClasses : IStObjTypeInfoFromParent, IStObjTypeRootParentInfo
         {
@@ -185,7 +184,13 @@ namespace CK.Setup
             }
         }
 
-        internal RealObjectClassInfo( IActivityMonitor monitor, RealObjectClassInfo parent, Type t, IServiceProvider provider, CKTypeKindDetector ambientTypeKind, bool isExcluded )
+        internal RealObjectClassInfo(
+            IActivityMonitor monitor,
+            RealObjectClassInfo parent,
+            Type t,
+            IServiceProvider provider,
+            CKTypeKindDetector ambientTypeKind,
+            bool isExcluded )
             : base( monitor, parent, t, provider, isExcluded, null )
         {
             Debug.Assert( parent == Generalization );
@@ -534,19 +539,31 @@ namespace CK.Setup
             }
         }
 
-        Type[] EnsureAllAmbientInterfaces( IActivityMonitor m, CKTypeKindDetector d )
+        internal void InitializeInterfaces( IActivityMonitor m, CKTypeKindDetector d )
         {
-            return _ambientInterfaces
-                ?? (_ambientInterfaces = Type.GetInterfaces().Where( t => (d.GetKind( m, t ) & CKTypeKind.RealObject) == CKTypeKind.RealObject ).ToArray());
+            // If there is a path ambiguity we'll reach an already initialized parent.
+            if( _realObjectInterfaces == null )
+            {
+                List<Type> all = null;
+                foreach( Type tI in Interfaces )
+                {
+                    var k = d.GetKind( m, tI );
+                    if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                    {
+                        if( all == null ) all = new List<Type>();
+                        all.Add( tI );
+                    }
+                    else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
+                    {
+                        AddMultipleMapping( tI );
+                    }
+                }
+                _realObjectInterfaces = (IReadOnlyList<Type>)all ?? Type.EmptyTypes;
+                Generalization?.InitializeInterfaces( m, d );
+            }
         }
 
-        internal Type[] EnsureThisAmbientInterfaces( IActivityMonitor m, CKTypeKindDetector d )
-        {
-            return _thisAmbientInterfaces ?? (_thisAmbientInterfaces = Generalization != null
-                                                        ? EnsureAllAmbientInterfaces( m, d ).Except( Generalization.EnsureAllAmbientInterfaces( m, d ) ).ToArray()
-                                                        : EnsureAllAmbientInterfaces( m, d ));
-        }
-
+        internal IEnumerable<Type> ThisRealObjectInterfaces => Generalization != null ? _realObjectInterfaces.Except( Generalization._realObjectInterfaces ) : _realObjectInterfaces;
 
         internal bool CreateMutableItemsPath(
             IActivityMonitor monitor,

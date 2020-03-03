@@ -22,9 +22,6 @@ namespace CK.Setup
         // for this service to be a singleton.
         List<ParameterInfo> _requiredParametersToBeSingletons;
 
-        // The set of interfaces marked with IsMultipleService that must be mapped to this class.
-        readonly List<Type> _multipleInterfacesToRegister;
-
         /// <summary>
         /// Constructor parameter info: either a <see cref="AutoServiceClassInfo"/>,
         /// <see cref="AutoServiceInterfaceInfo"/> or a enumeration of one of them.
@@ -159,8 +156,10 @@ namespace CK.Setup
                 TypeInfo = objectInfo;
                 objectInfo.ServiceClass = this;
             }
-            else TypeInfo = new CKTypeInfo( m, parent?.TypeInfo, t, serviceProvider, isExcluded, this );
-
+            else
+            {
+                TypeInfo = new CKTypeInfo( m, parent?.TypeInfo, t, serviceProvider, isExcluded, this );
+            }
             Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
 
             // Forgets the Front flags: constraint is handled dynamically later.
@@ -174,7 +173,6 @@ namespace CK.Setup
                 // See below.
                 MustBeScopedLifetime = false;
             }
-            _multipleInterfacesToRegister = new List<Type>();
 
             Debug.Assert( lifetime == CKTypeKind.IsAutoService
                           || lifetime == CKTypeKindAutoSingleton
@@ -227,7 +225,13 @@ namespace CK.Setup
         /// Gets the multiple interfaces that are marked with <see cref="CKTypeKind.IsMultipleService"/>
         /// and that must be mapped to this <see cref="Type"/>.
         /// </summary>
-        public IReadOnlyCollection<Type> MultipleMappingTypes => _multipleInterfacesToRegister;
+        public IReadOnlyCollection<Type> MultipleMappings => TypeInfo.MultipleMappingTypes;
+
+        /// <summary>
+        /// Gets the unique types that that must be mapped to this <see cref="Type"/> and only to this one.
+        /// </summary>
+        public IReadOnlyCollection<Type> UniqueMappings => TypeInfo.UniqueMappingTypes;
+
 
         /// <summary>
         /// Gets this Service class life time.
@@ -409,12 +413,11 @@ namespace CK.Setup
                 // This way only interfaces that are actually used are registered in the collector.
                 // An unused Auto Service interface (ie. that has no implementation in the context)
                 // is like any other interface.
-                Interfaces = collector.RegisterServiceInterfaces( Type.GetInterfaces(), this ).ToArray();
+                // Note that if this is a Real Object, multiple mappings are already handled by the real object.
+                Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces, IsRealObject ? (Action<Type>)null : TypeInfo.AddMultipleMapping ).ToArray();
             }
             return isConcretePath;
         }
-
-        internal void AddMultipleInterfaceToRegister( Type multipleInterface ) => _multipleInterfacesToRegister.Add( multipleInterface );
 
         /// <summary>
         /// Sets one of the leaves of this class to be the most specialized one from this

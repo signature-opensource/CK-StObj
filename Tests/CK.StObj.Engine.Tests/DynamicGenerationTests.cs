@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.CodeGen.Abstractions;
 using CK.Core;
 using CK.Setup;
+using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.IO;
@@ -217,7 +218,7 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    Assert.That( map.Implementations.OfType<IRealObject>().Count, Is.EqualTo( 2 ) );
+                    map.FinalImplementations.Count( f => f.Implementation is IRealObject ).Should().Be( 2 );
                     StObjInitializeOnACalled = true;
                 }
 
@@ -239,11 +240,10 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    Assert.That( map.Implementations.OfType<IRealObject>().Count, Is.EqualTo( 2 ) );
+                    map.FinalImplementations.Count( f => f.Implementation is IRealObject ).Should().Be( 2 );
                     Assert.That( StObjInitializeOnACalled );
                     StObjInitializeOnASpecCalled = true;
                 }
-
             }
 
             [StObj( ItemKind = DependentItemKindSpec.Container )]

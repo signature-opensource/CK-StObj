@@ -253,12 +253,12 @@ namespace CK.Setup
                     }
                     path.Reverse();
                     concreteClasses.Add( path );
-                    foreach( var m in path ) engineMap.AddClassMapping( m.Type.Type, last );
+                    foreach( var m in path ) engineMap.AddClassMapping( m.RealObjectType.Type, last );
                 }
                 else if( deepestConcretes.Count > 1 )
                 {
                     List<Type> ambiguousPath = new List<Type>() { newOne.Type };
-                    ambiguousPath.AddRange( deepestConcretes.Select( m => m.Item1.Type.Type ) );
+                    ambiguousPath.AddRange( deepestConcretes.Select( m => m.Item1.RealObjectType.Type ) );
 
                     if( classAmbiguities == null ) classAmbiguities = new List<IReadOnlyList<Type>>();
                     classAmbiguities.Add( ambiguousPath.ToArray() );
@@ -269,9 +269,10 @@ namespace CK.Setup
             foreach( var path in concreteClasses )
             {
                 MutableItem finalType = path[path.Count - 1];
+                finalType.RealObjectType.InitializeInterfaces( _monitor, _kindDetector );
                 foreach( var item in path )
                 {
-                    foreach( Type itf in item.Type.EnsureThisAmbientInterfaces( _monitor, _kindDetector ) )
+                    foreach( Type itf in item.RealObjectType.ThisRealObjectInterfaces )
                     {
                         MutableItem alreadyMapped;
                         if( (alreadyMapped = engineMap.ToLeaf( itf )) != null )
@@ -279,12 +280,12 @@ namespace CK.Setup
                             if( interfaceAmbiguities == null )
                             {
                                 interfaceAmbiguities = new Dictionary<Type, List<Type>>();
-                                interfaceAmbiguities.Add( itf, new List<Type>() { itf, alreadyMapped.Type.Type, item.Type.Type } );
+                                interfaceAmbiguities.Add( itf, new List<Type>() { itf, alreadyMapped.RealObjectType.Type, item.RealObjectType.Type } );
                             }
                             else
                             {
-                                var list = interfaceAmbiguities.GetOrSet( itf, t => new List<Type>() { itf, alreadyMapped.Type.Type } );
-                                list.Add( item.Type.Type );
+                                var list = interfaceAmbiguities.GetOrSet( itf, t => new List<Type>() { itf, alreadyMapped.RealObjectType.Type } );
+                                list.Add( item.RealObjectType.Type );
                             }
                         }
                         else

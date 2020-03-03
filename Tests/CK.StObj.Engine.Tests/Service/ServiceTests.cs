@@ -102,11 +102,11 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( Obj ) );
                 var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
                 // On runtime data.
-                collectorResult.Services.ObjectMappings[typeof( ISampleService )].Should().BeOfType<Obj>();
+                collectorResult.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
                 collectorResult.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
                 collectorResult.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
                 // On generated data.
-                map.Services.ObjectMappings[typeof( ISampleService )].Should().BeOfType<Obj>();
+                map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
                 map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
                 map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
                 // On built ServiceProvider.
@@ -131,12 +131,12 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( ObjSpec ) );
             var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
             // On runtime data.
-            collectorResult.Services.ObjectMappings[typeof( ISampleService )].Should().BeAssignableTo<ObjSpec>();
+            collectorResult.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
             collectorResult.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
             collectorResult.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
             collectorResult.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
             // On generated data.
-            map.Services.ObjectMappings[typeof( ISampleService )].Should().BeAssignableTo<ObjSpec>();
+            map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
             map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
             map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
             map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
@@ -166,16 +166,16 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( ObjSpecFinal ) );
             var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
             // On runtime data.
-            collectorResult.Services.ObjectMappings[typeof( ISampleService )].Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.Services.ObjectMappings[typeof( ISampleServiceSpec )].Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
             collectorResult.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
             collectorResult.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
             collectorResult.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
             collectorResult.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
             collectorResult.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
             // On generated data.
-            map.Services.ObjectMappings[typeof( ISampleService )].Should().BeAssignableTo<ObjSpecFinal>();
-            map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Should().BeAssignableTo<ObjSpecFinal>();
+            map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+            map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
             map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
             map.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
             map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();

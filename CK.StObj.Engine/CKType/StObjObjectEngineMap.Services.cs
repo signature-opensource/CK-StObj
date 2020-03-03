@@ -81,7 +81,9 @@ namespace CK.Setup
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => _c.MarshallableFrontServiceTypes;
 
-            public IReadOnlyCollection<Type> MultipleMappingTypes => _c.MultipleMappingTypes;
+            public IReadOnlyCollection<Type> MultipleMappings => _c.MultipleMappings;
+
+            public IReadOnlyCollection<Type> UniqueMappings => _c.UniqueMappings;
 
             public object CreateInstance( IServiceProvider provider )
             {
@@ -147,7 +149,7 @@ namespace CK.Setup
             _serviceToObjectMap.Add( t, _map[typeInfo.Type] );
         }
 
-        class ServiceObjectMappingTypeAdapter : IReadOnlyDictionary<Type, object>
+        class ServiceObjectMappingTypeAdapter : IReadOnlyDictionary<Type, IStObjFinalImplementation>
         {
             readonly Dictionary<Type, MutableItem> _map;
 
@@ -156,36 +158,33 @@ namespace CK.Setup
                 _map = map;
             }
 
-            public object this[Type key] => _map.GetValueWithDefault( key, null )?.InitialObject;
+            public IStObjFinalImplementation this[Type key] => _map[ key ].FinalImplementation;
 
             public IEnumerable<Type> Keys => _map.Keys;
 
-            public IEnumerable<object> Values => _map.Values.Select( m => m.InitialObject );
+            public IEnumerable<IStObjFinalImplementation> Values => _map.Values.Select( m => m.FinalImplementation );
 
             public int Count => _map.Count;
 
             public bool ContainsKey( Type key ) => _map.ContainsKey( key );
 
-            public IEnumerator<KeyValuePair<Type, object>> GetEnumerator() => _map.Select( kv => new KeyValuePair<Type, object>( kv.Key, kv.Value.InitialObject ) ).GetEnumerator(); 
+            public IEnumerator<KeyValuePair<Type, IStObjFinalImplementation>> GetEnumerator() => _map.Select( kv => KeyValuePair.Create( kv.Key, kv.Value.FinalImplementation ) ).GetEnumerator(); 
 
-            public bool TryGetValue( Type key, out object value )
+            public bool TryGetValue( Type key, out IStObjFinalImplementation value )
             {
                 if( _map.TryGetValue( key, out var m ) )
                 {
-                    value = m.InitialObject;
+                    value = m.FinalImplementation;
                     return true;
                 }
                 value = null;
                 return false;
             }
 
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                throw new NotImplementedException();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        IReadOnlyDictionary<Type, object> IStObjServiceMap.ObjectMappings => _serviceToObjectMapExposed;
+        IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _serviceToObjectMapExposed;
 
         // Direct access for code generation.
         internal IReadOnlyCollection<KeyValuePair<Type,MutableItem>> ObjectMappings => _serviceToObjectMap;

@@ -8,75 +8,6 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-    static class EEEEEEE
-    {
-        /// <summary>
-        /// Creates a segment of code inside this function.
-        /// </summary>
-        /// <typeparam name="T">The function scope type.</typeparam>
-        /// <param name="this">This function scope.</param>
-        /// <param name="part">The function part to use to inject code at this location (or at the top).</param>
-        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
-        /// <returns>This function scope writer to enable fluent syntax.</returns>
-        public static T CreatePart<T>( this T @this, out IFunctionScopePart part, bool top = false ) where T : IFunctionScope
-        {
-            part = @this.CreatePart( top );
-            return @this;
-        }
-
-        /// <summary>
-        /// Creates a segment of code inside this namespace.
-        /// </summary>
-        /// <typeparam name="T">The namespace scope type.</typeparam>
-        /// <param name="this">This namespace scope.</param>
-        /// <param name="part">The namespace part to use to inject code at this location (or at the top).</param>
-        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
-        /// <returns>This namespace scope writer to enable fluent syntax.</returns>
-        public static T CreatePart<T>( this T @this, out INamespaceScopePart part, bool top = false ) where T : INamespaceScope
-        {
-            part = @this.CreatePart( top );
-            return @this;
-        }
-
-        /// <summary>
-        /// Creates a segment of code inside this type.
-        /// </summary>
-        /// <typeparam name="T">The type scope type.</typeparam>
-        /// <param name="this">This type scope.</param>
-        /// <param name="part">The type part to use to inject code at this location (or at the top).</param>
-        /// <param name="top">Optionally creates the new part at the start of the code instead of at the current writing position in the code.</param>
-        /// <returns>This type scope writer to enable fluent syntax.</returns>
-        public static T CreatePart<T>( this T @this, out ITypeScopePart part, bool top = false ) where T : ITypeScope
-        {
-            part = @this.CreatePart( top );
-            return @this;
-        }
-
-        /// <summary>
-        /// Fluent function application.
-        /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
-        /// <param name="this">This code writer.</param>
-        /// <param name="f">Fluent function to apply.</param>
-        /// <returns>This code writer to enable fluent syntax.</returns>
-        public static T Append<T>( this T @this, Func<T, T> f ) where T : ICodeWriter => f( @this );
-
-        /// <summary>
-        /// Fluent action application.
-        /// </summary>
-        /// <typeparam name="T">Actual type of the code writer.</typeparam>
-        /// <param name="this">This code writer.</param>
-        /// <param name="f">Actio to apply to this code writer.</param>
-        /// <returns>This code writer to enable fluent syntax.</returns>
-        public static T Append<T>( this T @this, Action<T> f ) where T : ICodeWriter
-        {
-            f( @this );
-            return @this;
-        }
-
-    }
-
-
     class ServiceSupportCodeGenerator
     {
         static readonly string _sourceServiceSupport = @"
@@ -102,15 +33,40 @@ namespace CK.Setup
             public IReadOnlyList<Type> Value { get; }
         }
 
+        public sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
+        {
+            public StObjServiceClassDescriptor( Type t, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
+            {
+                ClassType = t;
+                AutoServiceKind = k;
+                MarshallableFrontServiceTypes = marshallableTypes;
+                MultipleMappings = mult;
+                UniqueMappings = uniq;
+           }
+
+            public Type ClassType { get; }
+
+            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
+
+            public AutoServiceKind AutoServiceKind { get; }
+
+            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+
+            public IReadOnlyCollection<Type> MultipleMappings { get; }
+
+            public IReadOnlyCollection<Type> UniqueMappings { get; }
+        }
+
         public sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
         {
-            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> multipleMappingTypes )
+            public StObjServiceClassFactoryInfo( Type t, IReadOnlyList<IStObjServiceParameterInfo> a, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
             {
                 ClassType = t;
                 Assignments = a;
                 AutoServiceKind = k;
                 MarshallableFrontServiceTypes = marshallableTypes;
-                MultipleMappingTypes = multipleMappingTypes;
+                MultipleMappings = mult;
+                UniqueMappings = uniq;
             }
 
             public Type ClassType { get; }
@@ -123,30 +79,11 @@ namespace CK.Setup
 
             public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
 
-            public IReadOnlyCollection<Type> MultipleMappingTypes { get; }
+            public IReadOnlyCollection<Type> MultipleMappings { get; }
+
+            public IReadOnlyCollection<Type> UniqueMappings { get; }
         }
 
-        public sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
-        {
-            public StObjServiceClassDescriptor( Type t, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> multipleMappingTypes )
-            {
-                ClassType = t;
-                AutoServiceKind = k;
-                MarshallableFrontServiceTypes = marshallableTypes;
-                MultipleMappingTypes = multipleMappingTypes;
-           }
-
-            public Type ClassType { get; }
-
-            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
-
-            public AutoServiceKind AutoServiceKind { get; }
-
-            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
-
-            public IReadOnlyCollection<Type> MultipleMappingTypes { get; }
-
-        }
 ";
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
@@ -166,23 +103,23 @@ namespace CK.Setup
             _infoType.Namespace.Append( _sourceServiceSupport );
 
             _rootType.Append( @"
-Dictionary<Type, object> _objectServiceMappings;
+Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
 Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
 Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappings;
 
 public IStObjServiceMap Services => this;
-IReadOnlyDictionary<Type, object> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
+IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
 IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _simpleServiceMappings;
 IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMappings => _manualServiceMappings;" )
                      .NewLine();
 
             // Object mappings.
-            _rootCtor.Append( $"_objectServiceMappings = new Dictionary<Type, object>({liftedMap.ObjectMappings.Count});" ).NewLine();
+            _rootCtor.Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({liftedMap.ObjectMappings.Count});" ).NewLine();
             foreach( var map in liftedMap.ObjectMappings )
             {
                 _rootCtor.Append( $"_objectServiceMappings.Add( " )
                        .AppendTypeOf( map.Key )
-                       .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].Instance );" )
+                       .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].Leaf );" )
                        .NewLine();
             }
             // Service mappings (Simple).
@@ -197,9 +134,11 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                             .Append( ", " )
                             .Append( map.Value.FinalFrontServiceKind.Value )
                             .Append( ", " )
-                            .Append( w => AppendTypes( w, map.Value.MarshallableFrontServiceTypes ) )
+                            .AppendArray( map.Value.MarshallableFrontServiceTypes )
                             .Append( ", " )
-                            .Append( w => AppendTypes( w, map.Value.MultipleMappingTypes ) )
+                            .AppendArray( map.Value.MultipleMappings )
+                            .Append( ", " )
+                            .AppendArray( map.Value.UniqueMappings )
                             .Append( ")" )
                        .Append( " );" )
                        .NewLine();
@@ -228,23 +167,23 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
 
             foreach( MutableItem m in orderedStObjs ) 
             {
-                foreach( var reg in m.Type.AllRegisterStartupServices )
+                foreach( var reg in m.RealObjectType.AllRegisterStartupServices )
                 {
-                    if( reg == m.Type.RegisterStartupServices ) configure.Append( $"_stObjs[{m.IndexOrdered}].ObjectType" );
+                    if( reg == m.RealObjectType.RegisterStartupServices ) configure.Append( $"_stObjs[{m.IndexOrdered}].ObjectType" );
                     else configure.AppendTypeOf( reg.DeclaringType );
 
                     configure.Append( ".GetMethod(" )
                              .AppendSourceString( StObjContextRoot.RegisterStartupServicesMethodName )
                              .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
                              .NewLine();
-                    configure.Append( $".Invoke( _stObjs[{m.IndexOrdered}].Instance, registerParam );" )
+                    configure.Append( $".Invoke( _stObjs[{m.IndexOrdered}].Leaf.Implementation, registerParam );" )
                              .NewLine();
 
                 }
             }
             foreach( MutableItem m in orderedStObjs )
             {
-                foreach( var parameters in m.Type.AllConfigureServicesParameters )
+                foreach( var parameters in m.RealObjectType.AllConfigureServicesParameters )
                 {
                     configure.AppendOnce( "GStObj s;" ).NewLine();
                     configure.AppendOnce( "MethodInfo m;" ).NewLine();
@@ -252,7 +191,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                     configure.Append( $"s = _stObjs[{m.IndexOrdered}];" ).NewLine();
 
                     configure.Append( "m = " );
-                    if( parameters == m.Type.ConfigureServicesParameters )
+                    if( parameters == m.RealObjectType.ConfigureServicesParameters )
                         configure.Append( "s.ObjectType" );
                     else configure.AppendTypeOf( parameters[0].Member.DeclaringType );
 
@@ -278,7 +217,7 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                 return r;
             }" );
                     }
-                    configure.Append( "m.Invoke( s.Instance, new object[]{ register" );
+                    configure.Append( "m.Invoke( s.Leaf.Implementation, new object[]{ register" );
                     foreach( var p in parameters.Skip( 1 ) )
                     {
                         configure.Append( $", Resolve<" ).AppendCSharpName( p.ParameterType, false ).Append( ">(" ).Append( p.HasDefaultValue ).Append( ')' );
@@ -304,9 +243,9 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                         .Append( ", " ).NewLine()
                         .Append( c.AutoServiceKind )
                         .Append( ", " ).NewLine()
-                        .Append( w => AppendTypes( w, c.MarshallableFrontServiceTypes ) )
+                        .AppendArray( c.MarshallableFrontServiceTypes )
                         .Append( ", " ).NewLine()
-                        .Append( w => AppendTypes( w, c.MultipleMappingTypes ) )
+                        .AppendArray( c.MultipleMappings )
                         .Append( ")" );
             } );
 
@@ -390,23 +329,6 @@ IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMapp
                 }
                 b.Append( '}' );
             }
-        }
-
-        static void AppendTypes( ICodeWriter w, IEnumerable<Type> types )
-        {
-            bool atLeastOne = false;
-            foreach( var t in types )
-            {
-                if( atLeastOne ) w.Append( ", " );
-                else
-                {
-                    w.Append( "new[] {" );
-                    atLeastOne = true;
-                }
-                w.AppendTypeOf( t );
-            }
-            if( atLeastOne ) w.Append( "}" );
-            else w.Append( "Type.EmptyTypes" );
         }
     }
 }

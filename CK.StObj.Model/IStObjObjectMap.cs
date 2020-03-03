@@ -28,35 +28,35 @@ namespace CK.Core
         /// <summary>
         /// Gets all the structured object final implementations that exist in this context.
         /// </summary>
-        IEnumerable<object> Implementations { get; }
+        IEnumerable<IStObjFinalImplementation> FinalImplementations { get; }
 
         /// <summary>
         /// Gets all the <see cref="IStObj"/> and their final implementation that exist in this context.
         /// This contains only classes, not <see cref="IRealObject"/> interfaces. 
         /// Use <see cref="Mappings"/> to dump all the types to implementation mappings.
         /// </summary>
-        IEnumerable<StObjImplementation> StObjs { get; }
+        IEnumerable<StObjMapping> StObjs { get; }
 
         /// <summary>
         /// Gets all the <see cref="IRealObject"/> types to implementation objects that this
         /// context contains.
         /// The key types are interfaces (IRealObject) as well as classes.
         /// </summary>
-        IEnumerable<KeyValuePair<Type, object>> Mappings { get; }
+        IEnumerable<KeyValuePair<Type, IStObjFinalImplementation>> Mappings { get; }
 
         /// <summary>
-        /// Configures a <see cref="IServiceCollection"/> with the registered services.
+        /// Enables Real Objects to participate in the configuration of the <see cref="IServiceCollection"/>.
+        /// If external services are required, then the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> can be configured
+        /// to expose those "external" services.
         /// <para>
-        /// The first services that are added are the real objets (as singletons) from <see cref="IStObjObjectMap.Mappings"/>.
-        /// </para>
-        /// <para>
-        /// Once the real objects are registered, their <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods are called (so that startup services
-        /// can be registered in the <see cref="ISimpleServiceContainer"/>):
+        /// The first step is to call all  <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods on all the <see cref="IStObj"/>, following
+        /// the topological sort: during this step, startup services can be registered in the <see cref="ISimpleServiceContainer"/>) and/or used by
+        /// dependent StObj (as a kind of "shared memory/state").
         /// <c>void RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer );</c>
         /// </para>
         /// <para>
         /// Once all the RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer ) methods have ran, then
-        /// all the <see cref="StObjContextRoot.ConfigureServicesMethodName"/> real objects' methods are called: 
+        /// all the <see cref="StObjContextRoot.ConfigureServicesMethodName"/> StObj methods are called: 
         /// <c>void ConfigureServices( in StObjContextRoot.ServiceRegister, ... any services previously registered in the ISimpleServiceContainer ... );</c>
         /// </para>
         /// </summary>

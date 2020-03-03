@@ -36,11 +36,14 @@ namespace CK.Core
         IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
 
         /// <summary>
-        /// Gets the multiple interfaces or abstract classes that are marked with <see cref="CKTypeKind.IsMultipleService"/>
-        /// and that must be mapped to this <see cref="Type"/>.
-        /// This is null when <see cref="IsMultiple"/> is false.
+        /// Gets the multiple interfaces that are marked with <see cref="IsMultipleAttribute"/> and that must be mapped to this <see cref="ClassType"/>.
         /// </summary>
-        IReadOnlyCollection<Type> MultipleMappingTypes { get; }
+        IReadOnlyCollection<Type> MultipleMappings { get; }
+
+        /// <summary>
+        /// Gets the types that that must be mapped to this <see cref="ClassType"/> and only to this one.
+        /// </summary>
+        IReadOnlyCollection<Type> UniqueMappings { get; }
 
     }
 

@@ -449,7 +449,7 @@ namespace CK.Setup
                 // continue the process.
                 if( theObject == null )
                 {
-                    _monitor.Error( $"Unable to create an instance of '{pathTypes[pathTypes.Count - 1].Type.Type.FullName}'." );
+                    _monitor.Error( $"Unable to create an instance of '{pathTypes[pathTypes.Count - 1].RealObjectType.Type.FullName}'." );
                     continue;
                 }
                 // Finalize configuration by soliciting IStObjStructuralConfigurator.

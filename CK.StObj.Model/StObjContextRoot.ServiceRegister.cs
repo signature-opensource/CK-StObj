@@ -89,11 +89,11 @@ namespace CK.Core
                         map.StObjs.ConfigureServices( this );
                         foreach( var kv in map.StObjs.Mappings )
                         {
-                            DoRegisterSingleton( kv.Key, kv.Value, true );
+                            DoRegisterSingleton( kv.Key, kv.Value.Implementation, true );
                         }
                         foreach( var kv in map.Services.ObjectMappings )
                         {
-                            DoRegisterSingleton( kv.Key, kv.Value, false );
+                            DoRegisterSingleton( kv.Key, kv.Value.Implementation, false );
                         }
                         foreach( var kv in map.Services.SimpleMappings )
                         {
@@ -128,6 +128,7 @@ namespace CK.Core
             /// <typeparam name="T">Service type.</typeparam>
             /// <param name="implementation">Resolved singleton instance.</param>
             public void RegisterSingleton<T>( T implementation ) => DoRegisterSingleton( typeof( T ), implementation, false );
+
 
             void DoRegisterSingleton( Type serviceType, object implementation, bool isRealObject )
             {

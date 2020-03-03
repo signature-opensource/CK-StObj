@@ -38,10 +38,10 @@ namespace CK.Setup
                     DoCallStObjConstruct( monitor, valueCollector, valueResolver, above.Item1, above.Item2 );
                 }
             }
-            if( Type.StObjConstruct != null )
+            if( RealObjectType.StObjConstruct != null )
             {
                 Debug.Assert( _constructParameterEx != null );
-                DoCallStObjConstruct( monitor, valueCollector, valueResolver, Type.StObjConstruct, _constructParameterEx );
+                DoCallStObjConstruct( monitor, valueCollector, valueResolver, RealObjectType.StObjConstruct, _constructParameterEx );
             }
         }
 

@@ -74,7 +74,7 @@ namespace CK.Setup
             return info;
         }
 
-        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, AutoServiceClassInfo multipleImplementation = null )
+        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, Action<Type> multipleImplementation = null )
         {
             foreach( var iT in interfaces )
             {
@@ -86,7 +86,7 @@ namespace CK.Setup
                 }
                 else if( (lt & CKTypeKind.IsMultipleService) != 0 )
                 {
-                    multipleImplementation?.AddMultipleInterfaceToRegister( iT );
+                    multipleImplementation?.Invoke( iT );
                 }
                 else if( (lt&CKTypeKind.IsAutoService) != 0 )
                 {
