@@ -54,11 +54,11 @@ namespace CK.StObj.Engine.Tests
         {
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
             {
-                if( o.ObjectType == typeof( SimpleObjectDirect ) )
+                if( o.ClassType == typeof( SimpleObjectDirect ) )
                 {
                     o.SetDirectPropertyValue( monitor, "OneIntValue", 42, "ConfiguratorOneIntValueSetTo42" );
                 }
-                if( o.ObjectType == typeof( SimpleObjectAmbient ) )
+                if( o.ClassType == typeof( SimpleObjectAmbient ) )
                 {
                     o.SetAmbientPropertyValue( monitor, "OneIntValue", 42, "ConfiguratorOneIntValueSetTo42" );
                 }
@@ -220,7 +220,7 @@ namespace CK.StObj.Engine.Tests
         {
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
             {
-                if( o.ObjectType == typeof( C1 ) ) o.SetAmbientPropertyConfiguration( monitor, "Ambient", typeof(TypeToMap), StObjRequirementBehavior.ErrorIfNotStObj );
+                if( o.ClassType == typeof( C1 ) ) o.SetAmbientPropertyConfiguration( monitor, "Ambient", typeof(TypeToMap), StObjRequirementBehavior.ErrorIfNotStObj );
             }
         }
 

@@ -23,6 +23,12 @@ namespace CK.Core
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> SimpleMappings { get; }
 
         /// <summary>
+        /// Gets all the types (exposed by <see cref="IStObjServiceClassDescriptor.ClassType"/>)
+        /// that can easily be resolved by any DI container.
+        /// </summary>
+        IReadOnlyList<IStObjServiceClassDescriptor> SimpleMappingList { get; }
+
+        /// <summary>
         /// Gets all the <see cref="IAutoService"/> types to Service class mappings
         /// that cannot be directly resolved by a DI container and require either
         /// an adaptation based on the <see cref="IStObjServiceClassFactoryInfo"/> or
@@ -32,6 +38,11 @@ namespace CK.Core
         /// is the descriptor used by <see cref="SimpleMappings"/>).
         /// </summary>
         IReadOnlyDictionary<Type, IStObjServiceClassFactory> ManualMappings { get; }
+
+        /// <summary>
+        /// Gets all the not so simple registred types. See <see cref="ManualMappings"/>.
+        /// </summary>
+        IReadOnlyList<IStObjServiceClassFactory> ManualMappingList { get; }
 
     }
 }

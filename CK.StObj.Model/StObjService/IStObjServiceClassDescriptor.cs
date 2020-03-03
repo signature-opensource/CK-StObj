@@ -17,6 +17,13 @@ namespace CK.Core
         Type ClassType { get; }
 
         /// <summary>
+        /// Gets the actual Type that must be instanciated. It is <see cref="ClassType"/> for regular classes
+        /// but for abstract classes with Auto implementation, this is the type of the dynamically genrerated
+        /// class.
+        /// </summary>
+        Type FinalType { get; }
+
+        /// <summary>
         /// Gets whether this is a scoped service or a singleton one.
         /// </summary>
         bool IsScoped { get; }

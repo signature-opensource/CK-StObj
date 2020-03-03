@@ -94,28 +94,52 @@ namespace CK.Core
                     try
                     {
                         if( map == null ) throw new ArgumentNullException( nameof( map ) );
-                        RegisterSingletonInstance( typeof( IStObjMap ), map, isRealObject: true, isMultiple: false );
+                        DoRegisterSingletonInstance( typeof( IStObjMap ), map, isRealObject: true, isMultiple: false );
                         map.StObjs.ConfigureServices( this );
                         foreach( var o in map.StObjs.FinalImplementations )
                         {
-                            RegisterSingletonInstance( o.ObjectType, o.Implementation, isRealObject: true, isMultiple: false );
-                            foreach( var s in o.UniqueMappings )
+                            DoRegisterSingletonInstance( o.ClassType, o.Implementation, isRealObject: true, isMultiple: false );
+                            foreach( var u in o.UniqueMappings )
                             {
-                                RegisterSingletonInstance( s, o.Implementation, isRealObject: true, isMultiple: false );
+                                DoRegisterSingletonInstance( u, o.Implementation, isRealObject: true, isMultiple: false );
                             }
-                            foreach( var s in o.MultipleMappings )
+                            foreach( var mult in o.MultipleMappings )
                             {
-                                RegisterSingletonInstance( s, o.Implementation, isRealObject: true, isMultiple: true );
+                                DoRegisterSingletonInstance( mult, o.Implementation, isRealObject: true, true );
                             }
                         }
-                        foreach( var kv in map.Services.SimpleMappings )
+                        foreach( var s in map.Services.SimpleMappingList )
                         {
-                            Register( kv.Key, kv.Value.ClassType, kv.Value.IsScoped, allowMultipleRegistration: false );
+                            Register( s.ClassType, s.FinalType, s.IsScoped, allowMultipleRegistration: false );
+                            foreach( var u in s.UniqueMappings )
+                            {
+                                Register( u, s.FinalType, s.IsScoped, allowMultipleRegistration: false );
+                            }
+                            foreach( var mult in s.MultipleMappings )
+                            {
+                                Register( mult, s.FinalType, s.IsScoped, allowMultipleRegistration: true );
+                            }
                         }
-                        foreach( var kv in map.Services.ManualMappings )
+                        //foreach( var kv in map.Services.SimpleMappings )
+                        //{
+                        //    Register( kv.Key, kv.Value.FinalType, kv.Value.IsScoped, allowMultipleRegistration: false );
+                        //}
+                        foreach( var s in map.Services.ManualMappingList )
                         {
-                            Register( kv.Key, kv.Value.CreateInstance, kv.Value.IsScoped, allowMultipleRegistration: false );
+                            Register( s.ClassType, s.CreateInstance, s.IsScoped, allowMultipleRegistration: false );
+                            foreach( var u in s.UniqueMappings )
+                            {
+                                Register( u, s.CreateInstance, s.IsScoped, allowMultipleRegistration: false );
+                            }
+                            foreach( var mult in s.MultipleMappings )
+                            {
+                                Register( mult, s.CreateInstance, s.IsScoped, allowMultipleRegistration: true );
+                            }
                         }
+                        //foreach( var kv in map.Services.ManualMappings )
+                        //{
+                        //    Register( kv.Key, kv.Value.CreateInstance, kv.Value.IsScoped, allowMultipleRegistration: false );
+                        //}
                     }
                     catch( Exception ex )
                     {
@@ -136,7 +160,7 @@ namespace CK.Core
             /// </param>
             public bool RegisterSingleton( Type serviceType, object implementation, bool allowMultipleRegistration )
             {
-                return RegisterSingletonInstance( serviceType, implementation, false, allowMultipleRegistration );
+                return DoRegisterSingletonInstance( serviceType, implementation, false, allowMultipleRegistration );
             }
 
             /// <summary>
@@ -144,10 +168,10 @@ namespace CK.Core
             /// </summary>
             /// <typeparam name="T">Service type.</typeparam>
             /// <param name="implementation">Resolved singleton instance.</param>
-            public void RegisterSingleton<T>( T implementation ) => RegisterSingletonInstance( typeof( T ), implementation, false, false );
+            public void RegisterSingleton<T>( T implementation ) => DoRegisterSingletonInstance( typeof( T ), implementation, false, false );
 
 
-            bool RegisterSingletonInstance( Type serviceType, object implementation, bool isRealObject, bool isMultiple )
+            bool DoRegisterSingletonInstance( Type serviceType, object implementation, bool isRealObject, bool isMultiple )
             {
                 if( !_registered.TryGetValue( serviceType, out var reg )
                     || (isMultiple && (reg == RegType.Multiple || reg == RegType.PreviouslyRegistered) ) )

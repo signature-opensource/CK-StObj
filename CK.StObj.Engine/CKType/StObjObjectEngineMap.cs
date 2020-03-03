@@ -43,11 +43,14 @@ namespace CK.Setup
             _map = new Dictionary<object, MutableItem>();
             _allSpecializations = allSpecializations;
             _assemblies = assemblies;
-            _serviceMap = new Dictionary<Type, AutoServiceClassInfo>();
-            _exposedServiceMap = new ServiceMapTypeAdapter( _serviceMap );
+
+            _serviceSimpleMap = new Dictionary<Type, AutoServiceClassInfo>();
+            _serviceSimpleList = new List<AutoServiceClassInfo>();
+            _exposedServiceMap = new ServiceMapTypeAdapter( _serviceSimpleMap );
+
             _serviceManualMap = new Dictionary<Type, IStObjServiceFinalManualMapping>();
-            _exposedManualServiceMap = new ServiceManualMapTypeAdapter( _serviceManualMap );
             _serviceManualList = new List<IStObjServiceFinalManualMapping>();
+            _exposedManualServiceMap = new ServiceManualMapTypeAdapter( _serviceManualMap );
 
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
             _serviceToObjectMapExposed = new ServiceObjectMappingTypeAdapter( _serviceToObjectMap );
@@ -160,7 +163,7 @@ namespace CK.Setup
         /// <returns>True if the type is mapped.</returns>
         public bool IsMapped( Type t ) => _map.ContainsKey( t );
 
-        public object Obtain( Type t ) => ToLeaf( t )?.Implementation;
+        public object Obtain( Type t ) => ToLeaf( t )?.InitialObject;
 
         /// <summary>
         /// Gets all types mapped by this contextual map.

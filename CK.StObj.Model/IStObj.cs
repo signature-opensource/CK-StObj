@@ -15,9 +15,9 @@ namespace CK.Core
     public interface IStObj
     {
         /// <summary>
-        /// Gets the associated type (the "slice" of the object).
+        /// Gets the class type of this "slice" of the object.
         /// </summary>
-        Type ObjectType { get; }
+        Type ClassType { get; }
 
         /// <summary>
         /// Gets the StObj map to which this StObj belongs.
@@ -25,7 +25,7 @@ namespace CK.Core
         IStObjMap StObjMap { get; }
 
         /// <summary>
-        /// Gets the parent <see cref="IStObj"/> in the inheritance chain (the one associated to the base class of this <see cref="ObjectType"/>).
+        /// Gets the parent <see cref="IStObj"/> in the inheritance chain (the one associated to the base class of this <see cref="ClassType"/>).
         /// May be null.
         /// </summary>
         IStObj Generalization { get; }

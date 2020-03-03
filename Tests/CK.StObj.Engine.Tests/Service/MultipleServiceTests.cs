@@ -26,7 +26,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( S2 ) );
 
             var result = TestHelper.GetSuccessfulResult( collector );
-            result.Services.SimpleMappings[typeof( IHostedService )].Should().BeNull();
+            result.Services.SimpleMappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
             IStObjServiceClassDescriptor s1 = result.Services.SimpleMappings[typeof( S1 )];
             IStObjServiceClassDescriptor s2 = result.Services.SimpleMappings[typeof( S2 )];
             s1.MultipleMappings.Should().BeEquivalentTo( typeof( IHostedService ) );
@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( UserOffice ) );
 
             var result = TestHelper.GetSuccessfulResult( collector );
-            result.Services.SimpleMappings[typeof( IAuthProvider )].Should().BeNull();
+            result.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
             IStObjFinalImplementation g = result.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
             IStObjFinalImplementation o = result.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;
             g.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );

@@ -191,7 +191,7 @@ namespace CK.Setup
                         // Walks up the chain to locate the most abstract compatible slice.
                         {
                             MutableItem genResolved = resolved.Generalization;
-                            while( genResolved != null && sourceProp.PropertyType.IsAssignableFrom( genResolved.ObjectType ) )
+                            while( genResolved != null && sourceProp.PropertyType.IsAssignableFrom( genResolved.ClassType ) )
                             {
                                 resolved = genResolved;
                                 genResolved = genResolved.Generalization;
@@ -227,7 +227,7 @@ namespace CK.Setup
                             if( sourcePropChanged )
                             {
                                 MutableItem genResolved = resolved.Generalization;
-                                while( genResolved != null && sourceProp.PropertyType.IsAssignableFrom( genResolved.ObjectType ) )
+                                while( genResolved != null && sourceProp.PropertyType.IsAssignableFrom( genResolved.ClassType ) )
                                 {
                                     resolved = genResolved;
                                     genResolved = genResolved.Generalization;

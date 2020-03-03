@@ -120,7 +120,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( MService1NoAutoService ) );
 
             var r = TestHelper.GetSuccessfulResult( collector );
-            r.Services.SimpleMappings[typeof( MService1NoAutoService )].Should().BeNull();
+            r.Services.SimpleMappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
         }
 
         public class MService1 : MService1NoAutoService, IAutoService 
@@ -173,8 +173,8 @@ namespace CK.StObj.Engine.Tests.Service
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
             dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
             dMClass.Should().BeSameAs( dM );
-            var dMInterface = r.Services.SimpleMappings[typeof( Model.IMarshaller<IFrontService1> )];
-            dMInterface.Should().BeNull( "Mashalling the IService MUST be explicitly supported by the marshaller implementation." );
+            r.Services.SimpleMappings.ContainsKey( typeof( Model.IMarshaller<IFrontService1> ) )
+                .Should().BeFalse( "Mashalling the IService MUST be explicitly supported by the marshaller implementation." );
         }
 
 

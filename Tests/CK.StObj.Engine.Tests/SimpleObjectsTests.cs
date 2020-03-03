@@ -81,21 +81,21 @@ namespace CK.StObj.Engine.Tests
             var result = TestHelper.GetSuccessfulResult( collector );
 
             IStObjResult oa = result.StObjs.ToStObj( typeof(ObjectA) );
-            oa.Container.ObjectType.Should().Be( typeof( PackageForAB ) );
-            oa.LeafSpecialization.ObjectType.Should().Be( typeof( ObjectALevel3 ) );
+            oa.Container.ClassType.Should().Be( typeof( PackageForAB ) );
+            oa.LeafSpecialization.ClassType.Should().Be( typeof( ObjectALevel3 ) );
 
             IStObjResult oa1 = result.StObjs.ToStObj( typeof( ObjectALevel1 ) );
             oa1.Generalization.Should().BeSameAs( oa );
-            oa1.Container.ObjectType.Should().Be( typeof( PackageForABLevel1 ) );
+            oa1.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ) );
 
             IStObjResult oa2 = result.StObjs.ToStObj( typeof( ObjectALevel2 ) );
             oa2.Generalization.Should().BeSameAs( oa1 );
-            oa2.Container.ObjectType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
+            oa2.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
 
             IStObjResult oa3 = result.StObjs.ToStObj( typeof( ObjectALevel3 ) );
             oa3.Generalization.Should().BeSameAs( oa2 );
-            oa3.Container.ObjectType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
-            oa.RootGeneralization.ObjectType.Should().Be( typeof( ObjectA ) );
+            oa3.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
+            oa.RootGeneralization.ClassType.Should().Be( typeof( ObjectA ) );
         }
 
         [Test]

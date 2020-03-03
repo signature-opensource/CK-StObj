@@ -16,49 +16,6 @@ namespace CK.Setup
 
         #region Service Manual mappings.
 
-        readonly Dictionary<Type, IStObjServiceFinalManualMapping> _serviceManualMap;
-        readonly List<IStObjServiceFinalManualMapping> _serviceManualList;
-        readonly ServiceManualMapTypeAdapter _exposedManualServiceMap;
-
-        class ServiceManualMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassFactory>
-        {
-            readonly Dictionary<Type, IStObjServiceFinalManualMapping> _map;
-
-            public ServiceManualMapTypeAdapter( Dictionary<Type, IStObjServiceFinalManualMapping> map )
-            {
-                _map = map;
-            }
-
-            public IStObjServiceClassFactory this[Type key] => _map[key];
-
-            public IEnumerable<Type> Keys => _map.Keys;
-
-            public IEnumerable<IStObjServiceClassFactory> Values => _map.Values;
-
-            public int Count => _map.Count;
-
-            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
-
-            public IEnumerator<KeyValuePair<Type, IStObjServiceClassFactory>> GetEnumerator()
-            {
-                return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassFactory>( kv.Key, kv.Value ) ).GetEnumerator();
-            }
-
-            public bool TryGetValue( Type key, out IStObjServiceClassFactory value )
-            {
-                value = null;
-                if( !_map.TryGetValue( key, out var c ) ) return false;
-                value = c;
-                return true;
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        internal Dictionary<Type, IStObjServiceFinalManualMapping> ServiceManualMappings => _serviceManualMap;
-
-        internal IReadOnlyList<IStObjServiceFinalManualMapping> ServiceManualList => _serviceManualList;
-
         class StObjServiceFinalManualMapping : IStObjServiceFinalManualMapping
         {
             readonly IStObjServiceClassFactoryInfo _c;
@@ -72,6 +29,8 @@ namespace CK.Setup
             public int Number { get; }
 
             public Type ClassType => _c.ClassType;
+
+            public Type FinalType => _c.FinalType;
 
             public bool IsScoped => _c.IsScoped;
 
@@ -128,13 +87,60 @@ namespace CK.Setup
             }
         }
 
+        readonly Dictionary<Type, IStObjServiceFinalManualMapping> _serviceManualMap;
+        readonly List<IStObjServiceFinalManualMapping> _serviceManualList;
+        readonly ServiceManualMapTypeAdapter _exposedManualServiceMap;
+
+        class ServiceManualMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassFactory>
+        {
+            readonly Dictionary<Type, IStObjServiceFinalManualMapping> _map;
+
+            public ServiceManualMapTypeAdapter( Dictionary<Type, IStObjServiceFinalManualMapping> map )
+            {
+                _map = map;
+            }
+
+            public IStObjServiceClassFactory this[Type key] => _map[key];
+
+            public IEnumerable<Type> Keys => _map.Keys;
+
+            public IEnumerable<IStObjServiceClassFactory> Values => _map.Values;
+
+            public int Count => _map.Count;
+
+            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
+
+            public IEnumerator<KeyValuePair<Type, IStObjServiceClassFactory>> GetEnumerator()
+            {
+                return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassFactory>( kv.Key, kv.Value ) ).GetEnumerator();
+            }
+
+            public bool TryGetValue( Type key, out IStObjServiceClassFactory value )
+            {
+                value = null;
+                if( !_map.TryGetValue( key, out var c ) ) return false;
+                value = c;
+                return true;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        internal Dictionary<Type, IStObjServiceFinalManualMapping> ManualMappings => _serviceManualMap;
+
+        internal IReadOnlyList<IStObjServiceFinalManualMapping> ManualMappingList => _serviceManualList;
+
         internal IStObjServiceFinalManualMapping CreateServiceFinalManualMapping( IStObjServiceClassFactoryInfo c )
         {
+            Debug.Assert( _serviceManualList.IndexOf( x => x.ClassType == c.ClassType ) < 0, "Unique registration must be done by the caller." );
             var r = new StObjServiceFinalManualMapping( _serviceManualList.Count + 1, c );
             _serviceManualList.Add( r );
             return r;
         }
+
         IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMappings => _exposedManualServiceMap;
+
+        IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _serviceManualList;
 
         #endregion
 
@@ -193,7 +199,8 @@ namespace CK.Setup
 
         #region Service to Type mappings (Simple).
 
-        readonly Dictionary<Type, AutoServiceClassInfo> _serviceMap;
+        readonly Dictionary<Type, AutoServiceClassInfo> _serviceSimpleMap;
+        readonly List<AutoServiceClassInfo> _serviceSimpleList;
         readonly ServiceMapTypeAdapter _exposedServiceMap;
 
         class ServiceMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassDescriptor>
@@ -205,14 +212,8 @@ namespace CK.Setup
                 _map = map;
             }
 
-            public IStObjServiceClassDescriptor this[Type key]
-            {
-                get
-                {
-                    _map.TryGetValue( key, out var c );
-                    return c;
-                }
-            }
+            public IStObjServiceClassDescriptor this[Type key] => _map[key];
+
             public IEnumerable<Type> Keys => _map.Keys;
 
             public IEnumerable<IStObjServiceClassDescriptor> Values => _map.Values;
@@ -240,9 +241,23 @@ namespace CK.Setup
         /// <summary>
         /// Direct access to the mutable service mapping.
         /// </summary>
-        internal Dictionary<Type, AutoServiceClassInfo> ServiceSimpleMappings => _serviceMap;
+        internal Dictionary<Type, AutoServiceClassInfo> SimpleMappings => _serviceSimpleMap;
+
+        internal IReadOnlyList<AutoServiceClassInfo> SimpleMappingList => _serviceSimpleList;
+
+        internal AutoServiceClassInfo EnsureFinalSimpleRegistration( AutoServiceClassInfo c )
+        {
+            if( c.FinalSimpleListNumber == 0 )
+            {
+                _serviceSimpleList.Add( c );
+                c.FinalSimpleListNumber = _serviceSimpleList.Count;
+            }
+            return c;
+        }
 
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _exposedServiceMap;
+
+        IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _serviceSimpleList;
 
         #endregion
 

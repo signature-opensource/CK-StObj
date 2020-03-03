@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( AS2 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            r.AutoServices.RootClasses[0].MostSpecialized.Type.Should().BeSameAs( typeof( UnifiedA ) );
+            r.AutoServices.RootClasses[0].MostSpecialized.ClassType.Should().BeSameAs( typeof( UnifiedA ) );
         }
 
         [Test]
@@ -35,7 +35,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( AS1 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            r.AutoServices.RootClasses[0].MostSpecialized.Type.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
+            r.AutoServices.RootClasses[0].MostSpecialized.ClassType.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
         }
 
         class _A : IScopedAutoService { }
@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( _AS3 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            r.AutoServices.RootClasses[0].MostSpecialized.Type.Should().BeSameAs( typeof( _UnifiedA2 ) );
+            r.AutoServices.RootClasses[0].MostSpecialized.ClassType.Should().BeSameAs( typeof( _UnifiedA2 ) );
         }
 
         class e_A : IScopedAutoService { }
@@ -77,7 +77,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( e_AS3 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 2 );
-            r.AutoServices.RootClasses.Single( c => c.Type == typeof( e_A ) ).MostSpecialized.Type
+            r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( e_A ) ).MostSpecialized.ClassType
                 .Should().BeSameAs( typeof( e_UnifiedA2 ) );
         }
 
@@ -99,7 +99,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterClass( typeof( u_UnifiedD ) );
                 var r = CheckSuccess( collector );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
-                r.AutoServices.RootClasses.Single( c => c.Type == typeof( u_A ) ).MostSpecialized.Type
+                r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized.ClassType
                     .Should().BeSameAs( typeof( u_UnifiedD ) );
             }
             {
@@ -109,7 +109,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterClass( typeof( u_UnifiedA ) );
                 var r = CheckSuccess( collector );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
-                r.AutoServices.RootClasses.Single( c => c.Type == typeof( u_A ) ).MostSpecialized.Type
+                r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized.ClassType
                     .Should().BeSameAs( typeof( u_UnifiedA ) );
             }
         }
@@ -160,8 +160,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             ambiguities.Should().HaveCount( 1 );
             var a = ambiguities[0];
             a.Should().HaveCount( 1 + 2 );
-            a[0].Type.Should().BeSameAs( typeof( s_AS2Base ) );
-            a.Skip( 1 ).Select( i => i.Type ).Should().BeEquivalentTo( typeof( s_AS2a ), typeof( s_AS2b ) );
+            a[0].ClassType.Should().BeSameAs( typeof( s_AS2Base ) );
+            a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( typeof( s_AS2a ), typeof( s_AS2b ) );
         }
 
         [TestCase( typeof( s_SubUnifier1 ) )]
@@ -179,8 +179,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             ambiguities.Should().HaveCount( 1 );
             var a = ambiguities[0];
             a.Should().HaveCount( 1 + 4 );
-            a[0].Type.Should().BeSameAs( typeof( s_A ) );
-            a.Skip( 1 ).Select( i => i.Type ).Should().BeEquivalentTo( typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) );
+            a[0].ClassType.Should().BeSameAs( typeof( s_A ) );
+            a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) );
         }
 
         [Test]

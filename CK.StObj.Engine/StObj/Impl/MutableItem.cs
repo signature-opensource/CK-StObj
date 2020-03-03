@@ -119,7 +119,7 @@ namespace CK.Setup
         /// <summary>
         /// Our container comes from the configuration of this item or is inherited (from generalization). 
         /// </summary>
-        bool IsOwnContainer => _dContainer != null && _dContainer.ObjectType == _container.Type;
+        bool IsOwnContainer => _dContainer != null && _dContainer.ClassType == _container.Type;
 
         /// <summary>
         /// The tracking mode for ambient properties is inherited and nothing prevents it to 
@@ -319,7 +319,7 @@ namespace CK.Setup
         /// and can keep an internal state if needed.
         /// </summary>
         /// <remarks>
-        /// All attributes related to ObjectType (either on the type itself or on any of its members) should be retrieved 
+        /// All attributes related to ClassType (either on the type itself or on any of its members) should be retrieved 
         /// thanks to this method otherwise stateful attributes will not work correctly.
         /// </remarks>
         public ICKCustomAttributeTypeMultiProvider Attributes => RealObjectType.Attributes;
@@ -779,12 +779,12 @@ namespace CK.Setup
 
         #region IStObj Members
 
-        public object Implementation => _leafData.StructuredObject; 
+        public object InitialObject => _leafData.StructuredObject; 
 
         /// <summary>
         /// Gets the type of the structure object.
         /// </summary>
-        public Type ObjectType => RealObjectType.Type; 
+        public Type ClassType => RealObjectType.Type; 
 
         IStObj IStObj.Generalization => Generalization; 
 

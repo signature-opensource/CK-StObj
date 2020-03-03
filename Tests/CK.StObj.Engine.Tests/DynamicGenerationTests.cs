@@ -152,8 +152,8 @@ namespace CK.StObj.Engine.Tests
             {
                 public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
                 {
-                    if( o.ObjectType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
-                    if( o.ObjectType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
+                    if( o.ClassType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
+                    if( o.ClassType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
                 }
             }
 
@@ -271,8 +271,8 @@ namespace CK.StObj.Engine.Tests
             {
                 public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
                 {
-                    if( o.ObjectType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
-                    if( o.ObjectType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
+                    if( o.ClassType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
+                    if( o.ClassType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
                 }
             }
 

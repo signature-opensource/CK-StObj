@@ -96,7 +96,7 @@ namespace CK.Setup
             {
                 foreach( var a in ClassAmbiguities )
                 {
-                    monitor.Error( $"Base class '{a[0].Type.FullName}' cannot be unified by any of this candidates: '{a.Skip( 1 ).Select( t => t.Type.FullName ).Concatenate( "', '" )}'." );
+                    monitor.Error( $"Base class '{a[0].ClassType.FullName}' cannot be unified by any of this candidates: '{a.Skip( 1 ).Select( t => t.ClassType.FullName ).Concatenate( "', '" )}'." );
                 }
                 RealObjectCollectorResult.CommonLogAndWarings( monitor, AbstractTails );
             }

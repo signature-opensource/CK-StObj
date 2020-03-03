@@ -127,12 +127,12 @@ class GStObj : IStObj
 {
     public GStObj( Type t, IStObj g, IStObjMap m )
     {
-        ObjectType = t;
+        ClassType = t;
         Generalization = g;
         StObjMap = m;
     }
 
-    public Type ObjectType { get; }
+    public Type ClassType { get; }
 
     public IStObj Generalization { get; }
 
@@ -191,7 +191,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 }
                 else rootCtor.Append( "new GStObj(" );
 
-                rootCtor.AppendTypeOf( m.ObjectType ).Append( ", " )
+                rootCtor.AppendTypeOf( m.ClassType ).Append( ", " )
                         .Append( generalization )
                         .Append( ", this );" ).NewLine();
 
@@ -267,7 +267,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 if( m.RealObjectType.StObjConstruct != null )
                 {
                     Debug.Assert( m.ConstructParameters.Count > 0 );
-                    rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ObjectType" );
+                    rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
                     CallConstructMethod( rootCtor, m, m.ConstructParameters );
                 }
             }
@@ -290,7 +290,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {
-                    if( init == m.RealObjectType.StObjInitialize ) rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ObjectType" );
+                    if( init == m.RealObjectType.StObjInitialize ) rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
                     else rootCtor.AppendTypeOf( init.DeclaringType );
 
                     rootCtor.Append( ".GetMethod(")
@@ -306,7 +306,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     .Append( @"
             public IStObjObjectMap StObjs => this;
 
-            Type IStObjTypeMap.ToLeafType( Type t ) => GToLeaf( t )?.ObjectType;
+            Type IStObjTypeMap.ToLeafType( Type t ) => GToLeaf( t )?.ClassType;
             bool IStObjTypeMap.IsMapped( Type t ) => _map.ContainsKey( t );
             IEnumerable<Type> IStObjTypeMap.Types => _map.Keys;
 
