@@ -100,36 +100,37 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns a string that correctly handles flags and results to <see cref="GetCKTypeKindCombinationError(CKTypeKind,bool)"/>
+        /// Returns a string that correctly handles flags and results to <see cref="GetCombinationError(CKTypeKind,bool)"/>
         /// if this kind is invalid.
         /// </summary>
         /// <param name="this">This CK type kind.</param>
-        /// <param name="realObjectCanBeSingletonService">True for Class type (not for interface).</param>
+        /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>A readable string.</returns>
-        public static string ToStringClear( this CKTypeKind @this, bool realObjectCanBeSingletonService = false )
+        public static string ToStringClear( this CKTypeKind @this, bool isClass )
         {
-            string error = GetCKTypeKindCombinationError( @this );
+            string error = GetCombinationError( @this, isClass );
             return error == null ? ToStringFlags( @this ) : error;
         }
 
         /// <summary>
         /// Gets whether this <see cref="CKTypeKind"/> is <see cref="CKTypeKind.None"/> or
-        /// is invalid (see <see cref="GetCKTypeKindCombinationError(CKTypeKind,bool)"/>).
+        /// is invalid (see <see cref="GetCombinationError(CKTypeKind,bool)"/>).
         /// </summary>
         /// <param name="this">This CK type kind.</param>
+        /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>whether this is invalid.</returns>
-        public static bool IsNoneOrInvalid( this CKTypeKind @this )
+        public static bool IsNoneOrInvalid( this CKTypeKind @this, bool isClass )
         {
-            return @this == CKTypeKind.None || GetCKTypeKindCombinationError( @this ) != null;
+            return @this == CKTypeKind.None || GetCombinationError( @this, isClass ) != null;
         }
 
         /// <summary>
         /// Gets the conflicting duplicate status message or null if this CK type kind is valid.
         /// </summary>
         /// <param name="this">This CK type kind.</param>
-        /// <param name="realObjectCanBeSingletonService">True for Class type (not for interface).</param>
+        /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>An error message or null.</returns>
-        public static string GetCKTypeKindCombinationError( this CKTypeKind @this, bool realObjectCanBeSingletonService = false )
+        public static string GetCombinationError( this CKTypeKind @this, bool isClass )
         {
             if( @this < 0 || @this > CKTypeKindDetector.MaskPublicInfo )
             {
@@ -159,6 +160,11 @@ namespace CK.Setup
             if( isPoco )
             {
                 if( @this != CKTypeKind.IsPoco ) conflict = "Poco cannot be combined with any other aspect";
+                if( isClass )
+                {
+                    if( conflict != null ) conflict += ", ";
+                    conflict += "A class cannot be a IPoco";
+                }
             }
             else if( isRealObject )
             {
@@ -168,7 +174,7 @@ namespace CK.Setup
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
                     if( isScoped ) conflict = "RealObject cannot have a Scoped lifetime";
                     else if( isMultiple ) conflict = "IRealObject interface cannot be marked as a Multiple service";
-                    else if( isAuto && !realObjectCanBeSingletonService ) conflict = "IRealObject interface cannot be an IAutoService";
+                    else if( isAuto && !isClass ) conflict = "IRealObject interface cannot be an IAutoService";
                     // Always handle Front service.
                     if( isFrontEndPoint | isFrontProcess | isMarshallable )
                     {
@@ -181,7 +187,7 @@ namespace CK.Setup
             {
                 conflict = "An interface or an implementation cannot be both Scoped and Singleton";
             }
-            return conflict == null ? null : $"Invalid CK type combination: {conflict} for '{@this.ToStringFlags()}'.";
+            return conflict == null ? null : $"Invalid CK type combination: {conflict} for {(isClass ? "class" : "interface")} '{@this.ToStringFlags()}'.";
         }
 
 

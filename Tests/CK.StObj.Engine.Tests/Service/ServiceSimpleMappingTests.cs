@@ -245,21 +245,20 @@ namespace CK.StObj.Engine.Tests.Service
             var (r, map) = TestHelper.CompileStObjMap( collector );
 
             var final = r.Services.SimpleMappings[typeof( ISBase )];
-            final.ClassType.Should().NotBeSameAs( typeof( AbstractS1 ) );
-            final.ClassType.Should().BeAssignableTo( typeof( AbstractS1 ) );
+            final.FinalType.Should().NotBeSameAs( typeof( AbstractS1 ) );
+            final.FinalType.Should().BeAssignableTo( typeof( AbstractS1 ) );
             r.Services.SimpleMappings[typeof( AbstractS1 )].Should().BeSameAs( final );
 
-            r.Services.SimpleMappings[typeof( AbstractS2 )].ClassType.Should().NotBeSameAs( typeof( AbstractS2 ) );
-            r.Services.SimpleMappings[typeof( AbstractS2 )].ClassType.Should().BeAssignableTo( typeof( AbstractS2 ) );
-            r.Services.SimpleMappings[typeof( AbstractS3 )].ClassType.Should().NotBeSameAs( typeof( AbstractS3 ) );
-            r.Services.SimpleMappings[typeof( AbstractS3 )].ClassType.Should().BeAssignableTo( typeof( AbstractS3 ) );
+            r.Services.SimpleMappings[typeof( AbstractS2 )].FinalType.Should().NotBeSameAs( typeof( AbstractS2 ) );
+            r.Services.SimpleMappings[typeof( AbstractS2 )].FinalType.Should().BeAssignableTo( typeof( AbstractS2 ) );
+            r.Services.SimpleMappings[typeof( AbstractS3 )].FinalType.Should().NotBeSameAs( typeof( AbstractS3 ) );
+            r.Services.SimpleMappings[typeof( AbstractS3 )].FinalType.Should().BeAssignableTo( typeof( AbstractS3 ) );
 
             var services = new ServiceCollection();
             new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map );
             IServiceProvider p = services.BuildServiceProvider();
             var oG = p.GetService( typeof( ISBase ) );
             oG.GetType().FullName.Should().StartWith( "CK._g.AbstractS1" );
-
         }
 
 

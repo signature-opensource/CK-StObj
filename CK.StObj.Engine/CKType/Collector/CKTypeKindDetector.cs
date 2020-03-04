@@ -178,7 +178,7 @@ namespace CK.Setup
                 throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
             var updated = exist | kind;
-            string error = (updated & MaskPublicInfo).GetCKTypeKindCombinationError( t.IsClass );
+            string error = (updated & MaskPublicInfo).GetCombinationError( t.IsClass );
             if( error != null )
             {
                 m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as {ToStringFull( kind )}. Error: {error}" );
@@ -186,7 +186,7 @@ namespace CK.Setup
             }
             _cache[t] = updated;
             Debug.Assert( (updated & (IsDefiner | IsSuperDefiner)) == 0 );
-            Debug.Assert( CKTypeKindExtension.GetCKTypeKindCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
+            Debug.Assert( CKTypeKindExtension.GetCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
             return updated & MaskPublicInfo;
         }
 
@@ -216,6 +216,7 @@ namespace CK.Setup
         {
             if( !_cache.TryGetValue( t, out CKTypeKind k ) )
             {
+                Debug.Assert( k == CKTypeKind.None );
                 var allInterfaces = t.GetInterfaces();
                 var baseType = t.BaseType;
                 // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
@@ -309,41 +310,53 @@ namespace CK.Setup
                     {
                         k |= CKTypeKind.IsMultipleService;
                     }
-                }
-                if( k != CKTypeKind.None )
-                {
-                    if( !t.Assembly.IsDynamic && !(t.IsPublic || t.IsNestedPublic) )
+                    // Check for errors and handle 
+                    if( k != CKTypeKind.None )
                     {
-                        m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
-                    }
-                    if( t.IsClass )
-                    {
-                        Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
-                        if( (k & CKTypeKind.IsPoco) == CKTypeKind.IsPoco )
+                        // Checking errors here that cannot be checked by the central GetCombinationError method.
+                        //
+                        if( !t.Assembly.IsDynamic && !(t.IsPublic || t.IsNestedPublic) )
                         {
-                            m.Error( $"Class '{t}' cannot be a IPoco: only interfaces can be IPoco." );
+                            m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
                         }
-                        if( (k & CKTypeKind.IsAutoService) != 0 )
+                        if( t.IsClass )
                         {
-                            foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
+                            Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
+                            if( (k & CKTypeKind.IsAutoService) != 0 )
                             {
-                                var marshallable = marshaller.GetGenericArguments()[0];
-                                m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
-                                SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallableService | IsMarshallableReasonMarshaller );
-                                // The marshaller interface must be promoted to be an IAutoService since they must be mapped (and without ambiguities).
-                                var exists = RawGet( m, marshaller );
-                                if( (exists & CKTypeKind.IsAutoService) == 0 )
+                                foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
                                 {
-                                    exists |= CKTypeKind.IsAutoService;
-                                    var error = exists.GetCKTypeKindCombinationError( false );
-                                    if( error != null ) m.Error( $"Unable to promote the IMarshaller interface as a IAutoService: {error}" );
-                                    else
+                                    var marshallable = marshaller.GetGenericArguments()[0];
+                                    m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
+                                    SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallableService | IsMarshallableReasonMarshaller );
+                                    // The marshaller interface must be promoted to be an IAutoService since they must be mapped (without ambiguities).
+                                    var exists = RawGet( m, marshaller );
+                                    if( (exists & CKTypeKind.IsAutoService) == 0 )
                                     {
-                                        m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
-                                        _cache[marshaller] = exists;
+                                        exists |= CKTypeKind.IsAutoService;
+                                        var error = exists.GetCombinationError( false );
+                                        if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
+                                        else
+                                        {
+                                            m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
+                                            _cache[marshaller] = exists;
+                                        }
                                     }
                                 }
                             }
+                        }
+                        else
+                        {
+                            Debug.Assert( t.IsInterface );
+                            // We are registering classes (not interfaces): the combination errors for classes are (at least should be) checked by the
+                            // root register code.
+                            // Here we check and log an error for any interface combination error. Some errors don't propagate to their final classes
+                            // like for instance the fact that a IRealObject interface cannot be marked IsMultiple (the attribute applies only to the
+                            // interface it decorates).
+                            // We may have test here only these kind of specific errors (currently only this one), however we consider that it is better
+                            // and safer to rely on the central GetCombinationError() method: this method concentrates all the checks.
+                            var error = (k&MaskPublicInfo).GetCombinationError( false );
+                            if( error != null ) m.Error( $"Invalid interface '{t.FullName}' kind: {error}" );
                         }
                     }
                 }

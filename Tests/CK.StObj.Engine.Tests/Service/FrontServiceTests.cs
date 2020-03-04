@@ -34,16 +34,26 @@ namespace CK.StObj.Engine.Tests.Service
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
         }
 
-        public class Impossible : IRealObject,  IFrontAutoService
+        public class Impossible0 : IRealObject, IFrontAutoService
+        {
+        }
+        public class Impossible1 : IRealObject, IFrontProcessAutoService
         {
         }
 
         [Test]
         public void real_objects_cannot_be_FrontOnly_services()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Impossible ) );
-            TestHelper.GetFailedResult( collector );
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( Impossible0 ) );
+                TestHelper.GetFailedResult( collector );
+            }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( Impossible1 ) );
+                TestHelper.GetFailedResult( collector );
+            }
         }
 
         public class RealObjectAndAutoService : IRealObject, IAutoService

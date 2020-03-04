@@ -909,7 +909,7 @@ namespace CK.Setup
             // We only consider I(Scoped/Singleton)AutoService marked type parameters.
             // If the IsMultipleService is set... this is an error (if isEnumerable computed above is false).
             var lifetime = collector.AmbientKindDetector.GetKind( m, tParam );
-            var conflictMsg = lifetime.GetCKTypeKindCombinationError( tParam.IsClass );
+            var conflictMsg = lifetime.GetCombinationError( tParam.IsClass );
             if( conflictMsg == null )
             {
                 bool isMultitpleService = (lifetime & CKTypeKind.IsMultipleService) != 0;

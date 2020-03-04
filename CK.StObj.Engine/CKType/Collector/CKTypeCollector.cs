@@ -133,7 +133,7 @@ namespace CK.Setup
             if( t.BaseType != typeof( object ) ) DoRegisterClass( t.BaseType, out acParent, out sParent );
 
             CKTypeKind lt = _kindDetector.GetKind( _monitor, t );
-            var conflictMsg = lt.GetCKTypeKindCombinationError( true );
+            var conflictMsg = lt.GetCombinationError( true );
             if( conflictMsg != null )
             {
                 _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );

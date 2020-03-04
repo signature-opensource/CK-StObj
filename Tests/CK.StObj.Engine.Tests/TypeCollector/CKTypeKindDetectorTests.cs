@@ -107,14 +107,18 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( SpecSingletonDefinerLevel2 ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
+        /// <summary>
+        /// Interfaces cannot be IRealObject and IAutoService but classes can.
+        /// </summary>
+        public interface INotPossible0 : IRealObject, IAutoService { }
         public interface INotPossible1 : IScopedAutoService, ISingletonAutoService { }
         public interface INotPossible2 : IScopedAutoService, IPoco { }
         public interface INotPossible3 : IRealObject, IPoco { }
         public interface INotPossible4 : IAutoService, IPoco { }
 
 
-        public class NotPossible0 : ObjDefinerLevel2, IAutoService { }
-        public class NotPossible1 : ScopedDefiner, IRealObject { }
+        public class NotPossible0 : ScopedDefiner, IRealObject { }
+        public class NotPossible1 : ScopedDefinerLevel2, IRealObject { }
         public class NotPossible2 : IPoco { }
 
         [Test]
@@ -128,21 +132,23 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 bool hasRegistrationError = false;
                 using( TestHelper.Monitor.OnError( () => hasRegistrationError = true ) )
                 {
-                    hasCombinationError = a.GetKind( TestHelper.Monitor, t ).GetCKTypeKindCombinationError() != null;
+                    hasCombinationError = a.GetKind( TestHelper.Monitor, t ).GetCombinationError( t.IsClass ) != null;
                 }
                 (hasCombinationError | hasRegistrationError).Should().BeTrue();
             }
 
+            CheckNotPossible( typeof( INotPossible0 ) );
             CheckNotPossible( typeof( INotPossible1 ) );
             CheckNotPossible( typeof( INotPossible2 ) );
             CheckNotPossible( typeof( INotPossible3 ) );
             CheckNotPossible( typeof( INotPossible4 ) );
+            CheckNotPossible( typeof( NotPossible0 ) );
             CheckNotPossible( typeof( NotPossible1 ) );
             CheckNotPossible( typeof( NotPossible2 ) );
 
             // This is explicitly allowed thanks to the parameter.
-            a.GetKind( TestHelper.Monitor, typeof( NotPossible0 ) ).GetCKTypeKindCombinationError().Should().NotBeNull();
-            a.GetKind( TestHelper.Monitor, typeof( NotPossible0 ) ).GetCKTypeKindCombinationError( realObjectCanBeSingletonService:true ).Should().BeNull();
+            a.GetKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: true ).Should().BeNull( "This is possible for a Class." );
+            a.GetKind( TestHelper.Monitor, typeof( INotPossible0 ) ).GetCombinationError( isClass: false ).Should().NotBeNull();
         }
 
         // IRA is a Super Definer.

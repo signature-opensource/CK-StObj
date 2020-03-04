@@ -79,7 +79,7 @@ namespace CK.Setup
             foreach( var iT in interfaces )
             {
                 CKTypeKind lt = _kindDetector.GetKind( _monitor, iT );
-                var conflictMsg = lt.GetCKTypeKindCombinationError();
+                var conflictMsg = lt.GetCombinationError( false );
                 if( conflictMsg != null )
                 {
                     _monitor.Error( $"Interface '{iT.FullName}': {conflictMsg}" );
