@@ -38,7 +38,7 @@ namespace CK.Setup
 
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments => _c.Assignments;
 
-            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => _c.MarshallableFrontServiceTypes;
+            public IReadOnlyCollection<Type> MarshallableTypes => _c.MarshallableTypes;
 
             public IReadOnlyCollection<Type> MultipleMappings => _c.MultipleMappings;
 

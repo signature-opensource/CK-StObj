@@ -314,7 +314,7 @@ namespace CK.Setup
                 }
             }
 
-            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes => Class.MarshallableFrontServiceTypes;
+            public IReadOnlyCollection<Type> MarshallableTypes => Class.MarshallableTypes;
 
             public IReadOnlyCollection<Type> MultipleMappings => Class.MultipleMappings;
 

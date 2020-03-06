@@ -30,7 +30,7 @@ namespace CK.Core
 
         /// <summary>
         /// Gets whether this is a front only service and if it's the case whether
-        /// it is <see cref="AutoServiceKind.IsFrontService"/> and/or <see cref="AutoServiceKind.IsMarshallableService"/>.
+        /// it is <see cref="AutoServiceKind.IsFrontService"/> and/or <see cref="AutoServiceKind.IsMarshallable"/>.
         /// </summary>
         AutoServiceKind AutoServiceKind { get; }
 
@@ -40,7 +40,7 @@ namespace CK.Core
         /// (if it is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available), or is a set of one or more types
         /// that must have a marshaller.
         /// </summary>
-        IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+        IReadOnlyCollection<Type> MarshallableTypes { get; }
 
         /// <summary>
         /// Gets the multiple interfaces that are marked with <see cref="IsMultipleAttribute"/> and that must be mapped to this <see cref="ClassType"/>.

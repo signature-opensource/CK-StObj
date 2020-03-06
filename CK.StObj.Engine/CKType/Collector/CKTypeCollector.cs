@@ -54,8 +54,8 @@ namespace CK.Setup
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo>();
             _kindDetector = new CKTypeKindDetector();
             _pocoRegisterer = new PocoRegisterer( ( m, t ) => (_kindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
-            _kindDetector.DefineAsExternalSingleton( monitor, typeof( IPocoFactory<> ) );
-            _kindDetector.DefineAsExternalScoped( monitor, typeof( IActivityMonitor ) );
+            _kindDetector.SetAutoServiceKind( monitor, typeof( IPocoFactory<> ), AutoServiceKind.IsSingleton );
+            _kindDetector.SetAutoServiceKind( monitor, typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
             _mapName = mapName ?? String.Empty;
         }
 

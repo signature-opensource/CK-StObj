@@ -87,7 +87,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_that_depends_on_external_that_is_defined_as_a_singleton_is_fine()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.DefineAsExternalSingletons( new[] { typeof( IExternalService ) } );
+            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsSingleton );
             collector.RegisterType( typeof( LifetimeOfExternalBoostToSingleton ) );
             TestHelper.GetSuccessfulResult( collector );
         }
@@ -96,7 +96,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_that_depends_on_external_that_is_defined_as_a_Scoped_is_an_error()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.DefineAsExternalScoped( new[] { typeof( IExternalService ) } );
+            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsScoped );
             collector.RegisterType( typeof( LifetimeOfExternalBoostToSingleton ) );
             TestHelper.GetFailedResult( collector );
         }
@@ -201,7 +201,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void an_auto_service_that_depends_on_all_kind_of_singletons_is_singleton()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.DefineAsExternalSingletons( new[] { typeof( IExternalService ) } );
+            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsSingleton );
             collector.RegisterType( typeof( AmbientThatDependsOnAllKindOfSingleton ) );
             collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
             collector.RegisterType( typeof( SampleRealObject ) );
@@ -241,10 +241,10 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_service_that_depends_on_all_kind_of_singletons_is_singleton( string mode )
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.DefineAsExternalSingletons( new[] { typeof( IExternalService ) } );
+            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsSingleton );
             if( mode == "WithSingletonLifetimeOnExternalService" )
             {
-                collector.DefineAsExternalSingletons( new[] { typeof( IOtherExternalService ) } );
+                collector.SetAutoServiceKind( typeof( IOtherExternalService ), AutoServiceKind.IsSingleton );
             }
             collector.RegisterType( typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService ) );
             collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
@@ -257,6 +257,84 @@ namespace CK.StObj.Engine.Tests.Service
             bool isScoped = r.Services.SimpleMappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
             isScoped.Should().Be( mode == "UnknwonLifetimeExternalService" );
         }
+
+
+        public interface IExternalService2 : IAmbientThatDependsOnNothing { }
+
+        public interface IExternalService3 : IExternalService2 { }
+
+        public class ExtS : IExternalService3 { }
+
+        [Test]
+        public void SetAutoServiceKind_application_order_doesnt_matter_on_interfaces()
+        {
+            // Because all interfaces are flattened on Types that support them.
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
+                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
+                collector.RegisterType( typeof( ExtS ) );
+                var r = TestHelper.GetSuccessfulResult( collector );
+                r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
+                                                                                        | AutoServiceKind.IsFrontProcessService
+                                                                                        | AutoServiceKind.IsMarshallable
+                                                                                        | AutoServiceKind.IsFrontService );
+            }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
+                collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
+                collector.RegisterType( typeof( ExtS ) );
+                var r = TestHelper.GetSuccessfulResult( collector );
+                r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
+                                                                                        | AutoServiceKind.IsFrontProcessService
+                                                                                        | AutoServiceKind.IsMarshallable
+                                                                                        | AutoServiceKind.IsFrontService );
+            }
+        }
+
+
+
+        public class CBase1 : IAutoService { }
+
+        public class CBase2 : CBase1 { }
+
+        public class CBase3 : CBase2 { }
+
+        public class ExtSC : CBase3 { }
+
+        [Test]
+        public void SetAutoServiceKind_application_order_matter_on_inheritance_class_chain()
+        {
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
+                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
+                collector.RegisterType( typeof( ExtSC ) );
+                var r = TestHelper.GetSuccessfulResult( collector );
+                r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
+                                                                                        | AutoServiceKind.IsFrontProcessService
+                                                                                        | AutoServiceKind.IsMarshallable
+                                                                                        | AutoServiceKind.IsFrontService );
+            }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
+                collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
+                collector.RegisterType( typeof( ExtSC ) );
+                var r = TestHelper.GetSuccessfulResult( collector );
+                r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
+                                                                                        | AutoServiceKind.IsFrontProcessService
+                                                                                        | AutoServiceKind.IsMarshallable
+                                                                                        | AutoServiceKind.IsFrontService );
+            }
+        }
+
+
 
     }
 }

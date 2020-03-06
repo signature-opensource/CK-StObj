@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.DefineAsExternalScoped( new[] { typeof( FrontService1 ) } );
+            collector.SetAutoServiceKind( typeof( FrontService1 ), AutoServiceKind.IsScoped );
             collector.RegisterType( typeof( FrontService1 ) );
 
             var result = TestHelper.GetSuccessfulResult( collector );
@@ -64,7 +64,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_defined_as_FrontOnly_services()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.DefineAsExternalFrontService( new[] { typeof( RealObjectAndAutoService ) }, AutoServiceKind.IsFrontProcessService );
+            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsFrontProcessService );
             collector.RegisterType( typeof( RealObjectAndAutoService ) );
             TestHelper.GetFailedResult( collector );
         }
@@ -148,7 +148,7 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dI = r.Services.SimpleMappings[typeof( IFrontService1 )];
             IStObjServiceClassDescriptor dC = r.Services.SimpleMappings[typeof( FrontService1 )];
             dI.Should().BeSameAs( dC );
-            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallableService | AutoServiceKind.IsSingleton );
+            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
         [Test]
@@ -201,10 +201,35 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallableService | AutoServiceKind.IsSingleton );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallableService | AutoServiceKind.IsSingleton );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallableService | AutoServiceKind.IsSingleton );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
+
+
+        public interface IAmNotAService { }
+
+        public class FinallyIAmAnAutoService : IAmNotAService { }
+
+        public class MarshalAnyway : Model.IMarshaller<IAmNotAService>, IAutoService
+        {
+            public IAmNotAService Read( ICKBinaryReader reader ) => null;
+
+            public void Write( ICKBinaryWriter writer, IAmNotAService service ) { }
+        }
+
+        [Test]
+        public void registering_a_service_with_its_AutoService_Marshaller_makes_it_marshallable()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( MarshalAnyway ) );
+            collector.RegisterType( typeof( FinallyIAmAnAutoService ) );
+
+            var r = TestHelper.GetSuccessfulResult( collector );
+            r.Services.SimpleMappings[typeof( FinallyIAmAnAutoService )].AutoServiceKind
+                .Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+        }
+
 
     }
 }

@@ -86,23 +86,26 @@ namespace CK.Setup
         /// </summary>
         public bool Started => _startContext != null;
 
-        class BinPathComparer : IEqualityComparer<BinPath>
+        class BinPathComparer : IEqualityComparer<BinPathConfiguration>
         {
             public static BinPathComparer Default = new BinPathComparer();
 
-            public bool Equals( BinPath x, BinPath y )
+            public bool Equals( BinPathConfiguration x, BinPathConfiguration y )
             {
-                return x.Types.SetEquals( y.Types )
-                        && x.Assemblies.SetEquals( y.Assemblies )
-                        && x.ExcludedTypes.SetEquals( y.ExcludedTypes )
-                        && x.ExternalScopedTypes.SetEquals( y.ExternalScopedTypes )
-                        && x.ExternalSingletonTypes.SetEquals( y.ExternalSingletonTypes );
+                bool s = x.Types.Count == y.Types.Count
+                         && x.Assemblies.SetEquals( y.Assemblies )
+                         && x.ExcludedTypes.SetEquals( y.ExcludedTypes );
+                if( s )
+                {
+                    var one = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
+                    var two = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
+                    s = one.SequenceEqual( two );
+                }
+                return s;
             }
 
-            public int GetHashCode( BinPath b ) => b.ExcludedTypes.Count
-                                                    + b.ExternalScopedTypes.Count * 37
+            public int GetHashCode( BinPathConfiguration b ) => b.ExcludedTypes.Count
                                                     + b.Types.Count * 59
-                                                    + b.ExternalSingletonTypes.Count * 83
                                                     + b.Assemblies.Count * 117;
         }
 
@@ -236,29 +239,41 @@ namespace CK.Setup
             }
         }
 
-        BinPath CreateRootBinPathFromAllBinPaths()
+        BinPathConfiguration CreateRootBinPathFromAllBinPaths()
         {
-            var rootBinPath = new BinPath();
+            var rootBinPath = new BinPathConfiguration();
             rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
             // The root (the Working directory) doesn't want any output by itself.
             rootBinPath.GenerateSourceFiles = false;
             rootBinPath.SkipCompilation = true;
             // Assemblies and types are the union of the assembblies and types of the bin paths.
             rootBinPath.Assemblies.AddRange( _config.BinPaths.SelectMany( b => b.Assemblies ) );
-            rootBinPath.Types.AddRange( _config.BinPaths.SelectMany( b => b.Types ) );
+
+            var fusion = new Dictionary<string, BinPathConfiguration.TypeConfiguration>();
+            foreach( var c in _config.BinPaths.SelectMany( b => b.Types ) )
+            {
+                if( fusion.TryGetValue( c.Name, out var exists ) )
+                {
+                    if( !c.Optional ) exists.Optional = false;
+                    if( exists.Kind != c.Kind )
+                    {
+                        _monitor.Error( $"Invalid Type configuration accross BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
+                        return null;
+                    }
+                }
+                else fusion.Add( c.Name, new BinPathConfiguration.TypeConfiguration( c.Name, c.Kind, c.Optional ) );
+            }
+            rootBinPath.Types.AddRange( fusion.Values );
+
             // Propagates root excluded types to all bin paths.
             rootBinPath.ExcludedTypes.AddRange( _config.GlobalExcludedTypes );
             foreach( var f in _config.BinPaths ) f.ExcludedTypes.AddRange( rootBinPath.ExcludedTypes );
-            // Unifies External lifetime definition: choose Scope as soon as one BinPath want Scope.
-            // Unifies also all the Singletons but remove any Scoped from them... This is not perfect
-            // but should do the dob in practice.
-            rootBinPath.ExternalScopedTypes.AddRange( _config.BinPaths.SelectMany( b => b.ExternalScopedTypes ) );
-            rootBinPath.ExternalSingletonTypes.AddRange( _config.BinPaths.SelectMany( b => b.ExternalSingletonTypes ).Except( rootBinPath.ExternalScopedTypes ) );
+
             return rootBinPath;
         }
 
 
-        bool SecondaryCodeGeneration( StObjCollectorResult firstRunResult, string dllName, IGrouping<BinPath,BinPath> bPaths )
+        bool SecondaryCodeGeneration( StObjCollectorResult firstRunResult, string dllName, IGrouping<BinPathConfiguration,BinPathConfiguration> bPaths )
         {
             using( _monitor.OpenInfo( $"Generating assembly for BinPaths '{bPaths.Select( b => b.Path.Path ).Concatenate("', '")}'." ) )
             {
@@ -269,7 +284,7 @@ namespace CK.Setup
             }
         }
 
-        bool CodeGenerationForPaths( IGrouping<BinPath, BinPath> bPaths, StObjCollectorResult r, string dllName )
+        bool CodeGenerationForPaths( IGrouping<BinPathConfiguration, BinPathConfiguration> bPaths, StObjCollectorResult r, string dllName )
         {
             var head = bPaths.Key;
             var g = r.GenerateFinalAssembly( _monitor, head.OutputPath.AppendPart( dllName ), bPaths.Any( f => f.GenerateSourceFiles ), _config.InformationalVersion, bPaths.All( f => f.SkipCompilation ) );
@@ -314,7 +329,7 @@ namespace CK.Setup
             readonly StObjConfigurationLayer _firstLayer;
             readonly HashSet<string> _excludedTypes;
 
-            public TypeFilterFromConfiguration( BinPath f, StObjConfigurationLayer firstLayer )
+            public TypeFilterFromConfiguration( BinPathConfiguration f, StObjConfigurationLayer firstLayer )
             {
                 _excludedTypes = f.ExcludedTypes;
                 _firstLayer = firstLayer;
@@ -347,7 +362,7 @@ namespace CK.Setup
             }
         }
 
-        StObjCollectorResult SafeBuildStObj( BinPath f, Func<string,object> secondaryRunAccessor )
+        StObjCollectorResult SafeBuildStObj( BinPathConfiguration f, Func<string,object> secondaryRunAccessor )
         {
             bool hasError = false;
             using( _monitor.OnError( () => hasError = true ) )
@@ -367,17 +382,21 @@ namespace CK.Setup
                 stObjC.RevertOrderingNames = _config.RevertOrderingNames;
                 using( _monitor.OpenInfo( "Registering types." ) )
                 {
-                    if( f.ExternalSingletonTypes.Count != 0 )
+                    // First handles the explicit kind of Types.
+                    foreach( var c in f.Types )
                     {
-                        stObjC.DefineAsExternalSingletons( f.ExternalSingletonTypes );
+                        if( c.Kind != AutoServiceKind.None )
+                        {
+                            stObjC.SetAutoServiceKind( c.Name, c.Kind, c.Optional );
+                        }
                     }
-                    if( f.ExternalScopedTypes.Count != 0 )
-                    {
-                        stObjC.DefineAsExternalScoped( f.ExternalScopedTypes );
-                    }
+                    // Then registers the types from the assemblies.
                     stObjC.RegisterAssemblyTypes( f.Assemblies );
-                    stObjC.RegisterTypes( f.Types );
+                    // Explicitly registers the non optional Types.
+                    stObjC.RegisterTypes( f.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
+                    // Finally, registers the code based explicitly registered types.
                     foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( t );
+
                     Debug.Assert( stObjC.RegisteringFatalOrErrorCount == 0 || hasError, "stObjC.RegisteringFatalOrErrorCount > 0 ==> An error has been logged." );
                 }
                 if( stObjC.RegisteringFatalOrErrorCount == 0 )

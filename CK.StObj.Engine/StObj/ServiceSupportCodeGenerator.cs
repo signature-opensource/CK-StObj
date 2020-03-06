@@ -145,7 +145,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                             .Append( ", " )
                             .Append( d.FinalFrontServiceKind.Value )
                             .Append( ", " )
-                            .AppendArray( d.MarshallableFrontServiceTypes )
+                            .AppendArray( d.MarshallableTypes )
                             .Append( ", " )
                             .AppendArray( d.MultipleMappings )
                             .Append( ", " )
@@ -271,7 +271,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                         .Append( ", " ).NewLine()
                         .Append( c.AutoServiceKind )
                         .Append( ", " ).NewLine()
-                        .AppendArray( c.MarshallableFrontServiceTypes )
+                        .AppendArray( c.MarshallableTypes )
                         .Append( ", " ).NewLine()
                         .AppendArray( c.MultipleMappings )
                         .Append( ")" );

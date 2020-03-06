@@ -25,17 +25,15 @@ namespace CK.Core
 
         /// <summary>
         /// This is a front service bound to the End Point: even inside the front process, it cannot be used directly
-        /// and needs to be marshalled to a background service (a typical example of such service is the HttpContext).
+        /// (a typical example of such service is the HttpContext). To be used by a background service, it must be <see cref="IsMarshallable"/>.
         /// This flag implies <see cref="IsFrontProcessService"/>
         /// </summary>
         IsFrontService = 2,
 
         /// <summary>
-        /// This service has an associated marchaller: thanks to this marshalling, this service
-        /// is no more "front only".
-        /// This flag implies <see cref="IsFrontProcessService"/>
+        /// This service is marchallable. This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsFrontService"/>.
         /// </summary>
-        IsMarshallableService = 4,
+        IsMarshallable = 4,
 
         /// <summary>
         /// This service must be registered as a Singleton.

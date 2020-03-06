@@ -20,7 +20,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Front process service.
-        /// This flag has to be set for <see cref="IsFrontEndPointService"/> and/or <see cref="IsMarshallableService"/> to be set.
+        /// This flag has to be set for <see cref="IsFrontService"/> to be set.
         /// </summary>
         IsFrontProcessService = 1,
 
@@ -28,22 +28,22 @@ namespace CK.Setup
         /// Service is bound to the End Point. The service is necessarily bound to front
         /// process (<see cref="IsFrontProcessService"/> is also set).
         /// </summary>
-        IsFrontEndPointService = 2,
+        IsFrontService = 2,
 
         /// <summary>
-        /// Marshallable service: this is set only if <see cref="IsFrontProcessService"/> is set.
+        /// Marshallable service. This is independent of <see cref="IsFrontProcessService"/> flag.
         /// </summary>
-        IsMarshallableService = 4,
+        IsMarshallable = 4,
 
         /// <summary>
         /// Singleton flag.
-        /// External (Auto) services are flagged with this only (or with this and <see cref="IsMarshallableService"/> or <see cref="IsFrontEndPointService"/>).
+        /// External (Auto) services are flagged with this only (or with this and <see cref="IsFrontService"/>).
         /// </summary>
         IsSingleton = 8,
 
         /// <summary>
         /// Scoped flag.
-        /// External (Auto) services are flagged with this only (or with this and <see cref="IsMarshallableService"/> or <see cref="IsFrontEndPointService"/>).
+        /// External (Auto) services are flagged with this only (or with this and <see cref="IsFrontService"/>).
         /// </summary>
         IsScoped = 16,
 
@@ -70,9 +70,9 @@ namespace CK.Setup
         RealObject = IsSingleton | 256,
 
         /// <summary>
-        /// Simple bit mask on <see cref="IsFrontEndPointService"/> | <see cref="IsFrontProcessService"/> | <see cref="IsMarshallableService"/>.
+        /// Simple bit mask on <see cref="IsFrontService"/> | <see cref="IsFrontProcessService"/>.
         /// </summary>
-        FrontTypeMask = IsFrontEndPointService | IsFrontProcessService | IsMarshallableService,
+        FrontTypeMask = IsFrontService | IsFrontProcessService,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
@@ -92,9 +92,9 @@ namespace CK.Setup
         /// <returns>The Auto service kind.</returns>
         public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this )
         {
-            if( (@this&(CKTypeKind.IsFrontEndPointService|CKTypeKind.IsMarshallableService)) != 0 && (@this & CKTypeKind.IsFrontProcessService) == 0 )
+            if( (@this&CKTypeKind.IsFrontService) != 0 && (@this & CKTypeKind.IsFrontProcessService) == 0 )
             {
-                throw new ArgumentException( $"Invalid CKTypeKind: IsFrontEndPointService|IsMarshallableService must imply IsFrontProcessService." );
+                throw new ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService." );
             }
             return (AutoServiceKind)((int)@this & 63);
         }
@@ -142,14 +142,14 @@ namespace CK.Setup
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
-            bool isFrontEndPoint = (@this & CKTypeKind.IsFrontEndPointService) != 0;
+            bool isFrontEndPoint = (@this & CKTypeKind.IsFrontService) != 0;
             bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
-            bool isMarshallable = (@this & CKTypeKind.IsMarshallableService) != 0;
+            bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
 
-            if( (isFrontEndPoint || isMarshallable) && !isFrontProcess )
+            if( isFrontEndPoint && !isFrontProcess )
             {
-                throw new ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsFrontEndPointService|IsMarshallableService: " + @this.ToStringFlags() );
+                throw new ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsFrontService: " + @this.ToStringFlags() );
             }
             if( isRealObject && !isSingleton )
             {
@@ -187,6 +187,14 @@ namespace CK.Setup
             {
                 conflict = "An interface or an implementation cannot be both Scoped and Singleton";
             }
+            if( isClass )
+            {
+                if( (@this & CKTypeKind.IsMultipleService) != 0 ) conflict = "A class cannot be marked as a Multiple service: only interfaces can be IsMultiple.";
+            }
+            else
+            {
+                if( (@this & CKTypeKind.IsMarshallable) != 0 ) conflict = "An interface cannot be marked as a Marshallable service: only classes can be IsMarshallable.";
+            }
             return conflict == null ? null : $"Invalid CK type combination: {conflict} for {(isClass ? "class" : "interface")} '{@this.ToStringFlags()}'.";
         }
 
@@ -198,16 +206,16 @@ namespace CK.Setup
         /// <returns>A readable string.</returns>
         public static string ToStringFlags( this CKTypeKind @this )
         {
-            string[] flags = new[] { "IsAutoService", "IsScopedService", "IsSingleton", "IsRealObject", "IsPoco", "IsFrontEndPointService", "IsFrontProcessService", "IsMarshallableService", "IsMultipleService" };
+            string[] flags = new[] { "IsAutoService", "IsScopedService", "IsSingleton", "IsRealObject", "IsPoco", "IsFrontEndPointService", "IsFrontProcessService", "IsMarshallable", "IsMultipleService" };
             if( @this == CKTypeKind.None ) return "None";
             var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
                                              || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)
                                              || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && (@this & CKTypeKind.IsFrontEndPointService) != 0)
+                                             || (i == 5 && (@this & CKTypeKind.IsFrontService) != 0)
                                              || (i == 6 && (@this & CKTypeKind.IsFrontProcessService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsMarshallableService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsMarshallable) != 0)
                                              || (i == 8 && (@this & CKTypeKind.IsMultipleService) != 0));
             return String.Join( "|", f );
         }

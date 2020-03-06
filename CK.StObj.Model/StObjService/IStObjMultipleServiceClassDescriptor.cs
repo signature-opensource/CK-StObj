@@ -23,7 +23,7 @@ namespace CK.Core
 
         /// <summary>
         /// Gets whether this is a front only service and if it's the case whether
-        /// it is <see cref="AutoServiceKind.IsFrontService"/> and/or <see cref="AutoServiceKind.IsMarshallableService"/>.
+        /// it is <see cref="AutoServiceKind.IsFrontService"/> and/or <see cref="AutoServiceKind.IsMarshallable"/>.
         /// </summary>
         AutoServiceKind FrontServiceKind { get; }
 

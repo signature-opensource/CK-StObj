@@ -1,6 +1,8 @@
 using CK.Core;
 using CK.Text;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -14,26 +16,81 @@ namespace CK.Setup
     /// after its work and before calling the StObj engine.
     /// </para>
     /// </summary>
-    public class BinPath
+    public class BinPathConfiguration
     {
         /// <summary>
-        /// Initializes a new empty <see cref="BinPath"/>.
-        /// At least, the <see cref="Path"/> should be set for this BinPath to be valid.
+        /// Models the &lt;Type&gt; elements that are children of &lt;Types&gt;.
         /// </summary>
-        public BinPath()
+        public class TypeConfiguration
         {
-            GenerateSourceFiles = true;
-            Assemblies = new HashSet<string>();
-            Types = new HashSet<string>();
-            ExcludedTypes = new HashSet<string>();
-            ExternalSingletonTypes = new HashSet<string>();
-            ExternalScopedTypes = new HashSet<string>();
+            /// <summary>
+            /// Initializes a new <see cref="TypeConfiguration"/> from a Xml element.
+            /// </summary>
+            /// <param name="e">The Xml element.</param>
+            public TypeConfiguration( XElement e )
+            {
+                Name = (string)e.Attribute( StObjEngineConfiguration.xName ) ?? e.Value;
+                string k = (string)e.Attribute( StObjEngineConfiguration.xKind );
+                if( k != null ) Kind = (AutoServiceKind)Enum.Parse( typeof( AutoServiceKind ), k );
+                Optional = (bool?)e.Attribute( StObjEngineConfiguration.xOptional ) ?? false;
+            }
+
+            /// <summary>
+            /// Initializes a new <see cref="TypeConfiguration"/>.
+            /// </summary>
+            /// <param name="name">Name of the type.</param>
+            /// <param name="kind">Kind.</param>
+            /// <param name="optional">Whether the type may not exist.</param>
+            public TypeConfiguration( string name, AutoServiceKind kind, bool optional )
+            {
+                Name = name;
+                Kind = kind;
+                Optional = optional;
+            }
+
+            /// <summary>
+            /// Gets or sets the assembly qualified name of the type.
+            /// This should not be null or whitespace, nor appear more than once in the <see cref="Types"/> collection otherwise
+            /// this configuration is considered invalid.
+            /// </summary>
+            public string Name { get; set; }
+
+            /// <summary>
+            /// Gets or sets the service kind. Defaults to <see cref="AutoServiceKind.None"/>.
+            /// </summary>
+            public AutoServiceKind Kind { get; set; }
+
+            /// <summary>
+            /// Gets or sets whether this type is optional: if the <see cref="TypeName"/> cannot be resolved
+            /// a warning is emitted.
+            /// Defaults to false: by default, if the type is not found at runtime, an error is raised.
+            /// </summary>
+            public bool Optional { get; set; }
+
+            /// <summary>
+            /// Overridden to returne the Name - Kind and Optional value.
+            /// </summary>
+            /// <returns>A readable string.</returns>
+            public override string ToString() => $"{Name} - {Kind} - {Optional}";
         }
 
         /// <summary>
-        /// Initializes a new <see cref="BinPath"/> from a Xml element.
+        /// Initializes a new empty <see cref="BinPathConfiguration"/>.
+        /// At least, the <see cref="Path"/> should be set for this BinPath to be valid.
         /// </summary>
-        public BinPath( XElement e )
+        public BinPathConfiguration()
+        {
+            GenerateSourceFiles = true;
+            Assemblies = new HashSet<string>();
+            ExcludedTypes = new HashSet<string>();
+            Types = new List<TypeConfiguration>();
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="BinPathConfiguration"/> from a Xml element.
+        /// </summary>
+        /// <param name="e">The Xml element.</param>
+        public BinPathConfiguration( XElement e )
         {
             Path = (string)e.Attribute( StObjEngineConfiguration.xPath );
             OutputPath = (string)e.Element( StObjEngineConfiguration.xOutputPath );
@@ -41,14 +98,13 @@ namespace CK.Setup
             GenerateSourceFiles = (bool?)e.Element( StObjEngineConfiguration.xGenerateSourceFiles ) ?? true;
 
             Assemblies = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly ) );
-            Types = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xTypes, StObjEngineConfiguration.xType ) );
-            ExternalSingletonTypes = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xExternalSingletonTypes, StObjEngineConfiguration.xType ) );
-            ExternalScopedTypes = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xExternalScopedTypes, StObjEngineConfiguration.xType ) );
             ExcludedTypes = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType ) );
+
+            Types = e.Elements( StObjEngineConfiguration.xTypes ).Elements( StObjEngineConfiguration.xType ).Select( c => new TypeConfiguration( c ) ).ToList();
         }
 
         /// <summary>
-        /// Creates a xml element from this <see cref="BinPath"/>.
+        /// Creates a xml element from this <see cref="BinPathConfiguration"/>.
         /// </summary>
         /// <returns>A new element.</returns>
         public XElement ToXml()
@@ -59,10 +115,11 @@ namespace CK.Setup
                                     SkipCompilation ? new XElement( StObjEngineConfiguration.xSkipCompilation, true ) : null,
                                     GenerateSourceFiles ? null : new XElement( StObjEngineConfiguration.xGenerateSourceFiles, false ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly, Assemblies ),
-                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xTypes, StObjEngineConfiguration.xType, Types ),
-                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExternalSingletonTypes, StObjEngineConfiguration.xType, ExternalSingletonTypes ),
-                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExternalScopedTypes, StObjEngineConfiguration.xType, ExternalScopedTypes ),
-                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType, ExcludedTypes ) );
+                                    StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType, ExcludedTypes ),
+                                    Types.Select( t => new XElement( StObjEngineConfiguration.xType,
+                                                            new XAttribute( StObjEngineConfiguration.xName, t.Name ),
+                                                            t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
+                                                            t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) );
         }
 
         /// <summary>
@@ -98,10 +155,11 @@ namespace CK.Setup
         public HashSet<string> Assemblies { get; }
 
         /// <summary>
-        /// Gets a set of assembly qualified type names that must be explicitly registered 
-        /// regardless of <see cref="Assemblies"/>.
+        /// Gets a set of <see cref="TypeConfiguration"/> that must be configured explicitly.
+        /// Type names that appear here with <see cref="TypeConfiguration.Optional"/> set to false are registered
+        /// regardless of the <see cref="Assemblies"/>.
         /// </summary>
-        public HashSet<string> Types { get; }
+        public List<TypeConfiguration> Types { get; }
 
         /// <summary>
         /// Gets a set of assembly qualified type names that must be excluded from  
@@ -110,16 +168,6 @@ namespace CK.Setup
         /// be excluded.
         /// </summary>
         public HashSet<string> ExcludedTypes { get; }
-
-        /// <summary>
-        /// Gets a set of assembly qualified type names that are known to be singletons. 
-        /// </summary>
-        public HashSet<string> ExternalSingletonTypes { get; }
-
-        /// <summary>
-        /// Gets a set of assembly qualified type names that are known to be scoped. 
-        /// </summary>
-        public HashSet<string> ExternalScopedTypes { get; }
 
     }
 }

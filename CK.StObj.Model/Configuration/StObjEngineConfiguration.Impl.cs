@@ -16,7 +16,7 @@ namespace CK.Setup
         public StObjEngineConfiguration()
         {
             Aspects = new List<IStObjEngineAspectConfiguration>();
-            BinPaths = new List<BinPath>();
+            BinPaths = new List<BinPathConfiguration>();
             GlobalExcludedTypes = new HashSet<string>();
         }
 
@@ -133,6 +133,21 @@ namespace CK.Setup
         static public readonly XName xGeneratedAssemblyName = XNamespace.None + "GeneratedAssemblyName";
 
         /// <summary>
+        /// The attribute Name.
+        /// </summary>
+        static public readonly XName xName = XNamespace.None + "Name";
+
+        /// <summary>
+        /// The attribute Kind.
+        /// </summary>
+        static public readonly XName xKind = XNamespace.None + "Kind";
+
+        /// <summary>
+        /// The attribute Optional.
+        /// </summary>
+        static public readonly XName xOptional = XNamespace.None + "Optional";
+
+        /// <summary>
         /// The InformationalVersion element name.
         /// </summary>
         static public readonly XName xInformationalVersion = XNamespace.None + "InformationalVersion";
@@ -156,7 +171,7 @@ namespace CK.Setup
             GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
 
             // BinPaths.
-            BinPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( f => new BinPath( f ) ).ToList();
+            BinPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( f => new BinPathConfiguration( f ) ).ToList();
 
             // Aspects.
             Aspects = new List<IStObjEngineAspectConfiguration>();
