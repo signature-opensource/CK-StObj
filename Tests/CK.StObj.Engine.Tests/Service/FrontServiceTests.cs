@@ -85,7 +85,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             var r = TestHelper.GetSuccessfulResult( collector );
             IStObjServiceClassDescriptor descriptor = r.Services.SimpleMappings[typeof( FrontDependentService1 )];
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsSingleton );
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
         }
 
         public interface IFrontDependentService2 : IAutoService
@@ -111,9 +111,9 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( FrontDependentService1 )];
             IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsSingleton );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsSingleton );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsSingleton );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
         }
 
         public class MService1NoAutoService : Model.IMarshaller<FrontService1>
@@ -148,7 +148,7 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dI = r.Services.SimpleMappings[typeof( IFrontService1 )];
             IStObjServiceClassDescriptor dC = r.Services.SimpleMappings[typeof( FrontService1 )];
             dI.Should().BeSameAs( dC );
-            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
         }
 
         [Test]
@@ -201,15 +201,15 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
         }
 
 
         public interface IAmNotAService { }
 
-        public class FinallyIAmAnAutoService : IAmNotAService { }
+        public class NotAutoService : IAmNotAService { }
 
         public class MarshalAnyway : Model.IMarshaller<IAmNotAService>, IAutoService
         {
@@ -219,17 +219,40 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void registering_a_service_with_its_AutoService_Marshaller_makes_it_marshallable()
+        public void a_mere_service_does_not_become_AutoService_because_a_Marshaller_exists()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( MarshalAnyway ) );
-            collector.RegisterType( typeof( FinallyIAmAnAutoService ) );
+            collector.RegisterType( typeof( NotAutoService ) );
 
             var r = TestHelper.GetSuccessfulResult( collector );
-            r.Services.SimpleMappings[typeof( FinallyIAmAnAutoService )].AutoServiceKind
-                .Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            r.Services.SimpleMappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
         }
 
 
+        public class OneSingleton : ISingletonAutoService
+        {
+            public OneSingleton( IUnknwon dep ) { }
+        }
+
+        public interface IUnknwon : IAutoService { }
+
+        public class Unknwon : IUnknwon
+        {
+            public Unknwon( Scoped s ) { }
+        }
+
+        public class Scoped : IScopedAutoService { }
+
+        [Test]
+        public void bug()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( Scoped ) );
+            collector.RegisterType( typeof( Unknwon ) );
+            collector.RegisterType( typeof( OneSingleton ) );
+
+            TestHelper.GetFailedResult( collector );
+        }
     }
 }

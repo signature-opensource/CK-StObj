@@ -90,5 +90,51 @@ namespace CK.StObj.Engine.Tests.Service
 
         }
 
+        public interface IOfficialHostedService { }
+
+        public class H1 : IOfficialHostedService, IAutoService { }
+        public class H2 : IOfficialHostedService, IScopedAutoService { }
+        public class HNot : IOfficialHostedService { }
+
+        [Test]
+        public void IsMutiple_works_on_external_interfaces_and_this_is_the_magic_for_IHosteService_auto_registering()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
+            collector.RegisterType( typeof( H1 ) );
+            collector.RegisterType( typeof( H2 ) );
+            collector.RegisterType( typeof( HNot ) );
+
+            var result = TestHelper.GetAutomaticServices( collector );
+            result.Map.Services.SimpleMappings.ContainsKey( typeof( IOfficialHostedService ) ).Should().BeFalse( "A Multiple interface IS NOT mapped." );
+            IStObjServiceClassDescriptor s1 = result.Map.Services.SimpleMappings[typeof( H1 )];
+            IStObjServiceClassDescriptor s2 = result.Map.Services.SimpleMappings[typeof( H2 )];
+            result.Map.Services.SimpleMappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
+            s1.MultipleMappings.Should().BeEquivalentTo( typeof( IOfficialHostedService ) );
+            s2.MultipleMappings.Should().BeEquivalentTo( typeof( IOfficialHostedService ) );
+            s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
+            s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
+
+            var hosts = result.Services.GetRequiredService<IEnumerable<IOfficialHostedService>>();
+            hosts.Should().HaveCount( 2 );
+        }
+
+        [Test]
+        public void IsMutiple_AND_IsSingleton_on_external_IHosteService_ensures_that_it_is_Singleton()
+        {
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
+                collector.RegisterType( typeof( H1 ) );
+                var result = TestHelper.GetAutomaticServices( collector );
+                result.Map.Services.SimpleMappings[typeof( H1 )].IsScoped.Should().BeFalse( "IOfficialHostedService makes it Singleton." );
+            }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
+                collector.RegisterType( typeof( H2 ) );
+                TestHelper.GetFailedResult( collector );
+            }
+        }
     }
 }

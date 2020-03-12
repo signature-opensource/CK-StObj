@@ -16,9 +16,9 @@ namespace CK.Setup
         int _serviceInterfaceCount;
         int _serviceRootInterfaceCount;
 
-        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo parent, CKTypeKind lt, RealObjectClassInfo objectInfo )
+        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo parent, CKTypeKind typeKind, RealObjectClassInfo objectInfo )
         {
-            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, !_typeFilter( _monitor, t ), lt, objectInfo );
+            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, !_typeFilter( _monitor, t ), typeKind, objectInfo );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -56,7 +56,7 @@ namespace CK.Setup
         {
             Debug.Assert( t.IsInterface && lt == _kindDetector.GetKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
-            lt &= ~CKTypeKind.FrontTypeMask;
+            lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
             Debug.Assert( lt == CKTypeKind.IsAutoService
                             || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
                             || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );

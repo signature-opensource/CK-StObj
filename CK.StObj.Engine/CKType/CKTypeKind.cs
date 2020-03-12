@@ -26,24 +26,25 @@ namespace CK.Setup
 
         /// <summary>
         /// Service is bound to the End Point. The service is necessarily bound to front
-        /// process (<see cref="IsFrontProcessService"/> is also set).
+        /// process (<see cref="IsFrontProcessService"/> is also set) AND this is necessarily <see cref="IsScoped"/>.
         /// </summary>
         IsFrontService = 2,
 
         /// <summary>
-        /// Marshallable service. This is independent of <see cref="IsFrontProcessService"/> flag.
+        /// Marshallable service.
+        /// This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsFrontService"/> flags.
         /// </summary>
         IsMarshallable = 4,
 
         /// <summary>
         /// Singleton flag.
-        /// External (Auto) services are flagged with this only (or with this and <see cref="IsFrontService"/>).
+        /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
         /// </summary>
         IsSingleton = 8,
 
         /// <summary>
         /// Scoped flag.
-        /// External (Auto) services are flagged with this only (or with this and <see cref="IsFrontService"/>).
+        /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
         /// </summary>
         IsScoped = 16,
 
@@ -185,15 +186,13 @@ namespace CK.Setup
             }
             else if( isScoped && isSingleton )
             {
-                conflict = "An interface or an implementation cannot be both Scoped and Singleton";
+                if( isFrontProcess )
+                    conflict = "An interface or an implementation cannot be both Scoped and Singleton (since this is marked as a FrontService, this is de facto Scoped)";
+                else conflict = "An interface or an implementation cannot be both Scoped and Singleton";
             }
             if( isClass )
             {
                 if( (@this & CKTypeKind.IsMultipleService) != 0 ) conflict = "A class cannot be marked as a Multiple service: only interfaces can be IsMultiple.";
-            }
-            else
-            {
-                if( (@this & CKTypeKind.IsMarshallable) != 0 ) conflict = "An interface cannot be marked as a Marshallable service: only classes can be IsMarshallable.";
             }
             return conflict == null ? null : $"Invalid CK type combination: {conflict} for {(isClass ? "class" : "interface")} '{@this.ToStringFlags()}'.";
         }
@@ -206,7 +205,7 @@ namespace CK.Setup
         /// <returns>A readable string.</returns>
         public static string ToStringFlags( this CKTypeKind @this )
         {
-            string[] flags = new[] { "IsAutoService", "IsScopedService", "IsSingleton", "IsRealObject", "IsPoco", "IsFrontEndPointService", "IsFrontProcessService", "IsMarshallable", "IsMultipleService" };
+            string[] flags = new[] { "IsAutoService", "IsScopedService", "IsSingleton", "IsRealObject", "IsPoco", "IsFrontService", "IsFrontProcessService", "IsMarshallable", "IsMultipleService" };
             if( @this == CKTypeKind.None ) return "None";
             var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
                                              || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)

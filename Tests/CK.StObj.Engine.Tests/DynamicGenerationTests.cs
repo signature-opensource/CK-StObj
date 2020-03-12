@@ -8,7 +8,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 
 namespace CK.StObj.Engine.Tests

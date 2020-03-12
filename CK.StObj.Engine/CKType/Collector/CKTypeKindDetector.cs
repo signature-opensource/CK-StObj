@@ -71,6 +71,8 @@ namespace CK.Setup
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Front service).
+        /// Note that <see cref="AutoServiceKind.IsFrontService"/> is automatically expanded with <see cref="AutoServiceKind.IsScoped"/>
+        /// and <see cref="AutoServiceKind.IsFrontProcessService"/>.
         /// </summary>
         /// <param name="m">The monitor.</param>
         /// <param name="t">The type to register.</param>
@@ -80,14 +82,29 @@ namespace CK.Setup
         {
             if( kind == AutoServiceKind.None ) throw new ArgumentException( nameof( kind ) );
 
-            bool hasFrontType = (kind & (AutoServiceKind.IsFrontProcessService|AutoServiceKind.IsFrontService|AutoServiceKind.IsMarshallable)) != 0;
+            bool hasFrontType = (kind & (AutoServiceKind.IsFrontProcessService|AutoServiceKind.IsFrontService)) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
             bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
 
             CKTypeKind k = (CKTypeKind)kind;
-            if( hasFrontType ) k |= CKTypeKind.IsFrontProcessService | IsFrontTypeReasonExternal;
+            if( hasFrontType )
+            {
+                if( (kind & AutoServiceKind.IsFrontService) != 0 )
+                {
+                    k |= CKTypeKind.IsScoped;
+                    hasLifetime = true;
+                }
+                k |= CKTypeKind.IsFrontProcessService;
+            }
+            string error = k.GetCombinationError( t.IsClass );
+            if( error != null )
+            {
+                m.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t}'." );
+                return null;
+            }
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
-            if( hasMultiple ) k |= IsLifetimeReasonExternal;
+            if( hasMultiple ) k |= IsMultipleReasonExternal;
+            if( hasFrontType ) k |= IsFrontTypeReasonExternal;
             return SetLifetimeOrFrontType( m, t, k );
         }
 
@@ -117,6 +134,19 @@ namespace CK.Setup
             return SetLifetimeOrFrontType( m, t, CKTypeKind.IsSingleton | IsSingletonReasonFinal );
         }
 
+        /// <summary>
+        /// Restricts a type to be Scoped (it is better to be a singleton, see <see cref="PromoteToSingleton(IActivityMonitor, Type)"/>).
+        /// This is acted at the start of the process when a constructor's parameter is known to be scoped: this is applied only
+        /// on leaf auto service classes.
+        /// </summary>
+        /// <param name="m">The monitor to use.</param>
+        /// <param name="t">The type to restrict.</param>
+        /// <returns>The type kind on success, null on error.</returns>
+        internal CKTypeKind? RestrictToScoped( IActivityMonitor m, Type t )
+        {
+            return SetLifetimeOrFrontType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
+        }
+
         CKTypeKind? SetLifetimeOrFrontType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
@@ -124,13 +154,9 @@ namespace CK.Setup
             bool isMultiple = (kind & CKTypeKind.IsMultipleService) != 0;
             bool isMarshallable = (kind & CKTypeKind.IsMarshallable) != 0;
 
-            Debug.Assert( (kind & (IsDefiner|IsSuperDefiner)) == 0
-                          // At least, something must be set.
-                          && (hasLifetime || hasFrontType || isMultiple || isMarshallable)
-                          // If lifetime is set, it cannot be both Scoped and Singleton.
-                          && (!hasLifetime || (kind & CKTypeKind.LifetimeMask) != CKTypeKind.LifetimeMask )
-                          // If front type is set, it cannot be both Marshallable and FrontOnly.
-                          && (!hasFrontType || (kind & CKTypeKind.FrontTypeMask) != CKTypeKind.FrontTypeMask) );
+            Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
+            Debug.Assert( hasLifetime || hasFrontType || isMultiple || isMarshallable, "At least, something must be set." );
+            Debug.Assert( (kind&MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind&MaskPublicInfo).GetCombinationError( t.IsClass ) );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
@@ -186,8 +212,8 @@ namespace CK.Setup
                 var allInterfaces = t.GetInterfaces();
                 // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
                 // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IFrontAutoService are extending IAutoService...
-                // ...and unfortunaltely we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService
-                // ...and unfortunaltely we must also consider the ones with 2 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
+                // ...and unfortunately we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService
+                // ...and unfortunately we must also consider the ones with 2 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
                 // that extends IFrontAutoService. 
                 if( t.IsInterface
                     && allInterfaces.Length <= 3
@@ -198,7 +224,7 @@ namespace CK.Setup
                     else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( IFrontProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontProcessService | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontService | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontService | CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                     else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                 }
                 if( k == CKTypeKind.None )
@@ -220,11 +246,10 @@ namespace CK.Setup
                     if( hasDefiner )
                     {
                         // If this is a definer, we can skip any handling of potential Super Definer.
-                        // We also clear any IsMultipleService since this flag is not transitive.
+                        // We also clear any IsMultipleService and IsMarshallable since thess flags are not transitive.
                         foreach( var i in allInterfaces )
                         {
-                            k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService);
-                            Debug.Assert( (k & CKTypeKind.IsMarshallable) == 0, "IsMarshallable is for classes only." );
+                            k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
                         }
                         k |= IsDefiner;
                         if( hasSuperDefiner ) k |= IsSuperDefiner;
@@ -250,8 +275,7 @@ namespace CK.Setup
                             // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
                             foreach( var i in allInterfaces )
                             {
-                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService );
-                                Debug.Assert( (k & CKTypeKind.IsMarshallable) == 0, "IsMarshallable is for classes only." );
+                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
                             }
                         }
                         else
@@ -259,8 +283,7 @@ namespace CK.Setup
                             // We are not (yet?) a Definer.
                             foreach( var i in allInterfaces )
                             {
-                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService);
-                                Debug.Assert( (kI & CKTypeKind.IsMarshallable) == 0, "IsMarshallable is for classes only." );
+                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
                                 if( (k & IsDefiner) == 0 // We are not yet a Definer...
                                     && (kI & IsSuperDefiner) != 0 ) // ...but this base interface is a SuperDefiner.
                                 {
@@ -275,20 +298,17 @@ namespace CK.Setup
                         }
                     }
                     // Propagation from base and interfaces has been done.
+                    var attrData = t.GetCustomAttributesData();
                     if( t.IsInterface )
                     {
-                        if( t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "IsMultipleAttribute" ) )
+                        if( attrData.Any( a => a.AttributeType.Name == "IsMultipleAttribute" ) )
                         {
                             k |= CKTypeKind.IsMultipleService;
                         }
                     }
-                    else
+                    if( attrData.Any( a => a.AttributeType.Name == "IsMarshallableAttribute" ) )
                     {
-                        Debug.Assert( t.IsClass );
-                        if( t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "IsMarshallableAttribute" ) )
-                        {
-                            k |= CKTypeKind.IsMarshallable;
-                        }
+                        k |= CKTypeKind.IsMarshallable;
                     }
                     // Check for errors and handle 
                     if( k != CKTypeKind.None )

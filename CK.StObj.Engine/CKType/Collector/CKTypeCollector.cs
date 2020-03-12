@@ -161,7 +161,7 @@ namespace CK.Setup
 
         RealObjectClassInfo RegisterObjectClassInfo( Type t, RealObjectClassInfo parent )
         {
-            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, _kindDetector, !_typeFilter( _monitor, t ) );
+            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, !_typeFilter( _monitor, t ) );
             if( !result.IsExcluded )
             {
                 RegisterAssembly( t );

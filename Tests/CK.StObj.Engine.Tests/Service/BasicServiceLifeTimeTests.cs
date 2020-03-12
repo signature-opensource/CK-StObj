@@ -278,7 +278,6 @@ namespace CK.StObj.Engine.Tests.Service
                 var r = TestHelper.GetSuccessfulResult( collector );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsMarshallable
                                                                                         | AutoServiceKind.IsFrontService );
             }
             {
@@ -290,7 +289,6 @@ namespace CK.StObj.Engine.Tests.Service
                 var r = TestHelper.GetSuccessfulResult( collector );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsMarshallable
                                                                                         | AutoServiceKind.IsFrontService );
             }
         }
@@ -306,33 +304,43 @@ namespace CK.StObj.Engine.Tests.Service
         public class ExtSC : CBase3 { }
 
         [Test]
-        public void SetAutoServiceKind_application_order_matter_on_inheritance_class_chain()
+        public void SetAutoServiceKind_application_order_matters_on_inheritance_class_chain()
         {
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
                 collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector );
                 r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsMarshallable
-                                                                                        | AutoServiceKind.IsFrontService );
+                                                                                        | AutoServiceKind.IsFrontProcessService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
                 collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
+                // CBase1 is set last: without the "base type flattening" step, the ExtSC below would be a Singleton!
                 collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector );
                 r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
-                                                                                        | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsMarshallable
-                                                                                        | AutoServiceKind.IsFrontService );
+                                                                                        | AutoServiceKind.IsFrontProcessService );
             }
         }
+
+        [Test]
+        public void SetAutoServiceKind_a_class_doesnt_mean_registering_it()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
+            collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
+            collector.RegisterType( typeof( CBase1 ) );
+            var r = TestHelper.GetSuccessfulResult( collector );
+            r.Services.SimpleMappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
+            r.Services.SimpleMappings.ContainsKey( typeof( CBase2 ) ).Should().BeFalse();
+        }
+
 
 
 

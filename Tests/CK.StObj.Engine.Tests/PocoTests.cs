@@ -5,7 +5,7 @@ using NUnit.Framework;
 using CK.StObj.Engine.Tests.Poco;
 using System.Linq;
 
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 using FluentAssertions;
 
 namespace CK.StObj.Engine.Tests

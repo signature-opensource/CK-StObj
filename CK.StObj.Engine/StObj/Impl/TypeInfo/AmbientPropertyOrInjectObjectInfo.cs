@@ -47,7 +47,6 @@ namespace CK.Setup
             IActivityMonitor monitor, 
             Type t, 
             int definerSpecializationDepth,
-            CKTypeKindDetector ambientTypeKind,
             List<StObjPropertyInfo> stObjProperties, 
             out IList<AmbientPropertyInfo> apListResult,
             out IList<InjectObjectInfo> injectedListResult )

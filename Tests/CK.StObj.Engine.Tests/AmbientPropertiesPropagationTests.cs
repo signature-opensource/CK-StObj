@@ -2,7 +2,7 @@ using System;
 using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {

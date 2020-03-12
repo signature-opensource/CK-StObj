@@ -41,7 +41,7 @@ namespace CK.Setup
                 ClassType = t;
                 FinalType = finalType;
                 AutoServiceKind = k;
-                MarshallableFrontServiceTypes = marshallableTypes;
+                MarshallableTypes = marshallableTypes;
                 MultipleMappings = mult;
                 UniqueMappings = uniq;
            }
@@ -54,7 +54,7 @@ namespace CK.Setup
 
             public AutoServiceKind AutoServiceKind { get; }
 
-            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+            public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
             public IReadOnlyCollection<Type> MultipleMappings { get; }
 
@@ -69,7 +69,7 @@ namespace CK.Setup
                 FinalType = finalType;
                 Assignments = a;
                 AutoServiceKind = k;
-                MarshallableFrontServiceTypes = marshallableTypes;
+                MarshallableTypes = marshallableTypes;
                 MultipleMappings = mult;
                 UniqueMappings = uniq;
             }
@@ -84,7 +84,7 @@ namespace CK.Setup
 
             public IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
 
-            public IReadOnlyCollection<Type> MarshallableFrontServiceTypes { get; }
+            public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
             public IReadOnlyCollection<Type> MultipleMappings { get; }
 

@@ -24,7 +24,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Constructor parameter info: either a <see cref="AutoServiceClassInfo"/>,
-        /// <see cref="AutoServiceInterfaceInfo"/> or a enumeration of one of them.
+        /// <see cref="AutoServiceInterfaceInfo"/>, a enumeration of one of them or a
+        /// regular (no IAutoService) parameter.
         /// </summary>
         public class CtorParameter
         {
@@ -35,7 +36,7 @@ namespace CK.Setup
             public readonly ParameterInfo ParameterInfo;
 
             /// <summary>
-            /// Not null if this parameter is a service class (ie. an Autot service implementation).
+            /// Not null if this parameter is a service class (ie. a IAutoService implementation).
             /// </summary>
             public readonly AutoServiceClassInfo ServiceClass;
 
@@ -55,16 +56,22 @@ namespace CK.Setup
             public readonly AutoServiceInterfaceInfo EnumeratedServiceInterface;
 
             /// <summary>
+            /// Gets whether this parameter is an <see cref="IAutoService"/>.
+            /// </summary>
+            public bool IsAutoService { get; }
+
+            /// <summary>
             /// Gets the (unwrapped) Type of this parameter.
             /// When <see cref="IsEnumerated"/> is true, this is the type of the enumerated object:
-            /// for IReadOnlyList&lt;X&gt;, this is typeof(X).
-            /// This is never null.
+            /// for IReadOnlyList&lt;X&gt;, this is typeof(X) (either <see cref="EnumeratedServiceClass"/> or <see cref="EnumeratedServiceInterface"/>).
+            /// Otherwise, it is simply the parameter type: this is never null.
             /// </summary>
             public Type ParameterType { get; }
 
             /// <summary>
-            /// Gets whether this is an enumerable of Auto service class or interface.
-            /// When true, <see cref="ServiceClass"/> xor <see cref="ServiceInterface"/> is not null.
+            /// Gets whether this is an enumerable of IAutoService class or interface.
+            /// When true, <see cref="EnumeratedServiceClass"/> xor <see cref="EnumeratedServiceInterface"/> is not null
+            /// and <see cref="ServiceClass"/> and <see cref="ServiceInterface"/> are both null.
             /// </summary>
             public bool IsEnumerated { get; }
 
@@ -98,34 +105,14 @@ namespace CK.Setup
                     ServiceClass = cS;
                     ServiceInterface = iS;
                 }
+                IsAutoService = ServiceClass != null || ServiceInterface != null || EnumeratedServiceClass != null || EnumeratedServiceInterface != null;
             }
 
             internal CtorParameter( ParameterInfo p )
             {
                 ParameterInfo = p;
                 ParameterType = p.ParameterType;
-            }
-
-            /// <summary>
-            /// Returns the <see cref="AutoServiceKind"/> for this parameter either by calling the
-            /// internal <see cref="AutoServiceClassInfo.GetFinalMustBeScopedAndFrontKind(IActivityMonitor, CKTypeKindDetector, ref bool)"/> method
-            /// on the most specialized class of <see cref="ServiceClass"/> or <see cref="ServiceInterface"/>, or by using the <paramref name="typeKindDetector"/>
-            /// with this <see cref="ParameterType"/>.
-            /// </summary>
-            /// <param name="m">The monitor.</param>
-            /// <param name="typeKindDetector">The type kind detector.</param>
-            /// <returns>Null on error, the front service kind otherwise.</returns>
-            internal AutoServiceKind? GetFrontServiceKind( IActivityMonitor m, CKTypeKindDetector typeKindDetector )
-            {
-                var c = ServiceClass?.MostSpecialized ?? ServiceInterface?.FinalResolved;
-                if( c != null )
-                {
-                    bool success = true;
-                    var k = c.GetFinalMustBeScopedAndFrontKind( m, typeKindDetector, ref success ).Kind;
-                    if( success ) return k;
-                    return null;
-                }
-                return typeKindDetector.GetKind( m, ParameterType ).ToAutoServiceKind();
+                Debug.Assert( IsAutoService == false );
             }
 
             /// <summary>
@@ -145,11 +132,11 @@ namespace CK.Setup
             AutoServiceClassInfo parent,
             Type t,
             bool isExcluded,
-            CKTypeKind lifetime,
+            CKTypeKind typeKind,
             RealObjectClassInfo objectInfo )
         {
             Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the the asociated Service, we must be the only one." );
-            Debug.Assert( (lifetime & CKTypeKind.IsMultipleService) == 0 );
+            Debug.Assert( (typeKind & CKTypeKind.IsMultipleService) == 0 );
 
             if( objectInfo != null )
             {
@@ -162,27 +149,27 @@ namespace CK.Setup
             }
             Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
 
-            // Forgets the Front flags: constraint is handled dynamically later.
-            lifetime &= ~CKTypeKind.FrontTypeMask;
-            Debug.Assert( (lifetime == (CKTypeKind.RealObject | CKTypeKindAutoSingleton)) == TypeInfo is RealObjectClassInfo );
+            // Forgets the Front and Marshallable flags: constraint is handled dynamically later.
+            typeKind &= ~(CKTypeKind.FrontTypeMask | CKTypeKind.IsMarshallable);
+            Debug.Assert( (typeKind == (CKTypeKind.RealObject | CKTypeKindAutoSingleton)) == TypeInfo is RealObjectClassInfo );
 
             // Forgets the RealObject flag.
-            if( (lifetime&CKTypeKind.RealObject) != 0 )
+            if( (typeKind&CKTypeKind.RealObject) != 0 )
             {
-                lifetime = CKTypeKindAutoSingleton;
+                typeKind = CKTypeKindAutoSingleton;
                 // See below.
                 MustBeScopedLifetime = false;
             }
 
-            Debug.Assert( lifetime == CKTypeKind.IsAutoService
-                          || lifetime == CKTypeKindAutoSingleton
-                          || lifetime == CKTypeKindAutoScoped );
+            Debug.Assert( typeKind == CKTypeKind.IsAutoService
+                          || typeKind == CKTypeKindAutoSingleton
+                          || typeKind == CKTypeKindAutoScoped );
 
-            DeclaredLifetime = lifetime;
+            TypeKind = typeKind;
             // Let MustBeScopedLifetime be null for singleton here. Singleton impact is handled later
             // since it may have an impact on its ctor parameter type.
             // We have shortcut this process above for RealObject (since there is no ctor).
-            if( lifetime == CKTypeKindAutoScoped ) MustBeScopedLifetime = true;
+            if( typeKind == CKTypeKindAutoScoped ) MustBeScopedLifetime = true;
             if( parent != null ) SpecializationDepth = parent.SpecializationDepth + 1;
 
             //if( IsExcluded ) return;
@@ -240,11 +227,11 @@ namespace CK.Setup
         /// This can never be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind)"/> since
         /// in such cases, the AutoServiceClassInfo is not instanciated.
         /// </summary>
-        public CKTypeKind DeclaredLifetime { get; }
+        public CKTypeKind TypeKind { get; private set; }
 
         /// <summary>
         /// Gets whether this class must be <see cref="CKTypeKind.IsScoped"/> because of its dependencies.
-        /// If its <see cref="DeclaredLifetime"/> is <see cref="CKTypeKind.IsSingleton"/> an error is detected
+        /// If its <see cref="TypeKind"/> is <see cref="CKTypeKind.IsSingleton"/> an error is detected
         /// either at the very beginning of the process based on the static parameter type information or at the
         /// end of the process when class and interface mappings are about to be resolved.
         /// </summary>
@@ -521,7 +508,7 @@ namespace CK.Setup
                         bool scoped = c.GetFinalMustBeScopedAndFrontKind( m, typeKindDetector, ref success ).Scoped;
                         if( !MustBeScopedLifetime.HasValue && scoped )
                         {
-                            if( DeclaredLifetime == CKTypeKindAutoSingleton )
+                            if( (TypeKind & CKTypeKind.IsSingleton) == CKTypeKind.IsSingleton )
                             {
                                 m.Error( $"Lifetime error: Type '{ClassType}' is {nameof( ISingletonAutoService )} but parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Scoped." );
                                 success = false;
@@ -538,7 +525,7 @@ namespace CK.Setup
                 {
                     if( _requiredParametersToBeSingletons != null )
                     {
-                        Debug.Assert( DeclaredLifetime == CKTypeKind.IsAutoService );
+                        Debug.Assert( (TypeKind&CKTypeKind.LifetimeMask) == 0, "Lifetime is not specified." );
                         foreach( var external in _requiredParametersToBeSingletons )
                         {
                             if( !typeKindDetector.IsSingleton( external.ParameterType ) )
@@ -552,10 +539,12 @@ namespace CK.Setup
                     if( !MustBeScopedLifetime.HasValue )
                     {
                         MustBeScopedLifetime = false;
-                        if( DeclaredLifetime != CKTypeKindAutoSingleton )
+                        if( (TypeKind&CKTypeKind.IsSingleton) == 0 )
                         {
                             m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
-                            success &= typeKindDetector.PromoteToSingleton( m, ClassType ) != null;
+                            var updated = typeKindDetector.PromoteToSingleton( m, ClassType );
+                            if( updated == null ) success = false; 
+                            else TypeKind = updated.Value;
                         }
                     }
                 }
@@ -694,6 +683,9 @@ namespace CK.Setup
             return (MustBeScopedLifetime.Value, FinalFrontServiceKind.Value);
         }
 
+        /// <summary>
+        /// This is called on the Service leaf and recursively on the Generalization.
+        /// </summary>
         internal HashSet<AutoServiceClassInfo> GetCtorParametersClassClosure(
             IActivityMonitor m,
             CKTypeCollector collector,
@@ -721,9 +713,9 @@ namespace CK.Setup
 
                 if( IsRealObject )
                 {
-                    // Calls EnsureCtorBinding (even if it is useless) for coherency: it is up
-                    // to this function to handle the IsRealObject case.
-                    initializationError |= !EnsureCtorBinding( m, collector );
+                    // This what EnsureCtorBinding would have done.
+                    AllConstructorParameters = ConstructorAutoServiceParameters = Array.Empty<CtorParameter>();
+                    _ctorBinding = true;
                     // Handles the ReplaceAutoServiceAttribute that must be used by RealObject service implementation.
                     if( !initializationError )
                     {
@@ -793,16 +785,12 @@ namespace CK.Setup
             }
         }
 
+        // This is called by GetCtorParametersClassClosure and recursively by this method.
+        // The initial call is on the service leaf.
         internal bool EnsureCtorBinding( IActivityMonitor m, CKTypeCollector collector )
         {
-            Debug.Assert( IsIncluded );
+            Debug.Assert( IsIncluded && !IsRealObject );
             if( _ctorBinding.HasValue ) return _ctorBinding.Value;
-            if( IsRealObject )
-            {
-                AllConstructorParameters = ConstructorAutoServiceParameters = Array.Empty<CtorParameter>();
-                _ctorBinding = true;
-                return true;
-            }
             bool success = false;
             var ctors = ClassType.GetConstructors();
             if( ctors.Length == 0 ) m.Error( $"No public constructor found for '{ClassType.FullName}'." );
@@ -825,19 +813,24 @@ namespace CK.Setup
                     }
                     else ctorParameter = new CtorParameter( p );
                     allCtorParameters[p.Position] = ctorParameter;
+
+                    CKTypeKind ltParam = param.Lifetime & (CKTypeKind.IsScoped|CKTypeKind.IsSingleton|CKTypeKind.IsAutoService);
                     // We check here the Singleton to Scoped dependency error at the Type level.
                     // This must be done here since CtorParameters are not created for types that are external (those
                     // are considered as Scoped) or for ambient interfaces that have no implementation classes.
                     // If the parameter is known to be singleton, we have nothing to do.
-                    if( param.Lifetime == CKTypeKind.None || (param.Lifetime & CKTypeKind.IsScoped) != 0 )
+                    if( ltParam == CKTypeKind.None || (ltParam & CKTypeKind.IsScoped) != 0 )
                     {
-                        // Note: if this DeclaredLifetime is AutoScoped nothing is done here: as a
+                        // Note: if this service class is Scoped nothing is done here: as a
                         //       scoped service there is nothing to say about its constructor parameters' lifetime.
-                        if( DeclaredLifetime == CKTypeKindAutoSingleton )
+                        //       As a Singleton, we analyze the parameters:
+                        //          - If the Lifetime is not known, then it MUST also be Singleton.
+                        //          - If the Lifetime is known to be Scoped, then it's an error.
+                        if( (TypeKind & CKTypeKindAutoSingleton) == CKTypeKindAutoSingleton )
                         {
-                            if( param.Lifetime == CKTypeKind.None )
+                            if( ltParam == CKTypeKind.None )
                             {
-                                m.Warn( $"Type '{p.Member.DeclaringType}' is marked with {nameof( ISingletonAutoService )}. Parameter '{p.Name}' of type '{p.ParameterType.Name}' that has no associated lifetime will be considered as a Singleton." );
+                                m.Warn( $"Type '{p.Member.DeclaringType}' is marked as Singleton. Parameter '{p.Name}' of type '{p.ParameterType.Name}' that has no associated lifetime will be considered as a Singleton." );
                                 if( collector.AmbientKindDetector.DefineAsSingletonReference( m, p.ParameterType ) == null )
                                 {
                                     success = false;
@@ -845,31 +838,24 @@ namespace CK.Setup
                             }
                             else
                             {
-                                MustBeScopedLifetime = true;
-                                string paramReason;
-                                if( param.Lifetime == CKTypeKindAutoScoped )
-                                {
-                                    paramReason = $"is marked with {nameof( IScopedAutoService )}";
-                                }
-                                else
-                                {
-                                    Debug.Assert( param.Lifetime == CKTypeKind.IsScoped );
-                                    paramReason = $"is registered as an external scoped service";
-                                }
-                                m.Error( $"Lifetime error: Type '{p.Member.DeclaringType}' is marked with {nameof( ISingletonAutoService )}  but parameter '{p.Name}' of type '{p.ParameterType.Name}' {paramReason}." );
+                                m.Error( $"Lifetime error: Type '{p.Member.DeclaringType}' is marked with as Singleton but parameter '{p.Name}' of type '{p.ParameterType.Name}' is Scoped." );
                                 success = false;
                             }
                         }
-                        else if( DeclaredLifetime == CKTypeKind.IsAutoService )
+                        else if( (TypeKind & CKTypeKind.IsAutoService) != 0 )
                         {
-                            if( (param.Lifetime & CKTypeKind.IsScoped) != 0 )
+                            // We are not scoped (yet).
+                            if( (ltParam & CKTypeKind.IsScoped) != 0 )
                             {
                                 m.Info( $"{nameof( IAutoService )} '{p.Member.DeclaringType}' is Scoped because of parameter '{p.Name}' of type '{p.ParameterType.Name}'." );
                                 MustBeScopedLifetime = true;
+                                var updated = collector.AmbientKindDetector.RestrictToScoped( m, ClassType );
+                                if( updated == null ) success = false;
+                                else TypeKind = updated.Value;
                             }
                             else
                             {
-                                Debug.Assert( param.Lifetime == CKTypeKind.None );
+                                Debug.Assert( ltParam == CKTypeKind.None );
                                 if( _requiredParametersToBeSingletons == null ) _requiredParametersToBeSingletons = new List<ParameterInfo>();
                                 _requiredParametersToBeSingletons.Add( p );
                             }
@@ -996,7 +982,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Awful prperty that avoids data structure. Used at the very end of the process when
+        /// Awful property that avoids data structure. Used at the very end of the process when
         /// the final StObjObjectEngineMap is built. This number is ONE based.
         /// </summary>
         internal int FinalSimpleListNumber;
