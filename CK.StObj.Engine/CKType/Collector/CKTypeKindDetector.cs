@@ -61,13 +61,6 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets whether a registered type is known to be a singleton.
-        /// </summary>
-        /// <param name="t">The already registered type.</param>
-        /// <returns>True if this is a singleton.</returns>
-        public bool IsSingleton( Type t ) => _cache.TryGetValue( t, out var i ) && (i&CKTypeKind.IsSingleton) != 0;
-
-        /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Front service).
@@ -109,35 +102,8 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Defines a type as being a <see cref="CKTypeKind.IsSingleton"/> because it is used
-        /// as a ctor parameter of a Singleton Service.
-        /// Can be called multiple times as long as lifetime is Singleton.
-        /// </summary>
-        /// <param name="m">The monitor.</param>
-        /// <param name="t">The type to register.</param>
-        /// <returns>The type kind on success, null on error.</returns>
-        internal CKTypeKind? DefineAsSingletonReference( IActivityMonitor m, Type t )
-        {
-            return SetLifetimeOrFrontType( m, t, CKTypeKind.IsSingleton | IsSingletonReasonReference );
-        }
-
-        /// <summary>
-        /// Promotes a type to be a singleton: it is good to be a singleton (for performance reasons).
-        /// This is acted at the end of the process of handling services once we know that nothing
-        /// prevents a <see cref="IAutoService"/> to be a singleton.
-        /// </summary>
-        /// <param name="m">The monitor to use.</param>
-        /// <param name="t">The type to promote.</param>
-        /// <returns>The type kind on success, null on error.</returns>
-        internal CKTypeKind? PromoteToSingleton( IActivityMonitor m, Type t )
-        {
-            return SetLifetimeOrFrontType( m, t, CKTypeKind.IsSingleton | IsSingletonReasonFinal );
-        }
-
-        /// <summary>
-        /// Restricts a type to be Scoped (it is better to be a singleton, see <see cref="PromoteToSingleton(IActivityMonitor, Type)"/>).
-        /// This is acted at the start of the process when a constructor's parameter is known to be scoped: this is applied only
-        /// on leaf auto service classes.
+        /// Restricts a type to be Scoped (it is better to be a singleton).
+        /// This is called once whenever an external type is used in a constructor.
         /// </summary>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type to restrict.</param>

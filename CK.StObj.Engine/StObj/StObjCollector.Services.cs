@@ -56,7 +56,7 @@ namespace CK.Setup
             {
                 bool success = true;
                 _params = new List<CtorParameter>();
-                foreach( var p in Class.ConstructorAutoServiceParameters )
+                foreach( var p in Class.ConstructorParameters )
                 {
                     if( p.ServiceInterface != null && Family.Interfaces.Contains( p.ServiceInterface ))
                     {
@@ -301,7 +301,7 @@ namespace CK.Setup
                 get
                 {
                     Debug.Assert( _finalMappingDone, "Must be called only once GetFinalMapping has been called at least once." );
-                    return Class.MustBeScopedLifetime.Value;
+                    return (Class.FinalTypeKind.Value & AutoServiceKind.IsScoped) != 0;
                 }
             }
 
@@ -309,8 +309,8 @@ namespace CK.Setup
             {
                 get
                 {
-                    Debug.Assert( Class.FinalFrontServiceKind.HasValue, "GetFinalMustBeScopedAndFrontKind must have ben called." );
-                    return Class.FinalFrontServiceKind.Value;
+                    Debug.Assert( Class.FinalTypeKind.HasValue, "GetFinalMustBeScopedAndFrontKind must have ben called." );
+                    return Class.FinalTypeKind.Value;
                 }
             }
 
@@ -335,7 +335,7 @@ namespace CK.Setup
                 if( !_finalMappingDone )
                 {
                     _finalMappingDone = true;
-                    Class.GetFinalMustBeScopedAndFrontKind( m, typeKindDetector, ref success );
+                    Class.ComputeFinalTypeKind( m, typeKindDetector, ref success );
                     if( Assignments.Any() )
                     {
                         _finalMapping = engineMap.CreateServiceFinalManualMapping( this );
@@ -462,7 +462,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    final.GetFinalMustBeScopedAndFrontKind( _monitor, _ambientTypeKindDetector, ref success );
+                    final.ComputeFinalTypeKind( _monitor, _ambientTypeKindDetector, ref success );
                     _monitor.Debug( $"Map '{t}' -> '{final}'." );
                     if( final.IsRealObject )
                     {

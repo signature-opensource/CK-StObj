@@ -118,7 +118,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class MService1NoAutoService : Model.IMarshaller<FrontService1>
         {
-            public FrontService1 Read( ICKBinaryReader reader ) => null;
+            public FrontService1 Read( ICKBinaryReader reader, IServiceProvider services ) => null;
 
             public void Write( ICKBinaryWriter writer, FrontService1 service ) { }
         }
@@ -213,7 +213,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class MarshalAnyway : Model.IMarshaller<IAmNotAService>, IAutoService
         {
-            public IAmNotAService Read( ICKBinaryReader reader ) => null;
+            public IAmNotAService Read( ICKBinaryReader reader, IServiceProvider services ) => null;
 
             public void Write( ICKBinaryWriter writer, IAmNotAService service ) { }
         }
@@ -244,8 +244,13 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class Scoped : IScopedAutoService { }
 
+        public class ServiceFreeLifetime : IAutoService
+        {
+            public ServiceFreeLifetime( IUnknwon dep ) { }
+        }
+
         [Test]
-        public void bug()
+        public void propagation_through_an_intermediate_service_1()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( Scoped ) );
@@ -253,6 +258,18 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( OneSingleton ) );
 
             TestHelper.GetFailedResult( collector );
+        }
+
+        [Test]
+        public void propagation_through_an_intermediate_service_2()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( Scoped ) );
+            collector.RegisterType( typeof( Unknwon ) );
+            collector.RegisterType( typeof( ServiceFreeLifetime ) );
+
+            var r = TestHelper.GetSuccessfulResult( collector );
+            r.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
         }
     }
 }

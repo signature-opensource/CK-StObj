@@ -12,13 +12,12 @@ namespace CK.Setup
         readonly Dictionary<Type, AutoServiceClassInfo> _serviceCollector;
         readonly List<AutoServiceClassInfo> _serviceRoots;
         readonly Dictionary<Type, AutoServiceInterfaceInfo> _serviceInterfaces;
-        readonly CKTypeKindDetector _kindDetector;
         int _serviceInterfaceCount;
         int _serviceRootInterfaceCount;
 
-        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo parent, CKTypeKind typeKind, RealObjectClassInfo objectInfo )
+        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo parent, RealObjectClassInfo objectInfo )
         {
-            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, !_typeFilter( _monitor, t ), typeKind, objectInfo );
+            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, !_typeFilter( _monitor, t ), objectInfo );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -28,12 +27,8 @@ namespace CK.Setup
             return serviceInfo;
         }
 
-        /// <summary>
-        /// Exposes the <see cref="CKTypeKindDetector"/>.
-        /// </summary>
-        public CKTypeKindDetector AmbientKindDetector => _kindDetector;
 
-        bool IsAutoService( Type t ) => (_kindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( Type t ) => (AmbientKindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo FindServiceClassInfo( Type t )
         {
@@ -54,7 +49,7 @@ namespace CK.Setup
         /// </summary>
         AutoServiceInterfaceInfo RegisterServiceInterface( Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface && lt == _kindDetector.GetKind( _monitor, t ) );
+            Debug.Assert( t.IsInterface && lt == AmbientKindDetector.GetKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
             lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
             Debug.Assert( lt == CKTypeKind.IsAutoService
@@ -78,7 +73,7 @@ namespace CK.Setup
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind lt = _kindDetector.GetKind( _monitor, iT );
+                CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, iT );
                 var conflictMsg = lt.GetCombinationError( false );
                 if( conflictMsg != null )
                 {

@@ -93,9 +93,11 @@ namespace CK.Setup
         /// <returns>The Auto service kind.</returns>
         public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this )
         {
-            if( (@this&CKTypeKind.IsFrontService) != 0 && (@this & CKTypeKind.IsFrontProcessService) == 0 )
+            if( (@this&CKTypeKind.IsFrontService) != 0
+                &&
+                (@this & (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped)) != (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped) )
             {
-                throw new ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService." );
+                throw new ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService and IsScoped." );
             }
             return (AutoServiceKind)((int)@this & 63);
         }

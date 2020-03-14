@@ -74,13 +74,12 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void a_singleton_that_depends_on_an_unknwon_external_defines_the_external_as_singletons()
+        public void a_singleton_that_depends_on_an_unknwon_external_is_not_possible()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( LifetimeOfExternalBoostToSingleton ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
-            var r = TestHelper.GetSuccessfulResult( collector );
-            r.CKTypeResult.TypeKindDetector.IsSingleton( typeof( IExternalService ) ).Should().BeTrue();
+            TestHelper.GetFailedResult( collector );
         }
 
         [Test]
@@ -134,7 +133,6 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector );
             r.Services.SimpleMappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
-            r.CKTypeResult.TypeKindDetector.IsSingleton( typeof( AmbientThatDependsOnSingleton ) ).Should().BeTrue();
         }
 
         public interface IAmbientThatDependsOnNothing : IAutoService { }
@@ -189,7 +187,6 @@ namespace CK.StObj.Engine.Tests.Service
                 IExternalService e,
                 IPocoFactory<ISamplePoco> pocoFactory,
                 ISampleRealObject contract,
-                IAmbientThatDependsOnNothing ambientThatDependsOnNothing,
                 AmbientThatDependsOnSingleton d,
                 SimpleClassSingleton s,
                 AmbientThatWillBeResolvedAsSingleton other )
@@ -228,7 +225,6 @@ namespace CK.StObj.Engine.Tests.Service
                 IExternalService e,
                 IPocoFactory<ISamplePoco> pocoFactory,
                 ISampleRealObject contract,
-                IAmbientThatDependsOnNothing ambientThatDependsOnNothing,
                 AmbientThatDependsOnSingleton d,
                 SimpleClassSingleton s,
                 AmbientThatDependsOnAnotherExternalService o )

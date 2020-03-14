@@ -29,8 +29,7 @@ namespace CK.Core
         bool IsScoped { get; }
 
         /// <summary>
-        /// Gets whether this is a front only service and if it's the case whether
-        /// it is <see cref="AutoServiceKind.IsFrontService"/> and/or <see cref="AutoServiceKind.IsMarshallable"/>.
+        /// Gets the service kind.
         /// </summary>
         AutoServiceKind AutoServiceKind { get; }
 

@@ -143,7 +143,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                             .Append( ", " )
                             .AppendTypeOf( d.FinalType )
                             .Append( ", " )
-                            .Append( d.FinalFrontServiceKind.Value )
+                            .Append( d.FinalTypeKind.Value )
                             .Append( ", " )
                             .AppendArray( d.MarshallableTypes )
                             .Append( ", " )
