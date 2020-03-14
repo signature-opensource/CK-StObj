@@ -131,9 +131,9 @@ namespace CK.Setup
                     // It is a warning because if actual values work, everything is okay... but one day, it should fail.
                     var msg = String.Format( "StObjProperty '{0}.{1}' of type '{2}' is not compatible with the one of its {6} ('{3}.{4}' of type '{5}'). Type should be compatible since {6}'s property value will be propagated if no explicit value is set for '{7}.{1}' or if '{3}.{4}' is set with an incompatible value.",
                         ToString(), p.Name, p.Type.Name,
-                        _dContainer.Type.Type.Name, c.Name, c.Type.Name,
+                        _dContainer.RealObjectType.Type.Name, c.Name, c.Type.Name,
                         sourceName,
-                        Type.Type.Name );
+                        RealObjectType.Type.Name );
                     monitor.Warn( msg ); 
                 }
                 if( doSetOrMerge )

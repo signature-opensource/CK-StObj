@@ -5,7 +5,7 @@ using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
 
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.ActorZoneTests
 {
@@ -16,7 +16,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         internal static void CheckChildren<T>( IStObjObjectEngineMap map, string childrenTypeNames )
         {
             IEnumerable<IStObjResult> items = map.ToStObj( typeof( T ) ).Children;
-            var s1 = items.Select( i => i.ObjectType.Name ).OrderBy( Util.FuncIdentity );
+            var s1 = items.Select( i => i.ClassType.Name ).OrderBy( Util.FuncIdentity );
             var s2 = childrenTypeNames.Split( ',' ).OrderBy( Util.FuncIdentity );
             if( !s1.SequenceEqual( s2 ) )
             {

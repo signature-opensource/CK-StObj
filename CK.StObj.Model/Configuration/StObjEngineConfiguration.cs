@@ -78,9 +78,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets a list of binary paths to setup (must not be empty).
-        /// Their <see cref="BinPath.Assemblies"/> must exist in the current <see cref="AppContext.BaseDirectory"/>.
+        /// Their <see cref="BinPathConfiguration.Assemblies"/> must exist in the current <see cref="AppContext.BaseDirectory"/>.
         /// </summary>
-        public List<BinPath> BinPaths { get; }
+        public List<BinPathConfiguration> BinPaths { get; }
 
         /// <summary>
         /// Gets a mutable set of assembly qualified type names that must be excluded from registration.

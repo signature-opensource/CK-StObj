@@ -148,7 +148,7 @@ namespace CK.Setup
                                                                    .OfType<RealObjectClassInfo>()
                                                                    .Where( c => c.ConstructParameters != null
                                                                                 && c.ConstructParameters
-                                                                                        .Any( p => headCandidates.Select( x => x.Class.Type ).Any( o => p.ParameterType.IsAssignableFrom( o ) ) ) )
+                                                                                        .Any( p => headCandidates.Select( x => x.Class.ClassType ).Any( o => p.ParameterType.IsAssignableFrom( o ) ) ) )
                                                                    .Select( c => $"{c.Type.FullName}.StObjConstruct( {c.ConstructParameters.Select( p => p.ParameterType.Name ).Concatenate() } )" )
                                                                    .FirstOrDefault();
 
@@ -301,12 +301,28 @@ namespace CK.Setup
                 get
                 {
                     Debug.Assert( _finalMappingDone, "Must be called only once GetFinalMapping has been called at least once." );
-                    return Class.MustBeScopedLifetime.Value;
+                    return (Class.FinalTypeKind.Value & AutoServiceKind.IsScoped) != 0;
                 }
             }
 
+            AutoServiceKind IStObjServiceClassDescriptor.AutoServiceKind
+            {
+                get
+                {
+                    Debug.Assert( Class.FinalTypeKind.HasValue, "GetFinalMustBeScopedAndFrontKind must have ben called." );
+                    return Class.FinalTypeKind.Value;
+                }
+            }
 
-            Type IStObjServiceClassDescriptor.ClassType => Class.Type;
+            public IReadOnlyCollection<Type> MarshallableTypes => Class.MarshallableTypes;
+
+            public IReadOnlyCollection<Type> MultipleMappings => Class.MultipleMappings;
+
+            public IReadOnlyCollection<Type> UniqueMappings => Class.UniqueMappings;
+
+            Type IStObjServiceClassDescriptor.ClassType => Class.ClassType;
+
+            Type IStObjServiceClassDescriptor.FinalType => Class.FinalType;
 
             IReadOnlyList<IStObjServiceParameterInfo> IStObjServiceClassFactoryInfo.Assignments => Assignments;
 
@@ -319,7 +335,7 @@ namespace CK.Setup
                 if( !_finalMappingDone )
                 {
                     _finalMappingDone = true;
-                    Class.GetFinalMustBeScopedLifetime( m, typeKindDetector, ref success );
+                    Class.ComputeFinalTypeKind( m, typeKindDetector, ref success );
                     if( Assignments.Any() )
                     {
                         _finalMapping = engineMap.CreateServiceFinalManualMapping( this );
@@ -341,7 +357,7 @@ namespace CK.Setup
                 if( Class == null ) b.Append( "null" );
                 else
                 {
-                    b.Append( Class.Type.Name ).Append( '(' );
+                    b.Append( Class.ClassType.Name ).Append( '(' );
                     bool atLeastOne = false;
                     foreach( var a in Assignments )
                     {
@@ -410,7 +426,7 @@ namespace CK.Setup
                             RegisterMapping( i.Type, f.Resolved, ref success );
                         }
                     }
-                    _monitor.CloseGroup( $"Registered {_engineMap.ObjectMappings.Count} object mappings, {_engineMap.ServiceSimpleMappings.Count} simple mappings and {_engineMap.ServiceManualList.Count} factories for {_engineMap.ServiceManualMappings.Count} manual mappings." );
+                    _monitor.CloseGroup( $"Registered {_engineMap.ObjectMappings.Count} object mappings, {_engineMap.SimpleMappings.Count} simple mappings and {_engineMap.ManualMappingList.Count} factories for {_engineMap.ManualMappings.Count} manual mappings." );
                     return success;
                 }
             }
@@ -419,7 +435,7 @@ namespace CK.Setup
             {
                 if( !c.IsRealObject )
                 {
-                    RegisterMapping( c.Type, c.MostSpecialized, ref success );
+                    RegisterMapping( c.ClassType, c.MostSpecialized, ref success );
                     foreach( var s in c.Specializations )
                     {
                         RegisterClassMapping( s, ref success );
@@ -427,7 +443,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    _monitor.Debug( $"Skipping '{c}' Service class mapping since it is an Real object." );
+                    _monitor.Debug( $"Skipping '{c}' Service class mapping since it is a Real object." );
                 }
             }
 
@@ -442,11 +458,11 @@ namespace CK.Setup
                     && (manual = build.GetFinalMapping( _monitor, _engineMap, _ambientTypeKindDetector, ref success )) != null )
                 {
                     _monitor.Debug( $"Map '{t}' -> manual '{final}': '{manual}'." );
-                    _engineMap.ServiceManualMappings.Add( t, manual );
+                    _engineMap.ManualMappings.Add( t, manual );
                 }
                 else
                 {
-                    final.GetFinalMustBeScopedLifetime( _monitor, _ambientTypeKindDetector, ref success );
+                    final.ComputeFinalTypeKind( _monitor, _ambientTypeKindDetector, ref success );
                     _monitor.Debug( $"Map '{t}' -> '{final}'." );
                     if( final.IsRealObject )
                     {
@@ -454,8 +470,9 @@ namespace CK.Setup
                     }
                     else
                     {
-                        _engineMap.ServiceSimpleMappings.Add( t, final );
+                        _engineMap.SimpleMappings.Add( t, _engineMap.EnsureFinalSimpleRegistration( final ) );
                     }
+                    if( t != final.ClassType ) final.TypeInfo.AddUniqueMapping( t );
                 }
             }
         }

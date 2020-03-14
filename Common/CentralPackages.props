@@ -3,12 +3,12 @@
     <PackageReference Update="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.1" />
     <!-- This implements concrete ServiceCollection and DI engine itself. This is required by CK.Testing.StObjMap and CK.Testing.StObjEngine. -->
     <PackageReference Update="Microsoft.Extensions.DependencyInjection" Version="3.1.1" />
-    <PackageReference Update="CK.Testing.Monitoring" Version="0.16.0" />
+    <PackageReference Update="CK.Testing.Monitoring" Version="0.16.1--0004-develop" />
     <PackageReference Update="CK.Testing.CKSetup" Version="11.1.1" />
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="13.1.0" />
     <PackageReference Update="CSemVer" Version="7.0.2" />
-    <PackageReference Update="CK.CodeGen.Roslyn" Version="0.13.0" />
-    <PackageReference Update="CK.CodeGen" Version="0.13.0" />
+    <PackageReference Update="CK.CodeGen.Roslyn" Version="0.13.1--0006-develop" />
+    <PackageReference Update="CK.CodeGen" Version="0.13.1--0006-develop" />
     <PackageReference Update="CK.Reflection" Version="9.0.0" />
     <PackageReference Update="CK.Setup.Dependency" Version="10.1.0" />
     <PackageReference Update="CK.Core" Version="13.0.0" />

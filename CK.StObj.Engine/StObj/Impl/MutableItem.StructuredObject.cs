@@ -22,7 +22,7 @@ namespace CK.Setup
             Debug.Assert( _leafData.StructuredObject == null, "Called once and only once." );
             try
             {
-                return _leafData.CreateStructuredObject( runtimeBuilder, ObjectType );
+                return _leafData.CreateStructuredObject( runtimeBuilder, ClassType );
             }
             catch( Exception ex )
             {

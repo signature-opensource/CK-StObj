@@ -2,12 +2,13 @@ using CK.CodeGen;
 using CK.CodeGen.Abstractions;
 using CK.Core;
 using CK.Setup;
+using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 
 namespace CK.StObj.Engine.Tests
@@ -151,8 +152,8 @@ namespace CK.StObj.Engine.Tests
             {
                 public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
                 {
-                    if( o.ObjectType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
-                    if( o.ObjectType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
+                    if( o.ClassType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
+                    if( o.ClassType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
                 }
             }
 
@@ -217,7 +218,7 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    Assert.That( map.Implementations.OfType<IRealObject>().Count, Is.EqualTo( 2 ) );
+                    map.FinalImplementations.Count( f => f.Implementation is IRealObject ).Should().Be( 2 );
                     StObjInitializeOnACalled = true;
                 }
 
@@ -239,11 +240,10 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    Assert.That( map.Implementations.OfType<IRealObject>().Count, Is.EqualTo( 2 ) );
+                    map.FinalImplementations.Count( f => f.Implementation is IRealObject ).Should().Be( 2 );
                     Assert.That( StObjInitializeOnACalled );
                     StObjInitializeOnASpecCalled = true;
                 }
-
             }
 
             [StObj( ItemKind = DependentItemKindSpec.Container )]
@@ -271,8 +271,8 @@ namespace CK.StObj.Engine.Tests
             {
                 public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
                 {
-                    if( o.ObjectType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
-                    if( o.ObjectType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
+                    if( o.ClassType == typeof( A ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "This is the A property." );
+                    if( o.ClassType == typeof( ASpec ) ) o.SetStObjPropertyValue( monitor, "StObjPower", "ASpec level property." );
                 }
             }
 

@@ -3,7 +3,7 @@ using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
 
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {

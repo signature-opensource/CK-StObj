@@ -18,13 +18,13 @@ namespace CK.Setup
         public Type Type { get; }
 
         /// <summary>
-        /// Gets this Service interface life time.
-        /// This reflects the <see cref="IAutoService"/> or <see cref="ISingletonAutoService"/>
-        /// vs. <see cref="IScopedAutoService"/> interface marker.
+        /// Gets the initial type kind that is the result of the marker interfaces, attributes
+        /// on the type itself and of any setting done through <see cref="CKTypeKindDetector.SetAutoServiceKind(IActivityMonitor, Type, AutoServiceKind)"/>
+        /// before types registration.
         /// This can never be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind)"/> since
         /// in such cases, the AutoServiceInterfaceInfo is not instanciated.
         /// </summary>
-        public CKTypeKind DeclaredLifetime { get; }
+        public CKTypeKind InitialTypeKind { get; }
 
         /// <summary>
         /// The interface type.
@@ -60,9 +60,11 @@ namespace CK.Setup
 
         internal AutoServiceInterfaceInfo( Type t, CKTypeKind lt, IEnumerable<AutoServiceInterfaceInfo> baseInterfaces )
         {
-            Debug.Assert( lt == CKTypeKind.IsAutoService || lt == CKTypeKind.AutoSingleton || lt == CKTypeKind.AutoScoped );
+            Debug.Assert( lt == CKTypeKind.IsAutoService
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             Type = t;
-            DeclaredLifetime = lt;
+            InitialTypeKind = lt;
             AutoServiceInterfaceInfo[] bases = Array.Empty<AutoServiceInterfaceInfo>();
             int depth = 0;
             foreach( var iT in baseInterfaces )

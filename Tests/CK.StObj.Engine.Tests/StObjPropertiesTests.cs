@@ -4,7 +4,7 @@ using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
 
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -66,11 +66,11 @@ namespace CK.StObj.Engine.Tests
         {
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
             {
-                if( o.ObjectType == typeof( SimpleContainer ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "Root" ) );
-                if( o.ObjectType == typeof( SpecializedContainer ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "SpecializedContainer specializes Root" ) );
-                if( o.ObjectType == typeof( BaseObject ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "BaseObject belongs to SpecializedContainer" ) );
-                if( o.ObjectType == typeof( SpecializedObject ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "Finally: SpecializedObject inherits from BaseObject" ) );
-                if( o.ObjectType == typeof( SpecializedObjectWithExplicitContainer ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "SpecializedObjectWithExplicitContainer inherits from BaseObject BUT is directly associated to SpecializedContainer" ) );
+                if( o.ClassType == typeof( SimpleContainer ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "Root" ) );
+                if( o.ClassType == typeof( SpecializedContainer ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "SpecializedContainer specializes Root" ) );
+                if( o.ClassType == typeof( BaseObject ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "BaseObject belongs to SpecializedContainer" ) );
+                if( o.ClassType == typeof( SpecializedObject ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "Finally: SpecializedObject inherits from BaseObject" ) );
+                if( o.ClassType == typeof( SpecializedObjectWithExplicitContainer ) ) o.SetStObjPropertyValue( monitor, "SchmurtzProp", new SchmurtzProperty( "SpecializedObjectWithExplicitContainer inherits from BaseObject BUT is directly associated to SpecializedContainer" ) );
             }
         }
 
@@ -85,14 +85,14 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( SpecializedObjectWithExplicitContainer ) );
             StObjCollectorResult result = collector.GetResult();
 
-            Assert.That( result.OrderedStObjs.First( s => s.ObjectType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
+            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer" ) );
 
-            Assert.That( result.OrderedStObjs.First( s => s.ObjectType == typeof( SpecializedObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
+            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( SpecializedObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer => Finally: SpecializedObject inherits from BaseObject" ),
                 "Here, we follow the Generalization link, since there is NO direct Container." );
 
-            Assert.That( result.OrderedStObjs.First( s => s.ObjectType == typeof( SpecializedObjectWithExplicitContainer ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
+            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( SpecializedObjectWithExplicitContainer ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => SpecializedObjectWithExplicitContainer inherits from BaseObject BUT is directly associated to SpecializedContainer" ),
                 "Here, we DO NOT follow the Generalization link, since the Container is set, the Container has the priority." );
         }

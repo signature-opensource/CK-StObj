@@ -278,7 +278,7 @@ namespace CK.StObj.Engine.Tests.Service
             void ConfigureServices( StObjContextRoot.ServiceRegister register, TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem conf )
             {
                 var impl = conf.AlwaysUseAlice ? typeof( PrivateAlwaysAliceProvider ) : typeof( PrivateAliceOrBobProvider );
-                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true );
+                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true, allowMultipleRegistration: false );
             }
 
             [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]
@@ -287,7 +287,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void code_generation_is_so_easy_on_ambient_objects()
+        public void code_generation_is_so_easy_on_real_objects()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( A ) );
@@ -309,8 +309,34 @@ namespace CK.StObj.Engine.Tests.Service
             logs.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
         }
 
+        public abstract class ServiceCanTalk : IAutoService
+        {
+            public ServiceCanTalk()
+            {
+            }
+
+            [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]
+            public abstract int CodeCanBeInTheAttribute( IActivityMonitor m, string msg );
+        }
+
         [Test]
-        public void startup_services_registration_on_Ambient_objects()
+        public void code_generation_is_also_easy_on_services()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ServiceCanTalk ) );
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            {
+                var sp = TestHelper.GetAutomaticServices( collector ).Services;
+                sp.GetRequiredService<ServiceCanTalk>()
+                    .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
+                    .Should().Be( 3172 );
+            }
+            logs.Should().Contain( e => e.Text == "This is from generated code: Magic! (Again)" );
+        }
+
+        [Test]
+        public void startup_services_registration_on_real_objects()
         {
             // Succesful run: TotallyExternalStartupService is available.
             {
@@ -348,7 +374,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void Service_implemented_by_an_Ambient_object_can_be_overridden()
+        public void Service_implemented_by_a_real_object_can_be_overridden()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ScopedImplementation ) );

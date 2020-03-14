@@ -67,16 +67,18 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterType( typeof( PackageA ) );
                 collector.RegisterType( typeof( ServiceWithOneCtor ) );
                 var r = CheckSuccess( collector );
-                var c = r.AutoServices.RootClasses.Single( x => x.Type == typeof( ServiceWithOneCtor ) );
+                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
                 c.ConstructorInfo.Should().NotBeNull();
-                var p = c.ConstructorParameters.Should().BeEmpty();
+                c.ConstructorParameters.Should().HaveCount( 1 );
+                c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
+                c.ConstructorParameters[0].Name.Should().Be( "a" );
             }
             {
                 var collector = CreateCKTypeCollector();
                 collector.RegisterType( typeof( PackageA ) );
                 collector.RegisterType( typeof( ServiceWithDefaultCtor ) );
                 var r = CheckSuccess( collector );
-                var c = r.AutoServices.RootClasses.Single( x => x.Type == typeof( ServiceWithDefaultCtor ) );
+                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
                 c.ConstructorInfo.Should().NotBeNull();
                 c.ConstructorParameters.Should().BeEmpty();
             }
@@ -118,18 +120,27 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 iRegistered.Should().NotBeNull();
             }
             r.AutoServices.RootClasses.Should().HaveCount( mode == "RegisteredDependentService" ? 2 : 1 );
-            var c = r.AutoServices.RootClasses.Single( x => x.Type == typeof( Consumer1Service ) );
+            var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( Consumer1Service ) );
             c.ConstructorInfo.Should().NotBeNull();
+            c.ConstructorParameters.Should().HaveCount( 3 );
+            c.ConstructorParameters[0].Name.Should().Be( "normal" );
+            c.ConstructorParameters[1].Name.Should().Be( "notReg" );
+            c.ConstructorParameters[2].Name.Should().Be( "reg" );
             if( mode == "RegisteredDependentService" )
             {
-                c.ConstructorParameters.Should().HaveCount( 1 );
-                c.ConstructorParameters[0].ParameterInfo.Name.Should().Be( "reg" );
-                c.ConstructorParameters[0].ServiceClass.Should().BeNull();
-                c.ConstructorParameters[0].ServiceInterface.Should().BeSameAs( iRegistered );
+                c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
+
+                c.ConstructorParameters[1].IsAutoService.Should().BeFalse();
+
+                c.ConstructorParameters[2].IsAutoService.Should().BeTrue();
+                c.ConstructorParameters[2].ServiceClass.Should().BeNull();
+                c.ConstructorParameters[2].ServiceInterface.Should().BeSameAs( iRegistered );
             }
             else
             {
-                c.ConstructorParameters.Should().BeEmpty();
+                c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
+                c.ConstructorParameters[1].IsAutoService.Should().BeFalse();
+                c.ConstructorParameters[2].IsAutoService.Should().BeFalse();
             }
         }
 
@@ -161,12 +172,13 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterClass( typeof( ServiceForISRegistered ) );
                 collector.RegisterClass( typeof( ConsumerWithClassDependencyService ) );
                 var r = CheckSuccess( collector );
-                var dep = r.AutoServices.RootClasses.Single( x => x.Type == typeof( ServiceForISRegistered ) );
-                var c = r.AutoServices.RootClasses.Single( x => x.Type == typeof( ConsumerWithClassDependencyService ) );
-                c.ConstructorParameters.Should().HaveCount( 1, "'INotAnAutoService normal' and 'ISNotRegistered notReg' are ignored." );
-                c.ConstructorParameters[0].Position.Should().Be( 2 );
-                c.ConstructorParameters[0].Name.Should().Be( "classDependency" );
-                c.ConstructorParameters[0].ServiceClass.Should().BeSameAs( dep );
+                var dep = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceForISRegistered ) );
+                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ConsumerWithClassDependencyService ) );
+                c.ConstructorParameters.Should().HaveCount( 3 );
+                c.ConstructorParameters[2].ParameterType.Should().Be( typeof( ServiceForISRegistered ) );
+                c.ConstructorParameters[2].Position.Should().Be( 2 );
+                c.ConstructorParameters[2].Name.Should().Be( "classDependency" );
+                c.ConstructorParameters[2].ServiceClass.Should().BeSameAs( dep );
             }
             {
                 var collector = CreateCKTypeCollector();
@@ -184,8 +196,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterClass( typeof( ConsumerWithDefaultService ) );
                 var r = CheckSuccess( collector );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
-                var c = r.AutoServices.RootClasses.Single( x => x.Type == typeof( ConsumerWithDefaultService ) );
-                c.ConstructorParameters.Should().BeEmpty();
+                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ConsumerWithDefaultService ) );
+                c.ConstructorParameters.Should().HaveCount( 3 );
             }
 
         }

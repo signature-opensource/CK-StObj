@@ -67,7 +67,7 @@ namespace CK.Testing
             stObjConf.TraceDependencySorterInput = helper.StObjTraceGraphOrdering;
             stObjConf.TraceDependencySorterOutput = helper.StObjTraceGraphOrdering;
             stObjConf.GeneratedAssemblyName = helper.GeneratedAssemblyName;
-            var b = new BinPath();
+            var b = new BinPathConfiguration();
             b.Path = helper.BinFolder;
             b.GenerateSourceFiles = helper.StObjGenerateSourceFiles;
             stObjConf.BinPaths.Add( b );

@@ -12,8 +12,7 @@ namespace CK.Setup
     /// </summary>
     internal class RealObjectClassInfo : CKTypeInfo, IStObjTypeInfoFromParent
     {
-        Type[] _ambientInterfaces;
-        Type[] _thisAmbientInterfaces;
+        IReadOnlyList<Type> _realObjectInterfaces;
 
         class TypeInfoForBaseClasses : IStObjTypeInfoFromParent, IStObjTypeRootParentInfo
         {
@@ -34,7 +33,7 @@ namespace CK.Setup
             static object _lock = new object();
             static Dictionary<Type, TypeInfoForBaseClasses> _cache;
 
-            static public TypeInfoForBaseClasses GetFor( IActivityMonitor monitor, Type t, CKTypeKindDetector ambientTypeKind )
+            static public TypeInfoForBaseClasses GetFor( IActivityMonitor monitor, Type t )
             {
                 TypeInfoForBaseClasses result = null;
                 // Poor lock: we don't care here. Really.
@@ -107,7 +106,7 @@ namespace CK.Setup
                             List<StObjPropertyInfo> stObjProperties = new List<StObjPropertyInfo>();
                             IReadOnlyList<AmbientPropertyInfo> propList;
                             IReadOnlyList<InjectObjectInfo> injectList;
-                            CreateAllAmbientPropertyList( monitor, t, result.SpecializationDepth, ambientTypeKind, stObjProperties, out propList, out injectList );
+                            CreateAllAmbientPropertyList( monitor, t, result.SpecializationDepth, stObjProperties, out propList, out injectList );
                             Debug.Assert( propList != null && injectList != null );
                             result.AmbientProperties = propList;
                             result.InjectObjects = injectList;
@@ -161,7 +160,6 @@ namespace CK.Setup
                 IActivityMonitor monitor,
                 Type type,
                 int specializationLevel,
-                CKTypeKindDetector ambientTypeKind,
                 List<StObjPropertyInfo> stObjProperties,
                 out IReadOnlyList<AmbientPropertyInfo> apListResult,
                 out IReadOnlyList<InjectObjectInfo> acListResult )
@@ -175,9 +173,9 @@ namespace CK.Setup
                 {
                     IList<AmbientPropertyInfo> apCollector;
                     IList<InjectObjectInfo> acCollector;
-                    AmbientPropertyOrInjectObjectInfo.CreateAmbientPropertyListForExactType( monitor, type, specializationLevel, ambientTypeKind, stObjProperties, out apCollector, out acCollector );
+                    AmbientPropertyOrInjectObjectInfo.CreateAmbientPropertyListForExactType( monitor, type, specializationLevel, stObjProperties, out apCollector, out acCollector );
 
-                    CreateAllAmbientPropertyList( monitor, type.BaseType, specializationLevel - 1, ambientTypeKind, stObjProperties, out apListResult, out acListResult );
+                    CreateAllAmbientPropertyList( monitor, type.BaseType, specializationLevel - 1, stObjProperties, out apListResult, out acListResult );
 
                     apListResult = AmbientPropertyOrInjectObjectInfo.MergeWithAboveProperties( monitor, apListResult, apCollector );
                     acListResult = AmbientPropertyOrInjectObjectInfo.MergeWithAboveProperties( monitor, acListResult, acCollector );
@@ -185,7 +183,12 @@ namespace CK.Setup
             }
         }
 
-        internal RealObjectClassInfo( IActivityMonitor monitor, RealObjectClassInfo parent, Type t, IServiceProvider provider, CKTypeKindDetector ambientTypeKind, bool isExcluded )
+        internal RealObjectClassInfo(
+            IActivityMonitor monitor,
+            RealObjectClassInfo parent,
+            Type t,
+            IServiceProvider provider,
+            bool isExcluded )
             : base( monitor, parent, t, provider, isExcluded, null )
         {
             Debug.Assert( parent == Generalization );
@@ -194,7 +197,7 @@ namespace CK.Setup
             IStObjTypeInfoFromParent infoFromParent = Generalization;
             if( infoFromParent == null )
             {
-                var b = TypeInfoForBaseClasses.GetFor( monitor, t.BaseType, ambientTypeKind );
+                var b = TypeInfoForBaseClasses.GetFor( monitor, t.BaseType );
                 BaseTypeInfo = b;
                 infoFromParent = b;
             }
@@ -227,7 +230,7 @@ namespace CK.Setup
             // In the same time, StObjPropertyAttribute that are associated to actual properties are collected into stObjProperties.
             IList<AmbientPropertyInfo> apCollector;
             IList<InjectObjectInfo> acCollector;
-            AmbientPropertyInfo.CreateAmbientPropertyListForExactType( monitor, Type, SpecializationDepth, ambientTypeKind, stObjProperties, out apCollector, out acCollector );
+            AmbientPropertyInfo.CreateAmbientPropertyListForExactType( monitor, Type, SpecializationDepth, stObjProperties, out apCollector, out acCollector );
             // For type that have no Generalization: we must handle [AmbientProperty], [InjectObject] and [StObjProperty] on base classes (we may not have CKTypeInfo object 
             // since they are not necessarily IRealObject, we use infoFromParent abstraction).
             AmbientProperties = AmbientPropertyInfo.MergeWithAboveProperties( monitor, infoFromParent.AmbientProperties, apCollector );
@@ -534,19 +537,31 @@ namespace CK.Setup
             }
         }
 
-        Type[] EnsureAllAmbientInterfaces( IActivityMonitor m, CKTypeKindDetector d )
+        internal void InitializeInterfaces( IActivityMonitor m, CKTypeKindDetector d )
         {
-            return _ambientInterfaces
-                ?? (_ambientInterfaces = Type.GetInterfaces().Where( t => (d.GetKind( m, t ) & CKTypeKind.RealObject) == CKTypeKind.RealObject ).ToArray());
+            // If there is a path ambiguity we'll reach an already initialized parent.
+            if( _realObjectInterfaces == null )
+            {
+                List<Type> all = null;
+                foreach( Type tI in Interfaces )
+                {
+                    var k = d.GetKind( m, tI );
+                    if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                    {
+                        if( all == null ) all = new List<Type>();
+                        all.Add( tI );
+                    }
+                    else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
+                    {
+                        AddMultipleMapping( tI );
+                    }
+                }
+                _realObjectInterfaces = (IReadOnlyList<Type>)all ?? Type.EmptyTypes;
+                Generalization?.InitializeInterfaces( m, d );
+            }
         }
 
-        internal Type[] EnsureThisAmbientInterfaces( IActivityMonitor m, CKTypeKindDetector d )
-        {
-            return _thisAmbientInterfaces ?? (_thisAmbientInterfaces = Generalization != null
-                                                        ? EnsureAllAmbientInterfaces( m, d ).Except( Generalization.EnsureAllAmbientInterfaces( m, d ) ).ToArray()
-                                                        : EnsureAllAmbientInterfaces( m, d ));
-        }
-
+        internal IEnumerable<Type> ThisRealObjectInterfaces => Generalization != null ? _realObjectInterfaces.Except( Generalization._realObjectInterfaces ) : _realObjectInterfaces;
 
         internal bool CreateMutableItemsPath(
             IActivityMonitor monitor,

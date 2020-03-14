@@ -14,13 +14,19 @@ namespace CK.Core
         /// Gets all the <see cref="IAutoService"/> types that are directly mapped to
         /// an already available Real Object.
         /// </summary>
-        IReadOnlyDictionary<Type, object> ObjectMappings { get; }
+        IReadOnlyDictionary<Type, IStObjFinalImplementation> ObjectMappings { get; }
 
         /// <summary>
         /// Gets all the <see cref="IAutoService"/> types to the final service class type
         /// that can be directly resolved by any DI container.
         /// </summary>
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> SimpleMappings { get; }
+
+        /// <summary>
+        /// Gets all the types (exposed by <see cref="IStObjServiceClassDescriptor.ClassType"/>)
+        /// that can easily be resolved by any DI container.
+        /// </summary>
+        IReadOnlyList<IStObjServiceClassDescriptor> SimpleMappingList { get; }
 
         /// <summary>
         /// Gets all the <see cref="IAutoService"/> types to Service class mappings
@@ -32,6 +38,11 @@ namespace CK.Core
         /// is the descriptor used by <see cref="SimpleMappings"/>).
         /// </summary>
         IReadOnlyDictionary<Type, IStObjServiceClassFactory> ManualMappings { get; }
+
+        /// <summary>
+        /// Gets all the not so simple registred types. See <see cref="ManualMappings"/>.
+        /// </summary>
+        IReadOnlyList<IStObjServiceClassFactory> ManualMappingList { get; }
 
     }
 }

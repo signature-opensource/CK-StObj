@@ -80,11 +80,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer startupServices = null )
         {
-#if NET461
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
-#else
-            var a = Assembly.LoadFrom( System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" ) );
-#endif
             return AddStObjMap( services, monitor, a, startupServices );
         }
 
