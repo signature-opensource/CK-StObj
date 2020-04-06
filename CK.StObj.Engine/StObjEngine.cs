@@ -385,10 +385,9 @@ namespace CK.Setup
                     // First handles the explicit kind of Types.
                     foreach( var c in f.Types )
                     {
-                        if( c.Kind != AutoServiceKind.None )
-                        {
-                            stObjC.SetAutoServiceKind( c.Name, c.Kind, c.Optional );
-                        }
+                        // When c.Kind is None, !Optional is challenged.
+                        // The Type is always resolved.
+                        stObjC.SetAutoServiceKind( c.Name, c.Kind, c.Optional );
                     }
                     // Then registers the types from the assemblies.
                     stObjC.RegisterAssemblyTypes( f.Assemblies );

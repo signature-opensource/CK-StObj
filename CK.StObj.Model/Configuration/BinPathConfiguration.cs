@@ -57,6 +57,8 @@ namespace CK.Setup
 
             /// <summary>
             /// Gets or sets the service kind. Defaults to <see cref="AutoServiceKind.None"/>.
+            /// Note that this None value may be used along with a false <see cref="Optional"/> to check the existence
+            /// of a type.
             /// </summary>
             public AutoServiceKind Kind { get; set; }
 
@@ -76,7 +78,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Initializes a new empty <see cref="BinPathConfiguration"/>.
-        /// At least, the <see cref="Path"/> should be set for this BinPath to be valid.
+        /// At least, the <see cref="Path"/> should be set for this BinPathConfiguration to be valid.
         /// </summary>
         public BinPathConfiguration()
         {

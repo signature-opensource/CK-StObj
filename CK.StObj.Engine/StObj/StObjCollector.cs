@@ -98,7 +98,7 @@ namespace CK.Setup
         public bool SetAutoServiceKind( Type type, AutoServiceKind kind )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
-            if( kind == AutoServiceKind.None ) throw new ArgumentException( nameof( kind ) );
+            if( kind == AutoServiceKind.None ) throw new ArgumentOutOfRangeException( nameof( kind ) );
             if( _cc.RegisteredTypeCount > 0 )
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
@@ -112,19 +112,19 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
-        /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Front service).
+        /// Sets <see cref="AutoServiceKind"/> combination for a type: the type is always resolved (<see cref="SimpleTypeFinder.WeakResolver"/>).
+        /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
+        /// cannot be a Front service).
         /// </summary>
         /// <param name="typeName">The assembly qualified type name to register.</param>
-        /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
+        /// <param name="kind">The kind of service. Can be <see cref="AutoServiceKind.None"/> (nothing is done except the type resolution).</param>
         /// <param name="isOptional">True to warn if the type is not found instead of logging an error and returning false.</param>
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( string typeName, AutoServiceKind kind, bool isOptional )
         {
             if( String.IsNullOrWhiteSpace( typeName ) ) throw new ArgumentNullException( nameof( typeName ) );
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
-            if( t != null ) return SetAutoServiceKind( t, kind );
+            if( t != null && kind != AutoServiceKind.None ) return SetAutoServiceKind( t, kind );
             if( isOptional )
             {
                 _monitor.Warn( $"Type name '{typeName}' not found. It is ignored." );
