@@ -61,7 +61,7 @@ namespace CK.Setup
             public AutoServiceKind Kind { get; set; }
 
             /// <summary>
-            /// Gets or sets whether this type is optional: if the <see cref="TypeName"/> cannot be resolved
+            /// Gets or sets whether this type is optional: if the <see cref="Name"/> cannot be resolved
             /// a warning is emitted.
             /// Defaults to false: by default, if the type is not found at runtime, an error is raised.
             /// </summary>

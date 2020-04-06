@@ -1,10 +1,3 @@
-#region Proprietary License
-/*----------------------------------------------------------------------------
-* This file (CK.StObj.Runtime\IStObjResult.cs) is part of CK-Database. 
-* Copyright © 2007-2014, Invenietis <http://www.invenietis.com>. All rights reserved. 
-*-----------------------------------------------------------------------------*/
-#endregion
-
 using System.Collections.Generic;
 using CK.Core;
 
@@ -16,9 +9,9 @@ namespace CK.Setup
     /// construct parameters for instance).
     /// It is the final interface that is exposed for each StObj at the end of the StObjCollector.GetResults work.
     /// <para>
-    /// The <see cref="IStObjFinalImplementation.Implementation"> object is built based on already built dependencies from top 
+    /// The <see cref="IStObjFinalImplementation.Implementation" /> object is built based on already built dependencies from top 
     /// to bottom thanks to the "StObjConstruct" (<see cref="StObjContextRoot.ConstructMethodName"/>) methods. 
-    /// Nte that this instance is built at the beginning of the process and remains the same: it is not necessarily a "real" object since
+    /// Note that this instance is built at the beginning of the process and remains the same: it is not necessarily a "real" object since
     /// its auto-implemented methods are not generated (only stupid default stub implementation are created to be able to instanciate it).
     /// </para>
     /// </summary>

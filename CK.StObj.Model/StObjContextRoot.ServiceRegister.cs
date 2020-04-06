@@ -290,7 +290,7 @@ namespace CK.Core
             /// <typeparam name="TImpl">Implementation type.</typeparam>
             /// <param name="isScoped">True for scope, false for singletons.</param>
             /// <param name="allowMultipleRegistration">
-            /// True to allow the <paramref name="serviceType"/> to already be associated to another mapping.
+            /// True to allow the <typeparamref name="T"/> to already be associated to another mapping.
             /// False to log an error and return false.
             /// </param>
             /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>
@@ -343,7 +343,7 @@ namespace CK.Core
             /// <param name="factory">Instance factory.</param>
             /// <param name="isScoped">True for scope, false for singletons.</param>
             /// <param name="allowMultipleRegistration">
-            /// True to allow the <paramref name="serviceType"/> to already be associated to another mapping.
+            /// True to allow the <typeparamref name="T"/> to already be associated to another mapping.
             /// False to log an error and return false.
             /// </param>
             /// <returns>True on success, false if multiple registration is detected and <paramref name="allowMultipleRegistration"/> is false.</returns>

@@ -19,7 +19,7 @@ namespace CK.Core
         /// <summary>
         /// This is a front service, bound to the front process that cannot be used directly in
         /// another process and needs to be marshalled to any other process (a typical example is
-        /// the IOptions<> implementations for instance). 
+        /// the IOptions&lt;&gt; implementations for instance). 
         /// </summary>
         IsFrontProcessService = 1,
 

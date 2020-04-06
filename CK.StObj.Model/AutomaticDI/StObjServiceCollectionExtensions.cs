@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Configures this <see cref="IServiceCollection"/> by registering the <see cref="IStObjMap.StObjs"/> and
         /// the <paramref name="map"/> itself as Singletons, by calling <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/>
-        /// and then <see cref="StObjContextRoot.ConfigureServicesMethodName"/> on all the <see cref="IStObjObjectMap.Implementations"/> that expose
+        /// and then <see cref="StObjContextRoot.ConfigureServicesMethodName"/> on all the <see cref="IStObjObjectMap.FinalImplementations"/> that expose
         /// such methods and by registering the <see cref="IStObjServiceMap.SimpleMappings"/> and <see cref="IStObjServiceMap.ManualMappings"/> mappings.
         /// Any attempt to register an already registered service will be ignored and a warning will be emitted.
         /// <para>

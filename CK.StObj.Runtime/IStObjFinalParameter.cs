@@ -1,10 +1,4 @@
-#region Proprietary License
-/*----------------------------------------------------------------------------
-* This file (CK.StObj.Runtime\IStObjFinalParameter.cs) is part of CK-Database. 
-* Copyright © 2007-2014, Invenietis <http://www.invenietis.com>. All rights reserved. 
-*-----------------------------------------------------------------------------*/
-#endregion
-
+using CK.Core;
 
 namespace CK.Setup
 {
@@ -44,7 +38,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the current value that will be used. 
-        /// If it has not been resolved to a <see cref="IStObjResult.InitialObject"/> instance or "structurally" set by one <see cref="IStObjStructuralConfigurator"/>, it is <see cref="System.Type.Missing"/>. 
+        /// If it has not been resolved to a <see cref="IStObjFinalImplementation.Implementation"/> instance or "structurally" set by
+        /// one <see cref="IStObjStructuralConfigurator"/>, it is <see cref="System.Type.Missing"/>. 
         /// Use <see cref="SetParameterValue"/> to set it.
         /// </summary>
         object Value { get; }

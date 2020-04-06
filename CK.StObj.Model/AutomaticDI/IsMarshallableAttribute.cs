@@ -9,6 +9,7 @@ namespace CK.Core
     /// It is not required to be this exact type: any attribute named "IsMarshallableAttribute" defined in any
     /// namespace will be considered as a valid marker.
     /// </para>
+    /// </summary>
     [AttributeUsage( AttributeTargets.Class|AttributeTargets.Interface, AllowMultiple = false, Inherited = false )]
     public class IsMarshallableAttribute : Attribute
     {

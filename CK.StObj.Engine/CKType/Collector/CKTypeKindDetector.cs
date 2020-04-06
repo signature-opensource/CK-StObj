@@ -153,7 +153,7 @@ namespace CK.Setup
         /// must be a pure marker, there must be no declared members.
         /// </para>
         /// <para>
-        /// The result can be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind)"/>.
+        /// The result can be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind, bool)"/>.
         /// </para>
         /// </summary>
         /// <param name="m">The monitor to use.</param>
