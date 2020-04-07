@@ -453,6 +453,9 @@ namespace CK.Setup
                     // we don't need to process the parameters since we have nothing to learn...
                     bool isFrontMarshallable = (final & IsFrontMashallableMask) == IsFrontMashallableMask;
 
+                    // This may be exposed?
+                    bool requiresInstanciator = false;
+
                     foreach( var p in ConstructorParameters )
                     {
                         AutoServiceClassInfo pC = null;
@@ -466,10 +469,23 @@ namespace CK.Setup
                             kP = typeKindDetector.GetKind( m, p.ParameterType ).ToAutoServiceKind();
                             if( (kP & (AutoServiceKind.IsSingleton | AutoServiceKind.IsScoped)) == 0 )
                             {
-                                m.Info( $"External type '{p.ParameterType}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
-                                var update = typeKindDetector.RestrictToScoped( m, p.ParameterType );
-                                if( update.HasValue ) kP = update.Value.ToAutoServiceKind();
-                                else success = false;
+                                if( p.ParameterType.IsValueType || p.ParameterType == typeof(string) )
+                                {
+                                    if( !p.ParameterInfo.HasDefaultValue )
+                                    {
+                                        m.Warn( $"Parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This prevents automatic instanciation." );
+                                        requiresInstanciator = true;
+                                    }
+                                    // Value type parameter with default value. Skip it.
+                                    continue;
+                                }
+                                else
+                                {
+                                    m.Info( $"External type '{p.ParameterType}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
+                                    var update = typeKindDetector.RestrictToScoped( m, p.ParameterType );
+                                    if( update.HasValue ) kP = update.Value.ToAutoServiceKind();
+                                    else success = false;
+                                }
                             }
                         }
                         // Handling lifetime.
@@ -545,6 +561,11 @@ namespace CK.Setup
                     {
                         m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
                         final |= AutoServiceKind.IsSingleton;
+                    }
+                    // Warn about instanciator function.
+                    if( requiresInstanciator )
+                    {
+                        m.Warn( $"'{ClassType}' requires a manual instanciation function." );
                     }
                     // Conclude about Front aspect.
                     if( isFrontMarshallable )

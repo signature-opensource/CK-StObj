@@ -104,6 +104,7 @@ namespace CK.Setup
         /// <summary>
         /// Restricts a type to be Scoped (it is better to be a singleton).
         /// This is called once whenever an external type is used in a constructor.
+        /// Returns null on error.
         /// </summary>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type to restrict.</param>

@@ -502,5 +502,50 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
 
+        public class ServiceWithValueTypeCtorParameters : IAutoService
+        {
+            public ServiceWithValueTypeCtorParameters( bool requiredValueType )
+            {
+            }
+        }
+
+        public class ServiceWithOptionalValueTypeCtorParameters : IAutoService
+        {
+            public ServiceWithOptionalValueTypeCtorParameters( bool optionalValueType = true, string stringAreConsideredSameAsValueType = "Hop" )
+            {
+            }
+        }
+
+        [Test]
+        public void ValueType_ctor_parameters_without_default_value_prevent_the_type_to_be_automatically_instanciated()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
+
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            {
+                var services = TestHelper.GetAutomaticServices( collector, null ).Services;
+                services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+            }
+            logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                        && e.Text.Contains( "requires a manual instanciation function" ) );
+        }
+
+        [Test]
+        public void ValueType_ctor_parameters_with_default_value_are_ignored()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            {
+                var services = TestHelper.GetAutomaticServices( collector, null ).Services;
+                services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
+            }
+        }
+
+
     }
 }
