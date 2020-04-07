@@ -12,7 +12,7 @@ namespace CK.Setup
     /// Internal mutable implementation of <see cref="IStObjObjectEngineMap"/> that handles <see cref="MutableItem"/>.
     /// The internal participants have write access to it. I'm not proud of this (there are definitly cleaner
     /// ways to organize this) but it work...
-    /// The map is instanciated by CKTypeCollector.GetRealObjectResult and then
+    /// The map is instantiated by CKTypeCollector.GetRealObjectResult and then
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
     /// can use (and fill) it.
     /// </summary>

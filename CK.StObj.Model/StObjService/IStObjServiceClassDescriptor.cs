@@ -10,14 +10,14 @@ namespace CK.Core
     public interface IStObjServiceClassDescriptor
     {
         /// <summary>
-        /// Gets the actual Type that must be instanciated.
+        /// Gets the actual Type that must be instantiated.
         /// This Type has, by design, one and only one public constructor
         /// (see <see cref="StObjServiceClassDescriptorExtension.GetSingleConstructor"/>).
         /// </summary>
         Type ClassType { get; }
 
         /// <summary>
-        /// Gets the actual Type that must be instanciated. It is <see cref="ClassType"/> for regular classes
+        /// Gets the actual Type that must be instantiated. It is <see cref="ClassType"/> for regular classes
         /// but for abstract classes with Auto implementation, this is the type of the dynamically genrerated
         /// class.
         /// </summary>

@@ -454,7 +454,7 @@ namespace CK.Setup
                     bool isFrontMarshallable = (final & IsFrontMashallableMask) == IsFrontMashallableMask;
 
                     // This may be exposed?
-                    bool requiresInstanciator = false;
+                    bool requiresInstantiator = false;
 
                     foreach( var p in ConstructorParameters )
                     {
@@ -473,8 +473,8 @@ namespace CK.Setup
                                 {
                                     if( !p.ParameterInfo.HasDefaultValue )
                                     {
-                                        m.Warn( $"Parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This prevents automatic instanciation." );
-                                        requiresInstanciator = true;
+                                        m.Warn( $"Parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This prevents automatic instantiation." );
+                                        requiresInstantiator = true;
                                     }
                                     // Value type parameter with default value. Skip it.
                                     continue;
@@ -562,10 +562,10 @@ namespace CK.Setup
                         m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
                         final |= AutoServiceKind.IsSingleton;
                     }
-                    // Warn about instanciator function.
-                    if( requiresInstanciator )
+                    // Warn about instantiation function.
+                    if( requiresInstantiator )
                     {
-                        m.Warn( $"'{ClassType}' requires a manual instanciation function." );
+                        m.Warn( $"'{ClassType}' requires a manual instantiation function." );
                     }
                     // Conclude about Front aspect.
                     if( isFrontMarshallable )

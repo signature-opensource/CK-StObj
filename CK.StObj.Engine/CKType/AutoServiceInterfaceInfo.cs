@@ -22,7 +22,7 @@ namespace CK.Setup
         /// on the type itself and of any setting done through <see cref="CKTypeKindDetector.SetAutoServiceKind(IActivityMonitor, Type, AutoServiceKind)"/>
         /// before types registration.
         /// This can never be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind,bool)"/> since
-        /// in such cases, the AutoServiceInterfaceInfo is not instanciated.
+        /// in such cases, the AutoServiceInterfaceInfo is not instantiated.
         /// </summary>
         public CKTypeKind InitialTypeKind { get; }
 

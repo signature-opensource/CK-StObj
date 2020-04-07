@@ -11,7 +11,7 @@ namespace CK.Setup
     /// <summary>
     /// Ad-hoc DI helper that focuses on required parameters injection.
     /// The static Create method can be used as-is or an instance that implements
-    /// the <see cref="ISimpleObjectActivator"/> interface can be instanciated.
+    /// the <see cref="ISimpleObjectActivator"/> interface can be instantiated.
     /// </summary>
     public class SimpleObjectActivator : ISimpleObjectActivator
     {
@@ -88,7 +88,7 @@ namespace CK.Setup
                 }
                 catch( Exception ex )
                 {
-                    monitor.Error( $"While instanciating {t.FullName}.", ex );
+                    monitor.Error( $"While instantiating {t.FullName}.", ex );
                     return null;
                 }
         }

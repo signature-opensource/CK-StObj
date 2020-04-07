@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Simplest object instanciator.
+    /// Simplest object instantiator.
     /// </summary>
     public interface ISimpleObjectActivator
     {

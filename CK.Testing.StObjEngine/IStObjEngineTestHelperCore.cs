@@ -43,7 +43,7 @@ namespace CK.Testing.StObjEngine
         StObjCollectorResult GetFailedResult( StObjCollector c );
 
         /// <summary>
-        /// Compiles and instanciates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
+        /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <returns>The (successful) collector result and the ready-to-use map.</returns>

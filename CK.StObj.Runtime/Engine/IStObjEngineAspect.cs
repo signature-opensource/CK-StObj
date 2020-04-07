@@ -7,7 +7,7 @@ namespace CK.Setup
     /// <para>
     /// Concrete Aspect classes must implement this interface and have a public constructor
     /// that takes the configuration object instance.
-    /// <see cref="Configure"/> will be called once all aspects have been instanciated.
+    /// <see cref="Configure"/> will be called once all aspects have been instantiated.
     /// </para>
     /// <para>
     /// The configuration object is a <see cref="IStObjEngineAspectConfiguration"/> that has been 

@@ -71,10 +71,10 @@ namespace CK.Setup
 
             internal object CreateStructuredObject( IStObjRuntimeBuilder runtimeBuilder, Type typeIfNotImplementable )
             {
-                Type toInstanciate = ImplementableTypeInfo != null
+                Type toInstantiate = ImplementableTypeInfo != null
                                         ? ImplementableTypeInfo.StubType
                                         : typeIfNotImplementable;
-                StructuredObject = runtimeBuilder.CreateInstance( toInstanciate );
+                StructuredObject = runtimeBuilder.CreateInstance( toInstantiate );
                 return StructuredObject;
             }
         }
@@ -243,7 +243,7 @@ namespace CK.Setup
 
         void AnalyzeConstruct( IActivityMonitor monitor )
         {
-            Debug.Assert( _constructParameterEx == null, "Called only once right after object instanciation..." );
+            Debug.Assert( _constructParameterEx == null, "Called only once right after object instantiation..." );
             Debug.Assert( _container != null, "...and after ApplyTypeInformation." );
 
             var fromAbove = RealObjectType.BaseTypeInfo?.StObjConstructCollector;

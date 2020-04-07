@@ -517,7 +517,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void ValueType_ctor_parameters_without_default_value_prevent_the_type_to_be_automatically_instanciated()
+        public void ValueType_ctor_parameters_without_default_value_prevent_the_type_to_be_automatically_instantiated()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
@@ -529,7 +529,7 @@ namespace CK.StObj.Engine.Tests.Service
                 services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
             }
             logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                        && e.Text.Contains( "requires a manual instanciation function" ) );
+                                        && e.Text.Contains( "requires a manual instantiation function" ) );
         }
 
         [Test]

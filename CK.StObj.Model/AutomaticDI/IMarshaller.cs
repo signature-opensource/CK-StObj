@@ -18,7 +18,7 @@ namespace CK.StObj.Model
     {
         /// <summary>
         /// Writes any information to the binary writer that <see cref="Read(ICKBinaryReader, IServiceProvider)"/> will use to
-        /// instanciate a copy of the <paramref name="service"/>.
+        /// instantiate a copy of the <paramref name="service"/>.
         /// </summary>
         /// <param name="writer">The writer.</param>
         /// <param name="service">The service to marshall.</param>

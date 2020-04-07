@@ -9,7 +9,7 @@ namespace CK.Setup
 {
 
     /// <summary>
-    /// Discovers available structure objects and instanciates them. 
+    /// Discovers available structure objects and instantiates them. 
     /// Once Types are registered, the <see cref="GetResult"/> method initializes the full object graph.
     /// </summary>
     public partial class StObjCollector

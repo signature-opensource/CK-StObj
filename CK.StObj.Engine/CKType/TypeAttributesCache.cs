@@ -107,7 +107,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets attributes on a <see cref="MemberInfo"/> that are assignable to <paramref name="attributeType"/>.
         /// Instances of attributes that support <see cref="IAttributeContextBound"/> are always the same. 
-        /// Other attributes are instanciated (by calling <see cref="MemberInfo.GetCustomAttributes(Type,bool)"/>).
+        /// Other attributes are instantiated (by calling <see cref="MemberInfo.GetCustomAttributes(Type,bool)"/>).
         /// </summary>
         /// <param name="m">Method of <see cref="P:Type"/>.</param>
         /// <param name="attributeType">Type that must be supported by the attributes.</param>
@@ -128,7 +128,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets attributes on a <see cref="MemberInfo"/> that are assignable to <typeparamref name="T"/>.
         /// Instances of attributes that support <see cref="IAttributeContextBound"/> are always the same. 
-        /// Other attributes are instanciated (by calling <see cref="MemberInfo.GetCustomAttributes(Type,bool)"/>).
+        /// Other attributes are instantiated (by calling <see cref="MemberInfo.GetCustomAttributes(Type,bool)"/>).
         /// </summary>
         /// <typeparam name="T">Type that must be supported by the attributes.</typeparam>
         /// <param name="m">Method of <see cref="P:Type"/>.</param>

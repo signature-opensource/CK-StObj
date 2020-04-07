@@ -99,7 +99,7 @@ namespace CK.Core
                 }
                 catch( Exception ex )
                 {
-                    m.Error( "Unable to instanciate StObjMap.", ex );
+                    m.Error( "Unable to instantiate StObjMap.", ex );
                     return null;
                 }
                 finally

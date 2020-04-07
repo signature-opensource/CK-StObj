@@ -12,7 +12,7 @@ namespace CK.Setup
     /// The <see cref="IStObjFinalImplementation.Implementation" /> object is built based on already built dependencies from top 
     /// to bottom thanks to the "StObjConstruct" (<see cref="StObjContextRoot.ConstructMethodName"/>) methods. 
     /// Note that this instance is built at the beginning of the process and remains the same: it is not necessarily a "real" object since
-    /// its auto-implemented methods are not generated (only stupid default stub implementation are created to be able to instanciate it).
+    /// its auto-implemented methods are not generated (only stupid default stub implementation are created to be able to instantiate it).
     /// </para>
     /// </summary>
     public interface IStObjResult : IStObj
