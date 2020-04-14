@@ -66,10 +66,11 @@ namespace CK.Setup
             if( traceDepencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
             if( traceDepencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
 
-            SetAutoServiceKind( typeof( IPocoFactory<> ), AutoServiceKind.IsSingleton );
             SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
 
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton|AutoServiceKind.IsMultipleService, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions<>, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot<>, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService, isOptional: true );
