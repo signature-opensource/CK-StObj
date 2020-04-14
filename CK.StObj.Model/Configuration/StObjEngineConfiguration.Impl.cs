@@ -218,7 +218,7 @@ namespace CK.Setup
 
         static internal IEnumerable<string> FromXml( XElement e, XName names, XName name )
         {
-            return e.Elements( names ).Elements( name ).Select( c => c.Value );
+            return e.Elements( names ).Elements( name ).Select( c => (string)c.Attribute( StObjEngineConfiguration.xName ) ?? c.Value );
         }
 
     }
