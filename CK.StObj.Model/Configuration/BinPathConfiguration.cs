@@ -31,7 +31,7 @@ namespace CK.Setup
             {
                 Name = (string)e.Attribute( StObjEngineConfiguration.xName ) ?? e.Value;
                 string k = (string)e.Attribute( StObjEngineConfiguration.xKind );
-                if( k != null ) Kind = (AutoServiceKind)Enum.Parse( typeof( AutoServiceKind ), k );
+                if( k != null ) Kind = (AutoServiceKind)Enum.Parse( typeof( AutoServiceKind ), k.Replace( '|', ',' ) );
                 Optional = (bool?)e.Attribute( StObjEngineConfiguration.xOptional ) ?? false;
             }
 
