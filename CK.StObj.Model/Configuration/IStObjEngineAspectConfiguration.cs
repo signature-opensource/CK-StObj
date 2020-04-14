@@ -16,6 +16,7 @@ namespace CK.Setup
         /// <summary>
         /// Serializes its content in the provided <see cref="XElement"/> and returns it.
         /// The dedicated constructor will be able to read this element back.
+        /// Note that a Type attribute (that contains this aspect configuration Type name) is automatically injected.
         /// </summary>
         /// <param name="e">The element to populate.</param>
         /// <returns>The <paramref name="e"/> element.</returns>
