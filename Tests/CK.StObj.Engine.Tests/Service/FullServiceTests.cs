@@ -49,8 +49,8 @@ namespace CK.StObj.Engine.Tests.Service
         // Note that using the qualified name is valid:
         // [ReplaceAutoService( "CK.StObj.Engine.Tests.Service.StObj.FullServiceTests+B, CK.StObj.Engine.Tests" )]
         //
-        // Thanks to this you may replace implementation IF they exist in the context: the replaced target is
-        // actually optional.
+        // Thanks to this string based declaration, you can replace implementation ONLY IF they exist in the context:
+        // the replaced target is actually optional.
         //
         public class ScopedImplementation : IAutoServiceCanBeImplementedByRealObject
         {
@@ -73,7 +73,7 @@ namespace CK.StObj.Engine.Tests.Service
         /// any <see cref="ReplaceAutoServiceAttribute"/> but because B appears in the
         /// constructor's parameters.
         /// Since B is singleton, nothing prevents this implementation to be singleton (this doesn't
-        /// have to be spoecified).
+        /// have to be specified).
         /// </summary>
         public class SingletonImplementation : IAutoServiceCanBeImplementedByRealObject
         {
@@ -185,8 +185,8 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         /// <summary>
-        /// This startup service is registered by B. And consumed b y A.
-        /// It couls also be used by B since all RegisterStartupServices are called
+        /// This startup service is registered by B. And consumed by A.
+        /// It could also be used by B since all RegisterStartupServices are called
         /// before all ConfigureServices.
         /// </summary>
         public class SuperStartupService
