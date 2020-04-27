@@ -179,7 +179,13 @@ namespace CK.Setup
                     else if( isMultiple ) conflict = "IRealObject interface cannot be marked as a Multiple service";
                     else if( isAuto && !isClass ) conflict = "IRealObject interface cannot be an IAutoService";
                     // Always handle Front service.
-                    if( isFrontEndPoint | isFrontProcess | isMarshallable )
+                    if( isMarshallable )
+                    {
+                        if( conflict != null ) conflict += ", ";
+                        conflict += "RealObject cannot be marked as Marshallable";
+                    }
+                    // Always handle Front service.
+                    if( isFrontEndPoint | isFrontProcess )
                     {
                         if( conflict != null ) conflict += ", ";
                         conflict += "RealObject cannot be a front service";
