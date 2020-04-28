@@ -50,12 +50,12 @@ namespace CK.Core
         /// Gets or sets the name of the StObj property. When the attribute is set on an actual property, this 
         /// name, when set, takes precedence over the property name.
         /// </summary>
-        public string PropertyName { get; set; }
+        public string? PropertyName { get; set; }
         
         /// <summary>
         /// Gets or sets the type of the StObj property. When the attribute is set on an actual 
         /// property and this type is set, it takes precedence over the actual property type.
         /// </summary>
-        public Type PropertyType { get; set; }
+        public Type? PropertyType { get; set; }
     }
 }

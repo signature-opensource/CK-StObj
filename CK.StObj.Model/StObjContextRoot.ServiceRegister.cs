@@ -9,9 +9,9 @@ namespace CK.Core
     {
         /// <summary>
         /// Small helper that captures the minimal required context to configure a <see cref="IServiceCollection"/>.
-        /// See <see cref="StObjServiceCollectionExtensions.AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/>.
+        /// The main method is <see cref="StObjServiceCollectionExtensions.AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/>.
         /// <para>
-        /// Using this wrapper instead of the <see cref="Services"/> directly is more secure.
+        /// Using this wrapper exposed methods such as <see cref="Register{T, TImpl}(bool, bool)"/> instead of the <see cref="Services"/> directly is more secure.
         /// </para>
         /// </summary>
         public readonly struct ServiceRegister
@@ -51,7 +51,7 @@ namespace CK.Core
             /// (they must be independent of any "dynamic" services), however registered services become available to
             /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
             /// </param>
-            public ServiceRegister( IActivityMonitor monitor, IServiceCollection services, SimpleServiceContainer startupServices = null )
+            public ServiceRegister( IActivityMonitor monitor, IServiceCollection services, SimpleServiceContainer? startupServices = null )
             {
                 Monitor = monitor ?? throw new ArgumentNullException( nameof( monitor ) );
                 Services = services ?? throw new ArgumentNullException( nameof( services ) );
@@ -91,6 +91,7 @@ namespace CK.Core
 
             /// <summary>
             /// Registers the map, the Real objects, singleton services and scoped services.
+            /// Caution: this never throws, instead any exception is logged and false is returned.
             /// </summary>
             /// <param name="map">The map to register. Must not be null.</param>
             /// <returns>
@@ -131,10 +132,6 @@ namespace CK.Core
                                 Register( mult, s.FinalType, s.IsScoped, allowMultipleRegistration: true );
                             }
                         }
-                        //foreach( var kv in map.Services.SimpleMappings )
-                        //{
-                        //    Register( kv.Key, kv.Value.FinalType, kv.Value.IsScoped, allowMultipleRegistration: false );
-                        //}
                         foreach( var s in map.Services.ManualMappingList )
                         {
                             Register( s.ClassType, s.CreateInstance, s.IsScoped, allowMultipleRegistration: false );
@@ -147,10 +144,6 @@ namespace CK.Core
                                 Register( mult, s.CreateInstance, s.IsScoped, allowMultipleRegistration: true );
                             }
                         }
-                        //foreach( var kv in map.Services.ManualMappings )
-                        //{
-                        //    Register( kv.Key, kv.Value.CreateInstance, kv.Value.IsScoped, allowMultipleRegistration: false );
-                        //}
                     }
                     catch( Exception ex )
                     {
@@ -180,7 +173,7 @@ namespace CK.Core
             /// </summary>
             /// <typeparam name="T">Service type.</typeparam>
             /// <param name="implementation">Resolved singleton instance.</param>
-            public void RegisterSingleton<T>( T implementation ) => DoRegisterSingletonInstance( typeof( T ), implementation, false, false );
+            public void RegisterSingleton<T>( T implementation ) where T : notnull => DoRegisterSingletonInstance( typeof( T ), implementation, false, false );
 
 
             bool DoRegisterSingletonInstance( Type serviceType, object implementation, bool isRealObject, bool isMultiple )

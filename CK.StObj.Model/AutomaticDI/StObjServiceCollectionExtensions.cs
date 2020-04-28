@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
         /// </param>
         /// <returns>This services collection.</returns>
-        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer startupServices = null )
+        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer? startupServices = null )
         {
             if( stobjAssembly == null ) throw new ArgumentNullException( nameof( stobjAssembly ) );
             var map = StObjContextRoot.Load( stobjAssembly );
@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <remarks>
         /// On NetCore runtime, Assembly.LoadFrom is used to resolves the assembly from its full path.
         /// </remarks>
-        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer startupServices = null )
+        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer? startupServices = null )
         {
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
             return AddStObjMap( services, monitor, a, startupServices );
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
         /// </param>
         /// <returns>This services collection.</returns>
-        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, IStObjMap map, SimpleServiceContainer startupServices = null )
+        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, IStObjMap map, SimpleServiceContainer? startupServices = null )
         {
             var reg = new StObjContextRoot.ServiceRegister( monitor, services, startupServices );
             if( !reg.AddStObjMap( map ) ) throw new Exception( "AddStObjMap failed. The logs contains detailed information." );

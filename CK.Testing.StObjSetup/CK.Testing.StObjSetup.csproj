@@ -6,6 +6,7 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <Description>Extends CK.Testing.StObjMap TestHelper to rebuild/compile generated assemblies thanks to CK.Testing.CKSetup.</Description>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Testing.StObjMap\CK.Testing.StObjMap.csproj" />

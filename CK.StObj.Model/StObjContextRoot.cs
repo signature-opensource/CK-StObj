@@ -45,7 +45,7 @@ namespace CK.Core
         /// </summary>
         public static readonly string ConfigureServicesMethodName = "ConfigureServices";
 
-        static IStObjRuntimeBuilder _stObjBuilder;
+        static IStObjRuntimeBuilder? _stObjBuilder;
 
         /// <summary>
         /// Default <see cref="IStObjRuntimeBuilder"/> that will be used.
@@ -75,12 +75,14 @@ namespace CK.Core
 
         /// <summary>
         /// Loads a previously generated assembly.
+        /// This never throws: errors are logged (a new monitor is automatically created when <paramref name="monitor"/> is null),
+        /// and false is returned.
         /// </summary>
         /// <param name="a">Already generated assembly.</param>
         /// <param name="runtimeBuilder">Runtime builder to use. When null, <see cref="DefaultStObjRuntimeBuilder"/> is used.</param>
         /// <param name="monitor">Optional monitor for loading operation.</param>
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
-        public static IStObjMap Load( Assembly a, IStObjRuntimeBuilder runtimeBuilder = null, IActivityMonitor monitor = null )
+        public static IStObjMap? Load( Assembly a, IStObjRuntimeBuilder? runtimeBuilder = null, IActivityMonitor? monitor = null )
         {
             if( a == null ) throw new ArgumentNullException( nameof( a ) );
             IActivityMonitor m = monitor ?? new ActivityMonitor( "CK.Core.StObjContextRoot.Load" );

@@ -28,14 +28,14 @@ namespace CK.Setup
         /// </summary>
         public string GeneratedAssemblyName
         {
-            get => String.IsNullOrWhiteSpace(_generatedAssemblyName) ? DefaultGeneratedAssemblyName : _generatedAssemblyName;
+            get => _generatedAssemblyName ?? DefaultGeneratedAssemblyName;
             set
             {
                 if( value != null && FileUtil.IndexOfInvalidFileNameChars( value ) >= 0 )
                 {
                     throw new ArgumentException( $"Invalid file character in file name '{value}'." );
                 }
-                _generatedAssemblyName = value;
+                _generatedAssemblyName = String.IsNullOrWhiteSpace( value ) ? null : value;
             }
         }
 
@@ -45,7 +45,7 @@ namespace CK.Setup
         /// Defaults to null (no <see cref="System.Reflection.AssemblyInformationalVersionAttribute"/> should be generated).
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
-        public string InformationalVersion { get; set; }
+        public string? InformationalVersion { get; set; }
 
         /// <summary>
         /// Gets ors sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.

@@ -8,7 +8,7 @@ namespace CK.Setup
 {
     public sealed partial class StObjEngineConfiguration 
     {
-        string _generatedAssemblyName;
+        string? _generatedAssemblyName;
 
         /// <summary>
         /// Initializes a new empty configuration.
@@ -192,7 +192,7 @@ namespace CK.Setup
         /// <returns>The Xml element.</returns>
         public XElement ToXml()
         {
-            string CleanName( Type t )
+            static string CleanName( Type t )
             {
                 SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName, out string weaken );
                 return weaken;

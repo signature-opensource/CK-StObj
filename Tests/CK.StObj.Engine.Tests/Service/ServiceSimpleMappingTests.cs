@@ -255,7 +255,7 @@ namespace CK.StObj.Engine.Tests.Service
             r.Services.SimpleMappings[typeof( AbstractS3 )].FinalType.Should().BeAssignableTo( typeof( AbstractS3 ) );
 
             var services = new ServiceCollection();
-            new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map );
+            new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).Should().BeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
             IServiceProvider p = services.BuildServiceProvider();
             var oG = p.GetService( typeof( ISBase ) );
             oG.GetType().FullName.Should().StartWith( "CK._g.AbstractS1" );

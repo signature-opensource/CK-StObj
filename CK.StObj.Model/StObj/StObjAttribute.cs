@@ -19,7 +19,7 @@ namespace CK.Core
         /// Gets or sets the container of the object.
         /// This property is inherited from base classes that are not Real Objects.
         /// </summary>
-        public Type Container { get; set; }
+        public Type? Container { get; set; }
 
         /// <summary>
         /// Gets or sets how this object must be considered regarding other items: it can be a <see cref="DependentItemKindSpec.Item"/>, 
@@ -40,26 +40,26 @@ namespace CK.Core
         /// Gets or sets an array of direct dependencies.
         /// This property is not inherited, it applies only to the decorated type.
         /// </summary>
-        public Type[] Requires { get; set; }
+        public Type[]? Requires { get; set; }
 
         /// <summary>
         /// Gets or sets an array of types that depend on the object.
         /// This property is not inherited, it applies only to the decorated type.
         /// </summary>
-        public Type[] RequiredBy { get; set; }
+        public Type[]? RequiredBy { get; set; }
 
         /// <summary>
         /// Gets or sets an array of types that must be Children of this item.
         /// <see cref="ItemKind"/> must be <see cref="DependentItemKindSpec.Group"/> or <see cref="DependentItemKindSpec.Container"/>.
         /// This property is not inherited, it applies only to the decorated type.
         /// </summary>
-        public Type[] Children { get; set; }
+        public Type[]? Children { get; set; }
 
         /// <summary>
         /// Gets or sets an array of types that must be considered as groups for this item.
         /// This property is not inherited, it applies only to the decorated type.
         /// </summary>
-        public Type[] Groups { get; set; }
+        public Type[]? Groups { get; set; }
 
     }
 }

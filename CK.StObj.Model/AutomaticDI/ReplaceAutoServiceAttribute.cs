@@ -30,8 +30,7 @@ namespace CK.Core
         /// <param name="replaced">The type of the service that this service replaces. Must not be null.</param>
         public ReplaceAutoServiceAttribute( Type replaced )
         {
-            if( replaced == null ) throw new ArgumentNullException( nameof( replaced ) );
-            ReplacedType = replaced;
+            ReplacedType = replaced ?? throw new ArgumentNullException( nameof( replaced ) );
         }
 
         /// <summary>
@@ -48,11 +47,11 @@ namespace CK.Core
         /// <summary>
         /// Gets the type of the service that this service replaces.
         /// </summary>
-        public Type ReplacedType { get; private set; }
+        public Type? ReplacedType { get; private set; }
 
         /// <summary>
         /// Gets the assembly qualified name of the replaced service type.
         /// </summary>
-        public string ReplacedAssemblyQualifiedName { get; private set; }
+        public string? ReplacedAssemblyQualifiedName { get; private set; }
     }
 }
