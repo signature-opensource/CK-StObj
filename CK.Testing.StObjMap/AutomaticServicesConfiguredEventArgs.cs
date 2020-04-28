@@ -15,8 +15,7 @@ namespace CK.Testing.StObjMap
         /// <param name="serviceRegister">The service register.</param>
         public AutomaticServicesConfiguredEventArgs( IStObjMap map, StObjContextRoot.ServiceRegister serviceRegister )
         {
-            if( map == null ) throw new ArgumentNullException( nameof( map ) );
-            StObjMap = map;
+            StObjMap = map ?? throw new ArgumentNullException( nameof( map ) );
             ServiceRegister = serviceRegister;
         }
 

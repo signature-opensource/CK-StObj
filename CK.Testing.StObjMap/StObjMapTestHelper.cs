@@ -24,13 +24,14 @@ namespace CK.Testing
 
         DateTime _lastLoadedMapUtc;
         DateTime _lastAccessMapUtc;
-        IStObjMap _map;
-        event EventHandler _stObjMapLoading;
-        event EventHandler<StObjMapAccessedEventArgs> _stObjMapAccessed;
+        IStObjMap? _map;
+        event EventHandler? _stObjMapLoading;
+        event EventHandler<StObjMapAccessedEventArgs>? _stObjMapAccessed;
 
-        ServiceProvider _automaticServices;
-        IStObjMap _automaticServicesSource;
-        event EventHandler<AutomaticServicesConfiguredEventArgs> _automaticServicesConfigured;
+        ServiceProvider? _automaticServices;
+        IStObjMap? _automaticServicesSource;
+        event EventHandler<AutomaticServicesConfiguringEventArgs>? _automaticServicesConfiguring;
+        event EventHandler<AutomaticServicesConfiguredEventArgs>? _automaticServicesConfigured;
 
         /// <summary>
         /// Initializes a new <see cref="StObjMapTestHelper"/>.
@@ -48,9 +49,11 @@ namespace CK.Testing
             }
         }
 
-        IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService();
+        IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService( null );
 
-        IServiceProvider DoGetAutomaticService()
+        IServiceProvider IStObjMapTestHelperCore.CreateAutomaticServices( SimpleServiceContainer? startupServices ) => DoCreateAutomaticServices( startupServices, DoGetStObjMap() );
+
+        IServiceProvider DoGetAutomaticService( SimpleServiceContainer? startupServices )
         {
             var current = DoGetStObjMap();
             if( current != _automaticServicesSource )
@@ -60,30 +63,47 @@ namespace CK.Testing
                     _automaticServices.Dispose();
                     _automaticServices = null;
                 }
-                if( current != null )
-                {
-                    var services = new ServiceCollection();
-                    var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services );
-                    reg.AddStObjMap( current );
-                    var h = _automaticServicesConfigured;
-                    if( h != null )
-                    {
-                        using( _monitor.Monitor.OpenInfo( "Raising Automatic services configuration event." ) )
-                        {
-                            h( this, new AutomaticServicesConfiguredEventArgs( current, reg ) );
-                        }
-                    }
-                    _automaticServices = services.BuildServiceProvider();
-                }
+                _automaticServices = DoCreateAutomaticServices( startupServices, current );
                 _automaticServicesSource = current;
             }
-            return _automaticServices;
+            return _automaticServices!;
+        }
+
+        private ServiceProvider DoCreateAutomaticServices( SimpleServiceContainer? startupServices, IStObjMap current )
+        {
+            var configuringArgs = new AutomaticServicesConfiguringEventArgs( current, startupServices ?? new SimpleServiceContainer() );
+            var hIng = _automaticServicesConfiguring;
+            if( hIng != null )
+            {
+                using( _monitor.Monitor.OpenInfo( "Raising Automatic services configuring event." ) )
+                {
+                    hIng( this, configuringArgs );
+                }
+            }
+            var services = new ServiceCollection();
+            var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services, configuringArgs.StartupServices );
+            if( !reg.AddStObjMap( current ) ) throw new Exception( "AddStObjMap failed. The logs contains detailed information." );
+            var hEd = _automaticServicesConfigured;
+            if( hEd != null )
+            {
+                using( _monitor.Monitor.OpenInfo( "Raising Automatic services configured event." ) )
+                {
+                    hEd( this, new AutomaticServicesConfiguredEventArgs( current, reg ) );
+                }
+            }
+            return services.BuildServiceProvider();
         }
 
         event EventHandler<AutomaticServicesConfiguredEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfigured
         {
             add => _automaticServicesConfigured += value;
             remove => _automaticServicesConfigured -= value;
+        }
+
+        event EventHandler<AutomaticServicesConfiguringEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfiguring
+        {
+            add => _automaticServicesConfiguring += value;
+            remove => _automaticServicesConfiguring -= value;
         }
 
         event EventHandler IStObjMapTestHelperCore.StObjMapLoading
@@ -115,7 +135,8 @@ namespace CK.Testing
                     }
                 }
                 _map = DoLoadStObjMap( _generatedAssemblyName, true );
-                if( _map != null ) _lastAccessMapUtc = _lastLoadedMapUtc = DateTime.UtcNow;
+                if( _map == null ) throw new Exception( "Unable to load StObjMap. See logs for details." );
+                _lastAccessMapUtc = _lastLoadedMapUtc = DateTime.UtcNow;
             }
 
             if( _map == null )
@@ -144,22 +165,22 @@ namespace CK.Testing
                     else _lastAccessMapUtc = now;
                 }
             }
-            return _map;
+            return _map!;
         }
 
-        IStObjMap IStObjMapTestHelperCore.LoadStObjMap( string assemblyName, bool withWeakAssemblyResolver )
+        IStObjMap? IStObjMapTestHelperCore.LoadStObjMap( string assemblyName, bool withWeakAssemblyResolver )
         {
             return DoLoadStObjMap( assemblyName, withWeakAssemblyResolver );
         }
 
-        IStObjMap DoLoadStObjMap( string assemblyName, bool withWeakAssemblyResolver )
+        IStObjMap? DoLoadStObjMap( string assemblyName, bool withWeakAssemblyResolver )
         {
             return withWeakAssemblyResolver
                         ? _monitor.WithWeakAssemblyResolver( () => DoLoadStObjMap( assemblyName ) )
                         : DoLoadStObjMap( assemblyName );
         }
 
-        IStObjMap DoLoadStObjMap( string assemblyName )
+        IStObjMap? DoLoadStObjMap( string assemblyName )
         {
             using( _monitor.Monitor.OpenInfo( $"Loading StObj map from '{assemblyName}'." ) )
             {
@@ -182,7 +203,7 @@ namespace CK.Testing
 
         void IStObjMapTestHelperCore.ResetStObjMap( bool deleteGeneratedBinFolderAssembly ) => DoResetStObjMap( deleteGeneratedBinFolderAssembly );
 
-        private void DoResetStObjMap( bool deleteGeneratedBinFolderAssembly )
+        void DoResetStObjMap( bool deleteGeneratedBinFolderAssembly )
         {
             if( _map == null ) _monitor.Monitor.Info( $"StObjMap is not loaded yet." );
             _map = null;
