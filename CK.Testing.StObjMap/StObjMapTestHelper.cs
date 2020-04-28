@@ -30,8 +30,8 @@ namespace CK.Testing
 
         ServiceProvider? _automaticServices;
         IStObjMap? _automaticServicesSource;
-        event EventHandler<AutomaticServicesConfiguringEventArgs>? _automaticServicesConfiguring;
-        event EventHandler<AutomaticServicesConfiguredEventArgs>? _automaticServicesConfigured;
+        event EventHandler<AutomaticServicesConfigurationEventArgs>? _automaticServicesConfiguring;
+        event EventHandler<AutomaticServicesConfigurationEventArgs>? _automaticServicesConfigured;
 
         /// <summary>
         /// Initializes a new <see cref="StObjMapTestHelper"/>.
@@ -71,36 +71,37 @@ namespace CK.Testing
 
         private ServiceProvider DoCreateAutomaticServices( SimpleServiceContainer? startupServices, IStObjMap current )
         {
-            var configuringArgs = new AutomaticServicesConfiguringEventArgs( current, startupServices ?? new SimpleServiceContainer() );
+            var services = new ServiceCollection();
+            var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services, startupServices );
+
+            var configureArgs = new AutomaticServicesConfigurationEventArgs( current, reg );
             var hIng = _automaticServicesConfiguring;
             if( hIng != null )
             {
                 using( _monitor.Monitor.OpenInfo( "Raising Automatic services configuring event." ) )
                 {
-                    hIng( this, configuringArgs );
+                    hIng( this, configureArgs );
                 }
             }
-            var services = new ServiceCollection();
-            var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services, configuringArgs.StartupServices );
             if( !reg.AddStObjMap( current ) ) throw new Exception( "AddStObjMap failed. The logs contains detailed information." );
             var hEd = _automaticServicesConfigured;
             if( hEd != null )
             {
                 using( _monitor.Monitor.OpenInfo( "Raising Automatic services configured event." ) )
                 {
-                    hEd( this, new AutomaticServicesConfiguredEventArgs( current, reg ) );
+                    hEd( this, configureArgs );
                 }
             }
             return services.BuildServiceProvider();
         }
 
-        event EventHandler<AutomaticServicesConfiguredEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfigured
+        event EventHandler<AutomaticServicesConfigurationEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfigured
         {
             add => _automaticServicesConfigured += value;
             remove => _automaticServicesConfigured -= value;
         }
 
-        event EventHandler<AutomaticServicesConfiguringEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfiguring
+        event EventHandler<AutomaticServicesConfigurationEventArgs> IStObjMapTestHelperCore.AutomaticServicesConfiguring
         {
             add => _automaticServicesConfiguring += value;
             remove => _automaticServicesConfiguring -= value;

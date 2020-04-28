@@ -43,17 +43,17 @@ namespace CK.Testing.StObjMap
 
         /// <summary>
         /// Fires before the future <see cref="AutomaticServices"/> or a new one created by <see cref="CreateAutomaticServices(SimpleServiceContainer?)"/>
-        /// is configured by the <see cref="StObjMap"/>: this enables external code to configure/alter the startup services that will be 
-        /// the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.
+        /// is configured by the <see cref="StObjMap"/>: this enables external code to configure/alter the startup services and
+        /// the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> before the <see cref="StObjContextRoot.ServiceRegister.AddStObjMap(IStObjMap)"/> call.
         /// </summary>
-        event EventHandler<AutomaticServicesConfiguringEventArgs> AutomaticServicesConfiguring;
+        event EventHandler<AutomaticServicesConfigurationEventArgs> AutomaticServicesConfiguring;
 
         /// <summary>
         /// Fires after the future <see cref="AutomaticServices"/> or a new one created by <see cref="CreateAutomaticServices(SimpleServiceContainer?)"/>
         /// have been configured by the <see cref="StObjMap"/> but before making it available to others.
         /// External code can configure/alter the configured services.
         /// </summary>
-        event EventHandler<AutomaticServicesConfiguredEventArgs> AutomaticServicesConfigured;
+        event EventHandler<AutomaticServicesConfigurationEventArgs> AutomaticServicesConfigured;
 
         /// <summary>
         /// Gets the <see cref="IStObjMap"/> from the current <see cref="GeneratedAssemblyName"/>.
