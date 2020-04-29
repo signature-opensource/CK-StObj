@@ -282,8 +282,10 @@ namespace CK.Setup
                         {
                             if( interfaceAmbiguities == null )
                             {
-                                interfaceAmbiguities = new Dictionary<Type, List<Type>>();
-                                interfaceAmbiguities.Add( itf, new List<Type>() { itf, alreadyMapped.RealObjectType.Type, item.RealObjectType.Type } );
+                                interfaceAmbiguities = new Dictionary<Type, List<Type>>
+                                {
+                                    { itf, new List<Type>() { itf, alreadyMapped.RealObjectType.Type, item.RealObjectType.Type } }
+                                };
                             }
                             else
                             {
@@ -301,9 +303,7 @@ namespace CK.Setup
             return new RealObjectCollectorResult(
                 engineMap,
                 concreteClasses,
-                classAmbiguities != null
-                    ? classAmbiguities
-                    : (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
+                classAmbiguities ?? (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
                 interfaceAmbiguities != null
                     ? interfaceAmbiguities.Values.Select( list => list.ToArray() ).ToArray()
                     : Array.Empty<IReadOnlyList<Type>>(),

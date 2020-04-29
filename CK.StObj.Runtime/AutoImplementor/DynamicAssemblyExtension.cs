@@ -21,7 +21,7 @@ namespace CK.Setup
         /// <param name="this">This Dynamic assembly.</param>
         /// <param name="name">Base type name.</param>
         /// <returns>A unique type name.</returns>
-        public static string AutoNextTypeName(this IDynamicAssembly @this, string name = null)
+        public static string AutoNextTypeName( this IDynamicAssembly @this, string? name = null )
         {
             return @this.DefaultGenerationNamespace.FullName
                     + '.'
@@ -35,7 +35,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="this">This Dynamic assembly.</param>
         /// <returns>The Poco information.</returns>
-        public static IPocoSupportResult GetPocoInfo( this IDynamicAssembly @this ) => (IPocoSupportResult)@this.Memory[typeof( IPocoSupportResult )];
+        public static IPocoSupportResult? GetPocoInfo( this IDynamicAssembly @this ) => (IPocoSupportResult?)@this.Memory[typeof( IPocoSupportResult )];
 
     }
 }

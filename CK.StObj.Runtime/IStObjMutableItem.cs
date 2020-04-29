@@ -109,7 +109,7 @@ namespace CK.Setup
         /// <param name="value">Value to set.</param>
         /// <param name="sourceDescription">Optional description of the origin of the value to help troubleshooting.</param>
         /// <returns>True on success, false if any error occurs.</returns>
-        bool SetDirectPropertyValue( IActivityMonitor monitor, string propertyName, object value, string sourceDescription = null );
+        bool SetDirectPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription = null );
 
         /// <summary>
         /// Sets a property on the StObj. The property must not be an ambient property, but it is not required to be 
@@ -124,7 +124,7 @@ namespace CK.Setup
         /// <param name="value">Value to set.</param>
         /// <param name="sourceDescription">Optional description of the origin of the value to help troubleshooting.</param>
         /// <returns>True on success, false if any error occurs.</returns>
-        bool SetStObjPropertyValue( IActivityMonitor monitor, string propertyName, object value, string sourceDescription = null );
+        bool SetStObjPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription = null );
 
         /// <summary>
         /// Sets an ambient property on the Structured Object (the property must exist, be writable, and marked with <see cref="AmbientPropertyAttribute"/>). The
@@ -135,7 +135,7 @@ namespace CK.Setup
         /// <param name="value">Value to set.</param>
         /// <param name="sourceDescription">Optional description of the origin of the value to help troubleshooting.</param>
         /// <returns>True on success, false if any error occurs.</returns>
-        bool SetAmbientPropertyValue( IActivityMonitor monitor, string propertyName, object value, string sourceDescription = null );
+        bool SetAmbientPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription = null );
 
         /// <summary>
         /// Sets how an ambient property on the Structured Object must be resolved (the property must exist, 
@@ -147,7 +147,7 @@ namespace CK.Setup
         /// <param name="behavior">See <see cref="IStObjMutableReference.StObjRequirementBehavior"/>.</param>
         /// <param name="sourceDescription">Optional description of the origin of the call to help troubleshooting.</param>
         /// <returns>True on success, false if any error occurs.</returns>
-        bool SetAmbientPropertyConfiguration( IActivityMonitor monitor, string propertyName, Type type, StObjRequirementBehavior behavior, string sourceDescription = null );
+        bool SetAmbientPropertyConfiguration( IActivityMonitor monitor, string propertyName, Type type, StObjRequirementBehavior behavior, string? sourceDescription = null );
 
     }
 }

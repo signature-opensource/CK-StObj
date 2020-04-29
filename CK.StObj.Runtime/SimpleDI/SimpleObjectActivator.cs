@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    using Required = IReadOnlyList<KeyValuePair<object, Type>>;
+    using Required = IReadOnlyList<KeyValuePair<object?, Type>>;
 
     /// <summary>
     /// Ad-hoc DI helper that focuses on required parameters injection.
@@ -15,21 +15,21 @@ namespace CK.Setup
     /// </summary>
     public class SimpleObjectActivator : ISimpleObjectActivator
     {
-        object ISimpleObjectActivator.Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object> requiredParameters )
+        object? ISimpleObjectActivator.Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object>? requiredParameters )
         {
             return Create( monitor, t, services, requiredParameters );
         }
 
         /// <summary>
         /// Creates an instance of the specified type, using any available services.
-        /// The strategy it to use the longest public constructor.
+        /// The strategy is to use the longest public constructor.
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="t">Type of the object to create.</param>
         /// <param name="services">Available services to inject.</param>
         /// <param name="requiredParameters">Optional required parameters.</param>
         /// <returns>The object instance or null on error.</returns>
-        public static object Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object> requiredParameters = null )
+        public static object? Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object>? requiredParameters = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( t == null ) throw new ArgumentNullException( nameof( t ) );
@@ -37,8 +37,8 @@ namespace CK.Setup
                 try
                 {
                     Required required = requiredParameters == null
-                            ? Array.Empty<KeyValuePair<object, Type>>()
-                            : (Required)requiredParameters.Select( r => new KeyValuePair<object, Type>( r, r.GetType() ) ).ToList();
+                            ? Array.Empty<KeyValuePair<object?, Type>>()
+                            : (Required)requiredParameters.Select( r => new KeyValuePair<object?, Type>( r, r.GetType() ) ).ToList();
 
                     var longestCtor = t.GetConstructors()
                                         .Select( x => ValueTuple.Create( x, x.GetParameters() ) )
@@ -81,7 +81,7 @@ namespace CK.Setup
                     }
                     if( failCount > 0 )
                     {
-                        monitor.Error( $"Unable to resolve parameters for '{t.FullName}'. Considered longest constructor: {longestCtor.Ctor.ToString()}." );
+                        monitor.Error( $"Unable to resolve parameters for '{t.FullName}'. Considered longest constructor: {longestCtor.Ctor}." );
                         return null;
                     }
                     return longestCtor.Ctor.Invoke( longestCtor.Mapped );

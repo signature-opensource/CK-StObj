@@ -32,8 +32,7 @@ namespace CK.Setup
                 else
                 {
                     Root = this;
-                    RootCollector = new List<Type>();
-                    RootCollector.Add( type );
+                    RootCollector = new List<Type>(){ type };
                 }
             }
         }
@@ -129,10 +128,12 @@ namespace CK.Setup
 
         class Result : IPocoSupportResult
         {
+            readonly IReadOnlyCollection<InterfaceInfo> _exportedInterfaces;
             public readonly List<ClassInfo> Roots;
             public readonly Dictionary<Type, InterfaceInfo> Interfaces;
+
             public Type FinalFactory { get; internal set; }
-            IReadOnlyCollection<InterfaceInfo> _exportedInterfaces;
+
 
             public Result()
             {
@@ -192,12 +193,12 @@ namespace CK.Setup
             var tB = moduleB.DefineType( _namespace + ".Factory" );
             Result r = CreateResult( moduleB, monitor, tB );
             if( r == null ) return null;
-            ImplementFactories( monitor, tB, r );
+            ImplementFactories( r );
             r.FinalFactory = tB.CreateTypeInfo().AsType();
             return r;
         }
 
-        void ImplementFactories( IActivityMonitor monitor, TypeBuilder tB, Result r )
+        void ImplementFactories( Result r )
         {
             foreach( var cInfo in r.Roots )
             {
@@ -289,8 +290,7 @@ namespace CK.Setup
                 tB.AddInterfaceImplementation( i );
                 foreach( var p in i.GetProperties() )
                 {
-                    PropertyInfo implP;
-                    if( properties.TryGetValue( p.Name, out implP ) )
+                    if( properties.TryGetValue( p.Name, out PropertyInfo implP ) )
                     {
                         if( implP.PropertyType != p.PropertyType )
                         {

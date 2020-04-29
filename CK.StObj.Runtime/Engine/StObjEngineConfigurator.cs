@@ -8,7 +8,7 @@ namespace CK.Setup
     /// </summary>
     public sealed class StObjEngineConfigurator
     {
-        StObjConfigurationLayer _first;
+        StObjConfigurationLayer? _first;
 
         /// <summary>
         /// Adds a configurator as the first configurator.
@@ -31,9 +31,9 @@ namespace CK.Setup
         {
             if( configurator == null ) throw new ArgumentNullException( nameof( configurator ) );
             if( configurator.Host != this ) throw new ArgumentException( $"{nameof(StObjConfigurationLayer)} is not hosted by this {nameof(StObjEngineConfigurator)}.", nameof( configurator ) );
-            StObjConfigurationLayer prev = null;
-            StObjConfigurationLayer x = _first;
-            while( x != configurator ) x = x.Next;
+            StObjConfigurationLayer? prev = null;
+            StObjConfigurationLayer? x = _first;
+            while( x != configurator ) x = x!.Next;
             if( prev != null ) prev.Next = configurator.Next;
             else _first = configurator.Next;
             configurator.Host = null;
@@ -43,7 +43,7 @@ namespace CK.Setup
         /// Gets the first <see cref="StObjConfigurationLayer"/>.
         /// Null if no layer has been added.
         /// </summary>
-        public StObjConfigurationLayer FirstLayer => _first;
+        public StObjConfigurationLayer? FirstLayer => _first;
     }
 
 }
