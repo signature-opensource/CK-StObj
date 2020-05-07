@@ -247,10 +247,10 @@ namespace CK.Setup
             return r;
         }
 
-        Type CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        Type? CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             var tB = moduleB.DefineType( $"{_namespace}.Poco{_uniqueNumber++}" );
-            Dictionary<string, PropertyInfo> properties = new Dictionary<string, PropertyInfo>();
+            var properties = new Dictionary<string, PropertyInfo>();
 
             // This is required to handle "non actual Poco" (CKTypeDefiner "base type"): interfaces
             // contains only actual IPoco, this set contains the closure of all the interfaces.
@@ -258,7 +258,7 @@ namespace CK.Setup
             // by identifying the "biggest" interface in terms of base interfaces, we can check that it
             // actually close the whole IPoco.
             var expanded = new HashSet<Type>( interfaces );
-            Type maxOne = null;
+            Type? maxOne = null;
             int maxICount = 0;
             bool mustBeClosed = false;
             foreach( var i in interfaces )
@@ -290,8 +290,12 @@ namespace CK.Setup
                 tB.AddInterfaceImplementation( i );
                 foreach( var p in i.GetProperties() )
                 {
-                    if( properties.TryGetValue( p.Name, out PropertyInfo implP ) )
+                    // Nullable and language definition here: the out parameter type is necessarily optional because of:
+                    //  - the MaybeNullWhen attribute of: bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
+                    //  - the inline parameter declaration is in the scope above the if statement.
+                    if( properties.TryGetValue( p.Name, out PropertyInfo? implP ) )
                     {
+                        // However, since TrGetValue returned true, the magic happens: implP is not null.  
                         if( implP.PropertyType != p.PropertyType )
                         {
                             monitor.Error( $"Interface '{i}' and '{implP.DeclaringType}' both declare property '{p.Name}' but their type differ ({p.PropertyType.Name} vs. {implP.PropertyType.Name})." );

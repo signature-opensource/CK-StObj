@@ -86,7 +86,7 @@ new CKSetupComponent( "CK.StObj.Engine", "netcoreapp3.1" )
             if( components == null ) components = GetCKSetupComponents();
             if( !Cake.CKSetupPublishAndAddComponentFoldersToStore(
                         storeConf,
-                        components.Select( c => c.GetBinPath( globalInfo.IsRelease ? "Release" : "Debug" ) ) ) )
+                        components.Select( c => c.GetBinPath( globalInfo.BuildInfo.BuildConfiguration ) ) ) )
             {
                 Cake.TerminateWithError( "Error while registering components in local temporary store." );
             }
