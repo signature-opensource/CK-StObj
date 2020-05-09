@@ -17,7 +17,7 @@ namespace CodeCake
         {
             return new CKSetupComponent[]{
 
-new CKSetupComponent( "CK.StObj.Model", "netstandard2.0" ),
+new CKSetupComponent( "CK.StObj.Model", "netstandard2.1" ),
 new CKSetupComponent( "CK.StObj.Runtime", "netcoreapp3.1" ),
 new CKSetupComponent( "CK.StObj.Engine", "netcoreapp3.1" )
 };

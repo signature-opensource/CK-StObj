@@ -20,7 +20,7 @@ namespace CK.Setup
         /// <param name="t">Type to instantiate.</param>
         /// <param name="requiredParameters">Optional required parameters.</param>
         /// <returns>A new instance on success, null on error.</returns>
-        public static object SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t, IEnumerable<object> requiredParameters )
+        public static object? SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t, IEnumerable<object> requiredParameters )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             ISimpleObjectActivator activator = @this.GetService<ISimpleObjectActivator>( false );
@@ -43,7 +43,7 @@ namespace CK.Setup
         /// <param name="t">Type to instantiate.</param>
         /// <param name="requiredParameter">Required parameter. Must not be null.</param>
         /// <returns>A new instance on success, null on error.</returns>
-        public static object SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t, object requiredParameter )
+        public static object? SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t, object requiredParameter )
         {
             if( requiredParameter == null ) throw new ArgumentNullException( nameof( requiredParameter ) );
             return SimpleObjectCreate( @this, monitor, t, new[] { requiredParameter } );
@@ -59,7 +59,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">Type to instantiate.</param>
         /// <returns>A new instance on success, null on error.</returns>
-        public static object SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t )
+        public static object? SimpleObjectCreate( this IServiceProvider @this, IActivityMonitor monitor, Type t )
         {
             return SimpleObjectCreate( @this, monitor, t, Array.Empty<object>() );
         }

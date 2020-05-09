@@ -5,9 +5,8 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;</TargetFrameworks>
-    <Description>
-      CK-Database helps to setup, construct, manages and build modular relationnal databases upon SqlServer.
-      CK.StObj.Runtime contains runtime objects that enables StObj implementation to be generated.
+    <Description>Façade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
+This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>
   </PropertyGroup>

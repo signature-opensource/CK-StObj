@@ -5,12 +5,9 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
-    <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
-    <Description>
-      CK-Database helps to setup, construct, manages and build modular relationnal databases upon SqlServer.
-      CK.StObj.Model is the central core component required by any CK-Database project.
-      It contains attributes and basic objects that enables StObj implementation to be defined and run.
+    <Description>Minimalist model with attributes, interfaces and basic objects that define StObj (Real Objects), Automatic DI configuration and enables Source Code Generation across multiple projects.
+Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStObjMap, StObjContextRoot.
     </Description>
   </PropertyGroup>
   <ItemGroup>

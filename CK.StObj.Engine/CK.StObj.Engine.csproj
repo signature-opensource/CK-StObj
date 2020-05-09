@@ -4,12 +4,10 @@
   <Import Project="..\Common\Shared.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;</TargetFrameworks>
-    <Description>
-      CK-Database helps to setup, construct, manages and build modular relationnal databases upon SqlServer.
-      CK.StObj.Engine supports actual generation of StObj implementation.
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
+This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
