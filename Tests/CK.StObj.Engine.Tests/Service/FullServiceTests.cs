@@ -49,8 +49,8 @@ namespace CK.StObj.Engine.Tests.Service
         // Note that using the qualified name is valid:
         // [ReplaceAutoService( "CK.StObj.Engine.Tests.Service.StObj.FullServiceTests+B, CK.StObj.Engine.Tests" )]
         //
-        // Thanks to this you may replace implementation IF they exist in the context: the replaced target is
-        // actually optional.
+        // Thanks to this string based declaration, you can replace implementation ONLY IF they exist in the context:
+        // the replaced target is actually optional.
         //
         public class ScopedImplementation : IAutoServiceCanBeImplementedByRealObject
         {
@@ -73,7 +73,7 @@ namespace CK.StObj.Engine.Tests.Service
         /// any <see cref="ReplaceAutoServiceAttribute"/> but because B appears in the
         /// constructor's parameters.
         /// Since B is singleton, nothing prevents this implementation to be singleton (this doesn't
-        /// have to be spoecified).
+        /// have to be specified).
         /// </summary>
         public class SingletonImplementation : IAutoServiceCanBeImplementedByRealObject
         {
@@ -185,8 +185,8 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         /// <summary>
-        /// This startup service is registered by B. And consumed b y A.
-        /// It couls also be used by B since all RegisterStartupServices are called
+        /// This startup service is registered by B. And consumed by A.
+        /// It could also be used by B since all RegisterStartupServices are called
         /// before all ConfigureServices.
         /// </summary>
         public class SuperStartupService
@@ -278,7 +278,7 @@ namespace CK.StObj.Engine.Tests.Service
             void ConfigureServices( StObjContextRoot.ServiceRegister register, TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem conf )
             {
                 var impl = conf.AlwaysUseAlice ? typeof( PrivateAlwaysAliceProvider ) : typeof( PrivateAliceOrBobProvider );
-                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true );
+                register.Register( typeof( IAliceOrBobProvider ), impl, isScoped: true, allowMultipleRegistration: false );
             }
 
             [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]
@@ -287,7 +287,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void code_generation_is_so_easy_on_ambient_objects()
+        public void code_generation_is_so_easy_on_real_objects()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( A ) );
@@ -309,8 +309,34 @@ namespace CK.StObj.Engine.Tests.Service
             logs.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
         }
 
+        public abstract class ServiceCanTalk : IAutoService
+        {
+            public ServiceCanTalk()
+            {
+            }
+
+            [StupidCode( @"m.Info( ""This is from generated code: "" + msg ); return 3172;" )]
+            public abstract int CodeCanBeInTheAttribute( IActivityMonitor m, string msg );
+        }
+
         [Test]
-        public void startup_services_registration_on_Ambient_objects()
+        public void code_generation_is_also_easy_on_services()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ServiceCanTalk ) );
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            {
+                var sp = TestHelper.GetAutomaticServices( collector ).Services;
+                sp.GetRequiredService<ServiceCanTalk>()
+                    .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
+                    .Should().Be( 3172 );
+            }
+            logs.Should().Contain( e => e.Text == "This is from generated code: Magic! (Again)" );
+        }
+
+        [Test]
+        public void startup_services_registration_on_real_objects()
         {
             // Succesful run: TotallyExternalStartupService is available.
             {
@@ -348,7 +374,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void Service_implemented_by_an_Ambient_object_can_be_overridden()
+        public void Service_implemented_by_a_real_object_can_be_overridden()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ScopedImplementation ) );
@@ -473,6 +499,51 @@ namespace CK.StObj.Engine.Tests.Service
             logs.Should().Contain( e => e.MaskedLevel >= LogLevel.Error );
             logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
             logs.Should().Contain( e => e.Text == "But SuperStartupService has been told to fail miserably." );
+        }
+
+
+        public class ServiceWithValueTypeCtorParameters : IAutoService
+        {
+            public ServiceWithValueTypeCtorParameters( bool requiredValueType )
+            {
+            }
+        }
+
+        public class ServiceWithOptionalValueTypeCtorParameters : IAutoService
+        {
+            public ServiceWithOptionalValueTypeCtorParameters( bool optionalValueType = true, string stringAreConsideredSameAsValueType = "Hop" )
+            {
+            }
+        }
+
+        [Test]
+        public void ValueType_ctor_parameters_without_default_value_prevent_the_type_to_be_automatically_instantiated()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
+
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            {
+                var services = TestHelper.GetAutomaticServices( collector, null ).Services;
+                services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+            }
+            logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                        && e.Text.Contains( "requires a manual instantiation function" ) );
+        }
+
+        [Test]
+        public void ValueType_ctor_parameters_with_default_value_are_ignored()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            {
+                var services = TestHelper.GetAutomaticServices( collector, null ).Services;
+                services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
+            }
         }
 
 

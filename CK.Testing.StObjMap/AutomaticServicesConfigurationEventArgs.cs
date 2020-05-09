@@ -4,24 +4,23 @@ using System;
 namespace CK.Testing.StObjMap
 {
     /// <summary>
-    /// Event of <see cref="IStObjMapTestHelperCore.AutomaticServicesConfigured"/>.
+    /// Event of <see cref="IStObjMapTestHelperCore.AutomaticServicesConfiguring"/> and <see cref="IStObjMapTestHelperCore.AutomaticServicesConfigured"/>.
     /// </summary>
-    public class AutomaticServicesConfiguredEventArgs : EventArgs
+    public class AutomaticServicesConfigurationEventArgs : EventArgs
     {
         /// <summary>
-        /// Initializes a new <see cref="AutomaticServicesConfiguredEventArgs"/>.
+        /// Initializes a new <see cref="AutomaticServicesConfigurationEventArgs"/>.
         /// </summary>
         /// <param name="map">The current StObjMap. Must not be null.</param>
         /// <param name="serviceRegister">The service register.</param>
-        public AutomaticServicesConfiguredEventArgs( IStObjMap map, StObjContextRoot.ServiceRegister serviceRegister )
+        public AutomaticServicesConfigurationEventArgs( IStObjMap map, StObjContextRoot.ServiceRegister serviceRegister )
         {
-            if( map == null ) throw new ArgumentNullException( nameof( map ) );
-            StObjMap = map;
+            StObjMap = map ?? throw new ArgumentNullException( nameof( map ) );
             ServiceRegister = serviceRegister;
         }
 
         /// <summary>
-        /// Gets the curren StObjMap. Never null.
+        /// Gets the current StObjMap. Never null.
         /// </summary>
         public IStObjMap StObjMap { get; }
 

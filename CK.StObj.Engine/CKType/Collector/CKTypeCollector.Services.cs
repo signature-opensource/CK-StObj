@@ -12,13 +12,12 @@ namespace CK.Setup
         readonly Dictionary<Type, AutoServiceClassInfo> _serviceCollector;
         readonly List<AutoServiceClassInfo> _serviceRoots;
         readonly Dictionary<Type, AutoServiceInterfaceInfo> _serviceInterfaces;
-        readonly CKTypeKindDetector _kindDetector;
         int _serviceInterfaceCount;
         int _serviceRootInterfaceCount;
 
-        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo parent, CKTypeKind lt, RealObjectClassInfo objectInfo )
+        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo parent, RealObjectClassInfo objectInfo )
         {
-            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, this, !_typeFilter( _monitor, t ), lt, objectInfo );
+            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, !_typeFilter( _monitor, t ), objectInfo );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -28,12 +27,8 @@ namespace CK.Setup
             return serviceInfo;
         }
 
-        /// <summary>
-        /// Exposes the <see cref="CKTypeKindDetector"/>.
-        /// </summary>
-        public CKTypeKindDetector AmbientKindDetector => _kindDetector;
 
-        bool IsAutoService( Type t ) => (_kindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( Type t ) => (AmbientKindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo FindServiceClassInfo( Type t )
         {
@@ -54,11 +49,12 @@ namespace CK.Setup
         /// </summary>
         AutoServiceInterfaceInfo RegisterServiceInterface( Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface
-                            && lt == _kindDetector.GetKind( _monitor, t )
-                            && (lt == CKTypeKind.IsAutoService
-                                || lt == CKTypeKind.AutoSingleton
-                                || lt == CKTypeKind.AutoScoped) );
+            Debug.Assert( t.IsInterface && lt == AmbientKindDetector.GetKind( _monitor, t ) );
+            // Front service constraint is managed dynamically.
+            lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
+            Debug.Assert( lt == CKTypeKind.IsAutoService
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
             {
                 if( _typeFilter( _monitor, t ) )
@@ -73,15 +69,19 @@ namespace CK.Setup
             return info;
         }
 
-        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces )
+        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, Action<Type> multipleImplementation = null )
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind lt = _kindDetector.GetKind( _monitor, iT );
-                var conflictMsg = lt.GetCKTypeKindCombinationError();
+                CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, iT );
+                var conflictMsg = lt.GetCombinationError( false );
                 if( conflictMsg != null )
                 {
                     _monitor.Error( $"Interface '{iT.FullName}': {conflictMsg}" );
+                }
+                else if( (lt & CKTypeKind.IsMultipleService) != 0 )
+                {
+                    multipleImplementation?.Invoke( iT );
                 }
                 else if( (lt&CKTypeKind.IsAutoService) != 0 )
                 {
@@ -155,7 +155,7 @@ namespace CK.Setup
                     deepestConcretes.Clear();
                     if( !c.InitializePath( _monitor, this, null, _tempAssembly, deepestConcretes, ref abstractTails ) )
                     {
-                        _monitor.Warn( $"Service '{c.Type}' is abstract. It is ignored." );
+                        _monitor.Warn( $"Service '{c.ClassType}' is abstract. It is ignored." );
                         _serviceRoots.RemoveAt( i-- );
                         continue;
                     }
@@ -195,13 +195,13 @@ namespace CK.Setup
                         var resolver = new ClassAmbiguityResolver( _monitor, this, engineMap );
                         foreach( var a in ambiguities )
                         {
-                            using( _monitor.OpenTrace( $"Trying to resolve class ambiguities for {a.Root.Type}." ) )
+                            using( _monitor.OpenTrace( $"Trying to resolve class ambiguities for {a.Root.ClassType}." ) )
                             {
                                 var (success, initError) = resolver.TryClassUnification( a.Root, a.Leaves );
                                 error |= initError;
                                 if( success )
                                 {
-                                    _monitor.CloseGroup( "Succeeds, resolved to: " + a.Root.MostSpecialized.Type );
+                                    _monitor.CloseGroup( "Succeeds, resolved to: " + a.Root.MostSpecialized.ClassType );
                                 }
                                 else
                                 {
@@ -337,12 +337,12 @@ namespace CK.Setup
                     {
                         if( a.MostSpecialized != null )
                         {
-                            _monitor.Error( $"Class Unification ambiguity: '{a.Type}' is already resolved by '{a.MostSpecialized.Type}'. It can not be resolved also by '{leaf.Type}'." );
+                            _monitor.Error( $"Class Unification ambiguity: '{a.ClassType}' is already resolved by '{a.MostSpecialized.ClassType}'. It can not be resolved also by '{leaf.ClassType}'." );
                             thisPathIsResolved = false;
                         }
                         else
                         {
-                            _monitor.Trace( $"Class Unification: '{a.Type}' resolved to '{leaf.Type}'." );
+                            _monitor.Trace( $"Class Unification: '{a.ClassType}' resolved to '{leaf.ClassType}'." );
                             initializationError |= !a.SetMostSpecialized( _monitor, _engineMap, leaf );
                         }
                     }
@@ -358,7 +358,7 @@ namespace CK.Setup
                 }
                 if( !success )
                 {
-                    _monitor.Error( $"Service Class Unification: unable to resolve '{a.Type}' to a unique specialization." );
+                    _monitor.Error( $"Service Class Unification: unable to resolve '{a.ClassType}' to a unique specialization." );
                 }
                 return (success, initializationError);
             }

@@ -12,8 +12,9 @@ namespace CK.Core
         /// Gets the set of parameters assignments of the single <see cref="IStObjServiceClassDescriptor.ClassType">ClassType</see>'s
         /// public constructor that must be explicitly provided in order to successfully
         /// call the constructor.
-        /// Only parameters that require a <see cref="IStObjServiceParameterInfo"/> appear
-        /// in this list.
+        /// <para>
+        /// Only parameters that require a <see cref="IStObjServiceParameterInfo"/> appear in this list.
+        /// </para>
         /// </summary>
         IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
     }

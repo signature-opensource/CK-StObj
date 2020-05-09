@@ -2,7 +2,7 @@ using System;
 using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
-using static CK.Testing.MonitorTestHelper;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests
             {
                 public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
                 {
-                    if( o.ObjectType == typeof( BaseObjectAmbient ) )
+                    if( o.ClassType == typeof( BaseObjectAmbient ) )
                     {
                         o.SetAmbientPropertyValue( monitor, "OneStringValue", "Pouf", "ConfiguratorOneStringValueSetToPouf" );
                     }
@@ -82,25 +82,25 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObjectWithSet" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType.Name == "InheritedBaseObjectWithSet" ) o.Container.Type = typeof( AnotherContainer );
                                                     } ) );
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( InheritedBaseObjectWithSet ) );
                     StObjCollectorResult result = collector.GetResult();
-                    Assert.That( result.StObjs.ToStObj( typeof(InheritedBaseObjectWithSet) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container has changed." );
+                    Assert.That( result.StObjs.ToStObj( typeof(InheritedBaseObjectWithSet) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container has changed." );
                     Assert.That( result.StObjs.Obtain<InheritedBaseObjectWithSet>().OneStringValue, Is.EqualTo( "OnInheritedWithSet" ), "Property does not change since it is set on the class itself." );
                 }
                 {
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObjectWithoutSet" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType.Name == "InheritedBaseObjectWithoutSet" ) o.Container.Type = typeof( AnotherContainer );
                                                     } ) );
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( InheritedBaseObjectWithoutSet ) );
                     StObjCollectorResult result = collector.GetResult();
                     Assert.That( result.StObjs.ToStObj( typeof(InheritedBaseObjectWithSet) ).Container, Is.Null, "Container of InheritedSimpleObjectWithSet has NOT changed (no container)." );
-                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet has changed." );
+                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet has changed." );
 
                     Assert.That( result.StObjs.Obtain<InheritedBaseObjectWithoutSet>().OneStringValue, Is.EqualTo( "OnAnotherContainer" ), "Here, the container's value takes precedence since Property is NOT set on the class itself but on its Generalization." );
                 }
@@ -108,13 +108,13 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObjectWithSet" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType.Name == "InheritedBaseObjectWithSet" ) o.Container.Type = typeof( AnotherContainer );
                                                     } ) );
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( InheritedBaseObjectWithoutSet ) );
                     StObjCollectorResult result = collector.GetResult();
-                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithSet ) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithSet has changed." );
-                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet is inherited." );
+                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithSet ) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithSet has changed." );
+                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet is inherited." );
                     Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).ConfiguredContainer, Is.Null, "Container is inherited, not directly configured for the object." );
 
                     Assert.That( result.StObjs.Obtain<InheritedBaseObjectWithoutSet>().OneStringValue, Is.EqualTo( "OnInheritedWithSet" ), "The inherited value is used since container is (also) inherited." );
@@ -170,7 +170,7 @@ namespace CK.StObj.Engine.Tests
             {
                 public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
                 {
-                    if( o.ObjectType == typeof( BaseObjectAmbient ) )
+                    if( o.ClassType == typeof( BaseObjectAmbient ) )
                     {
                         o.SetAmbientPropertyValue( monitor, "OneStringValue", "Pouf", "ConfiguratorOneStringValueSetToPouf" );
                     }
@@ -203,13 +203,13 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObjectWithoutSet" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType.Name == "InheritedBaseObjectWithoutSet" ) o.Container.Type = typeof( AnotherContainer );
                                                     } ) );
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( InheritedBaseObjectWithoutSet ) );
                     StObjCollectorResult result = collector.GetResult();
                     Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithSet ) ).Container, Is.Null, "Container of InheritedSimpleObjectWithSet has NOT changed (no container)." );
-                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet has changed." );
+                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObjectWithoutSet ) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedSimpleObjectWithoutSet has changed." );
 
                     Assert.That( result.StObjs.Obtain<InheritedBaseObjectWithoutSet>().OneStringValue, Is.EqualTo( "OnInheritedWithSet" ), "Generalization's value takes precedence, Container's value is ignored." );
                 }
@@ -217,12 +217,12 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObject" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType.Name == "InheritedBaseObject" ) o.Container.Type = typeof( AnotherContainer );
                                                     } ) );
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( InheritedBaseObject ) );
                     StObjCollectorResult result = collector.GetResult();
-                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObject ) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedBaseObject has changed." );
+                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObject ) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedBaseObject has changed." );
                     Assert.That( result.StObjs.ToStObj( typeof( BaseObjectAmbient ) ).Container, Is.Null, "BaseObjectAmbient has no container..." );
                     Assert.That( result.StObjs.Obtain<BaseObjectAmbient>().OneStringValue, Is.EqualTo( "OnAnotherContainer" ), "The value comes from the container of the specialized object since the value is not set anywhere else." );
                 }
@@ -231,8 +231,8 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObject" ) o.Container.Type = typeof( AnotherContainer );
-                                                        if( o.ObjectType == typeof( BaseObjectAmbient ) )
+                                                        if( o.ClassType.Name == "InheritedBaseObject" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType == typeof( BaseObjectAmbient ) )
                                                         {
                                                             o.SetAmbientPropertyValue( TestHelper.Monitor, "OneStringValue", "OnBaseObject", "Configurator" );
                                                         }
@@ -241,7 +241,7 @@ namespace CK.StObj.Engine.Tests
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( InheritedBaseObject ) );
                     StObjCollectorResult result = collector.GetResult();
-                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObject ) ).Container.ObjectType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedBaseObject has changed." );
+                    Assert.That( result.StObjs.ToStObj( typeof( InheritedBaseObject ) ).Container.ClassType.Name, Is.EqualTo( "AnotherContainer" ), "Container of InheritedBaseObject has changed." );
                     Assert.That( result.StObjs.ToStObj( typeof( BaseObjectAmbient ) ).Container, Is.Null, "BaseObjectAmbient has no container..." );
                     Assert.That( result.StObjs.Obtain<InheritedBaseObject>().OneStringValue, Is.EqualTo( "OnBaseObject" ), "The value comes from the Generalization." );
                 }
@@ -250,8 +250,8 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator:
                                                     new StructuralConfiguratorHelper( o =>
                                                     {
-                                                        if( o.ObjectType.Name == "InheritedBaseObject" ) o.Container.Type = typeof( AnotherContainer );
-                                                        if( o.ObjectType.Name == "BaseObjectAmbient" ) o.Container.Type = typeof( ContainerForBaseObject );
+                                                        if( o.ClassType.Name == "InheritedBaseObject" ) o.Container.Type = typeof( AnotherContainer );
+                                                        if( o.ClassType.Name == "BaseObjectAmbient" ) o.Container.Type = typeof( ContainerForBaseObject );
                                                     } ) );
                     collector.RegisterType( typeof( AnotherContainer ) );
                     collector.RegisterType( typeof( ContainerForContainerForBaseObject ) );

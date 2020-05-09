@@ -2,6 +2,8 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -24,7 +26,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="pocoInterface">The IPoco interface.</param>
         /// <returns>Information about the interface. Null if not found.</returns>
-        IPocoInterfaceInfo Find( Type pocoInterface );
+        IPocoInterfaceInfo? Find( Type pocoInterface );
 
         /// <summary>
         /// Gets the collection of all Poco interfaces.

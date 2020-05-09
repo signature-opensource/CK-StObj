@@ -37,9 +37,9 @@ namespace CK.Testing
             }
         }
 
-        StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( Func<Type, bool> typeFilter ) => DoCreateStObjCollector( typeFilter );
+        StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( Func<Type, bool>? typeFilter ) => DoCreateStObjCollector( typeFilter );
 
-        StObjCollector DoCreateStObjCollector( Func<Type, bool> typeFilter )
+        StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
         {
             return new StObjCollector(
                         _monitor.Monitor,
@@ -64,7 +64,7 @@ namespace CK.Testing
             return r;
         }
 
-        StObjCollectorResult IStObjEngineTestHelperCore.GetFailedResult( StObjCollector c )
+        StObjCollectorResult? IStObjEngineTestHelperCore.GetFailedResult( StObjCollector c )
         {
             if( c.RegisteringFatalOrErrorCount != 0 )
             {
@@ -86,24 +86,24 @@ namespace CK.Testing
             var codeGen = r.GenerateFinalAssembly( TestHelper.Monitor, assemblyPath, true, null, false );
             codeGen.Success.Should().BeTrue( "CodeGeneration should work." );
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
-            return (r, StObjContextRoot.Load( a, null, TestHelper.Monitor ));
+            var map = StObjContextRoot.Load( a, null, TestHelper.Monitor );
+            map.Should().NotBeNull();
+            return (r, map!);
         }
 
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c, SimpleServiceContainer startupServices )
+        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices )
         {
-            var r = DoCompileStObjMap( c );
-            r.Map.Should().NotBeNull();
+            var (result, map) = DoCompileStObjMap( c );
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
-            reg.AddStObjMap( r.Map ).Should().BeTrue( "Service configuration succeed." );
-            return (r.Result, r.Map, reg, reg.Services.BuildServiceProvider());
+            reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+            return (result, map, reg, reg.Services.BuildServiceProvider());
         }
 
-        StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c, SimpleServiceContainer startupServices )
+        StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c, SimpleServiceContainer? startupServices )
         {
-            var r = DoCompileStObjMap( c );
-            r.Map.Should().NotBeNull();
+            var map = DoCompileStObjMap( c ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
-            reg.AddStObjMap( r.Map ).Should().BeFalse( "Service configuration failed." );
+            reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
             return reg;
         }
 

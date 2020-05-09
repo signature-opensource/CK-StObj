@@ -12,27 +12,27 @@ namespace CK.Setup
     /// </summary>
     public class StObjConfigurationLayer : IStObjTypeFilter, IStObjStructuralConfigurator, IStObjValueResolver
     {
-        StObjConfigurationLayer _next;
-        StObjEngineConfigurator _host;
+        StObjConfigurationLayer? _next;
+        StObjEngineConfigurator? _host;
 
         /// <summary>
         /// Gets the next <see cref="StObjConfigurationLayer"/> that should be called by all hooks in this configurator.
         /// Can be null.
         /// </summary>
-        public StObjConfigurationLayer Next
+        public StObjConfigurationLayer? Next
         {
-            get { return _next; }
-            internal set { _next = value; }
+            get  => _next;
+            internal set => _next = value;
         }
 
         /// <summary>
         /// Gets the configuration host to which this configurator has been added.
         /// Null if this configurator is not bound to a <see cref="StObjEngineConfigurator"/>.
         /// </summary>
-        public StObjEngineConfigurator Host
+        public StObjEngineConfigurator? Host
         {
-            get { return _host; }
-            internal set { _host = value; }
+            get => _host;
+            internal set => _host = value;
         }
 
         /// <summary>

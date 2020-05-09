@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -18,8 +19,8 @@ namespace CK.Testing
     {
         readonly ICKSetupTestHelper _ckSetup;
         readonly IStObjMapTestHelper _stObjMap;
-        IStObjSetupTestHelper _mixin;
-        EventHandler<StObjSetupRunningEventArgs> _stObjSetupRunning;
+        IStObjSetupTestHelper? _mixin;
+        EventHandler<StObjSetupRunningEventArgs>? _stObjSetupRunning;
         bool _generateSourceFiles;
         bool _revertOrderingNames;
         bool _traceGraphOrdering;
@@ -38,13 +39,14 @@ namespace CK.Testing
             _traceGraphOrdering = config.GetBoolean( "StObjSetup/StObjTraceGraphOrdering" ) ?? false;
         }
 
-        void OnStObjMapLoading( object sender, EventArgs e )
+        void OnStObjMapLoading( object? sender, EventArgs e )
         {
             var file = _stObjMap.BinFolder.AppendPart( _stObjMap.GeneratedAssemblyName + ".dll" );
             if( !File.Exists( file ) )
             {
                 _stObjMap.Monitor.Info( $"File '{file}' does not exist. Running StObjSetup to create it." );
-                var defaultConf = CreateDefaultConfiguration( _mixin );
+                Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
+                var defaultConf = CreateDefaultConfiguration( _mixin! );
                 DoRunStObjSetup( defaultConf.Configuration, defaultConf.ForceSetup );
             }
         }
@@ -62,14 +64,18 @@ namespace CK.Testing
                                         .Select( p => p.AppendPart( helper.GeneratedAssemblyName + ".dll" ) )
                                         .Any( p => !File.Exists( p ) );
 
-            var stObjConf = new StObjEngineConfiguration();
-            stObjConf.RevertOrderingNames = helper.StObjRevertOrderingNames;
-            stObjConf.TraceDependencySorterInput = helper.StObjTraceGraphOrdering;
-            stObjConf.TraceDependencySorterOutput = helper.StObjTraceGraphOrdering;
-            stObjConf.GeneratedAssemblyName = helper.GeneratedAssemblyName;
-            var b = new BinPath();
-            b.Path = helper.BinFolder;
-            b.GenerateSourceFiles = helper.StObjGenerateSourceFiles;
+            var stObjConf = new StObjEngineConfiguration
+            {
+                RevertOrderingNames = helper.StObjRevertOrderingNames,
+                TraceDependencySorterInput = helper.StObjTraceGraphOrdering,
+                TraceDependencySorterOutput = helper.StObjTraceGraphOrdering,
+                GeneratedAssemblyName = helper.GeneratedAssemblyName
+            };
+            var b = new BinPathConfiguration
+            {
+                Path = helper.BinFolder,
+                GenerateSourceFiles = helper.StObjGenerateSourceFiles
+            };
             stObjConf.BinPaths.Add( b );
 
             return (stObjConf, forceSetup);

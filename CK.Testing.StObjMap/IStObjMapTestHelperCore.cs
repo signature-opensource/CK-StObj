@@ -22,22 +22,43 @@ namespace CK.Testing.StObjMap
         string GeneratedAssemblyName { get; }
 
         /// <summary>
-        /// Highest entry point possible: this gives a ready to use service provider based on the current <see cref="StObjMap"/>.
-        /// The services can be configured thanks to the <see cref="AutomaticServicesConfigured"/> event.
-        /// Null if an error occured.
+        /// Highest entry point possible: this gives a ready to use shared service provider based on the current <see cref="StObjMap"/>.
+        /// Note that this AutomaticServices will resolve (and keep) singletons AND scoped services. To obtain a "fresh" set of services,
+        /// use <see cref="CreateAutomaticServices"/>.
+        /// The returned services can be configured thanks to the <see cref="AutomaticServicesConfiguring"/>
+        /// and <see cref="AutomaticServicesConfigured"/> events.
+        /// This throws if any error prevents the services to be correctly configured.
         /// </summary>
         IServiceProvider AutomaticServices { get; }
 
         /// <summary>
-        /// Fires after the future <see cref="AutomaticServices"/> have been configured by the <see cref="StObjMap"/>
-        /// but before making it available to others.
+        /// Creates an configures a pristine service provider based on the current <see cref="StObjMap"/>.
+        /// The returned services can be configured thanks to the <see cref="AutomaticServicesConfiguring"/>
+        /// and <see cref="AutomaticServicesConfigured"/> events.
+        /// This throws if any error prevents the services to be correctly configured.
+        /// </summary>
+        /// <param name="startupServices">Optional startup services container.</param>
+        /// <returns>A new service provider.</returns>
+        IServiceProvider CreateAutomaticServices( SimpleServiceContainer? startupServices = null );
+
+        /// <summary>
+        /// Fires before the future <see cref="AutomaticServices"/> or a new one created by <see cref="CreateAutomaticServices(SimpleServiceContainer?)"/>
+        /// is configured by the <see cref="StObjMap"/>: this enables external code to configure/alter the startup services and
+        /// the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> before the <see cref="StObjContextRoot.ServiceRegister.AddStObjMap(IStObjMap)"/> call.
+        /// </summary>
+        event EventHandler<AutomaticServicesConfigurationEventArgs> AutomaticServicesConfiguring;
+
+        /// <summary>
+        /// Fires after the future <see cref="AutomaticServices"/> or a new one created by <see cref="CreateAutomaticServices(SimpleServiceContainer?)"/>
+        /// have been configured by the <see cref="StObjMap"/> but before making it available to others.
         /// External code can configure/alter the configured services.
         /// </summary>
-        event EventHandler<AutomaticServicesConfiguredEventArgs> AutomaticServicesConfigured;
+        event EventHandler<AutomaticServicesConfigurationEventArgs> AutomaticServicesConfigured;
 
         /// <summary>
         /// Gets the <see cref="IStObjMap"/> from the current <see cref="GeneratedAssemblyName"/>.
         /// The assembly, if it exists, is the one in the <see cref="IBasicTestHelper.BinFolder"/>.
+        /// This throws if any error prevents the map to be correctly loaded.
         /// </summary>
         IStObjMap StObjMap { get; }
 
@@ -77,7 +98,7 @@ namespace CK.Testing.StObjMap
         /// Actual loading of the assembly is done only if the StObjMap is not already available.
         /// </summary>
         /// <returns>The map or null if an error occurred (the error is logged).</returns>
-        IStObjMap LoadStObjMap( string assemblyName, bool withWeakAssemblyResolver = true );
+        IStObjMap? LoadStObjMap( string assemblyName, bool withWeakAssemblyResolver = true );
 
     }
 }

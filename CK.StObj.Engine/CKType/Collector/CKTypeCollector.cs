@@ -52,12 +52,15 @@ namespace CK.Setup
             _serviceCollector = new Dictionary<Type, AutoServiceClassInfo>();
             _serviceRoots = new List<AutoServiceClassInfo>();
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo>();
-            _kindDetector = new CKTypeKindDetector();
-            _pocoRegisterer = new PocoRegisterer( ( m, t ) => (_kindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
-            _kindDetector.DefineAsExternalSingleton( monitor, typeof( IPocoFactory<> ) );
-            _kindDetector.DefineAsExternalScoped( monitor, typeof( IActivityMonitor ) );
+            AmbientKindDetector = new CKTypeKindDetector();
+            _pocoRegisterer = new PocoRegisterer( ( m, t ) => (AmbientKindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _mapName = mapName ?? String.Empty;
         }
+
+        /// <summary>
+        /// Exposes the <see cref="CKTypeKindDetector"/>.
+        /// </summary>
+        public CKTypeKindDetector AmbientKindDetector { get; }
 
         /// <summary>
         /// Gets the number of registered types.
@@ -132,8 +135,8 @@ namespace CK.Setup
             AutoServiceClassInfo sParent = null;
             if( t.BaseType != typeof( object ) ) DoRegisterClass( t.BaseType, out acParent, out sParent );
 
-            CKTypeKind lt = _kindDetector.GetKind( _monitor, t );
-            var conflictMsg = lt.GetCKTypeKindCombinationError( true );
+            CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, t );
+            var conflictMsg = lt.GetCombinationError( true );
             if( conflictMsg != null )
             {
                 _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
@@ -147,7 +150,7 @@ namespace CK.Setup
                 }
                 if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
                 {
-                    serviceInfo = RegisterServiceClassInfo( t, sParent, lt, objectInfo );
+                    serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
                     Debug.Assert( serviceInfo != null );
                 }
             }
@@ -161,7 +164,7 @@ namespace CK.Setup
 
         RealObjectClassInfo RegisterObjectClassInfo( Type t, RealObjectClassInfo parent )
         {
-            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, _kindDetector, !_typeFilter( _monitor, t ) );
+            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, !_typeFilter( _monitor, t ) );
             if( !result.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -217,14 +220,14 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( contracts );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, _kindDetector );
+                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, AmbientKindDetector );
             }
         }
 
         RealObjectCollectorResult GetRealObjectResult()
         {
             MutableItem[] allSpecializations = new MutableItem[_roots.Count];
-            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, _kindDetector, _assemblies );
+            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, AmbientKindDetector, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
             List<IReadOnlyList<Type>> classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();
@@ -253,12 +256,12 @@ namespace CK.Setup
                     }
                     path.Reverse();
                     concreteClasses.Add( path );
-                    foreach( var m in path ) engineMap.AddClassMapping( m.Type.Type, last );
+                    foreach( var m in path ) engineMap.AddClassMapping( m.RealObjectType.Type, last );
                 }
                 else if( deepestConcretes.Count > 1 )
                 {
                     List<Type> ambiguousPath = new List<Type>() { newOne.Type };
-                    ambiguousPath.AddRange( deepestConcretes.Select( m => m.Item1.Type.Type ) );
+                    ambiguousPath.AddRange( deepestConcretes.Select( m => m.Item1.RealObjectType.Type ) );
 
                     if( classAmbiguities == null ) classAmbiguities = new List<IReadOnlyList<Type>>();
                     classAmbiguities.Add( ambiguousPath.ToArray() );
@@ -269,22 +272,25 @@ namespace CK.Setup
             foreach( var path in concreteClasses )
             {
                 MutableItem finalType = path[path.Count - 1];
+                finalType.RealObjectType.InitializeInterfaces( _monitor, AmbientKindDetector );
                 foreach( var item in path )
                 {
-                    foreach( Type itf in item.Type.EnsureThisAmbientInterfaces( _monitor, _kindDetector ) )
+                    foreach( Type itf in item.RealObjectType.ThisRealObjectInterfaces )
                     {
                         MutableItem alreadyMapped;
                         if( (alreadyMapped = engineMap.ToLeaf( itf )) != null )
                         {
                             if( interfaceAmbiguities == null )
                             {
-                                interfaceAmbiguities = new Dictionary<Type, List<Type>>();
-                                interfaceAmbiguities.Add( itf, new List<Type>() { itf, alreadyMapped.Type.Type, item.Type.Type } );
+                                interfaceAmbiguities = new Dictionary<Type, List<Type>>
+                                {
+                                    { itf, new List<Type>() { itf, alreadyMapped.RealObjectType.Type, item.RealObjectType.Type } }
+                                };
                             }
                             else
                             {
-                                var list = interfaceAmbiguities.GetOrSet( itf, t => new List<Type>() { itf, alreadyMapped.Type.Type } );
-                                list.Add( item.Type.Type );
+                                var list = interfaceAmbiguities.GetOrSet( itf, t => new List<Type>() { itf, alreadyMapped.RealObjectType.Type } );
+                                list.Add( item.RealObjectType.Type );
                             }
                         }
                         else
@@ -297,9 +303,7 @@ namespace CK.Setup
             return new RealObjectCollectorResult(
                 engineMap,
                 concreteClasses,
-                classAmbiguities != null
-                    ? classAmbiguities
-                    : (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
+                classAmbiguities ?? (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
                 interfaceAmbiguities != null
                     ? interfaceAmbiguities.Values.Select( list => list.ToArray() ).ToArray()
                     : Array.Empty<IReadOnlyList<Type>>(),

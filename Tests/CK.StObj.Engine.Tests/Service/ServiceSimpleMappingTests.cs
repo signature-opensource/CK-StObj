@@ -93,7 +93,7 @@ namespace CK.StObj.Engine.Tests.Service
             var iSU = interfaces[0];
             iSU.Type.Should().Be( typeof( ISU ) );
             iSU.Interfaces.Select( i => i.Type ).Should().BeEquivalentTo( typeof(ISBase), typeof(IS1), typeof(IS2) );
-            r.CKTypeResult.AutoServices.RootClasses.Should().ContainSingle().And.Contain( c => c.Type == typeof( ServiceUnifiedImpl ) );
+            r.CKTypeResult.AutoServices.RootClasses.Should().ContainSingle().And.Contain( c => c.ClassType == typeof( ServiceUnifiedImpl ) );
             r.Services.SimpleMappings[typeof( ISU )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
             r.Services.SimpleMappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
             r.Services.SimpleMappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
@@ -165,10 +165,10 @@ namespace CK.StObj.Engine.Tests.Service
                 var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
                 interfaces.Should().HaveCount( 1 );
                 var classes = r.CKTypeResult.AutoServices.RootClasses;
-                classes.Select( c => c.Type ).Should().BeEquivalentTo( typeof( ServiceImplBaseBase ) );
+                classes.Select( c => c.ClassType ).Should().BeEquivalentTo( typeof( ServiceImplBaseBase ) );
                 r.CKTypeResult.AutoServices.ClassAmbiguities.Should().HaveCount( 1 );
                 r.CKTypeResult.AutoServices.ClassAmbiguities[0]
-                    .Select( c => c.Type )
+                    .Select( c => c.ClassType )
                     .Should().BeEquivalentTo( typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) );
             }
         }
@@ -245,21 +245,20 @@ namespace CK.StObj.Engine.Tests.Service
             var (r, map) = TestHelper.CompileStObjMap( collector );
 
             var final = r.Services.SimpleMappings[typeof( ISBase )];
-            final.ClassType.Should().NotBeSameAs( typeof( AbstractS1 ) );
-            final.ClassType.Should().BeAssignableTo( typeof( AbstractS1 ) );
+            final.FinalType.Should().NotBeSameAs( typeof( AbstractS1 ) );
+            final.FinalType.Should().BeAssignableTo( typeof( AbstractS1 ) );
             r.Services.SimpleMappings[typeof( AbstractS1 )].Should().BeSameAs( final );
 
-            r.Services.SimpleMappings[typeof( AbstractS2 )].ClassType.Should().NotBeSameAs( typeof( AbstractS2 ) );
-            r.Services.SimpleMappings[typeof( AbstractS2 )].ClassType.Should().BeAssignableTo( typeof( AbstractS2 ) );
-            r.Services.SimpleMappings[typeof( AbstractS3 )].ClassType.Should().NotBeSameAs( typeof( AbstractS3 ) );
-            r.Services.SimpleMappings[typeof( AbstractS3 )].ClassType.Should().BeAssignableTo( typeof( AbstractS3 ) );
+            r.Services.SimpleMappings[typeof( AbstractS2 )].FinalType.Should().NotBeSameAs( typeof( AbstractS2 ) );
+            r.Services.SimpleMappings[typeof( AbstractS2 )].FinalType.Should().BeAssignableTo( typeof( AbstractS2 ) );
+            r.Services.SimpleMappings[typeof( AbstractS3 )].FinalType.Should().NotBeSameAs( typeof( AbstractS3 ) );
+            r.Services.SimpleMappings[typeof( AbstractS3 )].FinalType.Should().BeAssignableTo( typeof( AbstractS3 ) );
 
             var services = new ServiceCollection();
-            new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map );
+            new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).Should().BeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
             IServiceProvider p = services.BuildServiceProvider();
             var oG = p.GetService( typeof( ISBase ) );
             oG.GetType().FullName.Should().StartWith( "CK._g.AbstractS1" );
-
         }
 
 

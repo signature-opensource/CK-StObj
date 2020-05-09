@@ -39,13 +39,13 @@ namespace CK.Core
 
         /// <summary>
         /// Holds the name 'ConfigureServices'.
-        /// This must be a non virtual, typically private void method with parameters that must contain at least an interface named "IServiceCollection".
-        /// Other parameters can be a IActivityMonitor or any services previously registered in the ISimpleServiceContainer by
+        /// This must be a non virtual, typically private void method with parameters that must start with an input (in) <see cref="StObjContextRoot.ServiceRegister"/>.
+        /// Following parameters can be a IActivityMonitor or any services previously registered in the ISimpleServiceContainer by
         /// any <see cref="RegisterStartupServicesMethodName"/>.
         /// </summary>
         public static readonly string ConfigureServicesMethodName = "ConfigureServices";
 
-        static IStObjRuntimeBuilder _stObjBuilder;
+        static IStObjRuntimeBuilder? _stObjBuilder;
 
         /// <summary>
         /// Default <see cref="IStObjRuntimeBuilder"/> that will be used.
@@ -75,12 +75,14 @@ namespace CK.Core
 
         /// <summary>
         /// Loads a previously generated assembly.
+        /// This never throws: errors are logged (a new monitor is automatically created when <paramref name="monitor"/> is null),
+        /// and false is returned.
         /// </summary>
         /// <param name="a">Already generated assembly.</param>
         /// <param name="runtimeBuilder">Runtime builder to use. When null, <see cref="DefaultStObjRuntimeBuilder"/> is used.</param>
         /// <param name="monitor">Optional monitor for loading operation.</param>
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
-        public static IStObjMap Load( Assembly a, IStObjRuntimeBuilder runtimeBuilder = null, IActivityMonitor monitor = null )
+        public static IStObjMap? Load( Assembly a, IStObjRuntimeBuilder? runtimeBuilder = null, IActivityMonitor? monitor = null )
         {
             if( a == null ) throw new ArgumentNullException( nameof( a ) );
             IActivityMonitor m = monitor ?? new ActivityMonitor( "CK.Core.StObjContextRoot.Load" );
@@ -99,7 +101,7 @@ namespace CK.Core
                 }
                 catch( Exception ex )
                 {
-                    m.Error( "Unable to instanciate StObjMap.", ex );
+                    m.Error( "Unable to instantiate StObjMap.", ex );
                     return null;
                 }
                 finally

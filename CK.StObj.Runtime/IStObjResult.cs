@@ -1,10 +1,3 @@
-#region Proprietary License
-/*----------------------------------------------------------------------------
-* This file (CK.StObj.Runtime\IStObjResult.cs) is part of CK-Database. 
-* Copyright © 2007-2014, Invenietis <http://www.invenietis.com>. All rights reserved. 
-*-----------------------------------------------------------------------------*/
-#endregion
-
 using System.Collections.Generic;
 using CK.Core;
 
@@ -12,26 +5,24 @@ namespace CK.Setup
 {
     /// <summary>
     /// A StObj "slices" a Structured Object (that is an <see cref="IRealObject"/>) by types in its inheritance chain.
-    /// The <see cref="InitialObject">Structured Object</see> itself is built based on already built dependencies from top 
-    /// to bottom thanks to its "StObjConstruct" (<see cref="StObjContextRoot.ConstructMethodName"/>) methods. 
-    /// This interface is available after the dependency graph ordering (this is the Owner exposed by <see cref="IStObjFinalParameter"/> for construct parameters for instance).
+    /// This interface is available after the dependency graph ordering (this is the Owner exposed by <see cref="IStObjFinalParameter"/> for
+    /// construct parameters for instance).
     /// It is the final interface that is exposed for each StObj at the end of the StObjCollector.GetResults work.
+    /// <para>
+    /// The <see cref="IStObjFinalImplementation.Implementation" /> object is built based on already built dependencies from top 
+    /// to bottom thanks to the "StObjConstruct" (<see cref="StObjContextRoot.ConstructMethodName"/>) methods. 
+    /// Note that this instance is built at the beginning of the process and remains the same: it is not necessarily a "real" object since
+    /// its auto-implemented methods are not generated (only stupid default stub implementation are created to be able to instantiate it).
+    /// </para>
     /// </summary>
     public interface IStObjResult : IStObj
     {
-        /// <summary>
-        /// Gets the associated object instance (the final, most specialized, structured object).
-        /// This instance is built at the beginning of the process and remains the same: it is not necessarily a "real" object since its auto-implemented methods
-        /// are not generated (only stupid default stub implementation are created to be able to instanciate it).
-        /// </summary>
-        object InitialObject { get; }
-
         /// <summary>
         /// Gets the provider for attributes. Attributes that are marked with <see cref="IAttributeContextBound"/> are cached
         /// and can keep an internal state if needed.
         /// </summary>
         /// <remarks>
-        /// All attributes related to this <see cref="IStObj.ObjectType"/> (either on the type itself or on any of its members)
+        /// All attributes related to this <see cref="IStObj.ClassType"/> (either on the type itself or on any of its members)
         /// should be retrieved thanks to this method otherwise stateful attributes will not work correctly.
         /// </remarks>
         ICKCustomAttributeTypeMultiProvider Attributes { get; }
@@ -43,7 +34,7 @@ namespace CK.Setup
         DependentItemKindSpec ItemKind { get; }
 
         /// <summary>
-        /// Gets the parent <see cref="IStObjResult"/> in the inheritance chain (the one associated to the base class of this <see cref="IStObj.ObjectType"/>).
+        /// Gets the parent <see cref="IStObjResult"/> in the inheritance chain (the one associated to the base class of this <see cref="IStObj.ClassType"/>).
         /// May be null.
         /// </summary>
         new IStObjResult Generalization { get; }

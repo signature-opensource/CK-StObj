@@ -18,10 +18,13 @@ namespace CK.Setup
     public class CKTypeInfo
     {
         readonly TypeAttributesCache _attributes;
+        readonly Type[] _interfacesCache;
         CKTypeInfo _nextSibling;
         CKTypeInfo _firstChild;
         int _specializationCount;
         bool _initializeImplementableTypeInfo;
+        List<Type> _uniqueMappings;
+        List<Type> _multipleMappings;
 
         /// <summary>
         /// Initializes a new <see cref="CKTypeInfo"/> from a base one (its <see cref="Generalization"/>) if it exists and a type.
@@ -36,6 +39,7 @@ namespace CK.Setup
         {
             Debug.Assert( (serviceClass == null) == (this is RealObjectClassInfo) );
             ServiceClass = serviceClass;
+            Generalization = parent;
             if( (parent?.IsExcluded ?? false) )
             {
                 monitor.Warn( $"Type {t.FullName} is excluded since its parent is excluded." );
@@ -45,18 +49,47 @@ namespace CK.Setup
             {
                 monitor.Info( $"Type {t.FullName} is excluded." );
             }
-            else _attributes = new TypeAttributesCache( monitor, t, services, parent == null );
-            if( (Generalization = parent) != null && !IsExcluded )
+            else
             {
-                _nextSibling = parent._firstChild;
-                parent._firstChild = this;
-                ++parent._specializationCount;
+                _attributes = new TypeAttributesCache( monitor, t, services, parent == null );
+                _interfacesCache = t.GetInterfaces();
+                if( parent != null )
+                {
+                    _nextSibling = parent._firstChild;
+                    parent._firstChild = this;
+                    ++parent._specializationCount;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the unique mappings to this type that MUST be a leaf:
+        /// an <see cref="InvalidOperationException"/> is thrown if <see cref="IsSpecialized"/> is true.
+        /// </summary>
+        public IReadOnlyCollection<Type> UniqueMappingTypes
+        {
+            get
+            {
+                if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
+                return (IReadOnlyCollection<Type>)_uniqueMappings ?? Type.EmptyTypes;
+            }
+        }
+        /// <summary>
+        /// Gets the unique mappings to this type that MUST be a leaf:
+        /// an <see cref="InvalidOperationException"/> is thrown if <see cref="IsSpecialized"/> is true.
+        /// </summary>
+        public IReadOnlyCollection<Type> MultipleMappingTypes
+        {
+            get
+            {
+                if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
+                return (IReadOnlyCollection<Type>)_multipleMappings ?? Type.EmptyTypes;
             }
         }
 
 
         /// <summary>
-        /// Gets the service classe information for this type is there is one.
+        /// Gets the service classe information for this type if there is one.
         /// If this <see cref="CKTypeInfo"/> is an independent one, then this is necessarily not null.
         /// If this is a <see cref="RealObjectClassInfo"/> this can be null or not.
         /// </summary>
@@ -66,6 +99,11 @@ namespace CK.Setup
         /// Gets the Type that is decorated.
         /// </summary>
         public Type Type => _attributes.Type;
+
+        /// <summary>
+        /// Gets all the interfaces supported by this <see cref="Type"/> (the array is cached once for all).
+        /// </summary>
+        public IReadOnlyList<Type> Interfaces => _interfacesCache;
 
         /// <summary>
         /// Gets whether this Type is excluded from registration.
@@ -182,6 +220,40 @@ namespace CK.Setup
                     --_specializationCount;
                 }
             }
+        }
+
+        /// <summary>
+        /// Registers a new unique mapping.
+        /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
+        /// The type t must not already be registered.
+        /// </summary>
+        /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
+        internal void AddUniqueMapping( Type t )
+        {
+            Debug.Assert( SpecializationsCount == 0, "We are on the leaf." );
+            Debug.Assert( t != Type, $"Unique mapping {ToString()} must not be mapped to itself." );
+            Debug.Assert( t.IsAssignableFrom( Type ), $"Unique mapping '{t}' must be assignable from {ToString()}!" );
+            Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Unique mapping '{t}' already registered in {ToString()}." );
+            Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Unique mapping '{t}' already registered in MULTIPLE mappings of {ToString()}." );
+            if( _uniqueMappings == null ) _uniqueMappings = new List<Type>();
+            _uniqueMappings.Add( t );
+        }
+
+        /// <summary>
+        /// Registers a new multiple mapping.
+        /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
+        /// The type t must not already be registered (it can, of course be mapped to other finale types).
+        /// </summary>
+        /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
+        internal void AddMultipleMapping( Type t )
+        {
+            Debug.Assert( !IsSpecialized, "We are on the leaf." );
+            Debug.Assert( t != Type, $"Multiple mapping {ToString()} must not be mapped to itself." );
+            Debug.Assert( t.IsAssignableFrom( Type ), $"Multiple mapping '{t}' must be assignable from {ToString()}!" );
+            Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Multiple mapping '{t}' already registered in {ToString()}." );
+            Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Multiple mapping '{t}' already registered in UNIQUE mappings of {ToString()}." );
+            if( _multipleMappings == null ) _multipleMappings = new List<Type>();
+            _multipleMappings.Add( t );
         }
 
         /// <summary>

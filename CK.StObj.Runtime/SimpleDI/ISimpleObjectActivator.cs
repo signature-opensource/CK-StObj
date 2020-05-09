@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Simplest object instanciator.
+    /// Simplest object instantiator.
     /// </summary>
     public interface ISimpleObjectActivator
     {
@@ -17,6 +17,6 @@ namespace CK.Setup
         /// <param name="services">Available services to inject.</param>
         /// <param name="requiredParameters">Optional required parameters.</param>
         /// <returns>The object instance or null on error.</returns>
-        object Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object> requiredParameters = null );
+        object? Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object>? requiredParameters = null );
     }
 }

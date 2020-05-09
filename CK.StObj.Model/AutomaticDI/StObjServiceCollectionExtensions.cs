@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
         /// </param>
         /// <returns>This services collection.</returns>
-        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer startupServices = null )
+        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer? startupServices = null )
         {
             if( stobjAssembly == null ) throw new ArgumentNullException( nameof( stobjAssembly ) );
             var map = StObjContextRoot.Load( stobjAssembly );
@@ -78,20 +78,16 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <remarks>
         /// On NetCore runtime, Assembly.LoadFrom is used to resolves the assembly from its full path.
         /// </remarks>
-        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer startupServices = null )
+        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer? startupServices = null )
         {
-#if NET461
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
-#else
-            var a = Assembly.LoadFrom( System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" ) );
-#endif
             return AddStObjMap( services, monitor, a, startupServices );
         }
 
         /// <summary>
         /// Configures this <see cref="IServiceCollection"/> by registering the <see cref="IStObjMap.StObjs"/> and
         /// the <paramref name="map"/> itself as Singletons, by calling <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/>
-        /// and then <see cref="StObjContextRoot.ConfigureServicesMethodName"/> on all the <see cref="IStObjObjectMap.Implementations"/> that expose
+        /// and then <see cref="StObjContextRoot.ConfigureServicesMethodName"/> on all the <see cref="IStObjObjectMap.FinalImplementations"/> that expose
         /// such methods and by registering the <see cref="IStObjServiceMap.SimpleMappings"/> and <see cref="IStObjServiceMap.ManualMappings"/> mappings.
         /// Any attempt to register an already registered service will be ignored and a warning will be emitted.
         /// <para>
@@ -107,7 +103,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
         /// </param>
         /// <returns>This services collection.</returns>
-        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, IStObjMap map, SimpleServiceContainer startupServices = null )
+        public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, IStObjMap map, SimpleServiceContainer? startupServices = null )
         {
             var reg = new StObjContextRoot.ServiceRegister( monitor, services, startupServices );
             if( !reg.AddStObjMap( map ) ) throw new Exception( "AddStObjMap failed. The logs contains detailed information." );
