@@ -58,7 +58,7 @@ namespace CK.StObj.Engine.Tests
         <Types>
             <Type Name=""CK.Core.IActivityMonitor, CK.ActivityMonitor"" Kind=""IsScoped"" />
             <Type Name=""Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions"" Kind=""IsMultipleService|IsSingleton"" Optional=""True"" />
-            <Type Name=""Microsoft.Extensions.Options.IOptions&lt;&gt;, Microsoft.Extensions.Options"" Kind=""IsSingleton,IsFrontProcessService"" Optional=""True"" />
+            <Type Name=""Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options"" Kind=""IsSingleton,IsFrontProcessService"" Optional=""True"" />
         </Types>
         <ExcludedTypes>
             <Type>CK.Core.ActivityMonitor, CK.ActivityMonitor</Type>
@@ -114,7 +114,7 @@ namespace CK.StObj.Engine.Tests
             t2.Kind.Should().Be( AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
             t2.Optional.Should().BeTrue();
             var t3 = b1.Types[2];
-            t3.Name.Should().Be( "Microsoft.Extensions.Options.IOptions<>, Microsoft.Extensions.Options" );
+            t3.Name.Should().Be( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options" );
             t3.Kind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsSingleton );
             t3.Optional.Should().BeTrue();
 
