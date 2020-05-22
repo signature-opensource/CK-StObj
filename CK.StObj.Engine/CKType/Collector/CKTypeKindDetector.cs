@@ -265,6 +265,15 @@ namespace CK.Setup
                         }
                     }
                     // Propagation from base and interfaces has been done.
+                    // If we're still None here, we look for an open generic definition.
+                    if( k == CKTypeKind.None && t.IsGenericType && !t.IsGenericTypeDefinition )
+                    {
+                        // A Generic Type definition can be a (Super)Definer or be a multiple service definition: this
+                        // applies directly to the specialized type.
+                        // Even the IsMarshallable is kept: we consider that a generic marshaller is possible!
+                        var tGen = t.GetGenericTypeDefinition();
+                        k = RawGet( m, tGen );
+                    }
                     var attrData = t.GetCustomAttributesData();
                     if( t.IsInterface )
                     {

@@ -19,6 +19,8 @@ namespace CK.Core
         /// <summary>
         /// Gets all the <see cref="IAutoService"/> types to the final service class type
         /// that can be directly resolved by any DI container.
+        /// Use <see cref="SimpleMappingList"/> to have the final service classes list (without
+        /// duplicates). 
         /// </summary>
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> SimpleMappings { get; }
 

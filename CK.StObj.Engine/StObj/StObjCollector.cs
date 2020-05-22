@@ -66,15 +66,22 @@ namespace CK.Setup
             if( traceDepencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
             if( traceDepencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
 
+            // The IActivityMobitor is by design a scoped service.It is not Optional (since it necessarily exists).
             SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
 
+            // Registration must be done from the most specific types to the basic ones: here we must start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
+            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot`1, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
+            // IOptionsMonitor is independent.
+            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
+
+            // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations are automatocally registered.
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton|AutoServiceKind.IsMultipleService, isOptional: true );
+
+            // Other well known services life time can be defined...
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions<>, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot<>, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService, isOptional: true );
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor<>, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
         }
 
         /// <summary>
