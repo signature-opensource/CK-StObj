@@ -2,7 +2,7 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-
+using System;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service.TypeCollector
@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( Nop ) ).Should().Be( CKTypeKind.None );
             a.GetKind( TestHelper.Monitor, typeof( Obj ) ).Should().Be( CKTypeKind.RealObject );
             a.GetKind( TestHelper.Monitor, typeof( Serv ) ).Should().Be( CKTypeKind.IsAutoService );
-            a.GetKind( TestHelper.Monitor, typeof( Scoped ) ).Should().Be( CKTypeKind.IsAutoService|CKTypeKind.IsScoped );
+            a.GetKind( TestHelper.Monitor, typeof( Scoped ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsScoped );
             a.GetKind( TestHelper.Monitor, typeof( Singleton ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
@@ -153,7 +153,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
 
         // IRA is a Super Definer.
         [CKTypeSuperDefiner]
-        public interface IRA : IRealObject{ }
+        public interface IRA : IRealObject { }
 
         // IRB is a  Definer, not a Real Object.
         public interface IRB : IRA { }
@@ -210,6 +210,48 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( RBStillDefiner ) ).Should().Be( CKTypeKind.None );
             a.GetKind( TestHelper.Monitor, typeof( RBAtLast ) ).Should().Be( CKTypeKind.RealObject );
             a.GetKind( TestHelper.Monitor, typeof( RBOfCourse ) ).Should().Be( CKTypeKind.RealObject );
+        }
+
+
+        // The base Options interface is Singleton: you use it when you want to
+        // inject immutable options in any service that may need it (be it scoped or singleton).
+        // Unfortunately, sometimes, you want these options to be able to change while the app is running: the IOptionsSnapshot
+        // is a Scoped service that will contain the options value at the start of the request and it will be the same during the lifetime
+        // of the request (which is a good thing).
+        // But, here it is: the base is Singleton and the specialization is Scoped!
+        public interface IOptions<out TOptions> where TOptions : class, new()
+        {
+            TOptions Value { get; }
+        }
+
+        public interface IOptionsSnapshot<out TOptions> : IOptions<TOptions> where TOptions : class, new()
+        {
+            TOptions Get( string name );
+        }
+
+        [Test]
+        public void preliminary_SetAutoServiceKind_ordering_matters()
+        {
+            {
+                var a = new CKTypeKindDetector();
+                bool success = true;
+                using( TestHelper.Monitor.OnError( () => success = false ) )
+                {
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService );
+                }
+                success.Should().BeFalse( "From general to specific: this fails!" );
+            }
+            {
+                var a = new CKTypeKindDetector();
+                bool success = true;
+                using( TestHelper.Monitor.OnError( () => success = false ) )
+                {
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService );
+                }
+                success.Should().BeTrue( "From specific to general: success!" );
+            }
         }
     }
 }
