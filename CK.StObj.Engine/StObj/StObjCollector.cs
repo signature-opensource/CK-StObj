@@ -81,7 +81,7 @@ namespace CK.Setup
             // Other well known services life time can be defined...
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
-
+            SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
         }
 
         /// <summary>
