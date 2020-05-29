@@ -8,13 +8,13 @@ namespace CK.Setup
     /// by attributes that must appear on runtime objects to split their implementation into assemblies that will 
     /// be loaded only at setup time.
     /// </summary>
-    public abstract class ContextBoundDelegationAttribute : Attribute, IAttributeContextBound
+    public class ContextBoundDelegationAttribute : Attribute, IAttributeContextBound
     {
         /// <summary>
         /// Initializes a new <see cref="ContextBoundDelegationAttribute"/> that delegates its behaviors to another object.
         /// </summary>
         /// <param name="actualAttributeTypeAssemblyQualifiedName">Assembly Qualified Name of the object that will replace this attribute during setup.</param>
-        protected ContextBoundDelegationAttribute( string actualAttributeTypeAssemblyQualifiedName )
+        public ContextBoundDelegationAttribute( string actualAttributeTypeAssemblyQualifiedName )
         {
             ActualAttributeTypeAssemblyQualifiedName = actualAttributeTypeAssemblyQualifiedName;
         }
