@@ -19,7 +19,6 @@ namespace CK.StObj.Engine.Tests
     {
         public class CSimpleEmit
         {
-
             class AutoImplementedAttribute : Attribute, IAutoImplementorMethod
             {
                 public bool Implement(IActivityMonitor monitor, MethodInfo m, IDynamicAssembly dynamicAssembly, ITypeScope b)
@@ -109,7 +108,6 @@ namespace CK.StObj.Engine.Tests
         {
             new CSimpleEmit().DoTest();
         }
-
 
         public class CConstructCalledAndStObjProperties
         {
@@ -329,6 +327,122 @@ namespace CK.StObj.Engine.Tests
         }
 
 
+        public class CTypeImplementor
+        {
+            /// <summary>
+            /// Actual implementation that takes care of all the abstract properties.
+            /// This doesn't handle abstract methods at all.
+            /// </summary>
+            public class DefaultPropertyImplementationAttributeImpl : IAutoImplementorType, IAutoImplementorProperty
+            {
+                readonly DefaultPropertyImplementationAttribute _attr;
 
+                /// <summary>
+                /// The "attribute implementation" is provided with the original, ("Model" only) attribute: any configuration
+                /// can be used.
+                /// </summary>
+                /// <param name="attr">The model layer attribute.</param>
+                public DefaultPropertyImplementationAttributeImpl( DefaultPropertyImplementationAttribute attr )
+                {
+                    _attr = attr;
+                }
+
+                // We don't know how to handle any method.
+                public IAutoImplementorMethod HandleMethod( IActivityMonitor monitor, MethodInfo m ) => null;
+
+                // Here we tell the engine: "I'm handling this property implementation" only if the property name starts with a 'H'.
+                // This is rather stupid but this shows an easy way to enforce naming rules.
+                // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
+                public IAutoImplementorProperty HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
+
+                // We choose to implement all the properties as a whole in Implement method below: by returning true
+                // we tell the engine: "Okay, I handled it, please continue your business."
+                // (We can also implement each property here and do nothing in the Implement method.)
+                bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, IDynamicAssembly dynamicAssembly, ITypeScope typeBuilder ) => true;
+
+                public bool Implement( IActivityMonitor monitor, Type classType, IDynamicAssembly dynamicAssembly, ITypeScope scope )
+                {
+                    foreach( var p in classType.GetProperties() )
+                    {
+                        scope.Append( "public override " ).Append( p.PropertyType.FullName ).Append( " " ).Append( p.Name ).Append( " => " );
+                        if( typeof( int ).IsAssignableFrom( p.PropertyType ) )
+                        {
+                            scope.Append( _attr.Value );
+                        }
+                        else if( typeof( string ).IsAssignableFrom( p.PropertyType ) )
+                        {
+                            scope.AppendSourceString( $@"Value is ""{_attr.Value}""..." );
+                        }
+                        else 
+                        {
+                            scope.Append( "default(" ).AppendCSharpName( p.PropertyType ).Append( ")" );
+                        }
+                        scope.Append( ";" ).NewLine();
+                    }
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// This is the atribute that will trigger the abstract properties implementation.
+            /// This is a very small attribute that does nothing else than redirecting to the
+            /// actual implementation that must be in a ".Runtime" or ".Engine" assembly.
+            /// <para>
+            /// This attribute accepts a parameter name value that will drive/configure the code generation.
+            /// </para>
+            /// </summary>
+            [AttributeUsage(AttributeTargets.Class)]
+            public class DefaultPropertyImplementationAttribute : ContextBoundDelegationAttribute
+            {
+                public DefaultPropertyImplementationAttribute( int value )
+                    : base( "CK.StObj.Engine.Tests.DynamicGenerationTests+CTypeImplementor+DefaultPropertyImplementationAttributeImpl, CK.StObj.Engine.Tests" )
+                {
+                    Value = value;
+                }
+
+                public int Value { get; }
+            }
+
+            /// <summary>
+            /// This auto service is abstract and its abstract properties will be implemented
+            /// "by the attribute".
+            /// </summary>
+            [DefaultPropertyImplementation( 3712 )]
+            public abstract class AutomaticallyImplemented : IAutoService
+            {
+                /// <summary>
+                /// AutoServices MUST have a single public constructor.
+                /// </summary>
+                public AutomaticallyImplemented()
+                {
+                }
+
+                public abstract string Hip { get; }
+                public abstract int Hop { get; }
+                public abstract double Hup { get; }
+            }
+
+            public void DoTest()
+            {
+                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+                collector.RegisterType( typeof( AutomaticallyImplemented ) );
+                var r = collector.GetResult();
+                Assert.That( r.HasFatalError, Is.False );
+                r.GenerateFinalAssembly( TestHelper.Monitor, Path.Combine( AppContext.BaseDirectory, "TEST_TypeImplementor.dll" ), false, null, false );
+                var a = Assembly.Load( "TEST_TypeImplementor" );
+                Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
+                AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated );
+                done.Hip.Should().Be( "Value is \"3712\"..." );
+                done.Hop.Should().Be( 3712 );
+                done.Hup.Should().Be( 0.0 );
+            }
+
+        }
+
+        [Test]
+        public void IAutoImplementorType_implements_interface()
+        {
+            new CTypeImplementor().DoTest();
+        }
     }
 }

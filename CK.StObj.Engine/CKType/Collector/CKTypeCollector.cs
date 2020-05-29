@@ -96,9 +96,12 @@ namespace CK.Setup
                 {
                     DoRegisterClass( type, out _, out _ );
                 }
-                else if( _pocoRegisterer.Register( _monitor, type ) )
+                else if( type.IsInterface )
                 {
-                    RegisterAssembly( type );
+                    if( _pocoRegisterer.Register( _monitor, type ) )
+                    {
+                        RegisterAssembly( type );
+                    }
                 }
             }
         }
