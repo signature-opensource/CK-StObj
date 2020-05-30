@@ -16,7 +16,7 @@ namespace CK.Setup
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
     /// can use (and fill) it.
     /// </summary>
-    partial class StObjObjectEngineMap : IStObjObjectEngineMap, IStObjEngineMap, IStObjServiceMap
+    partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineMap, IStObjServiceEngineMap
     {
         readonly Dictionary<object, MutableItem> _map;
         readonly MutableItem[] _allSpecializations;
@@ -48,8 +48,8 @@ namespace CK.Setup
             _allSpecializations = allSpecializations;
             _assemblies = assemblies;
 
-            _serviceSimpleMap = new Dictionary<Type, AutoServiceClassInfo>();
-            _serviceSimpleList = new List<AutoServiceClassInfo>();
+            _serviceSimpleMap = new Dictionary<Type, IStObjServiceFinalSimpleMapping>();
+            _serviceSimpleList = new List<IStObjServiceFinalSimpleMapping>();
             _exposedServiceMap = new ServiceMapTypeAdapter( _serviceSimpleMap );
 
             _serviceManualMap = new Dictionary<Type, IStObjServiceFinalManualMapping>();

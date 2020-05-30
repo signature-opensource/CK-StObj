@@ -58,8 +58,6 @@ namespace CK.Setup
         /// </summary>
         public IStObjEngineMap? EngineMap { get; }
 
-        IReadOnlyList<IStObjResult> OrderedStObjs => EngineMap!.StObjs.OrderedStObjs;
-
         /// <summary>
         /// Generates final assembly.
         /// </summary>

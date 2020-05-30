@@ -15,5 +15,10 @@ namespace CK.Setup
         /// </summary>
         new IStObjObjectEngineMap StObjs { get; }
 
+        /// <summary>
+        /// Gets the engine extended Service map.
+        /// </summary>
+        new IStObjServiceEngineMap Services { get; }
+
     }
 }

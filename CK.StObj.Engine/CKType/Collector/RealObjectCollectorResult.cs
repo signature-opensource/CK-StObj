@@ -33,6 +33,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the internal mappings.
+        /// This map is "lifted" and eventually exposed on the final <see cref="StObjCollectorResult.EngineMap"/>.
         /// </summary>
         internal StObjObjectEngineMap EngineMap { get; }
 

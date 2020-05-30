@@ -4,14 +4,16 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Extends base class factory with the index in the list of the manual services.
+    /// Extends base class factory from Model layer with the index
+    /// in the list of the simple services mappings.
     /// </summary>
     public interface IStObjServiceFinalManualMapping : IStObjServiceClassFactory
     {
         /// <summary>
-        /// Gets the unique number that identifies this factory.
+        /// Gets the unique index that identifies this class factory: its index
+        /// in the <see cref="IStObjServiceMap.ManualMappingList"/>.
         /// </summary>
-        int Number { get; }
+        int ManualMappingIndex { get; }
     }
 
 }

@@ -458,7 +458,7 @@ namespace CK.Setup
                     && (manual = build.GetFinalMapping( _monitor, _engineMap, _ambientTypeKindDetector, ref success )) != null )
                 {
                     _monitor.Debug( $"Map '{t}' -> manual '{final}': '{manual}'." );
-                    _engineMap.ManualMappings.Add( t, manual );
+                    _engineMap.RegisterServiceFinalManualMapping( t, manual );
                 }
                 else
                 {
@@ -470,7 +470,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        _engineMap.SimpleMappings.Add( t, _engineMap.EnsureFinalSimpleRegistration( final ) );
+                        _engineMap.RegisterFinalSimpleMapping( t, final );
                     }
                     if( t != final.ClassType ) final.TypeInfo.AddUniqueMapping( t );
                 }

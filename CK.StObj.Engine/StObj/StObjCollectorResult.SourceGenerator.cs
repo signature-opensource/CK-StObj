@@ -79,7 +79,7 @@ namespace CK.Setup
                     }
 
                     // Generates the StObjContextRoot implementation.
-                    GenerateStObjContextRootSource( monitor, global.FindOrCreateNamespace( "CK.StObj" ) );
+                    GenerateStObjContextRootSource( monitor, global.FindOrCreateNamespace( "CK.StObj" ), EngineMap.StObjs.OrderedStObjs );
                 }
                 if( errorSummary != null )
                 {
@@ -165,7 +165,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
     public IReadOnlyCollection<Type> UniqueMappings { get; }
 }";
-        void GenerateStObjContextRootSource( IActivityMonitor monitor, INamespaceScope ns )
+        void GenerateStObjContextRootSource( IActivityMonitor monitor, INamespaceScope ns, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             ns.Append( _sourceGStObj ).NewLine();
             ns.Append( _sourceFinalGStObj ).NewLine();
@@ -177,11 +177,11 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
             var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}(IActivityMonitor monitor, IStObjRuntimeBuilder rb)" );
 
-            rootCtor.Append( $"_stObjs = new GStObj[{OrderedStObjs.Count}];" ).NewLine()
+            rootCtor.Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
                     .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.AllSpecializations.Count}];" ).NewLine();
             int iStObj = 0;
             int iImplStObj = 0;
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 string generalization = m.Generalization == null ? "null" : $"_stObjs[{m.Generalization.IndexOrdered}]";
                 rootCtor.Append( $"_stObjs[{iStObj++}] = " );
@@ -209,9 +209,9 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 rootCtor.Append( $"_map.Add( " ).AppendTypeOf( (Type)e.Key )
                         .Append( ", (GFinalStObj)_stObjs[" ).Append( e.Value.IndexOrdered ).Append( "] );" ).NewLine();
             }
-            if( OrderedStObjs.Count > 0 )
+            if( orderedStObjs.Count > 0 )
             {
-                rootCtor.Append( $"int iStObj = {OrderedStObjs.Count};" ).NewLine()
+                rootCtor.Append( $"int iStObj = {orderedStObjs.Count};" ).NewLine()
                        .Append( "while( --iStObj >= 0 ) {" ).NewLine()
                        .Append( " var o = _stObjs[iStObj];" ).NewLine()
                        .Append( " if( o.Specialization == null ) {" ).NewLine()
@@ -227,7 +227,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                        .Append( "}" ).NewLine();
             }
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 if( m.PreConstructProperties != null )
                 {
@@ -274,7 +274,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     CallConstructMethod( rootCtor, m, m.ConstructParameters );
                 }
             }
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 if( m.PostBuildProperties != null )
                 {
@@ -289,7 +289,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     }
                 }
             }
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {
@@ -324,8 +324,8 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             " );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
-            serviceGen.CreateServiceSupportCode( (StObjObjectEngineMap)EngineMap );
-            serviceGen.CreateConfigureServiceMethod( OrderedStObjs );
+            serviceGen.CreateServiceSupportCode( EngineMap.Services );
+            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
 
             GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }

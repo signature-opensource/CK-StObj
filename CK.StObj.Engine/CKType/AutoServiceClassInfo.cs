@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,7 @@ namespace CK.Setup
     /// <summary>
     /// Represents a service class/implementation.
     /// </summary>
-    public class AutoServiceClassInfo : IStObjServiceClassDescriptor
+    public class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
         const CKTypeKind CKTypeKindAutoSingleton = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton;
         const CKTypeKind CKTypeKindAutoScoped = CKTypeKind.IsAutoService | CKTypeKind.IsScoped;
@@ -154,6 +155,9 @@ namespace CK.Setup
             Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
 
             if( parent != null ) SpecializationDepth = parent.SpecializationDepth + 1;
+
+            // Used only when this service is eventually a simple one.
+            SimpleMappingListIndex = -1;
         }
 
         /// <summary>
@@ -1047,10 +1051,13 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Awful property that avoids data structure. Used at the very end of the process when
-        /// the final StObjObjectEngineMap is built. This number is ONE based.
+        /// Awful property that avoids yet another data structure to implement the IStObjServiceFinalManualMapping
+        /// and to track the final registration.
+        /// Used at the very end of the process when the final StObjObjectEngineMap is built.
         /// </summary>
-        internal int FinalSimpleListNumber;
+        internal int SimpleMappingListIndex;
+
+        int IStObjServiceFinalSimpleMapping.SimpleMappingIndex => SimpleMappingListIndex;
 
         /// <summary>
         /// Overridden to return the <see cref="CKTypeInfo.ToString()"/>.
