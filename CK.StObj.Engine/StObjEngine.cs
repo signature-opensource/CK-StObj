@@ -139,7 +139,7 @@ namespace CK.Setup
                     StObjCollectorResult firstRun = SafeBuildStObj( rootBinPath, null );
                     if( firstRun == null ) return _status.Success = false;
 
-                    var runCtx = new StObjEngineRunContext( _monitor, _startContext, firstRun.OrderedStObjs, firstRun.Features );
+                    var runCtx = new StObjEngineRunContext( _monitor, _startContext, firstRun.EngineMap );
                     runCtx.RunAspects( () => _status.Success = false );
 
                     if( _status.Success )

@@ -23,7 +23,7 @@ namespace CK.Setup
 
         public IReadOnlyList<IStObjEngineAspect> Aspects => _runContext.Aspects;
 
-        public IReadOnlyList<IStObjResult> OrderedStObjs => _runContext.OrderedStObjs;
+        public IStObjEngineMap EngineStObjMap => _runContext.EngineStObjMap;
 
         public void PushDeferredAction( Func<IActivityMonitor, IStObjEngineTerminateContext, bool> postAction ) => _trampoline.Push( postAction );
 

@@ -125,11 +125,12 @@ namespace CK.Setup
         const string _sourceGStObj = @"
 class GStObj : IStObj
 {
-    public GStObj( Type t, IStObj g, IStObjMap m )
+    public GStObj( Type t, IStObj g, IStObjMap m, int idx )
     {
         ClassType = t;
         Generalization = g;
         StObjMap = m;
+        IndexOrdered = idx;
     }
 
     public Type ClassType { get; }
@@ -142,13 +143,15 @@ class GStObj : IStObj
 
     public IStObjFinalImplementation FinalImplementation { get; internal set; }
 
+    public int IndexOrdered { get; }
+
     internal StObjMapping AsMapping => new StObjMapping( this, FinalImplementation );
 }";
         const string _sourceFinalGStObj = @"
 class GFinalStObj : GStObj, IStObjFinalImplementation
 {
-    public GFinalStObj( IStObjRuntimeBuilder rb, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m )
-            : base( t, g, m )
+    public GFinalStObj( IStObjRuntimeBuilder rb, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m, int idx )
+            : base( t, g, m, idx )
     {
         FinalImplementation = this;
         Implementation = rb.CreateInstance( actualType );
@@ -193,7 +196,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
                 rootCtor.AppendTypeOf( m.ClassType ).Append( ", " )
                         .Append( generalization )
-                        .Append( ", this );" ).NewLine();
+                        .Append( ", this, " ).Append( m.IndexOrdered ).Append( " );" ).NewLine();
 
             }
 
@@ -302,7 +305,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 }
             }
 
-            rootType.Append( "public string MapName => " ).AppendSourceString( MapName ).Append( ";" ).NewLine()
+            rootType.Append( "public string MapName => " ).AppendSourceString( EngineMap.MapName ).Append( ";" ).NewLine()
                     .Append( @"
             public IStObjObjectMap StObjs => this;
 
@@ -321,10 +324,10 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             " );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
-            serviceGen.CreateServiceSupportCode( _liftedMap );
+            serviceGen.CreateServiceSupportCode( (StObjObjectEngineMap)EngineMap );
             serviceGen.CreateConfigureServiceMethod( OrderedStObjs );
 
-            GenerateVFeatures( monitor, rootType, rootCtor, _liftedMap.Features );
+            GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }
 
         static void CallConstructMethod( IFunctionScope rootCtor, MutableItem m, IEnumerable<IStObjMutableParameter> parameters )

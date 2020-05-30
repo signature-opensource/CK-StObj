@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Reflection;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -14,7 +16,7 @@ namespace CK.Setup
     {
         internal CKTypeCollectorResult(
             ISet<Assembly> assemblies,
-            IPocoSupportResult pocoSupport,
+            IPocoSupportResult? pocoSupport,
             RealObjectCollectorResult c,
             AutoServiceCollectorResult s,
             CKTypeKindDetector typeKindDetector )
@@ -28,8 +30,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets all the registered Poco information.
+        /// Null if an error occurred while computing it.
         /// </summary>
-        public IPocoSupportResult PocoSupport { get; }
+        public IPocoSupportResult? PocoSupport { get; }
 
         /// <summary>
         /// Gets the set of asssemblies for which at least one type has been registered.
@@ -37,7 +40,7 @@ namespace CK.Setup
         public ISet<Assembly> Assemblies { get; }
 
         /// <summary>
-        /// Gets the reults for <see cref="IRealObject"/> objects.
+        /// Gets the results for <see cref="IRealObject"/> objects.
         /// </summary>
         public RealObjectCollectorResult RealObjects { get; }
 
@@ -72,7 +75,8 @@ namespace CK.Setup
                             // Filters out the Service implementation that are RealObject.
                             .Concat( AutoServices.RootClasses.Select( c => c.MostSpecialized.IsRealObject ? null : c.MostSpecialized.ImplementableTypeInfo ) )
                             .Concat( AutoServices.SubGraphRootClasses.Select( c => c.MostSpecialized.IsRealObject ? null : c.MostSpecialized.ImplementableTypeInfo ) )
-                            .Where( i => i != null );
+                            .Where( i => i != null )
+                            .Select( i => i! );
 
                 Debug.Assert( all.GroupBy( i => i ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
                 return all;

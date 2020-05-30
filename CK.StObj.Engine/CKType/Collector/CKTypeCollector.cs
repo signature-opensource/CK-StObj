@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Reflection;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -19,7 +21,7 @@ namespace CK.Setup
         readonly IServiceProvider _serviceProvider;
         readonly PocoRegisterer _pocoRegisterer;
         readonly HashSet<Assembly> _assemblies;
-        readonly Dictionary<Type, RealObjectClassInfo> _objectCollector;
+        readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
         readonly List<RealObjectClassInfo> _roots;
         readonly string _mapName;
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
@@ -36,8 +38,8 @@ namespace CK.Setup
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,
             IDynamicAssembly tempAssembly,
-            Func<IActivityMonitor,Type,bool> typeFilter = null,
-            string mapName = null )
+            Func<IActivityMonitor,Type,bool>? typeFilter = null,
+            string? mapName = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( serviceProvider == null ) throw new ArgumentNullException( nameof( serviceProvider ) );
@@ -47,11 +49,11 @@ namespace CK.Setup
             _tempAssembly = tempAssembly;
             _serviceProvider = serviceProvider;
             _assemblies = new HashSet<Assembly>();
-            _objectCollector = new Dictionary<Type, RealObjectClassInfo>();
+            _objectCollector = new Dictionary<Type, RealObjectClassInfo?>();
             _roots = new List<RealObjectClassInfo>();
             _serviceCollector = new Dictionary<Type, AutoServiceClassInfo>();
             _serviceRoots = new List<AutoServiceClassInfo>();
-            _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo>();
+            _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             AmbientKindDetector = new CKTypeKindDetector();
             _pocoRegisterer = new PocoRegisterer( ( m, t ) => (AmbientKindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _mapName = mapName ?? String.Empty;
@@ -119,7 +121,7 @@ namespace CK.Setup
             return c != typeof( object ) ? DoRegisterClass( c, out _, out _ ) : false;
         }
 
-        bool DoRegisterClass( Type t, out RealObjectClassInfo objectInfo, out AutoServiceClassInfo serviceInfo )
+        bool DoRegisterClass( Type t, out RealObjectClassInfo? objectInfo, out AutoServiceClassInfo? serviceInfo )
         {
             Debug.Assert( t != null && t != typeof( object ) && t.IsClass );
 
@@ -134,10 +136,13 @@ namespace CK.Setup
             }
 
             // Registers parent types whatever they are.
-            RealObjectClassInfo acParent = null;
-            AutoServiceClassInfo sParent = null;
-            if( t.BaseType != typeof( object ) ) DoRegisterClass( t.BaseType, out acParent, out sParent );
-
+            RealObjectClassInfo? acParent = null;
+            AutoServiceClassInfo? sParent = null;
+            if( t.BaseType != typeof( object ) )
+            {
+                Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
+                DoRegisterClass( t.BaseType, out acParent, out sParent );
+            }
             CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, t );
             var conflictMsg = lt.GetCombinationError( true );
             if( conflictMsg != null )
@@ -165,7 +170,7 @@ namespace CK.Setup
             return true;
         }
 
-        RealObjectClassInfo RegisterObjectClassInfo( Type t, RealObjectClassInfo parent )
+        RealObjectClassInfo RegisterObjectClassInfo( Type t, RealObjectClassInfo? parent )
         {
             RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, !_typeFilter( _monitor, t ) );
             if( !result.IsExcluded )
@@ -201,7 +206,7 @@ namespace CK.Setup
         {
             using( _monitor.OpenInfo( "Static Type analysis." ) )
             {
-                IPocoSupportResult pocoSupport;
+                IPocoSupportResult? pocoSupport;
                 using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
                     pocoSupport = _pocoRegisterer.Finalize( _tempAssembly.StubModuleBuilder, _monitor );
@@ -232,7 +237,7 @@ namespace CK.Setup
             MutableItem[] allSpecializations = new MutableItem[_roots.Count];
             StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, AmbientKindDetector, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
-            List<IReadOnlyList<Type>> classAmbiguities = null;
+            List<IReadOnlyList<Type>>? classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();
             var deepestConcretes = new List<(MutableItem, ImplementableTypeInfo)>();
             int idxSpecialization = 0;
@@ -271,7 +276,7 @@ namespace CK.Setup
                 }
             }
             Debug.Assert( classAmbiguities != null || idxSpecialization == allSpecializations.Length );
-            Dictionary<Type, List<Type>> interfaceAmbiguities = null;
+            Dictionary<Type, List<Type>>? interfaceAmbiguities = null;
             foreach( var path in concreteClasses )
             {
                 MutableItem finalType = path[path.Count - 1];

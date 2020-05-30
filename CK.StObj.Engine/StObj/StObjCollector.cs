@@ -224,72 +224,6 @@ namespace CK.Setup
             DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
         }
 
-        ///// <summary>
-        ///// Explicitly registers a set of types that are known to be singleton services.
-        ///// </summary>
-        ///// <param name="types">Types to register.</param>
-        //public void DefineAsExternalSingletons( IReadOnlyCollection<Type> types )
-        //{
-        //    if( types == null ) throw new ArgumentNullException( nameof( types ) );
-        //    DoDefineAsExternalSingletons( types, types.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are known to be scoped services.
-        ///// </summary>
-        ///// <param name="types">Types to register.</param>
-        //public void DefineAsExternalScoped( IReadOnlyCollection<Type> types )
-        //{
-        //    if( types == null ) throw new ArgumentNullException( nameof( types ) );
-        //    DoDefineAsExternalScoped( types, types.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types by their assembly qualified names that are known to be
-        ///// singleton services.
-        ///// </summary>
-        ///// <param name="typeNames">Assembly qualified names of the singleton types.</param>
-        //public void DefineAsExternalSingletons( IReadOnlyCollection<string> typeNames )
-        //{
-        //    if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-        //    DoDefineAsExternalSingletons( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types by their assembly qualified names that are known to be
-        ///// scoped services.
-        ///// </summary>
-        ///// <param name="typeNames">Assembly qualified names of the scoped types.</param>
-        //public void DefineAsExternalScoped( IReadOnlyCollection<string> typeNames )
-        //{
-        //    if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-        //    DoDefineAsExternalScoped( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are Front services of a certain <see cref="AutoServiceKind"/> (that must
-        ///// not be <see cref="AutoServiceKind.None"/>).
-        ///// </summary>
-        ///// <param name="types">Types to register.</param>
-        ///// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
-        //public void DefineAsExternalFrontService( IReadOnlyCollection<Type> types, AutoServiceKind kind )
-        //{
-        //    if( types == null ) throw new ArgumentNullException( nameof( types ) );
-        //    DoDefineAsExternalFrontService( types, types.Count, kind );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are Front services of a certain <see cref="AutoServiceKind"/> (that must
-        ///// not be <see cref="AutoServiceKind.None"/>).
-        ///// </summary>
-        ///// <param name="typeNames">Types to register.</param>
-        ///// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
-        //public void DefineAsExternalFrontService( IReadOnlyCollection<string> typeNames, AutoServiceKind kind )
-        //{
-        //    if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-        //    DoDefineAsExternalFrontService( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count, kind );
-        //}
-
         void DoRegisterTypes( IEnumerable<Type> types, int count )
         {
             SafeTypesHandler( "Explicitly registering IPoco interfaces, or Real Objects or Service classes", types, count, ( m, cc, t ) => cc.RegisterType( t ), false );
@@ -351,9 +285,19 @@ namespace CK.Setup
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
                 if( orderedItems != null )
                 {
-                    if( !RegisterServices( typeResult ) ) orderedItems = null;
+                    // This is far from elegant but simplifies the engine object model:
+                    // We set the final ordered results on the crappy mutable EngineMap (that should
+                    // not exist and be replaced with intermediate - functional-like - value results).
+                    // But this would be a massive refactoring and this internal mutable state is, to be honnest,
+                    // quite convenient!
+                    typeResult.RealObjects.EngineMap.SetFinalOrderedResults( orderedItems );
+                    if( !RegisterServices( typeResult ) )
+                    {
+                        // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
+                        buildValueCollector = null;
+                    }
                 }
-                return new StObjCollectorResult( typeResult, _tempAssembly, _primaryRunCache, orderedItems, buildValueCollector );
+                return new StObjCollectorResult( typeResult, _tempAssembly, _primaryRunCache, buildValueCollector );
             }
             catch( Exception ex )
             {
@@ -438,6 +382,7 @@ namespace CK.Setup
                 }
 
                 Debug.Assert( sortResult != null );
+                // We now can setup the final ordered list of MutableItems (ie. of IStObjResult).
                 List<MutableItem> ordered = new List<MutableItem>();
                 using( _monitor.OpenInfo( "Finalizing graph." ) )
                 {

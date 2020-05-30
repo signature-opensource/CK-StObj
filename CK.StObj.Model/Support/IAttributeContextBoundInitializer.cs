@@ -3,8 +3,8 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Marker interface that extends <see cref="IAttributeContextBound"/> in order to 
-    /// be initialized with the <see cref="MemberInfo"/> that is decorated with the attribute.
+    /// Extends <see cref="IAttributeContextBound"/> in order to be initialized with the <see cref="MemberInfo"/> that is
+    /// decorated with the attribute and the whole type information (giving access to any other attributes on the type).
     /// </summary>
     public interface IAttributeContextBoundInitializer : IAttributeContextBound
     {

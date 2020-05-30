@@ -40,5 +40,10 @@ namespace CK.Core
         /// Gets the final implementation (the most specialized type).
         /// </summary>
         IStObjFinalImplementation FinalImplementation { get; }
+
+        /// <summary>
+        /// Gets the index of this IStObj in the whole ordered list of StObj.
+        /// </summary>
+        int IndexOrdered { get; }
     }
 }

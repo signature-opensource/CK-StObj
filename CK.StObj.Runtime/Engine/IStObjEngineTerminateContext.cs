@@ -25,9 +25,9 @@ namespace CK.Setup
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 
         /// <summary>
-        /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.
+        /// Gets the <see cref="IStObjEngineMap"/>.
         /// </summary>
-        IReadOnlyList<IStObjResult> OrderedStObjs { get; }
+        IStObjEngineMap EngineStObjMap { get; }
 
         /// <summary>
         /// Pushes a defered action.

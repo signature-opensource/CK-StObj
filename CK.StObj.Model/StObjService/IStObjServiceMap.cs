@@ -34,7 +34,7 @@ namespace CK.Core
         /// Gets all the <see cref="IAutoService"/> types to Service class mappings
         /// that cannot be directly resolved by a DI container and require either
         /// an adaptation based on the <see cref="IStObjServiceClassFactoryInfo"/> or
-        /// to simply use the existing <see cref="IStObjServiceClassFactory.CreateInstance(IServiceProvider)"/>
+        /// to simply use the provided <see cref="IStObjServiceClassFactory.CreateInstance(IServiceProvider)"/>
         /// helper method.
         /// Note that a <see cref="IStObjServiceClassFactory"/> is a <see cref="IStObjServiceClassDescriptor"/> (that
         /// is the descriptor used by <see cref="SimpleMappings"/>).

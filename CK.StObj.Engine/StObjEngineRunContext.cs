@@ -10,12 +10,10 @@ namespace CK.Setup
         readonly StObjEngineConfigureContext _startContext;
         readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
 
-        public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext, IReadOnlyList<IStObjResult> stObjs, IReadOnlyCollection<VFeature> features )
+        public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext, IStObjEngineMap map )
         {
             _monitor = monitor;
             _startContext = startContext;
-            OrderedStObjs = stObjs;
-            Features = features;
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
         }
 
@@ -25,9 +23,7 @@ namespace CK.Setup
 
         public IReadOnlyList<IStObjEngineAspect> Aspects => _startContext.Aspects;
 
-        public IReadOnlyList<IStObjResult> OrderedStObjs { get; }
-
-        public IReadOnlyCollection<VFeature> Features { get; }
+        public IStObjEngineMap EngineStObjMap { get; }
 
         public void PushDeferredAction( Func<IActivityMonitor, IStObjEngineRunContext, bool> postAction ) => _trampoline.Push( postAction );
 

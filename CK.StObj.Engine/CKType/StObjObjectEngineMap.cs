@@ -11,16 +11,20 @@ namespace CK.Setup
     /// <summary>
     /// Internal mutable implementation of <see cref="IStObjObjectEngineMap"/> that handles <see cref="MutableItem"/>.
     /// The internal participants have write access to it. I'm not proud of this (there are definitly cleaner
-    /// ways to organize this) but it work...
+    /// ways to organize this) but it works...
     /// The map is instantiated by CKTypeCollector.GetRealObjectResult and then
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
     /// can use (and fill) it.
     /// </summary>
-    partial class StObjObjectEngineMap : IStObjObjectEngineMap, IStObjMap, IStObjServiceMap
+    partial class StObjObjectEngineMap : IStObjObjectEngineMap, IStObjEngineMap, IStObjServiceMap
     {
         readonly Dictionary<object, MutableItem> _map;
         readonly MutableItem[] _allSpecializations;
         readonly IReadOnlyCollection<Assembly> _assemblies;
+
+        // Ultimate result: StObjCollector.GetResult sets this if no error occurred
+        // during Real objects processing.
+        IReadOnlyList<MutableItem> _orderedStObjs;
 
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
@@ -74,8 +78,10 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// This map auto implements the root <see cref="IStObjMap"/>.
+        /// This auto implements the <see cref="IStObjObjectEngineMap"/>.
         /// </summary>
+        public IStObjObjectEngineMap StObjs => this;
+
         IStObjObjectMap IStObjMap.StObjs => this;
 
         /// <summary>
@@ -172,7 +178,7 @@ namespace CK.Setup
 
         IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _allSpecializations.Select( m => m.FinalImplementation );
 
-        public IEnumerable<StObjMapping> StObjs
+        IEnumerable<StObjMapping> IStObjObjectMap.StObjs
         {
             get
             {
@@ -182,6 +188,13 @@ namespace CK.Setup
         }
 
         IStObjResult IStObjObjectEngineMap.ToLeaf( Type t ) => ToLeaf( t );
+
+        IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedStObjs => _orderedStObjs;
+
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered )
+        {
+            _orderedStObjs = ordered;
+        }
 
         IStObj IStObjObjectMap.ToLeaf( Type t ) => ToLeaf( t );
 

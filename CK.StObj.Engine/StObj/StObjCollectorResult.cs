@@ -11,6 +11,8 @@ using System.Diagnostics;
 using CK.CodeGen;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -19,34 +21,32 @@ namespace CK.Setup
     public partial class StObjCollectorResult
     {
         readonly DynamicAssembly _tempAssembly;
-        readonly StObjObjectEngineMap _liftedMap;
-        readonly BuildValueCollector _valueCollector;
+        readonly BuildValueCollector? _valueCollector;
 
         internal StObjCollectorResult(
             CKTypeCollectorResult typeResult,
             DynamicAssembly tempAssembly,
             Dictionary<string, object> primaryRunCache,
-            IReadOnlyList<MutableItem> orderedStObjs,
-            BuildValueCollector valueCollector )
+            BuildValueCollector? valueCollector )
         {
+            Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (ie. valueCollector != null ==> !typeResult.HasFatalError)" );
             CKTypeResult = typeResult;
-            _liftedMap = CKTypeResult?.RealObjects?.EngineMap;
             _tempAssembly = tempAssembly;
-            if( primaryRunCache != null ) SecondaryRunAccessor = key => primaryRunCache[key];
-            OrderedStObjs = orderedStObjs;
             _valueCollector = valueCollector;
+            if( valueCollector != null ) EngineMap = typeResult.RealObjects.EngineMap;
+            if( primaryRunCache != null ) SecondaryRunAccessor = key => primaryRunCache[key];
         }
 
         /// <summary>
         /// Gets an accessor for the primary run cache only if this result comes
         /// from a primary run, null otherwise.
         /// </summary>
-        public Func<string, object> SecondaryRunAccessor { get; }
+        public Func<string, object>? SecondaryRunAccessor { get; }
 
         /// <summary>
         /// True if a fatal error occured. Result should be discarded.
         /// </summary>
-        public bool HasFatalError => OrderedStObjs == null || (CKTypeResult?.HasFatalError ?? false);
+        public bool HasFatalError => _valueCollector == null;
 
         /// <summary>
         /// Gets the result of the types discovery and analysis.
@@ -54,31 +54,11 @@ namespace CK.Setup
         public CKTypeCollectorResult CKTypeResult { get; }
 
         /// <summary>
-        /// Gets the <see cref="IStObjObjectEngineMap"/> that extends runtime <see cref="IStObjObjectMap"/>.
+        /// Gets the final <see cref="IStObjEngineMap"/> if <see cref="HasFatalError"/> is false.
         /// </summary>
-        public IStObjObjectEngineMap StObjs => _liftedMap;
+        public IStObjEngineMap? EngineMap { get; }
 
-        /// <summary>
-        /// Gets the <see cref="IStObjServiceMap"/>.
-        /// </summary>
-        public IStObjServiceMap Services => _liftedMap;
-
-        /// <summary>
-        /// Gets the name of this StObj map.
-        /// Never null, defaults to the empty string.
-        /// </summary>
-        public string MapName => _liftedMap?.MapName ?? String.Empty;
-
-        /// <summary>
-        /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.
-        /// Null if <see cref="HasFatalError"/> is true.
-        /// </summary>
-        public IReadOnlyList<IStObjResult> OrderedStObjs { get; }
-
-        /// <summary>
-        /// Gets the features.
-        /// </summary>
-        public IReadOnlyCollection<VFeature> Features => _liftedMap.Features;
+        IReadOnlyList<IStObjResult> OrderedStObjs => EngineMap!.StObjs.OrderedStObjs;
 
         /// <summary>
         /// Generates final assembly.
@@ -95,17 +75,17 @@ namespace CK.Setup
             IActivityMonitor monitor,
             string finalFilePath,
             bool saveSource,
-            string informationalVersion,
+            string? informationalVersion,
             bool skipCompilation )
         {
-            if( HasFatalError ) throw new InvalidOperationException( nameof( HasFatalError ) );
+            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             bool hasError = false;
             using( monitor.OnError( () => hasError = true ) )
             using( monitor.OpenInfo( "Generating StObj dynamic assembly." ) )
             {
                 using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                 {
-                    foreach( MutableItem item in OrderedStObjs )
+                    foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
                     {
                         item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
                     }

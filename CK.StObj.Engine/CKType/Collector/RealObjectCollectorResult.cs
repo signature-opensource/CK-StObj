@@ -4,6 +4,8 @@ using System.Linq;
 using CK.Text;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>

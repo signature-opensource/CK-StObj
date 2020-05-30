@@ -105,7 +105,7 @@ namespace CK.Setup
             _names = new Dictionary<IStObjServiceClassFactoryInfo, string>();
         }
 
-        public void CreateServiceSupportCode( StObjObjectEngineMap liftedMap )
+        public void CreateServiceSupportCode( StObjObjectEngineMap /*IStObjServiceMap*/ liftedMap )
         {
             _infoType.Namespace.Append( _sourceServiceSupport );
 
@@ -143,7 +143,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                             .Append( ", " )
                             .AppendTypeOf( d.FinalType )
                             .Append( ", " )
-                            .Append( d.FinalTypeKind.Value )
+                            .Append( d.FinalTypeKind.Value /*d.AutoServiceKind*/ )
                             .Append( ", " )
                             .AppendArray( d.MarshallableTypes )
                             .Append( ", " )

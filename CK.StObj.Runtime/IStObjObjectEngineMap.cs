@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using CK.Core;
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines an engine extension to the runtime <see cref="IStObjObjectMap"/>.
-    /// This is exposed as the <see cref="StObjCollectorResult.StObjs"/> property to
+    /// Defines an engine extension to the model <see cref="IStObjObjectMap"/>.
+    /// This is exposed as the <see cref="IStObjEngineMap.StObjs"/> property to
     /// mimic <see cref="IStObjMap.StObjs"/> (and is type compatible).
     /// </summary>
     public interface IStObjObjectEngineMap : IStObjObjectMap
@@ -23,6 +24,11 @@ namespace CK.Setup
         /// <param name="t">Any mapped type.</param>
         /// <returns>The most abstract, less specialized, associated type.</returns>
         IStObjResult ToStObj( Type t );
+
+        /// <summary>
+        /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.
+        /// </summary>
+        IReadOnlyList<IStObjResult> OrderedStObjs { get; }
 
     }
 }
