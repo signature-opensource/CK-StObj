@@ -336,21 +336,30 @@ namespace CK.Setup
 
         /// <summary>
         /// Builds and returns a <see cref="StObjCollectorResult"/> if no error occurred during type registration.
-        /// If <see cref="RegisteringFatalOrErrorCount"/> is not equal to 0, this throws a <see cref="CKException"/>.
+        /// On error, <see cref="StObjCollectorResult.HasFatalError"/> is true and this result should be discarded.
+        /// If <see cref="RegisteringFatalOrErrorCount"/> is not equal to 0, this throws a <see cref="InvalidOperationException"/>.
         /// </summary>
         /// <returns>The result.</returns>
         public StObjCollectorResult GetResult()
         {
             if( _registerFatalOrErrorCount > 0 )
             {
-                throw new CKException( $"There are {_registerFatalOrErrorCount} registration errors." );
+                throw new InvalidOperationException( $"There are {_registerFatalOrErrorCount} registration errors." );
             }
-            var (typeResult, orderedItems,buildValueCollector) = CreateTypeAndObjectResults();
-            if( orderedItems != null )
+            try
             {
-                if( !RegisterServices( typeResult ) ) orderedItems = null;
+                var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
+                if( orderedItems != null )
+                {
+                    if( !RegisterServices( typeResult ) ) orderedItems = null;
+                }
+                return new StObjCollectorResult( typeResult, _tempAssembly, _primaryRunCache, orderedItems, buildValueCollector );
             }
-            return new StObjCollectorResult( typeResult, _tempAssembly, _primaryRunCache, orderedItems, buildValueCollector );
+            catch( Exception ex )
+            {
+                _monitor.Fatal( ex );
+                throw;
+            }
         }
 
         (CKTypeCollectorResult, IReadOnlyList<MutableItem>, BuildValueCollector) CreateTypeAndObjectResults()

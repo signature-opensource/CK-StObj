@@ -59,7 +59,7 @@ namespace CK.Testing
         static StObjCollectorResult DoGetSuccessfulResult( StObjCollector c )
         {
             c.RegisteringFatalOrErrorCount.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
-            var r = c.GetResult();
+            StObjCollectorResult? r = c.GetResult();
             r.HasFatalError.Should().Be( false, "There must be no error." );
             return r;
         }

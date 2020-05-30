@@ -98,6 +98,7 @@ namespace CK.Setup
             string informationalVersion,
             bool skipCompilation )
         {
+            if( HasFatalError ) throw new InvalidOperationException( nameof( HasFatalError ) );
             bool hasError = false;
             using( monitor.OnError( () => hasError = true ) )
             using( monitor.OpenInfo( "Generating StObj dynamic assembly." ) )
