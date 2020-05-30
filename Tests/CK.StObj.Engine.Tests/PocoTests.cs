@@ -18,7 +18,7 @@ namespace CK.StObj.Engine.Tests
         {
             StObjCollectorResult result = BuildPocoSample();
 
-            IStObjResult p = result.StObjs.ToStObj( typeof( PackageWithBasicPoco ) );
+            IStObjResult p = result.EngineMap.StObjs.ToStObj( typeof( PackageWithBasicPoco ) );
             var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
             IBasicPoco poco = package.Factory.Create();
             Assert.That( poco is IEAlternateBasicPoco );
@@ -26,7 +26,7 @@ namespace CK.StObj.Engine.Tests
             Assert.That( poco is IECombineBasicPoco );
             Assert.That( poco is IEIndependentBasicPoco );
 
-            var fEI = result.StObjs.Obtain<IPocoFactory<IEIndependentBasicPoco>>();
+            var fEI = result.EngineMap.StObjs.Obtain<IPocoFactory<IEIndependentBasicPoco>>();
             IEIndependentBasicPoco ei = fEI.Create();
             ei.BasicProperty = 3;
             ei.IndependentProperty = 9;
@@ -76,7 +76,7 @@ namespace CK.StObj.Engine.Tests
         public void poco_factory_exposes_the_final_type()
         {
             StObjCollectorResult result = BuildPocoSample();
-            var p = result.StObjs.Obtain<IPocoFactory<IBasicPoco>>();
+            var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IBasicPoco>>();
 
             Type pocoType = p.PocoClassType;
             Assert.That( typeof( IBasicPoco ).IsAssignableFrom( pocoType ) );
@@ -91,7 +91,7 @@ namespace CK.StObj.Engine.Tests
         public void poco_support_read_only_properties()
         {
             StObjCollectorResult result = BuildPocoSample();
-            var p = result.StObjs.Obtain<IPocoFactory<IEBasicPocoWithReadOnly>>();
+            var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IEBasicPocoWithReadOnly>>();
             var o = p.Create();
 
             Assert.That( o.ReadOnlyProperty, Is.EqualTo( 0 ) );

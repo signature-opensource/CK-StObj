@@ -5,6 +5,7 @@ using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -165,13 +166,14 @@ namespace CK.StObj.Engine.Tests
                 var r = collector.GetResult(  );
                 {
                     Assert.That( r.HasFatalError, Is.False );
+                    IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
-                    Assert.That( r.StObjs.Obtain<B>().TheA, Is.SameAs( r.StObjs.Obtain<A>() ).And.SameAs( r.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( r.StObjs.Obtain<ASpec>().TheB, Is.SameAs( r.StObjs.Obtain<B>() ) );
-                    Assert.That( r.StObjs.ToStObj( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
-                    Assert.That( r.StObjs.ToStObj( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
+                    Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
+                    Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
+                    Assert.That( stObjs.ToStObj( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( stObjs.ToStObj( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
-                    ASpec theA = (ASpec)r.StObjs.Obtain<A>();
+                    ASpec theA = (ASpec)stObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
@@ -281,16 +283,17 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-                var r = collector.GetResult(  );
+                var r = collector.GetResult();
                 {
                     Assert.That( r.HasFatalError, Is.False );
+                    IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
-                    Assert.That( r.StObjs.Obtain<B>().TheA, Is.SameAs( r.StObjs.Obtain<A>() ).And.SameAs( r.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( r.StObjs.Obtain<ASpec>().TheB, Is.SameAs( r.StObjs.Obtain<B>() ) );
-                    Assert.That( r.StObjs.ToStObj( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
-                    Assert.That( r.StObjs.ToStObj( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
+                    Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
+                    Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
+                    Assert.That( stObjs.ToStObj( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( stObjs.ToStObj( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
-                    ASpec theA = (ASpec)r.StObjs.Obtain<A>();
+                    ASpec theA = (ASpec)stObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
@@ -373,7 +376,7 @@ namespace CK.StObj.Engine.Tests
                         {
                             scope.AppendSourceString( $@"Value is ""{_attr.Value}""..." );
                         }
-                        else 
+                        else
                         {
                             scope.Append( "default(" ).AppendCSharpName( p.PropertyType ).Append( ")" );
                         }
@@ -391,7 +394,7 @@ namespace CK.StObj.Engine.Tests
             /// This attribute accepts a parameter name value that will drive/configure the code generation.
             /// </para>
             /// </summary>
-            [AttributeUsage(AttributeTargets.Class)]
+            [AttributeUsage( AttributeTargets.Class )]
             public class DefaultPropertyImplementationAttribute : ContextBoundDelegationAttribute
             {
                 public DefaultPropertyImplementationAttribute( int value )
@@ -443,6 +446,47 @@ namespace CK.StObj.Engine.Tests
         public void IAutoImplementorType_implements_interface()
         {
             new CTypeImplementor().DoTest();
+        }
+
+
+        public class ContextBoundDelegationAttributeDI
+        {
+            public class AttributeImpl 
+            {
+                public AttributeImpl( ContextBoundDelegationAttribute a, IServiceProvider p, Func<string> hello )
+                {
+                    TestHelper.Monitor.Info( hello );
+                }
+            }
+
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+ContextBoundDelegationAttributeDI+AttributeImpl, CK.StObj.Engine.Tests" )]
+            public abstract class JustForTheAttribute : IAutoService
+            {
+                /// <summary>
+                /// AutoServices MUST have a single public constructor.
+                /// </summary>
+                public JustForTheAttribute()
+                {
+                }
+            }
+
+            public void DoTest()
+            {
+                var extraServices = new SimpleServiceContainer();
+                extraServices.Add<Func<string>>( () => "Hello World!" );
+
+                StObjCollector collector = new StObjCollector( TestHelper.Monitor, extraServices );
+                collector.RegisterType( typeof( JustForTheAttribute ) );
+                var r = collector.GetResult();
+                Assert.That( r.HasFatalError, Is.False );
+            }
+
+        }
+
+        [Test]
+        public void ContextBoundDelegation_dependency_injection()
+        {
+            new ContextBoundDelegationAttributeDI().DoTest();
         }
     }
 }

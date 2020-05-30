@@ -78,7 +78,7 @@ namespace CK.StObj.Engine.Tests
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterTypes( types.ToList() );
             
-            var result = TestHelper.GetSuccessfulResult( collector );
+            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap;
 
             IStObjResult oa = result.StObjs.ToStObj( typeof(ObjectA) );
             oa.Container.ClassType.Should().Be( typeof( PackageForAB ) );
@@ -213,10 +213,9 @@ namespace CK.StObj.Engine.Tests
 
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterTypes( types.ToList() );
-                var result = collector.GetResult(  );
-                Assert.That( result.HasFatalError, Is.False );
+                var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
 
-                IStObjResult theObject = result.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) );
+                IStObjResult theObject = r.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) );
                 Assert.That( theObject, Is.Not.Null );
                 Assert.That( theObject.FinalImplementation.Implementation, Is.Not.Null.And.InstanceOf<SimpleObjects.LoggerInjection.LoggerInjected>() );
             }

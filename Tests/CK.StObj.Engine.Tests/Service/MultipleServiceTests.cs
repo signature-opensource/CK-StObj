@@ -80,8 +80,8 @@ namespace CK.StObj.Engine.Tests.Service
 
             var result = TestHelper.GetAutomaticServices( collector );
             result.Map.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
-            IStObjFinalImplementation g = result.Result.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
-            IStObjFinalImplementation o = result.Result.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;
+            IStObjFinalImplementation g = result.Result.EngineMap.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
+            IStObjFinalImplementation o = result.Result.EngineMap.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;
             g.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
             o.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
 

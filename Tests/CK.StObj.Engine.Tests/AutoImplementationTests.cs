@@ -42,9 +42,8 @@ namespace CK.StObj.Engine.Tests
         {
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterType( typeof( A2 ) );
-            StObjCollectorResult result = collector.GetResult();
-            result.HasFatalError.Should().BeFalse();
-            result.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2>();
+            var r = TestHelper.GetSuccessfulResult( collector );
+            r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2>();
         }
 
         public abstract class A3 : A
@@ -57,9 +56,8 @@ namespace CK.StObj.Engine.Tests
         {
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterType( typeof( A3 ) );
-            StObjCollectorResult result = collector.GetResult();
-            result.HasFatalError.Should().BeFalse();
-            result.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A3>();
+            var r = TestHelper.GetSuccessfulResult( collector );
+            r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A3>();
         }
 
         [AttributeUsage( AttributeTargets.Class, AllowMultiple = false, Inherited = false )]
@@ -78,9 +76,9 @@ namespace CK.StObj.Engine.Tests
         {
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterType( typeof( A4 ) );
-            StObjCollectorResult result = collector.GetResult();
-            result.HasFatalError.Should().BeFalse();
-            result.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A4>();
+            
+            StObjCollectorResult result = TestHelper.GetSuccessfulResult( collector );
+            result.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A4>();
         }
 
     }

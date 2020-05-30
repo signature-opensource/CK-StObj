@@ -178,8 +178,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
-            StObjCollectorResult r = collector.GetResult();
-            Assert.That( r.HasFatalError, Is.False );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             CheckChildren<BasicPackage>( r.StObjs, "BasicActor,BasicUser,BasicGroup" );
             CheckChildren<ZonePackage>( r.StObjs, "SecurityZone,ZoneGroup" );
             CheckChildren<SqlDatabaseDefault>( r.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser,AuthenticationDetail" );

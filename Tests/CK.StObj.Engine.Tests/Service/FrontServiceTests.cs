@@ -25,7 +25,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.SetAutoServiceKind( typeof( FrontService1 ), AutoServiceKind.IsScoped );
             collector.RegisterType( typeof( FrontService1 ) );
 
-            var result = TestHelper.GetSuccessfulResult( collector );
+            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap;
 
             IStObjServiceClassDescriptor descriptor = result.Services.SimpleMappings[typeof( IFrontService1 )];
             descriptor.Should().BeSameAs( result.Services.SimpleMappings[typeof( FrontService1 )] );
@@ -83,7 +83,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( FrontDependentService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             IStObjServiceClassDescriptor descriptor = r.Services.SimpleMappings[typeof( FrontDependentService1 )];
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
         }
@@ -107,7 +107,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontDependentService1 ) );
             collector.RegisterType( typeof( FrontService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( FrontDependentService1 )];
             IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
@@ -129,7 +129,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( MService1NoAutoService ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             r.Services.SimpleMappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
         }
 
@@ -144,7 +144,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             IStObjServiceClassDescriptor dI = r.Services.SimpleMappings[typeof( IFrontService1 )];
             IStObjServiceClassDescriptor dC = r.Services.SimpleMappings[typeof( FrontService1 )];
             dI.Should().BeSameAs( dC );
@@ -158,7 +158,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
 
             var dM = r.Services.SimpleMappings[typeof( MService1 )];
             var dMi = r.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
@@ -175,7 +175,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
 
             var dM = r.Services.SimpleMappings[typeof( MService1 )];
             var dMClass = r.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
@@ -197,7 +197,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
@@ -225,7 +225,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( MarshalAnyway ) );
             collector.RegisterType( typeof( NotAutoService ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
+            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             r.Services.SimpleMappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
         }
 
@@ -269,7 +269,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( ServiceFreeLifetime ) );
 
             var r = TestHelper.GetSuccessfulResult( collector );
-            r.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
+            r.EngineMap.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
         }
     }
 }

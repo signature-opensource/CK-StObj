@@ -156,16 +156,14 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void CovariantPropertiesSupport()
         {
-            {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( CB3 ) );
-                collector.RegisterType( typeof( CA3 ) );
-                var r = collector.GetResult(  );
-                Assert.That( r.HasFatalError, Is.False );
-                var cb = r.StObjs.Obtain<CB>();
-                Assert.That( cb, Is.InstanceOf<CB3>() );
-                Assert.That( cb.A, Is.InstanceOf<CA3>() );
-            }
+            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+            collector.RegisterType( typeof( CB3 ) );
+            collector.RegisterType( typeof( CA3 ) );
+
+            var r = TestHelper.GetSuccessfulResult( collector );
+            var cb = r.EngineMap.StObjs.Obtain<CB>();
+            Assert.That( cb, Is.InstanceOf<CB3>() );
+            Assert.That( cb.A, Is.InstanceOf<CA3>() );
         }
 
         public class CMissingSetterOnTopDefiner : IRealObject
@@ -198,8 +196,7 @@ namespace CK.StObj.Engine.Tests
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( CPrivateSetter ) );
                 collector.RegisterType( typeof( CA2 ) );
-                var r = collector.GetResult( );
-                Assert.That( r.HasFatalError, Is.False );
+                var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 var c = r.StObjs.Obtain<CPrivateSetter>();
                 Assert.That( c.A, Is.InstanceOf<CA2>() );
             }

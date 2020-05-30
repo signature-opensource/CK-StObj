@@ -35,7 +35,7 @@ namespace CK.StObj.Engine.Tests
             {
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( SimpleContainer ) );
-                StObjCollectorResult result = collector.GetResult();
+                var result = collector.GetResult().EngineMap.StObjs;
                 Assert.That( result.OrderedStObjs.First().GetStObjProperty( "OneIntValue" ), Is.EqualTo( 3712 ) );
             }
         }
@@ -83,7 +83,7 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( BaseObject ) );
             collector.RegisterType( typeof( SpecializedObject ) );
             collector.RegisterType( typeof( SpecializedObjectWithExplicitContainer ) );
-            StObjCollectorResult result = collector.GetResult();
+            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap.StObjs;
 
             Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer" ) );

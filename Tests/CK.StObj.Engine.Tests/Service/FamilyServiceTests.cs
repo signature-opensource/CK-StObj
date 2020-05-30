@@ -42,7 +42,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( NotALinkBetweenFamilies ) );
                 collector.RegisterType( typeof( OnlyForS ) );
-                var r = TestHelper.GetSuccessfulResult( collector );
+                var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 r.Services.SimpleMappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
                 r.Services.SimpleMappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
                 r.Services.SimpleMappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );

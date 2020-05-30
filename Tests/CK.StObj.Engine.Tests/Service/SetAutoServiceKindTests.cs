@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( Service ) );
 
             var result = TestHelper.GetSuccessfulResult( collector );
-            var d = result.Services.SimpleMappings[typeof( Service )];
+            var d = result.EngineMap.Services.SimpleMappings[typeof( Service )];
             d.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
             d.MultipleMappings.Should().Contain( typeof( IService ) );
         }
