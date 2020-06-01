@@ -71,6 +71,7 @@ namespace CK.Setup
 
             /// <summary>
             /// Overridden to returne the Name - Kind and Optional value.
+            /// This is used as the equality key when configurations are grouped into equivalency classes.
             /// </summary>
             /// <returns>A readable string.</returns>
             public override string ToString() => $"{Name} - {Kind} - {Optional}";
@@ -94,6 +95,7 @@ namespace CK.Setup
         /// <param name="e">The Xml element.</param>
         public BinPathConfiguration( XElement e )
         {
+            Name = (string?)e.Attribute( StObjEngineConfiguration.xName );
             Path = (string)e.Attribute( StObjEngineConfiguration.xPath );
             OutputPath = (string)e.Element( StObjEngineConfiguration.xOutputPath );
             SkipCompilation = (bool?)e.Element( StObjEngineConfiguration.xSkipCompilation ) ?? false;
@@ -112,6 +114,7 @@ namespace CK.Setup
         public XElement ToXml()
         {
             return new XElement( StObjEngineConfiguration.xBinPath,
+                                    String.IsNullOrWhiteSpace( Name ) ? null : new XAttribute( StObjEngineConfiguration.xName, Name ),
                                     new XAttribute( StObjEngineConfiguration.xPath, Path ),
                                     !OutputPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.xOutputPath, OutputPath ) : null,
                                     SkipCompilation ? new XElement( StObjEngineConfiguration.xSkipCompilation, true ) : null,
@@ -123,6 +126,12 @@ namespace CK.Setup
                                                             t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
                                                             t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) );
         }
+
+        /// <summary>
+        /// Gets or sets the name of this configuration.
+        /// When null, an automatically numbered name is generated: only the unified bin path has an empty name.
+        /// </summary>
+        public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the path of the directory to setup (this property is shared with CKSetup configuration).

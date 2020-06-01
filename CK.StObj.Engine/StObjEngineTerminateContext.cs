@@ -23,7 +23,9 @@ namespace CK.Setup
 
         public IReadOnlyList<IStObjEngineAspect> Aspects => _runContext.Aspects;
 
-        public IStObjEngineMap EngineStObjMap => _runContext.EngineStObjMap;
+        public IGeneratedBinPath UnifiedBinPath => _runContext.UnifiedBinPath;
+
+        public IReadOnlyList<IGeneratedBinPath> AllBinPaths => _runContext.AllBinPaths;
 
         public void PushDeferredAction( Func<IActivityMonitor, IStObjEngineTerminateContext, bool> postAction ) => _trampoline.Push( postAction );
 

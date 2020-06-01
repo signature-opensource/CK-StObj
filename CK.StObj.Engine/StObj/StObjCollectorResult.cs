@@ -79,7 +79,7 @@ namespace CK.Setup
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             bool hasError = false;
             using( monitor.OnError( () => hasError = true ) )
-            using( monitor.OpenInfo( "Generating StObj dynamic assembly." ) )
+            using( monitor.OpenInfo( $"Generating dynamic assembly (Saving source: {saveSource}, SkipCompilation: {skipCompilation})." ) )
             {
                 using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                 {

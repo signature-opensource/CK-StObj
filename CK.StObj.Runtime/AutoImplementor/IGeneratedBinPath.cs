@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Captures a generated BinPath code: equivalent (compatible) <see cref="BinPathConfiguration"/>
-    /// are bound to the same generation context.
+    /// Captures the result of a BinPath analysis: multiple equivalent (compatible) <see cref="BinPathConfiguration"/>
+    /// are bound to the same <see cref="EngineMap"/>.
     /// </summary>
     public interface IGeneratedBinPath
     {
@@ -12,7 +12,6 @@ namespace CK.Setup
         /// Gets the engine map that concentrates all the Real Objects, Poco and AutoServices information.
         /// </summary>
         IStObjEngineMap EngineMap { get; }
-
 
         /// <summary>
         /// Gets one or more <see cref="BinPathConfiguration"/> that share/are compatible this <see cref="EngineMap"/>.

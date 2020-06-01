@@ -4,7 +4,8 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Exposes engine status.
+    /// Exposes engine status and capture of the current ActivityMonitor group path as
+    /// well as last error or warning paths.
     /// </summary>
     public interface IStObjEngineStatus
     {
@@ -14,7 +15,7 @@ namespace CK.Setup
         bool Success { get; }
 
         /// <summary>
-        /// Gets the current (mutable) path. You may use ToArray or ToList methods to take
+        /// Gets the current (mutable) ActivityMonitor path. You may use ToArray or ToList methods to take
         /// a snapshot of this list.
         /// Use the extension method <see cref="ActivityMonitorExtension.ToStringPath"/> to easily format this path.
         /// </summary>

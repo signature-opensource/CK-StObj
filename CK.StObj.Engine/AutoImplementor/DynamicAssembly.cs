@@ -101,7 +101,7 @@ namespace CK.Setup
         /// <param name="key">Key of the cached result.</param>
         public object GetPrimaryRunResult( string key )
         {
-            if( _secondaryRunAccessor == null ) throw new InvalidOperationException();
+            if( _secondaryRunAccessor == null ) throw new InvalidOperationException( nameof( IsSecondaryRun ) );
             return _secondaryRunAccessor( key );
         }
 
