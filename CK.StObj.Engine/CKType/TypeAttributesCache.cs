@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -69,7 +71,7 @@ namespace CK.Setup
             var attr = (IAttributeContextBound[])m.GetCustomAttributes( typeof( IAttributeContextBound ), inherit );
             foreach( var a in attr )
             {
-                object finalAttributeToUse = a;
+                object? finalAttributeToUse = a;
                 if( a is ContextBoundDelegationAttribute delegated )
                 {
                     Type dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
@@ -98,9 +100,8 @@ namespace CK.Setup
         {
             if( m == null ) throw new ArgumentNullException( nameof(m) );
             if( attributeType == null ) throw new ArgumentNullException( nameof(attributeType) );
-            return _all.Any( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) 
-                                  && attributeType.IsAssignableFrom( e.Attr.GetType() ) )
-                    || ( (m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType.IsAssignableFrom( Type ))) 
+            return _all.Any( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) && attributeType.IsAssignableFrom( e.Attr.GetType() ) )
+                    || ( (m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type ))) 
                          && m.GetCustomAttributes(false).Any( a => attributeType.IsAssignableFrom( a.GetType()) ) );
         }
 
@@ -117,7 +118,7 @@ namespace CK.Setup
             if( m == null ) throw new ArgumentNullException( "m" );
             if( attributeType == null ) throw new ArgumentNullException( "attributeType" );
             var fromCache = _all.Where( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
-            if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType.IsAssignableFrom( Type )) )
+            if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
             {
                 return fromCache
                         .Concat( m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) ) );
@@ -137,7 +138,7 @@ namespace CK.Setup
         {
             if( m == null ) throw new ArgumentNullException( "m" );
             var fromCache = _all.Where( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) && e.Attr is T ).Select( e => (T)e.Attr );
-            if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType.IsAssignableFrom( Type )) )
+            if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
             {
                 return fromCache
                         .Concat( m.GetCustomAttributes( false ).Where( a => !(a is IAttributeContextBound) && a is T).Select( a => (T)(object)a ) );
