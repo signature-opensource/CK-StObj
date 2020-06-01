@@ -9,6 +9,8 @@ using CK.Text;
 using CK.CodeGen.Abstractions;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Diagnostics;
+using CK.Setup;
+using System.Collections;
 
 namespace CK.Setup
 {
@@ -37,7 +39,7 @@ namespace CK.Setup
             }
         }
 
-        CodeGenerateResult GenerateSourceCode( IActivityMonitor monitor, string finalFilePath, bool saveSource, bool skipCompilation )
+        CodeGenerateResult GenerateSourceCode( IActivityMonitor monitor, string finalFilePath, ICodeGenerationContext c )
         {
             List<string> generatedFileNames = new List<string>();
             try
@@ -75,7 +77,7 @@ namespace CK.Setup
                     // the "reality cache" is created).
                     foreach( var t in CKTypeResult.TypesToImplement )
                     {
-                        t.GenerateType( monitor, _tempAssembly );
+                        t.GenerateType( monitor, c );
                     }
 
                     // Generates the StObjContextRoot implementation.
@@ -92,15 +94,15 @@ namespace CK.Setup
                     }
                     return new CodeGenerateResult( false, generatedFileNames );
                 }
-                using( monitor.OpenInfo( skipCompilation
-                                            ? "Generating source code, parsing using C# v7.3 language version, skipping compilation."
-                                            : "Compiling source code (using C# v7.3 language version)." ) )
+                using( monitor.OpenInfo( c.CompileSource
+                                            ? "Compiling source code (using C# v8.0 language version)."
+                                            : "Generating source code, parsing using C# v8.0 language version, skipping compilation." ) )
                 {
                     var g = new CodeGenerator( CodeWorkspace.Factory );
-                    g.ParseOptions = new CSharpParseOptions( LanguageVersion.CSharp7_3 );
-                    g.Modules.AddRange( _tempAssembly.SourceModules );
-                    var result = g.Generate( ws, finalFilePath, skipCompilation );
-                    if( saveSource && result.Sources != null )
+                    g.ParseOptions = new CSharpParseOptions( LanguageVersion.CSharp8 );
+                    g.Modules.AddRange( DynamicAssembly.SourceModules );
+                    var result = g.Generate( ws, finalFilePath, !c.CompileSource );
+                    if( c.SaveSource && result.Sources != null )
                     {
                         for( int i = 0; i < result.Sources.Count; ++i )
                         {

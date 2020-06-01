@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using CK.Core;
@@ -10,11 +12,25 @@ namespace CK.Setup
 {
     class StObjEngineRunContext : IStObjEngineRunContext
     {
-        internal class GenBinPath : IGeneratedBinPath
+        readonly IActivityMonitor _monitor;
+        readonly StObjEngineConfigureContext _startContext;
+        readonly List<GenBinPath> _binPaths;
+        readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
+        readonly Dictionary<string, object> _unifiedRunCache;
+        readonly IDictionary _codeGenerationGlobalMemory;
+
+        internal class GenBinPath : IGeneratedBinPath, ICodeGenerationContext
         {
-            public GenBinPath( StObjCollectorResult result, IReadOnlyCollection<BinPathConfiguration> binPathConfigurations, IGrouping<BinPathConfiguration, BinPathConfiguration> groupedPaths )
+            readonly StObjEngineRunContext _global;
+
+            public GenBinPath(
+                StObjEngineRunContext global,
+                StObjCollectorResult result,
+                IReadOnlyCollection<BinPathConfiguration> binPathConfigurations,
+                IGrouping<BinPathConfiguration, BinPathConfiguration> groupedPaths )
             {
                 Debug.Assert( !result.HasFatalError );
+                _global = global;
                 Result = result;
                 BinPathConfigurations = binPathConfigurations;
                 GroupedPaths = groupedPaths;
@@ -27,12 +43,37 @@ namespace CK.Setup
             public IStObjEngineMap EngineMap => Result.EngineMap!;
 
             public IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
+
+            IGeneratedBinPath ICodeGenerationContext.UnifiedBinPath => _global.UnifiedBinPath;
+
+            IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global.AllBinPaths;
+
+            IDictionary ICodeGenerationContext.GlobalMemory => _global._codeGenerationGlobalMemory;
+
+            bool ICodeGenerationContext.IsUnifiedRun => this == _global.UnifiedBinPath;
+
+            void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
+            {
+                if( this != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
+                if( addOrUpdate ) _global._unifiedRunCache[key] = o;
+                else _global._unifiedRunCache.Add( key, o );
+            }
+
+            object ICodeGenerationContext.GetUnifiedRunResult( string key )
+            {
+                if( this == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
+                return _global._unifiedRunCache[key];
+            }
+
+            IGeneratedBinPath ICodeGenerationContext.CurrentRun => this;
+
+            IDynamicAssembly ICodeGenerationContext.Assembly => Result.DynamicAssembly;
+
+            bool ICodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
+
+            bool ICodeGenerationContext.CompileSource => BinPathConfigurations.Any( f => !f.SkipCompilation );
         }
 
-        readonly IActivityMonitor _monitor;
-        readonly StObjEngineConfigureContext _startContext;
-        readonly List<GenBinPath> _binPaths;
-        readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
 
         public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext, IGrouping<BinPathConfiguration, BinPathConfiguration> primaryCompatibleBinPaths, StObjCollectorResult primaryResult )
         {
@@ -41,12 +82,14 @@ namespace CK.Setup
             _startContext = startContext;
             _binPaths = new List<GenBinPath>();
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
+            _unifiedRunCache = new Dictionary<string, object>();
+            _codeGenerationGlobalMemory = new HybridDictionary();
             AddResult( primaryCompatibleBinPaths, primaryResult );
         }
 
         internal void AddResult( IGrouping<BinPathConfiguration, BinPathConfiguration> binPaths, StObjCollectorResult secondaryResult )
         {
-            _binPaths.Add( new GenBinPath(secondaryResult, binPaths.ToArray(), binPaths) );
+            _binPaths.Add( new GenBinPath( this, secondaryResult, binPaths.ToArray(), binPaths ) );
         }
 
         public IGeneratedBinPath UnifiedBinPath => _binPaths[0];

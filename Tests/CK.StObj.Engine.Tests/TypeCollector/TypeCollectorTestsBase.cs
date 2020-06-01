@@ -18,7 +18,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             return new CKTypeCollector(
                         TestHelper.Monitor,
                         new SimpleServiceContainer(),
-                        new DynamicAssembly( new Dictionary<string, object>() ),
+                        new DynamicAssembly(),
                         f );
         }
 

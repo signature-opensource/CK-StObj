@@ -180,5 +180,48 @@ namespace CK.Setup
         /// </summary>
         public HashSet<string> ExcludedTypes { get; }
 
+        /// <summary>
+        /// Creates a <see cref="BinPathConfiguration"/> that unifies multiple <see cref="BinPathConfiguration"/>.
+        /// This configuration is the one used on the unified working directory.
+        /// </summary>
+        /// <param name="monitor">Monitor for error.</param>
+        /// <param name="configurations">Multiple configurations.</param>
+        /// <param name="globalExcludedTypes">Optional types to exclude: see <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/>.</param>
+        /// <returns>The unified configuration or null on error.</returns>
+        public static BinPathConfiguration? CreateUnified( IActivityMonitor monitor, IEnumerable<BinPathConfiguration> configurations, IEnumerable<string>? globalExcludedTypes = null )
+        {
+            var rootBinPath = new BinPathConfiguration();
+            rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
+            // The root (the Working directory) doesn't want any output by itself.
+            rootBinPath.GenerateSourceFiles = false;
+            rootBinPath.SkipCompilation = true;
+            // Assemblies and types are the union of the assemblies and types of the bin paths.
+            rootBinPath.Assemblies.AddRange( configurations.SelectMany( b => b.Assemblies ) );
+
+            var fusion = new Dictionary<string, TypeConfiguration>();
+            foreach( var c in configurations.SelectMany( b => b.Types ) )
+            {
+                if( fusion.TryGetValue( c.Name, out var exists ) )
+                {
+                    if( !c.Optional ) exists.Optional = false;
+                    if( exists.Kind != c.Kind )
+                    {
+                        monitor.Error( $"Invalid Type configuration accross BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
+                        return null;
+                    }
+                }
+                else fusion.Add( c.Name, new TypeConfiguration( c.Name, c.Kind, c.Optional ) );
+            }
+            rootBinPath.Types.AddRange( fusion.Values );
+
+            // Propagates root excluded types to all bin paths.
+            if( globalExcludedTypes != null )
+            {
+                rootBinPath.ExcludedTypes.AddRange( globalExcludedTypes );
+                foreach( var f in configurations ) f.ExcludedTypes.AddRange( rootBinPath.ExcludedTypes );
+            }
+            return rootBinPath;
+        }
+
     }
 }

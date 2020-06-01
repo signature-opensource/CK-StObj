@@ -23,19 +23,19 @@ namespace CK.Setup
         IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 
         /// <summary>
-        /// Gets the currently generated bin path.
+        /// Gets the currently generated bin path among <see cref="AllBinPaths"/>.
         /// </summary>
         IGeneratedBinPath CurrentRun { get; }
 
         /// <summary>
         /// Gets the <see cref="IDynamicAssembly"/> to use to generate code of the <see cref="CurrentRun"/>.
         /// </summary>
-        IDynamicAssembly RunAssembly { get; }
+        IDynamicAssembly Assembly { get; }
 
         /// <summary>
-        /// Gets whether this is the primary run on the <see cref="UnifiedBinPath"/> or a secondary run.
+        /// Gets whether this is the initial run (on the <see cref="UnifiedBinPath"/>) or a secondary run.
         /// </summary>
-        bool IsUnifiedRun => CurrentRun == UnifiedBinPath;
+        bool IsUnifiedRun { get; }
 
         /// <summary>
         /// Sets an object during the first run: this must be called only when <see cref="IsUnifiedRun"/> is true.
@@ -60,5 +60,19 @@ namespace CK.Setup
         /// encapsulated, typically by extension methods on this context.
         /// </summary>
         IDictionary GlobalMemory { get; }
+
+        /// <summary>
+        /// Gets whether the source code must eventually be saved.
+        /// See <see cref="CompileSource"/>.
+        /// </summary>
+        bool SaveSource { get; }
+
+        /// <summary>
+        /// Gets whether the generated source code must be compiled.
+        /// Both <see cref="SaveSource"/> and <see cref="CompileSource"/> can be false when <see cref="IsUnifiedRun"/> is true and
+        /// the unified bin path doesn't correspond to any of the different <see cref="BinPathConfiguration"/>.
+        /// </summary>
+        bool CompileSource { get; }
+
     }
 }

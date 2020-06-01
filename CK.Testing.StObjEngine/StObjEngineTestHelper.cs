@@ -83,7 +83,10 @@ namespace CK.Testing
             var r = DoGetSuccessfulResult( c );
             var assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
             var assemblyPath = Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
-            var codeGen = r.GenerateFinalAssembly( TestHelper.Monitor, assemblyPath, true, null, false );
+            var ctx = new SimpleEngineRunContext( r );
+            ctx.UnifiedCodeContext.SaveSource = true;
+            ctx.UnifiedCodeContext.CompileSource = true;
+            var codeGen = r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, assemblyPath, null );
             codeGen.Success.Should().BeTrue( "CodeGeneration should work." );
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
             var map = StObjContextRoot.Load( a, null, TestHelper.Monitor );

@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.CodeGen.Abstractions;
 using CK.Core;
 using CK.Setup;
+using CK.Testing.StObjEngine;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
@@ -22,7 +23,7 @@ namespace CK.StObj.Engine.Tests
         {
             class AutoImplementedAttribute : Attribute, IAutoImplementorMethod
             {
-                public bool Implement(IActivityMonitor monitor, MethodInfo m, IDynamicAssembly dynamicAssembly, ITypeScope b)
+                public bool Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
                 {
                     b.AppendOverrideSignature( m )
                      .Append( $"=> default({m.ReturnType.FullName});" )
@@ -93,7 +94,10 @@ namespace CK.StObj.Engine.Tests
                 var r = collector.GetResult();
                 Assert.That( r.HasFatalError, Is.False );
 
-                r.GenerateFinalAssembly( TestHelper.Monitor, Path.Combine( AppContext.BaseDirectory, "TEST_SimpleEmit.dll" ), false, null, false );
+                // no source, only compilation
+                var ctx = new SimpleEngineRunContext( r );
+                ctx.UnifiedCodeContext.CompileSource = true;
+                r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_SimpleEmit.dll" ), null );
                 var a = Assembly.Load( "TEST_SimpleEmit" );
                 IStObjMap c = StObjContextRoot.Load( a, runtimeBuilder, TestHelper.Monitor );
                 Assert.That( typeof( B ).IsAssignableFrom( c.StObjs.ToLeafType( typeof( A ) ) ) );
@@ -178,7 +182,9 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
 
-                r.GenerateFinalAssembly( TestHelper.Monitor, Path.Combine( AppContext.BaseDirectory, "TEST_ConstructCalled.dll" ), false, null, false );
+                var ctx = new SimpleEngineRunContext( r );
+                ctx.UnifiedCodeContext.CompileSource = true;
+                r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_ConstructCalled.dll" ), null );
                 {
                     var a = Assembly.Load( "TEST_ConstructCalled" );
                     IStObjMap c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
@@ -300,7 +306,10 @@ namespace CK.StObj.Engine.Tests
 
                 }
 
-                StObjCollectorResult.CodeGenerateResult genResult = r.GenerateFinalAssembly( TestHelper.Monitor, Path.Combine( AppContext.BaseDirectory, "TEST_PostBuildSet.dll" ), false, null, false );
+                var ctx = new SimpleEngineRunContext( r );
+                ctx.UnifiedCodeContext.CompileSource = true;
+
+                StObjCollectorResult.CodeGenerateResult genResult = r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_PostBuildSet.dll" ), null );
                 Assert.That( genResult.Success );
                 {
                     var a = Assembly.Load( "TEST_PostBuildSet" );
@@ -361,9 +370,9 @@ namespace CK.StObj.Engine.Tests
                 // We choose to implement all the properties as a whole in Implement method below: by returning true
                 // we tell the engine: "Okay, I handled it, please continue your business."
                 // (We can also implement each property here and do nothing in the Implement method.)
-                bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, IDynamicAssembly dynamicAssembly, ITypeScope typeBuilder ) => true;
+                bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => true;
 
-                public bool Implement( IActivityMonitor monitor, Type classType, IDynamicAssembly dynamicAssembly, ITypeScope scope )
+                public bool Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
                 {
                     foreach( var p in classType.GetProperties() )
                     {
@@ -431,7 +440,9 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( AutomaticallyImplemented ) );
                 var r = collector.GetResult();
                 Assert.That( r.HasFatalError, Is.False );
-                r.GenerateFinalAssembly( TestHelper.Monitor, Path.Combine( AppContext.BaseDirectory, "TEST_TypeImplementor.dll" ), false, null, false );
+                var ctx = new SimpleEngineRunContext( r );
+                ctx.UnifiedCodeContext.CompileSource = true;
+                r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_TypeImplementor.dll" ), null );
                 var a = Assembly.Load( "TEST_TypeImplementor" );
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
                 AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated );

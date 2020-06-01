@@ -222,7 +222,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             public string ActualCode { get; }
 
-            public bool Implement( IActivityMonitor monitor, MethodInfo m, IDynamicAssembly dynamicAssembly, ITypeScope b )
+            public bool Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
             {
                 b.AppendOverrideSignature( m )
                     .Should().BeSameAs( b, "Append uses 'fluent syntax': we stay in the Type scpope (but right after the method declaration)." );

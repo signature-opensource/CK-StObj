@@ -26,7 +26,6 @@ namespace CK.Setup
         internal StObjCollectorResult(
             CKTypeCollectorResult typeResult,
             DynamicAssembly tempAssembly,
-            Dictionary<string, object> primaryRunCache,
             BuildValueCollector? valueCollector )
         {
             Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (ie. valueCollector != null ==> !typeResult.HasFatalError)" );
@@ -34,14 +33,7 @@ namespace CK.Setup
             _tempAssembly = tempAssembly;
             _valueCollector = valueCollector;
             if( valueCollector != null ) EngineMap = typeResult.RealObjects.EngineMap;
-            if( primaryRunCache != null ) SecondaryRunAccessor = key => primaryRunCache[key];
         }
-
-        /// <summary>
-        /// Gets an accessor for the primary run cache only if this result comes
-        /// from a primary run, null otherwise.
-        /// </summary>
-        public Func<string, object>? SecondaryRunAccessor { get; }
 
         /// <summary>
         /// True if a fatal error occured. Result should be discarded.
@@ -59,27 +51,25 @@ namespace CK.Setup
         public IStObjEngineMap? EngineMap { get; }
 
         /// <summary>
+        /// Gets the dynamic assembly for this context.
+        /// </summary>
+        public IDynamicAssembly DynamicAssembly => _tempAssembly;
+
+        /// <summary>
         /// Generates final assembly.
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
+        /// <param name="c">The code generation context.</param>
         /// <param name="finalFilePath">Full path of the final dynamic assembly. Must end with '.dll'.</param>
-        /// <param name="saveSource">Whether generated source files must be saved alongside the final dll.</param>
         /// <param name="informationalVersion">Informational version.</param>
-        /// <param name="skipCompilation">
-        /// When true, compilation is skipped (but actual code generation step is always called).
-        /// </param>
         /// <returns>False if any error occured (logged into <paramref name="monitor"/>).</returns>
-        public CodeGenerateResult GenerateFinalAssembly(
-            IActivityMonitor monitor,
-            string finalFilePath,
-            bool saveSource,
-            string? informationalVersion,
-            bool skipCompilation )
+        public CodeGenerateResult GenerateFinalAssembly( IActivityMonitor monitor, ICodeGenerationContext c, string finalFilePath, string? informationalVersion )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
+            if( c.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( c ) );
             bool hasError = false;
             using( monitor.OnError( () => hasError = true ) )
-            using( monitor.OpenInfo( $"Generating dynamic assembly (Saving source: {saveSource}, SkipCompilation: {skipCompilation})." ) )
+            using( monitor.OpenInfo( $"Generating dynamic assembly (Saving source: {c.SaveSource}, Compilation: {c.CompileSource})." ) )
             {
                 using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                 {
@@ -90,13 +80,13 @@ namespace CK.Setup
                 }
                 if( !string.IsNullOrWhiteSpace( informationalVersion ) )
                 {
-                    _tempAssembly.DefaultGenerationNamespace.Workspace.Global
+                    DynamicAssembly.DefaultGenerationNamespace.Workspace.Global
                             .Append( "[assembly:System.Reflection.AssemblyInformationalVersion(" )
                             .AppendSourceString( informationalVersion )
                             .Append( ")]" )
                             .NewLine();
                 }
-                var r = GenerateSourceCode( monitor, finalFilePath, saveSource, skipCompilation );
+                var r = GenerateSourceCode( monitor, finalFilePath, c );
                 Debug.Assert( r.Success || hasError, "!success ==> An error has been logged." );
                 return r;
             }

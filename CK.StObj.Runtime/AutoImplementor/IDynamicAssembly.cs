@@ -7,32 +7,10 @@ using System.Reflection.Emit;
 namespace CK.Setup
 {
     /// <summary>
-    /// Supports assembly generation.
-    /// Actual support is not required by the model layer: runtime and engine are in charge of
-    /// extending this abstraction in any required way.
+    /// Supports a module for emit and source code generation helpers.
     /// </summary>
     public interface IDynamicAssembly
     {
-        /// <summary>
-        /// Gets whether this is the primary, main, run or a secondary run.
-        /// </summary>
-        bool IsSecondaryRun { get; }
-
-        /// <summary>
-        /// Gets an object created by the first run: this must be called only when <see cref="IsSecondaryRun"/> is true.
-        /// The key must exist otherwise a <see cref="KeyNotFoundException"/> is throw.
-        /// </summary>
-        /// <param name="key">Key of the cached result.</param>
-        object GetPrimaryRunResult( string key );
-
-        /// <summary>
-        /// Sets an object during the first run: this must be called only when <see cref="IsSecondaryRun"/> is false.
-        /// </summary>
-        /// <param name="key">Key of the object to cache.</param>
-        /// <param name="o">The object to cache.</param>
-        /// <param name="addOrUpdate">True to add or update, false to throw an exception if the key already exists.</param>
-        void SetPrimaryRunResult( string key, object o, bool addOrUpdate );
-
         /// <summary>
         /// Provides a new unique number that can be used for generating unique names inside this dynamic assembly.
         /// </summary>

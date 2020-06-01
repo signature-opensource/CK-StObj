@@ -122,7 +122,7 @@ namespace CK.Setup
             if( _startContext != null ) throw new InvalidOperationException( "Run can be called only once." );
             if( !PrepareAndCheckConfigurations() ) return false;
             if( _ckSetupConfig != null && !ApplyCKSetupConfiguration() ) return false;
-            var unifiedBinPath = CreateUnifiedBinPathFromAllBinPaths();
+            var unifiedBinPath = BinPathConfiguration.CreateUnified( _monitor, _config.BinPaths, _config.GlobalExcludedTypes );
             if( unifiedBinPath == null ) return false;
             if( unifiedBinPath.Assemblies.Count == 0 )
             {
@@ -140,19 +140,22 @@ namespace CK.Setup
                 _startContext.CreateAndConfigureAspects( _config.Aspects, () => _status.Success = false );
                 if( _status.Success )
                 {
-                    StObjCollectorResult? firstRun = SafeBuildStObj( unifiedBinPath, null );
-                    if( firstRun == null ) return _status.Success = false;
-
-                    // Primary StObjMap has been successfully built, we can initialize the run context
-                    // with this primary StObjMap and the bin paths that use it (including the unifiedBinPath).
-                    var runCtx = new StObjEngineRunContext( _monitor, _startContext, rootGroup, firstRun );
+                    StObjEngineRunContext runCtx;
+                    using( _monitor.OpenInfo( "Creating unified map." ) )
+                    {
+                        StObjCollectorResult? firstRun = SafeBuildStObj( unifiedBinPath );
+                        if( firstRun == null ) return _status.Success = false;
+                        // Primary StObjMap has been successfully built, we can initialize the run context
+                        // with this primary StObjMap and the bin paths that use it (including the unifiedBinPath).
+                        runCtx = new StObjEngineRunContext( _monitor, _startContext, rootGroup, firstRun );
+                    }
 
                     // Then for each set of compatible BinPaths, we can create the secondaries StObjMaps.
                     foreach( var g in groups.Where( g => g != rootGroup ) )
                     {
                         using( _monitor.OpenInfo( $"Creating secondary map for BinPaths '{g.Select( b => b.Path.Path ).Concatenate( "', '" )}'." ) )
                         {
-                            StObjCollectorResult? rFolder = SafeBuildStObj( g.Key, firstRun.SecondaryRunAccessor );
+                            StObjCollectorResult? rFolder = SafeBuildStObj( g.Key );
                             if( rFolder == null )
                             {
                                 _status.Success = false;
@@ -163,26 +166,30 @@ namespace CK.Setup
                     }
                     if( _status.Success )
                     {
+                        // This is where all aspects runs: this where CK.Setupable.Engine.SetupableAspect.Run():
+                        // - Builds the ISetupItem items (that support 3 steps setup) associated to each StObj (relies on EngineMap.StObjs.OrderedStObjs).
+                        // - Projects the StObj topological order on the ISetupItem items graph.
+                        // - Calls the DynamicItemInitialize methods that can create new Setup items (typically as child of existing containers like SqlProcedure on SqlTable)
+                        // - The ISetupItems are then sorted topologically (this is the second graph).
+                        // - The Init/Install/Settle steps are executed.
                         runCtx.RunAspects( () => _status.Success = false );
                     }
                     if( _status.Success )
                     {
                         string dllName = _config.GeneratedAssemblyName;
                         if( !dllName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) ) dllName += ".dll";
-                        using( _monitor.OpenInfo( "Final Code Generation." ) )
+                        using( _monitor.OpenInfo( "Final CodeGen." ) )
                         {
                             using( _monitor.OpenInfo( "Generating AppContext assembly (first run)." ) )
                             {
-                                // Use the rootgroup here: the Key of the group is the unified path and will be used
-                                // as the initial target for files.
-                                _status.Success = CodeGenerationForPaths( rootGroup, firstRun, dllName );
+                                _status.Success = RunFinalStep( runCtx.AllBinPaths[0], dllName );
                             }
                             if( _status.Success )
                             {
                                 foreach( var b in runCtx.AllBinPaths.Skip( 1 ) )
                                 {
                                     Debug.Assert( b.GroupedPaths != null, "Secondary runs have paths." );
-                                    if( !CodeGenerationForPaths( b.GroupedPaths, b.Result, dllName ) )
+                                    if( !RunFinalStep( b, dllName ) )
                                     {
                                         _status.Success = false;
                                         break;
@@ -216,7 +223,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Ensures thar <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
+        /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
         /// are rooted and gives automatic numbered names to empty <see cref="BinPathConfiguration.Name"/>.
         /// </summary>
         /// <returns>True on success, false is something's wrong.</returns>
@@ -281,47 +288,13 @@ namespace CK.Setup
             }
         }
 
-        BinPathConfiguration? CreateUnifiedBinPathFromAllBinPaths()
+        bool RunFinalStep( StObjEngineRunContext.GenBinPath codeGenerationContext, string dllName )
         {
-            var rootBinPath = new BinPathConfiguration();
-            rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
-            // The root (the Working directory) doesn't want any output by itself.
-            rootBinPath.GenerateSourceFiles = false;
-            rootBinPath.SkipCompilation = true;
-            // Assemblies and types are the union of the assembblies and types of the bin paths.
-            rootBinPath.Assemblies.AddRange( _config.BinPaths.SelectMany( b => b.Assemblies ) );
-
-            var fusion = new Dictionary<string, BinPathConfiguration.TypeConfiguration>();
-            foreach( var c in _config.BinPaths.SelectMany( b => b.Types ) )
-            {
-                if( fusion.TryGetValue( c.Name, out var exists ) )
-                {
-                    if( !c.Optional ) exists.Optional = false;
-                    if( exists.Kind != c.Kind )
-                    {
-                        _monitor.Error( $"Invalid Type configuration accross BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
-                        return null;
-                    }
-                }
-                else fusion.Add( c.Name, new BinPathConfiguration.TypeConfiguration( c.Name, c.Kind, c.Optional ) );
-            }
-            rootBinPath.Types.AddRange( fusion.Values );
-
-            // Propagates root excluded types to all bin paths.
-            rootBinPath.ExcludedTypes.AddRange( _config.GlobalExcludedTypes );
-            foreach( var f in _config.BinPaths ) f.ExcludedTypes.AddRange( rootBinPath.ExcludedTypes );
-
-            return rootBinPath;
-        }
-
-
-        bool CodeGenerationForPaths( IGrouping<BinPathConfiguration, BinPathConfiguration> bPaths, StObjCollectorResult r, string dllName )
-        {
-            var head = bPaths.Key;
-            var g = r.GenerateFinalAssembly( _monitor, head.OutputPath.AppendPart( dllName ), bPaths.Any( f => f.GenerateSourceFiles ), _config.InformationalVersion, bPaths.All( f => f.SkipCompilation ) );
+            var head = codeGenerationContext.GroupedPaths.Key;
+            var g = codeGenerationContext.Result.GenerateFinalAssembly( _monitor, codeGenerationContext, head.OutputPath.AppendPart( dllName ), _config.InformationalVersion );
             if( g.GeneratedFileNames.Count > 0 )
             {
-                foreach( var f in bPaths )
+                foreach( var f in codeGenerationContext.GroupedPaths )
                 {
                     if( !f.GenerateSourceFiles && f.SkipCompilation ) continue;
                     var dir = f.OutputPath;
@@ -398,38 +371,36 @@ namespace CK.Setup
             }
         }
 
-        StObjCollectorResult? SafeBuildStObj( BinPathConfiguration f, Func<string,object>? secondaryRunAccessor )
+        StObjCollectorResult? SafeBuildStObj( BinPathConfiguration head )
         {
             Debug.Assert( _startContext != null, "Work started." );
             bool hasError = false;
             using( _monitor.OnError( () => hasError = true ) )
-            using( secondaryRunAccessor == null ? _monitor.OpenInfo( "Building unified Engine map." ) : null )
             {
                 StObjCollectorResult result;
                 var configurator = _startContext.Configurator.FirstLayer;
-                var typeFilter = new TypeFilterFromConfiguration( f, configurator );
+                var typeFilter = new TypeFilterFromConfiguration( head, configurator );
                 StObjCollector stObjC = new StObjCollector(
                     _monitor,
                     _startContext.ServiceContainer,
                     _config.TraceDependencySorterInput,
                     _config.TraceDependencySorterOutput,
                     _runtimeBuilder,
-                    typeFilter, configurator, configurator,
-                    secondaryRunAccessor );
+                    typeFilter, configurator, configurator );
                 stObjC.RevertOrderingNames = _config.RevertOrderingNames;
                 using( _monitor.OpenInfo( "Registering types." ) )
                 {
                     // First handles the explicit kind of Types.
-                    foreach( var c in f.Types )
+                    foreach( var c in head.Types )
                     {
                         // When c.Kind is None, !Optional is challenged.
                         // The Type is always resolved.
                         stObjC.SetAutoServiceKind( c.Name, c.Kind, c.Optional );
                     }
                     // Then registers the types from the assemblies.
-                    stObjC.RegisterAssemblyTypes( f.Assemblies );
+                    stObjC.RegisterAssemblyTypes( head.Assemblies );
                     // Explicitly registers the non optional Types.
-                    stObjC.RegisterTypes( f.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
+                    stObjC.RegisterTypes( head.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
                     // Finally, registers the code based explicitly registered types.
                     foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( t );
 

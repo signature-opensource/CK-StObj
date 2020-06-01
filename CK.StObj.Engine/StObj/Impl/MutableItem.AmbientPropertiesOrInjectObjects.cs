@@ -270,7 +270,8 @@ namespace CK.Setup
 
             // Reentrancy is handled by returning null. 
             // The path that lead to such null result is simply ignored. 
-            // Only the first entry point in the cycle will cache a new (invalid) MutableAmbientProperty( this, name ) in its cache. Any other call to the same cycle will lead to (and return) this (empty) marker.
+            // Only the first entry point in the cycle will cache a new (invalid) MutableAmbientProperty( this, name ) in its cache. Any other call to the same cycle will
+            // lead to (and return) this (empty) marker.
             // The only other case where we return null is when the requested propertyType is not compatible with an existing cached property with the same name.
             if( _prepareState == PrepareState.CachingAmbientProperty ) return null;
             _prepareState = PrepareState.CachingAmbientProperty;

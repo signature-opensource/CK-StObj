@@ -20,7 +20,6 @@ namespace CK.Setup
         readonly IActivityMonitor _monitor;
         readonly DynamicAssembly _tempAssembly;
         readonly IStObjRuntimeBuilder _runtimeBuilder;
-        readonly Dictionary<string, object> _primaryRunCache;
         int _registerFatalOrErrorCount;
 
         /// <summary>
@@ -37,7 +36,6 @@ namespace CK.Setup
         /// Used to explicitly resolve or alter StObjConstruct parameters and object ambient properties.
         /// See <see cref="IStObjValueResolver"/>.
         /// </param>
-        /// <param name="secondaryRunAccessor">Provides already resolved and stored objects during secondary runs.</param>
         public StObjCollector(
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,
@@ -46,18 +44,12 @@ namespace CK.Setup
             IStObjRuntimeBuilder runtimeBuilder = null,
             IStObjTypeFilter typeFilter = null,
             IStObjStructuralConfigurator configurator = null,
-            IStObjValueResolver valueResolver = null,
-            Func<string, object> secondaryRunAccessor = null )
+            IStObjValueResolver valueResolver = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             _runtimeBuilder = runtimeBuilder ?? StObjContextRoot.DefaultStObjRuntimeBuilder;
             _monitor = monitor;
-            if( secondaryRunAccessor != null ) _tempAssembly = new DynamicAssembly( secondaryRunAccessor );
-            else
-            {
-                _primaryRunCache = new Dictionary<string, object>();
-                _tempAssembly = new DynamicAssembly( _primaryRunCache );
-            }
+            _tempAssembly = new DynamicAssembly();
             Func<IActivityMonitor,Type,bool> tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
             _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter );
@@ -297,7 +289,7 @@ namespace CK.Setup
                         buildValueCollector = null;
                     }
                 }
-                return new StObjCollectorResult( typeResult, _tempAssembly, _primaryRunCache, buildValueCollector );
+                return new StObjCollectorResult( typeResult, _tempAssembly, buildValueCollector );
             }
             catch( Exception ex )
             {

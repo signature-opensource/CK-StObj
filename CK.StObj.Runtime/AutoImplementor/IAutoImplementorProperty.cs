@@ -20,14 +20,14 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="p">The property to implement.</param>
-        /// <param name="dynamicAssembly">Dynamic assembly being implemented.</param>
+        /// <param name="c">Code generation context with its Dynamic assembly being implemented.</param>
         /// <param name="typeBuilder">The type builder to use.</param>
         /// <returns>
         /// True if the property is actually implemented, false if, for any reason, another implementation (empty for instance) must be generated 
         /// (for instance, whenever the property is not ready to be implemented).
         /// Any error must be logged into the <paramref name="monitor"/>.
         /// </returns>
-        bool Implement( IActivityMonitor monitor, PropertyInfo p, IDynamicAssembly dynamicAssembly, ITypeScope typeBuilder );
+        bool Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder );
     }
 
 }

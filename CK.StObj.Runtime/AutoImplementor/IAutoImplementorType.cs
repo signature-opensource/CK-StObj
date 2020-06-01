@@ -40,18 +40,18 @@ namespace CK.Setup
         IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p );
 
         /// <summary>
-        /// Generates any required code for the given abstract class in the given <see cref="ITypeDefinerScope"/>.
+        /// Generates any required code for the given abstract class in the given <see cref="ITypeScope"/>.
         /// Implementations can rely on the <paramref name="dynamicAssembly"/> to store shared information if needed.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="classType">The abstract class type to implement.</param>
-        /// <param name="dynamicAssembly">Dynamic assembly being implemented.</param>
+        /// <param name="c">Code generation context with its Dynamic assembly being implemented.</param>
         /// <param name="scope">The type scope into which the implementation should be generated.</param>
         /// <returns>
         /// True on success, false on error. 
         /// Any error must be logged into the <paramref name="monitor"/>.
         /// </returns>
-        bool Implement( IActivityMonitor monitor, Type classType, IDynamicAssembly dynamicAssembly, ITypeScope scope );
+        bool Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope );
     }
 
 }

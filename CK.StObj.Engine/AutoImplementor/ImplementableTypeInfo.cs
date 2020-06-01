@@ -25,12 +25,12 @@ namespace CK.Setup
         /// </summary>
         public class NoImplementationMarker : IAutoImplementorMethod, IAutoImplementorProperty
         {
-            bool IAutoImplementorMethod.Implement( IActivityMonitor monitor, MethodInfo m, IDynamicAssembly dynamicAssembly, ITypeScope b )
+            bool IAutoImplementorMethod.Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
 
-            bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, IDynamicAssembly dynamicAssembly, ITypeScope b )
+            bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
@@ -204,15 +204,15 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="a">The target dynamic assembly.</param>
         /// <returns>The full name of the generated type.</returns>
-        public string GenerateType( IActivityMonitor monitor, IDynamicAssembly a )
+        public string GenerateType( IActivityMonitor monitor, ICodeGenerationContext c )
         {
             if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
             // Currently there is no way to alter the class attributes (intrinsic as well as custom), nor adding
             // interfaces, nor modifying/removing "pass through" constructors.
             // This may be added if needed by extending IAutoImplementorType interface and
-            // by complexifying the code below a little bit.
-            ITypeScope cB = a.DefaultGenerationNamespace.CreateType( t => t.Append( "public class " )
+            // by complexifying the code below a little bit or (better?) by adding ITypeScopeParts (like "BaseTypes") exposed by a ITypeScope...
+            ITypeScope cB = c.Assembly.DefaultGenerationNamespace.CreateType( t => t.Append( "public class " )
                                                                            .Append( _stubType.Name )
                                                                            .Append( " : " )
                                                                            .AppendCSharpName( AbstractType ) );
@@ -221,7 +221,7 @@ namespace CK.Setup
             // Calls all Type level implementors first.
             foreach( var impl in TypeImplementors )
             {
-                if( !impl.Implement( monitor, AbstractType, a, cB ) )
+                if( !impl.Implement( monitor, AbstractType, c, cB ) )
                 {
                     monitor.Fatal( $"Type implementor '{impl.GetType().Name}' failed to implement type '{AbstractType}'." );
                 }
@@ -236,7 +236,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( !m.Implement( monitor, am.Method, a, cB ) )
+                    if( !m.Implement( monitor, am.Method, c, cB ) )
                     {
                         monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' can not be implemented by its IAutoImplementorMethod." );
                     }
@@ -252,7 +252,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( !p.Implement( monitor, ap.Property, a, cB ) )
+                    if( !p.Implement( monitor, ap.Property, c, cB ) )
                     {
                         monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' can not be implemented by its IAutoImplementorProperty." );
                     }
