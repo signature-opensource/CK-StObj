@@ -10,13 +10,6 @@ namespace CK.Core
     public interface IStObjServiceClassDescriptor : IStObjFinalClass
     {
         /// <summary>
-        /// Gets the Type of the service implementation (not necessarily the <see cref="FinalType"/>).
-        /// This Type has, by design, one and only one public constructor
-        /// (see <see cref="StObjServiceClassDescriptorExtension.GetSingleConstructor"/>).
-        /// </summary>
-        Type ClassType { get; }
-
-        /// <summary>
         /// Gets the service kind.
         /// </summary>
         AutoServiceKind AutoServiceKind { get; }

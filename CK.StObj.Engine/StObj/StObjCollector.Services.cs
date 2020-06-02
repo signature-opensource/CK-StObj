@@ -320,7 +320,7 @@ namespace CK.Setup
 
             public IReadOnlyCollection<Type> UniqueMappings => Class.UniqueMappings;
 
-            Type IStObjServiceClassDescriptor.ClassType => Class.ClassType;
+            Type IStObjFinalClass.ClassType => Class.ClassType;
 
             Type IStObjFinalClass.FinalType => Class.FinalType;
 

@@ -9,9 +9,13 @@ namespace CK.Core
     public interface IStObjFinalClass 
     {
         /// <summary>
-        /// Gets the actual Type that must be instantiated. It is <see cref="IStObjServiceClassDescriptor.ClassType"/>
-        /// or <see cref="IStObj.ClassType"/> for regular classes but for abstract classes with Auto implementation, this
-        /// is the type of the dynamically generated class.
+        /// Gets the class type of the most specialized type.
+        /// </summary>
+        Type ClassType { get; }
+
+        /// <summary>
+        /// Gets the actual Type that must be instantiated. It is <see cref="ClassType"/> for regular classes but
+        /// for abstract classes with Auto implementation, this is the type of the dynamically generated class.
         /// </summary>
         Type FinalType { get; }
 
