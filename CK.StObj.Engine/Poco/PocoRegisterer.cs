@@ -158,13 +158,17 @@ namespace CK.Setup
         class ClassInfo : IPocoRootInfo
         {
             public Type PocoClass { get; }
+            public Type? ClosureInterface { get; }
+            public bool IsClosedPoco { get; }
             public readonly MethodBuilder StaticMethod;
             public readonly List<InterfaceInfo> Interfaces;
             IReadOnlyList<IPocoInterfaceInfo> IPocoRootInfo.Interfaces => Interfaces;
 
-            public ClassInfo( Type pocoClass, MethodBuilder method )
+            public ClassInfo( Type pocoClass, MethodBuilder method, bool mustBeClosed, Type? closureInterface )
             {
                 PocoClass = pocoClass;
+                ClosureInterface = closureInterface;
+                IsClosedPoco = mustBeClosed;
                 StaticMethod = method;
                 Interfaces = new List<InterfaceInfo>();
             }
@@ -226,10 +230,10 @@ namespace CK.Setup
             int idMethod = 0;
             foreach( var signature in _result )
             {
-                Type? tPoco = CreatePocoType( moduleB, monitor, signature );
+                (Type? tPoco, bool mustBeClosed, Type? closureInterface) = CreatePocoType( moduleB, monitor, signature );
                 if( tPoco == null ) return null;
                 MethodBuilder realMB = tB.DefineMethod( "DoC" + r.Roots.Count.ToString(), MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Static, tPoco, Type.EmptyTypes );
-                var cInfo = new ClassInfo( tPoco, realMB );
+                var cInfo = new ClassInfo( tPoco, realMB, mustBeClosed, closureInterface );
                 r.Roots.Add( cInfo );
                 foreach( var i in signature )
                 {
@@ -258,28 +262,30 @@ namespace CK.Setup
             return r;
         }
 
-        Type? CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        (Type? created, bool mustBeClosed, Type? closureInterface) CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             var tB = moduleB.DefineType( $"{_namespace}.Poco{_uniqueNumber++}" );
             var properties = new Dictionary<string, PropertyInfo>();
 
-            // This is required to handle "non actual Poco" (CKTypeDefiner "base type"): interfaces
-            // contains only actual IPoco, this set contains the closure of all the interfaces.
+            // This is required to handle "non actual Poco" (CKTypeDefiner "base type"): interfaces list
+            // contains only actual IPoco, the expanded set contains the closure of all the interfaces.
+            //
             // This work is the perfect opportunity to handle the "closed poco" feature without overhead:
             // by identifying the "biggest" interface in terms of base interfaces, we can check that it
             // actually closes the whole IPoco.
+            //
             var expanded = new HashSet<Type>( interfaces );
-            Type? maxOne = null;
+            Type? closure = null;
             int maxICount = 0;
             bool mustBeClosed = false;
             foreach( var i in interfaces )
             {
                 mustBeClosed |= typeof( IClosedPoco ).IsAssignableFrom( i ); 
                 var bases = i.GetInterfaces();
-                if( maxOne == null || maxICount < bases.Length )
+                if( closure == null || maxICount < bases.Length )
                 {
                     maxICount = bases.Length;
-                    maxOne = i;
+                    closure = i;
                 }
                 expanded.AddRange( bases );
             }
@@ -289,12 +295,12 @@ namespace CK.Setup
                 if( maxICount < expanded.Count - 1 )
                 {
                     monitor.Error( $"Poco family '{interfaces.Select( b => b.FullName ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
-                    return null;
+                    return (null, false, null);
                 }
                 else
                 {
-                    Debug.Assert( maxOne != null, "Since there is at least one interface." );
-                    monitor.Debug( $"{maxOne.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
+                    Debug.Assert( closure != null, "Since there is at least one interface." );
+                    monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
                 }
             }
             foreach( var i in expanded )
@@ -311,7 +317,7 @@ namespace CK.Setup
                         if( implP.PropertyType != p.PropertyType )
                         {
                             monitor.Error( $"Interface '{i}' and '{implP.DeclaringType}' both declare property '{p.Name}' but their type differ ({p.PropertyType.Name} vs. {implP.PropertyType.Name})." );
-                            return null;
+                            return (null, false, null);
                         }
                     }
                     else
@@ -321,7 +327,7 @@ namespace CK.Setup
                     }
                 }
             }
-            return tB.CreateType();
+            return (tB.CreateType(), mustBeClosed, closure);
         }
     }
 }
