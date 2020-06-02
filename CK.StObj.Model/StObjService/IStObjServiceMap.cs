@@ -14,7 +14,16 @@ namespace CK.Core
         /// Gets all the <see cref="IAutoService"/> types that are directly mapped to
         /// an already available Real Object.
         /// </summary>
+        /// <para>
+        /// Use <see cref="ObjectMappingList"/> to have the final real object classes list (without
+        /// duplicates). 
+        /// </para>
         IReadOnlyDictionary<Type, IStObjFinalImplementation> ObjectMappings { get; }
+
+        /// <summary>
+        /// Gets all the real objects that implement one or more <see cref="IAutoService"/> without duplicates.
+        /// </summary>
+        IReadOnlyList<IStObjFinalImplementation> ObjectMappingList { get; }
 
         /// <summary>
         /// Gets all the <see cref="IAutoService"/> types to the final service class type

@@ -18,6 +18,7 @@ namespace CK.Setup
     /// </summary>
     partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineMap, IStObjServiceEngineMap
     {
+        readonly CKTypeKindDetector _typeKindDetector;
         readonly Dictionary<object, MutableItem> _map;
         readonly MutableItem[] _allSpecializations;
         readonly IReadOnlyCollection<Assembly> _assemblies;
@@ -57,6 +58,7 @@ namespace CK.Setup
             _exposedManualServiceMap = new ServiceManualMapTypeAdapter( _serviceManualMap );
 
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
+            _serviceRealObjects = new List<MutableItem>();
             _serviceToObjectMapExposed = new ServiceObjectMappingTypeAdapter( _serviceToObjectMap );
 
             _typeKindDetector = typeKindDetector;

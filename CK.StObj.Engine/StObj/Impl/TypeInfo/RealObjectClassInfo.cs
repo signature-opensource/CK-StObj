@@ -598,5 +598,11 @@ namespace CK.Setup
             return concreteBelow;
         }
 
+        /// <summary>
+        /// Marker for this real object if and only if this real object implements a (obviously singleton) Service.
+        /// This is an awful optimization trick for <see cref="StObjObjectEngineMap.RegisterServiceFinalObjectMapping(Type, CKTypeInfo)"/>.
+        /// This avoids a HashSet to remove duplicates and a lookup in the Type => MutableItem final map.
+        /// </summary>
+        internal MutableItem AutoServiceImpl;
     }
 }

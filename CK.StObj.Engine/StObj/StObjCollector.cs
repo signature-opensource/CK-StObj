@@ -21,6 +21,7 @@ namespace CK.Setup
         readonly DynamicAssembly _tempAssembly;
         readonly IStObjRuntimeBuilder _runtimeBuilder;
         int _registerFatalOrErrorCount;
+        bool _computedResult;
 
         /// <summary>
         /// Initializes a new <see cref="StObjCollector"/>.
@@ -272,6 +273,8 @@ namespace CK.Setup
             {
                 throw new InvalidOperationException( $"There are {_registerFatalOrErrorCount} registration errors." );
             }
+            if( _computedResult ) throw new InvalidOperationException( "Must be called once and only once." );
+            _computedResult = true;
             try
             {
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();

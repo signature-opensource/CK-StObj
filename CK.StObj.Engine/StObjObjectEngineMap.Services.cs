@@ -9,11 +9,132 @@ namespace CK.Setup
 {
     partial class StObjObjectEngineMap
     {
-        readonly CKTypeKindDetector _typeKindDetector;
-
         IStObjServiceMap IStObjMap.Services => this;
 
         public IStObjServiceEngineMap Services => this;
+
+        #region Service to Object mappings.
+
+        readonly Dictionary<Type,MutableItem> _serviceToObjectMap;
+        readonly List<MutableItem> _serviceRealObjects;
+        readonly ServiceObjectMappingTypeAdapter _serviceToObjectMapExposed;
+
+        internal void RegisterServiceFinalObjectMapping( Type t, CKTypeInfo typeInfo )
+        {
+            Debug.Assert( typeInfo is RealObjectClassInfo );
+            var c = (RealObjectClassInfo)typeInfo;
+            MutableItem mapping = c.AutoServiceImpl;
+            if( mapping == null )
+            {
+                c.AutoServiceImpl = mapping = _map[typeInfo.Type];
+                _serviceRealObjects.Add( mapping );
+            }
+            _serviceToObjectMap.Add( t, mapping );
+        }
+
+        class ServiceObjectMappingTypeAdapter : IReadOnlyDictionary<Type, IStObjFinalImplementation>
+        {
+            readonly Dictionary<Type, MutableItem> _map;
+
+            public ServiceObjectMappingTypeAdapter( Dictionary<Type, MutableItem> map )
+            {
+                _map = map;
+            }
+
+            public IStObjFinalImplementation this[Type key] => _map[ key ].FinalImplementation;
+
+            public IEnumerable<Type> Keys => _map.Keys;
+
+            public IEnumerable<IStObjFinalImplementation> Values => _map.Values.Select( m => m.FinalImplementation );
+
+            public int Count => _map.Count;
+
+            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
+
+            public IEnumerator<KeyValuePair<Type, IStObjFinalImplementation>> GetEnumerator() => _map.Select( kv => KeyValuePair.Create( kv.Key, (IStObjFinalImplementation)kv.Value.FinalImplementation ) ).GetEnumerator(); 
+
+            public bool TryGetValue( Type key, out IStObjFinalImplementation value )
+            {
+                if( _map.TryGetValue( key, out var m ) )
+                {
+                    value = m.FinalImplementation;
+                    return true;
+                }
+                value = null;
+                return false;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        public IReadOnlyDictionary<Type, IStObjFinalImplementation> ObjectMappings => _serviceToObjectMapExposed;
+
+        public IReadOnlyList<IStObjFinalImplementation> ObjectMappingList => _serviceRealObjects;
+
+        #endregion
+
+        #region Service to Type mappings (Simple).
+
+        readonly Dictionary<Type, IStObjServiceFinalSimpleMapping> _serviceSimpleMap;
+        readonly List<IStObjServiceFinalSimpleMapping> _serviceSimpleList;
+        readonly ServiceMapTypeAdapter _exposedServiceMap;
+
+        class ServiceMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassDescriptor>
+        {
+            readonly Dictionary<Type, IStObjServiceFinalSimpleMapping> _map;
+
+            public ServiceMapTypeAdapter( Dictionary<Type, IStObjServiceFinalSimpleMapping> map )
+            {
+                _map = map;
+            }
+
+            public IStObjServiceClassDescriptor this[Type key] => _map[key];
+
+            public IEnumerable<Type> Keys => _map.Keys;
+
+            public IEnumerable<IStObjServiceClassDescriptor> Values => _map.Values;
+
+            public int Count => _map.Count;
+
+            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
+
+            public IEnumerator<KeyValuePair<Type, IStObjServiceClassDescriptor>> GetEnumerator()
+            {
+                return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassDescriptor>( kv.Key, kv.Value ) ).GetEnumerator();
+            }
+
+            public bool TryGetValue( Type key, out IStObjServiceClassDescriptor value )
+            {
+                value = null;
+                if( !_map.TryGetValue( key, out var c ) ) return false;
+                value = c;
+                return true;
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
+        /// <inheritdoc />
+        public IReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping> SimpleMappings => _serviceSimpleMap;
+
+        /// <inheritdoc />
+        public IReadOnlyList<IStObjServiceFinalSimpleMapping> SimpleMappingList => _serviceSimpleList;
+
+        internal void RegisterFinalSimpleMapping( Type t, AutoServiceClassInfo c )
+        {
+            if( c.SimpleMappingListIndex == -1 )
+            {
+                c.SimpleMappingListIndex = _serviceSimpleList.Count;
+                _serviceSimpleList.Add( c );
+            }
+            _serviceSimpleMap.Add( t, c );
+        }
+
+        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _exposedServiceMap;
+
+        IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _serviceSimpleList;
+
+        #endregion
 
         #region Service Manual mappings.
 
@@ -146,122 +267,6 @@ namespace CK.Setup
         IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMappings => _exposedManualServiceMap;
 
         IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _serviceManualList;
-
-        #endregion
-
-        #region Service to Object mappings.
-
-        readonly Dictionary<Type,MutableItem> _serviceToObjectMap;
-        readonly ServiceObjectMappingTypeAdapter _serviceToObjectMapExposed;
-
-        internal void RegisterServiceFinalObjectMapping( Type t, CKTypeInfo typeInfo )
-        {
-            Debug.Assert( typeInfo is RealObjectClassInfo );
-            _serviceToObjectMap.Add( t, _map[typeInfo.Type] );
-        }
-
-        class ServiceObjectMappingTypeAdapter : IReadOnlyDictionary<Type, IStObjFinalImplementation>
-        {
-            readonly Dictionary<Type, MutableItem> _map;
-
-            public ServiceObjectMappingTypeAdapter( Dictionary<Type, MutableItem> map )
-            {
-                _map = map;
-            }
-
-            public IStObjFinalImplementation this[Type key] => _map[ key ].FinalImplementation;
-
-            public IEnumerable<Type> Keys => _map.Keys;
-
-            public IEnumerable<IStObjFinalImplementation> Values => _map.Values.Select( m => m.FinalImplementation );
-
-            public int Count => _map.Count;
-
-            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
-
-            public IEnumerator<KeyValuePair<Type, IStObjFinalImplementation>> GetEnumerator() => _map.Select( kv => KeyValuePair.Create( kv.Key, kv.Value.FinalImplementation ) ).GetEnumerator(); 
-
-            public bool TryGetValue( Type key, out IStObjFinalImplementation value )
-            {
-                if( _map.TryGetValue( key, out var m ) )
-                {
-                    value = m.FinalImplementation;
-                    return true;
-                }
-                value = null;
-                return false;
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _serviceToObjectMapExposed;
-
-        // Direct access for code generation.
-        internal IReadOnlyCollection<KeyValuePair<Type,MutableItem>> ObjectMappings => _serviceToObjectMap;
-
-        #endregion
-
-        #region Service to Type mappings (Simple).
-
-        readonly Dictionary<Type, IStObjServiceFinalSimpleMapping> _serviceSimpleMap;
-        readonly List<IStObjServiceFinalSimpleMapping> _serviceSimpleList;
-        readonly ServiceMapTypeAdapter _exposedServiceMap;
-
-        class ServiceMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassDescriptor>
-        {
-            readonly Dictionary<Type, IStObjServiceFinalSimpleMapping> _map;
-
-            public ServiceMapTypeAdapter( Dictionary<Type, IStObjServiceFinalSimpleMapping> map )
-            {
-                _map = map;
-            }
-
-            public IStObjServiceClassDescriptor this[Type key] => _map[key];
-
-            public IEnumerable<Type> Keys => _map.Keys;
-
-            public IEnumerable<IStObjServiceClassDescriptor> Values => _map.Values;
-
-            public int Count => _map.Count;
-
-            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
-
-            public IEnumerator<KeyValuePair<Type, IStObjServiceClassDescriptor>> GetEnumerator()
-            {
-                return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassDescriptor>( kv.Key, kv.Value ) ).GetEnumerator();
-            }
-
-            public bool TryGetValue( Type key, out IStObjServiceClassDescriptor value )
-            {
-                value = null;
-                if( !_map.TryGetValue( key, out var c ) ) return false;
-                value = c;
-                return true;
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
-        /// <inheritdoc />
-        public IReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping> SimpleMappings => _serviceSimpleMap;
-
-        /// <inheritdoc />
-        public IReadOnlyList<IStObjServiceFinalSimpleMapping> SimpleMappingList => _serviceSimpleList;
-
-        internal void RegisterFinalSimpleMapping( Type t, AutoServiceClassInfo c )
-        {
-            if( c.SimpleMappingListIndex == -1 )
-            {
-                c.SimpleMappingListIndex = _serviceSimpleList.Count;
-                _serviceSimpleList.Add( c );
-            }
-            _serviceSimpleMap.Add( t, c );
-        }
-
-        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _exposedServiceMap;
-
-        IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _serviceSimpleList;
 
         #endregion
 

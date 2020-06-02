@@ -303,6 +303,12 @@ namespace CK.Setup
         public ImplementableTypeInfo ImplementableTypeInfo => _leafData.ImplementableTypeInfo;
 
         /// <summary>
+        /// Gets the final type: either the <see cref="FinalImplementation"/>.<see cref="ImplementableTypeInfo.StubType"/>
+        /// or <see cref="FinalImplementation"/>.<see cref="ClassType"/>.
+        /// </summary>
+        public Type FinalType => _leafData.ImplementableTypeInfo?.StubType ?? FinalImplementation.ClassType;
+
+        /// <summary>
         /// Gets the generalization. 
         /// Null if this is the root of the specialization path.
         /// </summary>
@@ -325,9 +331,9 @@ namespace CK.Setup
         public ICKCustomAttributeTypeMultiProvider Attributes => RealObjectType.Attributes;
 
         /// <summary>
-        /// Never null.
+        /// Never null: it is this item if <see cref="Specialization"/> is null.
         /// </summary>
-        internal MutableItem LeafSpecialization => _leafData.LeafSpecialization; 
+        internal MutableItem FinalImplementation => _leafData.LeafSpecialization; 
 
         internal MutableItem RootGeneralization => _leafData.RootGeneralization; 
 
@@ -689,11 +695,6 @@ namespace CK.Setup
         public int RankOrdered { get; private set; }
 
         /// <summary>
-        /// Gets the final implementation.
-        /// </summary>
-        public IStObjFinalImplementation FinalImplementation => this;
-
-        /// <summary>
         /// Overridden to return the Type full name.
         /// </summary>
         /// <returns>The type's full name.</returns>
@@ -784,7 +785,9 @@ namespace CK.Setup
         /// <summary>
         /// Gets the type of the structure object.
         /// </summary>
-        public Type ClassType => RealObjectType.Type; 
+        public Type ClassType => RealObjectType.Type;
+
+        IStObjFinalImplementation IStObj.FinalImplementation => FinalImplementation;
 
         IStObj IStObj.Generalization => Generalization; 
 
@@ -792,9 +795,11 @@ namespace CK.Setup
 
         object IStObjFinalImplementation.Implementation => _leafData.StructuredObject;
 
-        IReadOnlyCollection<Type> IStObjFinalImplementation.MultipleMappings => LeafSpecialization.RealObjectType.MultipleMappingTypes;
+        bool IStObjFinalClass.IsScoped => false;
 
-        IReadOnlyCollection<Type> IStObjFinalImplementation.UniqueMappings => LeafSpecialization.RealObjectType.UniqueMappingTypes;
+        IReadOnlyCollection<Type> IStObjFinalClass.MultipleMappings => FinalImplementation.RealObjectType.MultipleMappingTypes;
+
+        IReadOnlyCollection<Type> IStObjFinalClass.UniqueMappings => FinalImplementation.RealObjectType.UniqueMappingTypes;
 
         IStObjResult IStObjResult.Generalization => Generalization; 
 

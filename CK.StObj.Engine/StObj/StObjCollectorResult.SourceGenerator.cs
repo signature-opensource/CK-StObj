@@ -163,6 +163,10 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
     public object Implementation { get; }
 
+    public Type FinalType => ClassType;
+
+    public bool IsScoped => false;
+
     public IReadOnlyCollection<Type> MultipleMappings { get; }
 
     public IReadOnlyCollection<Type> UniqueMappings { get; }
@@ -183,14 +187,15 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.AllSpecializations.Count}];" ).NewLine();
             int iStObj = 0;
             int iImplStObj = 0;
-            foreach( MutableItem m in orderedStObjs )
+            foreach( var m in orderedStObjs )
             {
+                Debug.Assert( (m.Specialization != null) == (m != m.FinalImplementation) );
                 string generalization = m.Generalization == null ? "null" : $"_stObjs[{m.Generalization.IndexOrdered}]";
                 rootCtor.Append( $"_stObjs[{iStObj++}] = " );
                 if( m.Specialization == null )
                 {
                     rootCtor.Append( $"_finalStObjs[{iImplStObj++}] = new GFinalStObj( rb, " )
-                            .AppendTypeOf( m.ImplementableTypeInfo?.StubType ?? m.RealObjectType.Type ).Append( ", " ).NewLine()
+                            .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();
                 }

@@ -37,4 +37,12 @@ namespace CK.StObj.Engine.Tests.Poco
     {
     }
 
+    public class Encapsulated
+    {
+        public interface IBasicPoco : IPoco
+        {
+            int AnotherInNestedScope { get; set; }
+        }
+    }
+
 }

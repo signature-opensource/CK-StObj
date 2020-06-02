@@ -428,7 +428,7 @@ namespace CK.Setup
         }
 
 
-        bool IStObjServiceClassDescriptor.IsScoped => (FinalTypeKind.Value & AutoServiceKind.IsScoped) != 0;
+        bool IStObjFinalClass.IsScoped => (FinalTypeKind.Value & AutoServiceKind.IsScoped) != 0;
 
         AutoServiceKind IStObjServiceClassDescriptor.AutoServiceKind => FinalTypeKind.Value;
 

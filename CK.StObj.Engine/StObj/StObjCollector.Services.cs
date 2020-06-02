@@ -296,7 +296,7 @@ namespace CK.Setup
                 Assignments = a;
             }
 
-            bool IStObjServiceClassDescriptor.IsScoped
+            bool IStObjFinalClass.IsScoped
             {
                 get
                 {
@@ -322,7 +322,7 @@ namespace CK.Setup
 
             Type IStObjServiceClassDescriptor.ClassType => Class.ClassType;
 
-            Type IStObjServiceClassDescriptor.FinalType => Class.FinalType;
+            Type IStObjFinalClass.FinalType => Class.FinalType;
 
             IReadOnlyList<IStObjServiceParameterInfo> IStObjServiceClassFactoryInfo.Assignments => Assignments;
 

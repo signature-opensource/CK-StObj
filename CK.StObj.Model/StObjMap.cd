@@ -21,14 +21,14 @@
   <Interface Name="CK.Core.IStObjServiceMap">
     <Position X="5" Y="0.5" Width="4.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAIAAAAAAAAAAAAACAAAAAAAAAAAAAAAQA=</HashCode>
+      <HashCode>AAAAAAAAAAAIAAAAAAAAAQAAAKAAAAAAAAAAAAAAAQA=</HashCode>
       <FileName>StObjService\IStObjServiceMap.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Interface Name="CK.Core.IStObjObjectMap">
-    <Position X="5" Y="2.25" Width="3.5" />
+    <Position X="5.75" Y="2.75" Width="4" />
     <TypeIdentifier>
-      <HashCode>AAgAAAAAAAAAACAAAIAAAQAAAAAAAAAAAAAACAAAAAg=</HashCode>
+      <HashCode>AAAAAAAAAAAAACAAAIAAIAAAAAAAAAAAAAAACAAAAAg=</HashCode>
       <FileName>IStObjObjectMap.cs</FileName>
     </TypeIdentifier>
   </Interface>

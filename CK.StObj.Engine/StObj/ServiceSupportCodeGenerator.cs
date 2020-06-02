@@ -109,6 +109,7 @@ namespace CK.Setup
 
             _rootType.Append( @"
 readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
+readonly IStObjFinalImplementation[] _objectServiceMappingList;
 readonly Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
 readonly IStObjServiceClassDescriptor[] _simpleServiceList;
 readonly Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappings;
@@ -116,6 +117,7 @@ readonly IStObjServiceClassFactory[] _manualServiceList;
 
 public IStObjServiceMap Services => this;
 IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
+IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => _objectServiceMappingList;
 IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _simpleServiceMappings;
 IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _simpleServiceList;
 IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMappings => _manualServiceMappings;
@@ -126,11 +128,26 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             _rootCtor.Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({liftedMap.ObjectMappings.Count});" ).NewLine();
             foreach( var map in liftedMap.ObjectMappings )
             {
-                _rootCtor.Append( $"_objectServiceMappings.Add( " )
+                _rootCtor.Append( "_objectServiceMappings.Add( " )
                        .AppendTypeOf( map.Key )
                        .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].FinalImplementation );" )
                        .NewLine();
             }
+            if( liftedMap.ObjectMappingList.Count > 0 )
+            {
+                _rootCtor.Append( $"_objectServiceMappingList = new IStObjFinalImplementation[] {{" ).NewLine();
+                foreach( var o in liftedMap.ObjectMappingList )
+                {
+                    _rootCtor.NewLine().Append( "_stObjs[" ).Append( o.IndexOrdered ).Append( "].FinalImplementation," );
+                }
+                _rootCtor.NewLine().Append( "};" ).NewLine();
+            }
+            else
+            {
+                _rootCtor.Append( $"_objectServiceMappingList = Array.Empty<IStObjFinalImplementation>();" ).NewLine();
+            }
+            // 
+
             // Service mappings (Simple).
             _rootCtor.Append( $"_simpleServiceList = new IStObjServiceClassDescriptor[").Append( liftedMap.SimpleMappingList.Count ).Append( "];" ).NewLine();
             foreach( var d in liftedMap.SimpleMappingList )
