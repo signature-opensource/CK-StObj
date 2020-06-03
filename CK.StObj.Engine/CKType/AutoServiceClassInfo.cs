@@ -982,7 +982,7 @@ namespace CK.Setup
                 }
                 else 
                 {
-                    var genLifetime = collector.AmbientKindDetector.GetKind( m, tGen );
+                    var genLifetime = collector.CKTypeKindDetector.GetKind( m, tGen );
                     if( genLifetime != CKTypeKind.None )
                     {
                         return new CtorParameterData( true, null, null, false, genLifetime );
@@ -991,7 +991,7 @@ namespace CK.Setup
             }
             // We only consider I(Scoped/Singleton)AutoService marked type parameters.
             // If the IsMultipleService is set... this is an error (if isEnumerable computed above is false).
-            var lifetime = collector.AmbientKindDetector.GetKind( m, tParam );
+            var lifetime = collector.CKTypeKindDetector.GetKind( m, tParam );
             var conflictMsg = lifetime.GetCombinationError( tParam.IsClass );
             if( conflictMsg == null )
             {

@@ -30,7 +30,7 @@ namespace CK.Setup
         }
 
 
-        bool IsAutoService( Type t ) => (AmbientKindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( Type t ) => (CKTypeKindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo? FindServiceClassInfo( Type t )
         {
@@ -51,7 +51,7 @@ namespace CK.Setup
         /// </summary>
         AutoServiceInterfaceInfo? RegisterServiceInterface( Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface && lt == AmbientKindDetector.GetKind( _monitor, t ) );
+            Debug.Assert( t.IsInterface && lt == CKTypeKindDetector.GetKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
             lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
             Debug.Assert( lt == CKTypeKind.IsAutoService
@@ -75,7 +75,7 @@ namespace CK.Setup
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, iT );
+                CKTypeKind lt = CKTypeKindDetector.GetKind( _monitor, iT );
                 var conflictMsg = lt.GetCombinationError( false );
                 if( conflictMsg != null )
                 {

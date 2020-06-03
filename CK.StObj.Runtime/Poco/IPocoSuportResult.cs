@@ -29,9 +29,9 @@ namespace CK.Setup
         IPocoInterfaceInfo? Find( Type pocoInterface );
 
         /// <summary>
-        /// Gets the collection of all Poco interfaces.
+        /// Gets the dictionary of all Poco interfaces indexed by their <see cref="IPocoInterfaceInfo.PocoInterface"/>.
         /// </summary>
-        IReadOnlyCollection<IPocoInterfaceInfo> AllInterfaces { get; }
+        IReadOnlyDictionary<Type, IPocoInterfaceInfo> AllInterfaces { get; }
 
     }
 }

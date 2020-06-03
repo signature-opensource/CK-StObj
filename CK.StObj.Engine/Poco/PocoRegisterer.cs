@@ -1,9 +1,12 @@
 using CK.Core;
 using CK.Reflection;
+using CK.Setup;
 using CK.Text;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -131,7 +134,7 @@ namespace CK.Setup
 
         class Result : IPocoSupportResult
         {
-            readonly IReadOnlyCollection<InterfaceInfo> _exportedInterfaces;
+            readonly Adapter _exportedInterfaces;
             public readonly List<ClassInfo> Roots;
             public readonly Dictionary<Type, InterfaceInfo> Interfaces;
             public Type? FinalFactory;
@@ -139,19 +142,49 @@ namespace CK.Setup
             // Exposed FinalFactory is necessarily not null.
             Type IPocoSupportResult.FinalFactory => FinalFactory!;
 
+            class Adapter : IReadOnlyDictionary<Type, IPocoInterfaceInfo>
+            {
+                readonly Dictionary<Type, InterfaceInfo> _interfaces;
+
+                public Adapter( Dictionary<Type, InterfaceInfo> interfaces )
+                {
+                    _interfaces = interfaces;
+                }
+
+                IPocoInterfaceInfo IReadOnlyDictionary<Type, IPocoInterfaceInfo>.this[Type key] => _interfaces[key];
+
+                IEnumerable<Type> IReadOnlyDictionary<Type, IPocoInterfaceInfo>.Keys => _interfaces.Keys;
+
+                IEnumerable<IPocoInterfaceInfo> IReadOnlyDictionary<Type, IPocoInterfaceInfo>.Values => _interfaces.Values;
+
+                int IReadOnlyCollection<KeyValuePair<Type, IPocoInterfaceInfo>>.Count => _interfaces.Count;
+
+                bool IReadOnlyDictionary<Type, IPocoInterfaceInfo>.ContainsKey( Type key ) => _interfaces.ContainsKey( key );
+
+                IEnumerator<KeyValuePair<Type, IPocoInterfaceInfo>> IEnumerable<KeyValuePair<Type, IPocoInterfaceInfo>>.GetEnumerator() => _interfaces.Select( e => KeyValuePair.Create( e.Key, (IPocoInterfaceInfo)e.Value ) ).GetEnumerator();
+
+                IEnumerator IEnumerable.GetEnumerator() => _interfaces.GetEnumerator();
+
+                bool IReadOnlyDictionary<Type, IPocoInterfaceInfo>.TryGetValue( Type key, [MaybeNullWhen( false )] out IPocoInterfaceInfo value )
+                {
+                    bool r = _interfaces.TryGetValue( key, out var i );
+                    value = i;
+                    return r;
+                }
+            }
 
             public Result()
             {
                 Roots = new List<ClassInfo>();
                 Interfaces = new Dictionary<Type, InterfaceInfo>();
-                _exportedInterfaces = new CKReadOnlyCollectionOnICollection<InterfaceInfo>( Interfaces.Values );
+                _exportedInterfaces = new Adapter( Interfaces );
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
 
             IPocoInterfaceInfo? IPocoSupportResult.Find( Type pocoInterface ) => Interfaces.GetValueOrDefault( pocoInterface );
 
-            IReadOnlyCollection<IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedInterfaces;
+            IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedInterfaces;
 
         }
 

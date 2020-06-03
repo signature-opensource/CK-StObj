@@ -54,15 +54,15 @@ namespace CK.Setup
             _serviceCollector = new Dictionary<Type, AutoServiceClassInfo>();
             _serviceRoots = new List<AutoServiceClassInfo>();
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
-            AmbientKindDetector = new CKTypeKindDetector();
-            _pocoRegisterer = new PocoRegisterer( ( m, t ) => (AmbientKindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            CKTypeKindDetector = new CKTypeKindDetector();
+            _pocoRegisterer = new PocoRegisterer( ( m, t ) => (CKTypeKindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _mapName = mapName ?? String.Empty;
         }
 
         /// <summary>
-        /// Exposes the <see cref="CKTypeKindDetector"/>.
+        /// Exposes the <see cref="Setup.CKTypeKindDetector"/>.
         /// </summary>
-        public CKTypeKindDetector AmbientKindDetector { get; }
+        public CKTypeKindDetector CKTypeKindDetector { get; }
 
         /// <summary>
         /// Gets the number of registered types.
@@ -143,7 +143,7 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, t );
+            CKTypeKind lt = CKTypeKindDetector.GetKind( _monitor, t );
             var conflictMsg = lt.GetCombinationError( true );
             if( conflictMsg != null )
             {
@@ -215,6 +215,7 @@ namespace CK.Setup
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
                         _tempAssembly.SourceModules.Add( PocoSourceGenerator.CreateModule( pocoSupport ) );
                         RegisterClass( pocoSupport.FinalFactory );
+                        Debug.Assert( _tempAssembly.GetPocoSupportResult() == pocoSupport, "The extension method GetPocoSupportResult() provides it." );
                     }
                 }
                 RealObjectCollectorResult contracts;
@@ -228,14 +229,14 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( contracts );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, AmbientKindDetector );
+                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, CKTypeKindDetector );
             }
         }
 
         RealObjectCollectorResult GetRealObjectResult()
         {
             MutableItem[] allSpecializations = new MutableItem[_roots.Count];
-            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, AmbientKindDetector, _assemblies );
+            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, CKTypeKindDetector, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
             List<IReadOnlyList<Type>>? classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();
@@ -280,7 +281,7 @@ namespace CK.Setup
             foreach( var path in concreteClasses )
             {
                 MutableItem finalType = path[path.Count - 1];
-                finalType.RealObjectType.InitializeInterfaces( _monitor, AmbientKindDetector );
+                finalType.RealObjectType.InitializeInterfaces( _monitor, CKTypeKindDetector );
                 foreach( var item in path )
                 {
                     foreach( Type itf in item.RealObjectType.ThisRealObjectInterfaces )

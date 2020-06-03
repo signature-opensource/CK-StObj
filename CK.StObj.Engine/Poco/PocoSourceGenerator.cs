@@ -48,8 +48,8 @@ namespace CK.Setup
                 var fB = b.CreateType( t => t.Append( "class " )
                                              .Append( _r.FinalFactory.Name )
                                              .Append( " : " )
-                                             .Append( _r.AllInterfaces.Select( i => i.PocoFactoryInterface.ToCSharpName() ) ) );
-                foreach( var i in _r.AllInterfaces )
+                                             .Append( _r.AllInterfaces.Values.Select( i => i.PocoFactoryInterface.ToCSharpName() ) ) );
+                foreach( var i in _r.AllInterfaces.Values )
                 {
                     fB.AppendCSharpName( i.PocoInterface )
                       .Space()

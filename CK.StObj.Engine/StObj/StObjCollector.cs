@@ -104,7 +104,7 @@ namespace CK.Setup
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            else if( _cc.AmbientKindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
+            else if( _cc.CKTypeKindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
             {
                  return true;
             }
@@ -315,6 +315,7 @@ namespace CK.Setup
                         typeResult.LogErrorAndWarnings( _monitor );
                     }
                     if( error || typeResult.HasFatalError ) return (typeResult, null, null);
+                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeeded." );
                     using( _monitor.OpenInfo( "Creating final objects and configuring items." ) )
                     {
                         int nbItems = ConfigureMutableItems( typeResult.RealObjects );
