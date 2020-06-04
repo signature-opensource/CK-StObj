@@ -159,7 +159,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             public ConsumerWithDefaultService(
                 INotAnAutoService normal,
                 ISNotRegistered notReg,
-                ServiceForISRegistered classDependency = null )
+                ServiceForISRegistered? classDependency = null )
             {
             }
         }
@@ -255,7 +255,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
 
         public class StupidA : IScopedAutoService
         {
-            public StupidA( SpecializedStupidA child )
+            public StupidA( SpecializedStupidA? child )
             {
             }
         }

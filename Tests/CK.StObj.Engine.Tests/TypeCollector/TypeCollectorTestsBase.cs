@@ -11,9 +11,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
     public class TypeCollectorTestsBase
     {
 
-        public static CKTypeCollector CreateCKTypeCollector( Func<Type, bool> typeFilter = null )
+        public static CKTypeCollector CreateCKTypeCollector( Func<Type, bool>? typeFilter = null )
         {
-            Func<IActivityMonitor, Type, bool> f = null;
+            Func<IActivityMonitor, Type, bool>? f = null;
             if( typeFilter != null ) f = ( m, t ) => typeFilter( t );
             return new CKTypeCollector(
                         TestHelper.Monitor,

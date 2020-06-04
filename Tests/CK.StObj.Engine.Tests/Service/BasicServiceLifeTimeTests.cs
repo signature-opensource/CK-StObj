@@ -1,7 +1,7 @@
 using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
-
+using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
@@ -31,6 +31,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( SimpleClassAmbient ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
             r.Services.SimpleMappings[typeof( SimpleClassSingleton )].IsScoped.Should().BeFalse();
             r.Services.SimpleMappings[typeof( SimpleClassScoped )].IsScoped.Should().BeTrue();
             r.Services.SimpleMappings[typeof( SimpleClassAmbient )].IsScoped.Should().BeFalse();
@@ -132,6 +133,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( AmbientThatDependsOnSingleton ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
             r.Services.SimpleMappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
         }
 
@@ -146,6 +148,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( AmbientThatDependsOnNothing ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
             r.Services.SimpleMappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
             r.Services.SimpleMappings[typeof( AmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
         }
@@ -164,6 +167,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
             r.Services.SimpleMappings[typeof( AmbientThatDependsOnExternal )].IsScoped.Should().BeTrue();
         }
 
@@ -207,6 +211,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( AmbientThatWillBeResolvedAsSingleton ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
             r.Services.SimpleMappings[typeof( AmbientThatDependsOnAllKindOfSingleton )].IsScoped.Should().BeFalse();
         }
 
@@ -250,6 +255,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( AmbientThatDependsOnAnotherExternalService ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
             bool isScoped = r.Services.SimpleMappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
             isScoped.Should().Be( mode == "UnknwonLifetimeExternalService" );
         }
@@ -272,6 +278,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
                                                                                         | AutoServiceKind.IsFrontService );
@@ -283,6 +290,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
                                                                                         | AutoServiceKind.IsFrontService );
@@ -309,6 +317,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService );
             }
@@ -320,6 +329,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
                                                                                         | AutoServiceKind.IsFrontProcessService );
             }
@@ -332,9 +342,10 @@ namespace CK.StObj.Engine.Tests.Service
             collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
             collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
             collector.RegisterType( typeof( CBase1 ) );
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            r.Services.SimpleMappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
-            r.Services.SimpleMappings.ContainsKey( typeof( CBase2 ) ).Should().BeFalse();
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            map.Services.SimpleMappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
+            map.Services.SimpleMappings.ContainsKey( typeof( CBase2 ) ).Should().BeFalse();
         }
 
 

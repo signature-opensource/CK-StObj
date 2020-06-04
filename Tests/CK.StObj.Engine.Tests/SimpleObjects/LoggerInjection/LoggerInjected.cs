@@ -5,7 +5,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects.LoggerInjection
 {
     public class LoggerInjected : IRealObject
     {
-        void StObjConstruct( IActivityMonitor monitor, IActivityMonitor anotherLogger = null )
+        void StObjConstruct( IActivityMonitor monitor, IActivityMonitor? anotherLogger = null )
         {
             monitor.Should().NotBeNull( "This is the Setup monitor." );
             anotherLogger.Should().BeSameAs( monitor, "All IActivityMonitor are Setup monitors." );

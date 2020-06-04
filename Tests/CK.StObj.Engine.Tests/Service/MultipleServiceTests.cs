@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
@@ -79,6 +80,8 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( UserOffice ) );
 
             var result = TestHelper.GetAutomaticServices( collector );
+            Debug.Assert( result.Result.EngineMap != null, "No initialization error." );
+
             result.Map.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
             IStObjFinalImplementation g = result.Result.EngineMap.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
             IStObjFinalImplementation o = result.Result.EngineMap.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;

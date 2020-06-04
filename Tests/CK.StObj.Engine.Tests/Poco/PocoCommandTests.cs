@@ -7,6 +7,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using static CK.Testing.StObjEngineTestHelper;
+using System.Diagnostics;
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -56,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         [TestCase( "OnlyTheFinalUserAndDocumentCommands" )]
         [TestCase( "AllBaseUserAndDocumentCommands" )]
-        public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_CK_Ris_Command( string mode )
+        public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_Command( string mode )
         {
             var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             if( mode == "AllBaseUserAndDocumentCommands" )
@@ -68,10 +69,14 @@ namespace CK.StObj.Engine.Tests.Service
                 c.RegisterType( typeof( ICreateDocumentCommand ) );
                 c.RegisterType( typeof( ICultureCreateUserCommand ) );
             }
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var all = TestHelper.GetAutomaticServices( c );
+            var pocoSupportResult = all.Result.CKTypeResult.PocoSupport;
+            Debug.Assert( pocoSupportResult != null );
+            pocoSupportResult.Should().BeSameAs( all.Result.DynamicAssembly.GetPocoSupportResult() );
+            var services = all.Services;
 
             var dCommand = services.GetService<IPocoFactory<ICreateDocumentCommand>>().Create();
-            dCommand.Should().NotBeNull( "Factories are functional." );
+            dCommand.Should().NotBeNull( "Factories work." );
 
             var factoryCommand = services.GetService<IPocoFactory<ICreateUserCommand>>();
             factoryCommand.Should().NotBeNull();
@@ -79,6 +84,9 @@ namespace CK.StObj.Engine.Tests.Service
             services.GetService<IPocoFactory<ICommand>>().Should().BeNull( "ICommand is a CKTypeDefiner." );
             services.GetService<IPocoFactory<ICommandPart>>().Should().BeNull( "ICommandPart is a CKTypeSuperDefiner." );
             services.GetService<IPocoFactory<IAuthenticatedCommandPart>>().Should().BeNull( "Since ICommandPart is a CKTypeSuperDefiner, a command part is NOT Poco." );
+
+            pocoSupportResult.AllInterfaces.Should().HaveCount( 3 );
+            pocoSupportResult.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo( typeof( ICreateDocumentCommand ), typeof( ICultureCreateUserCommand ), typeof( ICreateUserCommand ) );
 
             var factoryCultCommand = services.GetService<IPocoFactory<ICultureCreateUserCommand>>();
             factoryCultCommand.Should().BeSameAs( factoryCommand );

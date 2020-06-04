@@ -6,6 +6,7 @@
 #endregion
 
 using CK.Core;
+using SmartAnalyzers.CSharpExtensions.Annotations;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -17,6 +18,7 @@ namespace CK.StObj.Engine.Tests.Poco
             Factory = f;
         }
 
+        [InitRequired]
         public IPocoFactory<IBasicPoco> Factory { get; private set; }
 
     }

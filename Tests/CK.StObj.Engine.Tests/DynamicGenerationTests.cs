@@ -5,8 +5,10 @@ using CK.Setup;
 using CK.Testing.StObjEngine;
 using FluentAssertions;
 using NUnit.Framework;
+using SmartAnalyzers.CSharpExtensions.Annotations;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -62,13 +64,14 @@ namespace CK.StObj.Engine.Tests
             public class C : IC
             {
                 [InjectObject]
+                [InitRequired]
                 public A TheA { get; private set; }
             }
 
             public class D : C
             {
                 [AmbientProperty( IsOptional = true )]
-                public string AnOptionalString { get; private set; }
+                public string? AnOptionalString { get; private set; }
             }
             
             const string ctorParam = "Protected Ctor is called by public's finalType's constructor.";
@@ -77,8 +80,8 @@ namespace CK.StObj.Engine.Tests
             {
                 public object CreateInstance( Type finalType )
                 {
-                    if( typeof( B ).IsAssignableFrom( finalType ) ) return Activator.CreateInstance( finalType, ctorParam );
-                    else return Activator.CreateInstance( finalType, false );
+                    if( typeof( B ).IsAssignableFrom( finalType ) ) return Activator.CreateInstance( finalType, ctorParam )!;
+                    else return Activator.CreateInstance( finalType, false )!;
                 }
             }
 
@@ -99,7 +102,8 @@ namespace CK.StObj.Engine.Tests
                 ctx.UnifiedCodeContext.CompileSource = true;
                 r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_SimpleEmit.dll" ), null );
                 var a = Assembly.Load( "TEST_SimpleEmit" );
-                IStObjMap c = StObjContextRoot.Load( a, runtimeBuilder, TestHelper.Monitor );
+                IStObjMap? c = StObjContextRoot.Load( a, runtimeBuilder, TestHelper.Monitor );
+                Debug.Assert( c != null );
                 Assert.That( typeof( B ).IsAssignableFrom( c.StObjs.ToLeafType( typeof( A ) ) ) );
                 Assert.That( c.StObjs.ToLeafType( typeof( IC ) ), Is.SameAs( typeof( D ) ) );
                 Assert.That( c.StObjs.Obtain<B>().Auto( 3 ), Is.EqualTo( 0 ) );
@@ -119,7 +123,7 @@ namespace CK.StObj.Engine.Tests
             public class A : IRealObject
             {
                 [StObjProperty]
-                public string StObjPower { get; set; }
+                public string? StObjPower { get; set; }
 
                 void StObjConstruct( IActivityMonitor monitor )
                 {
@@ -130,7 +134,7 @@ namespace CK.StObj.Engine.Tests
             public abstract class ASpec : A
             {
                 [StObjProperty]
-                new public string StObjPower { get; set; }
+                new public string? StObjPower { get; set; }
 
                 void StObjConstruct( IActivityMonitor monitor, B b )
                 {
@@ -138,6 +142,7 @@ namespace CK.StObj.Engine.Tests
                     TheB = b;
                 }
 
+                [InitRequired]
                 public B TheB { get; private set; }
             }
 
@@ -148,6 +153,7 @@ namespace CK.StObj.Engine.Tests
                     TheA = a;
                 }
 
+                [InitRequired]
                 public A TheA { get; private set; }
             }
 
@@ -167,9 +173,10 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-                var r = collector.GetResult(  );
+                var r = collector.GetResult();
                 {
                     Assert.That( r.HasFatalError, Is.False );
+                    Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
                     IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
                     Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
@@ -179,7 +186,7 @@ namespace CK.StObj.Engine.Tests
 
                     ASpec theA = (ASpec)stObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
-                    Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
 
                 var ctx = new SimpleEngineRunContext( r );
@@ -187,13 +194,15 @@ namespace CK.StObj.Engine.Tests
                 r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_ConstructCalled.dll" ), null );
                 {
                     var a = Assembly.Load( "TEST_ConstructCalled" );
-                    IStObjMap c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
+                    IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
+                    Debug.Assert( c != null );
+                    c.Should().NotBeNull();
                     Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
                     Assert.That( c.StObjs.Obtain<ASpec>().TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
 
                     ASpec theA = (ASpec)c.StObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
-                    Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
             }
 
@@ -210,7 +219,7 @@ namespace CK.StObj.Engine.Tests
             public class A : IRealObject
             {
                 [StObjProperty]
-                public string StObjPower { get; private set; }
+                public string? StObjPower { get; private set; }
 
                 /// <summary>
                 /// StObjInitialize is NOT called on setup instances.
@@ -229,13 +238,14 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 [InjectObject]
+                [InitRequired]
                 public BSpec TheB { get; private set; }
             }
 
             public abstract class ASpec : A
             {
                 [StObjProperty]
-                new public string StObjPower { get; set; }
+                new public string? StObjPower { get; set; }
 
                 public bool StObjInitializeOnASpecCalled;
 
@@ -256,9 +266,11 @@ namespace CK.StObj.Engine.Tests
             public class B : IRealObject
             {
                 [InjectObject]
+                [InitRequired]
                 public A TheA { get; private set; }
 
                 [InjectObject]
+                [InitRequired]
                 public A TheInjectedA { get; private set; }
             }
 
@@ -292,6 +304,7 @@ namespace CK.StObj.Engine.Tests
                 var r = collector.GetResult();
                 {
                     Assert.That( r.HasFatalError, Is.False );
+                    Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
                     IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
                     Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
@@ -301,7 +314,7 @@ namespace CK.StObj.Engine.Tests
 
                     ASpec theA = (ASpec)stObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
-                    Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
 
                 }
@@ -313,13 +326,16 @@ namespace CK.StObj.Engine.Tests
                 Assert.That( genResult.Success );
                 {
                     var a = Assembly.Load( "TEST_PostBuildSet" );
-                    IStObjMap c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
+                    IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
+                    c.Should().NotBeNull();
+                    Debug.Assert( c != null );
                     Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
                     Assert.That( c.StObjs.Obtain<ASpec>().TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
 
                     ASpec theA = (ASpec)c.StObjs.Obtain<A>();
+                    theA.Should().NotBeNull();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
-                    Assert.That( typeof( A ).GetProperty( "StObjPower" ).GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
 
                     Assert.That( theA.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
                     Assert.That( c.StObjs.Obtain<B>().TheInjectedA, Is.SameAs( theA ) );
@@ -360,12 +376,12 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 // We don't know how to handle any method.
-                public IAutoImplementorMethod HandleMethod( IActivityMonitor monitor, MethodInfo m ) => null;
+                public IAutoImplementorMethod? HandleMethod( IActivityMonitor monitor, MethodInfo m ) => null;
 
                 // Here we tell the engine: "I'm handling this property implementation" only if the property name starts with a 'H'.
                 // This is rather stupid but this shows an easy way to enforce naming rules.
                 // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
-                public IAutoImplementorProperty HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
+                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
 
                 // We choose to implement all the properties as a whole in Implement method below: by returning true
                 // we tell the engine: "Okay, I handled it, please continue your business."
@@ -445,7 +461,7 @@ namespace CK.StObj.Engine.Tests
                 r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_TypeImplementor.dll" ), null );
                 var a = Assembly.Load( "TEST_TypeImplementor" );
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
-                AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated );
+                AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated )!;
                 done.Hip.Should().Be( "Value is \"3712\"..." );
                 done.Hop.Should().Be( 3712 );
                 done.Hup.Should().Be( 0.0 );

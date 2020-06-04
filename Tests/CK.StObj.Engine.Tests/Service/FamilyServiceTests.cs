@@ -2,6 +2,7 @@ using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -42,10 +43,11 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( NotALinkBetweenFamilies ) );
                 collector.RegisterType( typeof( OnlyForS ) );
-                var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-                r.Services.SimpleMappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
-                r.Services.SimpleMappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
-                r.Services.SimpleMappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );
+                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( map != null, "No initialization error." );
+                map.Services.SimpleMappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
+                map.Services.SimpleMappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
+                map.Services.SimpleMappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );
             }
         }
 

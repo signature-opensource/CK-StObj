@@ -5,6 +5,7 @@ using NUnit.Framework;
 using FluentAssertions;
 
 using static CK.Testing.StObjEngineTestHelper;
+using System.Diagnostics;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -43,6 +44,7 @@ namespace CK.StObj.Engine.Tests
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterType( typeof( A2 ) );
             var r = TestHelper.GetSuccessfulResult( collector );
+            Debug.Assert( r.EngineMap != null, "No initialization error." );
             r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2>();
         }
 
@@ -57,6 +59,7 @@ namespace CK.StObj.Engine.Tests
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterType( typeof( A3 ) );
             var r = TestHelper.GetSuccessfulResult( collector );
+            Debug.Assert( r.EngineMap != null, "No initialization error." );
             r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A3>();
         }
 
@@ -78,6 +81,8 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( A4 ) );
             
             StObjCollectorResult result = TestHelper.GetSuccessfulResult( collector );
+            Debug.Assert( result.EngineMap != null, "No initialization error." );
+
             result.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A>().And.NotBeAssignableTo<A4>();
         }
 

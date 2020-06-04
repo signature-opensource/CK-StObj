@@ -3,6 +3,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -25,10 +26,11 @@ namespace CK.StObj.Engine.Tests.Service
             collector.SetAutoServiceKind( typeof( FrontService1 ), AutoServiceKind.IsScoped );
             collector.RegisterType( typeof( FrontService1 ) );
 
-            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor descriptor = result.Services.SimpleMappings[typeof( IFrontService1 )];
-            descriptor.Should().BeSameAs( result.Services.SimpleMappings[typeof( FrontService1 )] );
+            IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( IFrontService1 )];
+            descriptor.Should().BeSameAs( map.Services.SimpleMappings[typeof( FrontService1 )] );
 
             descriptor.IsScoped.Should().BeTrue();
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
@@ -83,8 +85,10 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( FrontDependentService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            IStObjServiceClassDescriptor descriptor = r.Services.SimpleMappings[typeof( FrontDependentService1 )];
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+
+            IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
         }
 
@@ -107,10 +111,12 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontDependentService1 ) );
             collector.RegisterType( typeof( FrontService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
-            IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( FrontDependentService1 )];
-            IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+
+            IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
+            IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
+            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontService1 )];
             dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
             dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
             d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsScoped );
@@ -118,7 +124,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class MService1NoAutoService : Model.IMarshaller<FrontService1>
         {
-            public FrontService1 Read( ICKBinaryReader reader, IServiceProvider services ) => null;
+            public FrontService1 Read( ICKBinaryReader reader, IServiceProvider services ) => null!;
 
             public void Write( ICKBinaryWriter writer, FrontService1 service ) { }
         }
@@ -129,8 +135,9 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( MService1NoAutoService ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            r.Services.SimpleMappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            map.Services.SimpleMappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
         }
 
         public class MService1 : MService1NoAutoService, IAutoService 
@@ -144,9 +151,10 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            IStObjServiceClassDescriptor dI = r.Services.SimpleMappings[typeof( IFrontService1 )];
-            IStObjServiceClassDescriptor dC = r.Services.SimpleMappings[typeof( FrontService1 )];
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            IStObjServiceClassDescriptor dI = map.Services.SimpleMappings[typeof( IFrontService1 )];
+            IStObjServiceClassDescriptor dC = map.Services.SimpleMappings[typeof( FrontService1 )];
             dI.Should().BeSameAs( dC );
             dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
         }
@@ -158,10 +166,11 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
 
-            var dM = r.Services.SimpleMappings[typeof( MService1 )];
-            var dMi = r.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
+            var dM = map.Services.SimpleMappings[typeof( MService1 )];
+            var dMi = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
             dM.Should().NotBeNull();
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
             dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
@@ -175,15 +184,16 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
 
-            var dM = r.Services.SimpleMappings[typeof( MService1 )];
-            var dMClass = r.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
+            var dM = map.Services.SimpleMappings[typeof( MService1 )];
+            var dMClass = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
             dM.Should().NotBeNull();
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
             dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
             dMClass.Should().BeSameAs( dM );
-            r.Services.SimpleMappings.ContainsKey( typeof( Model.IMarshaller<IFrontService1> ) )
+            map.Services.SimpleMappings.ContainsKey( typeof( Model.IMarshaller<IFrontService1> ) )
                 .Should().BeFalse( "Mashalling the IService MUST be explicitly supported by the marshaller implementation." );
         }
 
@@ -197,10 +207,11 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( FrontService1 ) );
             collector.RegisterType( typeof( MService1 ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            IStObjServiceClassDescriptor dDep2 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
-            IStObjServiceClassDescriptor dDep1 = r.Services.SimpleMappings[typeof( IFrontDependentService2 )];
-            IStObjServiceClassDescriptor d1 = r.Services.SimpleMappings[typeof( IFrontService1 )];
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
+            IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
+            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontService1 )];
             dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
             dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
             d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
@@ -213,7 +224,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class MarshalAnyway : Model.IMarshaller<IAmNotAService>, IAutoService
         {
-            public IAmNotAService Read( ICKBinaryReader reader, IServiceProvider services ) => null;
+            public IAmNotAService Read( ICKBinaryReader reader, IServiceProvider services ) => null!;
 
             public void Write( ICKBinaryWriter writer, IAmNotAService service ) { }
         }
@@ -225,8 +236,9 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( MarshalAnyway ) );
             collector.RegisterType( typeof( NotAutoService ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            r.Services.SimpleMappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            map.Services.SimpleMappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
         }
 
 
@@ -268,8 +280,9 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( Unknwon ) );
             collector.RegisterType( typeof( ServiceFreeLifetime ) );
 
-            var r = TestHelper.GetSuccessfulResult( collector );
-            r.EngineMap.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            map.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
         }
     }
 }

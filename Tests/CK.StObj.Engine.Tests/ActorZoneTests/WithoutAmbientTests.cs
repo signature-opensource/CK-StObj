@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
@@ -118,6 +119,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
             
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( r != null, "No initialization error." );
 
             WithAmbientTests.CheckChildren<BasicPackage>( r.StObjs, "BasicActor,BasicUser,BasicGroup" );
             WithAmbientTests.CheckChildren<ZonePackage>( r.StObjs, "SecurityZone,ZoneGroup" );

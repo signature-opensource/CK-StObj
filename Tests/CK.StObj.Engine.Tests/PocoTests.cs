@@ -7,6 +7,8 @@ using System.Linq;
 
 using static CK.Testing.StObjEngineTestHelper;
 using FluentAssertions;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -17,6 +19,7 @@ namespace CK.StObj.Engine.Tests
         public void simple_poco_resolution_and_injection()
         {
             StObjCollectorResult result = BuildPocoSample();
+            Debug.Assert( result.EngineMap != null );
 
             IStObjResult p = result.EngineMap.StObjs.ToStObj( typeof( PackageWithBasicPoco ) );
             var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
@@ -63,10 +66,12 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( IThing ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var poco = collector.GetResult().CKTypeResult.PocoSupport;
+            Debug.Assert( poco != null, "Since there has been no error." );
             poco.Roots.Should().HaveCount( 1 );
             poco.AllInterfaces.Should().HaveCount( 1 );
             poco.Find( typeof( IThingBase ) ).Should().BeNull();
             var factory = Activator.CreateInstance( poco.FinalFactory );
+            Debug.Assert( factory != null );
             var thing = ((IPocoFactory<IThing>)factory).Create();
             thing.BaseId = 37;
             thing.SpecId = 12;
@@ -76,6 +81,8 @@ namespace CK.StObj.Engine.Tests
         public void poco_factory_exposes_the_final_type()
         {
             StObjCollectorResult result = BuildPocoSample();
+            Debug.Assert( result.EngineMap != null, "No error." );
+
             var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IBasicPoco>>();
 
             Type pocoType = p.PocoClassType;
@@ -91,12 +98,14 @@ namespace CK.StObj.Engine.Tests
         public void poco_support_read_only_properties()
         {
             StObjCollectorResult result = BuildPocoSample();
+            Debug.Assert( result.EngineMap != null, "No error." );
             var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IEBasicPocoWithReadOnly>>();
             var o = p.Create();
 
             Assert.That( o.ReadOnlyProperty, Is.EqualTo( 0 ) );
-            p.PocoClassType.GetProperty( nameof( IEBasicPocoWithReadOnly.ReadOnlyProperty ) )
-                .SetValue( o, 3712 );
+            PropertyInfo? prop = p.PocoClassType.GetProperty( nameof( IEBasicPocoWithReadOnly.ReadOnlyProperty ) );
+            Debug.Assert( prop != null ); 
+            prop.SetValue( o, 3712 );
             Assert.That( o.ReadOnlyProperty, Is.EqualTo( 3712 ) );
         }
 

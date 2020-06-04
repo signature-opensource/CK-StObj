@@ -3,7 +3,7 @@ using System.Linq;
 using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
-
+using SmartAnalyzers.CSharpExtensions.Annotations;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
@@ -13,8 +13,10 @@ namespace CK.StObj.Engine.Tests
     {
         public class StObjPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
+            [InitRequired]
             public string PropertyName { get; set; }
 
+            [InitRequired]
             public object PropertyValue { get; set; }
 
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
@@ -35,7 +37,7 @@ namespace CK.StObj.Engine.Tests
             {
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( SimpleContainer ) );
-                var result = collector.GetResult().EngineMap.StObjs;
+                var result = collector.GetResult().EngineMap!.StObjs;
                 Assert.That( result.OrderedStObjs.First().GetStObjProperty( "OneIntValue" ), Is.EqualTo( 3712 ) );
             }
         }
@@ -83,7 +85,7 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( BaseObject ) );
             collector.RegisterType( typeof( SpecializedObject ) );
             collector.RegisterType( typeof( SpecializedObjectWithExplicitContainer ) );
-            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap.StObjs;
+            var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
 
             Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer" ) );

@@ -5,6 +5,7 @@ using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using SmartAnalyzers.CSharpExtensions.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -97,7 +98,7 @@ namespace CK.StObj.Engine.Tests.Service
         [ReplaceAutoService(typeof(B))]
         public abstract class BDependency : IRealObject, IAutoServiceCanBeImplementedByRealObject
         {
-            B _theB;
+            B? _theB;
 
             void StObjConstruct( B b )
             {
@@ -170,7 +171,7 @@ namespace CK.StObj.Engine.Tests.Service
                 IStObjObjectMap ambientObjects,
                 SuperStartupService superService,
                 TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem ext,
-                IOptionalStartupService optionalService = null )
+                IOptionalStartupService? optionalService = null )
             {
                 ambientObjects.Obtain<IA1>().Should().BeSameAs( this );
                 superService.Should().NotBeNull();
@@ -294,7 +295,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( B ) );
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
@@ -324,7 +325,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ServiceCanTalk ) );
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var sp = TestHelper.GetAutomaticServices( collector ).Services;
@@ -346,7 +347,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var startupServices = new SimpleServiceContainer();
                 startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
@@ -384,7 +385,7 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
@@ -415,7 +416,7 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
@@ -441,7 +442,7 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.GetAutomaticServices( collector, startupServices );
@@ -466,7 +467,7 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.GetAutomaticServices( collector, startupServices );
@@ -491,7 +492,7 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 TestHelper.GetFailedAutomaticServicesConfiguration( collector, startupServices );
@@ -522,7 +523,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var services = TestHelper.GetAutomaticServices( collector, null ).Services;
@@ -538,7 +539,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var services = TestHelper.GetAutomaticServices( collector, null ).Services;
