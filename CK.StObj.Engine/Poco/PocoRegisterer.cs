@@ -15,6 +15,8 @@ using System.Reflection.Emit;
 
 namespace CK.Setup
 {
+
+
     /// <summary>
     /// Registerer for <see cref="IPoco"/> interfaces.
     /// </summary>
@@ -134,58 +136,30 @@ namespace CK.Setup
 
         class Result : IPocoSupportResult
         {
-            readonly Adapter _exportedInterfaces;
+            readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedInterfaces;
             public readonly List<ClassInfo> Roots;
-            public readonly Dictionary<Type, InterfaceInfo> Interfaces;
+            public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
+            public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
             public Type? FinalFactory;
 
             // Exposed FinalFactory is necessarily not null.
             Type IPocoSupportResult.FinalFactory => FinalFactory!;
 
-            class Adapter : IReadOnlyDictionary<Type, IPocoInterfaceInfo>
-            {
-                readonly Dictionary<Type, InterfaceInfo> _interfaces;
-
-                public Adapter( Dictionary<Type, InterfaceInfo> interfaces )
-                {
-                    _interfaces = interfaces;
-                }
-
-                IPocoInterfaceInfo IReadOnlyDictionary<Type, IPocoInterfaceInfo>.this[Type key] => _interfaces[key];
-
-                IEnumerable<Type> IReadOnlyDictionary<Type, IPocoInterfaceInfo>.Keys => _interfaces.Keys;
-
-                IEnumerable<IPocoInterfaceInfo> IReadOnlyDictionary<Type, IPocoInterfaceInfo>.Values => _interfaces.Values;
-
-                int IReadOnlyCollection<KeyValuePair<Type, IPocoInterfaceInfo>>.Count => _interfaces.Count;
-
-                bool IReadOnlyDictionary<Type, IPocoInterfaceInfo>.ContainsKey( Type key ) => _interfaces.ContainsKey( key );
-
-                IEnumerator<KeyValuePair<Type, IPocoInterfaceInfo>> IEnumerable<KeyValuePair<Type, IPocoInterfaceInfo>>.GetEnumerator() => _interfaces.Select( e => KeyValuePair.Create( e.Key, (IPocoInterfaceInfo)e.Value ) ).GetEnumerator();
-
-                IEnumerator IEnumerable.GetEnumerator() => _interfaces.GetEnumerator();
-
-                bool IReadOnlyDictionary<Type, IPocoInterfaceInfo>.TryGetValue( Type key, [MaybeNullWhen( false )] out IPocoInterfaceInfo value )
-                {
-                    bool r = _interfaces.TryGetValue( key, out var i );
-                    value = i;
-                    return r;
-                }
-            }
-
             public Result()
             {
                 Roots = new List<ClassInfo>();
-                Interfaces = new Dictionary<Type, InterfaceInfo>();
-                _exportedInterfaces = new Adapter( Interfaces );
+                AllInterfaces = new Dictionary<Type, InterfaceInfo>();
+                _exportedInterfaces = AllInterfaces.AsCovariantReadOnly<Type, InterfaceInfo, IPocoInterfaceInfo>();
+                OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
 
-            IPocoInterfaceInfo? IPocoSupportResult.Find( Type pocoInterface ) => Interfaces.GetValueOrDefault( pocoInterface );
+            IPocoInterfaceInfo? IPocoSupportResult.Find( Type pocoInterface ) => AllInterfaces.GetValueOrDefault( pocoInterface );
 
             IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedInterfaces;
 
+            IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
         }
 
         class ClassInfo : IPocoRootInfo
@@ -195,15 +169,18 @@ namespace CK.Setup
             public bool IsClosedPoco { get; }
             public readonly MethodBuilder StaticMethod;
             public readonly List<InterfaceInfo> Interfaces;
+            public HashSet<Type> OtherInterfaces;
             IReadOnlyList<IPocoInterfaceInfo> IPocoRootInfo.Interfaces => Interfaces;
+            IReadOnlyCollection<Type> IPocoRootInfo.OtherInterfaces => OtherInterfaces;
 
-            public ClassInfo( Type pocoClass, MethodBuilder method, bool mustBeClosed, Type? closureInterface )
+            public ClassInfo( Type pocoClass, MethodBuilder method, bool mustBeClosed, Type? closureInterface, HashSet<Type> others )
             {
                 PocoClass = pocoClass;
                 ClosureInterface = closureInterface;
                 IsClosedPoco = mustBeClosed;
                 StaticMethod = method;
                 Interfaces = new List<InterfaceInfo>();
+                OtherInterfaces = others;
             }
         }
 
@@ -263,10 +240,12 @@ namespace CK.Setup
             int idMethod = 0;
             foreach( var signature in _result )
             {
-                (Type? tPoco, bool mustBeClosed, Type? closureInterface) = CreatePocoType( moduleB, monitor, signature );
+                (Type? tPoco, HashSet<Type>? expanded, bool mustBeClosed, Type? closureInterface) = CreatePocoType( moduleB, monitor, signature );
                 if( tPoco == null ) return null;
+                Debug.Assert( expanded != null, "Since we have a type." );
                 MethodBuilder realMB = tB.DefineMethod( "DoC" + r.Roots.Count.ToString(), MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Static, tPoco, Type.EmptyTypes );
-                var cInfo = new ClassInfo( tPoco, realMB, mustBeClosed, closureInterface );
+
+                var cInfo = new ClassInfo( tPoco, realMB, mustBeClosed, closureInterface, expanded );
                 r.Roots.Add( cInfo );
                 foreach( var i in signature )
                 {
@@ -289,13 +268,29 @@ namespace CK.Setup
                     }
                     var iInfo = new InterfaceInfo( cInfo, i, iCreate );
                     cInfo.Interfaces.Add( iInfo );
-                    r.Interfaces.Add( i, iInfo );
+                    r.AllInterfaces.Add( i, iInfo );
+                }
+                Debug.Assert( expanded != null );
+                expanded.Remove( typeof( IPoco ) );
+                expanded.Remove( typeof( IClosedPoco ) );
+                foreach( var t in signature ) expanded.Remove( t );
+                foreach( var e in expanded )
+                {
+                    IReadOnlyList<IPocoRootInfo>? value;
+                    if( r.OtherInterfaces.TryGetValue( e, out value ) )
+                    {
+                        ((List<ClassInfo>)value).Add( cInfo );
+                    }
+                    else
+                    {
+                        r.OtherInterfaces.Add( e, new List<ClassInfo>() { cInfo } );
+                    }
                 }
             }
             return r;
         }
 
-        (Type? created, bool mustBeClosed, Type? closureInterface) CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        (Type? created, HashSet<Type>? rawInterfaces, bool mustBeClosed, Type? closureInterface) CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             var tB = moduleB.DefineType( $"{_namespace}.Poco{_uniqueNumber++}" );
             var properties = new Dictionary<string, PropertyInfo>();
@@ -328,7 +323,7 @@ namespace CK.Setup
                 if( maxICount < expanded.Count - 1 )
                 {
                     monitor.Error( $"Poco family '{interfaces.Select( b => b.FullName ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
-                    return (null, false, null);
+                    return (null, null, false, null);
                 }
                 else
                 {
@@ -350,7 +345,7 @@ namespace CK.Setup
                         if( implP.PropertyType != p.PropertyType )
                         {
                             monitor.Error( $"Interface '{i}' and '{implP.DeclaringType}' both declare property '{p.Name}' but their type differ ({p.PropertyType.Name} vs. {implP.PropertyType.Name})." );
-                            return (null, false, null);
+                            return (null, null, false, null);
                         }
                     }
                     else
@@ -360,7 +355,7 @@ namespace CK.Setup
                     }
                 }
             }
-            return (tB.CreateType(), mustBeClosed, closure);
+            return (tB.CreateType(), expanded, mustBeClosed, closure);
         }
     }
 }

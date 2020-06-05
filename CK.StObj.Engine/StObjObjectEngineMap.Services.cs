@@ -17,7 +17,7 @@ namespace CK.Setup
 
         readonly Dictionary<Type,MutableItem> _serviceToObjectMap;
         readonly List<MutableItem> _serviceRealObjects;
-        readonly ServiceObjectMappingTypeAdapter _serviceToObjectMapExposed;
+        readonly IReadOnlyDictionary<Type, IStObjFinalImplementation> _serviceToObjectMapExposed;
 
         internal void RegisterServiceFinalObjectMapping( Type t, CKTypeInfo typeInfo )
         {
@@ -32,41 +32,6 @@ namespace CK.Setup
             _serviceToObjectMap.Add( t, mapping );
         }
 
-        class ServiceObjectMappingTypeAdapter : IReadOnlyDictionary<Type, IStObjFinalImplementation>
-        {
-            readonly Dictionary<Type, MutableItem> _map;
-
-            public ServiceObjectMappingTypeAdapter( Dictionary<Type, MutableItem> map )
-            {
-                _map = map;
-            }
-
-            public IStObjFinalImplementation this[Type key] => _map[ key ].FinalImplementation;
-
-            public IEnumerable<Type> Keys => _map.Keys;
-
-            public IEnumerable<IStObjFinalImplementation> Values => _map.Values.Select( m => m.FinalImplementation );
-
-            public int Count => _map.Count;
-
-            public bool ContainsKey( Type key ) => _map.ContainsKey( key );
-
-            public IEnumerator<KeyValuePair<Type, IStObjFinalImplementation>> GetEnumerator() => _map.Select( kv => KeyValuePair.Create( kv.Key, (IStObjFinalImplementation)kv.Value.FinalImplementation ) ).GetEnumerator(); 
-
-            public bool TryGetValue( Type key, out IStObjFinalImplementation value )
-            {
-                if( _map.TryGetValue( key, out var m ) )
-                {
-                    value = m.FinalImplementation;
-                    return true;
-                }
-                value = null;
-                return false;
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-        }
-
         public IReadOnlyDictionary<Type, IStObjFinalImplementation> ObjectMappings => _serviceToObjectMapExposed;
 
         public IReadOnlyList<IStObjFinalImplementation> ObjectMappingList => _serviceRealObjects;
@@ -77,7 +42,7 @@ namespace CK.Setup
 
         readonly Dictionary<Type, IStObjServiceFinalSimpleMapping> _serviceSimpleMap;
         readonly List<IStObjServiceFinalSimpleMapping> _serviceSimpleList;
-        readonly ServiceMapTypeAdapter _exposedServiceMap;
+        readonly IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> _exposedServiceMap;
 
         class ServiceMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassDescriptor>
         {
@@ -211,7 +176,7 @@ namespace CK.Setup
 
         readonly Dictionary<Type, IStObjServiceFinalManualMapping> _serviceManualMap;
         readonly List<IStObjServiceFinalManualMapping> _serviceManualList;
-        readonly ServiceManualMapTypeAdapter _exposedManualServiceMap;
+        readonly IReadOnlyDictionary<Type, IStObjServiceClassFactory> _exposedManualServiceMap;
 
         class ServiceManualMapTypeAdapter : IReadOnlyDictionary<Type, IStObjServiceClassFactory>
         {

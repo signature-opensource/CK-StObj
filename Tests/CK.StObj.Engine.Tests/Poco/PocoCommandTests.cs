@@ -87,6 +87,12 @@ namespace CK.StObj.Engine.Tests.Service
 
             pocoSupportResult.AllInterfaces.Should().HaveCount( 3 );
             pocoSupportResult.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo( typeof( ICreateDocumentCommand ), typeof( ICultureCreateUserCommand ), typeof( ICreateUserCommand ) );
+            pocoSupportResult.OtherInterfaces.Keys.Should().BeEquivalentTo( typeof(ICommand), typeof(ICommandPart), typeof(IAuthenticatedCommandPart), typeof(ICultureDependentCommandPart) );
+
+            pocoSupportResult.OtherInterfaces[typeof( ICommand )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo( typeof( ICreateDocumentCommand ), typeof( ICultureCreateUserCommand ) );
+            pocoSupportResult.OtherInterfaces[typeof( ICommandPart )].Should().BeEquivalentTo( pocoSupportResult.OtherInterfaces[typeof( ICommand )], "Our 2 commands have parts." );
+            pocoSupportResult.OtherInterfaces[typeof( IAuthenticatedCommandPart )].Should().BeEquivalentTo( pocoSupportResult.OtherInterfaces[typeof( ICommand )], "Our 2 commands have IAuthenticatedCommandPart part." );
+            pocoSupportResult.OtherInterfaces[typeof( ICultureDependentCommandPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo( typeof( ICultureCreateUserCommand ) );
 
             var factoryCultCommand = services.GetService<IPocoFactory<ICultureCreateUserCommand>>();
             factoryCultCommand.Should().BeSameAs( factoryCommand );

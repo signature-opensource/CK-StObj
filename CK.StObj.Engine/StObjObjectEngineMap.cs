@@ -51,15 +51,15 @@ namespace CK.Setup
 
             _serviceSimpleMap = new Dictionary<Type, IStObjServiceFinalSimpleMapping>();
             _serviceSimpleList = new List<IStObjServiceFinalSimpleMapping>();
-            _exposedServiceMap = new ServiceMapTypeAdapter( _serviceSimpleMap );
+            _exposedServiceMap = _serviceSimpleMap.AsCovariantReadOnly<Type, IStObjServiceFinalSimpleMapping, IStObjServiceClassDescriptor>();
 
             _serviceManualMap = new Dictionary<Type, IStObjServiceFinalManualMapping>();
             _serviceManualList = new List<IStObjServiceFinalManualMapping>();
-            _exposedManualServiceMap = new ServiceManualMapTypeAdapter( _serviceManualMap );
+            _exposedManualServiceMap =  _serviceManualMap.AsCovariantReadOnly<Type, IStObjServiceFinalManualMapping, IStObjServiceClassFactory>();
 
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
             _serviceRealObjects = new List<MutableItem>();
-            _serviceToObjectMapExposed = new ServiceObjectMappingTypeAdapter( _serviceToObjectMap );
+            _serviceToObjectMapExposed = _serviceToObjectMap.AsCovariantReadOnly<Type,MutableItem,IStObjFinalImplementation>();
 
             _typeKindDetector = typeKindDetector;
         }

@@ -10,7 +10,7 @@ namespace CK.Setup
     public interface IPocoInterfaceInfo
     {
         /// <summary>
-        /// Gets the IPoco interface.
+        /// Gets the IPoco interface type.
         /// </summary>
         Type PocoInterface { get; }
 

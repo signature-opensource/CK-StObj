@@ -33,5 +33,19 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyDictionary<Type, IPocoInterfaceInfo> AllInterfaces { get; }
 
+        /// <summary>
+        /// Gets the dictionary of all interface types that are not <see cref="IPoco"/> but are supported by at least one Poco, mapped
+        /// to the list of roots that support them.
+        /// <para>
+        /// Keys are not <see cref="IPoco"/> interfaces (technically they may be IPoco but then they are "cancelled" by
+        /// a <see cref="CKTypeDefinerAttribute"/> or <see cref="CKTypeSuperDefinerAttribute"/>): this set complements and
+        /// doesn't intersect <see cref="AllInterfaces"/>.
+        /// </para>
+        /// <para>
+        /// Note that <see cref="IPoco"/> and <see cref="IClosedPoco"/> are excluded from this set (as well as from the AllInterfaces).
+        /// </para>
+        /// </summary>
+        IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces { get; }
+
     }
 }

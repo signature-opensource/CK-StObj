@@ -32,6 +32,12 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyList<IPocoInterfaceInfo> Interfaces { get; }
 
+        /// <summary>
+        /// Gets all the interface types that are not <see cref="IPoco"/> but nevertheless are supported by this <see cref="PocoClass"/>.
+        /// See <see cref="IPocoSupportResult.OtherInterfaces"/>.
+        /// </summary>
+        IReadOnlyCollection<Type> OtherInterfaces { get; }
+
     }
 
 }
