@@ -75,7 +75,11 @@ namespace CK.Setup
                 if( a is ContextBoundDelegationAttribute delegated )
                 {
                     Type dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
-                    finalAttributeToUse = services.SimpleObjectCreate( monitor, dT, a );
+                    // When ContextBoundDelegationAttribute is not specialized, it is useless: the attribute
+                    // parameter must not be specified.
+                    finalAttributeToUse = a.GetType() == typeof( ContextBoundDelegationAttribute )
+                                            ? services.SimpleObjectCreate( monitor, dT )
+                                            : services.SimpleObjectCreate( monitor, dT, a );
                     if( finalAttributeToUse == null ) continue;
                 }
                 all.Add( new Entry( m, finalAttributeToUse ) );

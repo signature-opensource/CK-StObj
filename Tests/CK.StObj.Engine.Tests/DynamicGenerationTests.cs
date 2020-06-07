@@ -480,7 +480,7 @@ namespace CK.StObj.Engine.Tests
         {
             public class AttributeImpl 
             {
-                public AttributeImpl( ContextBoundDelegationAttribute a, IServiceProvider p, Func<string> hello )
+                public AttributeImpl( IServiceProvider p, Func<string> hello )
                 {
                     TestHelper.Monitor.Info( hello );
                 }
