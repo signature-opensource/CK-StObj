@@ -59,7 +59,7 @@ namespace CK.Setup
         /// Note that use of such shared memory should be avoided as much as possible, and if required should be properly
         /// encapsulated, typically by extension methods on this context.
         /// </summary>
-        IDictionary GlobalMemory { get; }
+        IDictionary<object, object?> GlobalMemory { get; }
 
         /// <summary>
         /// Gets whether the source code must eventually be saved.

@@ -32,11 +32,13 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets all information related to Poco support.
-        /// This is not null as long as no fatal error occurred.
+        /// This is never null: if an error occurred, <see cref="EmptyPocoSupportResult.Default"/> is used.
+        /// Note that if no error but no Poco have been found, an empty result is produced that will not be
+        /// the <see cref="EmptyPocoSupportResult.Default"/> instance.
         /// </summary>
         /// <param name="this">This Dynamic assembly.</param>
         /// <returns>The Poco information.</returns>
-        public static IPocoSupportResult? GetPocoSupportResult( this IDynamicAssembly @this ) => (IPocoSupportResult?)@this.Memory[typeof( IPocoSupportResult )];
+        public static IPocoSupportResult GetPocoSupportResult( this IDynamicAssembly @this ) => (IPocoSupportResult)@this.Memory[typeof( IPocoSupportResult )]!;
 
     }
 }

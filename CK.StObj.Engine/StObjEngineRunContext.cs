@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using CK.Core;
@@ -17,7 +15,7 @@ namespace CK.Setup
         readonly List<GenBinPath> _binPaths;
         readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
         readonly Dictionary<string, object> _unifiedRunCache;
-        readonly IDictionary _codeGenerationGlobalMemory;
+        readonly Dictionary<object, object?> _codeGenerationGlobalMemory;
 
         internal class GenBinPath : IGeneratedBinPath, ICodeGenerationContext
         {
@@ -48,7 +46,7 @@ namespace CK.Setup
 
             IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global.AllBinPaths;
 
-            IDictionary ICodeGenerationContext.GlobalMemory => _global._codeGenerationGlobalMemory;
+            IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._codeGenerationGlobalMemory;
 
             bool ICodeGenerationContext.IsUnifiedRun => this == _global.UnifiedBinPath;
 
@@ -83,7 +81,7 @@ namespace CK.Setup
             _binPaths = new List<GenBinPath>();
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
             _unifiedRunCache = new Dictionary<string, object>();
-            _codeGenerationGlobalMemory = new HybridDictionary();
+            _codeGenerationGlobalMemory = new Dictionary<object, object?>();
             AddResult( primaryCompatibleBinPaths, primaryResult );
         }
 

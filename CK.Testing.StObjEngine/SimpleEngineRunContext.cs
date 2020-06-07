@@ -17,7 +17,7 @@ namespace CK.Testing.StObjEngine
     {
         readonly List<CodeGenerationContext> _all;
         readonly Dictionary<string, object> _unifiedRunCache;
-        readonly HybridDictionary _globalMemory;
+        readonly Dictionary<object, object?> _globalMemory;
 
         /// <summary>
         /// Mutable implementation of <see cref="IGeneratedBinPath"/>.
@@ -75,7 +75,7 @@ namespace CK.Testing.StObjEngine
 
             bool ICodeGenerationContext.IsUnifiedRun => CurrentRun == UnifiedBinPath;
 
-            IDictionary ICodeGenerationContext.GlobalMemory => _global._globalMemory;
+            IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._globalMemory;
 
             /// <inheritdoc />
             public bool SaveSource { get; set; }
@@ -106,7 +106,7 @@ namespace CK.Testing.StObjEngine
             if( unifiedResult != null && unifiedResult.HasFatalError ) throw new ArgumentException( nameof( unifiedResult ) ); 
             _all = new List<CodeGenerationContext>();
             _unifiedRunCache = new Dictionary<string, object>();
-            _globalMemory = new HybridDictionary();
+            _globalMemory = new Dictionary<object, object?>();
             UnifiedBinPath = AddContext().CurrentRun;
             UnifiedBinPath.Result = unifiedResult;
         }

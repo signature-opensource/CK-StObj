@@ -7,6 +7,8 @@ using System.Reflection.Emit;
 using CK.CodeGen;
 using CK.CodeGen.Abstractions;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -15,7 +17,7 @@ namespace CK.Setup
     public class DynamicAssembly : IDynamicAssembly
     {
         int _typeID;
-        readonly IDictionary _memory;
+        readonly Dictionary<object, object?> _memory;
 
         /// <summary>
         /// Initializes a new <see cref="DynamicAssembly"/>.
@@ -26,7 +28,7 @@ namespace CK.Setup
             var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly( new AssemblyName( name ), AssemblyBuilderAccess.Run );
             StubModuleBuilder = assemblyBuilder.DefineDynamicModule( name );
 
-            _memory = new System.Collections.Specialized.HybridDictionary();
+            _memory = new Dictionary<object, object?>();
 
             SourceModules = new List<ICodeGeneratorModule>();
             var ws = CodeWorkspace.Create();
@@ -35,7 +37,7 @@ namespace CK.Setup
         }
 
         /// <inheritdoc />
-        public IDictionary Memory => _memory;
+        public IDictionary<object,object?> Memory => _memory;
 
         /// <inheritdoc />
         public ModuleBuilder StubModuleBuilder { get; }

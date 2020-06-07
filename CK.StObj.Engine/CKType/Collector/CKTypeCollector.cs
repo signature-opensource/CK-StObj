@@ -215,8 +215,13 @@ namespace CK.Setup
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
                         _tempAssembly.SourceModules.Add( PocoSourceGenerator.CreateModule( pocoSupport ) );
                         RegisterClass( pocoSupport.FinalFactory );
-                        Debug.Assert( _tempAssembly.GetPocoSupportResult() == pocoSupport, "The extension method GetPocoSupportResult() provides it." );
                     }
+                    else
+                    {
+                        // On error, we register the Empty result.
+                        _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport = EmptyPocoSupportResult.Default );
+                    }
+                    Debug.Assert( _tempAssembly.GetPocoSupportResult() == pocoSupport, "The extension method GetPocoSupportResult() provides it." );
                 }
                 RealObjectCollectorResult contracts;
                 using( _monitor.OpenInfo( "Real objects handling." ) )
