@@ -43,14 +43,21 @@ namespace CK.Testing.StObjEngine
         StObjCollectorResult? GetFailedResult( StObjCollector c );
 
         /// <summary>
+        /// Compiles from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
+        /// </summary>
+        /// <param name="c">The collector.</param>
+        /// <returns>The (successful) collector result and compilation result (that may be in error).</returns>
+        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CompileResult) Compile( StObjCollector c );
+
+        /// <summary>
         /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <returns>The (successful) collector result and the ready-to-use map.</returns>
-        (StObjCollectorResult Result, IStObjMap Map) CompileStObjMap( StObjCollector c );
+        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c );
 
         /// <summary>
-        /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileStObjMap(StObjCollector)"/> and returns all
+        /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileAndLoadStObjMap(StObjCollector)"/> and returns all
         /// the intermediate results: the (successful) collector result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service registerer
         /// and the final, fully configured, service provider.
         /// </summary>

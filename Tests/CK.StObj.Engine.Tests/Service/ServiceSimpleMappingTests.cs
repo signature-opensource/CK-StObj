@@ -253,7 +253,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( AbstractS1 ) );
             collector.RegisterType( typeof( AbstractS2 ) );
             collector.RegisterType( typeof( AbstractS3 ) );
-            var (r, map) = TestHelper.CompileStObjMap( collector );
+            var (r, map) = TestHelper.CompileAndLoadStObjMap( collector );
 
             Debug.Assert( r.EngineMap != null, "No initialization error." );
             var final = r.EngineMap.Services.SimpleMappings[typeof( ISBase )];

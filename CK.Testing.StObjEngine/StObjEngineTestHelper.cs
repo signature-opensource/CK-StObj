@@ -76,17 +76,11 @@ namespace CK.Testing
             return r;
         }
 
-        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileStObjMap( StObjCollector c ) => DoCompileStObjMap( c );
+        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c ) => DoCompileAndLoadStObjMap( c );
 
-        static (StObjCollectorResult Result, IStObjMap Map) DoCompileStObjMap( StObjCollector c )
+        static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c )
         {
-            var r = DoGetSuccessfulResult( c );
-            var assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
-            var assemblyPath = Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
-            var ctx = new SimpleEngineRunContext( r );
-            ctx.UnifiedCodeContext.SaveSource = true;
-            ctx.UnifiedCodeContext.CompileSource = true;
-            var codeGen = r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, assemblyPath, null );
+            (StObjCollectorResult r, StObjCollectorResult.CodeGenerateResult codeGen) = DoCompile( c, out string assemblyName );
             codeGen.Success.Should().BeTrue( "CodeGeneration should work." );
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
             var map = StObjContextRoot.Load( a, null, TestHelper.Monitor );
@@ -94,9 +88,22 @@ namespace CK.Testing
             return (r, map!);
         }
 
+        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CompileResult) IStObjEngineTestHelperCore.Compile( StObjCollector c ) => DoCompile( c, out _ );
+
+        static (StObjCollectorResult,StObjCollectorResult.CodeGenerateResult) DoCompile( StObjCollector c, out string assemblyName )
+        {
+            var r = DoGetSuccessfulResult( c );
+            assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
+            var assemblyPath = Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
+            var ctx = new SimpleEngineRunContext( r );
+            ctx.UnifiedCodeContext.SaveSource = true;
+            ctx.UnifiedCodeContext.CompileSource = true;
+            return (r, r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, assemblyPath, null ));
+        }
+
         (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices )
         {
-            var (result, map) = DoCompileStObjMap( c );
+            var (result, map) = DoCompileAndLoadStObjMap( c );
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
             return (result, map, reg, reg.Services.BuildServiceProvider());
@@ -104,7 +111,7 @@ namespace CK.Testing
 
         StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c, SimpleServiceContainer? startupServices )
         {
-            var map = DoCompileStObjMap( c ).Map;
+            IStObjMap map = DoCompileAndLoadStObjMap( c ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
             return reg;
