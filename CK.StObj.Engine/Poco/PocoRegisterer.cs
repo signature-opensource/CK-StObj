@@ -133,7 +133,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Finalize registrations by creating emiting a <see cref="IPocoSupportResult"/> or null on error.
+        /// Finalize registrations by creating a <see cref="IPocoSupportResult"/> or null on error.
         /// The <see cref="Empty"/> singleton can be used wherever null references must be avoided.
         /// </summary>
         /// <param name="moduleB">The module builder into which dynamic code is generated.</param>

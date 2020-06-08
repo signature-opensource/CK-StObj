@@ -90,6 +90,8 @@ namespace CK.StObj.Engine.Tests.Service
             pocoSupportResult.OtherInterfaces.Keys.Should().BeEquivalentTo( typeof(ICommand), typeof(ICommandPart), typeof(IAuthenticatedCommandPart), typeof(ICultureDependentCommandPart) );
 
             pocoSupportResult.OtherInterfaces[typeof( ICommand )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo( typeof( ICreateDocumentCommand ), typeof( ICultureCreateUserCommand ) );
+            pocoSupportResult.OtherInterfaces[typeof( ICommand )].Select( info => info.PrimaryInterface ).Should().BeEquivalentTo( typeof( ICreateDocumentCommand ), typeof( ICreateUserCommand ) );
+
             pocoSupportResult.OtherInterfaces[typeof( ICommandPart )].Should().BeEquivalentTo( pocoSupportResult.OtherInterfaces[typeof( ICommand )], "Our 2 commands have parts." );
             pocoSupportResult.OtherInterfaces[typeof( IAuthenticatedCommandPart )].Should().BeEquivalentTo( pocoSupportResult.OtherInterfaces[typeof( ICommand )], "Our 2 commands have IAuthenticatedCommandPart part." );
             pocoSupportResult.OtherInterfaces[typeof( ICultureDependentCommandPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo( typeof( ICultureCreateUserCommand ) );

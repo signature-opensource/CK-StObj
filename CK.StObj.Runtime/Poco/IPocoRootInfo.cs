@@ -28,6 +28,12 @@ namespace CK.Setup
         Type? ClosureInterface { get; }
 
         /// <summary>
+        /// Gets the primary interface that defines the Poco: this
+        /// is the first entry of the <see cref="Interfaces"/> list.
+        /// </summary>
+        Type PrimaryInterface => Interfaces[0].PocoInterface;
+
+        /// <summary>
         /// Gets all the <see cref="IPocoInterfaceInfo"/> that this Poco implements.
         /// </summary>
         IReadOnlyList<IPocoInterfaceInfo> Interfaces { get; }
