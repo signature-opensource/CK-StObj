@@ -80,7 +80,7 @@ namespace CK.Testing
 
         static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c )
         {
-            (StObjCollectorResult r, StObjCollectorResult.CodeGenerateResult codeGen) = DoCompile( c, out string assemblyName );
+            (StObjCollectorResult r, StObjCollectorResult.CodeGenerateResult codeGen) = DoGenerateCode( c, true, out string assemblyName );
             codeGen.Success.Should().BeTrue( "CodeGeneration should work." );
             var a = Assembly.Load( new AssemblyName( assemblyName ) );
             var map = StObjContextRoot.Load( a, null, TestHelper.Monitor );
@@ -88,16 +88,16 @@ namespace CK.Testing
             return (r, map!);
         }
 
-        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CompileResult) IStObjEngineTestHelperCore.Compile( StObjCollector c ) => DoCompile( c, out _ );
+        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CompileResult) IStObjEngineTestHelperCore.GenerateCode( StObjCollector c, bool compile ) => DoGenerateCode( c, compile, out _ );
 
-        static (StObjCollectorResult,StObjCollectorResult.CodeGenerateResult) DoCompile( StObjCollector c, out string assemblyName )
+        static (StObjCollectorResult,StObjCollectorResult.CodeGenerateResult) DoGenerateCode( StObjCollector c, bool compile, out string assemblyName )
         {
             var r = DoGetSuccessfulResult( c );
             assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
             var assemblyPath = Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
             var ctx = new SimpleEngineRunContext( r );
             ctx.UnifiedCodeContext.SaveSource = true;
-            ctx.UnifiedCodeContext.CompileSource = true;
+            ctx.UnifiedCodeContext.CompileSource = compile;
             return (r, r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, assemblyPath, null ));
         }
 
