@@ -926,13 +926,25 @@ namespace CK.Setup
                 success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
                 if( ctors.Length == 0 )
                 {
-                    if( ClassType.GetConstructors( BindingFlags.Instance|BindingFlags.NonPublic ).Any() )
+                    // There is no public constructor.
+                    var privateCtors = ClassType.GetConstructors( BindingFlags.Instance | BindingFlags.NonPublic );
+                    if( privateCtors.Length > 0 )
                     {
-                        success = false;
-                        m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist since at least one non-public constructor exists." );
+                        // There is at least one default constructor: if the class is abstract AND this is a parameterless constructor
+                        // then everything is fine: this is the default protected constructor of an abstract class.
+                        if( ClassType.IsAbstract && privateCtors.Length == 1 && privateCtors[0].GetParameters().Length == 0 )
+                        {
+                            ConstructorParameters = Array.Empty<CtorParameter>();
+                        }
+                        else
+                        {
+                            success = false;
+                            m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist since at least one non-public constructor exists." );
+                        }
                     }
                     else
                     {
+                        // There is no constructor at all: the default constructor will be available.
                         ConstructorParameters = Array.Empty<CtorParameter>();
                     }
                 }
