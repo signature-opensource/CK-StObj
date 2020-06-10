@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -43,7 +45,7 @@ namespace CK.Setup
         /// is used to handle actual lifetime checks without requiring another
         /// dictionary index.
         /// </summary>
-        public AutoServiceClassInfo FinalResolved { get; internal set; }
+        public AutoServiceClassInfo? FinalResolved { get; internal set; }
 
         /// <summary>
         /// Gets the base service interfaces that are specialized by this one.
