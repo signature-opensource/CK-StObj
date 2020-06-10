@@ -24,7 +24,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="m">The abstract method.</param>
-        /// <returns>A non null <see cref="IAutoImplementorMethod"/> if the method is handled by this implementor, false otherwise.</returns>
+        /// <returns>A non null <see cref="IAutoImplementorMethod"/> if the method is handled by this implementor, null otherwise.</returns>
         IAutoImplementorMethod? HandleMethod( IActivityMonitor monitor, MethodInfo m );
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="p">The abstract property.</param>
-        /// <returns>A non null <see cref="IAutoImplementorProperty"/> if the property is handled by this implementor, false otherwise.</returns>
+        /// <returns>A non null <see cref="IAutoImplementorProperty"/> if the property is handled by this implementor, null otherwise.</returns>
         IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p );
 
         /// <summary>
