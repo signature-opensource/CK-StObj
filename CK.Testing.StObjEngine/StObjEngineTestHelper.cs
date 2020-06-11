@@ -88,7 +88,7 @@ namespace CK.Testing
             return (r, map!);
         }
 
-        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CompileResult) IStObjEngineTestHelperCore.GenerateCode( StObjCollector c, bool compile ) => DoGenerateCode( c, compile, out _ );
+        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CodeGenResult) IStObjEngineTestHelperCore.GenerateCode( StObjCollector c, bool compile ) => DoGenerateCode( c, compile, out _ );
 
         static (StObjCollectorResult,StObjCollectorResult.CodeGenerateResult) DoGenerateCode( StObjCollector c, bool compile, out string assemblyName )
         {

@@ -21,17 +21,17 @@ namespace CK.Setup
         bool IsClosedPoco { get; }
 
         /// <summary>
+        /// Gets the primary interface that defines the Poco: this
+        /// is the first entry of the <see cref="Interfaces"/> list.
+        /// </summary>
+        Type PrimaryInterface => Interfaces[0].PocoInterface;
+
+        /// <summary>
         /// Gets the IPoco interface that "closes" all these <see cref="Interfaces"/>: this interface "unifies"
         /// all the other ones.
         /// If <see cref="IsClosedPoco"/> is true, then this is necessarily not null.
         /// </summary>
         Type? ClosureInterface { get; }
-
-        /// <summary>
-        /// Gets the primary interface that defines the Poco: this
-        /// is the first entry of the <see cref="Interfaces"/> list.
-        /// </summary>
-        Type PrimaryInterface => Interfaces[0].PocoInterface;
 
         /// <summary>
         /// Gets all the <see cref="IPocoInterfaceInfo"/> that this Poco implements.

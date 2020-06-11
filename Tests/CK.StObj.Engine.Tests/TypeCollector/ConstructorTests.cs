@@ -45,6 +45,13 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             }
         }
 
+        public abstract class ServiceWithNonPublicCtorButAbstract : IScopedAutoService
+        {
+            protected ServiceWithNonPublicCtorButAbstract( int a )
+            {
+            }
+        }
+
         public class ServiceWithDefaultCtor : IScopedAutoService
         {
         }
@@ -65,30 +72,36 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void services_must_have_only_one_public_ctor_or_no_constructor_at_all()
         {
-            //{
-            //    var collector = CreateCKTypeCollector();
-            //    collector.RegisterType( typeof( PackageA ) );
-            //    collector.RegisterType( typeof( ServiceWith2Ctors ) );
-            //    CheckFailure( collector );
-            //}
-            //{
-            //    var collector = CreateCKTypeCollector();
-            //    collector.RegisterType( typeof( PackageA ) );
-            //    collector.RegisterType( typeof( ServiceWithNonPublicCtor ) );
-            //    CheckFailure( collector );
-            //}
-            //{
-            //    var collector = CreateCKTypeCollector();
-            //    collector.RegisterType( typeof( PackageA ) );
-            //    collector.RegisterType( typeof( ServiceWithOneCtor ) );
-            //    var r = CheckSuccess( collector );
-            //    var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
-            //    c.ConstructorInfo.Should().NotBeNull();
-            //    Debug.Assert( c.ConstructorParameters != null );
-            //    c.ConstructorParameters.Should().HaveCount( 1 );
-            //    c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
-            //    c.ConstructorParameters[0].Name.Should().Be( "a" );
-            //}
+            {
+                var collector = CreateCKTypeCollector();
+                collector.RegisterType( typeof( PackageA ) );
+                collector.RegisterType( typeof( ServiceWith2Ctors ) );
+                CheckFailure( collector );
+            }
+            {
+                var collector = CreateCKTypeCollector();
+                collector.RegisterType( typeof( PackageA ) );
+                collector.RegisterType( typeof( ServiceWithNonPublicCtor ) );
+                CheckFailure( collector );
+            }
+            {
+                var collector = CreateCKTypeCollector();
+                collector.RegisterType( typeof( PackageA ) );
+                collector.RegisterType( typeof( ServiceWithNonPublicCtorButAbstract ) );
+                CheckSuccess( collector );
+            }
+            {
+                var collector = CreateCKTypeCollector();
+                collector.RegisterType( typeof( PackageA ) );
+                collector.RegisterType( typeof( ServiceWithOneCtor ) );
+                var r = CheckSuccess( collector );
+                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
+                c.ConstructorInfo.Should().NotBeNull();
+                Debug.Assert( c.ConstructorParameters != null );
+                c.ConstructorParameters.Should().HaveCount( 1 );
+                c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
+                c.ConstructorParameters[0].Name.Should().Be( "a" );
+            }
             {
                 var collector = CreateCKTypeCollector();
                 collector.RegisterType( typeof( PackageA ) );

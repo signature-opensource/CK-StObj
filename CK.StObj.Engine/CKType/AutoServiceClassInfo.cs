@@ -926,26 +926,18 @@ namespace CK.Setup
                 success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
                 if( ctors.Length == 0 )
                 {
-                    // There is no public constructor.
-                    var privateCtors = ClassType.GetConstructors( BindingFlags.Instance | BindingFlags.NonPublic );
-                    if( privateCtors.Length > 0 )
+                    // There is no public constructor: if the class is abstract we cannot conclude anything since the
+                    // generated implementation can do whaterver it wants to satisfy any of its base constructor.
+                    if( ClassType.IsAbstract )
                     {
-                        // There is at least one default constructor: if the class is abstract AND this is a parameterless constructor
-                        // then everything is fine: this is the default protected constructor of an abstract class.
-                        if( ClassType.IsAbstract && privateCtors.Length == 1 && privateCtors[0].GetParameters().Length == 0 )
-                        {
-                            ConstructorParameters = Array.Empty<CtorParameter>();
-                        }
-                        else
-                        {
-                            success = false;
-                            m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist since at least one non-public constructor exists." );
-                        }
+                        // We can only consider that this type has no constructor parameters.
+                        ConstructorParameters = Array.Empty<CtorParameter>();
                     }
                     else
                     {
-                        // There is no constructor at all: the default constructor will be available.
-                        ConstructorParameters = Array.Empty<CtorParameter>();
+                        // The class is not abstract and has no public constructor. We can't do anything with it.
+                        success = false;
+                        m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist since at least one non-public constructor exists." );
                     }
                 }
                 else 

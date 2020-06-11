@@ -47,8 +47,8 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="compile">True to compile the generated source code.</param>
-        /// <returns>The (successful) collector result and compilation result (that may be in error).</returns>
-        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CompileResult) GenerateCode( StObjCollector c, bool compile = false );
+        /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
+        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CodeGenResult) GenerateCode( StObjCollector c, bool compile = false );
 
         /// <summary>
         /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
