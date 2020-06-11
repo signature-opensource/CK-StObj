@@ -216,7 +216,9 @@ namespace CK.Setup
                                                                            .Append( _stubType.Name )
                                                                            .Append( " : " )
                                                                            .AppendCSharpName( AbstractType ) );
-            cB.AppendPassThroughConstructors( AbstractType );
+
+            // Only public construstors are replicated: protected constructors are to be called by generated code. 
+            cB.AppendPassThroughConstructors( AbstractType, ctor => ctor.IsPublic ? "public " : null );
 
             // Calls all Type level implementors first.
             foreach( var impl in TypeImplementors )

@@ -42,7 +42,14 @@ namespace CK.StObj.Engine.Tests
             {
                 readonly string _str;
 
-                protected B( string injectableCtor )
+                /// <summary>
+                /// Public constructors are automatically replicated on the generated
+                /// implementations.
+                /// Protected ones are not automatically replicated: they may be
+                /// called by generated constructors.
+                /// </summary>
+                /// <param name="injectableCtor"></param>
+                public B( string injectableCtor )
                 {
                     _str = injectableCtor;
                 }
