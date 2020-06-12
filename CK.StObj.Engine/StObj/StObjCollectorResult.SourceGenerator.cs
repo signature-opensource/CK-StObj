@@ -68,6 +68,7 @@ namespace CK.Setup
                                           .EnsureUsing( "System" )
                                           .EnsureUsing( "System.Collections.Generic" )
                                           .EnsureUsing( "System.Linq" )
+                                          .EnsureUsing( "System.Threading.Tasks" )
                                           .EnsureUsing( "System.Text" )
                                           .EnsureUsing( "System.Reflection" );
 

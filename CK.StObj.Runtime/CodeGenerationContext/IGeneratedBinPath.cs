@@ -14,7 +14,7 @@ namespace CK.Setup
         IStObjEngineMap EngineMap { get; }
 
         /// <summary>
-        /// Gets one or more <see cref="BinPathConfiguration"/> that share/are compatible this <see cref="EngineMap"/>.
+        /// Gets one or more <see cref="BinPathConfiguration"/> that share/are compatible with this <see cref="EngineMap"/>.
         /// </summary>
         IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
     }
