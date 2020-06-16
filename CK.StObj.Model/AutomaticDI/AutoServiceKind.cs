@@ -32,7 +32,7 @@ namespace CK.Core
         IsFrontService = 2,
 
         /// <summary>
-        /// This service is marchallable. This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsFrontService"/>.
+        /// This service is marshallable. This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsFrontService"/>.
         /// </summary>
         IsMarshallable = 4,
 

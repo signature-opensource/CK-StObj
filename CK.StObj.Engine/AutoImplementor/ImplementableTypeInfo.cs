@@ -201,7 +201,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Generates the code of this Type and returns its full name.
+        /// Generates the code of this Type.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="a">The target dynamic assembly.</param>
