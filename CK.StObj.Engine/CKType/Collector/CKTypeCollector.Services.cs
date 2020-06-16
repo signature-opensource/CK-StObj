@@ -203,6 +203,7 @@ namespace CK.Setup
                                 error |= initError;
                                 if( success )
                                 {
+                                    Debug.Assert( a.Root.MostSpecialized != null, "This is null only on error." );
                                     _monitor.CloseGroup( "Succeeds, resolved to: " + a.Root.MostSpecialized.ClassType );
                                 }
                                 else

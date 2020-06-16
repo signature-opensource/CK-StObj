@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,14 +19,14 @@ namespace CK.Setup
         IGeneratedBinPath UnifiedBinPath { get; }
 
         /// <summary>
-        /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="UnifiedBinPath"/>.
-        /// </summary>
-        IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
-
-        /// <summary>
         /// Gets the currently generated bin path among <see cref="AllBinPaths"/>.
         /// </summary>
         IGeneratedBinPath CurrentRun { get; }
+
+        /// <summary>
+        /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="UnifiedBinPath"/>.
+        /// </summary>
+        IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 
         /// <summary>
         /// Gets the <see cref="IDynamicAssembly"/> to use to generate code of the <see cref="CurrentRun"/>.
@@ -60,6 +61,13 @@ namespace CK.Setup
         /// encapsulated, typically by extension methods on this context.
         /// </summary>
         IDictionary<object, object?> GlobalMemory { get; }
+
+        /// <summary>
+        /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
+        /// <see cref="IAutoImplementorType.Implement"/> typically registers services inside tjis containers so that
+        /// deferred implementators (<see cref="AutoImplementationResult.ImplementorType"/>) can depend on them.
+        /// </summary>
+        ISimpleServiceContainer GlobalServiceContainer { get; }
 
         /// <summary>
         /// Gets whether the source code must eventually be saved.

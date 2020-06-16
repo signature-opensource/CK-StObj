@@ -32,8 +32,8 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="tempAssembly">The temporary <see cref="IDynamicAssembly"/>.</param>
-        /// <param name="mapName">Optional map name. Defaults to the empty string.</param>
         /// <param name="typeFilter">Optional type filter.</param>
+        /// <param name="mapName">Optional map name. Defaults to the empty string.</param>
         public CKTypeCollector(
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,

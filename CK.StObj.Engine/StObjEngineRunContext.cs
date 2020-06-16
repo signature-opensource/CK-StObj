@@ -32,6 +32,7 @@ namespace CK.Setup
                 Result = result;
                 BinPathConfigurations = binPathConfigurations;
                 GroupedPaths = groupedPaths;
+                ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
             }
 
             public readonly StObjCollectorResult Result;
@@ -42,11 +43,15 @@ namespace CK.Setup
 
             public IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
 
+            public ISimpleServiceContainer ServiceContainer { get; }
+
             IGeneratedBinPath ICodeGenerationContext.UnifiedBinPath => _global.UnifiedBinPath;
 
             IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global.AllBinPaths;
 
             IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._codeGenerationGlobalMemory;
+
+            ISimpleServiceContainer ICodeGenerationContext.GlobalServiceContainer => _global.ServiceContainer;
 
             bool ICodeGenerationContext.IsUnifiedRun => this == _global.UnifiedBinPath;
 

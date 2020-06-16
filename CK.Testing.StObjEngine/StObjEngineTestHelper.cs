@@ -94,11 +94,7 @@ namespace CK.Testing
         {
             var r = DoGetSuccessfulResult( c );
             assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
-            var assemblyPath = Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
-            var ctx = new SimpleEngineRunContext( r );
-            ctx.UnifiedCodeContext.SaveSource = true;
-            ctx.UnifiedCodeContext.CompileSource = compile;
-            return (r, r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, assemblyPath, null ));
+            return (r, SimpleEngineRunContext.TryGenerateAssembly( TestHelper.Monitor, r, assemblyName, compile, true ) );
         }
 
         (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices )

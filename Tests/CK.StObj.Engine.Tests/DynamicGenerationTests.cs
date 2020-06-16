@@ -5,6 +5,7 @@ using CK.Setup;
 using CK.Testing.StObjEngine;
 using FluentAssertions;
 using NUnit.Framework;
+using NUnit.Framework.Internal;
 using SmartAnalyzers.CSharpExtensions.Annotations;
 using System;
 using System.Collections.Generic;
@@ -25,12 +26,12 @@ namespace CK.StObj.Engine.Tests
         {
             class AutoImplementedAttribute : Attribute, IAutoImplementorMethod
             {
-                public bool Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
+                public AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
                 {
                     b.AppendOverrideSignature( m )
                      .Append( $"=> default({m.ReturnType.FullName});" )
                      .NewLine();
-                    return true;
+                    return AutoImplementationResult.Success;
                 }
             }
 
@@ -105,9 +106,7 @@ namespace CK.StObj.Engine.Tests
                 Assert.That( r.HasFatalError, Is.False );
 
                 // no source, only compilation
-                var ctx = new SimpleEngineRunContext( r );
-                ctx.UnifiedCodeContext.CompileSource = true;
-                r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_SimpleEmit.dll" ), null );
+                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_SimpleEmit" );
                 var a = Assembly.Load( "TEST_SimpleEmit" );
                 IStObjMap? c = StObjContextRoot.Load( a, runtimeBuilder, TestHelper.Monitor );
                 Debug.Assert( c != null );
@@ -196,9 +195,7 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
 
-                var ctx = new SimpleEngineRunContext( r );
-                ctx.UnifiedCodeContext.CompileSource = true;
-                r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_ConstructCalled.dll" ), null );
+                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_ConstructCalled" );
                 {
                     var a = Assembly.Load( "TEST_ConstructCalled" );
                     IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
@@ -323,14 +320,9 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
-
                 }
 
-                var ctx = new SimpleEngineRunContext( r );
-                ctx.UnifiedCodeContext.CompileSource = true;
-
-                StObjCollectorResult.CodeGenerateResult genResult = r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_PostBuildSet.dll" ), null );
-                Assert.That( genResult.Success );
+                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_PostBuildSet" );
                 {
                     var a = Assembly.Load( "TEST_PostBuildSet" );
                     IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
@@ -393,9 +385,9 @@ namespace CK.StObj.Engine.Tests
                 // We choose to implement all the properties as a whole in Implement method below: by returning true
                 // we tell the engine: "Okay, I handled it, please continue your business."
                 // (We can also implement each property here and do nothing in the Implement method.)
-                bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => true;
+                AutoImplementationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
 
-                public bool Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
                 {
                     foreach( var p in classType.GetProperties() )
                     {
@@ -414,7 +406,7 @@ namespace CK.StObj.Engine.Tests
                         }
                         scope.Append( ";" ).NewLine();
                     }
-                    return true;
+                    return AutoImplementationResult.Success;
                 }
             }
 
@@ -462,10 +454,8 @@ namespace CK.StObj.Engine.Tests
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( AutomaticallyImplemented ) );
                 var r = collector.GetResult();
-                Assert.That( r.HasFatalError, Is.False );
-                var ctx = new SimpleEngineRunContext( r );
-                ctx.UnifiedCodeContext.CompileSource = true;
-                r.GenerateFinalAssembly( TestHelper.Monitor, ctx.UnifiedCodeContext, Path.Combine( AppContext.BaseDirectory, "TEST_TypeImplementor.dll" ), null );
+                r.HasFatalError.Should().BeFalse();
+                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_TypeImplementor" );
                 var a = Assembly.Load( "TEST_TypeImplementor" );
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
                 AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated )!;
@@ -482,11 +472,13 @@ namespace CK.StObj.Engine.Tests
             new CTypeImplementor().DoTest();
         }
 
-
         public class ContextBoundDelegationAttributeDI
         {
             public class AttributeImpl 
             {
+                // Attributes can depend on any service registered in the root initial service container.
+                // Aspects typically configure this container (The SqlServer aspect for instance publishes
+                // a Sql database context with the default database and secondary databases).
                 public AttributeImpl( IServiceProvider p, Func<string> hello )
                 {
                     TestHelper.Monitor.Info( hello );
@@ -496,12 +488,6 @@ namespace CK.StObj.Engine.Tests
             [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+ContextBoundDelegationAttributeDI+AttributeImpl, CK.StObj.Engine.Tests" )]
             public abstract class JustForTheAttribute : IAutoService
             {
-                /// <summary>
-                /// AutoServices MUST have a single public constructor.
-                /// </summary>
-                public JustForTheAttribute()
-                {
-                }
             }
 
             public void DoTest()
@@ -522,5 +508,185 @@ namespace CK.StObj.Engine.Tests
         {
             new ContextBoundDelegationAttributeDI().DoTest();
         }
+
+        public class SecondPassCodeGenerationDI
+        {
+            public interface ISourceCodeHelper1
+            {
+                string IHelpTheCodeGeneration();
+            }
+
+            public class AutoImpl1 : AutoImplementorType
+            {
+                class SourceCodeHelper1 : ISourceCodeHelper1
+                {
+                    public string IHelpTheCodeGeneration() => "I'm great!";
+                }
+
+                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                {
+                    var helper = new SourceCodeHelper1();
+                    c.CurrentRun.ServiceContainer.Add( helper );
+                    c.CurrentRun.ServiceContainer.Add<ISourceCodeHelper1>( helper );
+                    return new AutoImplementationResult( typeof( ActualImpl1 ) );
+                }
+
+                class ActualImpl1 : AutoImplementorType
+                {
+                    readonly SourceCodeHelper1 _h1;
+                    readonly SourceCodeHelper2 _h2;
+                    readonly AutoImpl1 _theOwner;
+
+                    // The implementor type can rely on its creator (here it has access to the AutoImpl1 and, as a nested type,
+                    // it can access its private fields).
+                    public ActualImpl1( AutoImpl1 theOwner, SourceCodeHelper1 h1, SourceCodeHelper2 h2 )
+                    {
+                        _theOwner = theOwner;
+                        _h1 = h1;
+                        _h2 = h2;
+                    }
+
+                    public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                    {
+                        _theOwner.Should().NotBeNull();
+                        monitor.Info( $"ActualImpl1: {_h1.IHelpTheCodeGeneration()}, {_h2.IAlsoHelpTheCodeGeneration()}." );
+                        return AutoImplementationResult.Success;
+                    }
+                }
+            }
+
+            public class SourceCodeHelper2
+            {
+                public string IAlsoHelpTheCodeGeneration() => "I'm SOOOO great!";
+            }
+
+            public class SourceCodeHelper3
+            {
+                public string ICannotHelpTheCodeGeneration() => "Because nobody added me :'(.";
+            }
+
+            public class AutoImpl2 : AutoImplementorType
+            {
+                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                {
+                    c.CurrentRun.ServiceContainer.Add( new SourceCodeHelper2() );
+                    return new AutoImplementationResult( typeof( ActualImpl2 ) );
+                }
+
+                public class ActualImpl2 : AutoImplementorType
+                {
+                    readonly ISourceCodeHelper1 _h1;
+                    readonly SourceCodeHelper2 _h2;
+
+                    public ActualImpl2( ISourceCodeHelper1 h1, SourceCodeHelper2 h2, SourceCodeHelper3? h3 = null )
+                    {
+                        _h1 = h1;
+                        _h2 = h2;
+                    }
+
+                    public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                    {
+                        monitor.Info( $"ActualImpl2: {_h1.IHelpTheCodeGeneration()}, {_h2.IAlsoHelpTheCodeGeneration()}." );
+                        return AutoImplementationResult.Success;
+                    }
+                }
+            }
+
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+SecondPassCodeGenerationDI+AutoImpl1, CK.StObj.Engine.Tests" )]
+            public abstract class S1 : IAutoService
+            {
+            }
+
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+SecondPassCodeGenerationDI+AutoImpl2, CK.StObj.Engine.Tests" )]
+            public abstract class S2 : IAutoService
+            {
+            }
+
+            public void DoTest()
+            {
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
+                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                {
+                    StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
+                    TestHelper.GenerateCode( collector ).CodeGenResult.Success.Should().BeTrue();
+                }
+                logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
+                logs.Should().Contain( e => e.Text == "ActualImpl2: I'm great!, I'm SOOOO great!." );
+            }
+
+        }
+
+        [Test]
+        public void SecondPass_code_generation_can_use_dependency_injection()
+        {
+            new SecondPassCodeGenerationDI().DoTest();
+        }
+
+        public class SecondPassCodeGenerationParameterInjectionDI
+        {
+            public interface ISourceCodeHelper
+            {
+                string IHelpTheCodeGeneration();
+            }
+
+            public class AutoImpl1 : AutoImplementorType
+            {
+                class SourceCodeHelper : ISourceCodeHelper
+                {
+                    public string IHelpTheCodeGeneration() => "I'm great!";
+                }
+
+                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                {
+                    c.CurrentRun.ServiceContainer.Add<ISourceCodeHelper>( new SourceCodeHelper() );
+                    return AutoImplementationResult.Success;
+                }
+            }
+
+            public class AutoImpl2 : AutoImplementorType
+            {
+                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                {
+                    return new AutoImplementationResult( nameof(DoImplement) );
+                }
+
+                void DoImplement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                {
+                    c.Should().NotBeNull();
+                    scope.Should().NotBeNull();
+                    monitor.Info( $"AutoImpl2: {helper.IHelpTheCodeGeneration()}." );
+                }
+            }
+
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+SecondPassCodeGenerationParameterInjectionDI+AutoImpl1, CK.StObj.Engine.Tests" )]
+            public abstract class S1 : IAutoService
+            {
+            }
+
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+SecondPassCodeGenerationParameterInjectionDI+AutoImpl2, CK.StObj.Engine.Tests" )]
+            public abstract class S2 : IAutoService
+            {
+            }
+
+            public void DoTest()
+            {
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
+                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                {
+                    StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
+                    TestHelper.GenerateCode( collector ).CodeGenResult.Success.Should().BeTrue();
+                }
+                logs.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." );
+            }
+
+        }
+
+        [Test]
+        public void SecondPass_code_generation_can_use_parameter_injection_on_another_method()
+        {
+            new SecondPassCodeGenerationParameterInjectionDI().DoTest();
+        }
+
+
     }
 }

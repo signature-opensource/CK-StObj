@@ -58,9 +58,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
 
         public class AAAAA : AutoImplementorType
         {
-            public override bool Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+            public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
             {
-                return true;
+                return AutoImplementationResult.Success;
             }
         }
 

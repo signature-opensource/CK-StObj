@@ -9,6 +9,8 @@ using CK.CodeGen.Abstractions;
 using System.Reflection.Emit;
 using CK.Core;
 using CK.Text;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CK.Setup;
 
 #nullable enable
 
@@ -25,12 +27,12 @@ namespace CK.Setup
         /// </summary>
         public class NoImplementationMarker : IAutoImplementorMethod, IAutoImplementorProperty
         {
-            bool IAutoImplementorMethod.Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
+            AutoImplementationResult IAutoImplementor<MethodInfo>.Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
 
-            bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope b )
+            AutoImplementationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
@@ -203,8 +205,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="a">The target dynamic assembly.</param>
-        /// <returns>The full name of the generated type.</returns>
-        public string GenerateType( IActivityMonitor monitor, ICodeGenerationContext c )
+        public void RunFirstPass( IActivityMonitor monitor, ICodeGenerationContext c, Action<SecondPassCodeGeneration> secondPass )
         {
             if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
@@ -213,9 +214,9 @@ namespace CK.Setup
             // This may be added if needed by extending IAutoImplementorType interface and
             // by complexifying the code below a little bit or (better?) by adding ITypeScopeParts (like "BaseTypes") exposed by a ITypeScope...
             ITypeScope cB = c.Assembly.DefaultGenerationNamespace.CreateType( t => t.Append( "public class " )
-                                                                           .Append( _stubType.Name )
-                                                                           .Append( " : " )
-                                                                           .AppendCSharpName( AbstractType ) );
+                                                                                    .Append( _stubType.Name )
+                                                                                    .Append( " : " )
+                                                                                    .AppendCSharpName( AbstractType ) );
 
             // Only public construstors are replicated: protected constructors are to be called by generated code. 
             cB.AppendPassThroughConstructors( AbstractType, ctor => ctor.IsPublic ? "public " : null );
@@ -223,10 +224,8 @@ namespace CK.Setup
             // Calls all Type level implementors first.
             foreach( var impl in TypeImplementors )
             {
-                if( !impl.Implement( monitor, AbstractType, c, cB ) )
-                {
-                    monitor.Fatal( $"Type implementor '{impl.GetType().Name}' failed to implement type '{AbstractType}'." );
-                }
+                var second = SecondPassCodeGeneration.FirstPass( monitor, impl, c, cB, AbstractType ).SecondPass;
+                if( second != null ) secondPass( second );
             }
             // Calls all method implementors.
             foreach( var am in MethodsToImplement )
@@ -238,10 +237,8 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( !m.Implement( monitor, am.Method, c, cB ) )
-                    {
-                        monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' can not be implemented by its IAutoImplementorMethod." );
-                    }
+                    var second = SecondPassCodeGeneration.FirstPass( monitor, m, c, cB, am.Method ).SecondPass;
+                    if( second != null ) secondPass( second );
                 }
             }
             // Finishes with all property implementors.
@@ -254,13 +251,10 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( !p.Implement( monitor, ap.Property, c, cB ) )
-                    {
-                        monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' can not be implemented by its IAutoImplementorProperty." );
-                    }
+                    var second = SecondPassCodeGeneration.FirstPass( monitor, p, c, cB, ap.Property ).SecondPass;
+                    if( second != null ) secondPass( second );
                 }
             }
-            return cB.FullName;
         }
 
         /// <summary>

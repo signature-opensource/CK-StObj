@@ -1,3 +1,4 @@
+using CK.Core;
 using CK.Setup;
 using System;
 using System.Collections;
@@ -18,12 +19,20 @@ namespace CK.Testing.StObjEngine
         readonly List<CodeGenerationContext> _all;
         readonly Dictionary<string, object> _unifiedRunCache;
         readonly Dictionary<object, object?> _globalMemory;
+        readonly SimpleServiceContainer _globalServiceContainer;
 
         /// <summary>
         /// Mutable implementation of <see cref="IGeneratedBinPath"/>.
         /// </summary>
         public class GeneratedBinPath : IGeneratedBinPath
         {
+            readonly ISimpleServiceContainer _container;
+
+            public GeneratedBinPath( SimpleEngineRunContext g )
+            {
+                _container = new SimpleServiceContainer( g._globalServiceContainer );
+            }
+
             /// <summary>
             /// Gets or sets a <see cref="StObjCollectorResult"/>.
             /// </summary>
@@ -34,6 +43,8 @@ namespace CK.Testing.StObjEngine
             /// There is no check about these.
             /// </summary>
             public List<BinPathConfiguration> BinPathConfigurations { get; } = new List<BinPathConfiguration>();
+
+            ISimpleServiceContainer IGeneratedBinPath.ServiceContainer => _container;
 
             IStObjEngineMap IGeneratedBinPath.EngineMap => Result!.EngineMap!;
 
@@ -46,10 +57,12 @@ namespace CK.Testing.StObjEngine
         public class CodeGenerationContext : ICodeGenerationContext
         {
             readonly StObjEngine.SimpleEngineRunContext _global;
+            readonly GeneratedBinPath _currentRun;
 
             internal CodeGenerationContext( StObjEngine.SimpleEngineRunContext global )
             {
                 _global = global;
+                _currentRun = new GeneratedBinPath( global );
             }
 
             /// <summary>
@@ -64,7 +77,7 @@ namespace CK.Testing.StObjEngine
             /// <summary>
             /// Gets the mutable <see cref="GeneratedBinPath"/> for this context.
             /// </summary>
-            public GeneratedBinPath CurrentRun { get; } = new GeneratedBinPath();
+            public GeneratedBinPath CurrentRun => _currentRun;
 
             IGeneratedBinPath ICodeGenerationContext.CurrentRun => CurrentRun;
 
@@ -76,6 +89,8 @@ namespace CK.Testing.StObjEngine
             bool ICodeGenerationContext.IsUnifiedRun => CurrentRun == UnifiedBinPath;
 
             IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._globalMemory;
+
+            ISimpleServiceContainer ICodeGenerationContext.GlobalServiceContainer => _global._globalServiceContainer;
 
             /// <inheritdoc />
             public bool SaveSource { get; set; }
@@ -107,6 +122,7 @@ namespace CK.Testing.StObjEngine
             _all = new List<CodeGenerationContext>();
             _unifiedRunCache = new Dictionary<string, object>();
             _globalMemory = new Dictionary<object, object?>();
+            _globalServiceContainer = new SimpleServiceContainer();
             UnifiedBinPath = AddContext().CurrentRun;
             UnifiedBinPath.Result = unifiedResult;
         }
@@ -114,7 +130,7 @@ namespace CK.Testing.StObjEngine
         /// <summary>
         /// Gets the <see cref="UnifiedBinPath"/>.
         /// </summary>
-        public GeneratedBinPath UnifiedBinPath { get; } = new GeneratedBinPath();
+        public GeneratedBinPath UnifiedBinPath { get; }
 
         /// <summary>
         /// Gets the first context of <see cref="All"/>.
@@ -135,6 +151,44 @@ namespace CK.Testing.StObjEngine
             var g = new CodeGenerationContext( this );
             _all.Add( g );
             return g;
+        }
+
+        /// <summary>
+        /// Attempts to generate an assembly from a single context scaffolded on a <see cref="StObjCollectorResult"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="result">The valid result.</param>
+        /// <param name="assemblyName">The assembly to generate.</param>
+        /// <param name="compileSource">False to skip the compilation.</param>
+        /// <param name="saveSource">True to save the generated source files.</param>
+        /// <returns><see cref="StObjCollectorResult.CodeGenerateResult"/>.</returns>
+        public static StObjCollectorResult.CodeGenerateResult TryGenerateAssembly( IActivityMonitor monitor, StObjCollectorResult result, string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName, bool compileSource = true, bool saveSource = false )
+        {
+            if( result.HasFatalError ) return default;
+            var ctx = new SimpleEngineRunContext( result );
+            ctx.UnifiedCodeContext.CompileSource = compileSource;
+            ctx.UnifiedCodeContext.SaveSource = saveSource;
+            var secondPass = new List<SecondPassCodeGeneration>();
+            string finalFilePath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
+            if( !result.GenerateSourceCodeFirstPass( monitor, ctx.UnifiedCodeContext, null, secondPass.Add ) ) return default;
+            return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, secondPass );
+        }
+
+        /// <summary>
+        /// Generates an assembly from a single context scaffolded on a <see cref="StObjCollectorResult"/>
+        /// or throws an <see cref="Exception"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="result">The valid result.</param>
+        /// <param name="assemblyName">The assembly to generate.</param>
+        /// <param name="compileSource">False to skip the compilation.</param>
+        /// <param name="saveSource">True to save the generated source files.</param>
+        public static void GenerateAssembly( IActivityMonitor monitor, StObjCollectorResult result, string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName, bool compileSource = true, bool saveSource = false )
+        {
+            if( !TryGenerateAssembly( monitor, result, assemblyName, compileSource, saveSource ).Success )
+            {
+                throw new Exception( $"Unable to generate assembly '{assemblyName}'." );
+            }
         }
 
     }

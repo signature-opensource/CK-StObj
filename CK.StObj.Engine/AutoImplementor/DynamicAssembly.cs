@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using CK.CodeGen;
 using CK.CodeGen.Abstractions;
+using CK.Core;
 
 #nullable enable
 
@@ -29,7 +31,6 @@ namespace CK.Setup
             StubModuleBuilder = assemblyBuilder.DefineDynamicModule( name );
 
             _memory = new Dictionary<object, object?>();
-
             SourceModules = new List<ICodeGeneratorModule>();
             var ws = CodeWorkspace.Create();
             ws.Global.Append( "[assembly:CK.Setup.ExcludeFromSetup()]" ).NewLine();

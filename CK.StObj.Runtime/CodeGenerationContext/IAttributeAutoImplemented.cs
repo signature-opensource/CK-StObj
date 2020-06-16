@@ -14,7 +14,7 @@ namespace CK.Setup
     /// This interface states that there is a way to implement it, but does not provide it.
     /// </summary>
     /// <remarks>
-    /// See <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/>
+    /// See <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/> or <see cref="IAutoImplementorType"/>
     /// that are able to actually implement methods and properties.
     /// Attributes that support those interfaces can directly provide an implementation: when an attribute only support
     /// this <see cref="IAttributeAutoImplemented"/> marker, the implementation is a stub provided by CK.Reflection.EmitHelper.ImplementEmptyStubMethod 

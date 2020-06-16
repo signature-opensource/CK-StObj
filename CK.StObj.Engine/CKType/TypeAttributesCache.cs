@@ -40,9 +40,9 @@ namespace CK.Setup
         /// <param name="type">Type for which attributes must be cached.</param>
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="includeBaseClasses">True to include attributes of base classes and attributes on members of the base classes.</param>
-        public TypeAttributesCache(IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClasses)
+        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClasses )
         {
-            if( type == null ) throw new ArgumentNullException( nameof(type) );
+            if( type == null ) throw new ArgumentNullException( nameof( type ) );
             Type = type;
             var all = new List<Entry>();
             int initializerCount = Register( monitor, services, all, type, includeBaseClasses );

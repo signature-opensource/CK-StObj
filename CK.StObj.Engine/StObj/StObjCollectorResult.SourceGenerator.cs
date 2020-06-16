@@ -12,15 +12,20 @@ using System.Diagnostics;
 using CK.Setup;
 using System.Collections;
 
+#nullable enable
+
 namespace CK.Setup
 {
     public partial class StObjCollectorResult
     {
         /// <summary>
         /// Captures code generation result.
+        /// The default values is a failed result.
         /// </summary>
         public readonly struct CodeGenerateResult
         {
+            readonly IReadOnlyList<string> _fileNames;
+
             /// <summary>
             /// Gets whether the generation succeeded.
             /// </summary>
@@ -30,27 +35,56 @@ namespace CK.Setup
             /// Gets the list of files that have been generated: the assembly itself and
             /// any source code or other files.
             /// </summary>
-            public readonly IReadOnlyList<string> GeneratedFileNames;
+            public IReadOnlyList<string> GeneratedFileNames => _fileNames ?? Array.Empty<string>();
 
             internal CodeGenerateResult( bool success, IReadOnlyList<string> fileNames )
             {
                 Success = success;
-                GeneratedFileNames = fileNames;
+                _fileNames = fileNames;
             }
         }
 
-        CodeGenerateResult GenerateSourceCode( IActivityMonitor monitor, string finalFilePath, ICodeGenerationContext c )
+        /// <summary>
+        /// Executes the first pass of code generation. This must be called on all <see cref="ICodeGenerationContext.AllBinPaths"/>, starting with
+        /// the <see cref="ICodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="codeGenContext">The code generation context that must be the one of this result.</param>
+        /// <param name="informationalVersion">Optional informational version attribute content.</param>
+        /// <param name="collector">The collector for second pass actions (for this <see cref="codeGenContext"/>).</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, Action<SecondPassCodeGeneration> collector )
         {
-            List<string> generatedFileNames = new List<string>();
+            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
+            if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
             try
             {
-                // Retrieves CK._g workspace.
-                var ws = _tempAssembly.DefaultGenerationNamespace.Workspace;
-
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> errorSummary = null;
-                using( monitor.OpenInfo( "Generating source code." ) )
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
+                using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
+                    using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
+                    {
+                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
+                        {
+                            item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
+                        }
+                    }
+
+                    // Retrieves CK._g workspace.
+                    var ws = _tempAssembly.DefaultGenerationNamespace.Workspace;
+                    // Gets the global name space and injects, once for all, basic namespaces that we
+                    // always want available.
+                    var global = ws.Global;
+
+                    if( !string.IsNullOrWhiteSpace( informationalVersion ) )
+                    {
+                        ws.Global.Append( "[assembly:System.Reflection.AssemblyInformationalVersion(" )
+                                 .AppendSourceString( informationalVersion )
+                                 .Append( ")]" )
+                                 .NewLine();
+                    }
+
                     // Injects System.Reflection and setup assemblies into the
                     // workspace that will be used to generate source code.
                     ws.EnsureAssemblyReference( typeof( BindingFlags ) );
@@ -60,17 +94,19 @@ namespace CK.Setup
                     }
                     else
                     {
-                        ws.EnsureAssemblyReference( typeof(StObjContextRoot).Assembly );
+                        ws.EnsureAssemblyReference( typeof( StObjContextRoot ).Assembly );
                     }
-                    // Gets the global name space and injects, once for all, basic namespaces that we
-                    // always want available.
-                    var global = ws.Global.EnsureUsing( "CK.Core" )
-                                          .EnsureUsing( "System" )
-                                          .EnsureUsing( "System.Collections.Generic" )
-                                          .EnsureUsing( "System.Linq" )
-                                          .EnsureUsing( "System.Threading.Tasks" )
-                                          .EnsureUsing( "System.Text" )
-                                          .EnsureUsing( "System.Reflection" );
+                    // Injects, once for all, basic namespaces that we always want available into the global namespace.
+                    global.EnsureUsing( "CK.Core" )
+                          .EnsureUsing( "System" )
+                          .EnsureUsing( "System.Collections.Generic" )
+                          .EnsureUsing( "System.Linq" )
+                          .EnsureUsing( "System.Threading.Tasks" )
+                          .EnsureUsing( "System.Text" )
+                          .EnsureUsing( "System.Reflection" );
+
+                    // Generates the StObjContextRoot implementation.
+                    GenerateStObjContextRootSource( monitor, global.FindOrCreateNamespace( "CK.StObj" ), EngineMap.StObjs.OrderedStObjs );
 
                     // Asks every ImplementableTypeInfo to generate their code. 
                     // This step MUST always be done, even if SkipCompilation is true and GenerateSourceFiles is false
@@ -78,11 +114,52 @@ namespace CK.Setup
                     // the "reality cache" is created).
                     foreach( var t in CKTypeResult.TypesToImplement )
                     {
-                        t.GenerateType( monitor, c );
+                        t.RunFirstPass( monitor, codeGenContext, collector );
                     }
+                }
+                if( errorSummary != null )
+                {
+                    using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                    {
+                        foreach( var e in errorSummary )
+                        {
+                            monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
+                        }
+                    }
+                    return false;
+                }
+                return true;
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While generating final source code.", ex );
+                return false;
+            }
+        }
 
-                    // Generates the StObjContextRoot implementation.
-                    GenerateStObjContextRootSource( monitor, global.FindOrCreateNamespace( "CK.StObj" ), EngineMap.StObjs.OrderedStObjs );
+        /// <summary>
+        /// Finalizes the source code generation or compilation.
+        /// </summary>
+        /// <param name="monitor"></param>
+        /// <param name="finalFilePath"></param>
+        /// <param name="codeGenContext"></param>
+        /// <param name="secondPass"></param>
+        /// <returns></returns>
+        public CodeGenerateResult GenerateSourceCodeSecondPass( IActivityMonitor monitor, string finalFilePath, ICodeGenerationContext codeGenContext, IEnumerable<SecondPassCodeGeneration> secondPass )
+        {
+            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
+            if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
+            List<string> generatedFileNames = new List<string>();
+            try
+            {
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
+                using( monitor.OpenInfo( $"Generating source code (second pass) for: {codeGenContext.CurrentRun.Names}." ) )
+                using( monitor.CollectEntries( entries => errorSummary = entries ) )
+                {
+                    foreach( var s in secondPass )
+                    {
+                        s.RunSecondPass( monitor, codeGenContext );
+                    }
                 }
                 if( errorSummary != null )
                 {
@@ -95,15 +172,17 @@ namespace CK.Setup
                     }
                     return new CodeGenerateResult( false, generatedFileNames );
                 }
-                using( monitor.OpenInfo( c.CompileSource
+                using( monitor.OpenInfo( codeGenContext.CompileSource
                                             ? "Compiling source code (using C# v8.0 language version)."
                                             : "Generating source code, parsing using C# v8.0 language version, skipping compilation." ) )
                 {
                     var g = new CodeGenerator( CodeWorkspace.Factory );
                     g.ParseOptions = new CSharpParseOptions( LanguageVersion.CSharp8 );
                     g.Modules.AddRange( DynamicAssembly.SourceModules );
-                    var result = g.Generate( ws, finalFilePath, !c.CompileSource );
-                    if( c.SaveSource && result.Sources != null )
+                    // Retrieves CK._g workspace.
+                    var ws = codeGenContext.Assembly.DefaultGenerationNamespace.Workspace;
+                    var result = g.Generate( ws, finalFilePath, !codeGenContext.CompileSource );
+                    if( codeGenContext.SaveSource && result.Sources != null )
                     {
                         for( int i = 0; i < result.Sources.Count; ++i )
                         {
@@ -174,6 +253,8 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 }";
         void GenerateStObjContextRootSource( IActivityMonitor monitor, INamespaceScope ns, IReadOnlyList<IStObjResult> orderedStObjs )
         {
+            Debug.Assert( EngineMap != null );
+
             ns.Append( _sourceGStObj ).NewLine();
             ns.Append( _sourceFinalGStObj ).NewLine();
 
@@ -241,8 +322,9 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 {
                     foreach( var setter in m.PreConstructProperties )
                     {
+                        Debug.Assert( setter.Property.DeclaringType != null );
                         Type decl = setter.Property.DeclaringType;
-                        string varName;
+                        string? varName;
                         var key = ValueTuple.Create( decl, setter.Property.Name );
                         if(!propertyCache.TryGetValue( key, out varName ))
                         {
@@ -288,6 +370,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 {
                     foreach( var p in m.PostBuildProperties )
                     {
+                        Debug.Assert( p.Property.DeclaringType != null );
                         Type decl = p.Property.DeclaringType;
                         rootCtor.AppendTypeOf( decl )
                                .Append( $".GetProperty( \"{p.Property.Name}\", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic )" )

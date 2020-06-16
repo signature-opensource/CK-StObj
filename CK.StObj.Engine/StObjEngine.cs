@@ -178,18 +178,61 @@ namespace CK.Setup
                     {
                         string dllName = _config.GeneratedAssemblyName;
                         if( !dllName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) ) dllName += ".dll";
-                        using( _monitor.OpenInfo( "Final CodeGen." ) )
+                        using( _monitor.OpenInfo( "Final Code Generation." ) )
                         {
-                            using( _monitor.OpenInfo( "Generating AppContext assembly (first run)." ) )
+                            var secondPass = new (StObjEngineRunContext.GenBinPath GenContext, List<SecondPassCodeGeneration> SecondPasses)[runCtx.AllBinPaths.Count];
+                            int i = 0;
+                            foreach( var g in runCtx.AllBinPaths )
                             {
-                                _status.Success = RunFinalStep( runCtx.AllBinPaths[0], dllName );
+                                var second = new List<SecondPassCodeGeneration>();
+                                secondPass[i] = (g, second);
+                                if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second.Add ) )
+                                {
+                                    _status.Success = false;
+                                    break;
+                                }
                             }
                             if( _status.Success )
                             {
-                                foreach( var b in runCtx.AllBinPaths.Skip( 1 ) )
+                                foreach( var (g, secondPasses) in secondPass )
                                 {
-                                    Debug.Assert( b.GroupedPaths != null, "Secondary runs have paths." );
-                                    if( !RunFinalStep( b, dllName ) )
+                                    var head = g.GroupedPaths.Key;
+                                    var primaryOutputFile = head.OutputPath.AppendPart( dllName );
+                                    var gR = g.Result.GenerateSourceCodeSecondPass( _monitor, primaryOutputFile, g, secondPasses );
+                                    if( gR.GeneratedFileNames.Count > 0 )
+                                    {
+                                        foreach( var f in g.GroupedPaths )
+                                        {
+                                            if( !f.GenerateSourceFiles && f.SkipCompilation ) continue;
+                                            var dir = f.OutputPath;
+                                            if( dir == head.OutputPath ) continue;
+                                            using( _monitor.OpenInfo( $"Copying generated files to folder: '{dir}'." ) )
+                                            {
+                                                foreach( var file in gR.GeneratedFileNames )
+                                                {
+                                                    if( file == dllName )
+                                                    {
+                                                        if( f.SkipCompilation ) continue;
+                                                    }
+                                                    else
+                                                    {
+                                                        if( !f.GenerateSourceFiles ) continue;
+                                                    }
+                                                    try
+                                                    {
+                                                        _monitor.Info( file );
+                                                        File.Copy( head.OutputPath.Combine( file ), dir.Combine( file ), true );
+                                                    }
+                                                    catch( Exception ex )
+                                                    {
+                                                        _monitor.Error( ex );
+                                                        return false;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if( !gR.Success )
                                     {
                                         _status.Success = false;
                                         break;
@@ -286,46 +329,6 @@ namespace CK.Setup
                 }
                 return true;
             }
-        }
-
-        bool RunFinalStep( StObjEngineRunContext.GenBinPath codeGenerationContext, string dllName )
-        {
-            var head = codeGenerationContext.GroupedPaths.Key;
-            var g = codeGenerationContext.Result.GenerateFinalAssembly( _monitor, codeGenerationContext, head.OutputPath.AppendPart( dllName ), _config.InformationalVersion );
-            if( g.GeneratedFileNames.Count > 0 )
-            {
-                foreach( var f in codeGenerationContext.GroupedPaths )
-                {
-                    if( !f.GenerateSourceFiles && f.SkipCompilation ) continue;
-                    var dir = f.OutputPath;
-                    if( dir == head.OutputPath ) continue;
-                    using( _monitor.OpenInfo( $"Copying generated files to folder: '{dir}'." ) )
-                    {
-                        foreach( var file in g.GeneratedFileNames )
-                        {
-                            if( file == dllName )
-                            {
-                                if( f.SkipCompilation ) continue;
-                            }
-                            else
-                            {
-                                if( !f.GenerateSourceFiles ) continue;
-                            }
-                            try
-                            {
-                                _monitor.Info( file );
-                                File.Copy( head.OutputPath.Combine( file ), dir.Combine( file ), true );
-                            }
-                            catch( Exception ex )
-                            {
-                                _monitor.Error( ex );
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-            return g.Success;
         }
 
         class TypeFilterFromConfiguration : IStObjTypeFilter

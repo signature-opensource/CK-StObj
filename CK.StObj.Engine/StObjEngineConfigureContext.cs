@@ -33,13 +33,9 @@ namespace CK.Setup
             protected override object GetDirectService( Type serviceType )
             {
                 object s = base.GetDirectService( serviceType );
-                if( s == null )
+                if( s == null && (serviceType == typeof(IActivityMonitor) || serviceType == typeof(ActivityMonitor)) )
                 {
-                    if( serviceType == typeof(IActivityMonitor)
-                        || serviceType == typeof(ActivityMonitor) )
-                    {
-                        s = _c._monitor;
-                    }
+                    s = _c._monitor;
                 }
                 return s;
             }

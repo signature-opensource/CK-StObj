@@ -43,8 +43,8 @@ namespace CK.Setup
         /// <param name="m">The method to implement.</param>
         /// <param name="c">Code generation context with its Dynamic assembly being implemented.</param>
         /// <param name="typeBuilder">The type builder to use.</param>
-        /// <returns>Always true at this level.</returns>
-        public virtual bool Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope typeBuilder ) => true;
+        /// <returns>Always <see cref="AutoImplementationResult.Success"/> at this level.</returns>
+        public virtual AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
 
         /// <summary>
         /// See <see cref="IAutoImplementorProperty.Implement"/>.
@@ -55,11 +55,11 @@ namespace CK.Setup
         /// <param name="p">The property to implement.</param>
         /// <param name="c">Code generation context with its Dynamic assembly being implemented.</param>
         /// <param name="typeBuilder">The type builder to use.</param>
-        /// <returns>Always true at this level.</returns>
-        public virtual bool Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => true;
+        /// <returns>Always <see cref="AutoImplementationResult.Success"/> at this level.</returns>
+        public virtual AutoImplementationResult Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
 
         /// <inheritdoc />
-        public abstract bool Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope );
+        public abstract AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope );
 
     }
 }

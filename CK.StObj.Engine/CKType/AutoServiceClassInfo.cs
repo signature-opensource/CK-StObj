@@ -141,10 +141,10 @@ namespace CK.Setup
         internal AutoServiceClassInfo(
             IActivityMonitor m,
             IServiceProvider serviceProvider,
-            AutoServiceClassInfo parent,
+            AutoServiceClassInfo? parent,
             Type t,
             bool isExcluded,
-            RealObjectClassInfo objectInfo )
+            RealObjectClassInfo? objectInfo )
         {
             Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the the asociated Service, we must be the only one." );
             if( objectInfo != null )
@@ -313,10 +313,10 @@ namespace CK.Setup
         internal bool InitializePath(
                         IActivityMonitor monitor,
                         CKTypeCollector collector,
-                        AutoServiceClassInfo generalization,
+                        AutoServiceClassInfo? generalization,
                         IDynamicAssembly tempAssembly,
                         List<AutoServiceClassInfo> lastConcretes,
-                        ref List<Type> abstractTails )
+                        ref List<Type>? abstractTails )
         {
             Debug.Assert( tempAssembly != null );
             Debug.Assert( !TypeInfo.IsExcluded );

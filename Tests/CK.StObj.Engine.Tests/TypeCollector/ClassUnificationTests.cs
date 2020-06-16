@@ -2,6 +2,7 @@ using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
+using System.Diagnostics;
 using System.Linq;
 
 namespace CK.StObj.Engine.Tests.Service.TypeCollector
@@ -24,7 +25,9 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( AS2 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            r.AutoServices.RootClasses[0].MostSpecialized.ClassType.Should().BeSameAs( typeof( UnifiedA ) );
+            var c = r.AutoServices.RootClasses[0].MostSpecialized;
+            Debug.Assert( c != null );
+            c.ClassType.Should().BeSameAs( typeof( UnifiedA ) );
         }
 
         [Test]
@@ -35,7 +38,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( AS1 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            r.AutoServices.RootClasses[0].MostSpecialized.ClassType.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
+            r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
         }
 
         class _A : IScopedAutoService { }
@@ -56,7 +59,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( _AS3 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
-            r.AutoServices.RootClasses[0].MostSpecialized.ClassType.Should().BeSameAs( typeof( _UnifiedA2 ) );
+            r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( _UnifiedA2 ) );
         }
 
         class e_A : IScopedAutoService { }
@@ -77,7 +80,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             collector.RegisterClass( typeof( e_AS3 ) );
             var r = CheckSuccess( collector );
             r.AutoServices.RootClasses.Should().HaveCount( 2 );
-            r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( e_A ) ).MostSpecialized.ClassType
+            r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( e_A ) ).MostSpecialized!.ClassType
                 .Should().BeSameAs( typeof( e_UnifiedA2 ) );
         }
 
@@ -99,7 +102,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterClass( typeof( u_UnifiedD ) );
                 var r = CheckSuccess( collector );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
-                r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized.ClassType
+                r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
                     .Should().BeSameAs( typeof( u_UnifiedD ) );
             }
             {
@@ -109,7 +112,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 collector.RegisterClass( typeof( u_UnifiedA ) );
                 var r = CheckSuccess( collector );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
-                r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized.ClassType
+                r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
                     .Should().BeSameAs( typeof( u_UnifiedA ) );
             }
         }

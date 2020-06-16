@@ -223,7 +223,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             public string ActualCode { get; }
 
-            public bool Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
+            public AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
             {
                 b.AppendOverrideSignature( m )
                     .Should().BeSameAs( b, "Append uses 'fluent syntax': we stay in the Type scpope (but right after the method declaration)." );
@@ -233,7 +233,7 @@ namespace CK.StObj.Engine.Tests.Service
                         .Append( ActualCode ).NewLine()
                         .Append( '}' ).NewLine();
 
-                return true;
+                return AutoImplementationResult.Success;
             }
         }
 

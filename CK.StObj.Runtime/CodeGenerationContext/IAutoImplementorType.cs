@@ -13,14 +13,16 @@ namespace CK.Setup
     /// not by the original ("Model") attributes but by their delegated implementations that depend on
     /// the runtimes/engines (<see cref="ContextBoundDelegationAttribute.ActualAttributeTypeAssemblyQualifiedName"/>). 
     /// </remarks>
-    public interface IAutoImplementorType
+    public interface IAutoImplementorType : IAutoImplementor<Type>
     {
         /// <summary>
         /// Must check whether the given abstract method is handled by this implementor.
         /// When null is returned, the method must be handled by another <see cref="IAutoImplementorType"/> or
         /// a <see cref="IAutoImplementorMethod"/>.
-        /// A typical implementation returns this type implementor that also implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/>
-        /// with a simple return true implementation.
+        /// <para>
+        /// A typical implementation (like the <see cref="AutoImplementorType"/> base type helper) returns this type implementor that also
+        /// implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/> with a simple return <see cref="AutoImplementationResult.Success"/> implementation.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="m">The abstract method.</param>
@@ -31,27 +33,15 @@ namespace CK.Setup
         /// Must check whether the given abstract method is handled by this implementor.
         /// When null is returned, the method must be handled by another <see cref="IAutoImplementorType"/> or
         /// a <see cref="IAutoImplementorProperty"/>.
-        /// A typical implementation returns this type implementor that also implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/>
-        /// with a simple return true implementation.
+        /// <para>
+        /// A typical implementation (like the <see cref="AutoImplementorType"/> base type helper) returns this type implementor that also
+        /// implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/> with a simple return <see cref="AutoImplementationResult.Success"/> implementation.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="p">The abstract property.</param>
         /// <returns>A non null <see cref="IAutoImplementorProperty"/> if the property is handled by this implementor, null otherwise.</returns>
         IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p );
-
-        /// <summary>
-        /// Generates any required code for the given abstract class in the given <see cref="ITypeScope"/>.
-        /// Implementations can rely on the <paramref name="dynamicAssembly"/> to store shared information if needed.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="classType">The abstract class type to implement.</param>
-        /// <param name="c">Code generation context with its Dynamic assembly being implemented.</param>
-        /// <param name="scope">The type scope into which the implementation should be generated.</param>
-        /// <returns>
-        /// True on success, false on error. 
-        /// Any error must be logged into the <paramref name="monitor"/>.
-        /// </returns>
-        bool Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope );
     }
 
 }

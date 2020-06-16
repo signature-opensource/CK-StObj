@@ -73,8 +73,8 @@ namespace CK.Setup
             {
                 var all = RealObjects.EngineMap.AllSpecializations.Select( m => m.ImplementableTypeInfo )
                             // Filters out the Service implementation that are RealObject.
-                            .Concat( AutoServices.RootClasses.Select( c => c.MostSpecialized.IsRealObject ? null : c.MostSpecialized.ImplementableTypeInfo ) )
-                            .Concat( AutoServices.SubGraphRootClasses.Select( c => c.MostSpecialized.IsRealObject ? null : c.MostSpecialized.ImplementableTypeInfo ) )
+                            .Concat( AutoServices.RootClasses.Select( c => c.IsRealObject ? null : c.MostSpecialized!.ImplementableTypeInfo ) )
+                            .Concat( AutoServices.SubGraphRootClasses.Select( c => c.IsRealObject ? null : c.MostSpecialized!.ImplementableTypeInfo ) )
                             .Where( i => i != null )
                             .Select( i => i! );
 

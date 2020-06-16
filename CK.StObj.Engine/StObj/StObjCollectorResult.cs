@@ -55,41 +55,5 @@ namespace CK.Setup
         /// </summary>
         public IDynamicAssembly DynamicAssembly => _tempAssembly;
 
-        /// <summary>
-        /// Generates final assembly.
-        /// </summary>
-        /// <param name="monitor">Monitor to use.</param>
-        /// <param name="c">The code generation context.</param>
-        /// <param name="finalFilePath">Full path of the final dynamic assembly. Must end with '.dll'.</param>
-        /// <param name="informationalVersion">Informational version.</param>
-        /// <returns>False if any error occured (logged into <paramref name="monitor"/>).</returns>
-        public CodeGenerateResult GenerateFinalAssembly( IActivityMonitor monitor, ICodeGenerationContext c, string finalFilePath, string? informationalVersion )
-        {
-            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
-            if( c.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( c ) );
-            bool hasError = false;
-            using( monitor.OnError( () => hasError = true ) )
-            using( monitor.OpenInfo( $"Generating dynamic assembly (Saving source: {c.SaveSource}, Compilation: {c.CompileSource})." ) )
-            {
-                using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
-                {
-                    foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
-                    {
-                        item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
-                    }
-                }
-                if( !string.IsNullOrWhiteSpace( informationalVersion ) )
-                {
-                    DynamicAssembly.DefaultGenerationNamespace.Workspace.Global
-                            .Append( "[assembly:System.Reflection.AssemblyInformationalVersion(" )
-                            .AppendSourceString( informationalVersion )
-                            .Append( ")]" )
-                            .NewLine();
-                }
-                var r = GenerateSourceCode( monitor, finalFilePath, c );
-                Debug.Assert( r.Success || hasError, "!success ==> An error has been logged." );
-                return r;
-            }
-        }
     }
 }

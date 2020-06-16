@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NUnit.Framework;
+using System.Diagnostics;
 
 namespace CK.StObj.Engine.Tests.Service.TypeCollector
 {
@@ -78,6 +79,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             cBase.ClassType.Should().Be( typeof( ServiceRegisteredImpl ) );
             cBase.TypeInfo.IsSpecialized.Should().BeTrue();
             var cSpec = cBase.MostSpecialized;
+            Debug.Assert( cSpec != null );
             cBase.Specializations.Should().ContainSingle().And.Contain( cSpec );
             cSpec.ClassType.Should().Be( typeof( ServiceNotRegisteredImpl ) );
             cSpec.Generalization.Should().BeSameAs( cBase );
