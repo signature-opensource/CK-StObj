@@ -167,7 +167,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the <see cref="CKTypeInfo"/> that can be an autonomous one (specific to this service), or an
         /// existing RealObjectClassInfo if this service is implemented by a Real object (such service don't
-        /// have to have a public constructor).
+        /// need to have a public constructor).
         /// </summary>
         public CKTypeInfo TypeInfo { get; }
 
@@ -212,6 +212,21 @@ namespace CK.Setup
         /// </summary>
         /// <returns>An enumerable of <see cref="AutoServiceClassInfo"/> that specialize this one.</returns>
         public IEnumerable<AutoServiceClassInfo> Specializations => TypeInfo.Specializations.Select( s => s.ServiceClass! );
+
+        /// <summary>
+        /// Gets all the <see cref="Specializations"/> recursively.
+        /// </summary>
+        public IEnumerable<AutoServiceClassInfo> AllSpecializations
+        {
+            get
+            {
+                foreach( var s in Specializations )
+                {
+                    yield return s;
+                    foreach( var c in s.AllSpecializations ) yield return c;
+                }
+            }
+        }
 
         /// <summary>
         /// Gets the most specialized concrete (or abstract but auto implementable) implementation.

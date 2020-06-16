@@ -78,9 +78,25 @@ namespace CK.Setup
                             .Where( i => i != null )
                             .Select( i => i! );
 
-                Debug.Assert( all.GroupBy( i => i ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+                Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
                 return all;
             }
+        }
+
+        /// <summary>
+        /// Gets all the attribute providers from all <see cref="RealObjectClassInfo"/> or <see cref="AutoServiceClassInfo"/>
+        /// without any duplicates (AutoService that are RealObjects don't appear twice).
+        /// </summary>
+        /// <returns>The attribute providers.</returns>
+        public IEnumerable<ICKCustomAttributeTypeMultiProvider> GetAllAttributeProvider()
+        {
+            var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
+                          .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes ) )
+                          .Where( attr => attr != null )
+                          .Select( attr => attr! );
+
+            Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+            return all;
         }
 
         /// <summary>

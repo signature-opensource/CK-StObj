@@ -157,6 +157,18 @@ namespace CK.Setup
             return HandleFirstResult<T>( monitor, r, first, context, scope, toImplement );
         }
 
+        /// <summary>
+        /// Executes the first pass of the code generation.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="first">The initial auto implementor.</param>
+        /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
+        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor, ICodeGenerator first, ICodeGenerationContext context )
+        {
+            var r = first.Implement( monitor, context );
+            return HandleFirstResult<Type>( monitor, r, first, context, null, null );
+        }
+
         static (bool Success, SecondPassCodeGeneration? SecondPass) HandleFirstResult<T>( IActivityMonitor monitor, AutoImplementationResult r, object first, ICodeGenerationContext context, ITypeScope? scope, T? toImplement ) where T : MemberInfo
         {
             Debug.Assert( (first is ICodeGenerator) == (toImplement == null) );

@@ -105,6 +105,12 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
+                    foreach( var g in CKTypeResult.GetAllAttributeProvider().SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
+                    {
+                        var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                        if( second != null ) collector( second );
+                    }
+
                     // Generates the StObjContextRoot implementation.
                     GenerateStObjContextRootSource( monitor, global.FindOrCreateNamespace( "CK.StObj" ), EngineMap.StObjs.OrderedStObjs );
 

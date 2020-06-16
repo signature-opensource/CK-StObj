@@ -78,6 +78,7 @@ namespace CK.Setup
                 return (IReadOnlyCollection<Type>?)_uniqueMappings ?? Type.EmptyTypes;
             }
         }
+
         /// <summary>
         /// Gets the unique mappings to this type that MUST be a leaf:
         /// an <see cref="InvalidOperationException"/> is thrown if <see cref="IsSpecialized"/> is true.
@@ -148,7 +149,8 @@ namespace CK.Setup
             do
             {
                 Debug.Assert( p.Attributes != null );
-                combined.Add( p.Attributes ); p = p.Generalization;
+                combined.Add( p.Attributes );
+                p = p.Generalization;
             }
             while( p != null );
 

@@ -173,21 +173,11 @@ namespace CK.Setup
 
         public object Obtain( Type t ) => ToLeaf( t )?.InitialObject;
 
-        /// <summary>
-        /// Gets all types mapped by this contextual map.
-        /// </summary>
-        public IEnumerable<Type> Types => _map.Keys.OfType<Type>(); 
+        IEnumerable<Type> IStObjTypeMap.Types => _map.Keys.OfType<Type>(); 
 
         IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _allSpecializations.Select( m => m.FinalImplementation );
 
-        IEnumerable<StObjMapping> IStObjObjectMap.StObjs
-        {
-            get
-            {
-                return _map.Where( kv => kv.Key is Type )
-                            .Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
-            }
-        }
+        IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _map.Where( kv => kv.Key is Type ).Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
 
         IStObjResult IStObjObjectEngineMap.ToLeaf( Type t ) => ToLeaf( t );
 
