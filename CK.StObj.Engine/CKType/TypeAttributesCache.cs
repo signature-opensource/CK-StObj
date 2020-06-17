@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using CK.Core;
@@ -43,7 +44,12 @@ namespace CK.Setup
         public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClasses )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
+
+            // This is ready to be injected in the delegated attribute constructor: no other attributes are visible.
+            // If other attributes must be accessed, then the IAttributeContextBoundInitializer interface must be used.
             Type = type;
+            _all = Array.Empty<Entry>();
+
             var all = new List<Entry>();
             int initializerCount = Register( monitor, services, all, type, includeBaseClasses );
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
@@ -65,7 +71,7 @@ namespace CK.Setup
             }
         }
 
-        static int Register( IActivityMonitor monitor, IServiceProvider services, List<Entry> all, MemberInfo m, bool inherit = false )
+        int Register( IActivityMonitor monitor, IServiceProvider services, List<Entry> all, MemberInfo m, bool inherit = false )
         {
             int initializerCount = 0;
             var attr = (IAttributeContextBound[])m.GetCustomAttributes( typeof( IAttributeContextBound ), inherit );
@@ -77,9 +83,19 @@ namespace CK.Setup
                     Type dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
                     // When ContextBoundDelegationAttribute is not specialized, it is useless: the attribute
                     // parameter must not be specified.
-                    finalAttributeToUse = a.GetType() == typeof( ContextBoundDelegationAttribute )
-                                            ? services.SimpleObjectCreate( monitor, dT )
-                                            : services.SimpleObjectCreate( monitor, dT, a );
+                    using( var sLocal = new SimpleServiceContainer( services ) )
+                    {
+                        Debug.Assert( _all.Length == 0, "Constructors see no attributes at all. IAttributeContextBoundInitializer must be used to have access to other attributes." );
+                        sLocal.Add<Type>( Type );
+                        sLocal.Add<ICKCustomAttributeTypeMultiProvider>( this );
+                        sLocal.Add<MemberInfo>( m );
+                        if( m is MethodInfo method ) sLocal.Add<MethodInfo>( method );
+                        else if( m is PropertyInfo property ) sLocal.Add<PropertyInfo>( property );
+                        else if( m is FieldInfo field ) sLocal.Add<FieldInfo>( field );
+                        finalAttributeToUse = a.GetType() == typeof( ContextBoundDelegationAttribute )
+                                            ? sLocal.SimpleObjectCreate( monitor, dT )
+                                            : sLocal.SimpleObjectCreate( monitor, dT, a );
+                    }
                     if( finalAttributeToUse == null ) continue;
                 }
                 all.Add( new Entry( m, finalAttributeToUse ) );
