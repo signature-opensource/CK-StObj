@@ -335,7 +335,7 @@ namespace CK.Setup
                         // Transfers construct parameters type as requirements for the object, binds dependent
                         // types to their respective MutableItem, resolve generalization and container
                         // inheritance, and intializes StObjProperties.
-                        foreach( MutableItem item in engineMap.AllSpecializations )
+                        foreach( MutableItem item in engineMap.FinalImplementations )
                         {
                             noCycleDetected &= item.PrepareDependentItem( _monitor, valueCollector );
                         }
@@ -349,7 +349,7 @@ namespace CK.Setup
                         // a chance to configure unresolved properties. (Since this external resolution may provide a StObj, this may also impact the sort order).
                         // During this step, DirectProperties and RealObjects are also collected: all these properties are added to PreConstruct collectors
                         // or to PostBuild collector in order to always set a correctly constructed object to a property.
-                        foreach( MutableItem item in engineMap.AllSpecializations )
+                        foreach( MutableItem item in engineMap.FinalImplementations )
                         {
                             item.ResolvePreConstructAndPostBuildProperties( _monitor, valueCollector, _valueResolver );
                         }
@@ -417,7 +417,7 @@ namespace CK.Setup
                     {
                         // Finalize construction by injecting Real Objects
                         // and PostBuild Ambient Properties on specializations.
-                        foreach( MutableItem item in engineMap.AllSpecializations )
+                        foreach( MutableItem item in engineMap.FinalImplementations )
                         {
                             item.SetPostBuildProperties( _monitor );
                         }

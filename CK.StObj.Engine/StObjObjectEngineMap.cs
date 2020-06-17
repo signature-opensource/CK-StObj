@@ -20,7 +20,7 @@ namespace CK.Setup
     {
         readonly CKTypeKindDetector _typeKindDetector;
         readonly Dictionary<object, MutableItem> _map;
-        readonly MutableItem[] _allSpecializations;
+        readonly MutableItem[] _finaImplementations;
         readonly IReadOnlyCollection<Assembly> _assemblies;
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
@@ -46,7 +46,7 @@ namespace CK.Setup
             Debug.Assert( mapName != null );
             MapName = mapName;
             _map = new Dictionary<object, MutableItem>();
-            _allSpecializations = allSpecializations;
+            _finaImplementations = allSpecializations;
             _assemblies = assemblies;
 
             _serviceSimpleMap = new Dictionary<Type, IStObjServiceFinalSimpleMapping>();
@@ -91,47 +91,28 @@ namespace CK.Setup
         /// </summary>
         public string MapName { get; }
 
-        /// <summary>
-        /// Gets the number of existing mappings (the <see cref="RawMappings"/>.Count).
-        /// </summary>
-        internal int MappedTypeCount => _map.Count;
-
-        /// <summary>
-        /// Gets the final mapped type for any type that is mapped.
-        /// </summary>
-        /// <param name="t">Base type.</param>
-        /// <returns>Most specialized type or null if not found.</returns>
-        public Type ToLeafType( Type t )
-        {
-            MutableItem c = ToLeaf( t );
-            return c != null ? c.RealObjectType.Type : null;
-        }
-
-        internal MutableItem ToLeaf( Type t )
-        {
-            _map.TryGetValue( t, out var c );
-            return c;
-        }
+        IStObjFinalClass IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
+                                                            ?? (IStObjFinalClass)_serviceSimpleMap.GetValueOrDefault( t )
+                                                            ?? (IStObjFinalClass)_serviceToObjectMap.GetValueOrDefault( t )
+                                                            ?? _serviceManualMap.GetValueOrDefault( t );
 
         /// <summary>
         /// Gets all the specialization. If there is no error, this list corresponds to the
         /// last items of the <see cref="RealObjectCollectorResult.ConcreteClasses"/>.
         /// </summary>
-        internal IReadOnlyCollection<MutableItem> AllSpecializations => _allSpecializations;
+        internal IReadOnlyCollection<MutableItem> FinalImplementations => _finaImplementations;
 
         /// <summary>
         /// Gets all the mapping from object (including <see cref="RealObjectInterfaceKey"/>) to
         /// <see cref="MutableItem"/>.
         /// </summary>
-        internal IEnumerable<KeyValuePair<object, MutableItem>> RawMappings => _map;
+        internal IReadOnlyDictionary<object, MutableItem> RawMappings => _map;
 
         /// <summary>
-        /// Gets the most abstract type for any type mapped.
+        /// Gets the most "abstract" item for a type.
         /// </summary>
         /// <param name="t">Any mapped type.</param>
-        /// <returns>The most abstract, less specialized, associated type.</returns>
-        public Type ToHighestImplType( Type t ) => ToHighestImpl( t ).RealObjectType.Type;
-
+        /// <returns>The most abstract, less specialized, associated StObj.</returns>
         internal MutableItem ToHighestImpl( Type t )
         {
             if( t == null ) throw new ArgumentNullException( "t" );
@@ -156,30 +137,15 @@ namespace CK.Setup
             return c;
         }
 
-        /// <summary>
-        /// Gets the most abstract mapped StObj for a type.
-        /// See <see cref="ToHighestImplType(Type)"/>.
-        /// </summary>
-        /// <param name="t">Any mapped type.</param>
-        /// <returns>The most abstract, less specialized, associated StObj.</returns>
-        public IStObjResult ToStObj( Type t ) => ToHighestImpl( t );
+        IStObjResult IStObjObjectEngineMap.ToHead( Type t ) => ToHighestImpl( t );
 
-        /// <summary>
-        /// Gets whether a type is mapped.
-        /// </summary>
-        /// <param name="t">Any type.</param>
-        /// <returns>True if the type is mapped.</returns>
-        public bool IsMapped( Type t ) => _map.ContainsKey( t );
+        object IStObjObjectMap.Obtain( Type t ) => _map.GetValueOrDefault( t )?.InitialObject;
 
-        public object Obtain( Type t ) => ToLeaf( t )?.InitialObject;
-
-        IEnumerable<Type> IStObjTypeMap.Types => _map.Keys.OfType<Type>(); 
-
-        IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _allSpecializations.Select( m => m.FinalImplementation );
+        IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finaImplementations.Select( m => m.FinalImplementation );
 
         IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _map.Where( kv => kv.Key is Type ).Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
 
-        IStObjResult IStObjObjectEngineMap.ToLeaf( Type t ) => ToLeaf( t );
+        IStObjResult IStObjObjectEngineMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
         IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedStObjs => _orderedStObjs;
 
@@ -188,7 +154,7 @@ namespace CK.Setup
             _orderedStObjs = ordered;
         }
 
-        IStObj IStObjObjectMap.ToLeaf( Type t ) => ToLeaf( t );
+        IStObj IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
         void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
         {

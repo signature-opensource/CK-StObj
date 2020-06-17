@@ -83,8 +83,8 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( result.Result.EngineMap != null, "No initialization error." );
 
             result.Map.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
-            IStObjFinalImplementation g = result.Result.EngineMap.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
-            IStObjFinalImplementation o = result.Result.EngineMap.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;
+            IStObjFinalImplementation g = result.Result.EngineMap.StObjs.ToHead( typeof( IUserGoogle ) ).FinalImplementation;
+            IStObjFinalImplementation o = result.Result.EngineMap.StObjs.ToHead( typeof( UserOffice ) ).FinalImplementation;
             g.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
             o.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
 

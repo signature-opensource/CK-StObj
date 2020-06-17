@@ -85,19 +85,19 @@ namespace CK.StObj.Engine.Tests
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjResult oa = map.StObjs.ToStObj( typeof(ObjectA) );
+            IStObjResult oa = map.StObjs.ToHead( typeof(ObjectA) );
             oa.Container.ClassType.Should().Be( typeof( PackageForAB ) );
             oa.LeafSpecialization.ClassType.Should().Be( typeof( ObjectALevel3 ) );
 
-            IStObjResult oa1 = map.StObjs.ToStObj( typeof( ObjectALevel1 ) );
+            IStObjResult oa1 = map.StObjs.ToHead( typeof( ObjectALevel1 ) );
             oa1.Generalization.Should().BeSameAs( oa );
             oa1.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ) );
 
-            IStObjResult oa2 = map.StObjs.ToStObj( typeof( ObjectALevel2 ) );
+            IStObjResult oa2 = map.StObjs.ToHead( typeof( ObjectALevel2 ) );
             oa2.Generalization.Should().BeSameAs( oa1 );
             oa2.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
 
-            IStObjResult oa3 = map.StObjs.ToStObj( typeof( ObjectALevel3 ) );
+            IStObjResult oa3 = map.StObjs.ToHead( typeof( ObjectALevel3 ) );
             oa3.Generalization.Should().BeSameAs( oa2 );
             oa3.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
             oa.RootGeneralization.ClassType.Should().Be( typeof( ObjectA ) );

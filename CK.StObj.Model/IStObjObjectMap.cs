@@ -5,11 +5,11 @@ using System.Collections.Generic;
 namespace CK.Core
 {
     /// <summary>
-    /// Extends <see cref="IStObjTypeMap"/> to expose <see cref="IStObj"/> and Type to Object resolution.
+    /// Fundamental Types to <see cref="IStObj"/> mappings.
     /// This is exposed by <see cref="IStObjMap.StObjs"/> and is the result of the setup: its implementation
     /// is dynamically generated.
     /// </summary>
-    public interface IStObjObjectMap : IStObjTypeMap
+    public interface IStObjObjectMap
     {
         /// <summary>
         /// Gets the most specialized <see cref="IStObj"/> or null if no mapping exists.

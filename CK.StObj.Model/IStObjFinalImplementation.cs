@@ -4,7 +4,8 @@ namespace CK.Core
 {
 
     /// <summary>
-    /// Associates the final, most specialized, implementation and its multiple and unique mappings.
+    /// Associates the final, most specialized, implementation and its multiple and unique mappings
+    /// since this is a <see cref="IStObjFinalClass"/>.
     /// </summary>
     public interface IStObjFinalImplementation : IStObj, IStObjFinalClass
     {

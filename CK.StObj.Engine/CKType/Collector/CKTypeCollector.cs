@@ -291,8 +291,8 @@ namespace CK.Setup
                 {
                     foreach( Type itf in item.RealObjectType.ThisRealObjectInterfaces )
                     {
-                        MutableItem alreadyMapped;
-                        if( (alreadyMapped = engineMap.ToLeaf( itf )) != null )
+                        MutableItem? alreadyMapped;
+                        if( (alreadyMapped = engineMap.RawMappings.GetValueOrDefault( itf )) != null )
                         {
                             if( interfaceAmbiguities == null )
                             {

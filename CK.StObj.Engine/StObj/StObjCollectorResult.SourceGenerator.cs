@@ -105,7 +105,7 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
-                    foreach( var g in CKTypeResult.GetAllAttributeProvider().SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
+                    foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
                     {
                         var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector( second );
@@ -272,7 +272,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}(IActivityMonitor monitor, IStObjRuntimeBuilder rb)" );
 
             rootCtor.Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
-                    .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.AllSpecializations.Count}];" ).NewLine();
+                    .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.FinalImplementations.Count}];" ).NewLine();
             int iStObj = 0;
             int iImplStObj = 0;
             foreach( var m in orderedStObjs )
@@ -298,7 +298,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootCtor.Append( $"_map = new Dictionary<Type,GFinalStObj>();" ).NewLine();
             var allMappings = CKTypeResult.RealObjects.EngineMap.RawMappings;
             // We skip highest implementation Type mappings (ie. RealObjectInterfaceKey keys) since 
-            // there is no ToStObj mapping (to root generalization) on final (runtime) IStObjMap.
+            // there is no ToHead mapping (to root generalization) on final (runtime) IStObjMap.
             foreach( var e in allMappings.Where( e => e.Key is Type ) )
             {
                 rootCtor.Append( $"_map.Add( " ).AppendTypeOf( (Type)e.Key )
@@ -405,10 +405,6 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootType.Append( "public string MapName => " ).AppendSourceString( EngineMap.MapName ).Append( ";" ).NewLine()
                     .Append( @"
             public IStObjObjectMap StObjs => this;
-
-            Type IStObjTypeMap.ToLeafType( Type t ) => GToLeaf( t )?.ClassType;
-            bool IStObjTypeMap.IsMapped( Type t ) => _map.ContainsKey( t );
-            IEnumerable<Type> IStObjTypeMap.Types => _map.Keys;
 
             IStObj IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
             object IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;

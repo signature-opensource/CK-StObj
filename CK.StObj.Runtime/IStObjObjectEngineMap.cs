@@ -23,7 +23,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="t">Any mapped type.</param>
         /// <returns>The most abstract, less specialized, associated type.</returns>
-        IStObjResult ToStObj( Type t );
+        IStObjResult ToHead( Type t );
 
         /// <summary>
         /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.

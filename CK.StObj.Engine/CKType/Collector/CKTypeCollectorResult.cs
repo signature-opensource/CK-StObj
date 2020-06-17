@@ -71,7 +71,7 @@ namespace CK.Setup
         {
             get
             {
-                var all = RealObjects.EngineMap.AllSpecializations.Select( m => m.ImplementableTypeInfo )
+                var all = RealObjects.EngineMap.FinalImplementations.Select( m => m.ImplementableTypeInfo )
                             // Filters out the Service implementation that are RealObject.
                             .Concat( AutoServices.RootClasses.Select( c => c.IsRealObject ? null : c.MostSpecialized!.ImplementableTypeInfo ) )
                             .Concat( AutoServices.SubGraphRootClasses.Select( c => c.IsRealObject ? null : c.MostSpecialized!.ImplementableTypeInfo ) )
@@ -84,19 +84,22 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets all the attribute providers from all <see cref="RealObjectClassInfo"/> or <see cref="AutoServiceClassInfo"/>
+        /// Gets all the type attribute providers from all <see cref="IStObjResult"/> (Real Objects) or <see cref="AutoServiceClassInfo"/>
         /// without any duplicates (AutoService that are RealObjects don't appear twice).
         /// </summary>
         /// <returns>The attribute providers.</returns>
-        public IEnumerable<ICKCustomAttributeTypeMultiProvider> GetAllAttributeProvider()
+        public IEnumerable<ICKCustomAttributeTypeMultiProvider> AllTypeAttributeProviders
         {
-            var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
-                          .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes ) )
-                          .Where( attr => attr != null )
-                          .Select( attr => attr! );
+            get
+            {
+                var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
+                              .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes ) )
+                              .Where( attr => attr != null )
+                              .Select( attr => attr! );
 
-            Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
-            return all;
+                Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+                return all;
+            }
         }
 
         /// <summary>

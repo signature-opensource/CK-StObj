@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests
             StObjCollectorResult result = BuildPocoSample();
             Debug.Assert( result.EngineMap != null );
 
-            IStObjResult p = result.EngineMap.StObjs.ToStObj( typeof( PackageWithBasicPoco ) );
+            IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) );
             var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
             IBasicPoco poco = package.Factory.Create();
             Assert.That( poco is IEAlternateBasicPoco );
