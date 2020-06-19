@@ -161,10 +161,17 @@ namespace CK.StObj.Engine.Tests
                 _attribute = a ?? throw new ArgumentNullException( nameof( a ) );
                 Constructed = true;
 
-                // We use this attribute in the S5 scenario.
-                type.Should().Match( t => t == typeof( S4 ) || t == typeof( S5 ) );
-                owner.Type.Should().Match( t => t == typeof( S4 ) || t == typeof( S5 ) );
-                m.Name.Should().Be( "M" );
+                // We use this attribute in the S5 and S6 scenario.
+                type.Should().Match( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
+                owner.Type.Should().Match( t => t == typeof( S4 ) || t == typeof( S5 ) || t == typeof( IServiceWithAttributeOnMember ) );
+                if( type == typeof( S4 ) || type == typeof( S5 ) )
+                {
+                    m.Name.Should().Be( "M" );
+                }
+                else
+                {
+                    m.Name.Should().Be( "OnAnInterface" );
+                }
             }
         }
 
@@ -263,6 +270,82 @@ namespace CK.StObj.Engine.Tests
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
             OtherCtorAttributeImpl.Constructed.Should().BeTrue();
             OtherCtorAttributeImpl.Initialized.Should().BeTrue();
+        }
+
+        #endregion
+
+        #region S6
+
+        public interface IServiceWithAttributeOnMember : IAutoService
+        {
+            [OneCtor]
+            void OnAnInterface();
+        }
+
+        public class S6 : IServiceWithAttributeOnMember
+        {
+            void IServiceWithAttributeOnMember.OnAnInterface()
+            {
+            }
+        }
+
+        [Test]
+        public void Attributes_can_be_on_AutoService_interface_members()
+        {
+            OneCtorAttributeImpl.Constructed = false;
+
+            var aspectProvidedServices = new SimpleServiceContainer();
+            // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
+            aspectProvidedServices.Add( this );
+            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
+            c.RegisterType( typeof( S6 ) );
+
+            var r = TestHelper.GetSuccessfulResult( c );
+
+            r.CKTypeResult.AllTypeAttributeProviders.Select( attrs => attrs.Type ).Should().BeEquivalentTo( typeof( S6 ), typeof( IServiceWithAttributeOnMember ) );
+            r.CKTypeResult.AllTypeAttributeProviders.SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
+
+            OneCtorAttributeImpl.Constructed.Should().BeTrue();
+        }
+
+
+        #endregion
+
+        #region S7
+
+        public interface IRealObjectWithAttributeOnMember : IRealObject
+        {
+            [OneCtor]
+            void OnAnInterface();
+        }
+
+        public class S7 : IRealObjectWithAttributeOnMember
+        {
+            void IRealObjectWithAttributeOnMember.OnAnInterface()
+            {
+            }
+        }
+
+        [Test]
+        public void Attributes_can_NOT_YET_be_on_IRealObject_interface_members()
+        {
+            Assume.That( false, "This has to be impleented if needed, but this may not be really useful: a IRealObject is unambiguosly mapped to its single implementation." );
+            // => This could be done in CKTypeCollector.RegisterObjectClassInfo().
+
+            OneCtorAttributeImpl.Constructed = false;
+
+            var aspectProvidedServices = new SimpleServiceContainer();
+            // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
+            aspectProvidedServices.Add( this );
+            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
+            c.RegisterType( typeof( S7 ) );
+
+            var r = TestHelper.GetSuccessfulResult( c );
+
+            r.CKTypeResult.AllTypeAttributeProviders.Select( attrs => attrs.Type ).Should().BeEquivalentTo( typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) );
+            r.CKTypeResult.AllTypeAttributeProviders.SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
+
+            OneCtorAttributeImpl.Constructed.Should().BeTrue();
         }
 
         #endregion

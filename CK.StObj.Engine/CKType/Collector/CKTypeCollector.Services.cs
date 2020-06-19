@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using CK.Setup;
 using CK.Core;
+using System.Runtime.InteropServices.ComTypes;
 
 #nullable enable
 
@@ -61,7 +62,8 @@ namespace CK.Setup
             {
                 if( _typeFilter( _monitor, t ) )
                 {
-                    info = new AutoServiceInterfaceInfo( t, lt, RegisterServiceInterfaces( t.GetInterfaces() ) );
+                    var attr = new TypeAttributesCache( _monitor, t, _serviceProvider, false ); 
+                    info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;
                     if( info.Interfaces.Count == 0 ) ++_serviceRootInterfaceCount;
                 }

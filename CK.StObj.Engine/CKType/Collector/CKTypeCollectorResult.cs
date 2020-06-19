@@ -92,10 +92,12 @@ namespace CK.Setup
         {
             get
             {
+                Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
+                Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
+
                 var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
-                              .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes ) )
-                              .Where( attr => attr != null )
-                              .Select( attr => attr! );
+                              .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
+                              .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) );
 
                 Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
                 return all;

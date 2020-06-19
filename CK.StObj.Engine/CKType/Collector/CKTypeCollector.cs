@@ -180,6 +180,7 @@ namespace CK.Setup
                 {
                     Debug.Assert( !_roots.Contains( result ) );
                     _roots.Add( result );
+                    // This is were the IRealObject interfaces could be enlisted.
                 }
             }
             _objectCollector.Add( t, result );
