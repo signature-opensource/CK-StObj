@@ -6,6 +6,8 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using CK.CodeGen.Abstractions;
 using CK.Core;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace CK.Setup
 {
@@ -37,12 +39,43 @@ namespace CK.Setup
                                                  .Append( root.PocoClass.Name )
                                                  .Append( " : " )
                                                  .Append( root.Interfaces.Select( i => i.PocoInterface.ToCSharpName() ) ) );
+                    IFunctionScope defaultCtorB = null;
+
                     foreach( var p in root.PocoClass.GetProperties() )
                     {
-                        tB.Append("public " ).AppendCSharpName( p.PropertyType ).Space().Append( p.Name ).Append( "{" );
-                        tB.Append( "get;" );
+                        tB.Append( "public " ).AppendCSharpName( p.PropertyType ).Space().Append( p.Name ).Append( "{get;" );
                         if( p.CanWrite ) tB.Append( "set;" );
                         tB.Append( "}" ).NewLine();
+                        if( !p.CanWrite )
+                        {
+                            Type propType = p.PropertyType;
+                            if( _r.AllInterfaces.TryGetValue( propType, out IPocoInterfaceInfo info ) )
+                            {
+                                if( defaultCtorB == null ) defaultCtorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
+                                defaultCtorB.Append( p.Name ).Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" ).NewLine();
+                            }
+                            else if( propType.IsGenericType )
+                            {
+                                Type genType = propType.GetGenericTypeDefinition();
+                                if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
+                                {
+                                    tB.Append( " = new System.Collections.Generic.List<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                                }
+                                else if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
+                                {
+                                    tB.Append( " = new System.Collections.Generic.Dictionary<" )
+                                                        .AppendCSharpName( propType.GetGenericArguments()[0] )
+                                                        .Append( ',' )
+                                                        .AppendCSharpName( propType.GetGenericArguments()[1] )
+                                                        .Append( ">();" )
+                                                        .NewLine();
+                                }
+                                else if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
+                                {
+                                    tB.Append( " = new System.Collections.Generic.HashSet<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                                }
+                            }
+                        }
                     }
                 }
                 var fB = b.CreateType( t => t.Append( "class " )

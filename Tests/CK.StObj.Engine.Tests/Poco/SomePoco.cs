@@ -1,6 +1,6 @@
 using CK.Core;
 
-namespace CK.StObj.Engine.Tests.Poco
+namespace CK.StObj.Engine.Tests.Poco.Sample
 {
 
     public interface IBasicPoco : IPoco
@@ -36,13 +36,4 @@ namespace CK.StObj.Engine.Tests.Poco
     public interface IECombineBasicPoco : IEAlternateBasicPoco, IEExtraBasicPoco
     {
     }
-
-    public class Encapsulated
-    {
-        public interface IBasicPoco : IPoco
-        {
-            int AnotherInNestedScope { get; set; }
-        }
-    }
-
 }

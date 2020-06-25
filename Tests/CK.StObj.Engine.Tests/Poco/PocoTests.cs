@@ -9,16 +9,32 @@ using static CK.Testing.StObjEngineTestHelper;
 using FluentAssertions;
 using System.Diagnostics;
 using System.Reflection;
+using SmartAnalyzers.CSharpExtensions.Annotations;
+using CK.StObj.Engine.Tests.Poco.Sample;
 
-namespace CK.StObj.Engine.Tests
+namespace CK.StObj.Engine.Tests.Poco
 {
     [TestFixture]
     public class PocoTests
     {
+
+        [StObj( ItemKind = DependentItemKindSpec.Container )]
+        public class PackageWithBasicPoco : IRealObject
+        {
+            void StObjConstruct( IPocoFactory<IBasicPoco> f )
+            {
+                Factory = f;
+            }
+
+            [InitRequired]
+            public IPocoFactory<IBasicPoco> Factory { get; private set; }
+
+        }
+
         [Test]
         public void simple_poco_resolution_and_injection()
         {
-            StObjCollectorResult result = BuildPocoSample();
+            StObjCollectorResult result = BuildPocoSample( typeof( PackageWithBasicPoco ) );
             Debug.Assert( result.EngineMap != null );
 
             IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) );
@@ -35,10 +51,11 @@ namespace CK.StObj.Engine.Tests
             ei.IndependentProperty = 9;
         }
 
-        static StObjCollectorResult BuildPocoSample()
+        static StObjCollectorResult BuildPocoSample( params Type[] extra )
         {
             var types = typeof(PocoTests).Assembly.GetTypes()
-                            .Where( t => t.Namespace == "CK.StObj.Engine.Tests.Poco" );
+                            .Where( t => t.Namespace == "CK.StObj.Engine.Tests.Poco.Sample" )
+                            .Concat( extra );
 
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterTypes( types.ToList() );

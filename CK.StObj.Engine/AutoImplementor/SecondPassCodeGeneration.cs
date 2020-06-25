@@ -262,7 +262,7 @@ namespace CK.Setup
 
             protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
             {
-                Debug.Assert( !IsCodeGenerator );
+                Debug.Assert( !IsCodeGenerator && TypeScope != null );
                 Debug.Assert( impl is IAutoImplementor<T>, "This has been already tested." );
                 return ((IAutoImplementor<T>)impl).Implement( monitor, Target, context, TypeScope );
             }
