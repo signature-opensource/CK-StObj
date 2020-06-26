@@ -214,7 +214,6 @@ namespace CK.Setup
                     if( pocoSupport != null )
                     {
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
-                        _tempAssembly.SourceModules.Add( PocoSourceGenerator.CreateModule( pocoSupport ) );
                         RegisterClass( pocoSupport.FinalFactory );
                     }
                     else

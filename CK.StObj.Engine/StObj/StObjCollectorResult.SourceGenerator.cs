@@ -96,6 +96,7 @@ namespace CK.Setup
                     {
                         ws.EnsureAssemblyReference( typeof( StObjContextRoot ).Assembly );
                     }
+
                     // Injects, once for all, basic namespaces that we always want available into the global namespace.
                     global.EnsureUsing( "CK.Core" )
                           .EnsureUsing( "System" )
@@ -105,6 +106,10 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
+                    // Generates the Poco type support: the types may be extended by other participants.
+                    PocoSourceGenerator.Inject( global.Workspace, codeGenContext.Assembly.GetPocoSupportResult() );
+
+                    // Calls all ICodeGenerator items.
                     foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
                     {
                         var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;

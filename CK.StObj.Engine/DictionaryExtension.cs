@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 #nullable enable
@@ -9,7 +10,9 @@ namespace CK.Setup
 {
     public static class DictionaryExtension
     {
-        class ReadOnlyDictionaryWrapper<TKey, TValue, TReadOnlyValue> : IReadOnlyDictionary<TKey, TReadOnlyValue> where TValue : TReadOnlyValue where TKey : notnull
+        class ReadOnlyDictionaryWrapper<TKey, TValue, TReadOnlyValue> : IReadOnlyDictionary<TKey, TReadOnlyValue>
+                where TValue : TReadOnlyValue
+                where TKey : notnull
         {
             private IDictionary<TKey, TValue> _dictionary;
 
@@ -22,7 +25,7 @@ namespace CK.Setup
 
             public IEnumerable<TKey> Keys { get { return _dictionary.Keys; } }
 
-            public bool TryGetValue( TKey key, out TReadOnlyValue value )
+            public bool TryGetValue( TKey key, [MaybeNullWhen( false )]out TReadOnlyValue value )
             {
                 var r = _dictionary.TryGetValue( key, out var v );
                 value = v;
@@ -41,8 +44,8 @@ namespace CK.Setup
         }
 
         public static IReadOnlyDictionary<TKey, TReadOnlyValue> AsCovariantReadOnly<TKey, TValue, TReadOnlyValue>( this IDictionary<TKey,TValue> @this )
-            where TKey : notnull
             where TValue : TReadOnlyValue
+            where TKey : notnull
         {
             return new ReadOnlyDictionaryWrapper<TKey, TValue, TReadOnlyValue>( @this );
         }

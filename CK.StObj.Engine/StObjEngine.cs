@@ -94,8 +94,9 @@ namespace CK.Setup
         {
             public static BinPathComparer Default = new BinPathComparer();
 
-            public bool Equals( BinPathConfiguration x, BinPathConfiguration y )
+            public bool Equals( BinPathConfiguration? x, BinPathConfiguration? y )
             {
+                Debug.Assert( x != null && y != null );
                 bool s = x.Types.Count == y.Types.Count
                          && x.Assemblies.SetEquals( y.Assemblies )
                          && x.ExcludedTypes.SetEquals( y.ExcludedTypes );
