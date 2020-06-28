@@ -215,7 +215,11 @@ namespace CK.Setup
                            ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
                            : null;
                 _regularTypeCollector.Add( t, c );
-                if( c != null ) RegisterAssembly( t );
+                if( c != null )
+                {
+                    _monitor.Trace( $"Attributes registration on '{t.FullName}'." );
+                    RegisterAssembly( t );
+                }
             }
         }
 
