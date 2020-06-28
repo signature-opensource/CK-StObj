@@ -90,11 +90,18 @@ namespace CK.Testing
 
         (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CodeGenResult) IStObjEngineTestHelperCore.GenerateCode( StObjCollector c, bool compile ) => DoGenerateCode( c, compile, out _ );
 
-        static (StObjCollectorResult,StObjCollectorResult.CodeGenerateResult) DoGenerateCode( StObjCollector c, bool compile, out string assemblyName )
+        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CodeGenResult) IStObjEngineTestHelperCore.GenerateCode( StObjCollectorResult r, bool compile ) => DoGenerateCode( r, compile, out _ );
+
+        static (StObjCollectorResult, StObjCollectorResult.CodeGenerateResult) DoGenerateCode( StObjCollector c, bool compile, out string assemblyName )
         {
-            var r = DoGetSuccessfulResult( c );
+            return DoGenerateCode( DoGetSuccessfulResult( c ), compile, out assemblyName );
+        }
+
+        static (StObjCollectorResult, StObjCollectorResult.CodeGenerateResult) DoGenerateCode( StObjCollectorResult result, bool compile, out string assemblyName )
+        {
+            if( result.HasFatalError ) throw new ArgumentException( "StObjCollectorResult.HasFatalError msut be false.", nameof( result ) );
             assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
-            return (r, SimpleEngineRunContext.TryGenerateAssembly( TestHelper.Monitor, r, assemblyName, compile, true ) );
+            return (result, SimpleEngineRunContext.TryGenerateAssembly( TestHelper.Monitor, result, assemblyName, compile, true ));
         }
 
         (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices )

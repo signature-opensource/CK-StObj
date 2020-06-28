@@ -14,17 +14,21 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeCollectorResult
     {
+        readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
+
         internal CKTypeCollectorResult(
             ISet<Assembly> assemblies,
             IPocoSupportResult? pocoSupport,
             RealObjectCollectorResult c,
             AutoServiceCollectorResult s,
+            IReadOnlyDictionary<Type,TypeAttributesCache?> regularTypes,
             CKTypeKindDetector typeKindDetector )
         {
             PocoSupport = pocoSupport;
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
+            _regularTypes = regularTypes;
             TypeKindDetector = typeKindDetector;
         }
 
@@ -97,7 +101,8 @@ namespace CK.Setup
 
                 var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
                               .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
-                              .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) );
+                              .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
+                              .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
 
                 Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
                 return all;

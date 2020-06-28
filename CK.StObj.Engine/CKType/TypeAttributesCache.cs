@@ -34,14 +34,27 @@ namespace CK.Setup
         readonly bool _includeBaseClasses;
 
         /// <summary>
-        /// Initializes a new <see cref="TypeAttributesCache"/> that considers only members explicitly 
-        /// declared by the <paramref name="type"/>.
+        /// Initializes a new <see cref="TypeAttributesCache"/> that can consider only members explicitly 
+        /// declared by the <paramref name="type"/> or includes the base class.
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="type">Type for which attributes must be cached.</param>
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
-        /// <param name="includeBaseClasses">True to include attributes of base classes and attributes on members of the base classes.</param>
-        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClasses )
+        /// <param name="includeBaseClass">True to include attributes of base classes and attributes on members of the base classes.</param>
+        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClass )
+            : this( monitor,
+                    type,
+                    (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), includeBaseClass ),
+                    services,
+                    includeBaseClass )
+        {
+        }
+
+        TypeAttributesCache( IActivityMonitor monitor,
+                             Type type,
+                             IAttributeContextBound[] typeAttributes,
+                             IServiceProvider services,
+                             bool includeBaseClasses )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
 
@@ -51,11 +64,11 @@ namespace CK.Setup
             _all = Array.Empty<Entry>();
 
             var all = new List<Entry>();
-            int initializerCount = Register( monitor, services, all, type, includeBaseClasses );
+            int initializerCount = Register( monitor, services, all, type, includeBaseClasses, typeAttributes );
             BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             if( includeBaseClasses ) flags &= ~BindingFlags.DeclaredOnly;
             _typeMembers = type.GetMembers( flags );
-            foreach( var m in _typeMembers ) initializerCount += Register( monitor, services, all, m );
+            foreach( var m in _typeMembers ) initializerCount += Register( monitor, services, all, m, false );
             _all = all.ToArray();
             _includeBaseClasses = includeBaseClasses;
             if( initializerCount > 0 )
@@ -71,10 +84,16 @@ namespace CK.Setup
             }
         }
 
-        int Register( IActivityMonitor monitor, IServiceProvider services, List<Entry> all, MemberInfo m, bool inherit = false )
+        int Register( IActivityMonitor monitor,
+                      IServiceProvider services,
+                      List<Entry> all,
+                      MemberInfo m,
+                      bool includeBaseClass,
+                      IAttributeContextBound[]? alreadyKnownMemberAttributes = null )
         {
             int initializerCount = 0;
-            var attr = (IAttributeContextBound[])m.GetCustomAttributes( typeof( IAttributeContextBound ), inherit );
+            var attr = alreadyKnownMemberAttributes
+                       ?? (IAttributeContextBound[])m.GetCustomAttributes( typeof( IAttributeContextBound ), includeBaseClass );
             foreach( var a in attr )
             {
                 object? finalAttributeToUse = a;
@@ -102,6 +121,20 @@ namespace CK.Setup
                 if( finalAttributeToUse is IAttributeContextBoundInitializer ) ++initializerCount;
             }
             return initializerCount;
+        }
+
+        /// <summary>
+        /// Creates a cache only if at least one <see cref="IAttributeContextBound"/> exists on the type.
+        /// If such an attribute exists, all its members are handled as usual.
+        /// </summary>
+        /// <param name="monitor">Monitor to use.</param>
+        /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
+        /// <param name="type">Type for which attributes must be cached.</param>
+        /// <returns>The cache or null.</returns>
+        public static TypeAttributesCache? CreateOnRegularType( IActivityMonitor monitor, IServiceProvider services, Type type )
+        {
+            var attr = (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), false );
+            return attr.Length > 0 ? new TypeAttributesCache( monitor, type, attr, services, false ) : null;
         }
 
         /// <summary>

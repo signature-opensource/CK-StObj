@@ -22,6 +22,7 @@ namespace CK.Setup
         readonly PocoRegisterer _pocoRegisterer;
         readonly HashSet<Assembly> _assemblies;
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
+        readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
         readonly List<RealObjectClassInfo> _roots;
         readonly string _mapName;
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
@@ -50,6 +51,7 @@ namespace CK.Setup
             _serviceProvider = serviceProvider;
             _assemblies = new HashSet<Assembly>();
             _objectCollector = new Dictionary<Type, RealObjectClassInfo?>();
+            _regularTypeCollector = new Dictionary<Type, TypeAttributesCache?>();
             _roots = new List<RealObjectClassInfo>();
             _serviceCollector = new Dictionary<Type, AutoServiceClassInfo>();
             _serviceRoots = new List<AutoServiceClassInfo>();
@@ -104,6 +106,11 @@ namespace CK.Setup
                     {
                         RegisterAssembly( type );
                     }
+                    RegisterRegularType( type );
+                }
+                else
+                {
+                    RegisterRegularType( type );
                 }
             }
         }
@@ -162,10 +169,12 @@ namespace CK.Setup
                     Debug.Assert( serviceInfo != null );
                 }
             }
-            // Marks the type as a registered one.
+            // Marks the type as a registered one and gives it a chance to carry
+            // Attributes...
             if( objectInfo == null && serviceInfo == null )
             {
                 _objectCollector.Add( t, null );
+                RegisterRegularType( t );
             }
             return true;
         }
@@ -196,6 +205,18 @@ namespace CK.Setup
         {
             var a = t.Assembly;
             if( !a.IsDynamic ) _assemblies.Add( a );
+        }
+
+        void RegisterRegularType( Type t )
+        {
+            if( !_regularTypeCollector.ContainsKey( t ) )
+            {
+                var c = _typeFilter(_monitor,t)
+                           ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
+                           : null;
+                _regularTypeCollector.Add( t, c );
+                if( c != null ) RegisterAssembly( t );
+            }
         }
 
         /// <summary>
@@ -234,7 +255,7 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( contracts );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, CKTypeKindDetector );
+                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, _regularTypeCollector, CKTypeKindDetector );
             }
         }
 

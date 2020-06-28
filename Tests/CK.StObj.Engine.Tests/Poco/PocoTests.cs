@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         static StObjCollectorResult BuildPocoSample( params Type[] extra )
         {
-            var types = typeof(PocoTests).Assembly.GetTypes()
+            var types = typeof( PocoTests ).Assembly.GetTypes()
                             .Where( t => t.Namespace == "CK.StObj.Engine.Tests.Poco.Sample" )
                             .Concat( extra );
 
@@ -121,11 +121,10 @@ namespace CK.StObj.Engine.Tests.Poco
 
             Assert.That( o.ReadOnlyProperty, Is.EqualTo( 0 ) );
             PropertyInfo? prop = p.PocoClassType.GetProperty( nameof( IEBasicPocoWithReadOnly.ReadOnlyProperty ) );
-            Debug.Assert( prop != null ); 
+            Debug.Assert( prop != null );
             prop.SetValue( o, 3712 );
             Assert.That( o.ReadOnlyProperty, Is.EqualTo( 3712 ) );
         }
-
 
     }
 }
