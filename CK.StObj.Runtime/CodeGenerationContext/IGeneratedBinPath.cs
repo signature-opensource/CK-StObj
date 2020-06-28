@@ -25,8 +25,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets a local service container, scoped to this path. This local container is backed by
         /// the <see cref="ICodeGenerationContext.GlobalServiceContainer"/> (see <see cref="SimpleServiceContainer.BaseProvider"/>).
-        /// <see cref="IAutoImplementorType.Implement"/> typically registers services inside this container so that
-        /// deferred implementators (<see cref="AutoImplementationResult.ImplementorType"/>) can depend on them.
+        /// <see cref="ICodeGenerator.Implement"/> and <see cref="IAutoImplementor{T}.Implement"/> typically registers services
+        /// inside this container so that deferred implementators (<see cref="AutoImplementationResult.ImplementorType"/>) can depend on them.
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }
 

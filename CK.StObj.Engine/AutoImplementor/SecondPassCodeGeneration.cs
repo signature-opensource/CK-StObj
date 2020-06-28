@@ -28,7 +28,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this is a global <see cref="ICodeGenerator"/> or a targeted <see cref="IAutoImplementor{T}"/> implementor.
         /// </summary>
-        [MemberNotNullWhen( false, "TypeScope", "Target" )]
+        [MemberNotNullWhen( false, nameof(TypeScope), nameof(Target) )]
         public bool IsCodeGenerator => Target == null;
 
         /// <summary>
@@ -148,10 +148,16 @@ namespace CK.Setup
         /// <typeparam name="T">The type of the member to generate.</typeparam>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="first">The initial auto implementor.</param>
+        /// <param name="context">The type generation context.</param>
         /// <param name="scope">See <see cref="TypeScope"/>.</param>
         /// <param name="toImplement">See <see cref="Target"/>.</param>
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
-        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass<T>( IActivityMonitor monitor, IAutoImplementor<T> first, ICodeGenerationContext context, ITypeScope scope, T toImplement ) where T : MemberInfo
+        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass<T>( IActivityMonitor monitor,
+                                                                                         IAutoImplementor<T> first,
+                                                                                         ICodeGenerationContext context,
+                                                                                         ITypeScope scope,
+                                                                                         T toImplement )
+            where T : MemberInfo
         {
             var r = first.Implement( monitor, toImplement, context, scope );
             return HandleFirstResult<T>( monitor, r, first, context, scope, toImplement );
@@ -162,8 +168,11 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="first">The initial auto implementor.</param>
+        /// <param name="context">The generation context.</param>
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
-        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor, ICodeGenerator first, ICodeGenerationContext context )
+        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor,
+                                                                                      ICodeGenerator first,
+                                                                                      ICodeGenerationContext context )
         {
             var r = first.Implement( monitor, context );
             return HandleFirstResult<Type>( monitor, r, first, context, null, null );
@@ -232,7 +241,7 @@ namespace CK.Setup
             Target = target;
         }
 
-        protected abstract AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl );
+        private protected abstract AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl );
 
         sealed class CodeGeneratorResult : SecondPassCodeGeneration
         {
@@ -243,7 +252,7 @@ namespace CK.Setup
 
             public override string TargetName => String.Empty;
 
-            protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
+            private protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
             {
                 return ((ICodeGenerator)impl).Implement( monitor, context );
             }
@@ -260,7 +269,7 @@ namespace CK.Setup
 
             public new IAutoImplementor<T> FirstRunner => (IAutoImplementor<T>)base.FirstRunner;
 
-            protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
+            private protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
             {
                 Debug.Assert( !IsCodeGenerator && TypeScope != null );
                 Debug.Assert( impl is IAutoImplementor<T>, "This has been already tested." );

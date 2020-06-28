@@ -4,9 +4,7 @@ using CK.Core;
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines an engine extension to the runtime <see cref="IStObjObjectMap"/>.
-    /// This is exposed as the <see cref="StObjCollectorResult.StObjs"/> property to
-    /// mimic <see cref="IStObjMap.StObjs"/> (and is type compatible).
+    /// Defines an engine extension to the runtime <see cref="IStObjMap"/>.
     /// </summary>
     public interface IStObjEngineMap : IStObjMap
     {

@@ -391,7 +391,7 @@ namespace CK.StObj.Engine.Tests
                 {
                     foreach( var p in classType.GetProperties() )
                     {
-                        scope.Append( "public override " ).Append( p.PropertyType.FullName ).Append( " " ).Append( p.Name ).Append( " => " );
+                        scope.Append( "public override " ).Append( p.PropertyType.FullName! ).Append( " " ).Append( p.Name ).Append( " => " );
                         if( typeof( int ).IsAssignableFrom( p.PropertyType ) )
                         {
                             scope.Append( _attr.Value );

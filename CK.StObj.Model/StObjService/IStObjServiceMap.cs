@@ -36,7 +36,7 @@ namespace CK.Core
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> SimpleMappings { get; }
 
         /// <summary>
-        /// Gets all the types (exposed by <see cref="IStObjServiceClassDescriptor.ClassType"/>)
+        /// Gets all the types (exposed by <see cref="IStObjFinalClass.ClassType"/>)
         /// that can easily be resolved by any DI container.
         /// </summary>
         IReadOnlyList<IStObjServiceClassDescriptor> SimpleMappingList { get; }

@@ -30,12 +30,12 @@ namespace CK.Setup
         /// will be called.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="m">The abstract property.</param>
+        /// <param name="p">The abstract property.</param>
         /// <returns>This implementation.</returns>
         public virtual IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => this;
 
         /// <summary>
-        /// See <see cref="IAutoImplementorMethod.Implement"/>.
+        /// See <see cref="ICodeGenerator.Implement"/>.
         /// This default implementation returns true: the abstract <see cref="Implement(IActivityMonitor, Type, ICodeGenerationContext, ITypeScope)"/> "type
         /// based" method must do the job.
         /// </summary>
@@ -47,7 +47,7 @@ namespace CK.Setup
         public virtual AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
 
         /// <summary>
-        /// See <see cref="IAutoImplementorProperty.Implement"/>.
+        /// See <see cref="ICodeGenerator.Implement"/>.
         /// This default implementation returns true: the abstract <see cref="Implement(IActivityMonitor, Type, ICodeGenerationContext, ITypeScope)"/> "type
         /// based" method must do the job.
         /// </summary>

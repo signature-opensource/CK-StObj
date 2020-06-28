@@ -11,7 +11,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Tries to get the typed object (that can be null).
-        /// Use <see cref="AddCachedInstance{T}(IDictionary{object, object?}, T?)"/> to register a nullable instance of the type.
+        /// Use <see cref="AddCachedInstance"/> to register a nullable instance of the type.
         /// </summary>
         /// <typeparam name="T">The type of the instance.</typeparam>
         /// <param name="this">This memory.</param>

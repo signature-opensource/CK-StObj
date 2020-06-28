@@ -9,7 +9,7 @@ namespace CK.Core
     public interface IStObjServiceClassFactoryInfo : IStObjServiceClassDescriptor
     {
         /// <summary>
-        /// Gets the set of parameters assignments of the single <see cref="IStObjServiceClassDescriptor.ClassType">ClassType</see>'s
+        /// Gets the set of parameters assignments of the single <see cref="IStObjFinalClass.ClassType">ClassType</see>'s
         /// public constructor that must be explicitly provided in order to successfully
         /// call the constructor.
         /// <para>

@@ -64,7 +64,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
-        /// <see cref="IAutoImplementorType.Implement"/> typically registers services inside tjis containers so that
+        /// <see cref="ICodeGenerator.Implement"/> typically registers services inside this container so that
         /// deferred implementators (<see cref="AutoImplementationResult.ImplementorType"/>) can depend on them.
         /// </summary>
         ISimpleServiceContainer GlobalServiceContainer { get; }

@@ -51,7 +51,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="codeGenContext">The code generation context that must be the one of this result.</param>
         /// <param name="informationalVersion">Optional informational version attribute content.</param>
-        /// <param name="collector">The collector for second pass actions (for this <see cref="codeGenContext"/>).</param>
+        /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
         /// <returns>True on success, false on error.</returns>
         public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, Action<SecondPassCodeGeneration> collector )
         {
@@ -364,7 +364,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     foreach( var mp in m.ConstructParametersAbove )
                     {
                         Debug.Assert( mp.Item2.Count > 0 );
-                        rootCtor.AppendTypeOf( mp.Item1.DeclaringType );
+                        rootCtor.AppendTypeOf( mp.Item1.DeclaringType! );
                         CallConstructMethod( rootCtor, m, mp.Item2 );
                     }
                 }
@@ -396,7 +396,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {
                     if( init == m.RealObjectType.StObjInitialize ) rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
-                    else rootCtor.AppendTypeOf( init.DeclaringType );
+                    else rootCtor.AppendTypeOf( init.DeclaringType! );
 
                     rootCtor.Append( ".GetMethod(")
                             .AppendSourceString( StObjContextRoot.InitializeMethodName )

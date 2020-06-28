@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
@@ -8,6 +9,10 @@ using System.Linq;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Provides a <see cref="AsCovariantReadOnly{TKey, TValue, TReadOnlyValue}(IDictionary{TKey, TValue})"/>
+    /// method on any generic dictionary.
+    /// </summary>
     public static class DictionaryExtension
     {
         class ReadOnlyDictionaryWrapper<TKey, TValue, TReadOnlyValue> : IReadOnlyDictionary<TKey, TReadOnlyValue>
@@ -28,7 +33,7 @@ namespace CK.Setup
             public bool TryGetValue( TKey key, [MaybeNullWhen( false )]out TReadOnlyValue value )
             {
                 var r = _dictionary.TryGetValue( key, out var v );
-                value = v;
+                value = v!;
                 return r;
             }
 
@@ -43,6 +48,14 @@ namespace CK.Setup
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
+        /// <summary>
+        /// Creates a wrapper on a dictionary that adapts the type of the values.
+        /// </summary>
+        /// <typeparam name="TKey">The dictionary key.</typeparam>
+        /// <typeparam name="TValue">The dictionary value.</typeparam>
+        /// <typeparam name="TReadOnlyValue">The base type of the <typeparamref name="TValue"/>.</typeparam>
+        /// <param name="this">This dictionary.</param>
+        /// <returns>A dictionary where values are a base type of this dictionary.</returns>
         public static IReadOnlyDictionary<TKey, TReadOnlyValue> AsCovariantReadOnly<TKey, TValue, TReadOnlyValue>( this IDictionary<TKey,TValue> @this )
             where TValue : TReadOnlyValue
             where TKey : notnull

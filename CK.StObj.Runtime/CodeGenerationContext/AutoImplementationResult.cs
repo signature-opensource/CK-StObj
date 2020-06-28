@@ -5,9 +5,9 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines the outcome of the <see cref="IAutoImplementorProperty.Implement"/>, <see cref="IAutoImplementorMethod.Implement"/> and <see cref="IAutoImplementorType.Implement"/>
-    /// methods: either the implementation has been successfuly done, must be done by a dedicated type that must be instantiated (and supports dependencies injection) or
-    /// failed.
+    /// Defines the outcome of the <see cref="ICodeGenerator.Implement"/> and <see cref="IAutoImplementor{T}.Implement"/>
+    /// methods: either the implementation has been successfuly done, must be done by a dedicated type that must
+    /// be instantiated (and supports dependencies injection) or failed.
     /// </summary>
     public readonly struct AutoImplementationResult
     {

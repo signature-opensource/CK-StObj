@@ -204,20 +204,16 @@ namespace CK.Setup
         /// Generates the code of this Type.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="a">The target dynamic assembly.</param>
+        /// <param name="c">The target dynamic assembly.</param>
+        /// <param name="secondPass">The second pass collector.</param>
         public void RunFirstPass( IActivityMonitor monitor, ICodeGenerationContext c, Action<SecondPassCodeGeneration> secondPass )
         {
             if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
-            // Currently there is no way to alter the class attributes (intrinsic as well as custom), nor adding
-            // interfaces, nor modifying/removing "pass through" constructors.
-            // This may be added if needed by extending IAutoImplementorType interface and
-            // by complexifying the code below a little bit or (better?) by adding ITypeScopeParts (like "BaseTypes") exposed by a ITypeScope...
             ITypeScope cB = c.Assembly.DefaultGenerationNamespace.CreateType( t => t.Append( "public class " )
                                                                                     .Append( _stubType.Name )
                                                                                     .Append( " : " )
                                                                                     .AppendCSharpName( AbstractType ) );
-
             // Only public construstors are replicated: protected constructors are to be called by generated code. 
             cB.AppendPassThroughConstructors( AbstractType, ctor => ctor.IsPublic ? "public " : null );
 

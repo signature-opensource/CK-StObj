@@ -9,10 +9,10 @@ using System.Text;
 
 namespace CK.Testing.StObjEngine
 {
-
     /// <summary>
     /// Simplified mock of the <see cref="IStObjEngineRunContext"/> that enables
-    /// to call <see cref="StObjCollectorResult.GenerateFinalAssembly(Core.IActivityMonitor, ICodeGenerationContext, string, string?)"/>.
+    /// to call <see cref="StObjCollectorResult.GenerateSourceCodeFirstPass"/>
+    /// and <see cref="StObjCollectorResult.GenerateSourceCodeSecondPass"/>.
     /// </summary>
     public class SimpleEngineRunContext
     {
@@ -28,6 +28,10 @@ namespace CK.Testing.StObjEngine
         {
             readonly ISimpleServiceContainer _container;
 
+            /// <summary>
+            /// Initializes a new <see cref="GeneratedBinPath"/>.
+            /// </summary>
+            /// <param name="g">The context.</param>
             public GeneratedBinPath( SimpleEngineRunContext g )
             {
                 _container = new SimpleServiceContainer( g._globalServiceContainer );
