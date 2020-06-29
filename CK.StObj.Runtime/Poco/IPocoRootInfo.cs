@@ -44,6 +44,16 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyCollection<Type> OtherInterfaces { get; }
 
+        /// <summary>
+        /// Gets all the properties of this poco indexed by their names.
+        /// </summary>
+        IReadOnlyDictionary<string, IPocoPropertyInfo> Properties { get; }
+
+        /// <summary>
+        /// Gets the properties of this poco.
+        /// </summary>
+        IReadOnlyList<IPocoPropertyInfo> PropertyList { get; }
+
     }
 
 }

@@ -38,18 +38,19 @@ namespace CK.Setup
                                              .Append( root.Interfaces.Select( i => i.PocoInterface.ToCSharpName() ) ) );
                 IFunctionScope defaultCtorB = null;
 
-                foreach( var p in root.PocoClass.GetProperties() )
+                foreach( var p in root.PropertyList )
                 {
-                    tB.Append( "public " ).AppendCSharpName( p.PropertyType ).Space().Append( p.Name ).Append( "{get;" );
-                    if( p.CanWrite ) tB.Append( "set;" );
+                    Type propType = p.PropertyType;
+                    tB.Append( "public " ).AppendCSharpName( propType ).Space().Append( p.PropertyName ).Append( "{get;" );
+                    // We always implement a setter except if we are .
+                    if( !p.AutoInstantiated ) tB.Append( "set;" );
                     tB.Append( "}" ).NewLine();
-                    if( !p.CanWrite )
+                    if( p.AutoInstantiated )
                     {
-                        Type propType = p.PropertyType;
                         if( r.AllInterfaces.TryGetValue( propType, out IPocoInterfaceInfo info ) )
                         {
                             if( defaultCtorB == null ) defaultCtorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
-                            defaultCtorB.Append( p.Name ).Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" ).NewLine();
+                            defaultCtorB.Append( p.PropertyName ).Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" ).NewLine();
                         }
                         else if( propType.IsGenericType )
                         {

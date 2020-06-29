@@ -63,23 +63,36 @@ namespace CK.Setup
             public Type PocoClass { get; }
             public Type? ClosureInterface { get; }
             public bool IsClosedPoco { get; }
-            public readonly MethodBuilder StaticMethod;
+            public MethodBuilder StaticMethod;
             public readonly List<InterfaceInfo> Interfaces;
             public HashSet<Type> OtherInterfaces;
-            public List<PropertyInfo>? Instantiated;
+
+            public Dictionary<string, PocoPropertyInfo> Properties;
+            IReadOnlyDictionary<string, IPocoPropertyInfo> _exposedProperties;
+            public IReadOnlyList<PocoPropertyInfo> PropertyList { get; }
+
+            IReadOnlyDictionary<string, IPocoPropertyInfo> IPocoRootInfo.Properties => _exposedProperties;
+            IReadOnlyList<IPocoPropertyInfo> IPocoRootInfo.PropertyList => PropertyList;
+
 
             IReadOnlyList<IPocoInterfaceInfo> IPocoRootInfo.Interfaces => Interfaces;
             IReadOnlyCollection<Type> IPocoRootInfo.OtherInterfaces => OtherInterfaces;
 
-            public ClassInfo( Type pocoClass, MethodBuilder method, bool mustBeClosed, Type? closureInterface, HashSet<Type> others, List<PropertyInfo>? instantiated )
+            public ClassInfo( Type pocoClass,
+                              bool mustBeClosed,
+                              Type? closureInterface,
+                              HashSet<Type> others,
+                              Dictionary<string, PocoPropertyInfo> properties,
+                              IReadOnlyList<PocoPropertyInfo> propertyList )
             {
                 PocoClass = pocoClass;
                 ClosureInterface = closureInterface;
                 IsClosedPoco = mustBeClosed;
-                StaticMethod = method;
                 Interfaces = new List<InterfaceInfo>();
                 OtherInterfaces = others;
-                Instantiated = instantiated;
+                Properties = properties;
+                _exposedProperties = Properties.AsCovariantReadOnly<string, PocoPropertyInfo, IPocoPropertyInfo>();
+                PropertyList = propertyList;
             }
 
             bool _instantiationCycleDone;
@@ -91,18 +104,17 @@ namespace CK.Setup
                 if( _instantiationCycleDone ) return false;
                 _instantiationCycleDone = true;
                 _instantiationCycleFlag = true;
-                if( Instantiated != null && Instantiated.Count > 0 )
+                var createdPocos = Properties.Values.Where( p => p.AutoInstantiated && typeof( IPoco ).IsAssignableFrom( p.PropertyType ) );
+                if( createdPocos.Any() )
                 {
                     HashSet<ClassInfo>? classes = null;
-                    for( int i = 0; i < Instantiated.Count; ++i )
+                    foreach( var p in createdPocos )
                     {
-                        var p = Instantiated[i];
                         if( !allInterfaces.TryGetValue( p.PropertyType, out InterfaceInfo? target ) )
                         {
                             // The IPoco interface type is NOT registered as a IPoco.
                             // This MAY be possible: we don't consider this to be a IPoco.
-                            Instantiated.RemoveAt( i-- );
-                            monitor.Warn( $"Auto instantiable Poco property '{p.DeclaringType!.FullName}.{p.Name}': the property type {p.PropertyType.Name} is not registered. This property will be a read only property initialized to null." );
+                            monitor.Warn( $"Auto instantiable Poco property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}': the property type {p.PropertyType.Name} is not registered. This property will be a read only property initialized to null." );
                         }
                         else
                         {
@@ -112,7 +124,7 @@ namespace CK.Setup
                                 if( target.Root.HasCycle( monitor, allInterfaces, ref clashPath ) )
                                 {
                                     if( clashPath == null ) clashPath = new List<PropertyInfo>();
-                                    clashPath.Add( p );
+                                    clashPath.Add( p.DeclaredProperties[0] );
                                     _instantiationCycleFlag = false;
                                     return true;
                                 }
@@ -143,5 +155,28 @@ namespace CK.Setup
             }
         }
 
+        class PocoPropertyInfo : IPocoPropertyInfo
+        {
+            public bool AutoInstantiated { get; set; }
+
+            public bool HasDeclaredSetter { get; set; }
+
+            public bool Setter { get; set; }
+
+            public Type PropertyType => DeclaredProperties[0].PropertyType;
+
+            public string PropertyName => DeclaredProperties[0].Name;
+
+            public List<PropertyInfo> DeclaredProperties { get; }
+
+            IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
+
+            public PocoPropertyInfo( PropertyInfo first )
+            {
+                DeclaredProperties = new List<PropertyInfo>() { first };
+            }
+
+            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
+        }
     }
 }

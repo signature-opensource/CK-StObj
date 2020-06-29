@@ -174,12 +174,10 @@ namespace CK.Setup
             int idMethod = 0;
             foreach( var signature in _result )
             {
-                (Type? tPoco, HashSet<Type>? expanded, bool mustBeClosed, Type? closureInterface, List<PropertyInfo>? instantiated) = CreatePocoType( moduleB, monitor, signature );
-                if( tPoco == null ) return null;
-                Debug.Assert( expanded != null, "Since we have a type." );
-                MethodBuilder realMB = tB.DefineMethod( "DoC" + r.Roots.Count.ToString(), MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Static, tPoco, Type.EmptyTypes );
-
-                var cInfo = new ClassInfo( tPoco, realMB, mustBeClosed, closureInterface, expanded, instantiated );
+                var cInfo = CreatePocoType( moduleB, monitor, signature );
+                if( cInfo == null ) return null;
+                MethodBuilder realMB = tB.DefineMethod( "DoC" + r.Roots.Count.ToString(), MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Static, cInfo.PocoClass, Type.EmptyTypes );
+                cInfo.StaticMethod = realMB;
                 r.Roots.Add( cInfo );
                 foreach( var i in signature )
                 {
@@ -195,7 +193,7 @@ namespace CK.Setup
                     {
                         MethodBuilder mB = tB.DefineMethod( "get_T" + (idMethod++).ToString(), MethodAttributes.Virtual | MethodAttributes.Private | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof(Type), Type.EmptyTypes );
                         ILGenerator g = mB.GetILGenerator();
-                        g.Emit( OpCodes.Ldtoken, tPoco );
+                        g.Emit( OpCodes.Ldtoken, cInfo.PocoClass );
                         g.Emit( OpCodes.Call, typeFromToken );
                         g.Emit( OpCodes.Ret );
                         tB.DefineMethodOverride( mB, iCreate.GetProperty( nameof( IPocoFactory<IPoco>.PocoClassType ) )!.GetGetMethod()! );
@@ -204,11 +202,10 @@ namespace CK.Setup
                     cInfo.Interfaces.Add( iInfo );
                     r.AllInterfaces.Add( i, iInfo );
                 }
-                Debug.Assert( expanded != null );
-                expanded.Remove( typeof( IPoco ) );
-                expanded.Remove( typeof( IClosedPoco ) );
-                foreach( var t in signature ) expanded.Remove( t );
-                foreach( var e in expanded )
+                cInfo.OtherInterfaces.Remove( typeof( IPoco ) );
+                cInfo.OtherInterfaces.Remove( typeof( IClosedPoco ) );
+                foreach( var t in signature ) cInfo.OtherInterfaces.Remove( t );
+                foreach( var e in cInfo.OtherInterfaces )
                 {
                     IReadOnlyList<IPocoRootInfo>? value;
                     if( r.OtherInterfaces.TryGetValue( e, out value ) )
@@ -224,12 +221,11 @@ namespace CK.Setup
             return r.HasInstantiationCycle( monitor ) ? null : r;
         }
 
-        (Type? created, HashSet<Type>? rawInterfaces, bool mustBeClosed, Type? closureInterface, List<PropertyInfo>? instantiated) CreatePocoType( ModuleBuilder moduleB,
-                                                                                                                                                   IActivityMonitor monitor,
-                                                                                                                                                   IReadOnlyList<Type> interfaces )
+        ClassInfo? CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             var tB = moduleB.DefineType( $"{_namespace}.Poco{_uniqueNumber++}" );
-            var properties = new Dictionary<string, PropertyInfo>();
+            var properties = new Dictionary<string, PocoPropertyInfo>();
+            var propertyList = new List<PocoPropertyInfo>();
 
             // This is required to handle "non actual Poco" (CKTypeDefiner "base type"): interfaces list
             // contains only actual IPoco, the expanded set contains the closure of all the interfaces.
@@ -259,7 +255,7 @@ namespace CK.Setup
                 if( maxICount < expanded.Count - 1 )
                 {
                     monitor.Error( $"Poco family '{interfaces.Select( b => b.FullName ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
-                    return (null, null, false, null, null);
+                    return null;
                 }
                 else
                 {
@@ -267,43 +263,44 @@ namespace CK.Setup
                     monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
                 }
             }
-            // Here we'll fill this set with the read only properties when it's PropertyType is a IPoco.
-            List<PropertyInfo>? instantiated = null;
             foreach( var i in expanded )
             {
                 tB.AddInterfaceImplementation( i );
                 foreach( var p in i.GetProperties() )
                 {
-                    // Nullable and language definition here: the out parameter type is necessarily optional because of:
-                    //  - the MaybeNullWhen attribute of: bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value);
-                    //  - the inline parameter declaration is in the scope above the if statement.
-                    if( properties.TryGetValue( p.Name, out PropertyInfo? implP ) )
+                    if( properties.TryGetValue( p.Name, out PocoPropertyInfo? implP ) )
                     {
-                        // However, since TryGetValue returned true, the magic happens: implP is not null.  
                         if( implP.PropertyType != p.PropertyType )
                         {
-                            monitor.Error( $"Interface '{i.FullName}' and '{implP.DeclaringType!.FullName}' both declare property '{p.Name}' but their type differ ({p.PropertyType.Name} vs. {implP.PropertyType.Name})." );
-                            return (null, null, false, null, null);
+                            monitor.Error( $"Interface '{i.FullName}' and '{implP.PropertyType.DeclaringType!.FullName}' both declare property '{p.Name}' but their type differ ({p.PropertyType.Name} vs. {implP.PropertyType.Name})." );
+                            return null;
                         }
+                        implP.DeclaredProperties.Add( p );
+                        implP.HasDeclaredSetter |= p.CanWrite;
                     }
                     else
                     {
-                        bool alwaysImplementSetter = true;
-                        if( !p.CanWrite )
+                        implP = new PocoPropertyInfo( p );
+                        properties.Add( p.Name, implP );
+                        propertyList.Add( implP );
+                        if( p.CanWrite )
                         {
+                            implP.HasDeclaredSetter = true;
+                        }
+                        else
+                        {
+                            // As soon as one interface doesn't declare a setter and the type is an instantiable one,
+                            // we flag this property's AutoInstantiated property.
                             if( expanded.Contains( p.PropertyType ) )
                             {
                                 monitor.Error( $"Poco Cyclic dependency error: automatically instantiated property '{i.FullName}.{p.Name}' references its own Poco type." );
-                                return (null, null, false, null, null);
+                                return null;
                             }
                             if( typeof(IPoco).IsAssignableFrom( p.PropertyType ) )
                             {
-                                // Collects potential IPoco properties.
-                                // Whether they are actual IPoco (ie. not excluded from Setup) and don't create
+                                // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
                                 // instantiation cycles is deferred when the global result is built.
-                                if( instantiated == null ) instantiated = new List<PropertyInfo>();
-                                instantiated.Add( p );
-                                alwaysImplementSetter = false;
+                                implP.AutoInstantiated = true;
                             }
                             else if( p.PropertyType.IsGenericType )
                             {
@@ -312,20 +309,25 @@ namespace CK.Setup
                                         || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
                                         || genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                                 {
-                                    alwaysImplementSetter = false;
+                                    implP.AutoInstantiated = true;
                                 }
                             }
-                            if( alwaysImplementSetter )
-                            {
-                                monitor.Warn( $"Property '{p.DeclaringType!.FullName}.{p.Name}' has no setter. Since its type ({p.PropertyType.Name}) is not a IPoco or a ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,> a setter will be implemented and the value will have its default value." );
-                            }
                         }
-                        EmitHelper.ImplementStubProperty( tB, p, false, alwaysImplementSetter );
-                        properties.Add( p.Name, p );
                     }
                 }
+                foreach( var p in propertyList )
+                {
+                    if( !p.HasDeclaredSetter && !p.AutoInstantiated )
+                    {
+                        var pNoWrite = p.DeclaredProperties.First( x => !x.CanWrite );
+                        monitor.Warn( $"Property '{pNoWrite.DeclaringType!.FullName}.{p.PropertyName}' has no setter. Since its type ({p.PropertyType.Name}) is not a IPoco or a ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,> a setter will be implemented and the value will have its default value." );
+                    }
+                    EmitHelper.ImplementStubProperty( tB, p.DeclaredProperties[0], isVirtual: false, alwaysImplementSetter: !p.AutoInstantiated );
+                }
             }
-            return (tB.CreateType(), expanded, mustBeClosed, closure, instantiated);
+            var tPoCo = tB.CreateType();
+            Debug.Assert( tPoCo != null );
+            return new ClassInfo( tPoCo, mustBeClosed, closure, expanded, properties, propertyList );
         }
 
     }
