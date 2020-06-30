@@ -13,9 +13,20 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets whether this property is a <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;
-        /// and that at least of the <see cref="DeclaredProperties"/> is read only.
+        /// and that at least one of the <see cref="DeclaredProperties"/> is read only.
         /// </summary>
         bool AutoInstantiated { get; }
+
+        /// <summary>
+        /// Gets whether this property is always readonly. If at least one of the <see cref="DeclaredProperties"/>
+        /// defines a setter then a setter will eventually be generated even if <see cref="AutoInstantiated"/> is true.
+        /// </summary>
+        bool HasDeclaredSetter { get; }
+
+        /// <summary>
+        /// Gets the default value as a source string or a null if this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/>.
+        /// </summary>
+        string? DefaultValueSource { get; }
 
         /// <summary>
         /// Gets the property type.

@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 
 #nullable enable
 
@@ -46,6 +45,7 @@ namespace CK.Setup
                 List<PropertyInfo>? clashPath = null;
                 foreach( var c in Roots )
                 {
+                    if( !c.CheckPropertiesVariance( monitor, AllInterfaces ) ) return false;
                     if( c.HasCycle( monitor, AllInterfaces, ref clashPath ) ) break;
                 }
                 if( clashPath != null )
@@ -78,6 +78,9 @@ namespace CK.Setup
             IReadOnlyList<IPocoInterfaceInfo> IPocoRootInfo.Interfaces => Interfaces;
             IReadOnlyCollection<Type> IPocoRootInfo.OtherInterfaces => OtherInterfaces;
 
+            bool _instantiationCycleDone;
+            bool _instantiationCycleFlag;
+
             public ClassInfo( Type pocoClass,
                               bool mustBeClosed,
                               Type? closureInterface,
@@ -95,8 +98,26 @@ namespace CK.Setup
                 PropertyList = propertyList;
             }
 
-            bool _instantiationCycleDone;
-            bool _instantiationCycleFlag;
+            internal bool CheckPropertiesVariance( IActivityMonitor monitor, Dictionary<Type, InterfaceInfo> allInterfaces )
+            {
+                foreach( var p in PropertyList )
+                {
+                    var refType = p.PropertyType;
+                    foreach( var other in p.DeclaredProperties.Skip( 1 ) )
+                    {
+                        bool isSameOrPocoFamily = refType == other.PropertyType
+                                                    || (allInterfaces.TryGetValue( refType, out var i1 )
+                                                       && allInterfaces.TryGetValue( other.PropertyType, out var i2 )
+                                                       && i1.Root == i2.Root);
+                        if( !isSameOrPocoFamily )
+                        {
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' but their type differ ({p.PropertyType.Name} vs. {other.PropertyType.Name})." );
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
 
             internal bool HasCycle( IActivityMonitor monitor, Dictionary<Type, InterfaceInfo> allInterfaces, ref List<PropertyInfo>? clashPath )
             {
@@ -104,7 +125,8 @@ namespace CK.Setup
                 if( _instantiationCycleDone ) return false;
                 _instantiationCycleDone = true;
                 _instantiationCycleFlag = true;
-                var createdPocos = Properties.Values.Where( p => p.AutoInstantiated && typeof( IPoco ).IsAssignableFrom( p.PropertyType ) );
+
+                var createdPocos = PropertyList.Where( p => p.AutoInstantiated && typeof( IPoco ).IsAssignableFrom( p.PropertyType ) );
                 if( createdPocos.Any() )
                 {
                     HashSet<ClassInfo>? classes = null;
@@ -163,6 +185,8 @@ namespace CK.Setup
 
             public bool Setter { get; set; }
 
+            public string? DefaultValueSource { get; set; }
+
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
             public string PropertyName => DeclaredProperties[0].Name;
@@ -175,6 +199,7 @@ namespace CK.Setup
             {
                 DeclaredProperties = new List<PropertyInfo>() { first };
             }
+
 
             public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
         }

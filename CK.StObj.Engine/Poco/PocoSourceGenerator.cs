@@ -36,31 +36,35 @@ namespace CK.Setup
                                              .Append( root.PocoClass.Name )
                                              .Append( " : " )
                                              .Append( root.Interfaces.Select( i => i.PocoInterface.ToCSharpName() ) ) );
-                IFunctionScope defaultCtorB = null;
+                // Always create the default constructor (empty) so that other code generators
+                // can always find it.
+                IFunctionScope defaultCtorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
 
                 foreach( var p in root.PropertyList )
                 {
                     Type propType = p.PropertyType;
                     tB.Append( "public " ).AppendCSharpName( propType ).Space().Append( p.PropertyName ).Append( "{get;" );
-                    // We always implement a setter except if we are .
-                    if( !p.AutoInstantiated ) tB.Append( "set;" );
+                    // We always implement a setter except if we are auto instantiating the value and NO properties are writable.
+                    if( !p.AutoInstantiated || p.HasDeclaredSetter ) tB.Append( "set;" );
                     tB.Append( "}" ).NewLine();
                     if( p.AutoInstantiated )
                     {
                         if( r.AllInterfaces.TryGetValue( propType, out IPocoInterfaceInfo info ) )
                         {
-                            if( defaultCtorB == null ) defaultCtorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
-                            defaultCtorB.Append( p.PropertyName ).Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" ).NewLine();
+                            Debug.Assert( p.DefaultValueSource == null, "Poco with [DefaultValue] has raised an error." );
+                            tB.Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" ).NewLine();
                         }
                         else if( propType.IsGenericType )
                         {
                             Type genType = propType.GetGenericTypeDefinition();
                             if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
                             {
+                                Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has raised an error." );
                                 tB.Append( " = new System.Collections.Generic.List<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                             }
                             else if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
                             {
+                                Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has raised an error." );
                                 tB.Append( " = new System.Collections.Generic.Dictionary<" )
                                                     .AppendCSharpName( propType.GetGenericArguments()[0] )
                                                     .Append( ',' )
@@ -70,9 +74,14 @@ namespace CK.Setup
                             }
                             else if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                             {
+                                Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has raised an error." );
                                 tB.Append( " = new System.Collections.Generic.HashSet<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                             }
                         }
+                    }
+                    if( p.DefaultValueSource != null )
+                    {
+                        tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" ).NewLine();
                     }
                 }
             }

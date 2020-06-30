@@ -11,6 +11,8 @@ using System.Diagnostics;
 using System.Reflection;
 using SmartAnalyzers.CSharpExtensions.Annotations;
 using CK.StObj.Engine.Tests.Poco.Sample;
+using System.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -125,6 +127,150 @@ namespace CK.StObj.Engine.Tests.Poco
             prop.SetValue( o, 3712 );
             Assert.That( o.ReadOnlyProperty, Is.EqualTo( 3712 ) );
         }
+
+        public interface IDefTest : IPoco
+        {
+            [DefaultValue( 3712 )]
+            int PDef { get; }
+
+            [DefaultValue( "Hello \"World\"!" )]
+            string Message { get; }
+        }
+
+        [Test]
+        public void poco_property_supports_DefaultValueAttribute_from_System_ComponentModel()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IDefTest ) );
+            var f = TestHelper.GetAutomaticServices( c ).Services.GetRequiredService<IPocoFactory<IDefTest>>();
+            var o = f.Create();
+            o.PDef.Should().Be( 3712 );
+            o.Message.Should().Be( @"Hello ""World""!" );
+        }
+
+        public interface IDefPropInt : IDefBase
+        {
+            int PDef { get; }
+        }
+
+        public interface IDefPropFloat : IDefBase
+        {
+            float PDef { get; }
+        }
+
+        [Test]
+        public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same()
+        {
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDefPropInt ), typeof( IDefPropFloat ) ) );
+        }
+
+
+        public interface IDefTestMaskedBaseProperties : IDefTest
+        {
+            [DefaultValue( 3713 )]
+            new int PDef { get; }
+
+            [DefaultValue( "Hello World!" )]
+            new string Message { get; }
+        }
+
+        [Test]
+        public void DefaultValueAttribute_must_be_the_same_when_base_properties_are_masked()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IDefTestMaskedBaseProperties ) );
+            TestHelper.GetFailedResult( c );
+        }
+
+        public interface IDefBase : IPoco
+        {
+        }
+
+        public interface IDef1 : IDefBase
+        {
+            [DefaultValue( 3712 )]
+            int PDef { get; }
+
+            [DefaultValue( "Hello \"World\"!" )]
+            string Message { get; }
+        }
+
+        public interface IDef2 : IDefBase
+        {
+            [DefaultValue( 3713 )]
+            int PDef { get; }
+
+            [DefaultValue( "Hello World!" )]
+            string Message { get; }
+        }
+
+        [Test]
+        public void DefaultValueAttribute_must_be_the_same_accross_the_different_interfaces()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IDef1 ), typeof( IDef2 ) );
+            TestHelper.GetFailedResult( c );
+        }
+
+        public interface IRootTest : IPoco
+        {
+            ISubTest Sub { get; }
+        }
+
+        public interface ISubTest : IPoco
+        {
+            string SubMessage { get; }
+        }
+
+        public interface IRootBetterTest : IRootTest
+        {
+            new ISubBestTest Sub { get; }
+        }
+
+        public interface IRootBestTest : IRootBetterTest
+        {
+            new ISubBestTest Sub { get; }
+        }
+
+        public interface IRootAbsoluteBestTest : IRootBestTest
+        {
+            new ISubBetterTest Sub { get; }
+        }
+
+        public interface ISubBetterTest : ISubTest
+        {
+            string SubBetterMessage { get; }
+        }
+
+        public interface ISubBestTest : ISubBetterTest
+        {
+            string SubBestMessage { get; }
+        }
+
+        public interface IRootBuggyOtherFamily : IRootTest
+        {
+            new IDefBase Sub { get; }
+        }
+
+
+        [Test]
+        public void same_Poco_properties_can_be_of_any_type_as_long_as_they_stay_in_a_Poco_family()
+        {
+            TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ) ) );
+
+            TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
+
+            // Without registering the IDefBase Poco:
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
+
+            // With IDefBase Poco registration:
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
+
+
+        }
+
+
 
     }
 }

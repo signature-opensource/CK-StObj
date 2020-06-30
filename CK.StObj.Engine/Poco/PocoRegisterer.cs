@@ -1,3 +1,5 @@
+using CK.CodeGen;
+using CK.CodeGen.Abstractions;
 using CK.Core;
 using CK.Reflection;
 using CK.Setup;
@@ -5,6 +7,7 @@ using CK.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -270,11 +273,6 @@ namespace CK.Setup
                 {
                     if( properties.TryGetValue( p.Name, out PocoPropertyInfo? implP ) )
                     {
-                        if( implP.PropertyType != p.PropertyType )
-                        {
-                            monitor.Error( $"Interface '{i.FullName}' and '{implP.PropertyType.DeclaringType!.FullName}' both declare property '{p.Name}' but their type differ ({p.PropertyType.Name} vs. {implP.PropertyType.Name})." );
-                            return null;
-                        }
                         implP.DeclaredProperties.Add( p );
                         implP.HasDeclaredSetter |= p.CanWrite;
                     }
@@ -315,20 +313,61 @@ namespace CK.Setup
                         }
                     }
                 }
-                foreach( var p in propertyList )
+            }
+            foreach( var p in propertyList )
+            {
+                if( !InitializeDefaultValue( p, monitor ) ) return null;
+
+                if( p.AutoInstantiated )
                 {
-                    if( !p.HasDeclaredSetter && !p.AutoInstantiated )
+                    if( p.DefaultValueSource != null )
                     {
-                        var pNoWrite = p.DeclaredProperties.First( x => !x.CanWrite );
-                        monitor.Warn( $"Property '{pNoWrite.DeclaringType!.FullName}.{p.PropertyName}' has no setter. Since its type ({p.PropertyType.Name}) is not a IPoco or a ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,> a setter will be implemented and the value will have its default value." );
+                        monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attriblute: [DefaultValue( {p.DefaultValueSource} )]." );
+                        return null;
                     }
-                    EmitHelper.ImplementStubProperty( tB, p.DeclaredProperties[0], isVirtual: false, alwaysImplementSetter: !p.AutoInstantiated );
+                }
+                else if( !p.HasDeclaredSetter )
+                {
+                    Debug.Assert( p.DeclaredProperties.All( x => !x.CanWrite ) );
+                    var pNoWrite = p.DeclaredProperties.First();
+                    monitor.Warn( $"Property '{pNoWrite.DeclaringType!.FullName}.{p.PropertyName}' has no setter. Since its type ({p.PropertyType.Name}) is not a IPoco or a ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,> a setter will be implemented and the value will have its default value." );
+                }
+                foreach( var propInfo in p.DeclaredProperties )
+                {
+                    EmitHelper.ImplementStubProperty( tB, propInfo, isVirtual: false, alwaysImplementSetter: !p.AutoInstantiated );
                 }
             }
             var tPoCo = tB.CreateType();
             Debug.Assert( tPoCo != null );
             return new ClassInfo( tPoCo, mustBeClosed, closure, expanded, properties, propertyList );
         }
+
+        bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )
+        {
+            bool success = true;
+            var aDefs = p.DeclaredProperties.Select( x => (Prop: x, x.GetCustomAttribute<DefaultValueAttribute>()) )
+                                            .Where( a => a.Item2 != null )
+                                            .Select( a => (a.Prop, a.Item2!.Value) );
+
+            var first = aDefs.FirstOrDefault();
+            if( first.Prop != null )
+            {
+                var w = new StringCodeWriter();
+                string defaultSource = p.DefaultValueSource = w.Append( first.Value ).ToString();
+                foreach( var other in aDefs.Skip( 1 ) )
+                {
+                    w.StringBuilder.Clear();
+                    var o = w.Append( other.Value ).ToString();
+                    if( defaultSource != o )
+                    {
+                        monitor.Error( $"Default values difference between {first.Prop.DeclaringType}.{first.Prop.Name} = {defaultSource} and {other.Prop.DeclaringType}.{other.Prop.Name} = {o}." );
+                        success = false;
+                    }
+                }
+            }
+            return success;
+        }
+
 
     }
 }
