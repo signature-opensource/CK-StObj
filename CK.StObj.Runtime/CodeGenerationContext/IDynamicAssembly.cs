@@ -33,18 +33,10 @@ namespace CK.Setup
         ModuleBuilder StubModuleBuilder { get; }
 
         /// <summary>
-        /// Gets the default name space for this <see cref="IDynamicAssembly"/>
-        /// into which code should be generated.
-        /// Note that nothing prevents the <see cref="INamedScope.Workspace"/> to be used and other
-        /// namespaces to be created.
+        /// Gets the <see cref="ICodeWorkspace"/> for this <see cref="IDynamicAssembly"/> into which
+        /// code should be generated.
         /// </summary>
-        INamespaceScope DefaultGenerationNamespace { get; }
-
-        /// <summary>
-        /// Gets a mutable list of source code generator modules for this <see cref="IDynamicAssembly"/>.
-        /// </summary>
-        IList<ICodeGeneratorModule> SourceModules { get; }
-
+        ICodeWorkspace Code { get; }
     }
 
 }

@@ -237,7 +237,10 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    map.FinalImplementations.Count( f => f.Implementation is IRealObject ).Should().Be( 2 );
+                    map.FinalImplementations
+                        .Count( f => f.Implementation is IRealObject && !(f.Implementation is PocoDirectory) )
+                        .Should().Be( 2 );
+
                     StObjInitializeOnACalled = true;
                 }
 
@@ -260,7 +263,9 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    map.FinalImplementations.Count( f => f.Implementation is IRealObject ).Should().Be( 2 );
+                    map.FinalImplementations
+                       .Count( f => f.Implementation is IRealObject && !(f.Implementation is PocoDirectory) )
+                       .Should().Be( 2 );
                     Assert.That( StObjInitializeOnACalled );
                     StObjInitializeOnASpecCalled = true;
                 }

@@ -4,6 +4,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -38,7 +39,7 @@ namespace CK.StObj.Engine.Tests
             CGen.Called = false;
             var c = TestHelper.CreateStObjCollector( typeof( Holder ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.Should().HaveCount( 1 );
+            r.CKTypeResult.AllTypeAttributeProviders.Select( a => a.Type ).Should().Contain( typeof( Holder ) );
             TestHelper.GenerateCode( r ).CodeGenResult.Success.Should().BeTrue();
             CGen.Called.Should().BeTrue();
         }

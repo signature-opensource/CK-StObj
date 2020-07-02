@@ -12,14 +12,15 @@ namespace CK.Setup
     public interface IPocoSupportResult
     {
         /// <summary>
-        /// The final factory type.
-        /// </summary>
-        Type FinalFactory { get; }
-
-        /// <summary>
         /// Gets the root Poco information.
         /// </summary>
         IReadOnlyList<IPocoRootInfo> Roots { get; }
+
+        /// <summary>
+        /// Gets the root poco information indexed by their <see cref="IPocoRootInfo.Name"/>
+        /// and <see cref="IPocoRootInfo.PreviousNames"/>.
+        /// </summary>
+        IReadOnlyDictionary<string, IPocoRootInfo> NamedRoots { get; }
 
         /// <summary>
         /// Gets the <see cref="IPocoInterfaceInfo"/> for any <see cref="IPoco"/> interface.

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
+using FluentAssertions;
 using NUnit.Framework;
 using SmartAnalyzers.CSharpExtensions.Annotations;
 using static CK.Testing.StObjEngineTestHelper;
@@ -38,7 +39,10 @@ namespace CK.StObj.Engine.Tests
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( SimpleContainer ) );
                 var result = collector.GetResult().EngineMap!.StObjs;
-                Assert.That( result.OrderedStObjs.First().GetStObjProperty( "OneIntValue" ), Is.EqualTo( 3712 ) );
+                result.OrderedStObjs
+                      .Where( o => !(o.FinalImplementation.Implementation is PocoDirectory))
+                      .First()
+                      .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
             }
         }
 

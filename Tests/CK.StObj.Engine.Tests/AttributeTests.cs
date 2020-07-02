@@ -302,8 +302,14 @@ namespace CK.StObj.Engine.Tests
 
             var r = TestHelper.GetSuccessfulResult( c );
 
-            r.CKTypeResult.AllTypeAttributeProviders.Select( attrs => attrs.Type ).Should().BeEquivalentTo( typeof( S6 ), typeof( IServiceWithAttributeOnMember ) );
-            r.CKTypeResult.AllTypeAttributeProviders.SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
+            r.CKTypeResult.AllTypeAttributeProviders
+                          .Select( attrs => attrs.Type )
+                          .Where( t => !typeof(PocoDirectory).IsAssignableFrom( t ) )
+                          .Should().BeEquivalentTo( typeof( S6 ), typeof( IServiceWithAttributeOnMember ) );
+
+            r.CKTypeResult.AllTypeAttributeProviders
+                          .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() )
+                          .Should().HaveCount( 1 );
 
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
         }

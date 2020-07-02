@@ -41,7 +41,7 @@ namespace CK.Setup
                 else
                 {
                     Root = this;
-                    RootCollector = new List<Type>(){ type };
+                    RootCollector = new List<Type>() { type };
                 }
             }
         }
@@ -62,13 +62,13 @@ namespace CK.Setup
         /// </param>
         /// <param name="namespace">Namespace into which dynamic types will be created.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        public PocoRegisterer( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK._g.poco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
+        public PocoRegisterer( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _actualPocoPredicate = actualPocoPredicate ?? throw new ArgumentNullException( nameof( actualPocoPredicate ) );
-            _namespace = @namespace ?? "CK._g.poco";
+            _namespace = @namespace ?? "CK.GPoco";
             _all = new Dictionary<Type, PocoType?>();
             _result = new List<List<Type>>();
-            _typeFilter = typeFilter ?? ((m,type) => true);
+            _typeFilter = typeFilter ?? (( m, type ) => true);
         }
 
         /// <summary>
@@ -140,67 +140,28 @@ namespace CK.Setup
         /// The <see cref="EmptyPocoSupportResult.Default"/> singleton can be used wherever null
         /// references must be avoided.
         /// </summary>
-        /// <param name="moduleB">The module builder into which dynamic code is generated.</param>
+        /// <param name="assembly">The dynamic assembly: its <see cref="IDynamicAssembly.StubModuleBuilder"/> will host the generated stub.</param>
         /// <param name="monitor">Monitor to use.</param>
         /// <returns>The result or null on error.</returns>
-        public IPocoSupportResult? Finalize( ModuleBuilder moduleB, IActivityMonitor monitor )
+        public IPocoSupportResult? Finalize( IDynamicAssembly assembly, IActivityMonitor monitor )
         {
             _uniqueNumber = 0;
-            var tB = moduleB.DefineType( _namespace + ".Factory" );
-            Result? r = CreateResult( moduleB, monitor, tB );
-            if( r == null ) return null;
-            ImplementFactories( r );
-            Type? final = tB.CreateType();
-            if( final == null )
-            {
-                monitor.Fatal( $"Final CreateType call returned a null type." );
-                return null;
-            }
-            r.FinalFactory = final;
-            return r;
+            return CreateResult( assembly, monitor );
         }
 
-        void ImplementFactories( Result r )
+        Result? CreateResult( IDynamicAssembly assembly, IActivityMonitor monitor )
         {
-            foreach( var cInfo in r.Roots )
-            {
-                var g = cInfo.StaticMethod.GetILGenerator();
-                g.Emit( OpCodes.Newobj, cInfo.PocoClass.GetConstructor( Type.EmptyTypes )! );
-                g.Emit( OpCodes.Ret );
-            }
-        }
-
-        Result? CreateResult( ModuleBuilder moduleB, IActivityMonitor monitor, TypeBuilder tB )
-        {
-            MethodInfo typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
             Result r = new Result();
-            int idMethod = 0;
+            bool hasNameError = false;
             foreach( var signature in _result )
             {
-                var cInfo = CreatePocoType( moduleB, monitor, signature );
+                var cInfo = CreateClassInfo( assembly, monitor, signature );
                 if( cInfo == null ) return null;
-                MethodBuilder realMB = tB.DefineMethod( "DoC" + r.Roots.Count.ToString(), MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Static, cInfo.PocoClass, Type.EmptyTypes );
-                cInfo.StaticMethod = realMB;
                 r.Roots.Add( cInfo );
+
                 foreach( var i in signature )
                 {
                     Type iCreate = typeof( IPocoFactory<> ).MakeGenericType( i );
-                    tB.AddInterfaceImplementation( iCreate );
-                    {
-                        MethodBuilder mB = tB.DefineMethod( "C" + (idMethod++).ToString(), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, Type.EmptyTypes );
-                        ILGenerator g = mB.GetILGenerator();
-                        g.Emit( OpCodes.Call, realMB );
-                        g.Emit( OpCodes.Ret );
-                        tB.DefineMethodOverride( mB, iCreate.GetMethod( nameof( IPocoFactory<IPoco>.Create ) )! );
-                    }
-                    {
-                        MethodBuilder mB = tB.DefineMethod( "get_T" + (idMethod++).ToString(), MethodAttributes.Virtual | MethodAttributes.Private | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof(Type), Type.EmptyTypes );
-                        ILGenerator g = mB.GetILGenerator();
-                        g.Emit( OpCodes.Ldtoken, cInfo.PocoClass );
-                        g.Emit( OpCodes.Call, typeFromToken );
-                        g.Emit( OpCodes.Ret );
-                        tB.DefineMethodOverride( mB, iCreate.GetProperty( nameof( IPocoFactory<IPoco>.PocoClassType ) )!.GetGetMethod()! );
-                    }
                     var iInfo = new InterfaceInfo( cInfo, i, iCreate );
                     cInfo.Interfaces.Add( iInfo );
                     r.AllInterfaces.Add( i, iInfo );
@@ -220,13 +181,68 @@ namespace CK.Setup
                         r.OtherInterfaces.Add( e, new List<ClassInfo>() { cInfo } );
                     }
                 }
+
+                hasNameError |= !cInfo.InitializeNames( monitor );
             }
-            return r.HasInstantiationCycle( monitor ) ? null : r;
+            return hasNameError
+                   || r.HasInstantiationCycle( monitor )
+                   || !r.BuildNameIndex( monitor )
+                   ? null
+                   : r;
         }
 
-        ClassInfo? CreatePocoType( ModuleBuilder moduleB, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        static readonly MethodInfo _typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
+        static readonly Type[] _stObjConstructParameters = new Type[]{ typeof(PocoDirectory) };
+
+        ClassInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
-            var tB = moduleB.DefineType( $"{_namespace}.Poco{_uniqueNumber++}" );
+            // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
+            string pocoTypeName = assembly.GetAutoImplementedTypeName( interfaces[0] );
+            var moduleB = assembly.StubModuleBuilder;
+            var tB = moduleB.DefineType( pocoTypeName );
+            // The factory also ends with "_CK": it is a generated type.
+            var tBF = moduleB.DefineType( pocoTypeName + "Factory_CK" );
+
+            // The IPocoFactory base implementation.
+            tBF.AddInterfaceImplementation( typeof( IPocoFactory ) );
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_PocoClassType", MethodAttributes.Public | MethodAttributes.Virtual |  MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( Type ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldtoken, tB );
+                g.Emit( OpCodes.Call, _typeFromToken );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.PocoClassType ), PropertyAttributes.None, typeof( Type ), null );
+                p.SetGetMethod( m );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_Name", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( string ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.Name ), PropertyAttributes.None, typeof( string ), null );
+                p.SetGetMethod( m );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_PreviousNames", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IReadOnlyList<string> ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.PreviousNames ), PropertyAttributes.None, typeof( IReadOnlyList<string> ), null );
+                p.SetGetMethod( m );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "Create", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPoco ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "StObjConstruct", MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Final, null, _stObjConstructParameters );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ret );
+            }
+
+            // The IPoco implementation.
             var properties = new Dictionary<string, PocoPropertyInfo>();
             var propertyList = new List<PocoPropertyInfo>();
 
@@ -251,7 +267,19 @@ namespace CK.Setup
                     closure = i;
                 }
                 expanded.AddRange( bases );
+                // Since we are iterating over the IPoco interfaces, we can build
+                // the factory class that must support all the IPocoFactory<>.
+                Type iCreate = typeof( IPocoFactory<> ).MakeGenericType( i );
+                tBF.AddInterfaceImplementation( iCreate );
+                {
+                    MethodBuilder m = tBF.DefineMethod( "C" + expanded.Count.ToString(), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, Type.EmptyTypes );
+                    ILGenerator g = m.GetILGenerator();
+                    g.Emit( OpCodes.Ldnull );
+                    g.Emit( OpCodes.Ret );
+                    tBF.DefineMethodOverride( m, iCreate.GetMethod( nameof( IPocoFactory<IPoco>.Create ) )! );
+                }
             }
+            // If the IClosedPoco has been found, we ensure that a closure interface has been found.
             if( mustBeClosed )
             {
                 Debug.Assert( maxICount < expanded.Count );
@@ -260,12 +288,12 @@ namespace CK.Setup
                     monitor.Error( $"Poco family '{interfaces.Select( b => b.FullName ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
                     return null;
                 }
-                else
-                {
-                    Debug.Assert( closure != null, "Since there is at least one interface." );
-                    monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
-                }
+                Debug.Assert( closure != null, "Since there is at least one interface." );
+                monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
             }
+            // For each expanded interfaces (all of them: the Interfaces and the OtherInterfaces):
+            // - Implements the interface on the PocoClass (tB).
+            // - Registers the properties and creates the PocoPropertyInfo.
             foreach( var i in expanded )
             {
                 tB.AddInterfaceImplementation( i );
@@ -314,6 +342,9 @@ namespace CK.Setup
                     }
                 }
             }
+
+            // Handles default values and implements the stubs for each
+            // PocoPropertyInfo.
             foreach( var p in propertyList )
             {
                 if( !InitializeDefaultValue( p, monitor ) ) return null;
@@ -337,9 +368,14 @@ namespace CK.Setup
                     EmitHelper.ImplementStubProperty( tB, propInfo, isVirtual: false, alwaysImplementSetter: !p.AutoInstantiated );
                 }
             }
+
             var tPoCo = tB.CreateType();
             Debug.Assert( tPoCo != null );
-            return new ClassInfo( tPoCo, mustBeClosed, closure, expanded, properties, propertyList );
+
+            var tPocoFactory = tBF.CreateType();
+            Debug.Assert( tPocoFactory != null );
+
+            return new ClassInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList );
         }
 
         bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )

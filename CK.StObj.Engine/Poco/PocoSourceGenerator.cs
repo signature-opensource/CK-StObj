@@ -14,31 +14,34 @@ namespace CK.Setup
     /// <summary>
     /// Code source generator for <see cref="IPoco"/>.
     /// </summary>
-    public static class PocoSourceGenerator
+    public class PocoSourceGenerator : AutoImplementorType
     {
-        /// <summary>
-        /// Generates the code of the poco classes in the <see cref="IPocoSupportResult.FinalFactory"/>' namespace
-        /// along with the final factory itself.
-        /// </summary>
-        /// <param name="code">The code workspace.</param>
-        /// <param name="r">The poco analysis.</param>
-        public static void Inject( ICodeWorkspace code, IPocoSupportResult r )
+
+        public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
         {
-            if( code == null ) throw new ArgumentNullException( nameof( code ) );
-            if( r == null ) throw new ArgumentNullException( nameof( r ) );
-            if( r.AllInterfaces.Count == 0 ) return;
-            var b = code.Global
-                            .FindOrCreateNamespace( r.FinalFactory.Namespace )
-                            .EnsureUsing( "System" );
+            IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
+
+            scope.Append( "Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" )
+                 .NewLine()
+                 .Append( "public override IPocoFactory Find( string name ) => _factories.GetValueOrDefault( name );" ).NewLine()
+                 .Append( "internal void Register( IPocoFactory f )" ).NewLine()
+                 .Append( "{" ).NewLine()
+                 .Append( "_factories.Add( f.Name, f );" ).NewLine()
+                 .Append( "foreach( var n in f.PreviousNames ) _factories.Add( n, f );" ).NewLine()
+                 .Append( "}" ).NewLine();
+
+            if( r.AllInterfaces.Count == 0 ) return AutoImplementationResult.Success;
+
             foreach( var root in r.Roots )
             {
-                var tB = b.CreateType( t => t.Append( "class " )
-                                             .Append( root.PocoClass.Name )
-                                             .Append( " : " )
-                                             .Append( root.Interfaces.Select( i => i.PocoInterface.ToCSharpName() ) ) );
+                // Poco class.
+                var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
                 // Always create the default constructor (empty) so that other code generators
                 // can always find it.
+                // We support the interface here: if other participants have already created this type, it is
+                // up to us, here, to handle the "exact" type definition.
                 IFunctionScope defaultCtorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
+                tB.TypeDefinition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
                 foreach( var p in root.PropertyList )
                 {
@@ -84,23 +87,39 @@ namespace CK.Setup
                         tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" ).NewLine();
                     }
                 }
+
+                // PocoFactory class.
+
+                var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+
+                tFB.Append( "public Type PocoClassType => typeof(" ).AppendCSharpName( root.PocoClass ).Append( ");" )
+                   .NewLine();
+
+                tFB.Append( "public IPoco Create() => new " ).AppendCSharpName( root.PocoClass ).Append( "();" )
+                   .NewLine();
+
+                tFB.Append( "public string Name => " ).AppendSourceString( root.Name ).Append( ";" )
+                   .NewLine();
+
+                tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( root.PreviousNames ).Append( ";" )
+                   .NewLine();
+
+                tFB.Append( "void StObjConstruct( PocoDirectory d ) => ((PocoDirectory_CK)d).Register(this);" )
+                   .NewLine();
+
+                foreach( var i in root.Interfaces )
+                {
+                    tFB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( i.PocoFactoryInterface.ToCSharpName() ) );
+                    tFB.AppendCSharpName( i.PocoInterface )
+                       .Space()
+                       .AppendCSharpName( i.PocoFactoryInterface )
+                       .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass ).Append( "();" )
+                       .NewLine();
+                }
             }
-            var fB = b.CreateType( t => t.Append( "class " )
-                                         .Append( r.FinalFactory.Name )
-                                         .Append( " : " )
-                                         .Append( r.AllInterfaces.Values.Select( i => i.PocoFactoryInterface.ToCSharpName() ) ) );
-            foreach( var i in r.AllInterfaces.Values )
-            {
-                fB.AppendCSharpName( i.PocoInterface )
-                  .Space()
-                  .AppendCSharpName( i.PocoFactoryInterface )
-                  .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass ).Append( "();" )
-                  .NewLine();
-                fB.Append( "Type " )
-                  .AppendCSharpName( i.PocoFactoryInterface )
-                  .Append( ".PocoClassType => typeof(" ).AppendCSharpName( i.Root.PocoClass ).Append( ");" )
-                  .NewLine();
-            }
+            return AutoImplementationResult.Success;
         }
+
+
     }
 }

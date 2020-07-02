@@ -118,10 +118,7 @@ namespace CK.Setup
             if( monitor == null ) throw new ArgumentNullException( nameof(monitor) );
             using( monitor.OpenTrace( $"Collector summary:" ) )
             {
-                if( PocoSupport == null )
-                {
-                    monitor.Fatal( $"Poco support failed!" );
-                }
+                if( PocoSupport == null ) monitor.Fatal( $"Poco support failed!" );
                 RealObjects.LogErrorAndWarnings( monitor );
                 AutoServices.LogErrorAndWarnings( monitor );
             }

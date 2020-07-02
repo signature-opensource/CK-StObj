@@ -31,10 +31,8 @@ namespace CK.Setup
             StubModuleBuilder = assemblyBuilder.DefineDynamicModule( name );
 
             _memory = new Dictionary<object, object?>();
-            SourceModules = new List<ICodeGeneratorModule>();
-            var ws = CodeWorkspace.Create();
-            ws.Global.Append( "[assembly:CK.Setup.ExcludeFromSetup()]" ).NewLine();
-            DefaultGenerationNamespace = ws.Global.FindOrCreateNamespace( "CK._g" );
+            Code = CodeWorkspace.Create();
+            Code.Global.Append( "[assembly:CK.Setup.ExcludeFromSetup()]" ).NewLine();
         }
 
         /// <inheritdoc />
@@ -44,10 +42,7 @@ namespace CK.Setup
         public ModuleBuilder StubModuleBuilder { get; }
 
         /// <inheritdoc />
-        public INamespaceScope DefaultGenerationNamespace { get; }
-
-        /// <inheritdoc />
-        public IList<ICodeGeneratorModule> SourceModules { get; }
+        public ICodeWorkspace Code { get; }
 
         /// <inheritdoc />
         public string NextUniqueNumber() => (++_typeID).ToString();

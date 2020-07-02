@@ -235,11 +235,12 @@ namespace CK.Setup
                 IPocoSupportResult? pocoSupport;
                 using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
-                    pocoSupport = _pocoRegisterer.Finalize( _tempAssembly.StubModuleBuilder, _monitor );
+                    pocoSupport = _pocoRegisterer.Finalize( _tempAssembly, _monitor );
                     if( pocoSupport != null )
                     {
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
-                        RegisterClass( pocoSupport.FinalFactory );
+                        RegisterClass( typeof( PocoDirectory ) );
+                        foreach( var c in pocoSupport.Roots ) RegisterClass( c.PocoFactoryClass );
                     }
                     else
                     {
@@ -265,13 +266,12 @@ namespace CK.Setup
 
         RealObjectCollectorResult GetRealObjectResult()
         {
-            MutableItem[] allSpecializations = new MutableItem[_roots.Count];
+            List<MutableItem> allSpecializations = new List<MutableItem>( _roots.Count );
             StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, CKTypeKindDetector, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
             List<IReadOnlyList<Type>>? classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();
             var deepestConcretes = new List<(MutableItem, ImplementableTypeInfo)>();
-            int idxSpecialization = 0;
 
             Debug.Assert( _roots.All( info => info != null && !info.IsExcluded && info.Generalization == null),
                 "_roots contains only not Excluded types." );
@@ -282,7 +282,7 @@ namespace CK.Setup
                 if( deepestConcretes.Count == 1 )
                 {
                     MutableItem last = deepestConcretes[0].Item1;
-                    allSpecializations[idxSpecialization++] = last;
+                    allSpecializations.Add( last );
                     var path = new List<MutableItem>();
                     last.InitializeBottomUp( null, deepestConcretes[0].Item2 );
                     path.Add( last );
@@ -306,7 +306,6 @@ namespace CK.Setup
                     classAmbiguities.Add( ambiguousPath.ToArray() );
                 }
             }
-            Debug.Assert( classAmbiguities != null || idxSpecialization == allSpecializations.Length );
             Dictionary<Type, List<Type>>? interfaceAmbiguities = null;
             foreach( var path in concreteClasses )
             {

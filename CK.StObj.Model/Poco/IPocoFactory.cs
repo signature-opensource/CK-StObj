@@ -1,22 +1,35 @@
 using System;
+using System.Collections.Generic;
 
 namespace CK.Core
 {
     /// <summary>
-    /// Poco factory.
-    /// These interfaces are automatically implemented.
+    /// Poco factory interface: untyped base for <see cref="IPocoFactory{T}"/> real objects.
     /// </summary>
-    public interface IPocoFactory<out T> : IRealObject where T : IPoco
+    public interface IPocoFactory
     {
         /// <summary>
-        /// Creates a new Poco instance.
+        /// Creates a new Poco instance of this given instance.
         /// </summary>
         /// <returns>A new poco instance.</returns>
-        T Create();
+        IPoco Create();
 
         /// <summary>
         /// Gets the type of the final, unified, poco.
         /// </summary>
         Type PocoClassType { get; }
+
+        /// <summary>
+        /// Gets the Poco name.
+        /// When no [<see cref="PocoNameAttribute"/>] is defined, this name defaults
+        /// to the <see cref="Type.FullName"/> of the <see cref="PrimaryInterface"/>.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
+        /// Gets the command previous names if any.
+        /// </summary>
+        IReadOnlyList<string> PreviousNames { get; }
     }
+
 }

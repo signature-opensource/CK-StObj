@@ -18,11 +18,11 @@ namespace CK.Setup
 
         EmptyPocoSupportResult() {}
 
-        Type IPocoSupportResult.FinalFactory => typeof( object );
-
         IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Array.Empty<IPocoRootInfo>();
 
         IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => ImmutableDictionary<Type, IPocoInterfaceInfo>.Empty;
+
+        IReadOnlyDictionary<string, IPocoRootInfo> IPocoSupportResult.NamedRoots => ImmutableDictionary<string, IPocoRootInfo>.Empty;
 
         IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => ImmutableDictionary<Type, IReadOnlyList<IPocoRootInfo>>.Empty;
 

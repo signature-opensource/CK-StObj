@@ -58,7 +58,14 @@ namespace CK.Setup
         /// <returns>Always <see cref="AutoImplementationResult.Success"/> at this level.</returns>
         public virtual AutoImplementationResult Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Must implement the full type.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="classType">The full base type to implement.</param>
+        /// <param name="c">Code generation context with its Dynamic assembly being implemented.</param>
+        /// <param name="scope">The type builder of the specialized class to implement.</param>
+        /// <returns></returns>
         public abstract AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope );
 
     }

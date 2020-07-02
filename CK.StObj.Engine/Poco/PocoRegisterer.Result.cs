@@ -19,10 +19,7 @@ namespace CK.Setup
             public readonly List<ClassInfo> Roots;
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
-            public Type? FinalFactory;
-
-            // Exposed FinalFactory is necessarily not null.
-            Type IPocoSupportResult.FinalFactory => FinalFactory!;
+            public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
 
             public Result()
             {
@@ -30,9 +27,12 @@ namespace CK.Setup
                 AllInterfaces = new Dictionary<Type, InterfaceInfo>();
                 _exportedInterfaces = AllInterfaces.AsCovariantReadOnly<Type, InterfaceInfo, IPocoInterfaceInfo>();
                 OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
+                NamedRoots = new Dictionary<string, IPocoRootInfo>();
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
+
+            IReadOnlyDictionary<string, IPocoRootInfo> IPocoSupportResult.NamedRoots => NamedRoots;
 
             IPocoInterfaceInfo? IPocoSupportResult.Find( Type pocoInterface ) => AllInterfaces.GetValueOrDefault( pocoInterface );
 
@@ -56,14 +56,34 @@ namespace CK.Setup
                 }
                 return false;
             }
+
+            public bool BuildNameIndex( IActivityMonitor monitor )
+            {
+                bool success = true;
+                foreach( var r in Roots )
+                {
+                    foreach( var name in r.PreviousNames.Append( r.Name ) )
+                    {
+                        if( NamedRoots.TryGetValue( name, out var exists ) )
+                        {
+                            monitor.Error( $"The Poco name '{name}' clashes: both '{r.Interfaces[0].PocoInterface.AssemblyQualifiedName}' and '{exists.Interfaces[0].PocoInterface.AssemblyQualifiedName}' share it." );
+                            success = false;
+                        }
+                        else NamedRoots.Add( name, r );
+                    }
+                }
+                return success;
+            }
         }
 
         class ClassInfo : IPocoRootInfo
         {
             public Type PocoClass { get; }
+            public Type PocoFactoryClass { get; }
+            public string Name { get; set; }
+            public IReadOnlyList<string> PreviousNames { get; set; }
             public Type? ClosureInterface { get; }
             public bool IsClosedPoco { get; }
-            public MethodBuilder StaticMethod;
             public readonly List<InterfaceInfo> Interfaces;
             public HashSet<Type> OtherInterfaces;
 
@@ -82,6 +102,7 @@ namespace CK.Setup
             bool _instantiationCycleFlag;
 
             public ClassInfo( Type pocoClass,
+                              Type pocoFactoryClass,
                               bool mustBeClosed,
                               Type? closureInterface,
                               HashSet<Type> others,
@@ -89,6 +110,7 @@ namespace CK.Setup
                               IReadOnlyList<PocoPropertyInfo> propertyList )
             {
                 PocoClass = pocoClass;
+                PocoFactoryClass = pocoFactoryClass;
                 ClosureInterface = closureInterface;
                 IsClosedPoco = mustBeClosed;
                 Interfaces = new List<InterfaceInfo>();
@@ -98,6 +120,16 @@ namespace CK.Setup
                 PropertyList = propertyList;
             }
 
+            /// <summary>
+            /// Checks that for each property definition with the same name, the return type is
+            /// either NOT co nor contravariant (general case), or BOTH co and contravariant (for
+            /// IPoco types).
+            /// There may be an evolution here: covariance may be accepted as long as base properties
+            /// do not expose a setter... 
+            /// </summary>
+            /// <param name="monitor">The monitor to use.</param>
+            /// <param name="allInterfaces">The interfaces indexes.</param>
+            /// <returns>True on success, false on error.</returns>
             internal bool CheckPropertiesVariance( IActivityMonitor monitor, Dictionary<Type, InterfaceInfo> allInterfaces )
             {
                 foreach( var p in PropertyList )
@@ -159,6 +191,53 @@ namespace CK.Setup
             }
 
             public override string ToString() => $"Poco: {Interfaces[0].PocoInterface.FullName} ({Interfaces.Count} interfaces)";
+
+            public bool InitializeNames( IActivityMonitor monitor )
+            {
+                string name;
+                string[] previousNames;
+
+                var primary = Interfaces[0].PocoInterface;
+                var names = primary.GetCustomAttributesData().Where( d => typeof( PocoNameAttribute ).IsAssignableFrom( d.AttributeType ) ).FirstOrDefault();
+
+                var others = Interfaces.Where( i => i.PocoInterface != primary
+                                                    && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( PocoNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
+                if( others.Any() )
+                {
+                    monitor.Error( $"PocoName attribute appear on '{others.Select( i => i.PocoInterface.FullName ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.FullName}') should define the Poco names." );
+                    return false;
+                }
+                if( names != null )
+                {
+                    var args = names.ConstructorArguments;
+                    name = (string)args[0].Value!;
+                    previousNames = ((IEnumerable<CustomAttributeTypedArgument>)args[1].Value!).Select( a => (string)a.Value! ).ToArray();
+                    if( String.IsNullOrWhiteSpace( name ) )
+                    {
+                        monitor.Error( $"Empty name in PocoName attribute on '{primary.FullName}'." );
+                        return false;
+                    }
+                    if( previousNames.Any( n => String.IsNullOrWhiteSpace( n ) ) )
+                    {
+                        monitor.Error( $"Empty previous name in PocoName attribute on '{primary.FullName}'." );
+                        return false;
+                    }
+                    if( previousNames.Contains( name ) || previousNames.GroupBy( Util.FuncIdentity ).Any( g => g.Count() > 1 ) )
+                    {
+                        monitor.Error( $"Duplicate PocoName in attribute on '{primary.FullName}'." );
+                        return false;
+                    }
+                }
+                else
+                {
+                    name = primary.FullName!;
+                    previousNames = Array.Empty<string>();
+                    monitor.Warn( $"Poco '{name}' use its full name as its name since no [PocoName] attribute is defined." );
+                }
+                Name = name;
+                PreviousNames = previousNames;
+                return true;
+            }
         }
 
         class InterfaceInfo : IPocoInterfaceInfo

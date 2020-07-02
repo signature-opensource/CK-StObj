@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests
     {
 
         [AttributeUsage( AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = true, Inherited = false )]
-        public class AutoImplementMethodAttribute : Attribute, IAttributeAutoImplemented
+        public class AutoImplementMethodAttribute : Attribute, IAutoImplementationClaimAttribute
         {
         }
 

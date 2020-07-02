@@ -5,7 +5,8 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines information for a unified Poco type.
+    /// Defines information for a unified Poco type: this is associated to the
+    /// final <see cref="IPocoFactory"/> interface.
     /// </summary>
     public interface IPocoRootInfo
     {
@@ -13,6 +14,24 @@ namespace CK.Setup
         /// Gets the final, unified, type that implements all <see cref="Interfaces"/>.
         /// </summary>
         Type PocoClass { get; }
+
+        /// <summary>
+        /// Gets the type that implements the <see cref="IPocoFactory{T}"/> real object for
+        /// this Poco type.
+        /// </summary>
+        Type PocoFactoryClass { get; }
+
+        /// <summary>
+        /// Gets the Poco name.
+        /// When no [<see cref="PocoNameAttribute"/>] is defined, this name defaults
+        /// to the <see cref="Type.FullName"/> of the <see cref="PrimaryInterface"/>.
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
+        /// Gets the command previous names if any.
+        /// </summary>
+        IReadOnlyList<string> PreviousNames { get; }
 
         /// <summary>
         /// Gets whether the <see cref="IClosedPoco"/> interface marker appear among the interfaces.

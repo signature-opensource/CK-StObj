@@ -5,6 +5,9 @@
 *-----------------------------------------------------------------------------*/
 #endregion
 
+using CK.CodeGen;
+using CK.CodeGen.Abstractions;
+using CK.Core;
 using System;
 
 namespace CK.Setup
@@ -15,19 +18,87 @@ namespace CK.Setup
     public static class DynamicAssemblyExtension
     {
         /// <summary>
-        /// Gets a type name in <see cref="IDynamicAssembly.DefaultGenerationNamespace"/>'s namespace
-        /// and a <see cref="IDynamicAssembly.NextUniqueNumber"/> suffix or a guid when the <paramref name="name"/> is null.
+        /// Gets a type name in the same namespace as the provided type.
+        /// This method is idempotent, it simply ensures that the returned name ends with "_CK":
+        /// it can safely be called on the generated Stub type itself.
         /// </summary>
         /// <param name="this">This Dynamic assembly.</param>
-        /// <param name="name">Base type name.</param>
-        /// <returns>A unique type name.</returns>
-        public static string AutoNextTypeName( this IDynamicAssembly @this, string? name = null )
+        /// <param name="type">The base or stub type.</param>
+        /// <returns>The stub or generated type name.</returns>
+        public static string GetAutoImplementedTypeName( this IDynamicAssembly @this, Type type )
         {
-            return @this.DefaultGenerationNamespace.FullName
-                    + '.'
-                    + (name != null
-                            ? name + @this.NextUniqueNumber()
-                            : "G" + Guid.NewGuid().ToString( "N" ));
+            var n = type.FullName;
+            if( String.IsNullOrEmpty( n ) ) throw new ArgumentException( $"Type '{type}' doesn't have a FullName." );
+            n = n.Replace( '+', '_' );
+            return n.EndsWith( "_CK" ) ? n : n + "_CK";
+        }
+
+        /// <summary>
+        /// Gets or creates the <see cref="ITypeScope"/> builder from an interface, the direct base type or from
+        /// an already stub type that is named with <see cref="GetAutoImplementedTypeName(IDynamicAssembly, Type)"/> (its
+        /// name ends with "_CK").
+        /// <para>
+        /// Public constructors of the <see cref="Type.BaseType"/> if it exists are automatically replicated: protected
+        /// constructors are to be called by generated code if needed. 
+        /// </para>
+        /// </summary>
+        /// <param name="this">This Dynamic assembly.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="type">The base or stub type. Can be an interface.</param>
+        /// <returns>Th generated class builder.</returns>
+        public static ITypeScope FindOrCreateAutoImplementedClass( this IDynamicAssembly @this, IActivityMonitor monitor, Type type ) => FindOrCreateAutoImplementedClass( @this, monitor, type, out bool _ );
+
+        /// <summary>
+        /// Gets or creates the <see cref="ITypeScope"/> builder from an interface, the direct base type or from
+        /// an already stub type that is named with <see cref="GetAutoImplementedTypeName(IDynamicAssembly, Type)"/> (its
+        /// name ends with "_CK").
+        /// <para>
+        /// Public constructors of the <see cref="Type.BaseType"/> if it exists are automatically replicated: protected
+        /// constructors are to be called by generated code if needed. 
+        /// </para>
+        /// </summary>
+        /// <param name="this">This Dynamic assembly.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="type">The base or stub type. Can be an interface.</param>
+        /// <param name="created">True if the type scope has been created. False if it was already defined.</param>
+        /// <returns>Th generated class builder.</returns>
+        public static ITypeScope FindOrCreateAutoImplementedClass( this IDynamicAssembly @this, IActivityMonitor monitor, Type type, out bool created )
+        {
+            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            Type? baseType;
+            string name = type.Name;
+            if( name.EndsWith( "_CK" ) )
+            {
+                baseType = type.BaseType;
+            }
+            else
+            {
+                baseType = type;
+                name += "_CK";
+            }
+            var ns = @this.Code.Global.FindOrCreateNamespace( type.Namespace ?? String.Empty );
+
+            ITypeScope? tB = ns.FindType( name );
+            if( created = (tB == null) )
+            {
+                monitor.Trace( $"Creating ITypeScope builder for class: '{ns.FullName}.{name}'." );
+                tB = ns.CreateType( "public class "+ name );
+                if( baseType != null )
+                {
+                    if( baseType != typeof( object ) )
+                    {
+                        tB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( baseType.ToCSharpName() ) );
+                        // Only public constructors are replicated: protected constructors are to be called
+                        // by generated code. 
+                        tB.AppendPassThroughConstructors( baseType, ctor => ctor.IsPublic ? "public " : null );
+                    }
+                }
+                else if( type.IsInterface )
+                {
+                    tB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( type.ToCSharpName() ) );
+                }
+            }
+            return tB!;
         }
 
         /// <summary>

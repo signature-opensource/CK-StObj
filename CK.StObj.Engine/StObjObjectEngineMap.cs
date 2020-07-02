@@ -20,7 +20,7 @@ namespace CK.Setup
     {
         readonly CKTypeKindDetector _typeKindDetector;
         readonly Dictionary<object, MutableItem> _map;
-        readonly MutableItem[] _finaImplementations;
+        readonly IReadOnlyList<MutableItem> _finaImplementations;
         readonly IReadOnlyCollection<Assembly> _assemblies;
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
@@ -39,7 +39,7 @@ namespace CK.Setup
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
         internal protected StObjObjectEngineMap(
             string mapName,
-            MutableItem[] allSpecializations,
+            IReadOnlyList<MutableItem> allSpecializations,
             CKTypeKindDetector typeKindDetector,
             IReadOnlyCollection<Assembly> assemblies )
         {

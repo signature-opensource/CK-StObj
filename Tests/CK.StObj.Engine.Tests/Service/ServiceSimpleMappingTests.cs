@@ -269,8 +269,9 @@ namespace CK.StObj.Engine.Tests.Service
             var services = new ServiceCollection();
             new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services ).AddStObjMap( map ).Should().BeTrue( "ServiceRegister.AddStObjMap doesn't throw." );
             IServiceProvider p = services.BuildServiceProvider();
+
             var oG = p.GetService( typeof( ISBase ) );
-            oG.GetType().FullName.Should().StartWith( "CK._g.AbstractS1" );
+            oG.GetType().FullName.Should().Be( "CK.StObj.Engine.Tests.Service.ServiceSimpleMappingTests_AbstractS1_CK" );
         }
 
 

@@ -9,7 +9,6 @@ using CK.CodeGen.Abstractions;
 using System.Reflection.Emit;
 using CK.Core;
 using CK.Text;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using CK.Setup;
 
 #nullable enable
@@ -17,7 +16,7 @@ using CK.Setup;
 namespace CK.Setup
 {
     /// <summary>
-    /// Handles abstract Type and <see cref="IAttributeAutoImplemented"/>, <see cref="IAutoImplementorMethod"/>
+    /// Handles abstract Type and <see cref="IAutoImplementationClaimAttribute"/>, <see cref="IAutoImplementorMethod"/>
     /// and <see cref="IAutoImplementorProperty"/> members.
     /// </summary>
     public class ImplementableTypeInfo
@@ -80,8 +79,12 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Attempts to create a new <see cref="ImplementableTypeInfo"/>. If the type is marked with <see cref="PreventAutoImplementationAttribute"/> or that one
-        /// of its abstract methods (or properties) misses <see cref="IAttributeAutoImplemented"/> or <see cref="IAutoImplementorMethod"/> (<see cref="IAutoImplementorProperty"/>
+        /// Attempts to create a new <see cref="ImplementableTypeInfo"/>.
+        /// <para>
+        /// </para>
+        /// If the type is marked with <see cref="PreventAutoImplementationAttribute"/> or that the type misses
+        /// a <see cref="IAutoImplementationClaimAttribute"/> (or the <see cref="AutoImplementationClaimAttribute"/>) and one of
+        /// its abstract methods (or properties) misses <see cref="IAutoImplementationClaimAttribute"/> or <see cref="IAutoImplementorMethod"/> (<see cref="IAutoImplementorProperty"/>
         /// for properties), null is returned.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -90,16 +93,24 @@ namespace CK.Setup
         /// <returns>An instance of <see cref="ImplementableTypeInfo"/> or null if the type is not automatically implementable.</returns>
         static public ImplementableTypeInfo? CreateImplementableTypeInfo( IActivityMonitor monitor, Type abstractType, ICKCustomAttributeProvider attributeProvider )
         {
+            static bool HasAutoImplementationClaim( ICKCustomAttributeProvider attributeProvider, MemberInfo m )
+            {
+                return attributeProvider.IsDefined( m, typeof( IAutoImplementationClaimAttribute ) )
+                       || m.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) );
+            }
+
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( abstractType == null ) throw new ArgumentNullException( nameof( abstractType ) );
             if( !abstractType.IsClass || !abstractType.IsAbstract ) throw new ArgumentException( "Type must be an abstract class.", nameof( abstractType ) );
             if( attributeProvider == null ) throw new ArgumentNullException( nameof( attributeProvider ) );
 
-            if( abstractType.GetCustomAttributesData().Any( d => d.AttributeType.Name == "PreventAutoImplementationAttribute" ) )
+            if( abstractType.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( PreventAutoImplementationAttribute ) ) )
             {
-                monitor.Trace( $"Type {abstractType} is marked with a [PreventAutoImplementationAttribute]. Auto implementation is skipped." );
+                monitor.Trace( $"Type {abstractType} is marked with a [{nameof( PreventAutoImplementationAttribute )}]. Auto implementation is skipped." );
                 return null;
             }
+            // Gets whether the Type itself is marked with an attribute that claims that the type is handled.
+            bool isTypeAutoImplemented = HasAutoImplementationClaim( attributeProvider, abstractType );
 
             IAutoImplementorType[] typeImplementors = attributeProvider.GetCustomAttributes<IAutoImplementorType>( abstractType ).ToArray();
 
@@ -114,11 +125,11 @@ namespace CK.Setup
                 if( impl == null )
                 {
                     // Second, ask the type.
-                    var tImpl = typeImplementors.Select( t => t.HandleMethod( monitor, m ) ).FirstOrDefault( i => i != null );
+                    IAutoImplementorMethod? tImpl = typeImplementors.Select( t => t.HandleMethod( monitor, m ) ).FirstOrDefault( i => i != null );
                     if( (impl = tImpl) == null )
                     {
                         // Third, use the ultimate workaround to avoid an error right now and defer the resolution (if possible).
-                        if( attributeProvider.IsDefined( m, typeof( IAttributeAutoImplemented ) ) ) impl = UnimplementedMarker;
+                        if( isTypeAutoImplemented || HasAutoImplementationClaim( attributeProvider, m ) ) impl = UnimplementedMarker;
                     }
                 }
                 if( impl != null )
@@ -146,11 +157,11 @@ namespace CK.Setup
                     if( impl == null )
                     {
                         // Second, ask the type.
-                        var tImpl = typeImplementors.Select( t => t.HandleProperty( monitor, p ) ).FirstOrDefault( i => i != null );
+                        IAutoImplementorProperty? tImpl = typeImplementors.Select( t => t.HandleProperty( monitor, p ) ).FirstOrDefault( i => i != null );
                         if( (impl = tImpl) == null )
                         {
                             // Third, use the ultimate workaround to avoid an error right now and defer the resolution (if possible).
-                            if( attributeProvider.IsDefined( p, typeof( IAttributeAutoImplemented ) ) ) impl = UnimplementedMarker;
+                            if( isTypeAutoImplemented || HasAutoImplementationClaim( attributeProvider, p ) ) impl = UnimplementedMarker;
                         }
                     }
                     if( impl != null )
@@ -164,7 +175,11 @@ namespace CK.Setup
                     }
                 }
             }
-            if( nbUncovered > 0 ) return null;
+            if( nbUncovered > 0 )
+            {
+                // We are missing something.
+                return null;
+            }
             return new ImplementableTypeInfo( abstractType, typeImplementors, properties, methods );
         }
 
@@ -180,7 +195,7 @@ namespace CK.Setup
             try
             {
                 TypeAttributes tA = TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;
-                TypeBuilder b = assembly.StubModuleBuilder.DefineType( assembly.AutoNextTypeName( AbstractType.Name ), tA, AbstractType );
+                TypeBuilder b = assembly.StubModuleBuilder.DefineType( assembly.GetAutoImplementedTypeName( AbstractType ), tA, AbstractType );
                 // Relayed constructors replicates all their potential attributes (except attributes on parameters).
                 b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, (param,attributeData) => false );
                 foreach( var am in MethodsToImplement )
@@ -210,12 +225,7 @@ namespace CK.Setup
         {
             if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
-            ITypeScope cB = c.Assembly.DefaultGenerationNamespace.CreateType( t => t.Append( "public class " )
-                                                                                    .Append( _stubType.Name )
-                                                                                    .Append( " : " )
-                                                                                    .AppendCSharpName( AbstractType ) );
-            // Only public construstors are replicated: protected constructors are to be called by generated code. 
-            cB.AppendPassThroughConstructors( AbstractType, ctor => ctor.IsPublic ? "public " : null );
+            ITypeScope cB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, _stubType );
 
             // Calls all Type level implementors first.
             foreach( var impl in TypeImplementors )
@@ -227,28 +237,34 @@ namespace CK.Setup
             foreach( var am in MethodsToImplement )
             {
                 IAutoImplementorMethod m = am.ImplementorToUse;
-                if( m == null || m == UnimplementedMarker )
+                if( m != UnimplementedMarker )
                 {
-                    monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' has no valid associated IAutoImplementorMethod." );
-                }
-                else
-                {
-                    var second = SecondPassCodeGeneration.FirstPass( monitor, m, c, cB, am.Method ).SecondPass;
-                    if( second != null ) secondPass( second );
+                    if( m == null )
+                    {
+                        monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' has no valid associated IAutoImplementorMethod." );
+                    }
+                    else
+                    {
+                        var second = SecondPassCodeGeneration.FirstPass( monitor, m, c, cB, am.Method ).SecondPass;
+                        if( second != null ) secondPass( second );
+                    }
                 }
             }
             // Finishes with all property implementors.
             foreach( var ap in PropertiesToImplement )
             {
                 IAutoImplementorProperty p = ap.ImplementorToUse;
-                if( p == null || p == UnimplementedMarker )
+                if( p != UnimplementedMarker )
                 {
-                    monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' has no valid associated IAutoImplementorProperty." );
-                }
-                else
-                {
-                    var second = SecondPassCodeGeneration.FirstPass( monitor, p, c, cB, ap.Property ).SecondPass;
-                    if( second != null ) secondPass( second );
+                    if( p == null )
+                    {
+                        monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' has no valid associated IAutoImplementorProperty." );
+                    }
+                    else
+                    {
+                        var second = SecondPassCodeGeneration.FirstPass( monitor, p, c, cB, ap.Property ).SecondPass;
+                        if( second != null ) secondPass( second );
+                    }
                 }
             }
         }

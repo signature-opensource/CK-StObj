@@ -7,10 +7,10 @@ using System.IO;
 using CK.CodeGen;
 using CK.Text;
 using CK.CodeGen.Abstractions;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Diagnostics;
 using CK.Setup;
 using System.Collections;
+using Microsoft.CodeAnalysis.CSharp;
 
 #nullable enable
 
@@ -72,7 +72,7 @@ namespace CK.Setup
                     }
 
                     // Retrieves CK._g workspace.
-                    var ws = _tempAssembly.DefaultGenerationNamespace.Workspace;
+                    var ws = _tempAssembly.Code;
                     // Gets the global name space and injects, once for all, basic namespaces that we
                     // always want available.
                     var global = ws.Global;
@@ -105,9 +105,6 @@ namespace CK.Setup
                           .EnsureUsing( "System.Threading.Tasks" )
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
-
-                    // Generates the Poco type support: the types may be extended by other participants.
-                    PocoSourceGenerator.Inject( global.Workspace, codeGenContext.Assembly.GetPocoSupportResult() );
 
                     // Calls all ICodeGenerator items.
                     foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
@@ -189,9 +186,7 @@ namespace CK.Setup
                 {
                     var g = new CodeGenerator( CodeWorkspace.Factory );
                     g.ParseOptions = new CSharpParseOptions( LanguageVersion.CSharp8 );
-                    g.Modules.AddRange( DynamicAssembly.SourceModules );
-                    // Retrieves CK._g workspace.
-                    var ws = codeGenContext.Assembly.DefaultGenerationNamespace.Workspace;
+                    var ws = codeGenContext.Assembly.Code;
                     var result = g.Generate( ws, finalFilePath, !codeGenContext.CompileSource );
                     if( codeGenContext.SaveSource && result.Sources != null )
                     {
