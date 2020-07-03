@@ -1,6 +1,4 @@
 using System.Reflection;
-using CK.CodeGen.Abstractions;
-using CK.Core;
 
 namespace CK.Setup
 {

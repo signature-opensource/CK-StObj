@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
-using CK.CodeGen.Abstractions;
 using CK.Core;
 using System.Diagnostics;
 using System.Reflection;
@@ -24,11 +23,10 @@ namespace CK.Setup
             scope.Append( "Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" )
                  .NewLine()
                  .Append( "public override IPocoFactory Find( string name ) => _factories.GetValueOrDefault( name );" ).NewLine()
-                 .Append( "internal void Register( IPocoFactory f )" ).NewLine()
-                 .Append( "{" ).NewLine()
+                 .Append( "internal void Register( IPocoFactory f )" ).OpenBlock()
                  .Append( "_factories.Add( f.Name, f );" ).NewLine()
                  .Append( "foreach( var n in f.PreviousNames ) _factories.Add( n, f );" ).NewLine()
-                 .Append( "}" ).NewLine();
+                 .CloseBlock();
 
             if( r.AllInterfaces.Count == 0 ) return AutoImplementationResult.Success;
 
@@ -36,6 +34,8 @@ namespace CK.Setup
             {
                 // Poco class.
                 var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+                tB.TypeDefinition.Modifiers |= Modifiers.Sealed;
+
                 // Always create the default constructor (empty) so that other code generators
                 // can always find it.
                 // We support the interface here: if other participants have already created this type, it is
@@ -49,25 +49,23 @@ namespace CK.Setup
                     tB.Append( "public " ).AppendCSharpName( propType ).Space().Append( p.PropertyName ).Append( "{get;" );
                     // We always implement a setter except if we are auto instantiating the value and NO properties are writable.
                     if( !p.AutoInstantiated || p.HasDeclaredSetter ) tB.Append( "set;" );
-                    tB.Append( "}" ).NewLine();
+                    tB.Append( "}" );
                     if( p.AutoInstantiated )
                     {
+                        Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
                         if( r.AllInterfaces.TryGetValue( propType, out IPocoInterfaceInfo info ) )
                         {
-                            Debug.Assert( p.DefaultValueSource == null, "Poco with [DefaultValue] has raised an error." );
-                            tB.Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" ).NewLine();
+                            tB.Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" );
                         }
                         else if( propType.IsGenericType )
                         {
                             Type genType = propType.GetGenericTypeDefinition();
                             if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
                             {
-                                Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has raised an error." );
-                                tB.Append( " = new System.Collections.Generic.List<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                                tB.Append( " = new System.Collections.Generic.List<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" );
                             }
                             else if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
                             {
-                                Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has raised an error." );
                                 tB.Append( " = new System.Collections.Generic.Dictionary<" )
                                                     .AppendCSharpName( propType.GetGenericArguments()[0] )
                                                     .Append( ',' )
@@ -77,20 +75,23 @@ namespace CK.Setup
                             }
                             else if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                             {
-                                Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has raised an error." );
-                                tB.Append( " = new System.Collections.Generic.HashSet<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                                tB.Append( " = new System.Collections.Generic.HashSet<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" );
                             }
                         }
                     }
                     if( p.DefaultValueSource != null )
                     {
-                        tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" ).NewLine();
+                        tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" );
                     }
+                    tB.NewLine();
                 }
 
                 // PocoFactory class.
 
                 var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+                tFB.TypeDefinition.Modifiers |= Modifiers.Sealed;
+
+                tFB.Append( "public PocoDirectory PocoDirectory { get; private set; }" ).NewLine();
 
                 tFB.Append( "public Type PocoClassType => typeof(" ).AppendCSharpName( root.PocoClass ).Append( ");" )
                    .NewLine();
@@ -104,8 +105,10 @@ namespace CK.Setup
                 tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( root.PreviousNames ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "void StObjConstruct( PocoDirectory d ) => ((PocoDirectory_CK)d).Register(this);" )
-                   .NewLine();
+                tFB.Append( "void StObjConstruct( PocoDirectory d )" ).OpenBlock()
+                    .Append( "PocoDirectory = d;" ).NewLine()
+                    .Append( "((PocoDirectory_CK)d).Register(this);" )
+                    .CloseBlock();
 
                 foreach( var i in root.Interfaces )
                 {

@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
 using SmartAnalyzers.CSharpExtensions.Annotations;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -403,5 +404,18 @@ namespace CK.StObj.Engine.Tests
         }
         #endregion
 
+        public abstract class MissingAutoImplementation : IRealObject
+        {
+            public abstract void Nop();
+        }
+
+        [Test]
+        public void missing_AutoImplementation_attributes()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( MissingAutoImplementation ) );
+            var m = TestHelper.GetSuccessfulResult( c ).EngineMap;
+            Debug.Assert( m != null );
+            m.StObjs.FinalImplementations.Where( i => !(i.Implementation is PocoDirectory) ).Should().BeEmpty();
+        }
     }
 }

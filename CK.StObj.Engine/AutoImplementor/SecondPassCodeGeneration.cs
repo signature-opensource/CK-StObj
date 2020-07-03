@@ -1,12 +1,12 @@
 using System;
 using CK.Core;
-using CK.CodeGen.Abstractions;
 using System.Reflection;
 using System.Linq;
 using System.Diagnostics;
 using CK.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
+using CK.CodeGen;
 
 #nullable enable
 

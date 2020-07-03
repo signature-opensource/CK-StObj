@@ -1,4 +1,5 @@
-using CK.CodeGen.Abstractions;
+
+using CK.CodeGen;
 using CK.Core;
 using System.Reflection;
 

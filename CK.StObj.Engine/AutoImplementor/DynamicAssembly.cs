@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using CK.CodeGen;
-using CK.CodeGen.Abstractions;
 using CK.Core;
 
 #nullable enable

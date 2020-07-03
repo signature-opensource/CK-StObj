@@ -6,7 +6,6 @@
 #endregion
 
 using CK.CodeGen;
-using CK.CodeGen.Abstractions;
 using CK.Core;
 using System;
 

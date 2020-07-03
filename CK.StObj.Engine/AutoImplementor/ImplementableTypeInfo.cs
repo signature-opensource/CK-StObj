@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using CK.Reflection;
 using CK.CodeGen;
-using CK.CodeGen.Abstractions;
 using System.Reflection.Emit;
 using CK.Core;
 using CK.Text;

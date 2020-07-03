@@ -1,5 +1,4 @@
 using CK.CodeGen;
-using CK.CodeGen.Abstractions;
 using CK.Core;
 using CK.Reflection;
 using CK.Setup;
@@ -205,6 +204,14 @@ namespace CK.Setup
 
             // The IPocoFactory base implementation.
             tBF.AddInterfaceImplementation( typeof( IPocoFactory ) );
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_PocoDirectory", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( PocoDirectory ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.PocoDirectory ), PropertyAttributes.None, typeof( PocoDirectory ), null );
+                p.SetGetMethod( m );
+            }
             {
                 MethodBuilder m = tBF.DefineMethod( "get_PocoClassType", MethodAttributes.Public | MethodAttributes.Virtual |  MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( Type ), Type.EmptyTypes );
                 ILGenerator g = m.GetILGenerator();

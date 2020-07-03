@@ -9,7 +9,12 @@ namespace CK.Core
     public interface IPocoFactory
     {
         /// <summary>
-        /// Creates a new Poco instance of this given instance.
+        /// Gets the <see cref="PocoDirectory"/> that centralizes all the factories.
+        /// </summary>
+        PocoDirectory PocoDirectory { get; }
+
+        /// <summary>
+        /// Creates a new Poco instance of this type.
         /// </summary>
         /// <returns>A new poco instance.</returns>
         IPoco Create();

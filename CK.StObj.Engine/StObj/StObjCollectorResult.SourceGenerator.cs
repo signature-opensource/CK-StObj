@@ -6,7 +6,6 @@ using System.Reflection;
 using System.IO;
 using CK.CodeGen;
 using CK.Text;
-using CK.CodeGen.Abstractions;
 using System.Diagnostics;
 using CK.Setup;
 using System.Collections;

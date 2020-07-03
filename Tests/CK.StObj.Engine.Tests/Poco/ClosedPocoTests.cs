@@ -57,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         [TestCase( "OnlyTheFinalUserAndDocumentCloPocs" )]
         [TestCase( "AllBaseUserAndDocumentCloPocs" )]
-        public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_CloPoc( string mode )
+        public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_ICommand( string mode )
         {
             var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             if( mode == "AllBaseUserAndDocumentCloPocs" )

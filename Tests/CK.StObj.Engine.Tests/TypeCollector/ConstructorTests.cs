@@ -1,4 +1,4 @@
-using CK.CodeGen.Abstractions;
+using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using FluentAssertions;
