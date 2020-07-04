@@ -40,7 +40,7 @@ namespace CK.Setup
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
 
-            public bool HasInstantiationCycle( IActivityMonitor monitor )
+            public bool CheckPropertiesVarianceAndInstantiationCycle( IActivityMonitor monitor )
             {
                 List<PropertyInfo>? clashPath = null;
                 foreach( var c in Roots )
@@ -168,6 +168,7 @@ namespace CK.Setup
                         {
                             // The IPoco interface type is NOT registered as a IPoco.
                             // This MAY be possible: we don't consider this to be a IPoco.
+                            p.AutoInstantiated = false;
                             monitor.Warn( $"Auto instantiable Poco property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}': the property type {p.PropertyType.Name} is not registered. This property will be a read only property initialized to null." );
                         }
                         else

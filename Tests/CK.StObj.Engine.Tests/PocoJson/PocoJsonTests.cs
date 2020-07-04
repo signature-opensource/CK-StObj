@@ -25,21 +25,6 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void simple_poco_serialization()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
-            var s = TestHelper.GetAutomaticServices( c ).Services;
-
-            var f = s.GetRequiredService<IPocoFactory<ITest>>();
-            var o = f.Create( o => { o.Power = 3712; o.Hip += "CodeGen!"; } );
-            var o2 = Roundtrip( s, o );
-
-            Debug.Assert( o2 != null );
-            o2.Power.Should().Be( o.Power );
-            o2.Hip.Should().Be( o.Hip );
-        }
-
-        [Test]
         public void null_poco_is_handled()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
@@ -54,6 +39,21 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             IPoco? o3 = Roundtrip( s, nullUnknwonPoco );
             o3.Should().BeNull();
+        }
+
+        [Test]
+        public void simple_poco_serialization()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            var f = s.GetRequiredService<IPocoFactory<ITest>>();
+            var o = f.Create( o => { o.Power = 3712; o.Hip += "CodeGen!"; } );
+            var o2 = Roundtrip( s, o );
+
+            Debug.Assert( o2 != null );
+            o2.Power.Should().Be( o.Power );
+            o2.Hip.Should().Be( o.Hip );
         }
 
         static byte[] Serialize( IPoco o )

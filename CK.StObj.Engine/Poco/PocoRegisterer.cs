@@ -184,7 +184,7 @@ namespace CK.Setup
                 hasNameError |= !cInfo.InitializeNames( monitor );
             }
             return hasNameError
-                   || r.HasInstantiationCycle( monitor )
+                   || r.CheckPropertiesVarianceAndInstantiationCycle( monitor )
                    || !r.BuildNameIndex( monitor )
                    ? null
                    : r;

@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace CK.Setup
@@ -23,9 +24,9 @@ namespace CK.Setup
                     tFactory.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( readerName ) );
                     tFactory.Append( interfaceName ).Append( ' ' ).Append( readerName ).Append( ".Read( ref System.Text.Json.Utf8JsonReader r )" ).NewLine()
                             .Append( " => r.TokenType == System.Text.Json.JsonTokenType.Null ? null : new " )
-                            .Append( p.PocoClass.Name ).Append( "( ref r );" ).NewLine();
+                            .Append( p.PocoClass.Name ).Append( "( ref r, PocoDirectory );" ).NewLine();
 
-                    tFactory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( p.PocoClass.Name ).Append( "( ref r );" ).NewLine();
+                    tFactory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( p.PocoClass.Name ).Append( "( ref r, PocoDirectory );" ).NewLine();
                 }
                 var tPoco = c.Assembly.FindOrCreateAutoImplementedClass( monitor, p.PocoClass );
                 ExtendPoco( tPoco, p, poco );
@@ -39,25 +40,38 @@ namespace CK.Setup
 
             // Each Poco class is a IWriter and has a constructor that accepts a Utf8JsonReader.
             tPoco.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.PocoJsonSerializer.IWriter" ) );
-            tPoco.Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" ).NewLine()
-                 .Append( '{' ).NewLine()
+            tPoco.Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
+                 .OpenBlock()
                  .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( root.Name ).Append( "); }" ).NewLine()
                  .Append( "w.WriteStartObject();" ).NewLine();
             var write = tPoco.CreatePart();
             tPoco.NewLine()
                  .Append( "w.WriteEndObject();" ).NewLine()
                  .Append( "if( withType ) w.WriteEndArray();" ).NewLine()
-                 .Append( '}' ).NewLine();
+                 .CloseBlock();
 
-            tPoco.Append( "public " ).Append( tPoco.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r )" ).NewLine()
-              .Append( '{' ).NewLine();
-            var read = tPoco.CreatePart();
-            tPoco.NewLine().Append( '}' ).NewLine();
+            tPoco.Append( "public " ).Append( tPoco.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoDirectory d )" )
+                 .Append( "=> Read( ref r, d );" ).NewLine();
 
-            // Fill the "read" and "write" parts in one pass.
+            // Poco has a Read method but it is not exposed.
 
-            // Read prefix: starts the loop on the "PropertyName" Json fields.
-            read.Append( @"
+            tPoco.Append( "public void Read( ref System.Text.Json.Utf8JsonReader r, PocoDirectory d )" )
+              .OpenBlock()
+              .Append( @"
+bool isDef = r.TokenType == System.Text.Json.JsonTokenType.StartArray;
+if( isDef )
+{
+    r.Read();
+    string name = r.GetString();
+    if( name != " ).AppendSourceString( root.Name )
+        .Append( " && !").AppendArray( root.PreviousNames )
+        .Append( ".Contains(" ).AppendSourceString( root.Name ) 
+        .Append( @" ) )
+    {
+        throw new System.Text.Json.JsonException( ""Expected '""+ ").AppendSourceString(root.Name).Append( @" + $""' Poco type, but found '{name}'."" );
+    }
+    r.Read();
+}
 if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) throw new System.Text.Json.JsonException( ""Expecting '{' to start a Poco."" );
 r.Read();
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
@@ -66,7 +80,24 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
     r.Read();
     switch( n )
     {
-" );
+" ).NewLine();
+            var read = tPoco.CreatePart();
+            tPoco.Append( @"
+    }
+    r.Read();
+}
+if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) throw new System.Text.Json.JsonException( ""Expecting '}' to end a Poco."" );
+r.Read();
+if( isDef )
+{
+    if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( ""Expecting ']' to end a Poco array."" );
+    r.Read();
+}
+" ).CloseBlock();
+
+            // Fill the "read" and "write" parts in one pass.
+
+            // Read prefix: starts the loop on the "PropertyName" Json fields.
             // For each property, GenerateWriteForType fills the "write" (this is easy) and
             // returns the non nullable property type and whether it is nullable.
             foreach( var p in root.PropertyList )
@@ -74,16 +105,39 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
                 var (isNullable, t) = GenerateWriteForType( tPoco, write, p.PropertyName, p.PropertyType, poco );
 
+                read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( " : " );
+                if( p.AutoInstantiated )
+                {
+                    read.OpenBlock();
+                    read.Append( "break; " ).CloseBlock();
+                }
+                else
+                {
+                    read.Append( p.PropertyName ).Append( " = " );
+                    if( !ReadNumberValue( read, p.PropertyType ) )
+                    {
+                        if( t == typeof( string ) ) read.Append( "r.GetString()" );
+                        else if( t == typeof( bool ) ) read.Append( "r.GetBoolean()" );
+                        else if( t == typeof( Guid ) ) read.Append( "r.GetGuid()" );
+                        else if( t == typeof( DateTime ) ) read.Append( "r.GetDateTime()" );
+                        else if( t == typeof( DateTimeOffset ) ) read.Append( "r.GetDateTimeOffset()" );
+                        else if( t == typeof( byte[] ) ) read.Append( "r.GetBytesFromBase64()" );
+                        else if( t.IsEnum )
+                        {
+                            var eT = Enum.GetUnderlyingType( t );
+                            read.Append( '(' ).AppendCSharpName( t ).Append( ')' );
+                            ReadNumberValue( read, eT );
+                        }
+                        else
+                        {
+                            Debug.Fail( $"Unsupported type is already handled by the Write." );
+                        }
+                    }
+                    read.Append( "; break;" ).NewLine();
+                }
+
             }
 
-            // read suffix: closes the loop and ensures that a '}' is found.
-            read.Append( @"
-    }
-    r.Read();
-}
-if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) throw new System.Text.Json.JsonException( ""Expecting '}' to end a Poco."" );
-r.Read();
-" );
         }
 
         (bool IsNullable, Type Type) GenerateWriteForType( ITypeScope tB, ICodeWriter write, string variableName, Type t, IPocoSupportResult poco )
@@ -218,6 +272,27 @@ r.Read();
             }
             return isNullable;
         }
+
+        #region Read
+
+        static bool ReadNumberValue( ICodeWriter read, Type t )
+        {
+            if( t == typeof( int ) ) read.Append( "r.GetInt32()" );
+            else if( t == typeof( double ) ) read.Append( "r.GetDouble()" );
+            else if( t == typeof( float ) ) read.Append( "r.GetFloat()" );
+            else if( t == typeof( long ) ) read.Append( "r.GetInt64()" );
+            else if( t == typeof( uint ) ) read.Append( "r.GetUInt32()" );
+            else if( t == typeof( byte ) ) read.Append( "r.GetByte()" );
+            else if( t == typeof( sbyte ) ) read.Append( "r.GetSByte()" );
+            else if( t == typeof( short ) ) read.Append( "r.GetInt16()" );
+            else if( t == typeof( ushort ) ) read.Append( "r.GetUInt16()" );
+            else if( t == typeof( ulong ) ) read.Append( "r.GetUInt64()" );
+            else if( t == typeof( decimal ) ) read.Append( "r.GetDecimal()" );
+            else return false;
+            return true;
+        }
+
+        #endregion
 
     }
 }

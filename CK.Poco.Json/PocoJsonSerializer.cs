@@ -94,6 +94,7 @@ namespace CK.Core
             string name = reader.GetString();
             IPocoFactory? f = directory.Find( name );
             if( f == null ) throw new JsonException( $"Json type '{name}' not found." );
+            reader.Read();
             var p = ((IFactoryReader)f).ReadTyped( ref reader );
             if( reader.TokenType != JsonTokenType.EndArray ) throw new JsonException( "Expecting Json Poco end array." );
             reader.Read();
@@ -109,7 +110,7 @@ namespace CK.Core
         /// <returns>The Poco.</returns>
         public static T? Read<T>( this IPocoFactory<T> f, ref Utf8JsonReader reader ) where T : class, IPoco
         {
-            if( CheckNullStart( ref reader, "expecting Json onject or null value." ) ) return null;
+            if( CheckNullStart( ref reader, "expecting Json object, Json array or null value." ) ) return null;
             return ((IFactoryReader<T>)f).Read( ref reader );
         }
 

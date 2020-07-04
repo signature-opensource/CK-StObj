@@ -53,31 +53,8 @@ namespace CK.Setup
                     if( p.AutoInstantiated )
                     {
                         Debug.Assert( p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
-                        if( r.AllInterfaces.TryGetValue( propType, out IPocoInterfaceInfo info ) )
-                        {
-                            tB.Append( " = new " ).Append( info.Root.PocoClass.Name ).Append( "();" );
-                        }
-                        else if( propType.IsGenericType )
-                        {
-                            Type genType = propType.GetGenericTypeDefinition();
-                            if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
-                            {
-                                tB.Append( " = new System.Collections.Generic.List<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" );
-                            }
-                            else if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
-                            {
-                                tB.Append( " = new System.Collections.Generic.Dictionary<" )
-                                                    .AppendCSharpName( propType.GetGenericArguments()[0] )
-                                                    .Append( ',' )
-                                                    .AppendCSharpName( propType.GetGenericArguments()[1] )
-                                                    .Append( ">();" )
-                                                    .NewLine();
-                            }
-                            else if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
-                            {
-                                tB.Append( " = new System.Collections.Generic.HashSet<" ).AppendCSharpName( propType.GetGenericArguments()[0] ).Append( ">();" );
-                            }
-                        }
+                        tB.Append( " = " );
+                        r.WriteAutoInstantiatedNewObject( tB, propType );
                     }
                     if( p.DefaultValueSource != null )
                     {
@@ -122,7 +99,5 @@ namespace CK.Setup
             }
             return AutoImplementationResult.Success;
         }
-
-
     }
 }
