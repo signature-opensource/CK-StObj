@@ -98,6 +98,8 @@ namespace CK.Setup
             IReadOnlyList<IPocoInterfaceInfo> IPocoRootInfo.Interfaces => Interfaces;
             IReadOnlyCollection<Type> IPocoRootInfo.OtherInterfaces => OtherInterfaces;
 
+            public IReadOnlyList<PropertyInfo> ExternallyImplementedPropertyList { get; }
+
             bool _instantiationCycleDone;
             bool _instantiationCycleFlag;
 
@@ -107,7 +109,8 @@ namespace CK.Setup
                               Type? closureInterface,
                               HashSet<Type> others,
                               Dictionary<string, PocoPropertyInfo> properties,
-                              IReadOnlyList<PocoPropertyInfo> propertyList )
+                              IReadOnlyList<PocoPropertyInfo> propertyList,
+                              IReadOnlyList<PropertyInfo>? externallyImplementedPropertyList )
             {
                 PocoClass = pocoClass;
                 PocoFactoryClass = pocoFactoryClass;
@@ -118,6 +121,7 @@ namespace CK.Setup
                 Properties = properties;
                 _exposedProperties = Properties.AsCovariantReadOnly<string, PocoPropertyInfo, IPocoPropertyInfo>();
                 PropertyList = propertyList;
+                ExternallyImplementedPropertyList = externallyImplementedPropertyList ?? Array.Empty<PropertyInfo>();
             }
 
             /// <summary>

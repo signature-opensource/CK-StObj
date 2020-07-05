@@ -1,6 +1,7 @@
 using System;
 using CK.Core;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace CK.Setup
 {
@@ -72,6 +73,12 @@ namespace CK.Setup
         /// Gets the properties of this poco.
         /// </summary>
         IReadOnlyList<IPocoPropertyInfo> PropertyList { get; }
+
+        /// <summary>
+        /// Gets the properties that are implemented by external code provider.
+        /// These properties are typically marked with <see cref="AutoImplementationClaimAttribute"/>.
+        /// </summary>
+        IReadOnlyList<PropertyInfo> ExternallyImplementedPropertyList { get; }
 
     }
 

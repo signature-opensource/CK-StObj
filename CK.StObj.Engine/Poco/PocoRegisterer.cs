@@ -252,6 +252,7 @@ namespace CK.Setup
             // The IPoco implementation.
             var properties = new Dictionary<string, PocoPropertyInfo>();
             var propertyList = new List<PocoPropertyInfo>();
+            List<PropertyInfo>? externallyImplementedPropertyList = null;
 
             // This is required to handle "non actual Poco" (CKTypeDefiner "base type"): interfaces list
             // contains only actual IPoco, the expanded set contains the closure of all the interfaces.
@@ -306,7 +307,12 @@ namespace CK.Setup
                 tB.AddInterfaceImplementation( i );
                 foreach( var p in i.GetProperties() )
                 {
-                    if( properties.TryGetValue( p.Name, out PocoPropertyInfo? implP ) )
+                    if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
+                    {
+                        if( externallyImplementedPropertyList == null ) externallyImplementedPropertyList = new List<PropertyInfo>();
+                        externallyImplementedPropertyList.Add( p );
+                    }
+                    else if( properties.TryGetValue( p.Name, out PocoPropertyInfo? implP ) )
                     {
                         implP.DeclaredProperties.Add( p );
                         implP.HasDeclaredSetter |= p.CanWrite;
@@ -350,6 +356,15 @@ namespace CK.Setup
                 }
             }
 
+            // Implements the stubs for each externally implemented property.
+            if( externallyImplementedPropertyList != null )
+            {
+                foreach( var p in externallyImplementedPropertyList )
+                {
+                    EmitHelper.ImplementStubProperty( tB, p, isVirtual: false, alwaysImplementSetter: false );
+                }
+            }
+
             // Handles default values and implements the stubs for each
             // PocoPropertyInfo.
             foreach( var p in propertyList )
@@ -382,7 +397,7 @@ namespace CK.Setup
             var tPocoFactory = tBF.CreateType();
             Debug.Assert( tPocoFactory != null );
 
-            return new ClassInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList );
+            return new ClassInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList, externallyImplementedPropertyList );
         }
 
         bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )
