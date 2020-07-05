@@ -199,6 +199,7 @@ namespace CK.Setup
             string pocoTypeName = assembly.GetAutoImplementedTypeName( interfaces[0] );
             var moduleB = assembly.StubModuleBuilder;
             var tB = moduleB.DefineType( pocoTypeName );
+
             // The factory also ends with "_CK": it is a generated type.
             var tBF = moduleB.DefineType( pocoTypeName + "Factory_CK" );
 
@@ -249,7 +250,7 @@ namespace CK.Setup
                 g.Emit( OpCodes.Ret );
             }
 
-            // The IPoco implementation.
+            // The IPocoClass implementation.
             var properties = new Dictionary<string, PocoPropertyInfo>();
             var propertyList = new List<PocoPropertyInfo>();
             List<PropertyInfo>? externallyImplementedPropertyList = null;
@@ -299,6 +300,17 @@ namespace CK.Setup
                 Debug.Assert( closure != null, "Since there is at least one interface." );
                 monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
             }
+            // Supports the IPocoClass interface.
+            tB.AddInterfaceImplementation( typeof( IPocoClass ) );
+            {
+                MethodBuilder m = tB.DefineMethod( "get_Factory", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPocoFactory ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tB.DefineProperty( nameof( IPocoClass.Factory ), PropertyAttributes.None, typeof( IPocoFactory ), null );
+                p.SetGetMethod( m );
+            }
+
             // For each expanded interfaces (all of them: the Interfaces and the OtherInterfaces):
             // - Implements the interface on the PocoClass (tB).
             // - Registers the properties and creates the PocoPropertyInfo.

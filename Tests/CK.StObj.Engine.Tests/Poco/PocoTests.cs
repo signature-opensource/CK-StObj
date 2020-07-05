@@ -4,8 +4,6 @@ using CK.Setup;
 using NUnit.Framework;
 using CK.StObj.Engine.Tests.Poco;
 using System.Linq;
-
-using static CK.Testing.StObjEngineTestHelper;
 using FluentAssertions;
 using System.Diagnostics;
 using System.Reflection;
@@ -13,7 +11,7 @@ using SmartAnalyzers.CSharpExtensions.Annotations;
 using CK.StObj.Engine.Tests.Poco.Sample;
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
-using CK.CodeGen;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -249,48 +247,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
 
 
-        }
-
-        public interface IPocoWithSpecialProperty : IPoco
-        {
-            [AutoImplementationClaim]
-            int GlobalSequence { get; }
-
-            int NormalOne { get; set; }
-        }
-
-        public class GlobalSequenceGeneratorImpl : ICodeGenerator
-        {
-            public AutoImplementationResult Implement( IActivityMonitor monitor, ICodeGenerationContext c )
-            {
-                foreach( var poco in c.Assembly.GetPocoSupportResult().Roots )
-                {
-                    foreach( var p in poco.ExternallyImplementedPropertyList )
-                    {
-                        if( p.Name == "GlobalSequence" )
-                        {
-                            ITypeScope? tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, poco.PocoClass );
-                            tB.Append( "public int GlobalSequence => 45343;" );
-                        }
-                    }
-                }
-                return AutoImplementationResult.Success;
-            }
-        }
-
-        [ContextBoundDelegation( "CK.StObj.Engine.Tests.Poco.PocoTests+GlobalSequenceGeneratorImpl, CK.StObj.Engine.Tests" )]
-        public class GlobalSequenceGenerator : IRealObject
-        {
-        } 
-
-            [Test]
-        public void some_poco_properties_can_be_handled_by_independent_CodeGenerator()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
-            var f = s.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();
-            var o = f.Create();
-            o.GlobalSequence.Should().Be( 45343 );
         }
 
     }

@@ -23,11 +23,11 @@ namespace CK.Setup
         /// <param name="this">This result.</param>
         /// <param name="writer">The code writer.</param>
         /// <param name="autoType">The type.</param>
-        public static void WriteAutoInstantiatedNewObject( this IPocoSupportResult @this, ICodeWriter writer, Type autoType )
+        public static void WriteAutoInstantiatedNewObject( this IPocoSupportResult @this, ICodeWriter writer, Type autoType, string pocoDirectory )
         {
             if( @this.AllInterfaces.TryGetValue( autoType, out IPocoInterfaceInfo? info ) )
             {
-                writer.Append( "new " ).Append( info.Root.PocoClass.Name ).Append( "();" );
+                writer.Append( "new " ).Append( info.Root.PocoClass.Name ).Append( "( " ).Append( pocoDirectory ).Append( " );" );
                 return;
             }
             if( autoType.IsGenericType )

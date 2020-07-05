@@ -56,6 +56,47 @@ namespace CK.StObj.Engine.Tests.PocoJson
             o2.Hip.Should().Be( o.Hip );
         }
 
+        public interface IPocoA : IPoco
+        {
+            [DefaultValue("A")]
+            string ValA { get; set; }
+
+            IPocoB B { get; }
+
+            IPocoB B2 { get; set; }
+        }
+
+        public interface IPocoB : IPoco
+        {
+            [DefaultValue("B")]
+            string ValB { get; set; }
+
+            IPocoC C { get; }
+        }
+
+        public interface IPocoC : IPoco
+        {
+            [DefaultValue("C")]
+            string ValC { get; set; }
+        }
+
+
+        [Test]
+        public void property_poco_serialization()
+        {
+            //var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
+            //var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            //var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
+            //var a = fA.Create( a => { a.B2.ValB = "B2"; a.B2.C.ValC = "B2.C"; } );
+
+            //var a2 = Roundtrip( s, a );
+            //Debug.Assert( a2 != null );
+            //a2.B2.ValB.Should().Be( "B2" );
+            //a2.B2.C.ValC.Should().Be( "B2.C" );
+            //a2.Should().BeEquivalentTo( a );
+        }
+
         static byte[] Serialize( IPoco o )
         {
             var m = new MemoryStream();
