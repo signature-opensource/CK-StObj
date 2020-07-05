@@ -29,12 +29,12 @@ namespace CK.Setup
                     tFactory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( p.PocoClass.Name ).Append( "( ref r, PocoDirectory );" ).NewLine();
                 }
                 var tPoco = c.Assembly.FindOrCreateAutoImplementedClass( monitor, p.PocoClass );
-                ExtendPoco( tPoco, p, poco );
+                ExtendPoco( tFactory, tPoco, p, poco );
             }
             return AutoImplementationResult.Success;
         }
 
-        void ExtendPoco( ITypeScope tPoco, IPocoRootInfo root, IPocoSupportResult poco )
+        void ExtendPoco( ITypeScope tPocoFactory, ITypeScope tPoco, IPocoRootInfo root, IPocoSupportResult poco )
         {
             System.Text.Json.Utf8JsonWriter w;
 
@@ -50,12 +50,16 @@ namespace CK.Setup
                  .Append( "if( withType ) w.WriteEndArray();" ).NewLine()
                  .CloseBlock();
 
-            tPoco.Append( "public " ).Append( tPoco.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoDirectory d )" )
-                 .Append( "=> Read( ref r, d );" ).NewLine();
+            tPoco.Append( "public " ).Append( tPoco.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoDirectory_CK d )" )
+                 .OpenBlock()
+                 .Append( "_factory = d._f" ).Append( tPocoFactory.UniqueId ).Append( ';' ).NewLine();
+            var ctor = tPoco.CreatePart();
+            tPoco.Append( "Read( ref r );" )
+                 .CloseBlock();
 
             // Poco has a Read method but it is not exposed.
 
-            tPoco.Append( "public void Read( ref System.Text.Json.Utf8JsonReader r, PocoDirectory d )" )
+            tPoco.Append( "public void Read( ref System.Text.Json.Utf8JsonReader r )" )
               .OpenBlock()
               .Append( @"
 bool isDef = r.TokenType == System.Text.Json.JsonTokenType.StartArray;
@@ -63,10 +67,12 @@ if( isDef )
 {
     r.Read();
     string name = r.GetString();
-    if( name != " ).AppendSourceString( root.Name )
-        .Append( " && !").AppendArray( root.PreviousNames )
-        .Append( ".Contains(" ).AppendSourceString( root.Name ) 
-        .Append( @" ) )
+    if( name != " ).AppendSourceString( root.Name );
+            if( root.PreviousNames.Count > 0 )
+            {
+                tPoco.Append( " && !" ).AppendArray( root.PreviousNames ).Append( ".Contains( name )" );
+            }
+            tPoco.Append( @" )
     {
         throw new System.Text.Json.JsonException( ""Expected '""+ ").AppendSourceString(root.Name).Append( @" + $""' Poco type, but found '{name}'."" );
     }
@@ -84,7 +90,6 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
             var read = tPoco.CreatePart();
             tPoco.Append( @"
     }
-    r.Read();
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) throw new System.Text.Json.JsonException( ""Expecting '}' to end a Poco."" );
 r.Read();
@@ -95,7 +100,8 @@ if( isDef )
 }
 " ).CloseBlock();
 
-            // Fill the "read" and "write" parts in one pass.
+            // Fill the "read" and "write" parts in one pass as well as the "ctor" where
+            // auto instantiated properties that have no declared setter are new'ed.
 
             // Read prefix: starts the loop on the "PropertyName" Json fields.
             // For each property, GenerateWriteForType fills the "write" (this is easy) and
@@ -103,17 +109,65 @@ if( isDef )
             foreach( var p in root.PropertyList )
             {
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
-                var (isNullable, t) = GenerateWriteForType( tPoco, write, p.PropertyName, p.PropertyType, poco );
+                var (isNullable, t, typeSpec, pocoType) = GenerateWriteForType( tPoco, write, p.PropertyName, p.PropertyType, poco );
 
                 read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( " : " );
-                if( p.AutoInstantiated )
+                if( typeSpec != TypeSpec.None )
                 {
                     read.OpenBlock();
-                    read.Append( "break; " ).CloseBlock();
+                    bool mayBeNull = !p.AutoInstantiated || p.HasDeclaredSetter;
+                    if( !mayBeNull )
+                    {
+                        poco.WriteAutoInstantiatedProperty( ctor, p, "d" );
+                    }
+                    else
+                    {
+                        read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" ).OpenBlock()
+                            .Append( p.PropertyName ).Append( " = null;" ).NewLine()
+                            .Append( "r.Read();" )
+                            .CloseBlock()
+                            .Append( "else" )
+                            .OpenBlock();
+                        if( p.AutoInstantiated )
+                        {
+                            read.Append( "if( " ).Append( p.PropertyName ).Append( " == null ) " );
+                            poco.WriteAutoInstantiatedProperty( read, p, "_factory.PocoDirectory" );
+                        }
+                    }
+                    if( typeSpec == TypeSpec.Poco )
+                    {
+                        if( pocoType != null )
+                        {
+                            if( !p.AutoInstantiated )
+                            {
+                                read.Append( "if( " ).Append( p.PropertyName ).Append( " != null ) " );
+                            }
+                            read.Append( "((" ).AppendCSharpName( pocoType.Root.PocoClass ).Append( ')' ).Append( p.PropertyName ).Append( ')' ).Append( ".Read( ref r );" ).NewLine();
+                            if( !p.AutoInstantiated )
+                            {
+                                read.Append( "else" ).OpenBlock()
+                                    .Append( p.PropertyName ).Append( " = " )
+                                    .Append( "_factory.PocoDirectory._f" ).Append( tPocoFactory.UniqueId ).Append( ".Read( ref r );" )
+                                    .CloseBlock();
+                            }
+                        }
+                        else
+                        {
+                            read.Append( p.PropertyName ).Append( " = _factory.PocoDirectory.ReadPocoValue( ref r );" ).NewLine();
+                        }
+                    }
+                    if( mayBeNull ) read.CloseBlock();
+                    read.Append( "break; " )
+                        .CloseBlock();
                 }
                 else
                 {
                     read.Append( p.PropertyName ).Append( " = " );
+                    // Null handling: a prefix does the job.
+                    if( isNullable )
+                    {
+                        read.Append( "r.TokenType == System.Text.Json.JsonTokenType.Null ? null : " );
+                    }
                     if( !ReadNumberValue( read, p.PropertyType ) )
                     {
                         if( t == typeof( string ) ) read.Append( "r.GetString()" );
@@ -133,15 +187,24 @@ if( isDef )
                             Debug.Fail( $"Unsupported type is already handled by the Write." );
                         }
                     }
-                    read.Append( "; break;" ).NewLine();
+                    read.Append( ";" ).NewLine()
+                        .Append( "r.Read();" ).NewLine()
+                        .Append( "break;" ).NewLine();
                 }
 
             }
-
         }
 
-        (bool IsNullable, Type Type) GenerateWriteForType( ITypeScope tB, ICodeWriter write, string variableName, Type t, IPocoSupportResult poco )
+        enum TypeSpec
         {
+            None,
+            Poco,
+        }
+
+        (bool IsNullable, Type Type, TypeSpec spec, IPocoInterfaceInfo? pocoType) GenerateWriteForType( ITypeScope tB, ICodeWriter write, string variableName, Type t, IPocoSupportResult poco )
+        {
+            TypeSpec typeSpec = TypeSpec.None;
+            IPocoInterfaceInfo? pocoType = null;
             bool unsupportedType = false;
             bool isNullable = IsNullable( ref t );
             // Null handling: a prefix does the job.
@@ -211,22 +274,22 @@ if( isDef )
                     {
                         write.Append( "w.WriteStartObject();" ).NewLine()
                              .Append( "foreach( var kv in " ).Append( variableName ).Append( " )" ).NewLine()
-                             .Append( "{" ).NewLine()
+                             .OpenBlock()
                              .Append( "w.WritePropertyName( kv.Key );" ).NewLine();
                         GenerateWriteForType( tB, write, "kv.Value", tValue, poco );
-                        write.Append( "}" ).NewLine()
+                        write.CloseBlock()
                              .Append( "w.WriteEndObject();" ).NewLine();
                     }
                     else
                     {
                         write.Append( "w.WriteStartArray();" ).NewLine()
                              .Append( "foreach( var kv in " ).Append( variableName ).Append( " )" ).NewLine()
-                             .Append( "{" ).NewLine()
+                             .OpenBlock()
                              .Append( "w.WriteStartArray();" ).NewLine();
                         GenerateWriteForType( tB, write, "kv.Key", tKey, poco );
                         GenerateWriteForType( tB, write, "kv.Value", tValue, poco );
                         write.Append( "w.WriteEndArray();" ).NewLine()
-                             .Append( "}" ).NewLine()
+                             .CloseBlock()
                              .Append( "w.WriteEndArray();" ).NewLine();
                     }
                 }
@@ -246,8 +309,11 @@ if( isDef )
                     write.Append( variableName );
                     // If its a real Poco type and not a definer, we write its value directly.
                     // When it's only a definer, we write it with its type.
-                    bool isPocoDefiner = poco.Find( t ) == null;
-                    write.Append( variableName ).Append( "Write( w, " ).Append( isPocoDefiner ).Append( " );" );
+                    pocoType = poco.Find( t );
+                    bool isPocoDefiner = pocoType == null;
+                    write.Append( ".Write( w, " ).Append( isPocoDefiner ).Append( " );" );
+                    typeSpec = TypeSpec.Poco;
+                    unsupportedType = false;
                 }
             }
             if( unsupportedType )
@@ -255,7 +321,7 @@ if( isDef )
                 throw new InvalidOperationException( $"Json serialization is not supported for type '{t.ToCSharpName()}'." );
             }
             write.NewLine();
-            return (isNullable, t);
+            return (isNullable, t, typeSpec, pocoType);
         }
 
         static bool IsNullable( ref Type t )

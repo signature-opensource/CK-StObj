@@ -63,7 +63,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             IPocoB B { get; }
 
-            IPocoB B2 { get; set; }
+            IPocoB B2 { get; }
         }
 
         public interface IPocoB : IPoco
@@ -84,17 +84,46 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [Test]
         public void property_poco_serialization()
         {
-            //var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
-            //var s = TestHelper.GetAutomaticServices( c ).Services;
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
 
-            //var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
-            //var a = fA.Create( a => { a.B2.ValB = "B2"; a.B2.C.ValC = "B2.C"; } );
+            var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
+            var a = fA.Create( a => { a.B2.ValB = "B2"; a.B2.C.ValC = "B2.C"; } );
 
-            //var a2 = Roundtrip( s, a );
-            //Debug.Assert( a2 != null );
-            //a2.B2.ValB.Should().Be( "B2" );
-            //a2.B2.C.ValC.Should().Be( "B2.C" );
-            //a2.Should().BeEquivalentTo( a );
+            var a2 = Roundtrip( s, a );
+            Debug.Assert( a2 != null );
+            a2.B2.ValB.Should().Be( "B2" );
+            a2.B2.C.ValC.Should().Be( "B2.C" );
+            a2.Should().BeEquivalentTo( a );
+        }
+
+        public interface IPocoWithGeneric : IPoco
+        {
+            IPoco OnePoco { get; set; }
+            IPoco AnotherOnePoco { get; set; }
+        }
+
+        [Test]
+        public void generic_property_poco_serialization()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithGeneric ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            var fG = s.GetRequiredService<IPocoFactory<IPocoWithGeneric>>();
+            var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
+
+            var g = fG.Create();
+
+            var gWithNull = Roundtrip( s, g );
+            Debug.Assert( gWithNull != null );
+            gWithNull.OnePoco.Should().BeNull();
+            gWithNull.AnotherOnePoco.Should().BeNull();
+
+            g.OnePoco = fA.Create();
+            var gWithA = Roundtrip( s, g );
+            Debug.Assert( gWithA != null );
+            gWithA.OnePoco.Should().NotBeNull();
+            gWithA.AnotherOnePoco.Should().BeNull();
         }
 
         static byte[] Serialize( IPoco o )

@@ -12,6 +12,21 @@ namespace CK.Setup
     public static class PocoSupportResultExtension
     {
         /// <summary>
+        /// Writes the property initialization.
+        /// Writes the property name assingnment and <see cref="WriteAutoInstantiatedNewObject(IPocoSupportResult, ICodeWriter, Type, string)"/>.
+        /// </summary>
+        /// <param name="this">This result.</param>
+        /// <param name="writer">The code writer.</param>
+        /// <param name="p">The property info.</param>
+        /// <param name="pocoDirectory">The PocoDirectory accessor.</param>
+        public static void WriteAutoInstantiatedProperty( this IPocoSupportResult @this, ICodeWriter writer, IPocoPropertyInfo p, string pocoDirectory )
+        {
+            writer.Append( p.PropertyName ).Append( " = " );
+            WriteAutoInstantiatedNewObject( @this, writer, p.PropertyType, pocoDirectory );
+            writer.Append( ';' ).NewLine();
+        }
+
+        /// <summary>
         /// Writes the "new ..." instruction to the writer for an automatically instantiated property value.
         /// This throws a ArgumentException if the <paramref name="autoType"/> is not a valid one:
         /// see <see cref="IPocoPropertyInfo.AutoInstantiated"/>.
@@ -23,6 +38,7 @@ namespace CK.Setup
         /// <param name="this">This result.</param>
         /// <param name="writer">The code writer.</param>
         /// <param name="autoType">The type.</param>
+        /// <param name="pocoDirectory">The PocoDirectory accessor.</param>
         public static void WriteAutoInstantiatedNewObject( this IPocoSupportResult @this, ICodeWriter writer, Type autoType, string pocoDirectory )
         {
             if( @this.AllInterfaces.TryGetValue( autoType, out IPocoInterfaceInfo? info ) )

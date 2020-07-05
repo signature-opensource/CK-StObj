@@ -58,7 +58,7 @@ namespace CK.Setup
                 tB.TypeDefinition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {root.PocoClass.Name}( PocoDirectory_CK d )" );
-                ctorB.Append( "_factory = d._f" ).Append( tFB.UniqueId ).Append( ';' );
+                ctorB.Append( "_factory = d._f" ).Append( tFB.UniqueId ).Append( ';' ).NewLine();
 
                 foreach( var p in root.PropertyList )
                 {
@@ -71,8 +71,7 @@ namespace CK.Setup
 
                     if( p.AutoInstantiated )
                     {
-                        ctorB.Append( p.PropertyName ).Append( " = " );
-                        r.WriteAutoInstantiatedNewObject( ctorB, propType, "d" );
+                        r.WriteAutoInstantiatedProperty( ctorB, p, "d" );
                     }
                     if( p.DefaultValueSource != null )
                     {
