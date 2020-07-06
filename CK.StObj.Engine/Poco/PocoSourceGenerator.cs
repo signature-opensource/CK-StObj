@@ -71,7 +71,7 @@ namespace CK.Setup
 
                     if( p.AutoInstantiated )
                     {
-                        r.WriteAutoInstantiatedProperty( ctorB, p, "d" );
+                        r.GenerateAutoInstantiatedNewAssignation( ctorB, p.PropertyName, p.PropertyType, "d" );
                     }
                     if( p.DefaultValueSource != null )
                     {

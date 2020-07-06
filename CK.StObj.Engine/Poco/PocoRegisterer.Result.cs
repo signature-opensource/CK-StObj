@@ -271,6 +271,8 @@ namespace CK.Setup
 
             public string? DefaultValueSource { get; set; }
 
+            public int Index { get; set; }
+
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
             public string PropertyName => DeclaredProperties[0].Name;
@@ -279,9 +281,10 @@ namespace CK.Setup
 
             IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
 
-            public PocoPropertyInfo( PropertyInfo first )
+            public PocoPropertyInfo( PropertyInfo first, int index )
             {
                 DeclaredProperties = new List<PropertyInfo>() { first };
+                Index = index;
             }
 
 

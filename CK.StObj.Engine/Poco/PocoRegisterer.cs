@@ -319,35 +319,48 @@ namespace CK.Setup
                 tB.AddInterfaceImplementation( i );
                 foreach( var p in i.GetProperties() )
                 {
+                    PocoPropertyInfo? implP = null;
+                    // As soon as a property claims to be implemented, we remove it from the properties.
                     if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
                     {
                         if( externallyImplementedPropertyList == null ) externallyImplementedPropertyList = new List<PropertyInfo>();
                         externallyImplementedPropertyList.Add( p );
-                    }
-                    else if( properties.TryGetValue( p.Name, out PocoPropertyInfo? implP ) )
-                    {
-                        implP.DeclaredProperties.Add( p );
-                        implP.HasDeclaredSetter |= p.CanWrite;
+                        if( properties.TryGetValue( p.Name, out implP ) )
+                        {
+                            propertyList.RemoveAt( implP.Index );
+                            for( int idx = implP.Index; idx < propertyList.Count; ++idx )
+                            {
+                                --propertyList[idx].Index;
+                            }
+                        }
                     }
                     else
                     {
-                        implP = new PocoPropertyInfo( p );
-                        properties.Add( p.Name, implP );
-                        propertyList.Add( implP );
+                        if( properties.TryGetValue( p.Name, out implP ) )
+                        {
+                            implP.DeclaredProperties.Add( p );
+                            implP.HasDeclaredSetter |= p.CanWrite;
+                        }
+                        else
+                        {
+                            implP = new PocoPropertyInfo( p, propertyList.Count );
+                            properties.Add( p.Name, implP );
+                            propertyList.Add( implP );
+                        }
+                        // As soon as one interface doesn't declare a setter and the type is an instantiable one,
+                        // we flag this property's AutoInstantiated property.
                         if( p.CanWrite )
                         {
                             implP.HasDeclaredSetter = true;
                         }
                         else
                         {
-                            // As soon as one interface doesn't declare a setter and the type is an instantiable one,
-                            // we flag this property's AutoInstantiated property.
                             if( expanded.Contains( p.PropertyType ) )
                             {
                                 monitor.Error( $"Poco Cyclic dependency error: automatically instantiated property '{i.FullName}.{p.Name}' references its own Poco type." );
                                 return null;
                             }
-                            if( typeof(IPoco).IsAssignableFrom( p.PropertyType ) )
+                            if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) )
                             {
                                 // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
                                 // instantiation cycles is deferred when the global result is built.
@@ -363,6 +376,7 @@ namespace CK.Setup
                                     implP.AutoInstantiated = true;
                                 }
                             }
+
                         }
                     }
                 }

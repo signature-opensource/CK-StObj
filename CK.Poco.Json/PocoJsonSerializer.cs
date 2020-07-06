@@ -51,16 +51,7 @@ namespace CK.Core
             /// </summary>
             /// <param name="reader">The Json reader.</param>
             T? Read( ref Utf8JsonReader reader );
-        }
-
-        /// <summary>
-        /// Writes a <see cref="IPoco"/> with its type in a 2-cells array to the Json writer.
-        /// When <paramref name="o"/> is null, ths Json null value is written.
-        /// </summary>
-        /// <param name="writer">This writer.</param>
-        /// <param name="o">The poco to write.</param>
-        public static void WritePocoValue( this Utf8JsonWriter writer, IPoco? o ) => Write( o, writer, true );
-        
+        }        
 
         /// <summary>
         /// Writes this IPoco (that can be null) as Json.
@@ -68,11 +59,11 @@ namespace CK.Core
         /// </summary>
         /// <param name="writer">The Json writer.</param>
         /// <param name="withType">
-        /// When true, a 2-cells array contains the Poco's <see cref="IPocoFactory.Name"/> first
+        /// When true (the default), a 2-cells array contains the Poco's <see cref="IPocoFactory.Name"/> first
         /// and then the Poco's value.
         /// When false, the Poco's value object is directly written.
         /// </param>
-        public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType )
+        public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true )
         {
             if( o == null ) writer.WriteNullValue();
             else ((IWriter)o).Write( writer, withType );

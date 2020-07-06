@@ -12,22 +12,8 @@ namespace CK.Setup
     public static class PocoSupportResultExtension
     {
         /// <summary>
-        /// Writes the property initialization.
-        /// Writes the property name assingnment and <see cref="WriteAutoInstantiatedNewObject(IPocoSupportResult, ICodeWriter, Type, string)"/>.
-        /// </summary>
-        /// <param name="this">This result.</param>
-        /// <param name="writer">The code writer.</param>
-        /// <param name="p">The property info.</param>
-        /// <param name="pocoDirectory">The PocoDirectory accessor.</param>
-        public static void WriteAutoInstantiatedProperty( this IPocoSupportResult @this, ICodeWriter writer, IPocoPropertyInfo p, string pocoDirectory )
-        {
-            writer.Append( p.PropertyName ).Append( " = " );
-            WriteAutoInstantiatedNewObject( @this, writer, p.PropertyType, pocoDirectory );
-            writer.Append( ';' ).NewLine();
-        }
-
-        /// <summary>
-        /// Writes the "new ..." instruction to the writer for an automatically instantiated property value.
+        /// Generate <paramref name="variableName"/> = "new ..." assignation to the writer for an automatically
+        /// instantiated type.
         /// This throws a ArgumentException if the <paramref name="autoType"/> is not a valid one:
         /// see <see cref="IPocoPropertyInfo.AutoInstantiated"/>.
         /// <para>
@@ -37,13 +23,18 @@ namespace CK.Setup
         /// </summary>
         /// <param name="this">This result.</param>
         /// <param name="writer">The code writer.</param>
+        /// <param name="variableName">The assigned variable name.</param>
         /// <param name="autoType">The type.</param>
-        /// <param name="pocoDirectory">The PocoDirectory accessor.</param>
-        public static void WriteAutoInstantiatedNewObject( this IPocoSupportResult @this, ICodeWriter writer, Type autoType, string pocoDirectory )
+        /// <param name="pocoDirectoryAccessor">
+        /// The PocoDirectory accessor: "this" in the PocoDirectory, "PocoDirectory" in
+        /// a factory or "_factory.PocoDirectory" in a Poco class.
+        /// </param>
+        public static void GenerateAutoInstantiatedNewAssignation( this IPocoSupportResult @this, ICodeWriter writer, string variableName, Type autoType, string pocoDirectoryAccessor )
         {
+            writer.Append( variableName ).Append( " = " );
             if( @this.AllInterfaces.TryGetValue( autoType, out IPocoInterfaceInfo? info ) )
             {
-                writer.Append( "new " ).Append( info.Root.PocoClass.Name ).Append( "( " ).Append( pocoDirectory ).Append( " );" );
+                writer.Append( "new " ).Append( info.Root.PocoClass.Name ).Append( "( " ).Append( pocoDirectoryAccessor ).Append( " );" ).NewLine();
                 return;
             }
             if( autoType.IsGenericType )
@@ -51,7 +42,7 @@ namespace CK.Setup
                 Type genType = autoType.GetGenericTypeDefinition();
                 if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
                 {
-                    writer.Append( "new System.Collections.Generic.List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" );
+                    writer.Append( "new System.Collections.Generic.List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
                 if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
@@ -66,11 +57,11 @@ namespace CK.Setup
                 }
                 if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                 {
-                    writer.Append( "new System.Collections.Generic.HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" );
+                    writer.Append( "new System.Collections.Generic.HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
             }
-            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco, ISet<>;, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
+            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco (that are not marked with [CKTypeDefiner] or[CKTypeSuperDefiner]), ISet<>;, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
         }
     }
 }

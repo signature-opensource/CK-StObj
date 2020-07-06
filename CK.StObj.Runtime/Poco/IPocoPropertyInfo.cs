@@ -29,6 +29,13 @@ namespace CK.Setup
         string? DefaultValueSource { get; }
 
         /// <summary>
+        /// Gets the index of this property in the Poco class.
+        /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
+        /// by index (MessagePack) rather than by name (Json).
+        /// </summary>
+        int Index { get; }
+
+        /// <summary>
         /// Gets the property type.
         /// </summary>
         Type PropertyType { get; }
