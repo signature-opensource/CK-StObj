@@ -326,11 +326,11 @@ class GStObj : IStObj
         const string _sourceFinalGStObj = @"
 class GFinalStObj : GStObj, IStObjFinalImplementation
 {
-    public GFinalStObj( IStObjRuntimeBuilder rb, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m, int idx )
+    public GFinalStObj( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m, int idx )
             : base( t, g, m, idx )
     {
         FinalImplementation = this;
-        Implementation = rb.CreateInstance( actualType );
+        Implementation = impl;
         MultipleMappings = mult;
         UniqueMappings = uniq;
     }
@@ -357,7 +357,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                                 .Append( "readonly GFinalStObj[] _finalStObjs;" ).NewLine()
                                 .Append( "readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine();
 
-            var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}(IActivityMonitor monitor, IStObjRuntimeBuilder rb)" );
+            var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}( IActivityMonitor monitor )" );
 
             rootCtor.Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
                     .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.FinalImplementations.Count}];" ).NewLine();
@@ -370,7 +370,8 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 rootCtor.Append( $"_stObjs[{iStObj++}] = " );
                 if( m.Specialization == null )
                 {
-                    rootCtor.Append( $"_finalStObjs[{iImplStObj++}] = new GFinalStObj( rb, " )
+                    rootCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
+                            .AppendCSharpName( m.FinalImplementation.FinalType ).Append("(), " )
                             .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();

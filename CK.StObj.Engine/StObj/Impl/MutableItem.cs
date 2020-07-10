@@ -69,12 +69,12 @@ namespace CK.Setup
 
             public List<PropertySetter> PostBuildProperties;
 
-            internal object CreateStructuredObject( IStObjRuntimeBuilder runtimeBuilder, Type typeIfNotImplementable )
+            internal object CreateStructuredObject( Type typeIfNotImplementable )
             {
                 Type toInstantiate = ImplementableTypeInfo != null
                                         ? ImplementableTypeInfo.StubType
                                         : typeIfNotImplementable;
-                StructuredObject = runtimeBuilder.CreateInstance( toInstantiate );
+                StructuredObject = Activator.CreateInstance( toInstantiate );
                 return StructuredObject;
             }
         }

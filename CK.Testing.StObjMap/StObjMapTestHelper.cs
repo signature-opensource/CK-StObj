@@ -188,7 +188,7 @@ namespace CK.Testing
                 try
                 {
                     var a = Assembly.LoadFrom( Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" ) );
-                    return StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, _monitor.Monitor );
+                    return StObjContextRoot.Load( a, _monitor.Monitor );
                 }
                 catch( Exception ex )
                 {

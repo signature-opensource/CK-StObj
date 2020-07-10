@@ -16,13 +16,13 @@ namespace CK.Setup
     partial class MutableItem
     {
 
-        public object CreateStructuredObject( IActivityMonitor monitor, IStObjRuntimeBuilder runtimeBuilder )
+        public object CreateStructuredObject( IActivityMonitor monitor )
         {
             Debug.Assert( Specialization == null );
             Debug.Assert( _leafData.StructuredObject == null, "Called once and only once." );
             try
             {
-                return _leafData.CreateStructuredObject( runtimeBuilder, ClassType );
+                return _leafData.CreateStructuredObject( ClassType );
             }
             catch( Exception ex )
             {

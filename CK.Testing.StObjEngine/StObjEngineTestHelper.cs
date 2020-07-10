@@ -87,7 +87,7 @@ namespace CK.Testing
             if( map == null )
             {
                 var a = Assembly.Load( new AssemblyName( assemblyName ) );
-                map = StObjContextRoot.Load( a, null, TestHelper.Monitor );
+                map = StObjContextRoot.Load( a, TestHelper.Monitor );
                 map.Should().NotBeNull();
             }
             return (r.Collector, map!);

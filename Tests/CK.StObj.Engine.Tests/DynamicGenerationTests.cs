@@ -95,7 +95,7 @@ namespace CK.StObj.Engine.Tests
                 SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_ConstructCalled" );
                 {
                     var a = Assembly.Load( "TEST_ConstructCalled" );
-                    IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
+                    IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
                     Debug.Assert( c != null );
                     c.Should().NotBeNull();
                     Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
@@ -227,7 +227,7 @@ namespace CK.StObj.Engine.Tests
                 SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_PostBuildSet" );
                 {
                     var a = Assembly.Load( "TEST_PostBuildSet" );
-                    IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
+                    IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
                     c.Should().NotBeNull();
                     Debug.Assert( c != null );
                     Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );

@@ -48,32 +48,6 @@ namespace CK.Core
         /// </summary>
         public static readonly string ConfigureServicesMethodName = "ConfigureServices";
 
-        static IStObjRuntimeBuilder? _stObjBuilder;
-
-        /// <summary>
-        /// Default <see cref="IStObjRuntimeBuilder"/> that will be used.
-        /// Never null: defaults to <see cref="BasicStObjRuntimeBuilder"/>.
-        /// </summary>
-        public static IStObjRuntimeBuilder DefaultStObjRuntimeBuilder
-        {
-            get => _stObjBuilder ?? BasicStObjRuntimeBuilder;
-            set => _stObjBuilder = value;
-        }
-
-        /// <summary>
-        /// Default and trivial implementation of <see cref="IStObjRuntimeBuilder"/> where <see cref="IStObjRuntimeBuilder.CreateInstance"/> implementation 
-        /// uses <see cref="Activator.CreateInstance(Type)"/> to call the public default constructor of the type.
-        /// </summary>
-        public readonly static IStObjRuntimeBuilder BasicStObjRuntimeBuilder = new SimpleStObjRuntimeBuilder();
-
-        class SimpleStObjRuntimeBuilder : IStObjRuntimeBuilder
-        {
-            public object CreateInstance( Type finalType )
-            {
-                return Activator.CreateInstance( finalType );
-            }
-        }
-
         // We index the StObjMapInfo by the Assembly and by the Signature: assemblies are stable keys but
         // a new info with the same signature replaces the existing one.
         static readonly Dictionary<object, StObjMapInfo?> _alreadyHandled = new Dictionary<object, StObjMapInfo?>();
@@ -216,7 +190,7 @@ namespace CK.Core
             {
                 try
                 {
-                    return info.StObjMap = (IStObjMap)Activator.CreateInstance( info.StObjMapType, new object[] { monitor, DefaultStObjRuntimeBuilder } );
+                    return info.StObjMap = (IStObjMap)Activator.CreateInstance( info.StObjMapType, new object[] { monitor } );
                 }
                 catch( Exception ex )
                 {
@@ -231,10 +205,9 @@ namespace CK.Core
         /// Attempts to load a StObjMap from an assembly.
         /// </summary>
         /// <param name="a">Already generated assembly.</param>
-        /// <param name="runtimeBuilder">Runtime builder to use. When null, <see cref="DefaultStObjRuntimeBuilder"/> is used.</param>
         /// <param name="monitor">Optional monitor for loading operation.</param>
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
-        public static IStObjMap? Load( Assembly a, IStObjRuntimeBuilder? runtimeBuilder = null, IActivityMonitor? monitor = null )
+        public static IStObjMap? Load( Assembly a, IActivityMonitor? monitor = null )
         {
             lock( _alreadyHandled )
             {

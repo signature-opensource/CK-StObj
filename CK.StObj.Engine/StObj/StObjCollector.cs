@@ -19,7 +19,6 @@ namespace CK.Setup
         readonly IStObjValueResolver _valueResolver;
         readonly IActivityMonitor _monitor;
         readonly DynamicAssembly _tempAssembly;
-        readonly IStObjRuntimeBuilder _runtimeBuilder;
         int _registerFatalOrErrorCount;
         bool _computedResult;
 
@@ -30,7 +29,6 @@ namespace CK.Setup
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="traceDepencySorterInput">True to trace in <paramref name="monitor"/> the input of dependency graph.</param>
         /// <param name="traceDepencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
-        /// <param name="runtimeBuilder">Optional runtime builder to use.</param>
         /// <param name="typeFilter">Optional type filter.</param>
         /// <param name="configurator">Used to configure items. See <see cref="IStObjStructuralConfigurator"/>.</param>
         /// <param name="valueResolver">
@@ -43,14 +41,12 @@ namespace CK.Setup
             IServiceProvider serviceProvider,
             bool traceDepencySorterInput = false,
             bool traceDepencySorterOutput = false,
-            IStObjRuntimeBuilder runtimeBuilder = null,
             IStObjTypeFilter typeFilter = null,
             IStObjStructuralConfigurator configurator = null,
             IStObjValueResolver valueResolver = null,
             IEnumerable<string> names = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            _runtimeBuilder = runtimeBuilder ?? StObjContextRoot.DefaultStObjRuntimeBuilder;
             _monitor = monitor;
             _tempAssembly = new DynamicAssembly();
             Func<IActivityMonitor,Type,bool> tFilter = null;
@@ -448,7 +444,7 @@ namespace CK.Setup
 
                 MutableItem specialization = pathTypes[pathTypes.Count - 1];
 
-                object theObject = specialization.CreateStructuredObject( _monitor, _runtimeBuilder );
+                object theObject = specialization.CreateStructuredObject( _monitor );
                 // If we failed to create an instance, we ensure that an error is logged and
                 // continue the process.
                 if( theObject == null )

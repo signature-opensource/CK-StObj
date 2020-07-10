@@ -19,8 +19,6 @@ namespace CK.Setup
         readonly IActivityMonitor _monitor;
         readonly StObjEngineConfiguration _config;
         readonly XElement? _ckSetupConfig;
-        readonly IStObjRuntimeBuilder _runtimeBuilder;
-
 
         Status? _status;
         StObjEngineConfigureContext? _startContext;
@@ -59,14 +57,12 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">Logger that must be used.</param>
         /// <param name="config">Configuration that describes the key aspects of the build.</param>
-        /// <param name="runtimeBuilder">The object in charge of actual objects instantiation. When null, <see cref="StObjContextRoot.DefaultStObjRuntimeBuilder"/> is used.</param>
-        public StObjEngine( IActivityMonitor monitor, StObjEngineConfiguration config, IStObjRuntimeBuilder? runtimeBuilder = null )
+        public StObjEngine( IActivityMonitor monitor, StObjEngineConfiguration config )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( config == null ) throw new ArgumentNullException( nameof( config ) );
             _monitor = monitor;
             _config = config;
-            _runtimeBuilder = runtimeBuilder ?? StObjContextRoot.DefaultStObjRuntimeBuilder;
         }
 
         /// <summary>
@@ -79,7 +75,6 @@ namespace CK.Setup
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( config == null ) throw new ArgumentNullException( nameof( config ) );
             _monitor = monitor;
-            _runtimeBuilder = StObjContextRoot.DefaultStObjRuntimeBuilder;
             _config = new StObjEngineConfiguration( config );
             // We are coming from CKSetup: the configuation element has a Engine attribute.
             if( config.Attribute( "Engine" ) != null ) _ckSetupConfig = config;
@@ -392,8 +387,8 @@ namespace CK.Setup
                     _startContext.ServiceContainer,
                     _config.TraceDependencySorterInput,
                     _config.TraceDependencySorterOutput,
-                    _runtimeBuilder,
-                    typeFilter, configurator, configurator );
+                    typeFilter, configurator, configurator,
+                    _config.BinPaths.Select( b => b.Name ) );
                 stObjC.RevertOrderingNames = _config.RevertOrderingNames;
                 using( _monitor.OpenInfo( "Registering types." ) )
                 {
