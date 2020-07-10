@@ -11,9 +11,6 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   
-  <ItemGroup>
-    <Compile Include=".StObjGen\G0.cs" />
-  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

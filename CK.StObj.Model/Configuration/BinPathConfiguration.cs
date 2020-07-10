@@ -164,7 +164,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets an optional target (output) directory for source files.
-        /// When not <see cref="NormalizedPath.IsEmptyPath"/>, a ".StObjGen" folder is created and
+        /// When not <see cref="NormalizedPath.IsEmptyPath"/>, a "$StObjGen" folder is created and
         /// the source files are moved from the <see cref="OutputPath"/> to this one and, for ".cs" files,
         /// they are renamed into standard names "G0.cs", "G1.cs", etc. (even if currently only one file
         /// is generated).

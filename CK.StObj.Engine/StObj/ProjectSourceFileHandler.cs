@@ -12,10 +12,10 @@ namespace CK.Setup
 {
     /// <summary>
     /// Handles source files that have been created in the output path by moving
-    /// them to a ".StobjGen" folder in a project path and checking whether the signature (SHA1 at the start of the primary generated
+    /// them to a "$StObjGen" folder in a project path and checking whether the signature (SHA1 at the start of the primary generated
     /// .cs file) match the already existing one: in such case, the available map should be used.
     /// <para>
-    /// This class is public since it is directly used by CK.Testing.StObjEngine to update the ".StObjGen" folder of
+    /// This class is public since it is directly used by CK.Testing.StObjEngine to update the "$StObjGen" folder of
     /// the TestHelper.ProjectTestFolder.
     /// </para>
     /// </summary>
@@ -33,7 +33,7 @@ namespace CK.Setup
         /// The output path of the code generation.
         /// </param>
         /// <param name="projectPath">
-        /// The target project path into which a ".StObjGen" folder is updated.
+        /// The target project path into which a "$StObjGen" folder is updated.
         /// </param>
         public ProjectSourceFileHandler(
             IActivityMonitor monitor,
@@ -42,14 +42,14 @@ namespace CK.Setup
         {
             _monitor = monitor;
             _originPath = originPath;
-            _target = projectPath.AppendPart( ".StObjGen" );
+            _target = projectPath.AppendPart( "$StObjGen" );
             Directory.CreateDirectory( _target );
         }
 
         NormalizedPath GetCSFileTargetPath( int idx ) => _target.AppendPart( "G" + idx + ".cs" );
 
         /// <summary>
-        /// Handles the move of the generated files from the output path to the ".StObjGen" folder.
+        /// Handles the move of the generated files from the output path to the "$StObjGen" folder.
         /// </summary>
         /// <param name="r">The generation result.</param>
         /// <returns>
