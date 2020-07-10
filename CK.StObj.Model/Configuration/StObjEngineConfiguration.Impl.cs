@@ -18,6 +18,7 @@ namespace CK.Setup
             Aspects = new List<IStObjEngineAspectConfiguration>();
             BinPaths = new List<BinPathConfiguration>();
             GlobalExcludedTypes = new HashSet<string>();
+            AvailableStObjMapSignatures = new HashSet<SHA1Value>();
         }
 
         #region Xml centralized names.
@@ -73,6 +74,16 @@ namespace CK.Setup
         static public readonly XName xGlobalExcludedTypes = XNamespace.None + "GlobalExcludedTypes";
 
         /// <summary>
+        /// The AvailableStObjMapSignatures element name.
+        /// </summary>
+        static public readonly XName xAvailableStObjMapSignatures = XNamespace.None + "AvailableStObjMapSignatures";
+
+        /// <summary>
+        /// The Signature element name.
+        /// </summary>
+        static public readonly XName xSignature = XNamespace.None + "Signature";
+
+        /// <summary>
         /// The Type element name.
         /// </summary>
         static public readonly XName xType = XNamespace.None + "Type";
@@ -108,14 +119,19 @@ namespace CK.Setup
         static public readonly XName xOutputPath = XNamespace.None + "OutputPath";
 
         /// <summary>
+        /// The OutputPath element name.
+        /// </summary>
+        static public readonly XName ProjectPath = XNamespace.None + "ProjectPath";
+
+        /// <summary>
         /// The GenerateSourceFiles element name.
         /// </summary>
         static public readonly XName xGenerateSourceFiles = XNamespace.None + "GenerateSourceFiles";
 
         /// <summary>
-        /// The SkipCompilation element name.
+        /// The CompileOption element name.
         /// </summary>
-        static public readonly XName xSkipCompilation = XNamespace.None + "SkipCompilation";
+        static public readonly XName xCompileOption = XNamespace.None + "CompileOption";
 
         /// <summary>
         /// The TraceDependencySorterInput element name.
@@ -167,7 +183,11 @@ namespace CK.Setup
             TraceDependencySorterOutput = (bool?)e.Element( xTraceDependencySorterOutput ) ?? false;
             RevertOrderingNames = (bool?)e.Element( xRevertOrderingNames ) ?? false;
             InformationalVersion = (string)e.Element( xInformationalVersion );
- 
+            AvailableStObjMapSignatures = new HashSet<SHA1Value>( FromXml( e, xAvailableStObjMapSignatures, xSignature )
+                                                                    .Select( s => SHA1Value.TryParse( s, 0, out SHA1Value sha1 )
+                                                                                    ? sha1
+                                                                                    : SHA1Value.ZeroSHA1 )
+                                                                    .Where( sha => sha != SHA1Value.ZeroSHA1 ) );
             GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
 
             // BinPaths.
@@ -198,16 +218,19 @@ namespace CK.Setup
                 return weaken;
             }
             return new XElement( xConfigurationRoot,
-                        new XComment( "Please see https://gitlab.com/signature-code/CK-Database/raw/develop/CK.StObj.Model/Configuration/StObjEngineConfiguration.cs for documentation." ),
+                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/StObjEngineConfiguration.cs for documentation." ),
                         !BasePath.IsEmptyPath ? new XElement( xBasePath, BasePath ) : null,
                         GeneratedAssemblyName != DefaultGeneratedAssemblyName ? new XElement( xGeneratedAssemblyName, GeneratedAssemblyName ) : null,
                         TraceDependencySorterInput ? new XElement( xTraceDependencySorterInput, true ) : null,
                         TraceDependencySorterOutput ? new XElement( xTraceDependencySorterOutput, true ) : null,
                         RevertOrderingNames ? new XElement( xRevertOrderingNames, true ) : null,
                         InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
+                        AvailableStObjMapSignatures.Count > 0
+                                    ? ToXml( xAvailableStObjMapSignatures, xSignature, AvailableStObjMapSignatures.Select( sha => sha.ToString() ) )
+                                    : null,
                         ToXml( xGlobalExcludedTypes, xType, GlobalExcludedTypes ),
                         Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
-                        new XComment( "BinPaths: please see https://gitlab.com/signature-code/CK-Database/raw/develop/CK.StObj.Model/Configuration/BinPath.cs for documentation." ),
+                        new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/BinPathConfiguration.cs for documentation." ),
                         new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
         }
 

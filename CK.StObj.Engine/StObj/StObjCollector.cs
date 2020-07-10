@@ -37,6 +37,7 @@ namespace CK.Setup
         /// Used to explicitly resolve or alter StObjConstruct parameters and object ambient properties.
         /// See <see cref="IStObjValueResolver"/>.
         /// </param>
+        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is is the default name.</param>
         public StObjCollector(
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,
@@ -45,7 +46,8 @@ namespace CK.Setup
             IStObjRuntimeBuilder runtimeBuilder = null,
             IStObjTypeFilter typeFilter = null,
             IStObjStructuralConfigurator configurator = null,
-            IStObjValueResolver valueResolver = null )
+            IStObjValueResolver valueResolver = null,
+            IEnumerable<string> names = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             _runtimeBuilder = runtimeBuilder ?? StObjContextRoot.DefaultStObjRuntimeBuilder;

@@ -89,5 +89,12 @@ namespace CK.Setup
         /// </summary>
         public HashSet<string> GlobalExcludedTypes { get; }
 
+        /// <summary>
+        /// Gets a mutable set of SHA1 file signatures. Whenever any generated source file's signature
+        /// appears in this list, the source file is not generated nor comiled: the available map should
+        /// be used.
+        /// </summary>
+        public HashSet<SHA1Value> AvailableStObjMapSignatures { get; }
+
     }
 }

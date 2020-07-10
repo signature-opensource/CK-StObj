@@ -2,7 +2,9 @@ using CK.Core;
 using CK.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Xml;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -98,7 +100,21 @@ namespace CK.Setup
             Name = (string?)e.Attribute( StObjEngineConfiguration.xName );
             Path = (string)e.Attribute( StObjEngineConfiguration.xPath );
             OutputPath = (string)e.Element( StObjEngineConfiguration.xOutputPath );
-            SkipCompilation = (bool?)e.Element( StObjEngineConfiguration.xSkipCompilation ) ?? false;
+            ProjectPath = (string)e.Element( StObjEngineConfiguration.ProjectPath );
+
+            if( e.Element( "SkipCompilation" ) != null )
+            {
+                throw new XmlException( @"Element SkipCompilation must be replaced with CompileOption that can be be ""None"", ""Parse"" or ""Compile"". It defaults to ""None""." );
+            }
+            CompileOption = e.Element( StObjEngineConfiguration.xCompileOption )?.Value.ToLowerInvariant() switch
+            {
+                null => CompileOption.None,
+                "none" => CompileOption.None,
+                "parse" => CompileOption.Parse,
+                "compile" => CompileOption.Compile,
+                _ => throw new XmlException( @"Expected CompileOption to be ""None"", ""Parse"" or ""Compile""." )
+            };
+
             GenerateSourceFiles = (bool?)e.Element( StObjEngineConfiguration.xGenerateSourceFiles ) ?? true;
 
             Assemblies = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly ) );
@@ -117,7 +133,8 @@ namespace CK.Setup
                                     String.IsNullOrWhiteSpace( Name ) ? null : new XAttribute( StObjEngineConfiguration.xName, Name ),
                                     new XAttribute( StObjEngineConfiguration.xPath, Path ),
                                     !OutputPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.xOutputPath, OutputPath ) : null,
-                                    SkipCompilation ? new XElement( StObjEngineConfiguration.xSkipCompilation, true ) : null,
+                                    !ProjectPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.ProjectPath, ProjectPath ) : null,
+                                    new XElement( StObjEngineConfiguration.xCompileOption, CompileOption.ToString() ),
                                     GenerateSourceFiles ? null : new XElement( StObjEngineConfiguration.xGenerateSourceFiles, false ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly, Assemblies ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType, ExcludedTypes ),
@@ -128,7 +145,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets or sets the name of this configuration.
+        /// Gets or sets the name that uniquely identifies this configuration among the others.
         /// When null, an automatically numbered name is generated: only the unified bin path has an empty name.
         /// </summary>
         public string? Name { get; set; }
@@ -146,14 +163,22 @@ namespace CK.Setup
         public NormalizedPath OutputPath { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the compilation should be skipped for this folder (and compiled assembly shouldn't be
-        /// copied to <see cref="OutputPath"/>).
-        /// Defaults to false.
+        /// Gets or sets an optional target (output) directory for source files.
+        /// When not <see cref="NormalizedPath.IsEmptyPath"/>, a ".StObjGen" folder is created and
+        /// the source files are moved from the <see cref="OutputPath"/> to this one and, for ".cs" files,
+        /// they are renamed into standard names "G0.cs", "G1.cs", etc. (even if currently only one file
+        /// is generated).
         /// </summary>
-        public bool SkipCompilation { get; set; }
+        public NormalizedPath ProjectPath { get; set; }
 
         /// <summary>
-        /// Gets whether generated source files should be generated and copied to <see cref="OutputPath"/>.
+        /// Gets or sets the Roslyn compilation behavior.
+        /// Defaults to <see cref="CompileOption.None"/>.
+        /// </summary>
+        public CompileOption CompileOption { get; set; }
+
+        /// <summary>
+        /// Gets whether generated source files should be generated and copied to <see cref="OutputPath"/> or .
         /// Defaults to true.
         /// </summary>
         public bool GenerateSourceFiles { get; set; }
@@ -194,7 +219,7 @@ namespace CK.Setup
             rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
             // The root (the Working directory) doesn't want any output by itself.
             rootBinPath.GenerateSourceFiles = false;
-            rootBinPath.SkipCompilation = true;
+            Debug.Assert( rootBinPath.CompileOption == CompileOption.None );
             // Assemblies and types are the union of the assemblies and types of the bin paths.
             rootBinPath.Assemblies.AddRange( configurations.SelectMany( b => b.Assemblies ) );
 

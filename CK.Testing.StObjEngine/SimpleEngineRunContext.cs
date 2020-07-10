@@ -100,7 +100,7 @@ namespace CK.Testing.StObjEngine
             public bool SaveSource { get; set; }
 
             /// <inheritdoc />
-            public bool CompileSource { get; set; }
+            public CompileOption CompileOption { get; set; }
 
             void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
             {
@@ -162,20 +162,32 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="result">The valid result.</param>
+        /// <param name="compileOption">Compilation behavior.</param>
+        /// <param name="skipEmbeddedStObjMap">
+        /// True to skip any <see cref="ProjectSourceFileHandler.FindEmbeddedStObjMap(IActivityMonitor)"/>: this MUST be true when
+        /// a setup depends on externally injected services.
+        /// </param>
         /// <param name="assemblyName">The assembly to generate.</param>
-        /// <param name="compileSource">False to skip the compilation.</param>
-        /// <param name="saveSource">True to save the generated source files.</param>
+        /// <param name="saveSource">False to not save the generated source files.</param>
         /// <returns><see cref="StObjCollectorResult.CodeGenerateResult"/>.</returns>
-        public static StObjCollectorResult.CodeGenerateResult TryGenerateAssembly( IActivityMonitor monitor, StObjCollectorResult result, string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName, bool compileSource = true, bool saveSource = false )
+        public static StObjCollectorResult.CodeGenerateResult TryGenerateAssembly(
+            IActivityMonitor monitor,
+            StObjCollectorResult result,
+            CompileOption compileOption,
+            bool skipEmbeddedStObjMap,
+            string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName,
+            bool saveSource = true )
         {
             if( result.HasFatalError ) return default;
             var ctx = new SimpleEngineRunContext( result );
-            ctx.UnifiedCodeContext.CompileSource = compileSource;
+            ctx.UnifiedCodeContext.CompileOption = compileOption;
             ctx.UnifiedCodeContext.SaveSource = saveSource;
             var secondPass = new List<SecondPassCodeGeneration>();
             string finalFilePath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
             if( !result.GenerateSourceCodeFirstPass( monitor, ctx.UnifiedCodeContext, null, secondPass.Add ) ) return default;
-            return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, secondPass );
+            Func<SHA1Value, bool> mapFinder = v => StObjContextRoot.GetMapInfo( v, monitor ) != null;
+            if( skipEmbeddedStObjMap ) mapFinder = v => false;
+            return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, secondPass, mapFinder );
         }
 
         /// <summary>
@@ -185,11 +197,15 @@ namespace CK.Testing.StObjEngine
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="result">The valid result.</param>
         /// <param name="assemblyName">The assembly to generate.</param>
-        /// <param name="compileSource">False to skip the compilation.</param>
-        /// <param name="saveSource">True to save the generated source files.</param>
-        public static void GenerateAssembly( IActivityMonitor monitor, StObjCollectorResult result, string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName, bool compileSource = true, bool saveSource = false )
+        /// <param name="skipEmbeddedStObjMap">
+        /// True to skip any <see cref="ProjectSourceFileHandler.FindEmbeddedStObjMap(IActivityMonitor)"/>: this MUST be true when
+        /// a setup depends on externally injected services.
+        /// </param>
+        /// <param name="compileOption">Compilation behavior.</param>
+        /// <param name="saveSource">False to not save the generated source files.</param>
+        public static void GenerateAssembly(IActivityMonitor monitor, StObjCollectorResult result, CompileOption compileOption, bool skipEmbeddedStObjMap, string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName, bool saveSource = true )
         {
-            if( !TryGenerateAssembly( monitor, result, assemblyName, compileSource, saveSource ).Success )
+            if( !TryGenerateAssembly(monitor, result, compileOption, skipEmbeddedStObjMap, assemblyName, saveSource).Success )
             {
                 throw new Exception( $"Unable to generate assembly '{assemblyName}'." );
             }

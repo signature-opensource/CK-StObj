@@ -19,6 +19,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets one or more <see cref="BinPathConfiguration"/> that share/are compatible with this <see cref="EngineMap"/>.
+        /// When used by tests Mock objects may not have any configuration.
         /// </summary>
         IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
 
@@ -31,8 +32,11 @@ namespace CK.Setup
         ISimpleServiceContainer ServiceContainer { get; }
 
         /// <summary>
-        /// Gets the name (or comma seprated names) of the <see cref="BinPathConfigurations"/>.
+        /// Gets the name (or comma separated names) of the <see cref="BinPathConfigurations"/>.
+        /// When no configuration exists, this is "CurrentTest" since only with Mock test objects can we have no BinPathConfigurations.
         /// </summary>
-        public string Names => BinPathConfigurations.Select( c => String.IsNullOrEmpty( c.Name ) ? "(Unified)" : c.Name ).Concatenate();
+        public string Names => BinPathConfigurations.Count > 0
+                                ? BinPathConfigurations.Select( c => String.IsNullOrEmpty( c.Name ) ? "(Unified)" : c.Name ).Concatenate()
+                                : "CurrentTest";
     }
 }

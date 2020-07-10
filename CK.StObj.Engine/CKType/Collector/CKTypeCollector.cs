@@ -24,8 +24,8 @@ namespace CK.Setup
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
         readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
         readonly List<RealObjectClassInfo> _roots;
-        readonly string _mapName;
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
+        readonly IReadOnlyList<string> _names;
 
         /// <summary>
         /// Initializes a new <see cref="CKTypeCollector"/> instance.
@@ -34,13 +34,13 @@ namespace CK.Setup
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="tempAssembly">The temporary <see cref="IDynamicAssembly"/>.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        /// <param name="mapName">Optional map name. Defaults to the empty string.</param>
+        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is is the default name.</param>
         public CKTypeCollector(
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,
             IDynamicAssembly tempAssembly,
             Func<IActivityMonitor,Type,bool>? typeFilter = null,
-            string? mapName = null )
+            IEnumerable<string>? names = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( serviceProvider == null ) throw new ArgumentNullException( nameof( serviceProvider ) );
@@ -58,7 +58,7 @@ namespace CK.Setup
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             CKTypeKindDetector = new CKTypeKindDetector();
             _pocoRegisterer = new PocoRegisterer( ( m, t ) => (CKTypeKindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
-            _mapName = mapName ?? String.Empty;
+            _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
         /// <summary>
@@ -267,7 +267,7 @@ namespace CK.Setup
         RealObjectCollectorResult GetRealObjectResult()
         {
             List<MutableItem> allSpecializations = new List<MutableItem>( _roots.Count );
-            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _mapName, allSpecializations, CKTypeKindDetector, _assemblies );
+            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _names, allSpecializations, CKTypeKindDetector, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
             List<IReadOnlyList<Type>>? classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();

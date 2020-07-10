@@ -97,20 +97,32 @@ if( isDef )
             {
                 string cType = info.Type.ToCSharpName();
                 var f = PocoDirectory.CreateFunction( "internal void " + name + "( ref System.Text.Json.Utf8JsonReader r, "+ cType + " c )" );
-                f.Append( @"if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) throw new System.Text.Json.JsonException( ""Expected '[' to start a collection."" );" ).NewLine();
+                f.Append( "if( r.TokenType != " )
+                .Append( info.Spec == TypeSpec.StringMap ? "System.Text.Json.JsonTokenType.StartObject" : "System.Text.Json.JsonTokenType.StartArray" )
+                .Append( @" ) throw new System.Text.Json.JsonException( ""Expected " )
+                .Append( info.Spec == TypeSpec.StringMap ? "'{' to start a Json object (dictionary of string)" : "'[' to start a collection" )
+                .Append( @"."" );" ).NewLine();
 
                 f.Append( "r.Read();" ).NewLine()
                  .Append( "c.Clear();" ).NewLine()
-                 .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )" )
+                 .Append( "while( r.TokenType != " )
+                 .Append( info.Spec == TypeSpec.StringMap ? "System.Text.Json.JsonTokenType.EndObject" : "System.Text.Json.JsonTokenType.EndArray" )
+                 .Append( " )" )
                  .OpenBlock();
 
                 if( info.Spec == TypeSpec.Map )
                 {
+                    f.Append( @"if( r.TokenType != System.Text.Json.JsonTokenType.StartArray  ) throw new System.Text.Json.JsonException( ""Expected '[' to start a map item."" );" ).NewLine()
+                     .Append( "r.Read();" ).NewLine();
+
                     f.AppendCSharpName( info.Item1.Type ).Append( " k;" ).NewLine();
                     GenerateAssignation( f, "k", info.Item1, pocoDirectoryAccessor );
                     f.AppendCSharpName( info.Item2.Type ).Append( " v;" ).NewLine();
                     GenerateAssignation( f, "v", info.Item2, pocoDirectoryAccessor );
                     f.Append( "c.Add( k, v );" ).NewLine();
+
+                    f.Append( @"if( r.TokenType != System.Text.Json.JsonTokenType.EndArray  ) throw new System.Text.Json.JsonException( ""Expected ']' to end a map item."" );" ).NewLine()
+                     .Append( "r.Read();" ).NewLine();
                 }
                 else if( info.Spec == TypeSpec.StringMap )
                 {

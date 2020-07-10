@@ -74,7 +74,7 @@ namespace CK.Setup
 
             bool ICodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
 
-            bool ICodeGenerationContext.CompileSource => BinPathConfigurations.Any( f => !f.SkipCompilation );
+            CompileOption ICodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
         }
 
 

@@ -195,41 +195,37 @@ namespace CK.Setup
                             }
                             if( _status.Success )
                             {
+                                Func<SHA1Value, bool> stObjMapAvailable = _config.AvailableStObjMapSignatures.Count > 0
+                                                                            ? _config.AvailableStObjMapSignatures.Contains
+                                                                            : (Func<SHA1Value, bool>)(v => StObjContextRoot.GetMapInfo( v, _monitor ) != null);
                                 foreach( var (g, secondPasses) in secondPass )
                                 {
                                     var head = g.GroupedPaths.Key;
                                     var primaryOutputFile = head.OutputPath.AppendPart( dllName );
-                                    var gR = g.Result.GenerateSourceCodeSecondPass( _monitor, primaryOutputFile, g, secondPasses );
+                                    StObjCollectorResult.CodeGenerateResult gR = g.Result.GenerateSourceCodeSecondPass( _monitor, primaryOutputFile, g, secondPasses, stObjMapAvailable );
                                     if( gR.GeneratedFileNames.Count > 0 )
                                     {
                                         foreach( var f in g.GroupedPaths )
                                         {
-                                            if( !f.GenerateSourceFiles && f.SkipCompilation ) continue;
-                                            var dir = f.OutputPath;
-                                            if( dir == head.OutputPath ) continue;
-                                            using( _monitor.OpenInfo( $"Copying generated files to folder: '{dir}'." ) )
+                                            if( !f.GenerateSourceFiles && f.CompileOption == CompileOption.None ) continue;
+                                            // Handling OutputPath: if the OutputPath is not empty and is not already the primary one,
+                                            // We move all the generated files.
+                                            if( !f.OutputPath.IsEmptyPath
+                                                && f.OutputPath != head.OutputPath )
                                             {
                                                 foreach( var file in gR.GeneratedFileNames )
                                                 {
-                                                    if( file == dllName )
-                                                    {
-                                                        if( f.SkipCompilation ) continue;
-                                                    }
-                                                    else
-                                                    {
-                                                        if( !f.GenerateSourceFiles ) continue;
-                                                    }
-                                                    try
-                                                    {
-                                                        _monitor.Info( file );
-                                                        File.Copy( head.OutputPath.Combine( file ), dir.Combine( file ), true );
-                                                    }
-                                                    catch( Exception ex )
-                                                    {
-                                                        _monitor.Error( ex );
-                                                        return false;
-                                                    }
+                                                    ProjectSourceFileHandler.DoMove( _monitor, head.OutputPath.Combine( file ), f.OutputPath.Combine( file ) );
                                                 }
+                                            }
+                                            // Once done, if there is a ProjectPath that is not the OutputPath, then
+                                            // we handle the "Project Mode" source files.
+                                            // There are 2 moves for file sources but the code is simpler.
+                                            if( !f.ProjectPath.IsEmptyPath
+                                                && f.ProjectPath != f.OutputPath )
+                                            {
+                                                var h = new ProjectSourceFileHandler( _monitor, f.OutputPath, f.ProjectPath );
+                                                h.MoveFilesAndCheckSignature( gR );
                                             }
                                         }
                                     }
@@ -291,8 +287,15 @@ namespace CK.Setup
                 if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
                 else b.OutputPath = MakeAbsolutePath( b.OutputPath );
 
-                if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath#{idx}";
+                if( !b.ProjectPath.IsEmptyPath ) b.ProjectPath = MakeAbsolutePath( b.ProjectPath );
+
+                if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
                 ++idx;
+            }
+            if( _config.BinPaths.GroupBy( c => c.Name ).Any( g => g.Count() > 1 ) )
+            {
+                _monitor.Error( $"BinPath configuration names must be unique. Duplicates: {_config.BinPaths.GroupBy( c => c.Name ).Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
+                return false;
             }
             return true;
         }

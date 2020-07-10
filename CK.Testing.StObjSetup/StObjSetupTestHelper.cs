@@ -74,7 +74,8 @@ namespace CK.Testing
             var b = new BinPathConfiguration
             {
                 Path = helper.BinFolder,
-                GenerateSourceFiles = helper.StObjGenerateSourceFiles
+                GenerateSourceFiles = helper.StObjGenerateSourceFiles,
+                ProjectPath = helper.TestProjectFolder
             };
             stObjConf.BinPaths.Add( b );
 

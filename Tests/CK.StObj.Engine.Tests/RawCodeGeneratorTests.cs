@@ -40,7 +40,7 @@ namespace CK.StObj.Engine.Tests
             var c = TestHelper.CreateStObjCollector( typeof( Holder ) );
             var r = TestHelper.GetSuccessfulResult( c );
             r.CKTypeResult.AllTypeAttributeProviders.Select( a => a.Type ).Should().Contain( typeof( Holder ) );
-            TestHelper.GenerateCode( r ).CodeGenResult.Success.Should().BeTrue();
+            TestHelper.GenerateCode( r ).CodeGen.Success.Should().BeTrue();
             CGen.Called.Should().BeTrue();
         }
 
@@ -55,7 +55,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var c = TestHelper.CreateStObjCollector( typeof( StaticHolder ) );
-            TestHelper.GenerateCode( c ).CodeGenResult.Success.Should().BeTrue();
+            TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeTrue();
             CGen.Called.Should().BeTrue();
         }
 
@@ -69,7 +69,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var c = TestHelper.CreateStObjCollector( typeof( RawInterface ) );
-            TestHelper.GenerateCode( c ).CodeGenResult.Success.Should().BeTrue();
+            TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeTrue();
             CGen.Called.Should().BeTrue();
         }
 
@@ -83,7 +83,7 @@ namespace CK.StObj.Engine.Tests
         {
             CGen.Called = false;
             var c = TestHelper.CreateStObjCollector( typeof( EvenOnAnEnumItWorks ) );
-            TestHelper.GenerateCode( c ).CodeGenResult.Success.Should().BeTrue();
+            TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeTrue();
             CGen.Called.Should().BeTrue();
         }
 

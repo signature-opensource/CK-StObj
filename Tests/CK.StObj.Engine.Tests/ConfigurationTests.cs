@@ -65,7 +65,7 @@ namespace CK.StObj.Engine.Tests
             <Type Name=""CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine"" />
         </ExcludedTypes>
         <OutputPath>Another/Relative</OutputPath>
-        <SkipCompilation>true</SkipCompilation>
+        <CompileOption>Parse</CompileOption>
         <GenerateSourceFiles>True</GenerateSourceFiles>
     </BinPath>
     <BinPath Path=""/Absolute/[Debug|Release]Path/Bin"">
@@ -73,7 +73,7 @@ namespace CK.StObj.Engine.Tests
       <Types />
       <ExcludedTypes />
       <OutputPath>Another/relative/path</OutputPath>
-      <SkipCompilation>true</SkipCompilation>
+      <CompileOption>Compile</CompileOption>
       <GenerateSourceFiles>True</GenerateSourceFiles>
     </BinPath>
   </BinPaths>
@@ -120,7 +120,7 @@ namespace CK.StObj.Engine.Tests
 
             b1.ExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
             b1.OutputPath.Should().Be( new Text.NormalizedPath( "Another/Relative" ) );
-            b1.SkipCompilation.Should().BeTrue();
+            b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
 
             c.GeneratedAssemblyName.Should().Be( "Not the default CK.StObj.AutoAssembly" );

@@ -76,11 +76,11 @@ namespace CK.Setup
         bool SaveSource { get; }
 
         /// <summary>
-        /// Gets whether the generated source code must be compiled.
-        /// Both <see cref="SaveSource"/> and <see cref="CompileSource"/> can be false when <see cref="IsUnifiedRun"/> is true and
-        /// the unified bin path doesn't correspond to any of the different <see cref="BinPathConfiguration"/>.
+        /// Gets whether the generated source code must be parsed and or compiled.
+        /// <see cref="SaveSource"/> can be false and this can be <see cref="CompileOption.None"/>
+        /// when <see cref="IsUnifiedRun"/> is true and the unified bin path doesn't correspond to any of the
+        /// different <see cref="BinPathConfiguration"/>.
         /// </summary>
-        bool CompileSource { get; }
-
+        CompileOption CompileOption { get; }
     }
 }

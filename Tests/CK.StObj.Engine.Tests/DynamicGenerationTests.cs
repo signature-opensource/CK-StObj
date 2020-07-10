@@ -21,108 +21,6 @@ namespace CK.StObj.Engine.Tests
     [Category( "DynamicGeneration" )]
     public class DynamicGenerationTests
     {
-        public class CSimpleEmit
-        {
-            class AutoImplementedAttribute : Attribute, IAutoImplementorMethod
-            {
-                public AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
-                {
-                    b.AppendOverrideSignature( m )
-                     .Append( $"=> default({m.ReturnType.FullName});" )
-                     .NewLine();
-                    return AutoImplementationResult.Success;
-                }
-            }
-
-            public class A : IRealObject
-            {
-            }
-
-            public abstract class B : A
-            {
-                readonly string _str;
-
-                /// <summary>
-                /// Public constructors are automatically replicated on the generated
-                /// implementations.
-                /// Protected ones are not automatically replicated: they may be
-                /// called by generated constructors.
-                /// </summary>
-                /// <param name="injectableCtor"></param>
-                public B( string injectableCtor )
-                {
-                    _str = injectableCtor;
-                }
-
-                public string InjectedString 
-                { 
-                    get { return _str; } 
-                }
-
-                [AutoImplemented]
-                public abstract int Auto( int i );
-            }
-
-            public interface IC : IRealObject
-            {
-                A TheA { get; }
-            }
-
-            public class C : IC
-            {
-                [InjectObject]
-                [InitRequired]
-                public A TheA { get; private set; }
-            }
-
-            public class D : C
-            {
-                [AmbientProperty( IsOptional = true )]
-                public string? AnOptionalString { get; private set; }
-            }
-            
-            const string ctorParam = "Protected Ctor is called by public's finalType's constructor.";
-
-            class StObjRuntimeBuilder : IStObjRuntimeBuilder
-            {
-                public object CreateInstance( Type finalType )
-                {
-                    if( typeof( B ).IsAssignableFrom( finalType ) ) return Activator.CreateInstance( finalType, ctorParam )!;
-                    else return Activator.CreateInstance( finalType, false )!;
-                }
-            }
-
-            public void DoTest()
-            {
-                var runtimeBuilder = new StObjRuntimeBuilder();
-
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), runtimeBuilder: runtimeBuilder );
-                collector.RegisterType( typeof( B ) );
-                collector.RegisterType( typeof( D ) );
-                collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
-                collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-                var r = collector.GetResult();
-                Assert.That( r.HasFatalError, Is.False );
-
-                // no source, only compilation
-                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_SimpleEmit" );
-                var a = Assembly.Load( "TEST_SimpleEmit" );
-                IStObjMap? c = StObjContextRoot.Load( a, runtimeBuilder, TestHelper.Monitor );
-                Debug.Assert( c != null );
-                Assert.That( typeof( B ).IsAssignableFrom( c.StObjs.ToLeaf( typeof( A ) ).ClassType ) );
-                Assert.That( c.StObjs.ToLeaf( typeof( IC ) ).ClassType, Is.SameAs( typeof( D ) ) );
-                Assert.That( c.StObjs.Obtain<B>().Auto( 3 ), Is.EqualTo( 0 ) );
-                Assert.That( c.StObjs.Obtain<B>().InjectedString, Is.EqualTo( ctorParam ) );
-            }
-
-        }
-
-        [Test]
-        public void SimpleEmit()
-        {
-            new CSimpleEmit().DoTest();
-        }
-
         public class CConstructCalledAndStObjProperties
         {
             public class A : IRealObject
@@ -194,7 +92,7 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
 
-                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_ConstructCalled" );
+                SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_ConstructCalled" );
                 {
                     var a = Assembly.Load( "TEST_ConstructCalled" );
                     IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
@@ -326,7 +224,7 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
                 }
 
-                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_PostBuildSet" );
+                SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_PostBuildSet" );
                 {
                     var a = Assembly.Load( "TEST_PostBuildSet" );
                     IStObjMap? c = StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, TestHelper.Monitor );
@@ -459,7 +357,7 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( AutomaticallyImplemented ) );
                 var r = collector.GetResult();
                 r.HasFatalError.Should().BeFalse();
-                SimpleEngineRunContext.GenerateAssembly( TestHelper.Monitor, r, "TEST_TypeImplementor" );
+                SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_TypeImplementor" );
                 var a = Assembly.Load( "TEST_TypeImplementor" );
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
                 AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated )!;
@@ -612,7 +510,7 @@ namespace CK.StObj.Engine.Tests
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
-                    TestHelper.GenerateCode( collector ).CodeGenResult.Success.Should().BeTrue();
+                    TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
                 }
                 logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
                 logs.Should().Contain( e => e.Text == "ActualImpl2: I'm great!, I'm SOOOO great!." );
@@ -678,7 +576,7 @@ namespace CK.StObj.Engine.Tests
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
-                    TestHelper.GenerateCode( collector ).CodeGenResult.Success.Should().BeTrue();
+                    TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
                 }
                 logs.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." );
             }

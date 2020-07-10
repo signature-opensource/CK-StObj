@@ -30,7 +30,7 @@ namespace CK.Setup
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
         /// </summary>
-        /// <param name="mapName">The final map name.</param>
+        /// <param name="names">The final map names.</param>
         /// <param name="allSpecializations">
         /// Predimensioned array that will be filled with actual
         /// mutable items by <see cref="StObjCollector.GetResult()"/>.
@@ -38,13 +38,13 @@ namespace CK.Setup
         /// <param name="typeKindDetector">The type kind detector.</param>
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
         internal protected StObjObjectEngineMap(
-            string mapName,
+            IReadOnlyList<string> names,
             IReadOnlyList<MutableItem> allSpecializations,
             CKTypeKindDetector typeKindDetector,
             IReadOnlyCollection<Assembly> assemblies )
         {
-            Debug.Assert( mapName != null );
-            MapName = mapName;
+            Debug.Assert( names != null );
+            Names = names;
             _map = new Dictionary<object, MutableItem>();
             _finaImplementations = allSpecializations;
             _assemblies = assemblies;
@@ -84,12 +84,14 @@ namespace CK.Setup
         /// </summary>
         public IStObjObjectEngineMap StObjs => this;
 
+        SHA1Value IStObjMap.GeneratedSignature => SHA1Value.EmptySHA1;
+
         IStObjObjectMap IStObjMap.StObjs => this;
 
         /// <summary>
-        /// Gets the map name. Never null.
+        /// Gets the map names.
         /// </summary>
-        public string MapName { get; }
+        public IReadOnlyList<string> Names { get; }
 
         IStObjFinalClass IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
                                                             ?? (IStObjFinalClass)_serviceSimpleMap.GetValueOrDefault( t )

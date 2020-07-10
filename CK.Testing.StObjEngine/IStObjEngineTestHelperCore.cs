@@ -46,9 +46,9 @@ namespace CK.Testing.StObjEngine
         /// Compiles from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// </summary>
         /// <param name="c">The collector.</param>
-        /// <param name="compile">True to compile the generated source code.</param>
+        /// <param name="compileOption">Compilation behavior.</param>
         /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
-        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CodeGenResult) GenerateCode( StObjCollector c, bool compile = false );
+        GenerateCodeResult GenerateCode( StObjCollector c, CompileOption compileOption = CompileOption.None );
 
         /// <summary>
         /// Compiles from a successful <see cref="StObjCollectorResult"/>. <see cref="StObjCollectorResult.HasFatalError"/> must be
@@ -59,9 +59,9 @@ namespace CK.Testing.StObjEngine
         /// </para>
         /// </summary>
         /// <param name="result">The collector result.</param>
-        /// <param name="compile">True to compile the generated source code.</param>
+        /// <param name="compileOption">Compilation behavior.</param>
         /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
-        (StObjCollectorResult Result, StObjCollectorResult.CodeGenerateResult CodeGenResult) GenerateCode( StObjCollectorResult result, bool compile = false );
+        GenerateCodeResult GenerateCode( StObjCollectorResult result, CompileOption compileOption = CompileOption.None );
 
         /// <summary>
         /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.

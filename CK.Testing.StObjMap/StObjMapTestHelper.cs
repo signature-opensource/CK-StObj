@@ -46,7 +46,7 @@ namespace CK.Testing
             if( _generatedAssemblyName.IndexOf( ".Reset.", StringComparison.OrdinalIgnoreCase ) >= 0 )
             {
                 throw new ArgumentException( "Must not contain '.Reset.' substring.", "StObjMap/GeneratedAssemblyName" );
-            }
+            }           
         }
 
         IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService( null );
@@ -187,11 +187,7 @@ namespace CK.Testing
             {
                 try
                 {
-#if NET461
-                    var a = Assembly.Load( new AssemblyName( assemblyName ) );
-#else
                     var a = Assembly.LoadFrom( Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" ) );
-#endif
                     return StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, _monitor.Monitor );
                 }
                 catch( Exception ex )

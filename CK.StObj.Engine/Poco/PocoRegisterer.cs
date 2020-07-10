@@ -50,7 +50,6 @@ namespace CK.Setup
         readonly string _namespace;
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
         readonly Func<IActivityMonitor, Type, bool> _actualPocoPredicate;
-        int _uniqueNumber;
 
         /// <summary>
         /// Initializes a new <see cref="PocoRegisterer"/>.
@@ -144,7 +143,6 @@ namespace CK.Setup
         /// <returns>The result or null on error.</returns>
         public IPocoSupportResult? Finalize( IDynamicAssembly assembly, IActivityMonitor monitor )
         {
-            _uniqueNumber = 0;
             return CreateResult( assembly, monitor );
         }
 

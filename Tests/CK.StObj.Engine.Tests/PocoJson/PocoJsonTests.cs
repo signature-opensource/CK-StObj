@@ -11,6 +11,9 @@ using static CK.Testing.StObjEngineTestHelper;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Collections;
+using System.Reflection;
+using System.Linq;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CK.StObj.Engine.Tests.PocoJson
 {
@@ -216,7 +219,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             Debug.Assert( lA2 != null );
             lA2.Should().BeEquivalentTo( lA );
 
-            lA.NullableCollection = null;
+            lA.NullableCollection = null!;
 
             var lA3 = Roundtrip( s, lA );
             Debug.Assert( lA3 != null );
@@ -242,7 +245,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 o.Numbers.AddRangeArray( 12, 87, 12, 54, 12 );
             } );
             var o2 = Roundtrip( s, o );
-
+            Debug.Assert( o2 != null );
             o2.Power.Should().Be( o.Power );
             o2.Hip.Should().Be( o.Hip );
             o2.Numbers.Should().BeEquivalentTo( o.Numbers );
@@ -279,6 +282,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var oLb = Serialize( oL, false );
             var oLFromS = Deserialize<IWithList>( services, oSb );
             var oSFromL = Deserialize<IWithSet>( services, oLb );
+            Debug.Assert( oLFromS != null && oSFromL != null );
 
             oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
             oSFromL.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
@@ -312,6 +316,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             } );
 
             var a2 = Roundtrip( services, a );
+            Debug.Assert( a2 != null );
             a2.B.MsgB.Should().Be( "From A.B." );
 
             a.B.A = a;
@@ -325,22 +330,22 @@ namespace CK.StObj.Engine.Tests.PocoJson
             IDictionary<int, string> Map { get; }
         }
 
-        //[Test]
-        //public void dictionary_with_a_string_key_is_a_Json_object_otherwise_it_is_an_array_of_2_cells_array()
-        //{
-        //    var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithDictionary ) );
-        //    var services = TestHelper.GetAutomaticServices( c ).Services;
+        [Test]
+        public void dictionary_with_a_string_key_is_a_Json_object_otherwise_it_is_an_array_of_2_cells_array()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithDictionary ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
 
-        //    var fA = services.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
-        //    var a = fA.Create( a =>
-        //    {
-        //        a.Map.Add( 1, "Toto" );
-        //        a.ClassicalJson.Add( "key", 3712 );
-        //    } );
-        //    var a2 = Roundtrip( services, a );
+            var fA = services.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
+            var a = fA.Create( a =>
+            {
+                a.Map.Add( 1, "Toto" );
+                a.ClassicalJson.Add( "key", 3712 );
+            } );
+            var a2 = Roundtrip( services, a );
 
-        //    a2.Should().BeEquivalentTo( a );
-        //}
+            a2.Should().BeEquivalentTo( a );
+        }
 
 
         static byte[] Serialize( IPoco o, bool withType )
