@@ -33,6 +33,15 @@ namespace CK.Core
         /// </summary>
         public interface IFactoryReader
         {
+            /// <summary>
+            /// Non generic version of <see cref="IFactoryReader{T}.Read(ref Utf8JsonReader)"/> method,
+            /// the type must be known.
+            /// If the reader is <see cref="JsonTokenType.StartArray"/>, it must be a 2-cells array
+            /// with this Poco's type that comes first (otherwise an exception is thrown).
+            /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
+            /// </summary>
+            /// <param name="reader">The Json reader.</param>
+            /// <returns>A new Poco.</returns>
             IPoco ReadTyped( ref Utf8JsonReader reader );
         }
 
@@ -45,7 +54,7 @@ namespace CK.Core
         {
             /// <summary>
             /// Reads the known typed Poco from a Json.
-            /// If the reader is <see cref="JsonTokenType.StartArray"/> tha it must be a 2-cells array
+            /// If the reader is <see cref="JsonTokenType.StartArray"/>, it must be a 2-cells array
             /// with this Poco's type that comes first (otherwise an exception is thrown).
             /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
             /// </summary>
@@ -57,6 +66,7 @@ namespace CK.Core
         /// Writes this IPoco (that can be null) as Json.
         /// When this is null, the Json null value is written.
         /// </summary>
+        /// <param name="o">This Poco (that can be null).</param>
         /// <param name="writer">The Json writer.</param>
         /// <param name="withType">
         /// When true (the default), a 2-cells array contains the Poco's <see cref="IPocoFactory.Name"/> first

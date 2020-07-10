@@ -71,7 +71,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether the source code must eventually be saved.
-        /// See <see cref="CompileSource"/>.
+        /// See <see cref="CompileOption"/>.
         /// </summary>
         bool SaveSource { get; }
 

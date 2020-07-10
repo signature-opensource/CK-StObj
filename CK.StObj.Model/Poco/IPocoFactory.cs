@@ -27,7 +27,7 @@ namespace CK.Core
         /// <summary>
         /// Gets the Poco name.
         /// When no [<see cref="PocoNameAttribute"/>] is defined, this name defaults
-        /// to the <see cref="Type.FullName"/> of the <see cref="PrimaryInterface"/>.
+        /// to the <see cref="Type.FullName"/> of the primary interface of the Poco.
         /// </summary>
         string Name { get; }
 

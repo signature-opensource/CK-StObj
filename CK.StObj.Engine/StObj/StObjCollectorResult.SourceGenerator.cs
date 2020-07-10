@@ -179,7 +179,6 @@ namespace CK.Setup
         /// <param name="availableStObjMap">
         /// Predicate that states whether a signature can be bound to an already available StObjMap.
         /// When true is returned, the process stops as early as possible and the available map should be used.
-        /// </para>
         /// </param>
         /// <returns>A Code generation result.</returns>
         public CodeGenerateResult GenerateSourceCodeSecondPass(

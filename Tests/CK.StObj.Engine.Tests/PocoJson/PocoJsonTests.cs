@@ -1,19 +1,15 @@
 using CK.Core;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using static CK.Testing.StObjEngineTestHelper;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Collections;
-using System.Reflection;
-using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CK.StObj.Engine.Tests.PocoJson
 {

@@ -15,7 +15,15 @@ namespace CK.Setup
     /// </summary>
     public class PocoSourceGenerator : AutoImplementorType
     {
-
+        /// <summary>
+        /// Generates the PocoDirectory_CK class that implements <see cref="PocoDirectory"/> and
+        /// all the factories (<see cref="IPocoFactory"/> implementations) and Poco class (<see cref="IPoco"/> implementations).
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="classType">The <see cref="PocoDirectory"/> type.</param>
+        /// <param name="c">Code generation context.</param>
+        /// <param name="scope">The PocoDirectory_CK type scope.</param>
+        /// <returns>Always <see cref="AutoImplementationResult.Success"/>.</returns>
         public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
         {
             Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );

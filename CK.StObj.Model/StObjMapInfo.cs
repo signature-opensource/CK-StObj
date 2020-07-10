@@ -9,6 +9,10 @@ using System.Text;
 
 namespace CK.Core
 {
+    /// <summary>
+    /// Defines the key properties of available <see cref="IStObjMap"/> managed
+    /// by <see cref="StObjContextRoot"/>.
+    /// </summary>
     public sealed class StObjMapInfo
     {
         /// <summary>
@@ -37,6 +41,10 @@ namespace CK.Core
         internal IStObjMap? StObjMap;
         internal string? LoadError;
 
+        /// <summary>
+        /// Overridden to return the names, signature and assembly names.
+        /// </summary>
+        /// <returns>A readable string.</returns>
         public override string ToString() => $"Names: {Names.Concatenate()}, Signature: {GeneratedSignature}, Assembly: {AssemblyName}";
 
         StObjMapInfo( SHA1Value s, IReadOnlyList<string> n, Type t )

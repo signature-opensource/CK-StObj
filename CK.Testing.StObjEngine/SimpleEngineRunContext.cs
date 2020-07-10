@@ -164,7 +164,7 @@ namespace CK.Testing.StObjEngine
         /// <param name="result">The valid result.</param>
         /// <param name="compileOption">Compilation behavior.</param>
         /// <param name="skipEmbeddedStObjMap">
-        /// True to skip any <see cref="ProjectSourceFileHandler.FindEmbeddedStObjMap(IActivityMonitor)"/>: this MUST be true when
+        /// True to skip any available StObjMap: this MUST be true when
         /// a setup depends on externally injected services.
         /// </param>
         /// <param name="assemblyName">The assembly to generate.</param>
@@ -198,7 +198,7 @@ namespace CK.Testing.StObjEngine
         /// <param name="result">The valid result.</param>
         /// <param name="assemblyName">The assembly to generate.</param>
         /// <param name="skipEmbeddedStObjMap">
-        /// True to skip any <see cref="ProjectSourceFileHandler.FindEmbeddedStObjMap(IActivityMonitor)"/>: this MUST be true when
+        /// True to skip any available StObjMap: this MUST be true when
         /// a setup depends on externally injected services.
         /// </param>
         /// <param name="compileOption">Compilation behavior.</param>

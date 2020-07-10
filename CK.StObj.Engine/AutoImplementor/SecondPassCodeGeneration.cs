@@ -28,7 +28,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this is a global <see cref="ICodeGenerator"/> or a targeted <see cref="IAutoImplementor{T}"/> implementor.
         /// </summary>
-        [MemberNotNullWhen( false, nameof(TypeScope), nameof(Target) )]
+        [MemberNotNullWhen( false, nameof(Target) )]
         public bool IsCodeGenerator => Target == null;
 
         /// <summary>

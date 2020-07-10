@@ -7,7 +7,7 @@ using System.Text;
 namespace CK.Testing
 {
     /// <summary>
-    /// Defines the result of <see cref="IStObjEngineTestHelperCore.GenerateCode(StObjCollector, bool)"/>.
+    /// Defines the result of <see cref="StObjEngine.IStObjEngineTestHelperCore.GenerateCode(StObjCollector, CompileOption)"/>.
     /// </summary>
     public readonly struct GenerateCodeResult
     {

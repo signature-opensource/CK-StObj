@@ -59,7 +59,6 @@ namespace CK.Setup
             /// <summary>
             /// Gets whether this parameter is an <see cref="IAutoService"/>.
             /// </summary>
-            [MemberNotNullWhen( true, nameof( FinalServiceClass ) )]
             public bool IsAutoService { get; }
 
             /// <summary>
@@ -488,6 +487,7 @@ namespace CK.Setup
                         AutoServiceKind kP;
                         if( p.IsAutoService )
                         {
+                            Debug.Assert( p.FinalServiceClass != null );
                             kP = (pC = p.FinalServiceClass).ComputeFinalTypeKind( m, typeKindDetector, ref success );
                         }
                         else

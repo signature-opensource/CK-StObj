@@ -11,6 +11,11 @@ using System.Text;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Implements the Json serialization. This class extends the Poco classes to support
+    /// the API exposed as extension methods by the CK.Poco.PocoJsonSerializer static
+    /// class (in CK.Poco.Json).
+    /// </summary>
     public partial class PocoJsonSerializerImpl : ICodeGenerator
     {
         IPocoSupportResult? _pocoSupport;
@@ -29,6 +34,12 @@ namespace CK.Setup
 
         ITypeScope PocoClass => _pocoClass!;
 
+        /// <summary>
+        /// Extends PocoDirectory_CK, the factories and the Poco classes.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="c">The code generation context.</param>
+        /// <returns>Always <see cref="AutoImplementationResult.Success"/>.</returns>
         public AutoImplementationResult Implement( IActivityMonitor monitor, ICodeGenerationContext c )
         {
             _pocoSupport = c.Assembly.GetPocoSupportResult();

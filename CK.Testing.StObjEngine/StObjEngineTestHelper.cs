@@ -114,7 +114,7 @@ namespace CK.Testing
         /// <param name="compileOption">Compilation behavior.</param>
         /// <param name="assemblyName">The automatically computed assembly name that has been generated based on current time.</param>
         /// <param name="skipEmbeddedStObjMap">
-        /// True to skip <see cref="ProjectSourceFileHandler.FindEmbeddedStObjMap(IActivityMonitor)"/> work: this MUST be true when
+        /// True to skip any available StObjMap: this MUST be true when
         /// a setup depends on externally injected services.
         /// </param>
         /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>

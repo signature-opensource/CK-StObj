@@ -11,7 +11,7 @@ namespace CK.Setup
     {
         readonly Dictionary<Type, string> _names = new Dictionary<Type, string>();
 
-        public string GetReadFunctionName( Type t, out bool isNew )
+        string GetReadFunctionName( Type t, out bool isNew )
         {
             if( isNew = !_names.TryGetValue( t, out var name ) )
             {
