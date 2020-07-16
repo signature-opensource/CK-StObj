@@ -86,15 +86,15 @@ namespace CK.Setup
                 {
                     if( baseType != typeof( object ) )
                     {
-                        tB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( baseType.ToCSharpName() ) );
+                        tB.Definition.BaseTypes.Add( new ExtendedTypeName( baseType.ToCSharpName() ) );
                         // Only public constructors are replicated: protected constructors are to be called
                         // by generated code. 
-                        tB.AppendPassThroughConstructors( baseType, ctor => ctor.IsPublic ? "public " : null );
+                        tB.CreatePassThroughConstructors( baseType, ctor => ctor.IsPublic ? "public " : null );
                     }
                 }
                 else if( type.IsInterface )
                 {
-                    tB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( type.ToCSharpName() ) );
+                    tB.Definition.BaseTypes.Add( new ExtendedTypeName( type.ToCSharpName() ) );
                 }
             }
             return tB!;

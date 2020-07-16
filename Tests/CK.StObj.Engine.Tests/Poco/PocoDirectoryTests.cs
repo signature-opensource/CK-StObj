@@ -16,7 +16,7 @@ namespace CK.StObj.Engine.Tests.Poco
     [TestFixture]
     public class PocoDirectoryTests
     {
-        [PocoName( "Test", "PreviousTest1", "PreviousTest2" )]
+        [ExternalName( "Test", "PreviousTest1", "PreviousTest2" )]
         public interface ICmdTest : IPoco
         {
         }
@@ -32,10 +32,10 @@ namespace CK.StObj.Engine.Tests.Poco
             f0.Should().NotBeNull().And.BeSameAs( f1 ).And.BeSameAs( f2 );
         }
 
-        [PocoName( "Test", "Prev1", "Test" )]
+        [ExternalName( "Test", "Prev1", "Test" )]
         public interface ICmdBadName1 : IPoco { }
 
-        [PocoName( "Test", "Test" )]
+        [ExternalName( "Test", "Test" )]
         public interface ICmdBadName2 : IPoco { }
 
         [Test]
@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName1 ) );
                 using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                                 .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                         && x.Text.StartsWith( "Duplicate PocoName in attribute " ) ) ) ) )
+                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on " ) ) ) ) )
                 {
                     TestHelper.GetFailedResult( c );
                 }
@@ -54,7 +54,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName2 ) );
                 using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                                 .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                         && x.Text.StartsWith( "Duplicate PocoName in attribute " ) ) ) ) )
+                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on " ) ) ) ) )
                 {
                     TestHelper.GetFailedResult( c );
                 }
@@ -81,7 +81,7 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
-        [PocoName( "NoWay" )]
+        [ExternalName( "NoWay" )]
         public interface ICmdSecondary : ICmdNoName
         {
         }
@@ -92,18 +92,18 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( ICmdSecondary ) );
             using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                     && x.Text.StartsWith( $"PocoName attribute appear on '{typeof( ICmdSecondary ).FullName}'." ) ) ) ) )
+                                                                     && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).FullName}'." ) ) ) ) )
             {
                 TestHelper.GetFailedResult( c );
             }
         }
 
-        [PocoName( "Cmd1" )]
+        [ExternalName( "Cmd1" )]
         public interface ICmd1 : IPoco
         {
         }
 
-        [PocoName( "Cmd1" )]
+        [ExternalName( "Cmd1" )]
         public interface ICmd1Bis : IPoco
         {
         }

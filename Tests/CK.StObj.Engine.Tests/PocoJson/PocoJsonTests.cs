@@ -58,7 +58,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IPocoA : IPoco
         {
-            [DefaultValue("A")]
+            [DefaultValue( "A" )]
             string ValA { get; set; }
 
             IPocoB B { get; }
@@ -68,7 +68,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IPocoB : IPoco
         {
-            [DefaultValue("B")]
+            [DefaultValue( "B" )]
             string ValB { get; set; }
 
             IPocoC C { get; }
@@ -76,7 +76,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IPocoC : IPoco
         {
-            [DefaultValue("C")]
+            [DefaultValue( "C" )]
             string ValC { get; set; }
         }
 
@@ -126,7 +126,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             gWithA.AnotherOnePoco.Should().BeNull();
         }
 
-        
+
 
         [Test]
         public void recursive_poco_properties_throw_InvalidOperationException_by_JsonWriter()
@@ -343,6 +343,25 @@ namespace CK.StObj.Engine.Tests.PocoJson
             a2.Should().BeEquivalentTo( a );
         }
 
+        public interface IPocoWithObject : IPoco
+        {
+            object Value { get; set; }
+        }
+
+        [Test]
+        public void objects_are_supported_as_long_as_their_type_is_a_basic_type_or_Poco_or_one_the_supported_collection_types()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+
+            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var a = f.Create( a =>
+            {
+                a.Value = 1;
+            } );
+            var a2 = Roundtrip( services, a );
+            a2.Should().BeEquivalentTo( a );
+        }
 
         static byte[] Serialize( IPoco o, bool withType )
         {
@@ -412,6 +431,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             }
 
         }
+
 
     }
 }

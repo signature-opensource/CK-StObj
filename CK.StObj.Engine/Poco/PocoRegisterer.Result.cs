@@ -200,45 +200,17 @@ namespace CK.Setup
 
             public bool InitializeNames( IActivityMonitor monitor )
             {
-                string name;
-                string[] previousNames;
-
-                var primary = Interfaces[0].PocoInterface;
-                var names = primary.GetCustomAttributesData().Where( d => typeof( PocoNameAttribute ).IsAssignableFrom( d.AttributeType ) ).FirstOrDefault();
-
-                var others = Interfaces.Where( i => i.PocoInterface != primary
-                                                    && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( PocoNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
-                if( others.Any() )
+                Type primary = Interfaces[0].PocoInterface;
+                if( !primary.GetExternalNames( monitor, out string name, out string[] previousNames ) )
                 {
-                    monitor.Error( $"PocoName attribute appear on '{others.Select( i => i.PocoInterface.FullName ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.FullName}') should define the Poco names." );
                     return false;
                 }
-                if( names != null )
+                var others = Interfaces.Where( i => i.PocoInterface != primary
+                                                    && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( ExternalNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
+                if( others.Any() )
                 {
-                    var args = names.ConstructorArguments;
-                    name = (string)args[0].Value!;
-                    previousNames = ((IEnumerable<CustomAttributeTypedArgument>)args[1].Value!).Select( a => (string)a.Value! ).ToArray();
-                    if( String.IsNullOrWhiteSpace( name ) )
-                    {
-                        monitor.Error( $"Empty name in PocoName attribute on '{primary.FullName}'." );
-                        return false;
-                    }
-                    if( previousNames.Any( n => String.IsNullOrWhiteSpace( n ) ) )
-                    {
-                        monitor.Error( $"Empty previous name in PocoName attribute on '{primary.FullName}'." );
-                        return false;
-                    }
-                    if( previousNames.Contains( name ) || previousNames.GroupBy( Util.FuncIdentity ).Any( g => g.Count() > 1 ) )
-                    {
-                        monitor.Error( $"Duplicate PocoName in attribute on '{primary.FullName}'." );
-                        return false;
-                    }
-                }
-                else
-                {
-                    name = primary.FullName!;
-                    previousNames = Array.Empty<string>();
-                    monitor.Warn( $"Poco '{name}' use its full name as its name since no [PocoName] attribute is defined." );
+                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.FullName ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.FullName}') should define the Poco names." );
+                    return false;
                 }
                 Name = name;
                 PreviousNames = previousNames;

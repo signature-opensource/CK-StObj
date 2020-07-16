@@ -224,13 +224,11 @@ namespace CK.StObj.Engine.Tests.Service
 
             public AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
             {
-                b.AppendOverrideSignature( m )
-                    .Should().BeSameAs( b, "Append uses 'fluent syntax': we stay in the Type scpope (but right after the method declaration)." );
+                IFunctionScope mB = b.CreateOverride( m );
+                mB.Parent.Should().BeSameAs( b, "The function is ready to be implemented." );
 
-                if( IsLambda ) b.Append( "=> " ).Append( ActualCode ).Append( ';' ).NewLine();
-                else b.Append( '{' ).NewLine()
-                        .Append( ActualCode ).NewLine()
-                        .Append( '}' ).NewLine();
+                if( IsLambda ) mB.Append( "=> " ).Append( ActualCode ).Append( ';' ).NewLine();
+                else mB.Append( ActualCode );
 
                 return AutoImplementationResult.Success;
             }

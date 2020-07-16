@@ -16,8 +16,8 @@ namespace CK.Setup
     public class PocoSourceGenerator : AutoImplementorType
     {
         /// <summary>
-        /// Generates the PocoDirectory_CK class that implements <see cref="PocoDirectory"/> and
-        /// all the factories (<see cref="IPocoFactory"/> implementations) and Poco class (<see cref="IPoco"/> implementations).
+        /// Generates the <paramref name="scope"/> that is the PocoDirectory_CK class and
+        /// all the factories (<see cref="IPocoFactory"/> implementations) and the Poco class (<see cref="IPoco"/> implementations).
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="classType">The <see cref="PocoDirectory"/> type.</param>
@@ -30,9 +30,11 @@ namespace CK.Setup
 
             IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
 
-            // Poco class.
-            scope.Append( "Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" )
-                 .NewLine()
+            // PocoDirectory_CK class.
+            scope.FindOrCreateFunction( "public PocoDirectory_CK()" )
+                 .Append( "_factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" );
+
+            scope.Append( "Dictionary<string,IPocoFactory> _factories;" ).NewLine()
                  .Append( "public override IPocoFactory Find( string name ) => _factories.GetValueOrDefault( name );" ).NewLine()
                  .Append( "internal PocoDirectory_CK Register( IPocoFactory f )" ).OpenBlock()
                  .Append( "_factories.Add( f.Name, f );" ).NewLine()
@@ -46,12 +48,12 @@ namespace CK.Setup
             {
                 // PocoFactory class.
                 var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
-                tFB.TypeDefinition.Modifiers |= Modifiers.Sealed;
-                string factoryClassName = tFB.TypeDefinition.Name.Name;
+                tFB.Definition.Modifiers |= Modifiers.Sealed;
+                string factoryClassName = tFB.Definition.Name.Name;
 
                 // Poco class.
                 var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
-                tB.TypeDefinition.Modifiers |= Modifiers.Sealed;
+                tB.Definition.Modifiers |= Modifiers.Sealed;
 
                 // The factory field is private and its type is the exact class: extended code can refer to the _factory
                 // and can have access to the factory extended code without cast.
@@ -62,8 +64,8 @@ namespace CK.Setup
                 // can always find it.
                 // We support the interfaces here: if other participants have already created this type, it is
                 // up to us, here, to handle the "exact" type definition.
-                tB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( "IPocoClass" ) );
-                tB.TypeDefinition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
+                tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoClass" ) );
+                tB.Definition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {root.PocoClass.Name}( PocoDirectory_CK d )" );
                 ctorB.Append( "_factory = d._f" ).Append( tFB.UniqueId ).Append( ';' ).NewLine();
@@ -90,7 +92,7 @@ namespace CK.Setup
 
                 // PocoFactory class.
 
-                // The PocoDirectory field is set by the StObjCostruct below. It is public and is 
+                // The PocoDirectory field is set by the StObjConstruct below. It is public and is 
                 // typed with the generated class: extended code can use it without cast.
                 tFB.Append( "public PocoDirectory_CK PocoDirectory;" ).NewLine();
 
@@ -121,7 +123,7 @@ namespace CK.Setup
 
                 foreach( var i in root.Interfaces )
                 {
-                    tFB.TypeDefinition.BaseTypes.Add( new ExtendedTypeName( i.PocoFactoryInterface.ToCSharpName() ) );
+                    tFB.Definition.BaseTypes.Add( new ExtendedTypeName( i.PocoFactoryInterface.ToCSharpName() ) );
                     tFB.AppendCSharpName( i.PocoInterface )
                        .Space()
                        .AppendCSharpName( i.PocoFactoryInterface )
