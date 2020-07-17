@@ -25,20 +25,23 @@ namespace CK.Setup
             var ctor = PocoDirectory.FindOrCreateFunction( "public PocoDirectory_CK()" );
             foreach( var (type,handler) in map )
             {
-                if( handler.IsNullable
-                    || (handler.Info.DirectType != DirectType.None && handler.Info.DirectType != DirectType.Untyped) ) continue;
+                // Skips direct types that are handled...directly.
+                if( handler.Info.DirectType != DirectType.None && handler.Info.DirectType != DirectType.Untyped ) continue;
+
+                // Write is called on o.GetType(): this is the concrete type, it is useless to map an abstract type.
+                // And since Read reads back what has been written...
+                if( handler.IsAbstractType ) continue;
+
                 if( type is string name )
                 {
-                    if( name.Length == 0 ) continue;
-                    ctor.Append( "_typeReaders.Add( " )
-                        .AppendSourceString( name )
-                        .Append( ", delegate ( ref System.Text.Json.Utf8JsonReader r )" )
-                        .OpenBlock()
-                        .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
-                    handler.GenerateRead( ctor, "o", true, FromPocoDirectory );
-                    ctor.NewLine().Append( "return o;" )
-                        .CloseBlock()
-                        .Append( " );" ).NewLine();
+                    Debug.Assert( name == handler.Name );
+                    WriteTypeRead( ctor, handler );
+                    if( handler.Type.IsValueType )
+                    {
+                        // Nullable names are not registered.
+                        Debug.Assert( !handler.IsNullable );
+                        WriteTypeRead( ctor, handler.Info.NullHandler );
+                    }
                 }
                 else
                 {
@@ -46,11 +49,30 @@ namespace CK.Setup
                     ctor.Append( "_typeWriters.Add( " ).AppendTypeOf( handler.Type )
                         .Append( ", (w,o) => " )
                         .OpenBlock();
-                    var variableName = "((" + handler.Type.ToCSharpName() + ")o)";
-                    handler.GenerateWrite( ctor, variableName, FromPocoDirectory, true );
+                    // Writing a null object is handled directly by the WriteObject code,
+                    // If the Type is a Nullable<>, it must be written with the nullable
+                    // marker (the '?' suffix) but we can skip the "if( variableName == null )" block.
+                    Type notNullableType = handler.IsNullable && handler.Type.IsValueType
+                                            ? handler.Info.NotNullHandler.Type
+                                            : handler.Type;
+                    handler.GenerateWrite( ctor, "((" + notNullableType.ToCSharpName() + ")o)", FromPocoDirectory, true, true );
                     ctor.CloseBlock()
                         .Append( " );" ).NewLine();
                 }
+            }
+
+            static void WriteTypeRead( IFunctionScope ctor, IHandler handler )
+            {
+                // Reading null is already handled: we can skip the "if( variableName == null )" block.
+                ctor.Append( "_typeReaders.Add( " )
+                    .AppendSourceString( handler.Name )
+                    .Append( ", delegate( ref System.Text.Json.Utf8JsonReader r )" )
+                    .OpenBlock()
+                    .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
+                handler.GenerateRead( ctor, "o", true, FromPocoDirectory, true );
+                ctor.NewLine().Append( "return o;" )
+                    .CloseBlock()
+                    .Append( " );" ).NewLine();
             }
         }
 
@@ -67,14 +89,12 @@ namespace CK.Setup
                     case bool v: w.WriteBooleanValue( v ); break;
                     default:
                         {
-                            w.WriteStartArray();
                             var t = o.GetType();
                             if( !_typeWriters.TryGetValue( t, out var writer ) )
                             {
                                 throw new System.Text.Json.JsonException( $""Unregistered type '{t.AssemblyQualifiedName}'."" );
                             }
                             writer( w, o );
-                            w.WriteEndArray();
                             break;
                         }
                 }
@@ -103,7 +123,9 @@ namespace CK.Setup
                             {
                                 throw new System.Text.Json.JsonException( $""Unregistered type name '{n}'."" );
                             }
-                            return reader( ref r );
+                            var o = reader( ref r );
+                            r.Read();
+                            return o;
                         }
                 }
             }

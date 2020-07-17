@@ -349,7 +349,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void objects_are_supported_as_long_as_their_type_is_a_basic_type_or_Poco_or_one_the_supported_collection_types()
+        public void basic_types_properties_as_Object_are_supported()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -358,6 +358,28 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var a = f.Create( a =>
             {
                 a.Value = 1;
+            } );
+            var a2 = Roundtrip( services, a );
+            a2.Should().BeEquivalentTo( a );
+        }
+
+        [Test]
+        public void IPoco_types_properties_as_Object_are_supported()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ), typeof( IPocoWithDictionary ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+
+            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var fO = services.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
+            var o = fO.Create( o =>
+            {
+                o.ClassicalJson.Add( "Name", 712 );
+                o.Map[3712] = "Hop";
+                o.Map[0] = "Zero";
+            } );
+            var a = f.Create( a =>
+            {
+                a.Value = o;
             } );
             var a2 = Roundtrip( services, a );
             a2.Should().BeEquivalentTo( a );

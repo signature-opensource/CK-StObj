@@ -37,6 +37,9 @@ namespace CK.Setup
             if( isValueType )
             {
                 _map.Add( i.NullHandler.Type, i.NullHandler );
+                Debug.Assert( i.NullHandler.Name != i.NotNullHandler.Name );
+                // Registering the nullable "name?" is useless: FillDynamicMap will do the job.
+                //_map.Add( i.NullHandler.Name, i.NullHandler );
             }
             return i;
         }
@@ -55,9 +58,9 @@ namespace CK.Setup
         {
             // Direct types.
             AddTypeInfo( TypeInfo.Untyped );
-            AddTypeInfo( typeof( int ), "i", null, DirectType.Int );
-            AddTypeInfo( typeof( bool ), "b", null, DirectType.Bool );
-            AddTypeInfo( typeof( string ), "s", null, DirectType.String );
+            AddTypeInfo( typeof( int ), "int", null, DirectType.Int );
+            AddTypeInfo( typeof( bool ), "bool", null, DirectType.Bool );
+            AddTypeInfo( typeof( string ), "string", null, DirectType.String );
 
             static void WriteString( ICodeWriter write, string variableName, string pocoDirectoryAccessor )
             {
