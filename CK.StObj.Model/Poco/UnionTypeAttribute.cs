@@ -5,6 +5,8 @@ namespace CK.Core
 {
     /// <summary>
     /// Defines multiples allowed types on an "object" property.
+    /// This attribute can be applied only on "object" IPoco properties.
+    /// Currently this always allows null value.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class UnionTypeAttribute : Attribute

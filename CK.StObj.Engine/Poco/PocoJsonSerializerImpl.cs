@@ -39,11 +39,7 @@ namespace CK.Setup
         {
             _monitor = monitor;
             _pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
-        //    return new AutoImplementationResult( "WaitForPocoDirectory" );
-        //}
 
-        //public AutoImplementationResult WaitForPocoDirectory( IActivityMonitor monitor, ICodeGenerationContext c )
-        //{
             var pocoSupport = c.Assembly.GetPocoSupportResult();
             if( pocoSupport == null )
             {
@@ -125,10 +121,13 @@ namespace CK.Setup
                 factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r, PocoDirectory );" ).NewLine();
 
                 var pocoClass = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+
+                // Generates the Poco class Read and Write methhods.
+                // UnionTypes on properties are registered.
                 ExtendPocoClass( root, pocoClass );
             }
 
-            // Generates the code for "dynamic" object.
+            // Generates the code for "dynamic"/"untyped" object.
             FillDynamicMaps( _map );
             GenerateObjectWrite();
             GenerateObjectRead();
@@ -160,6 +159,11 @@ namespace CK.Setup
 
             foreach( var p in pocoInfo.PropertyList )
             {
+                foreach( var union in p.PropertyUnionTypes )
+                {
+                    TryFindOrCreateHandler( union );
+                }
+
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
 
                 var handler = TryFindOrCreateHandler( p.PropertyType );

@@ -401,6 +401,58 @@ namespace CK.StObj.Engine.Tests.PocoJson
             Roundtrip( services, a ).Should().BeEquivalentTo( a );
         }
 
+        [Test]
+        public void IPoco_types_properties_must_be_known()
+        {
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoCrossA ) );
+                TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeFalse();
+            }
+            {
+                // Here we don't add IPocoWithDictionary: Dictionary<string, int> and Dictionary<int,string> are not registered.
+                var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
+                var services = TestHelper.GetAutomaticServices( c ).Services;
+                var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+                var a = f.Create( a =>
+                {
+                    a.Value = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
+                } );
+                a.Invoking( x => Roundtrip( services, x ) ).Should().Throw<JsonException>();
+            }
+        }
+
+        public interface IWithUnionType : IPoco
+        {
+            [UnionType( typeof(IList<int>), typeof(int), typeof(IDictionary<int, string>) )]
+            object V { get; set; }
+        }
+
+        [Test]
+        public void UnionTypes_automatically_register_the_allowed_types()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithUnionType ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var f = services.GetRequiredService<IPocoFactory<IWithUnionType>>();
+            var a = f.Create( a =>
+            {
+                a.V = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
+            } );
+            Roundtrip( services, a );
+
+            a.V = 56;
+            Roundtrip( services, a );
+
+            a.V = new List<int>() { 45, 87, 87, 254, 87 };
+            Roundtrip( services, a );
+
+            // UnionType restricts the type but allows null.
+            a.V = null!;
+            Roundtrip( services, a );
+
+            a.Invoking( x => x.V = "lj" ).Should().Throw<ArgumentException>();
+        }
+
+
         static byte[] Serialize( IPoco o, bool withType )
         {
             var m = new MemoryStream();
