@@ -41,6 +41,12 @@ namespace CK.Setup
         Type PropertyType { get; }
 
         /// <summary>
+        /// Gets the set of types that defines the union type.
+        /// Empty when not applicable, and when not applicable <see cref="PropertyType"/> is necessarily <c>typeof(object)</c>.
+        /// </summary>
+        IReadOnlyCollection<Type> PropertyUnionTypes { get; }
+
+        /// <summary>
         /// Gets the property name.
         /// </summary>
         string PropertyName { get; }

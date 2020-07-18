@@ -42,12 +42,12 @@ namespace CK.Setup
                 Type genType = autoType.GetGenericTypeDefinition();
                 if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
                 {
-                    writer.Append( "new System.Collections.Generic.List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                    writer.Append( "new List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
                 if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
                 {
-                    writer.Append( "new System.Collections.Generic.Dictionary<" )
+                    writer.Append( "new Dictionary<" )
                                         .AppendCSharpName( autoType.GetGenericArguments()[0] )
                                         .Append( ',' )
                                         .AppendCSharpName( autoType.GetGenericArguments()[1] )
@@ -57,7 +57,7 @@ namespace CK.Setup
                 }
                 if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                 {
-                    writer.Append( "new System.Collections.Generic.HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                    writer.Append( "new HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
             }

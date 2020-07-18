@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace CK.Core
 {
@@ -16,6 +15,12 @@ namespace CK.Core
         /// <param name="types">The allowed types of this union.</param>
         public UnionTypeAttribute( params Type[] types )
         {
+            Types = types;
         }
+
+        /// <summary>
+        /// Gets the allowed types.
+        /// </summary>
+        public IReadOnlyList<Type> Types { get; }
     }
 }

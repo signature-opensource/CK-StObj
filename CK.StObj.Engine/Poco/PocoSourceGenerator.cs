@@ -73,15 +73,52 @@ namespace CK.Setup
                 foreach( var p in root.PropertyList )
                 {
                     Type propType = p.PropertyType;
-                    tB.Append( "public " ).AppendCSharpName( propType ).Space().Append( p.PropertyName ).Append( "{get;" );
                     // We always implement a setter except if we are auto instantiating the value and NO properties are writable.
-                    if( !p.AutoInstantiated || p.HasDeclaredSetter ) tB.Append( "set;" );
-                    tB.Append( "}" );
-                    Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
+                    bool generateSetter = !p.AutoInstantiated || p.HasDeclaredSetter;
+                    bool isAutoProperty = p.PropertyUnionTypes.Count == 0;
 
-                    if( p.AutoInstantiated )
+                    var typeName = propType.ToCSharpName();
+                    tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
+                    if( isAutoProperty )
                     {
-                        r.GenerateAutoInstantiatedNewAssignation( ctorB, p.PropertyName, p.PropertyType, "d" );
+                        tB.Append( "{ get;" );
+                        if( generateSetter )
+                        {
+                            tB.Append( " set;" );
+                        }
+                        tB.Append( "}" );
+                        if( p.AutoInstantiated )
+                        {
+                            // Generates in constructor.
+                            r.GenerateAutoInstantiatedNewAssignation( ctorB, p.PropertyName, p.PropertyType, "d" );
+                        }
+                        Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
+                    }
+                    else
+                    {
+                        Debug.Assert( !p.AutoInstantiated );
+                        string fieldName = "_fA" + c.Assembly.NextUniqueNumber();
+                        tB.OpenBlock()
+                          .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine()
+                          .Append( "set" )
+                          .OpenBlock()
+                          .Append( "if( value != null )" )
+                          .OpenBlock()
+
+                                .Append( "Type tV = value.GetType();" ).NewLine()
+                                .Append( "if( !_c" ).Append( fieldName )
+                                .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
+                                .OpenBlock()
+                                .Append( "throw new ArgumentException( \"Invalid Type in UnionType\");" )
+                                .CloseBlock()
+
+                          .CloseBlock()
+                          .Append( fieldName ).Append( " = value;" ).NewLine()
+                          .CloseBlock()
+                          .CloseBlock();
+                        tB.Append( "static readonly Type[] _c" ).Append( fieldName ).Append( "=" ).AppendArray( p.PropertyUnionTypes ).Append( ";" ).NewLine();
+                        tB.Append( typeName ).Space().Append( fieldName );
+                        if( p.DefaultValueSource == null ) tB.Append( ";" );
                     }
                     if( p.DefaultValueSource != null )
                     {

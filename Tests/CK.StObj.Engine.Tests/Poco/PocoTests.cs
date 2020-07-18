@@ -188,6 +188,19 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c );
         }
 
+        public interface IInvalidNoDefaultValue : IPoco
+        {
+            [DefaultValue( "bug" )]
+            IDef1 Auto { get; }
+        }
+
+        [Test]
+        public void DefaultValueAttribute_must_not_exist_on_AutoInstantiated_properties()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalidNoDefaultValue ), typeof( IDef1 ) );
+            TestHelper.GetFailedResult( c );
+        }
+
         public interface IRootTest : IPoco
         {
             ISubTest Sub { get; }

@@ -3,6 +3,7 @@ using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -236,6 +237,8 @@ namespace CK.Setup
 
         class PocoPropertyInfo : IPocoPropertyInfo
         {
+            HashSet<Type>? _unionTypes;
+
             public bool AutoInstantiated { get; set; }
 
             public bool HasDeclaredSetter { get; set; }
@@ -247,6 +250,8 @@ namespace CK.Setup
             public int Index { get; set; }
 
             public Type PropertyType => DeclaredProperties[0].PropertyType;
+
+            public IReadOnlyCollection<Type> PropertyUnionTypes => (IReadOnlyCollection<Type>?)_unionTypes ?? Type.EmptyTypes;
 
             public string PropertyName => DeclaredProperties[0].Name;
 
@@ -260,6 +265,12 @@ namespace CK.Setup
                 Index = index;
             }
 
+            public void AddUnionPropertyTypes( IReadOnlyList<Type> types )
+            {
+                Debug.Assert( types.Count > 0 );
+                if( _unionTypes == null ) _unionTypes = new HashSet<Type>();
+                _unionTypes.AddRange( types );
+            }
 
             public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
         }

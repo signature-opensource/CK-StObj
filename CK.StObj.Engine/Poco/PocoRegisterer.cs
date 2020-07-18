@@ -374,7 +374,23 @@ namespace CK.Setup
                                     implP.AutoInstantiated = true;
                                 }
                             }
-
+                        }
+                        var unionTypes = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
+                        if( unionTypes != null )
+                        {
+                            if( p.PropertyType != typeof(object) )
+                            {
+                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union types requires the property type to be 'object'." );
+                                return null;
+                            }
+                            if( unionTypes.Types.Count == 0 )
+                            {
+                                monitor.Warn( $"[UnionType] attributes on '{i.FullName}.{p.Name}' is empty. It is ignored." );
+                            }
+                            else
+                            {
+                                implP.AddUnionPropertyTypes( unionTypes.Types );
+                            }
                         }
                     }
                 }
