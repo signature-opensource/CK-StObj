@@ -169,9 +169,6 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [Test]
         public void basic_lists_can_be_nullable()
         {
-            //var gen = new GeneratedRootContext( TestHelper.Monitor, StObjContextRoot.BasicStObjRuntimeBuilder );
-            //var s = new ServiceCollection().AddStObjMap( TestHelper.Monitor, gen ).BuildServiceProvider();
-
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicList ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
 
@@ -383,6 +380,25 @@ namespace CK.StObj.Engine.Tests.PocoJson
             } );
             var a2 = Roundtrip( services, a );
             a2.Should().BeEquivalentTo( a );
+        }
+
+        [Test]
+        public void IPoco_types_properties_as_known_Collections_are_supported()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ), typeof( IPocoWithDictionary ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+
+            // IPocoWithDictionary brings Dictionary<string, int> and Dictionary<int,string>.
+            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var a = f.Create( a =>
+            {
+                a.Value = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
+            } );
+            var a2 = Roundtrip( services, a );
+            a2.Should().BeEquivalentTo( a );
+
+            a.Value = new Dictionary<string, int>() { { "One", 1 }, { "Two", 2 }, { "Three", 3 } };
+            Roundtrip( services, a ).Should().BeEquivalentTo( a );
         }
 
         static byte[] Serialize( IPoco o, bool withType )

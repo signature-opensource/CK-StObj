@@ -194,36 +194,54 @@ namespace CK.Setup
                     TypeInfo.RegKey reg = default;
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
-                    string? concreteTypeName = null;
 
+                    Type? tInterface = null;
                     Type genType = t.GetGenericTypeDefinition();
+                    Type[] genArgs = t.GetGenericArguments();
                     bool isList = genType == typeof( IList<> ) || genType == typeof( List<> );
                     bool isSet = !isList && (genType == typeof( ISet<> ) || genType == typeof( HashSet<> ));
                     if( isList || isSet )
                     {
-                        reg = GetNextRegKey( t );
-                        (fWrite, fRead, info, concreteTypeName) = CreateListOrSetFunctions( reg, isList );
-                    }
-                    else if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
-                    {
-                        reg = GetNextRegKey( t );
-                        Type tKey = t.GetGenericArguments()[0];
-                        Type tValue = t.GetGenericArguments()[1];
-                        if( tKey == typeof( string ) )
+                        if( t.IsInterface )
                         {
-                            (fWrite, fRead, info, concreteTypeName) = CreateStringMapFunctions( reg, tValue );
+                            tInterface = t;
+                            t = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( genArgs[0] );
                         }
                         else
                         {
-                            (fWrite, fRead, info, concreteTypeName) = CreateMapFunctions( reg, tKey, tValue );
+                            tInterface = (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( genArgs[0] );
+                        }
+                        reg = GetNextRegKey( t );
+                        (fWrite, fRead, info) = CreateListOrSetFunctions( reg, isList );
+                    }
+                    else if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
+                    {
+                        Type tKey = genArgs[0];
+                        Type tValue = genArgs[1];
+                        if( t.IsInterface )
+                        {
+                            tInterface = t;
+                            t = typeof( Dictionary<,> ).MakeGenericType( tKey, tValue );
+                        }
+                        else
+                        {
+                            tInterface = typeof( IDictionary<,> ).MakeGenericType( tKey, tValue );
+                        }
+                        reg = GetNextRegKey( t );
+                        if( tKey == typeof( string ) )
+                        {
+                            (fWrite, fRead, info) = CreateStringMapFunctions( reg, tValue );
+                        }
+                        else
+                        {
+                            (fWrite, fRead, info) = CreateMapFunctions( reg, tKey, tValue );
                         }
 
                     }
                     if( info != null )
                     {
-                        Debug.Assert( fRead != null && fWrite != null && concreteTypeName != null );
-                        info = ConfigureAndAddTypeInfo( info, fWrite, fRead, concreteTypeName );
-                        handler = info.NullHandler;
+                        Debug.Assert( fRead != null && fWrite != null && tInterface != null );
+                        handler = ConfigureAndAddTypeInfo( info, tInterface, fWrite, fRead );
                     }
                 }
             }
@@ -242,8 +260,9 @@ namespace CK.Setup
             return handler;
         }
 
-        TypeInfo ConfigureAndAddTypeInfo( TypeInfo info, IFunctionScope fWrite, IFunctionScope fRead, string concreteTypeName )
+        IHandler ConfigureAndAddTypeInfo( TypeInfo info, Type tInterface, IFunctionScope fWrite, IFunctionScope fRead )
         {
+            Debug.Assert( !info.Type.IsInterface && tInterface.IsInterface );
             info.Configure(
                       ( ICodeWriter write, string variableName, string pocoDirectoryAccessor ) =>
                       {
@@ -257,7 +276,7 @@ namespace CK.Setup
                               {
                                   read.Append( "if( " ).Append( variableName ).Append( " == null )" )
                                       .OpenBlock()
-                                      .Append( variableName ).Append( " = new " ).Append( concreteTypeName ).Append( "();" )
+                                      .Append( variableName ).Append( " = new " ).AppendCSharpName( info.Type ).Append( "();" )
                                       .CloseBlock();
                               }
                               else
@@ -267,14 +286,17 @@ namespace CK.Setup
                           }
                           else
                           {
-                              read.Append( variableName ).Append( " = new " ).Append( concreteTypeName ).Append( "();" ).NewLine();
+                              read.Append( variableName ).Append( " = new " ).AppendCSharpName( info.Type ).Append( "();" ).NewLine();
                           }
                           read.Append( pocoDirectoryAccessor ).Append( "." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( " );" );
                       } );
-            return AddTypeInfo( info );
+            AddTypeInfo( info );
+            // The interface is directly mapped to the null handler.
+            AddTypeHandlerAlias( tInterface, info.NullHandler );
+            return info.NullHandler;
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info, string concreteTypeName) CreateMapFunctions( in TypeInfo.RegKey reg, Type tKey, Type tValue )
+        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info) CreateMapFunctions( in TypeInfo.RegKey reg, Type tKey, Type tValue )
         {
             var keyHandler = TryFindOrCreateHandler( tKey );
             if( keyHandler == null ) return default;
@@ -285,9 +307,10 @@ namespace CK.Setup
             string valueTypeName = valueHandler.Type.ToCSharpName();
             var concreteTypeName = "Dictionary<" + keyTypeName + "," + valueTypeName + ">";
 
-            string funcPrefix = keyHandler.Info.NumberName + "_" + valueHandler.Info.NumberName;
-            var fWriteDef = FunctionDefinition.Parse( "internal void WriteO" + funcPrefix + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c )" );
-            var fReadDef = FunctionDefinition.Parse( "internal void ReadO" + funcPrefix + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c )" );
+            string funcSuffix = keyHandler.Info.NumberName + "_" + valueHandler.Info.NumberName;
+            // Trick: the reader/writer functions accepts the interface rather than the concrete type.
+            var fWriteDef = FunctionDefinition.Parse( "internal void WriteM_" + funcSuffix + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c )" );
+            var fReadDef = FunctionDefinition.Parse( "internal void ReadM_" + funcSuffix + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c )" );
             IFunctionScope? fWrite = PocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
             if( fWrite != null )
@@ -329,18 +352,18 @@ namespace CK.Setup
                      .Append( "r.Read();" );
 
             }
-            return (fWrite, fRead, new TypeInfo( in reg, "!M<" + keyHandler.Name + "," + valueHandler.Name + ">"), concreteTypeName );
+            return (fWrite, fRead, new TypeInfo( in reg, "M<" + keyHandler.Name + "," + valueHandler.Name + ">") );
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info, string concreteTypeName ) CreateStringMapFunctions( in TypeInfo.RegKey reg, Type tValue )
+        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info ) CreateStringMapFunctions( in TypeInfo.RegKey reg, Type tValue )
         {
             var valueHandler = TryFindOrCreateHandler( tValue );
             if( valueHandler == null ) return default;
 
             string valueTypeName = valueHandler.Type.ToCSharpName();
             var concreteTypeName = "Dictionary<string," + valueTypeName + ">";
-            var fWriteDef = FunctionDefinition.Parse( "internal void WriteO" + valueHandler.Info.NumberName + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c )" );
-            var fReadDef = FunctionDefinition.Parse( "internal void ReadO" + valueHandler.Info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c )" );
+            var fWriteDef = FunctionDefinition.Parse( "internal void WriteO_" + valueHandler.Info.NumberName + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c )" );
+            var fReadDef = FunctionDefinition.Parse( "internal void ReadO_" + valueHandler.Info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c )" );
             IFunctionScope? fWrite = PocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
             if( fWrite != null )
@@ -371,18 +394,18 @@ namespace CK.Setup
                      .CloseBlock()
                      .Append( "r.Read();" );
             }
-            return (fWrite, fRead, new TypeInfo( in reg, "!O<" + valueHandler.Name + ">" ), concreteTypeName );
+            return (fWrite, fRead, new TypeInfo( in reg, "O<" + valueHandler.Name + ">" ) );
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info, string concreteTypeName) CreateListOrSetFunctions( in TypeInfo.RegKey reg, bool isList )
+        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info ) CreateListOrSetFunctions( in TypeInfo.RegKey reg, bool isList )
         {
             Type tItem = reg.Type.GetGenericArguments()[0];
             var itemHandler = TryFindOrCreateHandler( tItem );
             if( itemHandler == null ) return default;
 
             string itemTypeName = itemHandler.Type.ToCSharpName();
-            var fWriteDef = FunctionDefinition.Parse( "internal void WriteLOrS" + itemHandler.Info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ICollection<" + itemTypeName + "> c )" );
-            var fReadDef = FunctionDefinition.Parse( "internal void ReadLOrS" + itemHandler.Info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, ICollection<" + itemTypeName + "> c )" );
+            var fWriteDef = FunctionDefinition.Parse( "internal void WriteLOrS_" + itemHandler.Info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ICollection<" + itemTypeName + "> c )" );
+            var fReadDef = FunctionDefinition.Parse( "internal void ReadLOrS_" + itemHandler.Info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, ICollection<" + itemTypeName + "> c )" );
 
             IFunctionScope? fWrite = PocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
@@ -411,8 +434,8 @@ namespace CK.Setup
                      .CloseBlock()
                      .Append( "r.Read();" );
             }
-            var concrete = (isList ? "List<" : "HashSet<") + itemTypeName + ">";
-            return (fWrite, fRead, new TypeInfo( in reg, "!" + (isList ? "L<" : "S<") + itemHandler.Name + ">" ), concrete );
+            
+            return (fWrite, fRead, new TypeInfo( in reg, (isList ? "L<" : "S<") + itemHandler.Name + ">" ) );
         }
 
         static bool LiftNullableValueType( ref Type t )

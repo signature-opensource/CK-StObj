@@ -124,10 +124,6 @@ namespace CK.Setup
                     {
                         if( t.IsValueType ) Name += '?';
                     }
-                    else
-                    {
-                        if( !t.IsValueType ) Name += '!';
-                    }
                 }
 
                 public void GenerateWrite( ICodeWriter write, string variableName, string pocoDirectoryAccessor, bool? withType = null, bool skipIfNullBlock = false )
