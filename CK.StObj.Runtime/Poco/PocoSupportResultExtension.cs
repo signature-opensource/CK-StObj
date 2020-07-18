@@ -12,7 +12,7 @@ namespace CK.Setup
     public static class PocoSupportResultExtension
     {
         /// <summary>
-        /// Generate <paramref name="variableName"/> = "new ..." assignation to the writer for an automatically
+        /// Generates <paramref name="variableName"/> = "new ..." assignation to the writer for an automatically
         /// instantiated type.
         /// This throws a ArgumentException if the <paramref name="autoType"/> is not a valid one:
         /// see <see cref="IPocoPropertyInfo.AutoInstantiated"/>.
@@ -25,16 +25,12 @@ namespace CK.Setup
         /// <param name="writer">The code writer.</param>
         /// <param name="variableName">The assigned variable name.</param>
         /// <param name="autoType">The type.</param>
-        /// <param name="pocoDirectoryAccessor">
-        /// The PocoDirectory accessor: "this" in the PocoDirectory, "PocoDirectory" in
-        /// a factory or "_factory.PocoDirectory" in a Poco class.
-        /// </param>
-        public static void GenerateAutoInstantiatedNewAssignation( this IPocoSupportResult @this, ICodeWriter writer, string variableName, Type autoType, string pocoDirectoryAccessor )
+        public static void GenerateAutoInstantiatedNewAssignation( this IPocoSupportResult @this, ICodeWriter writer, string variableName, Type autoType )
         {
             writer.Append( variableName ).Append( " = " );
             if( @this.AllInterfaces.TryGetValue( autoType, out IPocoInterfaceInfo? info ) )
             {
-                writer.Append( "new " ).Append( info.Root.PocoClass.Name ).Append( "( " ).Append( pocoDirectoryAccessor ).Append( " );" ).NewLine();
+                writer.Append( "new " ).Append( info.Root.PocoClass.FullName! ).Append( "();" ).NewLine();
                 return;
             }
             if( autoType.IsGenericType )

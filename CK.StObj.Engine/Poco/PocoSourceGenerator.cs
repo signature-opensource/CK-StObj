@@ -32,14 +32,15 @@ namespace CK.Setup
 
             // PocoDirectory_CK class.
             scope.FindOrCreateFunction( "public PocoDirectory_CK()" )
+                 .Append( "Instance = this;" ).NewLine()
                  .Append( "_factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" );
 
-            scope.Append( "Dictionary<string,IPocoFactory> _factories;" ).NewLine()
+            scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
+                 .Append( "static readonly Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()
                  .Append( "public override IPocoFactory Find( string name ) => _factories.GetValueOrDefault( name );" ).NewLine()
-                 .Append( "internal PocoDirectory_CK Register( IPocoFactory f )" ).OpenBlock()
+                 .Append( "internal static void Register( IPocoFactory f )" ).OpenBlock()
                  .Append( "_factories.Add( f.Name, f );" ).NewLine()
                  .Append( "foreach( var n in f.PreviousNames ) _factories.Add( n, f );" ).NewLine()
-                 .Append( "return this;" ).NewLine()
                  .CloseBlock();
 
             if( r.AllInterfaces.Count == 0 ) return AutoImplementationResult.Success;
@@ -55,9 +56,10 @@ namespace CK.Setup
                 var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
-                // The factory field is private and its type is the exact class: extended code can refer to the _factory
-                // and can have access to the factory extended code without cast.
-                tB.Append( "readonly " ).Append( factoryClassName ).Append( " _factory;" ).NewLine();
+                // The Poco's static _factory field is internal and its type is the exact class: extended code
+                // can refer to the _factory to access the factory extended code without cast.
+                tB.Append( "internal static " ).Append( tFB.FullName ).Append( " _factory;")
+                  .NewLine();
                 tB.Append( "public IPocoFactory Factory => _factory;" ).NewLine();
                 
                 // Always create the constructor so that other code generators
@@ -67,8 +69,7 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoClass" ) );
                 tB.Definition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                IFunctionScope ctorB = tB.CreateFunction( $"public {root.PocoClass.Name}( PocoDirectory_CK d )" );
-                ctorB.Append( "_factory = d._f" ).Append( tFB.UniqueId ).Append( ';' ).NewLine();
+                IFunctionScope ctorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
 
                 foreach( var p in root.PropertyList )
                 {
@@ -90,14 +91,14 @@ namespace CK.Setup
                         if( p.AutoInstantiated )
                         {
                             // Generates in constructor.
-                            r.GenerateAutoInstantiatedNewAssignation( ctorB, p.PropertyName, p.PropertyType, "d" );
+                            r.GenerateAutoInstantiatedNewAssignation( ctorB, p.PropertyName, p.PropertyType );
                         }
                         Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
                     }
                     else
                     {
                         Debug.Assert( !p.AutoInstantiated );
-                        string fieldName = "_fA" + c.Assembly.NextUniqueNumber();
+                        string fieldName = "_a" + c.Assembly.NextUniqueNumber();
                         tB.OpenBlock()
                           .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine()
                           .Append( "set" )
@@ -129,16 +130,12 @@ namespace CK.Setup
 
                 // PocoFactory class.
 
-                // The PocoDirectory field is set by the StObjConstruct below. It is public and is 
-                // typed with the generated class: extended code can use it without cast.
-                tFB.Append( "public PocoDirectory_CK PocoDirectory;" ).NewLine();
-
-                tFB.Append( "PocoDirectory IPocoFactory.PocoDirectory => PocoDirectory;" ).NewLine();
+                tFB.Append( "PocoDirectory IPocoFactory.PocoDirectory => PocoDirectory_CK.Instance;" ).NewLine();
 
                 tFB.Append( "public Type PocoClassType => typeof(" ).AppendCSharpName( root.PocoClass ).Append( ");" )
                    .NewLine();
 
-                tFB.Append( "public IPoco Create() => new " ).AppendCSharpName( root.PocoClass ).Append( "( PocoDirectory );" )
+                tFB.Append( "public IPoco Create() => new " ).AppendCSharpName( root.PocoClass ).Append( "();" )
                    .NewLine();
 
                 tFB.Append( "public string Name => " ).AppendSourceString( root.Name ).Append( ";" )
@@ -147,15 +144,9 @@ namespace CK.Setup
                 tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( root.PreviousNames ).Append( ";" )
                    .NewLine();
 
-                // The StObjConstruct implementation registers the names AND the factory itself as a field of the directory implementation.
-                // This enables a direct factory instance access, without any lookup in yet another dictionary.
-                // The field is "internal" to mark it as a kind of "trick"...
-                Debug.Assert( scope == c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) ), "We are implementing the PocoDirectory." );
-                scope.Append( "internal " ).Append( tFB.FullName ).Append( " _f" ).Append( tFB.UniqueId ).Append( ';' ).NewLine();
-
-                tFB.Append( "void StObjConstruct( PocoDirectory d )" ).OpenBlock()
-                    .Append( "PocoDirectory = (PocoDirectory_CK)d;" ).NewLine()
-                    .Append( "PocoDirectory.Register( this )._f" ).Append( tFB.UniqueId ).Append( " = this;" ).NewLine()
+                tFB.CreateFunction( "public " + factoryClassName + "()" ).OpenBlock()
+                    .Append( "PocoDirectory_CK.Register( this );" ).NewLine()
+                    .Append( tB.FullName ).Append( "._factory = this;" ).NewLine()
                     .CloseBlock();
 
                 foreach( var i in root.Interfaces )
@@ -164,7 +155,7 @@ namespace CK.Setup
                     tFB.AppendCSharpName( i.PocoInterface )
                        .Space()
                        .AppendCSharpName( i.PocoFactoryInterface )
-                       .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass ).Append( "( PocoDirectory );" )
+                       .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass ).Append( "();" )
                        .NewLine();
                 }
             }

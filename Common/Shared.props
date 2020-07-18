@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!--<BasicDefinitions>: provides simple and useful definitions.-->
   <PropertyGroup>
     <!-- Simple IsTestProject and IsInTestsFolder variables. -->
@@ -38,7 +38,7 @@
   <!--</SourceLink>-->
   <!--<StandardProperties>-->
   <PropertyGroup>
-    <RepositoryUrl>https://github.com/signature-opensource/CK-StObj.git</RepositoryUrl>
+    <RepositoryUrl>https://github.com/signature-opensource/CK-StObj</RepositoryUrl>
     <ProductName>CK</ProductName>
     <Company>Signature Code</Company>
     <Authors>Signature Code</Authors>
