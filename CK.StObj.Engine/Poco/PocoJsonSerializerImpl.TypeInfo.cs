@@ -11,8 +11,8 @@ namespace CK.Setup
 {
     public partial class PocoJsonSerializerImpl
     {
-        public delegate void CodeWriter( ICodeWriter write, string variableName, string pocoDirectoryAccessor );
-        public delegate void CodeReader( ICodeWriter read, string variableName, bool assignOnly, bool isNullable, string pocoDirectoryAccessor );
+        public delegate void CodeWriter( ICodeWriter write, string variableName );
+        public delegate void CodeReader( ICodeWriter read, string variableName, bool assignOnly, bool isNullable );
 
         public enum DirectType
         {
@@ -64,13 +64,12 @@ namespace CK.Setup
             /// </summary>
             /// <param name="write">The code writer.</param>
             /// <param name="variableName">The variable name.</param>
-            /// <param name="pocoDirectoryAccessor">The accessor to the PocoDirectory_CK class from the generated code.</param>
             /// <param name="withType">True or false to override <see cref="IsAbstractType"/>.</param>
             /// <param name="skipIfNullBlock">
             /// True to skip the "if( variableName == null )" block whenever <see cref="IsNullable"/> is true.
             /// This <see cref="Type"/> and <see cref="Name"/> are kept as-is.
             /// </param>
-            void GenerateWrite( ICodeWriter write, string variableName, string pocoDirectoryAccessor, bool? withType = null, bool skipIfNullBlock = false );
+            void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipIfNullBlock = false );
 
             /// <summary>
             /// Generates the code required to read a value into a <paramref name="variableName"/>.
@@ -78,11 +77,10 @@ namespace CK.Setup
             /// <param name="read">The code reader.</param>
             /// <param name="variableName">The variable name.</param>
             /// <param name="assignOnly">True to force the assignment of the variable, not trying to reuse it (typically because it is not initialized).</param>
-            /// <param name="pocoDirectoryAccessor">The accessor to the PocoDirectory_CK class from the generated code.</param>
             /// <param name="skipIfNullBlock">
             /// True to skip the "if( variableName == null )" block whenever <see cref="IsNullable"/> is true.
             /// </param>
-            void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, string pocoDirectoryAccessor, bool skipIfNullBlock = false );
+            void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false );
 
             /// <summary>
             /// Creates a handler for type that is mapped to this one.
@@ -126,8 +124,13 @@ namespace CK.Setup
                     }
                 }
 
-                public void GenerateWrite( ICodeWriter write, string variableName, string pocoDirectoryAccessor, bool? withType = null, bool skipIfNullBlock = false )
+                public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipIfNullBlock = false )
                 {
+                    if( Info.DirectType == DirectType.Untyped )
+                    {
+                        write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" ).NewLine();
+                        return;
+                    }
                     bool isNullable = IsNullable && !skipIfNullBlock;
                     if( isNullable )
                     {
@@ -142,13 +145,13 @@ namespace CK.Setup
                         case DirectType.Bool: write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" ); break;
                         default:
                             {
-                                bool writeType = Info.DirectType != DirectType.Untyped && (withType.HasValue ? withType.Value : IsAbstractType);
+                                bool writeType = (withType.HasValue ? withType.Value : IsAbstractType);
                                 if( writeType )
                                 {
                                     write.Append( "w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( Name ).Append( ");" ).NewLine();
                                 }
                                 Debug.Assert( Info._writer != null );
-                                Info._writer( write, variableName, pocoDirectoryAccessor );
+                                Info._writer( write, variableName );
                                 if( writeType )
                                 {
                                     write.Append( "w.WriteEndArray();" ).NewLine();
@@ -159,8 +162,13 @@ namespace CK.Setup
                     if( isNullable ) write.CloseBlock();
                 }
 
-                public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, string pocoDirectoryAccessor, bool skipIfNullBlock = false )
+                public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false )
                 {
+                    if( Info.DirectType == DirectType.Untyped )
+                    {
+                        read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r );" ).NewLine();
+                        return;
+                    }
                     bool isNullable = IsNullable && !skipIfNullBlock;
                     if( isNullable )
                     {
@@ -182,7 +190,7 @@ namespace CK.Setup
                                 Debug.Assert( Info._reader != null );
                                 // It's not because we skip the Json null test above that the reader function
                                 // works with a nullable type: we use the IsNullable property here.
-                                Info._reader( read, variableName, assignOnly, IsNullable, pocoDirectoryAccessor );
+                                Info._reader( read, variableName, assignOnly, IsNullable );
                                 break;
                             }
                     }
@@ -194,7 +202,6 @@ namespace CK.Setup
                     return new Handler( Info, t, IsNullable, true ); 
                 }
             }
-
 
             public readonly ref struct RegKey
             {
@@ -272,13 +279,13 @@ namespace CK.Setup
                 PreviousNames = Array.Empty<string>();
                 NumberName = String.Empty;
                 DirectType = DirectType.Untyped;
-                _writer = ( ICodeWriter write, string variableName, string pocoDirectoryAccessor ) =>
+                _writer = ( ICodeWriter write, string variableName ) =>
                 {
-                    write.Append( pocoDirectoryAccessor ).Append( ".WriteObject( w, " ).Append( variableName ).Append( ");" );
+                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" );
                 };
-                _reader = ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable, string pocoDirectoryAccessor ) =>
+                _reader = ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = " ).Append( pocoDirectoryAccessor ).Append( ".ReadObject( ref r );" );
+                    read.Append( variableName ).Append( " = " ).Append( "PocoDirectory_CK.ReadObject( ref r );" );
                 };
                 NullHandler = new Handler( this, Type, true, true );
                 NotNullHandler = new Handler( this, Type, false, true );

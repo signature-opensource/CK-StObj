@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void poco_knwows_its_Factory()
+        public void poco_knows_its_Factory()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoKnowsItsFactory ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;

@@ -32,8 +32,7 @@ namespace CK.Setup
 
             // PocoDirectory_CK class.
             scope.FindOrCreateFunction( "public PocoDirectory_CK()" )
-                 .Append( "Instance = this;" ).NewLine()
-                 .Append( "_factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" );
+                 .Append( "Instance = this;" );
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
                  .Append( "static readonly Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()
@@ -58,7 +57,7 @@ namespace CK.Setup
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
                 // can refer to the _factory to access the factory extended code without cast.
-                tB.Append( "internal static " ).Append( tFB.FullName ).Append( " _factory;")
+                tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
                   .NewLine();
                 tB.Append( "public IPocoFactory Factory => _factory;" ).NewLine();
                 
@@ -132,10 +131,10 @@ namespace CK.Setup
 
                 tFB.Append( "PocoDirectory IPocoFactory.PocoDirectory => PocoDirectory_CK.Instance;" ).NewLine();
 
-                tFB.Append( "public Type PocoClassType => typeof(" ).AppendCSharpName( root.PocoClass ).Append( ");" )
+                tFB.Append( "public Type PocoClassType => typeof(" ).Append( root.PocoClass.Name ).Append( ");" )
                    .NewLine();
 
-                tFB.Append( "public IPoco Create() => new " ).AppendCSharpName( root.PocoClass ).Append( "();" )
+                tFB.Append( "public IPoco Create() => new " ).Append( root.PocoClass.Name ).Append( "();" )
                    .NewLine();
 
                 tFB.Append( "public string Name => " ).AppendSourceString( root.Name ).Append( ";" )
@@ -144,10 +143,9 @@ namespace CK.Setup
                 tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( root.PreviousNames ).Append( ";" )
                    .NewLine();
 
-                tFB.CreateFunction( "public " + factoryClassName + "()" ).OpenBlock()
+                tFB.CreateFunction( "public " + factoryClassName + "()" )
                     .Append( "PocoDirectory_CK.Register( this );" ).NewLine()
-                    .Append( tB.FullName ).Append( "._factory = this;" ).NewLine()
-                    .CloseBlock();
+                    .Append( tB.Name ).Append( "._factory = this;" );
 
                 foreach( var i in root.Interfaces )
                 {

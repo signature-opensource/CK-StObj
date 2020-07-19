@@ -189,7 +189,6 @@ namespace CK.Setup
         }
 
         static readonly MethodInfo _typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
-        static readonly Type[] _stObjConstructParameters = new Type[]{ typeof(PocoDirectory) };
 
         ClassInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
@@ -240,11 +239,6 @@ namespace CK.Setup
                 MethodBuilder m = tBF.DefineMethod( "Create", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPoco ), Type.EmptyTypes );
                 ILGenerator g = m.GetILGenerator();
                 g.Emit( OpCodes.Ldnull );
-                g.Emit( OpCodes.Ret );
-            }
-            {
-                MethodBuilder m = tBF.DefineMethod( "StObjConstruct", MethodAttributes.Private | MethodAttributes.HideBySig | MethodAttributes.Final, null, _stObjConstructParameters );
-                ILGenerator g = m.GetILGenerator();
                 g.Emit( OpCodes.Ret );
             }
 
