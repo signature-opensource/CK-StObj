@@ -203,11 +203,14 @@ namespace CK.Setup
                                         foreach( var f in g.GroupedPaths )
                                         {
                                             if( !f.GenerateSourceFiles && f.CompileOption == CompileOption.None ) continue;
+
+                                            NormalizedPath outPath = head.OutputPath;
                                             // Handling OutputPath: if the OutputPath is not empty and is not already the primary one,
                                             // We move all the generated files.
                                             if( !f.OutputPath.IsEmptyPath
                                                 && f.OutputPath != head.OutputPath )
                                             {
+                                                outPath = f.OutputPath;
                                                 foreach( var file in gR.GeneratedFileNames )
                                                 {
                                                     ProjectSourceFileHandler.DoMove( _monitor, head.OutputPath.Combine( file ), f.OutputPath.Combine( file ) );
@@ -217,9 +220,9 @@ namespace CK.Setup
                                             // we handle the "Project Mode" source files.
                                             // There are 2 moves for file sources but the code is simpler.
                                             if( !f.ProjectPath.IsEmptyPath
-                                                && f.ProjectPath != f.OutputPath )
+                                                && f.ProjectPath != outPath )
                                             {
-                                                var h = new ProjectSourceFileHandler( _monitor, f.OutputPath, f.ProjectPath );
+                                                var h = new ProjectSourceFileHandler( _monitor, outPath, f.ProjectPath );
                                                 h.MoveFilesAndCheckSignature( gR );
                                             }
                                         }
