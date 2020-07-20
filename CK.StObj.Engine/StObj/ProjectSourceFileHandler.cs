@@ -65,13 +65,14 @@ namespace CK.Setup
                 if( f.EndsWith( ".cs" ) )
                 {
                     bool isPrimaryFile = idxFile == 0;
+                    var fPath = _originPath.AppendPart( f );
                     var t = GetCSFileTargetPath( idxFile++ );
                     if( File.Exists( t ) )
                     {
                         // The primary source file that has the signature is the first one.
                         if( isPrimaryFile )
                         {
-                            if( SignatureFileEquals( f, t ) )
+                            if( SignatureFileEquals( fPath, t ) )
                             {
                                 _monitor.Info( $"File signature matches: no change in primary project source file." );
                             }
@@ -92,7 +93,7 @@ namespace CK.Setup
                     {
                         _monitor.Trace( $"New project source file: '{t.LastPart}'." );
                     }
-                    DoMoveOrCopy( _monitor, _originPath.AppendPart( f ), t, copy: false );
+                    DoMoveOrCopy( _monitor, fPath, t, copy: false );
                 }
                 else if( f.EndsWith( ".dll" ) || f.EndsWith( ".exe" ) ) continue;
                 else
@@ -104,10 +105,10 @@ namespace CK.Setup
             }
             // Cleaning "G{X}.cs" files only if at least one files has been generated:
             // On error or if no files have been generated (typically because of a successful available StObjMap
-            // match) we let the existing files as-is.
-            // Other files (that don't exist currently) are left as-is.
+            // match) we let ALL the existing files as-is.
             if( r.GeneratedFileNames.Count > 0 )
             {
+                // Implemented cleaning here is currently useless since there are no G{X}.cs where X > 0.
                 for(; ; )
                 {
                     var previous = GetCSFileTargetPath( idxFile++ );
