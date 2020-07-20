@@ -181,7 +181,7 @@ namespace CK.Setup
                             foreach( var g in runCtx.AllBinPaths )
                             {
                                 var second = new List<SecondPassCodeGeneration>();
-                                secondPass[i] = (g, second);
+                                secondPass[i++] = (g, second);
                                 if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second.Add ) )
                                 {
                                     _status.Success = false;
