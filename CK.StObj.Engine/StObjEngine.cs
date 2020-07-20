@@ -213,7 +213,10 @@ namespace CK.Setup
                                                 outPath = f.OutputPath;
                                                 foreach( var file in gR.GeneratedFileNames )
                                                 {
-                                                    ProjectSourceFileHandler.DoMove( _monitor, head.OutputPath.Combine( file ), f.OutputPath.Combine( file ) );
+                                                    ProjectSourceFileHandler.DoMoveOrCopy( _monitor,
+                                                                                     head.OutputPath.Combine( file ),
+                                                                                     outPath.Combine( file ),
+                                                                                     copy: file.EndsWith( ".dll" ) );
                                                 }
                                             }
                                             // Once done, if there is a ProjectPath that is not the OutputPath, then

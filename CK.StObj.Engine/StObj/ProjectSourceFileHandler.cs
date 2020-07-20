@@ -92,7 +92,7 @@ namespace CK.Setup
                     {
                         _monitor.Trace( $"New project source file: '{t.LastPart}'." );
                     }
-                    DoMove( _monitor, _originPath.AppendPart( f ), t );
+                    DoMoveOrCopy( _monitor, _originPath.AppendPart( f ), t, copy: false );
                 }
                 else if( f.EndsWith( ".dll" ) || f.EndsWith( ".exe" ) ) continue;
                 else
@@ -124,7 +124,7 @@ namespace CK.Setup
             return !modified;
         }
 
-        internal static void DoMove( IActivityMonitor m, NormalizedPath f, NormalizedPath t )
+        internal static void DoMoveOrCopy( IActivityMonitor m, NormalizedPath f, NormalizedPath t, bool copy )
         {
             int retryCount = 0;
             retry:
@@ -132,23 +132,24 @@ namespace CK.Setup
             {
                 if( f != t.LastPart )
                 {
-                    m.Info( $"Moving generated file: '{f.LastPart}' to '{t}'." );
+                    m.Info( $"{(copy ? "Copy" : "Mov")}ing generated file: '{f.LastPart}' to '{t}'." );
                 }
                 else
                 {
-                    m.Info( $"Moving generated file: '{t}'." );
+                    m.Info( $"{(copy ? "Copy" : "Mov")}ing generated file: '{t}'." );
                 }
-                File.Move( f, t, true );
+                if( copy ) File.Copy( f, t, true );
+                else File.Move( f, t, true );
             }
             catch( Exception ex )
             {
                 if( retryCount++ < 3 )
                 {
-                    m.Warn( $"Failed to move project source file: '{f.LastPart}'. Retrying.", ex );
+                    m.Warn( $"Failed to {(copy ? "copy" : "move")} project source file: '{f.LastPart}'. Retrying.", ex );
                     Thread.Sleep( retryCount * 50 );
                     goto retry;
                 }
-                m.Error( $"Failed to move project source file: '{f.LastPart}'. Rethrowing.", ex );
+                m.Error( $"Failed to {(copy ? "copy" : "move")} project source file: '{f.LastPart}'. Rethrowing.", ex );
                 throw;
             }
         }
