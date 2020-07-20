@@ -274,19 +274,12 @@ namespace CK.Setup
 
             TypeInfo()
             {
+                // _writer and _reader are unused and let to null.
                 Type = typeof( object );
                 Name = String.Empty;
                 PreviousNames = Array.Empty<string>();
                 NumberName = String.Empty;
                 DirectType = DirectType.Untyped;
-                _writer = ( ICodeWriter write, string variableName ) =>
-                {
-                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" );
-                };
-                _reader = ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = " ).Append( "PocoDirectory_CK.ReadObject( ref r );" );
-                };
                 NullHandler = new Handler( this, Type, true, true );
                 NotNullHandler = new Handler( this, Type, false, true );
             }

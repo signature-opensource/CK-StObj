@@ -4,8 +4,9 @@ using System.Collections.Generic;
 namespace CK.Core
 {
     /// <summary>
-    /// Defines multiples allowed types on an "object" property.
-    /// This attribute can be applied only on "object" IPoco properties.
+    /// Defines multiples allowed types on a Poco property.
+    /// This attribute can be applied only on IPoco properties.
+    /// The property type must be compatible with each of the <see cref="Types"/>.
     /// Currently this always allows null value.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]

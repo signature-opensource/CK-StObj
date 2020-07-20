@@ -372,17 +372,18 @@ namespace CK.Setup
                         var unionTypes = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
                         if( unionTypes != null )
                         {
-                            if( p.PropertyType != typeof(object) )
-                            {
-                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union types requires the property type to be 'object'." );
-                                return null;
-                            }
                             if( unionTypes.Types.Count == 0 )
                             {
                                 monitor.Warn( $"[UnionType] attributes on '{i.FullName}.{p.Name}' is empty. It is ignored." );
                             }
                             else
                             {
+                                var deviants = unionTypes.Types.Where( u => !p.PropertyType.IsAssignableFrom( u ) );
+                                if( deviants.Any() )
+                                {
+                                    monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union types '{deviants.Select( d => d.Name ).Concatenate("' ,'")}' are incompatible with to the property type '{p.PropertyType.Name}'." );
+                                    return null;
+                                }
                                 implP.AddUnionPropertyTypes( unionTypes.Types );
                             }
                         }
