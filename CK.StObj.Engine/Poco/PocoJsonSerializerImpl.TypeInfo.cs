@@ -215,6 +215,7 @@ namespace CK.Setup
                     NumberName = n;
                 }
             }
+
             /// <summary>
             /// Gets the primary type.
             /// For value type, this is the not nullable type.

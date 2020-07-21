@@ -182,7 +182,7 @@ namespace CK.Setup
                             {
                                 var second = new List<SecondPassCodeGeneration>();
                                 secondPass[i++] = (g, second);
-                                if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second.Add ) )
+                                if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second ) )
                                 {
                                     _status.Success = false;
                                     break;

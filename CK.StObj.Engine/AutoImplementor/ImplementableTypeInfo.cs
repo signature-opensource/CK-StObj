@@ -220,7 +220,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="c">The target dynamic assembly.</param>
         /// <param name="secondPass">The second pass collector.</param>
-        public void RunFirstPass( IActivityMonitor monitor, ICodeGenerationContext c, Action<SecondPassCodeGeneration> secondPass )
+        public void RunFirstPass( IActivityMonitor monitor, ICodeGenerationContext c, List<SecondPassCodeGeneration> secondPass )
         {
             if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
@@ -230,7 +230,7 @@ namespace CK.Setup
             foreach( var impl in TypeImplementors )
             {
                 var second = SecondPassCodeGeneration.FirstPass( monitor, impl, c, cB, AbstractType ).SecondPass;
-                if( second != null ) secondPass( second );
+                if( second != null ) secondPass.Add( second );
             }
             // Calls all method implementors.
             foreach( var am in MethodsToImplement )
@@ -245,7 +245,7 @@ namespace CK.Setup
                     else
                     {
                         var second = SecondPassCodeGeneration.FirstPass( monitor, m, c, cB, am.Method ).SecondPass;
-                        if( second != null ) secondPass( second );
+                        if( second != null ) secondPass.Add( second );
                     }
                 }
             }
@@ -262,7 +262,7 @@ namespace CK.Setup
                     else
                     {
                         var second = SecondPassCodeGeneration.FirstPass( monitor, p, c, cB, ap.Property ).SecondPass;
-                        if( second != null ) secondPass( second );
+                        if( second != null ) secondPass.Add( second );
                     }
                 }
             }

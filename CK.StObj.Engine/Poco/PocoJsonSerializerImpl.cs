@@ -16,7 +16,7 @@ namespace CK.Setup
     /// the API exposed as extension methods by the CK.Poco.PocoJsonSerializer static
     /// class (in CK.Poco.Json).
     /// </summary>
-    public partial class PocoJsonSerializerImpl : ICodeGenerator
+    public partial class PocoJsonSerializerImpl : ICodeGenerator, IJsonSerializationCodeGen
     {
         IActivityMonitor? _monitor;
         ITypeScope? _pocoDirectory;
@@ -24,6 +24,13 @@ namespace CK.Setup
         IActivityMonitor Monitor => _monitor!;
 
         ITypeScope PocoDirectory => _pocoDirectory!;
+
+        void IJsonSerializationCodeGen.RegisterEnumOrCollectionType( Type t )
+        {
+            TryFindOrCreateHandler( t );
+        }
+
+        bool IJsonSerializationCodeGen.IsKnownType( Type t ) => _map.ContainsKey( t );
 
         /// <summary>
         /// Extends PocoDirectory_CK, the factories and the Poco classes.
@@ -35,15 +42,17 @@ namespace CK.Setup
         {
             _monitor = monitor;
             _pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            InitializeMap();
+            // Exposes this as a service to others.
+            c.CurrentRun.ServiceContainer.Add<IJsonSerializationCodeGen>( this );
 
             var pocoSupport = c.Assembly.GetPocoSupportResult();
-            if( pocoSupport == null )
+            if( pocoSupport.Roots.Count == 0 )
             {
-                monitor.Info( "No Poco support available. Skipping Poco serialization code generation." );
-                return AutoImplementationResult.Success;
+                monitor.Info( "No Poco available. Skipping Poco serialization code generation." );
+                return new AutoImplementationResult( nameof( Finalize ) );
             }
 
-            InitializeMap();
             // IPoco and IClosedPoco are not in the "OtherInterfaces".
             AddUntypedHandler( typeof( IPoco ) );
             AddUntypedHandler( typeof( IClosedPoco ) );
@@ -51,7 +60,7 @@ namespace CK.Setup
             // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
             foreach( var root in pocoSupport.Roots )
             {
-                var typeInfo = AddTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure( 
+                var typeInfo = AddTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
                                 ( ICodeWriter write, string variableName )
                                         => write.Append( variableName ).Append( ".Write( w, false );" ),
                                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -87,6 +96,11 @@ namespace CK.Setup
                 AddUntypedHandler( other.Key );
             }
 
+            return new AutoImplementationResult( nameof( GeneratePocoSupport ) );
+        }
+
+        AutoImplementationResult GeneratePocoSupport( IActivityMonitor monitor, ICodeGenerationContext c, IPocoSupportResult pocoSupport )
+        { 
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
             {
@@ -111,12 +125,16 @@ namespace CK.Setup
                 ExtendPocoClass( root, pocoClass );
             }
 
+            return new AutoImplementationResult( nameof( Finalize ) );
+        }
+
+        void Finalize( IActivityMonitor monitor )
+        {
+            monitor.Info( $"Generating Json serialization with {_map.Count} mappings." );
             // Generates the code for "dynamic"/"untyped" object.
             FillDynamicMaps( _map );
             GenerateObjectWrite();
             GenerateObjectRead();
-
-            return AutoImplementationResult.Success;
         }
 
         void ExtendPocoClass( IPocoRootInfo pocoInfo, ITypeScope pocoClass )

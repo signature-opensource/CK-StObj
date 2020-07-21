@@ -284,7 +284,7 @@ namespace CK.StObj.Engine.Tests
                 // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
                 public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
 
-                // We choose to implement all the properties as a whole in Implement method below: by returning true
+                // We choose to implement all the properties as a whole in Implement method below: by returning AutoImplementationResult.Success
                 // we tell the engine: "Okay, I handled it, please continue your business."
                 // (We can also implement each property here and do nothing in the Implement method.)
                 AutoImplementationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
@@ -524,7 +524,7 @@ namespace CK.StObj.Engine.Tests
             new SecondPassCodeGenerationDI().DoTest();
         }
 
-        public class SecondPassCodeGenerationParameterInjectionDI
+        public class MultiPassCodeGenerationParameterInjectionDI
         {
             public interface ISourceCodeHelper
             {
@@ -552,20 +552,27 @@ namespace CK.StObj.Engine.Tests
                     return new AutoImplementationResult( nameof(DoImplement) );
                 }
 
-                void DoImplement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                AutoImplementationResult DoImplement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
                 {
                     c.Should().NotBeNull();
                     scope.Should().NotBeNull();
                     monitor.Info( $"AutoImpl2: {helper.IHelpTheCodeGeneration()}." );
+                    return new AutoImplementationResult( nameof( FinalizeImpl ) );
+                }
+
+                bool FinalizeImpl( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                {
+                    monitor.Info( $"AutoImpl in another pass: {helper.IHelpTheCodeGeneration()}." );
+                    return true;
                 }
             }
 
-            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+SecondPassCodeGenerationParameterInjectionDI+AutoImpl1, CK.StObj.Engine.Tests" )]
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+MultiPassCodeGenerationParameterInjectionDI+AutoImpl1, CK.StObj.Engine.Tests" )]
             public abstract class S1 : IAutoService
             {
             }
 
-            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+SecondPassCodeGenerationParameterInjectionDI+AutoImpl2, CK.StObj.Engine.Tests" )]
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.DynamicGenerationTests+MultiPassCodeGenerationParameterInjectionDI+AutoImpl2, CK.StObj.Engine.Tests" )]
             public abstract class S2 : IAutoService
             {
             }
@@ -578,15 +585,16 @@ namespace CK.StObj.Engine.Tests
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
                     TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
                 }
-                logs.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." );
+                logs.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
+                             .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
             }
 
         }
 
         [Test]
-        public void SecondPass_code_generation_can_use_parameter_injection_on_another_method()
+        public void MultiPass_code_generation_can_use_parameter_injection()
         {
-            new SecondPassCodeGenerationParameterInjectionDI().DoTest();
+            new MultiPassCodeGenerationParameterInjectionDI().DoTest();
         }
 
 
