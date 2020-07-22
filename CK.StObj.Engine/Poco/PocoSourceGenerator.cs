@@ -73,58 +73,71 @@ namespace CK.Setup
                 foreach( var p in root.PropertyList )
                 {
                     Type propType = p.PropertyType;
-                    // We always implement a setter except if we are auto instantiating the value and NO properties are writable.
-                    bool generateSetter = !p.AutoInstantiated || p.HasDeclaredSetter;
-                    bool isAutoProperty = p.PropertyUnionTypes.Count == 0;
+                    // We always implement a setter except if we are auto instantiating the value and NONE of the properties are writable.
+                    bool isUnionType = p.PropertyUnionTypes.Any();
+                    bool generateSetter = !p.AutoInstantiated || p.HasDeclaredSetter || isUnionType;
 
                     var typeName = propType.ToCSharpName();
-                    tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
-                    if( isAutoProperty )
-                    {
-                        tB.Append( "{ get;" );
-                        if( generateSetter )
-                        {
-                            tB.Append( " set;" );
-                        }
-                        tB.Append( "}" );
-                        if( p.AutoInstantiated )
-                        {
-                            // Generates in constructor.
-                            r.GenerateAutoInstantiatedNewAssignation( ctorB, p.PropertyName, p.PropertyType );
-                        }
-                        Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
-                    }
+                    string fieldName = "_v" + p.Index;
+                    tB.Append( typeName ).Space().Append( fieldName );
+                    if( p.DefaultValueSource == null ) tB.Append( ";" );
                     else
-                    {
-                        Debug.Assert( !p.AutoInstantiated );
-                        string fieldName = "_a" + c.Assembly.NextUniqueNumber();
-                        tB.OpenBlock()
-                          .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine()
-                          .Append( "set" )
-                          .OpenBlock()
-                          .Append( "if( value != null )" )
-                          .OpenBlock()
-
-                                .Append( "Type tV = value.GetType();" ).NewLine()
-                                .Append( "if( !_c" ).Append( fieldName )
-                                .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
-                                .OpenBlock()
-                                .Append( "throw new ArgumentException( \"Invalid Type in UnionType\");" )
-                                .CloseBlock()
-
-                          .CloseBlock()
-                          .Append( fieldName ).Append( " = value;" ).NewLine()
-                          .CloseBlock()
-                          .CloseBlock();
-                        tB.Append( "static readonly Type[] _c" ).Append( fieldName ).Append( "=" ).AppendArray( p.PropertyUnionTypes ).Append( ";" ).NewLine();
-                        tB.Append( typeName ).Space().Append( fieldName );
-                        if( p.DefaultValueSource == null ) tB.Append( ";" );
-                    }
-                    if( p.DefaultValueSource != null )
                     {
                         tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" );
                     }
                     tB.NewLine();
+
+                    tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
+                    Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
+                   
+                    if( p.AutoInstantiated )
+                    {
+                        // Generates in constructor.
+                        r.GenerateAutoInstantiatedNewAssignation( ctorB, fieldName, p.PropertyType );
+                    }
+
+                    tB.OpenBlock()
+                      .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine();
+
+                    if( generateSetter )
+                    {
+                        tB.Append( "set" )
+                          .OpenBlock();
+
+                        bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
+                        bool isEventuallyNullable = p.IsEventuallyNullable;
+
+                        if( isTechnicallyNullable )
+                        {
+                            tB.Append( "if( value != null )" )
+                              .OpenBlock();
+                        }
+                        if( isUnionType )
+                        {
+                            tB.Append( "Type tV = value.GetType();" ).NewLine()
+                                .Append( "if( !_c" ).Append( fieldName )
+                                .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
+                                .OpenBlock()
+                                .Append( "throw new ArgumentException( \"Unexpected Type '{tV}' in UnionType\");" )
+                                .CloseBlock();
+                        }
+                        if( isTechnicallyNullable )
+                        {
+                            tB.CloseBlock();
+                            if( !isEventuallyNullable )
+                            {
+                                tB.Append( "else throw new ArgumentNullException();" ).NewLine();
+                            }
+                        }
+                        tB.Append( fieldName ).Append( " = value;" ).NewLine()
+                          .CloseBlock();
+                    }
+                    tB.CloseBlock();
+
+                    if( isUnionType )
+                    {
+                        tB.Append( "static readonly Type[] _c" ).Append( fieldName ).Append( "=" ).AppendArray( p.PropertyUnionTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
+                    }
                 }
 
                 // PocoFactory class.

@@ -3,6 +3,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
 #nullable enable
@@ -26,20 +27,17 @@ namespace CK.Setup
 
         TypeInfo AddTypeInfo( TypeInfo i )
         {
-            bool isValueType = i.Type.IsValueType;
-            var defaultHandler = isValueType ? i.NotNullHandler : i.NullHandler;
-            _map.Add( i.Type, defaultHandler );
-            _map.Add( i.Name, defaultHandler );
+            // For Value type, we register the Nullable<T> type.
+            // Registering the nullable "name?" is useless for everybody: FillDynamicMap will do the job.
+            _map.Add( i.Type, i.NonNullHandler );
+            _map.Add( i.Name, i.NonNullHandler );
             foreach( var p in i.PreviousNames )
             {
-                _map.Add( p, defaultHandler );
+                _map.Add( p, i.NonNullHandler );
             }
-            if( isValueType )
+            if( i.Type.IsValueType )
             {
                 _map.Add( i.NullHandler.Type, i.NullHandler );
-                Debug.Assert( i.NullHandler.Name != i.NotNullHandler.Name );
-                // Registering the nullable "name?" is useless: FillDynamicMap will do the job.
-                //_map.Add( i.NullHandler.Name, i.NullHandler );
             }
             return i;
         }
@@ -51,7 +49,7 @@ namespace CK.Setup
 
         void AddUntypedHandler( Type t, bool nullable = true )
         {
-            _map.Add( t, nullable ? TypeInfo.Untyped.NullHandler.CreateAbstract( t ) : TypeInfo.Untyped.NotNullHandler.CreateAbstract( t ) );
+            _map.Add( t, nullable ? TypeInfo.Untyped.NullHandler.CreateAbstract( t ) : TypeInfo.Untyped.NonNullHandler.CreateAbstract( t ) );
         }
 
         void InitializeMap()
@@ -159,7 +157,7 @@ namespace CK.Setup
                 {
                     read.Append( variableName ).Append( " = r.GetDateTimeOffset(); r.Read();" );
                 } );
-        
+
             AddTypeInfo( typeof( TimeSpan ), "TimeSpan" ).Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
@@ -184,14 +182,22 @@ namespace CK.Setup
                     {
                         info = TryRegisterInfoForEnum( t );
                     }
+                    else if( t.IsGenericType )
+                    {
+                        var tGen = t.GetGenericTypeDefinition();
+                        if( tGen.Namespace == "System" && tGen.Name.StartsWith( "ValueTuple`" ) )
+                        {
+                            info = TryRegisterInfoForValueTuple( t, t.GetGenericArguments() );
+                        }
+                    }
                     if( info != null )
                     {
-                        handler = isNullable ? info.NullHandler : info.NotNullHandler;
+                        handler = isNullable ? info.NullHandler : info.NonNullHandler;
                     }
                 }
                 else if( t.IsGenericType )
                 {
-                    TypeInfo.RegKey reg = default;
+                    TypeInfo.RegKey reg;
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
 
@@ -254,7 +260,7 @@ namespace CK.Setup
                 // Honor the optional null/not null handler (override the default handler type).
                 if( nullableHandler != null )
                 {
-                    handler = nullableHandler.Value ? handler.Info.NullHandler : handler.Info.NotNullHandler;
+                    handler = nullableHandler.Value ? handler.ToNullHandler() : handler.ToNonNullHandler();
                 }
             }
             return handler;
@@ -291,8 +297,8 @@ namespace CK.Setup
                           read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( " );" );
                       } );
             AddTypeInfo( info );
-            // The interface is directly mapped to the null handler.
-            AddTypeHandlerAlias( tInterface, info.NullHandler );
+            // The interface is directly mapped to the non null handler.
+            AddTypeHandlerAlias( tInterface, info.NonNullHandler );
             return info.NullHandler;
         }
 
@@ -352,10 +358,10 @@ namespace CK.Setup
                      .Append( "r.Read();" );
 
             }
-            return (fWrite, fRead, new TypeInfo( in reg, "M<" + keyHandler.Name + "," + valueHandler.Name + ">") );
+            return (fWrite, fRead, new TypeInfo( in reg, "M<" + keyHandler.Name + "," + valueHandler.Name + ">" ));
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info ) CreateStringMapFunctions( in TypeInfo.RegKey reg, Type tValue )
+        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info) CreateStringMapFunctions( in TypeInfo.RegKey reg, Type tValue )
         {
             var valueHandler = TryFindOrCreateHandler( tValue );
             if( valueHandler == null ) return default;
@@ -394,10 +400,10 @@ namespace CK.Setup
                      .CloseBlock()
                      .Append( "r.Read();" );
             }
-            return (fWrite, fRead, new TypeInfo( in reg, "O<" + valueHandler.Name + ">" ) );
+            return (fWrite, fRead, new TypeInfo( in reg, "O<" + valueHandler.Name + ">" ));
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info ) CreateListOrSetFunctions( in TypeInfo.RegKey reg, bool isList )
+        (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info) CreateListOrSetFunctions( in TypeInfo.RegKey reg, bool isList )
         {
             Type tItem = reg.Type.GetGenericArguments()[0];
             var itemHandler = TryFindOrCreateHandler( tItem );
@@ -434,8 +440,8 @@ namespace CK.Setup
                      .CloseBlock()
                      .Append( "r.Read();" );
             }
-            
-            return (fWrite, fRead, new TypeInfo( in reg, (isList ? "L<" : "S<") + itemHandler.Name + ">" ) );
+
+            return (fWrite, fRead, new TypeInfo( in reg, (isList ? "L<" : "S<") + itemHandler.Name + ">" ));
         }
 
         static bool LiftNullableValueType( ref Type t )
@@ -456,7 +462,7 @@ namespace CK.Setup
                 return null;
             }
             var uT = Enum.GetUnderlyingType( t );
-            return AddTypeInfo( t, name, previousNames ).Configure( 
+            return AddTypeInfo( t, name, previousNames ).Configure(
                         ( ICodeWriter write, string variableName )
                             => write.Append( "w.WriteNumberValue( (" ).AppendCSharpName( uT ).Append( ')' ).Append( variableName ).Append( " );" ),
                         ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
@@ -466,5 +472,82 @@ namespace CK.Setup
                             _map[uT].GenerateRead( read, variableName, false );
                         } );
         }
+
+
+        TypeInfo? TryRegisterInfoForValueTuple( Type t, Type[] types )
+        {
+            IHandler[] handlers = new IHandler[types.Length];
+            var b = new StringBuilder( "[" );
+            for( int i = 0; i < types.Length; i++ )
+            {
+                if( i > 0 ) b.Append( ',' );
+                var h = TryFindOrCreateHandler( types[i] );
+                if( h == null ) return null;
+                handlers[i] = h;
+                b.Append( h.Name );
+            }
+            b.Append( ']' );
+            TypeInfo info = AddTypeInfo( t, b.ToString() );
+
+            var valueTupleName = t.ToCSharpName();
+            // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/
+            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + valueTupleName + " v )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + valueTupleName + " v )" );
+
+            IFunctionScope? fWrite = PocoDirectory.FindFunction( fWriteDef.Key, false );
+            IFunctionScope? fRead;
+            if( fWrite != null )
+            {
+                fRead = PocoDirectory.FindFunction( fReadDef.Key, false );
+                Debug.Assert( fRead != null );
+            }
+            else
+            {
+                fWrite = PocoDirectory.CreateFunction( fWriteDef );
+                fWrite.Append( "w.WriteStartArray();" ).NewLine();
+                int itemNumber = 0;
+                foreach( var h in handlers )
+                {
+                    h.GenerateWrite( fWrite, "v.Item" + (++itemNumber).ToString( CultureInfo.InvariantCulture ) );
+                }
+                fWrite.Append( "w.WriteEndArray();" ).NewLine();
+
+                fRead = PocoDirectory.CreateFunction( fReadDef );
+                fRead.Append( "r.Read();" ).NewLine();
+
+                itemNumber = 0;
+                foreach( var h in handlers )
+                {
+                    h.GenerateRead( fRead, "v.Item" + (++itemNumber).ToString( CultureInfo.InvariantCulture ), false );
+                }
+                fRead.Append( "r.Read();" ).NewLine();
+            }
+
+            info.SetByRefWriter()
+                .Configure(
+                  ( ICodeWriter write, string variableName ) =>
+                  {
+                      write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, ref " ).Append( variableName ).Append( " );" );
+                  },
+                  ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                  {
+                      string vName = variableName;
+                      if( isNullable )
+                      {
+                          read.OpenBlock()
+                              .AppendCSharpName( info.Type ).Space().Append( "notNull;" ).NewLine();
+                          vName = "notNull";
+                      }
+                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( vName ).Append( " );" );
+                      if( isNullable )
+                      {
+                          read.Append( variableName ).Append( " = notNull;" )
+                              .CloseBlock();
+                      }
+                  } );
+
+            return info;
+        }
+
     }
 }

@@ -13,7 +13,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Implements the Json serialization. This class extends the Poco classes to support
-    /// the API exposed as extension methods by the CK.Poco.PocoJsonSerializer static
+    /// the API exposed as extension methods by the CK.Core.PocoJsonSerializer static
     /// class (in CK.Poco.Json).
     /// </summary>
     public partial class PocoJsonSerializerImpl : ICodeGenerator, IJsonSerializationCodeGen
@@ -163,23 +163,23 @@ namespace CK.Setup
             {
                 foreach( var union in p.PropertyUnionTypes )
                 {
-                    TryFindOrCreateHandler( union );
+                    TryFindOrCreateHandler( union.Type );
                 }
 
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
 
-                var handler = TryFindOrCreateHandler( p.PropertyType );
+                var handler = TryFindOrCreateHandler( p.PropertyType, p.IsEventuallyNullable );
                 if( handler == null ) continue;
                 // If its an AutoInstantiated property with no setter, it cannot be null.
                 if( handler.IsNullable && p.AutoInstantiated && !p.HasDeclaredSetter )
                 {
-                    handler = handler.Info.NotNullHandler;
+                    handler = handler.Info.NonNullHandler;
                 }
-                handler.GenerateWrite( write, p.PropertyName );
+                handler.GenerateWrite( write, "_v" + p.Index );
 
                 read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( " : " )
                     .OpenBlock();
-                handler.GenerateRead( read, p.PropertyName, false );
+                handler.GenerateRead( read, "_v" + p.Index, false );
                 read.Append( "break; " )
                     .CloseBlock();
             }

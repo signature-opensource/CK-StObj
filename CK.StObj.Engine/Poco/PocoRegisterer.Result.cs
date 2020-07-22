@@ -237,7 +237,7 @@ namespace CK.Setup
 
         class PocoPropertyInfo : IPocoPropertyInfo
         {
-            HashSet<Type>? _unionTypes;
+            Dictionary<Type,NullabilityTypeKind>? _unionTypes;
 
             public bool AutoInstantiated { get; set; }
 
@@ -249,9 +249,16 @@ namespace CK.Setup
 
             public int Index { get; set; }
 
+            public NullabilityTypeInfo PropertyNullabilityInfo { get; set; }
+
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
-            public IReadOnlyCollection<Type> PropertyUnionTypes => (IReadOnlyCollection<Type>?)_unionTypes ?? Type.EmptyTypes;
+            public IEnumerable<(Type Type,NullabilityTypeKind Kind)> PropertyUnionTypes => _unionTypes != null
+                                                                                    ? _unionTypes.Select( kv => (kv.Key,kv.Value) )
+                                                                                    : Enumerable.Empty<(Type,NullabilityTypeKind)>();
+            public bool IsEventuallyNullable => PropertyUnionTypes.Any()
+                                                    ? PropertyUnionTypes.Any( x => x.Kind.IsNullable() )
+                                                    : PropertyNullabilityInfo.Kind.IsNullable();
 
             public string PropertyName => DeclaredProperties[0].Name;
 
@@ -268,11 +275,22 @@ namespace CK.Setup
             public void AddUnionPropertyTypes( IReadOnlyList<Type> types )
             {
                 Debug.Assert( types.Count > 0 );
-                if( _unionTypes == null ) _unionTypes = new HashSet<Type>();
-                _unionTypes.AddRange( types );
+                if( _unionTypes == null ) _unionTypes = new Dictionary<Type, NullabilityTypeKind>();
+                // Different Poco can (re)define variants.
+                foreach( var t in types )
+                {
+                    _unionTypes[t] = t.GetNullabilityKind();
+                }
             }
 
+            public void ComputeNullabilities( PropertyInfo p )
+            {
+                PropertyNullabilityInfo = p.GetNullabilityInfo();
+            }
+
+
             public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
+
         }
     }
 }

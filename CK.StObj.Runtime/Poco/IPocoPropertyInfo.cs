@@ -32,6 +32,9 @@ namespace CK.Setup
         /// Gets the index of this property in the Poco class.
         /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
         /// by index (MessagePack) rather than by name (Json).
+        /// <para>
+        /// Note that the generated backing field is named <c>_v{Index}</c>.
+        /// </para>
         /// </summary>
         int Index { get; }
 
@@ -41,10 +44,22 @@ namespace CK.Setup
         Type PropertyType { get; }
 
         /// <summary>
-        /// Gets the set of types that defines the union type.
-        /// Empty when not applicable, and when not applicable <see cref="PropertyType"/> is necessarily <c>typeof(object)</c>.
+        /// Gets the <see cref="NullabilityTypeInfo"/> of this property.
         /// </summary>
-        IReadOnlyCollection<Type> PropertyUnionTypes { get; }
+        NullabilityTypeInfo PropertyNullabilityInfo { get; }
+
+        /// <summary>
+        /// Gets whether this property should not be null: either it is a union with at least one <see cref="NullabilityTypeKind.IsNullable"/>
+        /// flag, or it is not an union and the <see cref="PropertyNullabilityInfo"/> itself has the flag set.
+        /// </summary>
+        bool IsEventuallyNullable { get; }
+
+        /// <summary>
+        /// Gets the set of types that defines the union type with their nullability kind.
+        /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
+        /// assignable to any of the variants.
+        /// </summary>
+        IEnumerable<(Type Type, NullabilityTypeKind Kind)> PropertyUnionTypes { get; }
 
         /// <summary>
         /// Gets the property name.

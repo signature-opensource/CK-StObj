@@ -387,6 +387,7 @@ namespace CK.Setup
                                 implP.AddUnionPropertyTypes( unionTypes.Types );
                             }
                         }
+                        implP.ComputeNullabilities( p );
                     }
                 }
             }

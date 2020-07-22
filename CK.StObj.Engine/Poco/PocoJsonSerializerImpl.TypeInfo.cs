@@ -38,7 +38,7 @@ namespace CK.Setup
             Type Type { get; }
 
             /// <summary>
-            /// Gets the name with '!' or '?' suffix dependent on <see cref="IsNullable"/>.
+            /// Gets the name with '?' suffix if <see cref="IsNullable"/> is true.
             /// </summary>
             string Name { get; }
 
@@ -89,6 +89,18 @@ namespace CK.Setup
             /// <param name="t">The mapped type.</param>
             /// <returns>An handler for the type.</returns>
             IHandler CreateAbstract( Type t );
+
+            /// <summary>
+            /// Returns either this handler or its nullable companion.
+            /// </summary>
+            /// <returns>The nullable handler for the type as a nullable one.</returns>
+            IHandler ToNullHandler();
+
+            /// <summary>
+            /// Returns either this handler or its non nullable companion.
+            /// </summary>
+            /// <returns>The non nullable handler for the type.</returns>
+            IHandler ToNonNullHandler();
         }
 
 
@@ -111,6 +123,8 @@ namespace CK.Setup
                 public string Name { get; }
                 public bool IsAbstractType { get; }
 
+                readonly Handler _otherHandler;
+
                 public Handler( TypeInfo info, Type t, bool isNullable, bool isAbstractType )
                 {
                     IsNullable = isNullable;
@@ -120,18 +134,44 @@ namespace CK.Setup
                     Name = info.Name;
                     if( isNullable )
                     {
-                        if( t.IsValueType ) Name += '?';
+                        Type = GetNullableType( t );
+                        Name += '?';
                     }
+                    _otherHandler = new Handler( this );
                 }
 
-                public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipIfNullBlock = false )
+                Handler( Handler other )
+                {
+                    _otherHandler = other;
+                    IsNullable = !other.IsNullable;
+                    IsAbstractType = other.IsAbstractType;
+                    Info = other.Info;
+                    Name = other.Info.Name;
+                    if( IsNullable )
+                    {
+                        Type = GetNullableType( other.Type );
+                        Name += '?';
+                    }
+                    else Type = other.Type;
+                }
+
+                static Type GetNullableType( Type t )
+                {
+                    if( t.IsValueType )
+                    {
+                        t = typeof( Nullable<> ).MakeGenericType( t );
+                    }
+                    return t;
+                }
+
+                public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipNullable = false )
                 {
                     if( Info.DirectType == DirectType.Untyped )
                     {
                         write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" ).NewLine();
                         return;
                     }
-                    bool isNullable = IsNullable && !skipIfNullBlock;
+                    bool isNullable = IsNullable && !skipNullable;
                     if( isNullable )
                     {
                         write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
@@ -151,7 +191,23 @@ namespace CK.Setup
                                     write.Append( "w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( Name ).Append( ");" ).NewLine();
                                 }
                                 Debug.Assert( Info._writer != null );
+                                bool hasBlock = false;
+                                if( isNullable && Type.IsValueType )
+                                {
+                                    if( Info.ByRefWriter )
+                                    {
+                                        hasBlock = true;
+                                        write.OpenBlock()
+                                             .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
+                                        variableName = "notNull";
+                                    }
+                                    else variableName += ".Value";
+                                }
                                 Info._writer( write, variableName );
+                                if( hasBlock )
+                                {
+                                    write.CloseBlock();
+                                }
                                 if( writeType )
                                 {
                                     write.Append( "w.WriteEndArray();" ).NewLine();
@@ -188,9 +244,7 @@ namespace CK.Setup
                         default:
                             {
                                 Debug.Assert( Info._reader != null );
-                                // It's not because we skip the Json null test above that the reader function
-                                // works with a nullable type: we use the IsNullable property here.
-                                Info._reader( read, variableName, assignOnly, IsNullable );
+                                Info._reader( read, variableName, assignOnly, isNullable );
                                 break;
                             }
                     }
@@ -201,6 +255,10 @@ namespace CK.Setup
                 {
                     return new Handler( Info, t, IsNullable, true ); 
                 }
+
+                public IHandler ToNullHandler() => IsNullable ? this : _otherHandler;
+
+                public IHandler ToNonNullHandler() => IsNullable ? _otherHandler : this;
             }
 
             public readonly ref struct RegKey
@@ -235,13 +293,19 @@ namespace CK.Setup
             /// <summary>
             /// Not nullable type handler.
             /// </summary>
-            public IHandler NotNullHandler { get; }
+            public IHandler NonNullHandler { get; }
 
             /// <summary>
             /// Gets the type name. Uses the ExternalNameAttribute, the type full name
             /// or a generated name for generic List, Set and Dictionary. 
             /// </summary>
             public string Name { get; }
+
+            /// <summary>
+            /// Gets whether the writer uses a 'ref' parameter.
+            /// This should be used for large struct.
+            /// </summary>
+            public bool ByRefWriter { get; private set; }
 
             /// <summary>
             /// Gets the previous names (if any).
@@ -256,21 +320,12 @@ namespace CK.Setup
             public TypeInfo( in RegKey r, string name, IReadOnlyList<string>? previousNames = null, DirectType d = DirectType.None, bool isAbstractType = false )
             {
                 Type = r.Type;
+                NumberName = r.NumberName;
                 Name = name;
                 PreviousNames = previousNames ?? Array.Empty<string>();
-                NumberName = r.NumberName;
                 DirectType = d;
-                if( Type.IsValueType )
-                {
-                    var tNull = typeof( Nullable<> ).MakeGenericType( Type );
-                    NullHandler = new Handler( this, tNull, true, isAbstractType );
-                    NotNullHandler = new Handler( this, Type, false, isAbstractType );
-                }
-                else
-                {
-                    NullHandler = new Handler( this, Type, true, isAbstractType );
-                    NotNullHandler = new Handler( this, Type, false, isAbstractType );
-                }
+                NonNullHandler = new Handler( this, Type, false, isAbstractType );
+                NullHandler = NonNullHandler.ToNullHandler();
             }
 
             TypeInfo()
@@ -281,14 +336,20 @@ namespace CK.Setup
                 PreviousNames = Array.Empty<string>();
                 NumberName = String.Empty;
                 DirectType = DirectType.Untyped;
-                NullHandler = new Handler( this, Type, true, true );
-                NotNullHandler = new Handler( this, Type, false, true );
+                NonNullHandler = new Handler( this, Type, false, true );
+                NullHandler = NonNullHandler.ToNullHandler();
             }
 
             public TypeInfo Configure( CodeWriter w, CodeReader r )
             {
                 _writer = w;
                 _reader = r;
+                return this;
+            }
+
+            public TypeInfo SetByRefWriter()
+            {
+                ByRefWriter = true;
                 return this;
             }
         }
