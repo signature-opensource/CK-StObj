@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using CK.Text;
 using System;
@@ -150,6 +151,13 @@ namespace CK.Setup
                         if( !isSameOrPocoFamily )
                         {
                             monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' but their type differ ({p.PropertyType.Name} vs. {other.PropertyType.Name})." );
+                            return false;
+                        }
+                        // Types are equal but NRT must be checked.
+                        var otherN = other.GetNullabilityInfo();
+                        if( !otherN.Equals( p.PropertyNullabilityInfo ) )
+                        {
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type {p.PropertyType.ToCSharpName()} but their type's Nullabilty differ." );
                             return false;
                         }
                     }

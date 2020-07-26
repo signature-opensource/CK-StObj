@@ -72,5 +72,23 @@ namespace CK.StObj.Engine.Tests.Poco
             p.GetType().GetProperty( nameof( p.SimpleValueType ) ).Should().BeWritable();
         }
 
+        public interface IWithListString : IPoco
+        {
+            IList<string> L { get; }
+        }
+
+        public interface IWithListNullableString : IWithListString
+        {
+            new IList<string?> L { get; }
+        }
+
+        [Test]
+        public void NRT_must_be_the_same_across_Poco_family()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IWithListString ), typeof(IWithListNullableString) );
+            TestHelper.GetFailedResult( c );
+        }
+
+
     }
 }

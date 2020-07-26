@@ -72,6 +72,13 @@ namespace CK.Setup
         /// method always return <see cref="NullabilityTypeKind.NullableReferenceType"/> or <see cref="NullabilityTypeKind.NullableGenericReferenceType"/> for
         /// classes and interfaces and always <see cref="NullabilityTypeKind.NullableArrayType"/> for arrays.
         /// </summary>
+        /// <para>
+        /// <c>typeof(List&lt;string?&gt;)</c> is valid and type but <c>typeof(List&lt;string?&gt;?)</c>
+        /// cannot compile and this makes sense: the "outer", "root" nullability depends on the usage of the type: non nullable reference types can be obtained
+        /// via a <see cref="ParameterInfo"/> or a <see cref="PropertyInfo"/> that "references" their type.
+        /// However, <c>typeof(List&lt;string?&gt;)</c> could have been a <see cref="NullabilityTypeKind.NRTFullNullable"/>, but it is not, it is actually
+        /// oblivious to nullable: both <c>typeof(List&lt;string?&gt;)</c> and <c>typeof(List&lt;string&gt;)</c> are marked with with a single 0 byte.
+        /// </para>
         /// <param name="this">This type.</param>
         /// <returns></returns>
         public static NullabilityTypeKind GetNullabilityKind( this Type @this )
@@ -90,28 +97,37 @@ namespace CK.Setup
                 if( @this.IsGenericType && @this.GetGenericTypeDefinition() == typeof( Nullable<> ) ) return NullabilityTypeKind.NullableValueType;
                 return NullabilityTypeKind.NonNullableValueType;
             }
-            throw new Exception( $"What's this type that is not an interface, a class or a value type: {@this.AssemblyQualifiedName}" );
+            throw new Exception( $"What's this type that is not an interface, a class or a value type?: {@this.AssemblyQualifiedName}" );
         }
 
         /// <summary>
-        /// Gets the <see cref="NullabilityTypeKind"/> for a parameter.
+        /// Gets the <see cref="NullabilityTypeInfo"/> for a parameter.
         /// <param name="this">This parameter.</param>
         /// <returns>The nullability info for the parameter.</returns>
         public static NullabilityTypeInfo GetNullabilityInfo( this ParameterInfo @this )
         {
-            return GetNullabilityInfo( @this.ParameterType, @this.GetCustomAttributesData(), () => $" parameter '{@this.Name}' of {@this.Member.DeclaringType}.{@this.Member.Name}." );
+            return GetNullabilityInfo( @this.ParameterType, @this.Member, @this.GetCustomAttributesData(), () => $" parameter '{@this.Name}' of {@this.Member.DeclaringType}.{@this.Member.Name}." );
         }
 
         /// <summary>
-        /// Gets the <see cref="NullabilityTypeKind"/> for a property.
+        /// Gets the <see cref="NullabilityTypeInfo"/> for a property.
         /// <param name="this">This parameter.</param>
         /// <returns>The nullability info for the parameter.</returns>
         public static NullabilityTypeInfo GetNullabilityInfo( this PropertyInfo @this )
         {
-            return GetNullabilityInfo( @this.PropertyType, @this.GetCustomAttributesData(), () => $" property '{@this.Name}' of {@this.DeclaringType}." );
+            return GetNullabilityInfo( @this.PropertyType, @this.DeclaringType, @this.GetCustomAttributesData(), () => $" property '{@this.Name}' of {@this.DeclaringType}." );
         }
 
-        static NullabilityTypeInfo GetNullabilityInfo( Type t, IEnumerable<CustomAttributeData> attributes, Func<string> locationForError )
+        /// <summary>
+        /// Gets the <see cref="NullabilityTypeInfo"/> for a field.
+        /// <param name="this">This parameter.</param>
+        /// <returns>The nullability info for the field.</returns>
+        public static NullabilityTypeInfo GetNullabilityInfo( this FieldInfo @this )
+        {
+            return GetNullabilityInfo( @this.FieldType, @this.DeclaringType, @this.GetCustomAttributesData(), () => $" field '{@this.Name}' of {@this.DeclaringType}." );
+        }
+
+        static NullabilityTypeInfo GetNullabilityInfo( Type t, MemberInfo? parent, IEnumerable<CustomAttributeData> attributes, Func<string> locationForError )
         {
             bool[]? profile = null;
             var n = GetNullabilityKind( t );
@@ -119,25 +135,26 @@ namespace CK.Setup
             {
                 Debug.Assert( (n & NullabilityTypeKind.IsNullable) != 0 );
                 var a = attributes.FirstOrDefault( a => a.AttributeType.Name == "NullableAttribute" && a.AttributeType.Namespace == "System.Runtime.CompilerServices" );
-                if( a != null )
+                if( a == null )
+                {
+                    while( parent != null )
+                    {
+                        a = parent.GetCustomAttributesData().FirstOrDefault( a => a.AttributeType.Name == "NullableContextAttribute" && a.AttributeType.Namespace == "System.Runtime.CompilerServices" );
+                        if( a != null )
+                        {
+                            n = HandleByte( locationForError, n, (byte)a.ConstructorArguments[0].Value! );
+                            break;
+                        }
+                        parent = parent.DeclaringType;
+                    }
+                }
+                else
                 {
                     object? data = a.ConstructorArguments[0].Value;
                     // A single value means "apply to everything in the type", e.g. 1 for Dictionary<string, string>, 2 for Dictionary<string?, string?>?
                     if( data is byte b )
                     {
-                        if( b == 1 )
-                        {
-                            n &= ~NullabilityTypeKind.IsNullable;
-                            n |= NullabilityTypeKind.NRTFullNonNullable;
-                        }
-                        else if( b == 2 )
-                        {
-                            n |= NullabilityTypeKind.NRTFullNullable;
-                        }
-                        else
-                        {
-                            throw new Exception( $"Invalid byte value in NullableAttribute({b}) for {locationForError()}." );
-                        }
+                        n = HandleByte( locationForError, n, b );
                     }
                     else if( data is IEnumerable<CustomAttributeTypedArgument> arguments )
                     {
@@ -161,6 +178,25 @@ namespace CK.Setup
                 }
             }
             return new NullabilityTypeInfo( n, profile );
+
+            static NullabilityTypeKind HandleByte( Func<string> locationForError, NullabilityTypeKind n, byte b )
+            {
+                if( b == 1 )
+                {
+                    n &= ~NullabilityTypeKind.IsNullable;
+                    n |= NullabilityTypeKind.NRTFullNonNullable;
+                }
+                else if( b == 2 )
+                {
+                    n |= NullabilityTypeKind.NRTFullNullable;
+                }
+                else
+                {
+                    throw new Exception( $"Invalid byte value in NullableAttribute({b}) for {locationForError()}." );
+                }
+
+                return n;
+            }
         }
 
 

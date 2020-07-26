@@ -338,6 +338,7 @@ namespace CK.Setup
                             implP = new PocoPropertyInfo( p, propertyList.Count );
                             properties.Add( p.Name, implP );
                             propertyList.Add( implP );
+                            implP.ComputeNullabilities( p );
                         }
                         // As soon as one interface doesn't declare a setter and the type is an instantiable one,
                         // we flag this property's AutoInstantiated property.
@@ -387,7 +388,6 @@ namespace CK.Setup
                                 implP.AddUnionPropertyTypes( unionTypes.Types );
                             }
                         }
-                        implP.ComputeNullabilities( p );
                     }
                 }
             }

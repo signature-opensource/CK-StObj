@@ -12,6 +12,7 @@ using CK.StObj.Engine.Tests.Poco.Sample;
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using static CK.Testing.StObjEngineTestHelper;
+using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -243,7 +244,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
 
         [Test]
-        public void same_Poco_properties_can_be_of_any_type_as_long_as_they_stay_in_a_Poco_family()
+        public void same_Poco_properties_can_be_of_any_type_as_long_as_they_belong_to_the_same_Poco_family()
         {
             TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
                 typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ) ) );
@@ -258,9 +259,8 @@ namespace CK.StObj.Engine.Tests.Poco
             // With IDefBase Poco registration:
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
                 typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
-
-
         }
+
 
     }
 }
