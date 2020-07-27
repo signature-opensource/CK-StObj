@@ -11,15 +11,50 @@ namespace CK.Setup
 {
     public partial class PocoJsonSerializerImpl
     {
+        /// <summary>
+        /// The code writer delegate is in charge of generating the write code.
+        /// </summary>
+        /// <param name="write">The code writer to uses.</param>
+        /// <param name="variableName">The variable name to write.</param>
         public delegate void CodeWriter( ICodeWriter write, string variableName );
+
+        /// <summary>
+        /// The code reader delegate is in charge of generating the read code.
+        /// </summary>
+        /// <param name="read">The code writer to use.</param>
+        /// <param name="variableName">The variable name.</param>
+        /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible.</param>
+        /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
         public delegate void CodeReader( ICodeWriter read, string variableName, bool assignOnly, bool isNullable );
 
+        /// <summary>
+        /// Defines basic, direct types that are directly handled.
+        /// </summary>
         public enum DirectType
         {
+            /// <summary>
+            /// Regular type.
+            /// </summary>
             None,
+
+            /// <summary>
+            /// Untyped is handled by Read/WriteObject.
+            /// </summary>
             Untyped,
+
+            /// <summary>
+            /// A raw string.
+            /// </summary>
             String,
+
+            /// <summary>
+            /// A number is, by default, an integer.
+            /// </summary>
             Int,
+
+            /// <summary>
+            /// Raw boolean type.
+            /// </summary>
             Bool
         }
 
@@ -103,7 +138,10 @@ namespace CK.Setup
             IHandler ToNonNullHandler();
         }
 
-
+        /// <summary>
+        /// Centralized type representation that holds the null and non-null handlers and
+        /// carries the <see cref="CodeReader"/> and <see cref="CodeWriter"/>.
+        /// </summary>
         public class TypeInfo
         {
             /// <summary>
@@ -261,12 +299,22 @@ namespace CK.Setup
                 public IHandler ToNonNullHandler() => IsNullable ? _otherHandler : this;
             }
 
+            /// <summary>
+            /// Pre registration key: the <see cref="Type"/> is bound to a <see cref="NumberName"/>.
+            /// </summary>
             public readonly ref struct RegKey
             {
+                /// <summary>
+                /// The pre-registered type.
+                /// </summary>
                 public readonly Type Type;
+
+                /// <summary>
+                /// The associated number name.
+                /// </summary>
                 public readonly string NumberName;
 
-                public RegKey( Type t, string n )
+                internal RegKey( Type t, string n )
                 {
                     if( t.IsValueType && Nullable.GetUnderlyingType( t ) != null ) throw new ArgumentException( "Nullable value type must not be registered." );
                     Type = t;
@@ -317,6 +365,14 @@ namespace CK.Setup
             /// </summary>
             public DirectType DirectType { get; }
 
+            /// <summary>
+            /// INitializes a new <see cref="TypeInfo"/>.
+            /// </summary>
+            /// <param name="r">The pre-registration key.</param>
+            /// <param name="name">The type name.</param>
+            /// <param name="previousNames">Optional previous names.</param>
+            /// <param name="d">Optional <see cref="DirectType"/>.</param>
+            /// <param name="isAbstractType">True for an abstract type (type mapping).</param>
             public TypeInfo( in RegKey r, string name, IReadOnlyList<string>? previousNames = null, DirectType d = DirectType.None, bool isAbstractType = false )
             {
                 Type = r.Type;
@@ -340,6 +396,12 @@ namespace CK.Setup
                 NullHandler = NonNullHandler.ToNullHandler();
             }
 
+            /// <summary>
+            /// Sets the writer and reader delegates.
+            /// </summary>
+            /// <param name="w">The writer.</param>
+            /// <param name="r">The reader.</param>
+            /// <returns>This type info.</returns>
             public TypeInfo Configure( CodeWriter w, CodeReader r )
             {
                 _writer = w;
@@ -347,6 +409,10 @@ namespace CK.Setup
                 return this;
             }
 
+            /// <summary>
+            /// Sets whether the <see cref="CodeWriter"/> uses a "ref" for the variable.
+            /// </summary>
+            /// <returns>This type info.</returns>
             public TypeInfo SetByRefWriter()
             {
                 ByRefWriter = true;

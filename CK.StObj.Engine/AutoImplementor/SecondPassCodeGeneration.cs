@@ -77,6 +77,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The code generation context.</param>
+        /// <param name="passes">The result of the first pass.</param>
         /// <returns>True on success, false on error.</returns>
         public static bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context, List<SecondPassCodeGeneration> passes )
         {

@@ -15,6 +15,11 @@ namespace CK.Setup
         readonly Dictionary<object, IHandler> _map = new Dictionary<object, IHandler>();
         int _typeInfoCurrentCount;
 
+        /// <summary>
+        /// Generates a new pre-registration key.
+        /// </summary>
+        /// <param name="t">The type for which a key must be obtained.</param>
+        /// <returns>A new registration key.</returns>
         public TypeInfo.RegKey GetNextRegKey( Type t )
         {
             return new TypeInfo.RegKey( t, (_typeInfoCurrentCount++).ToString() );
