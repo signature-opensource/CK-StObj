@@ -175,6 +175,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicNullableList>>();
 
             var lA = f.Create();
+            Debug.Assert( lA.Values != null );
             lA.Values.Add( -12 );
             lA.Values.Add( 3712 );
             lA.NullableCollection.Should().BeNull();
@@ -204,6 +205,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicNullableList>>();
             var lA = f.Create();
+            Debug.Assert( lA.Values != null );
             lA.Values.Add( -12 );
             lA.Values.Add( 3712 );
             lA.NullableCollection.Should().NotBeNull( "IPocoWithBasicList2 has no setter: it is AutoImplemented." );

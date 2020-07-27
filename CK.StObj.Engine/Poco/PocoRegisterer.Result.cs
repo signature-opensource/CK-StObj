@@ -246,6 +246,7 @@ namespace CK.Setup
         class PocoPropertyInfo : IPocoPropertyInfo
         {
             Dictionary<Type,NullabilityTypeKind>? _unionTypes;
+            NullableTypeTree _nullableTypeTree;
 
             public bool AutoInstantiated { get; set; }
 
@@ -258,6 +259,10 @@ namespace CK.Setup
             public int Index { get; set; }
 
             public NullabilityTypeInfo PropertyNullabilityInfo { get; set; }
+
+            public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree.Kind == NullabilityTypeKind.Unknown
+                                                                    ? (_nullableTypeTree = PropertyType.GetNullableTypeTree( PropertyNullabilityInfo ))
+                                                                    : _nullableTypeTree;
 
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
@@ -290,12 +295,6 @@ namespace CK.Setup
                     _unionTypes[t] = t.GetNullabilityKind();
                 }
             }
-
-            public void ComputeNullabilities( PropertyInfo p )
-            {
-                PropertyNullabilityInfo = p.GetNullabilityInfo();
-            }
-
 
             public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
 

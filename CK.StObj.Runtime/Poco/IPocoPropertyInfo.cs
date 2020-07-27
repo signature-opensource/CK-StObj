@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
@@ -47,6 +48,11 @@ namespace CK.Setup
         /// Gets the <see cref="NullabilityTypeInfo"/> of this property.
         /// </summary>
         NullabilityTypeInfo PropertyNullabilityInfo { get; }
+
+        /// <summary>
+        /// Gets the <see cref="NullableTypeTree"/> of this property.
+        /// </summary>
+        NullableTypeTree PropertyNullableTypeTree { get; }
 
         /// <summary>
         /// Gets whether this property should not be null: either it is a union with at least one <see cref="NullabilityTypeKind.IsNullable"/>

@@ -53,6 +53,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             o.Hop = null;
 
             var o3 = PocoJsonTests.Roundtrip( s, o );
+            Debug.Assert( o3 != null );
             o3.Hop.Should().BeNull();
         }
 
