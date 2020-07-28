@@ -59,7 +59,7 @@ namespace CK.Setup
                 // can refer to the _factory to access the factory extended code without cast.
                 tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
                   .NewLine();
-                tB.Append( "internal IPocoFactory Factory => _factory;" ).NewLine();
+                tB.Append( "IPocoFactory IPocoClass.Factory => _factory;" ).NewLine();
                 
                 // Always create the constructor so that other code generators
                 // can always find it.
