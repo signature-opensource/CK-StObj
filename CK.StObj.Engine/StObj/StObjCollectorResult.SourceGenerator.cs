@@ -118,7 +118,7 @@ namespace CK.Setup
 
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
-                    nsStObj.Append( @"public class SignatureAttribute : Attribute" )
+                    nsStObj.Append( @"internal class SignatureAttribute : Attribute" )
                         .OpenBlock()
                         .Append( "public SignatureAttribute( string s ) {}" ).NewLine()
                         .Append( "public readonly static (SHA1Value Signature, IReadOnlyList<string> Names) V = ( SHA1Value.Parse( (string)typeof( SignatureAttribute ).Assembly.GetCustomAttributesData().First( a => a.AttributeType == typeof( SignatureAttribute ) ).ConstructorArguments[0].Value )" ).NewLine()
@@ -348,7 +348,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             ns.Append( _sourceGStObj ).NewLine();
             ns.Append( _sourceFinalGStObj ).NewLine();
 
-            var rootType = ns.CreateType( "public sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
+            var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
                                 .Append( "readonly GStObj[] _stObjs;" ).NewLine()
                                 .Append( "readonly GFinalStObj[] _finalStObjs;" ).NewLine()
                                 .Append( "readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine();

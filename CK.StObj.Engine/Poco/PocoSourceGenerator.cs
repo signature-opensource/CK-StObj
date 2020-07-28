@@ -31,7 +31,7 @@ namespace CK.Setup
             IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
 
             // PocoDirectory_CK class.
-            scope.FindOrCreateFunction( "public PocoDirectory_CK()" )
+            scope.FindOrCreateFunction( "internal PocoDirectory_CK()" )
                  .Append( "Instance = this;" );
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
@@ -59,7 +59,7 @@ namespace CK.Setup
                 // can refer to the _factory to access the factory extended code without cast.
                 tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
                   .NewLine();
-                tB.Append( "public IPocoFactory Factory => _factory;" ).NewLine();
+                tB.Append( "internal IPocoFactory Factory => _factory;" ).NewLine();
                 
                 // Always create the constructor so that other code generators
                 // can always find it.
