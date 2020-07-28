@@ -473,8 +473,12 @@ namespace CK.Setup
                         ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
                             =>
                         {
-                            read.Append( "(" ).AppendCSharpName( t ).Append( ")" );
-                            _map[uT].GenerateRead( read, variableName, false );
+                            read.OpenBlock()
+                                .Append( "var " );
+                            _map[uT].GenerateRead( read, "u", true );
+                            read.NewLine()
+                                .Append( variableName ).Append( " = (" ).AppendCSharpName( t ).Append( ")u;" )
+                                .CloseBlock();
                         } );
         }
 
