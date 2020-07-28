@@ -423,6 +423,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             }
         }
 
+        [ExternalName( "WithUnionType" )]
         public interface IWithUnionType : IPoco
         {
             [UnionType( typeof(IList<int>), typeof(int), typeof(IDictionary<int, string>) )]
