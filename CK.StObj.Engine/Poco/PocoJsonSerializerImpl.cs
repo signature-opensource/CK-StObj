@@ -141,6 +141,21 @@ namespace CK.Setup
         {
             // Each Poco class is a IWriter and has a constructor that accepts a Utf8JsonReader.
             pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.PocoJsonSerializer.IWriter" ) );
+
+            // Define ToString() to return the Json Poco only if it is not already defined.
+            var toString = FunctionDefinition.Parse( "public override string ToString()" );
+            if( pocoClass.FindFunction( toString.Key, false ) == null )
+            {
+                pocoClass.CreateFunction( toString )
+                    .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
+                    .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
+                    .OpenBlock()
+                    .Append( "Write( w, false );" ).NewLine()
+                    .Append( "w.Flush();" ).NewLine()
+                    .CloseBlock()
+                    .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
+            }
+
             pocoClass.Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
                  .OpenBlock()
                  .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()

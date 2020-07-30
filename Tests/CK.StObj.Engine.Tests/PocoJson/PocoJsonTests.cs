@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -54,6 +55,17 @@ namespace CK.StObj.Engine.Tests.PocoJson
             Debug.Assert( o2 != null );
             o2.Power.Should().Be( o.Power );
             o2.Hip.Should().Be( o.Hip );
+        }
+
+        [Test]
+        public void poco_ToString_overridden_method_returns_its_Json_representation()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            var f = s.GetRequiredService<IPocoFactory<ITest>>();
+            var o = f.Create( o => { o.Power = 3712; o.Hip = "Here!"; } );
+            o.ToString().Should().Be( @"{""Power"":3712,""Hip"":""Here!""}" );
         }
 
         public interface IPocoA : IPoco
@@ -275,8 +287,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             } );
             var oSb = Serialize( oS, false );
             var oLb = Serialize( oL, false );
-            var oLFromS = Deserialize<IWithList>( services, oSb );
-            var oSFromL = Deserialize<IWithSet>( services, oLb );
+            var oLFromS = Deserialize<IWithList>( services, oSb.Span );
+            var oSFromL = Deserialize<IWithSet>( services, oLb.Span );
             Debug.Assert( oLFromS != null && oSFromL != null );
 
             oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
@@ -475,18 +487,18 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
 
-        static byte[] Serialize( IPoco o, bool withType )
+        static ReadOnlyMemory<byte> Serialize( IPoco o, bool withType )
         {
-            var m = new MemoryStream();
+            var m = new ArrayBufferWriter<byte>();
             using( var w = new Utf8JsonWriter( m ) )
             {
                 o.Write( w, withType );
                 w.Flush();
             }
-            return m.ToArray();
+            return m.WrittenMemory;
         }
 
-        public static T? Deserialize<T>( IServiceProvider services, byte[] b ) where T : class, IPoco
+        public static T? Deserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b ) where T : class, IPoco
         {
             var r = new Utf8JsonReader( b );
             var f = services.GetRequiredService<IPocoFactory<T>>();
