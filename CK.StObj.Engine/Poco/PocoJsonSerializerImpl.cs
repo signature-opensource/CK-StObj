@@ -226,6 +226,13 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 " ).NewLine();
             var read = pocoClass.CreatePart();
             pocoClass.Append( @"
+        default:
+        {
+            var t = r.TokenType; 
+            r.Skip();
+            if( t == System.Text.Json.JsonTokenType.StartArray || t == System.Text.Json.JsonTokenType.StartObject ) r.Read();
+            break;
+        }
     }
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) throw new System.Text.Json.JsonException( ""Expecting '}' to end a Poco."" );

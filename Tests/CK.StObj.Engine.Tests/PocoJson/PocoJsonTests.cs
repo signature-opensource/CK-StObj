@@ -284,6 +284,25 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
 
+        [Test]
+        public void missing_and_extra_properties_in_Json_are_ignored_Missing_have_their_DefaultValue_Extra_are_skipped()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            string missingValue = @"{""Hip"": ""Hop"", ""Stranger"": [0,1,[]]}";
+            var noValue = Deserialize<ITest>( s, missingValue );
+            Debug.Assert( noValue != null );
+            noValue.Hip.Should().Be( "Hop" );
+            noValue.Power.Should().Be( 0 );
+
+            string missingHip = @"{""Power"": 871871, ""Another"": {""Nimp"": [87,54]}, ""Stranger"": []}";
+            var noHip = Deserialize<ITest>( s, missingHip );
+            Debug.Assert( noHip != null );
+            noHip.Hip.Should().Be( "Hello...", "This is the default Hip value." );
+            noHip.Power.Should().Be( 871871 );
+        }
+
         public interface IPocoCrossA : IPoco
         {
             IPocoCrossB B { get; }
@@ -472,6 +491,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var r = new Utf8JsonReader( b );
             var f = services.GetRequiredService<IPocoFactory<T>>();
             return f.Read( ref r );
+        }
+
+        public static T? Deserialize<T>( IServiceProvider services, string s ) where T : class, IPoco
+        {
+            return Deserialize<T>( services, Encoding.UTF8.GetBytes( s ) );
         }
 
         public static T? Roundtrip<T>( IServiceProvider services, T? o ) where T : class, IPoco
