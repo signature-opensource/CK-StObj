@@ -27,6 +27,7 @@ namespace CK.Testing.StObjEngine
         public class GeneratedBinPath : IGeneratedBinPath
         {
             readonly ISimpleServiceContainer _container;
+            StObjCollectorResult? _result;
 
             /// <summary>
             /// Initializes a new <see cref="GeneratedBinPath"/>.
@@ -40,7 +41,23 @@ namespace CK.Testing.StObjEngine
             /// <summary>
             /// Gets or sets a <see cref="StObjCollectorResult"/>.
             /// </summary>
-            public StObjCollectorResult? Result { get; set; }
+            public StObjCollectorResult? Result
+            {
+                get => _result;
+                set
+                {
+                    if( _result != value )
+                    {
+                        if( _result != null ) _container.Remove<IPocoSupportResult>();
+                        if( value != null )
+                        {
+                            var pocoSupport = value.DynamicAssembly.GetPocoSupportResult();
+                            if( pocoSupport != null ) _container.Add( pocoSupport );
+                        }
+                        _result = value;
+                    }
+                }
+            }
 
             /// <summary>
             /// Mutable list of <see cref="BinPathConfiguration"/>.
@@ -184,7 +201,7 @@ namespace CK.Testing.StObjEngine
             ctx.UnifiedCodeContext.SaveSource = saveSource;
             var secondPass = new List<SecondPassCodeGeneration>();
             string finalFilePath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
-            if( !result.GenerateSourceCodeFirstPass( monitor, ctx.UnifiedCodeContext, null, secondPass.Add ) ) return default;
+            if( !result.GenerateSourceCodeFirstPass( monitor, ctx.UnifiedCodeContext, null, secondPass ) ) return default;
             Func<SHA1Value, bool> mapFinder = v => StObjContextRoot.GetMapInfo( v, monitor ) != null;
             if( skipEmbeddedStObjMap ) mapFinder = v => false;
             return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, secondPass, mapFinder );

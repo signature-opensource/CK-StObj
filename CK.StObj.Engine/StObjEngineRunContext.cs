@@ -33,6 +33,7 @@ namespace CK.Setup
                 BinPathConfigurations = binPathConfigurations;
                 GroupedPaths = groupedPaths;
                 ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
+                ServiceContainer.Add( result.DynamicAssembly.GetPocoSupportResult() );
             }
 
             public readonly StObjCollectorResult Result;

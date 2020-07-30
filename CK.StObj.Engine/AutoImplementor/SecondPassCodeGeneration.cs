@@ -7,6 +7,7 @@ using CK.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using CK.CodeGen;
+using System.Collections.Generic;
 
 #nullable enable
 
@@ -61,24 +62,61 @@ namespace CK.Setup
                                             ? $"Method '{m.DeclaringType!.Name}.{m.Name}"
                                             : (IsCodeGenerator ? $"Code generator '{((Type)Implementor).FullName}'" : $"Implementor '{((Type)Implementor).FullName}'");
 
+        // Subsequent runs on named Methods are tracked here.
+        object? _secondRunner;
+        MethodInfo? _subsequentRun;
+
         /// <summary>
         /// Executes the second pass by either:
         /// <list type="bullet">
         ///     <item>If <see cref="Implementor"/> is a Type: instantiating it and executing its <see cref="IAutoImplementor{T}.Implement"/> method.</item>
         ///     <item>If <see cref="Implementor"/> is a MethodInfo: calling it.</item>
         /// </list>
+        /// Subsequent runs can use methods as long as a <see cref="AutoImplementationResult(string)"/> is returned by implemetors.
         /// On error, a fatal or error message has necessarily been logged.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The code generation context.</param>
+        /// <param name="passes">The result of the first pass.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context )
+        public static bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context, List<SecondPassCodeGeneration> passes )
+        {
+            if( passes.Count > 0 )
+            {
+                int passNumber = 0;
+                for(; ; )
+                {
+                    List<SecondPassCodeGeneration>? next = null;
+                    using( monitor.OpenInfo( $"Running code generation pass n°{++passNumber} with {passes.Count} code generators." ) )
+                    {
+                        foreach( var s in passes )
+                        {
+                            if( !s.RunSecondPass( monitor, context ) )
+                            {
+                                return false;
+                            }
+                            if( s._subsequentRun != null )
+                            {
+                                if( next == null ) next = new List<SecondPassCodeGeneration>();
+                                next.Add( s );
+                            }
+                        }
+                    }
+                    if( next == null ) break;
+                    passes = next;
+                }
+            }
+            return true;
+        }
+
+        bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context )
         {
             try
             {
                 AutoImplementationResult r;
                 if( Implementor is Type iType )
                 {
+                    Debug.Assert( _secondRunner == null );
                     object? impl;
                     using( var s = new SimpleServiceContainer( context.CurrentRun.ServiceContainer ) )
                     {
@@ -92,11 +130,24 @@ namespace CK.Setup
                             return false;
                         }
                     }
+                    _secondRunner = impl;
                     r = CallImplementorTypeMethod( monitor, context, impl );
                 }
                 else
                 {
-                    var m = (MethodInfo)Implementor;
+                    MethodInfo m;
+                    if( _secondRunner == null )
+                    {
+                        Debug.Assert( _subsequentRun == null );
+                        _secondRunner = FirstRunner;
+                        m = (MethodInfo)Implementor;
+                    }
+                    else
+                    {
+                        Debug.Assert( _subsequentRun != null );
+                        m = _subsequentRun;
+                        _subsequentRun = null;
+                    }
                     var parameters = m.GetParameters();
                     var values = new object?[parameters.Length];
                     for( int i = 0; i < parameters.Length; ++i )
@@ -113,10 +164,10 @@ namespace CK.Setup
                                             : context.CurrentRun.ServiceContainer.GetRequiredService( p.ParameterType );
                         }
                     }
-                    object? o = m.Invoke( FirstRunner, values );
+                    object? o = m.Invoke( _secondRunner, values );
                     if( o == null ) r = AutoImplementationResult.Success;
                     else if( o is AutoImplementationResult ) r = (AutoImplementationResult)o;
-                    else if( o is Boolean b ) r = b ? AutoImplementationResult.Success : AutoImplementationResult.Failed;
+                    else if( o is bool b ) r = b ? AutoImplementationResult.Success : AutoImplementationResult.Failed;
                     else
                     {
                         monitor.Fatal( $"{ImplementorName} returned an unhandled type of object: {o}." );
@@ -128,10 +179,16 @@ namespace CK.Setup
                     monitor.Fatal( IsCodeGenerator ? $"{ImplementorName} failed." : $"{ImplementorName} failed to implement {TargetName}." );
                     return false;
                 }
-                if( r.ImplementorType != null || r.MethodName != null )
+                if( r.ImplementorType != null )
                 {
-                    monitor.Fatal( $"{ImplementorName}: the implement method must not return another type to instantiate nor another method name to call." );
+                    monitor.Fatal( $"{ImplementorName}: the implement method must not return another type to instantiate (but can return one of its method name to call)." );
                     return false;
+                }
+                if( r.MethodName != null )
+                {
+                    MethodInfo? next = FindSingleMethod( monitor, _secondRunner.GetType(), r.MethodName );
+                    if( next == null ) return false;
+                    _subsequentRun = next;
                 }
                 return true;
             }
@@ -180,6 +237,7 @@ namespace CK.Setup
 
         static (bool Success, SecondPassCodeGeneration? SecondPass) HandleFirstResult<T>( IActivityMonitor monitor, AutoImplementationResult r, object first, ICodeGenerationContext context, ITypeScope? scope, T? toImplement ) where T : MemberInfo
         {
+            Debug.Assert( first is ICodeGenerator || first is IAutoImplementor<T> );
             Debug.Assert( (first is ICodeGenerator) == (toImplement == null) );
             if( r.HasError )
             {
@@ -206,18 +264,8 @@ namespace CK.Setup
             }
             else if( r.MethodName != null )
             {
-                var mA = first.GetType().GetMethods( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static ).Where( m => m.Name == r.MethodName ).ToList();
-                if( mA.Count == 0 )
-                {
-                    monitor.Fatal( $"'{first.GetType().Name}.Implement' wants to use its method named '{r.MethodName}' but no such method can be found." );
-                    return (false, null);
-                }
-                if( mA.Count > 1 )
-                {
-                    monitor.Fatal( $"'{first.GetType().Name}.Implement' wants to use a method named '{r.MethodName}' but this method must be unique. Found {mA.Count} overloads." );
-                    return (false, null);
-                }
-                implementor = mA[0]!;
+                implementor = FindSingleMethod( monitor, first.GetType(), r.MethodName );
+                if( implementor == null ) return (false, null);
             }
             if( implementor != null )
             {
@@ -231,6 +279,22 @@ namespace CK.Setup
                 };
             }
             return (true, null);
+        }
+
+        static MethodInfo? FindSingleMethod( IActivityMonitor monitor, Type caller, string methodName )
+        {
+            var mA = caller.GetMethods( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static ).Where( m => m.Name == methodName && m.DeclaringType != typeof(object) ).ToList();
+            if( mA.Count == 0 )
+            {
+                monitor.Fatal( $"'{caller.Name}.Implement' wants to use its method named '{methodName}' but no such method can be found." );
+                return null;
+            }
+            if( mA.Count > 1 )
+            {
+                monitor.Fatal( $"'{caller.Name}.Implement' wants to use a method named '{methodName}' but this method must be unique. Found {mA.Count} overloads." );
+                return null;
+            }
+            return mA[0]!;
         }
 
         private protected SecondPassCodeGeneration( object firstRunner, ITypeScope? s, MemberInfo implementor, MemberInfo? target )

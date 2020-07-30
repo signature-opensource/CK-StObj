@@ -13,21 +13,24 @@ namespace CK.Setup
 {
     /// <summary>
     /// Implements the Json serialization. This class extends the Poco classes to support
-    /// the API exposed as extension methods by the CK.Poco.PocoJsonSerializer static
+    /// the API exposed as extension methods by the CK.Core.PocoJsonSerializer static
     /// class (in CK.Poco.Json).
     /// </summary>
-    public partial class PocoJsonSerializerImpl : ICodeGenerator
+    public partial class PocoJsonSerializerImpl : ICodeGenerator, IJsonSerializationCodeGen
     {
-        const string FromPocoDirectory = "this";
-        const string FromFactory = "PocoDirectory";
-        const string FromPocoClass = "_factory.PocoDirectory";
-
         IActivityMonitor? _monitor;
         ITypeScope? _pocoDirectory;
 
         IActivityMonitor Monitor => _monitor!;
 
         ITypeScope PocoDirectory => _pocoDirectory!;
+
+        void IJsonSerializationCodeGen.RegisterEnumOrCollectionType( Type t )
+        {
+            TryFindOrCreateHandler( t );
+        }
+
+        bool IJsonSerializationCodeGen.IsKnownType( Type t ) => _map.ContainsKey( t );
 
         /// <summary>
         /// Extends PocoDirectory_CK, the factories and the Poco classes.
@@ -39,38 +42,28 @@ namespace CK.Setup
         {
             _monitor = monitor;
             _pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            InitializeMap();
+            // Exposes this as a service to others.
+            c.CurrentRun.ServiceContainer.Add<IJsonSerializationCodeGen>( this );
 
             var pocoSupport = c.Assembly.GetPocoSupportResult();
-            if( pocoSupport == null )
+            if( pocoSupport.Roots.Count == 0 )
             {
-                monitor.Info( "No Poco support available. Skipping Poco serialization code generation." );
-                return AutoImplementationResult.Success;
+                monitor.Info( "No Poco available. Skipping Poco serialization code generation." );
+                return new AutoImplementationResult( nameof( Finalize ) );
             }
 
-            InitializeMap();
-            AddTypeInfo( typeof( IPoco ), "IPoco", null, DirectType.Untyped, true ).Configure(
-            ( ICodeWriter write, string variableName, string pocoDirectoryAccessor ) =>
-            {
-                // Use the poco's Write method directly:
-                // - Null is already checked (by the Handler's null handling).
-                // - Type is written since this is DirectType.Untyped.
-                write.Append( "((PocoJsonSerializer.IWriter)" ).Append( variableName ).Append( ").Write( w, true );" );
-            },
-            ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable, string pocoDirectoryAccessor ) =>
-            {
-                // Funny fact: PocoJsonSerializer is not referenced anywhere:
-                // the extension method is not discovered by Roslyn! We must call the static explicitly.
-                //read.Append( variableName ).Append( " = " ).Append( pocoDirectoryAccessor ).Append( ".ReadPocoValue( ref r );" ).NewLine();
-                read.Append( variableName ).Append( " = PocoJsonSerializer.ReadPocoValue( " ).Append( pocoDirectoryAccessor ).Append( ", ref r );" ).NewLine();
-            } );
+            // IPoco and IClosedPoco are not in the "OtherInterfaces".
+            AddUntypedHandler( typeof( IPoco ) );
+            AddUntypedHandler( typeof( IClosedPoco ) );
 
             // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
             foreach( var root in pocoSupport.Roots )
             {
-                var typeInfo = AddTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure( 
-                                ( ICodeWriter write, string variableName, string pocoDirectoryAccessor )
+                var typeInfo = AddTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
+                                ( ICodeWriter write, string variableName )
                                         => write.Append( variableName ).Append( ".Write( w, false );" ),
-                                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable, string pocoDirectoryAccessor ) =>
+                                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                                 {
                                     if( !assignOnly )
                                     {
@@ -89,7 +82,7 @@ namespace CK.Setup
                                     {
                                         read.Append( variableName )
                                             .Append( " = new " ).AppendCSharpName( root.PocoClass )
-                                            .Append( "( ref r, " ).Append( pocoDirectoryAccessor ).Append( " );" );
+                                            .Append( "( ref r );" );
                                     }
                                 } );
                 foreach( var i in root.Interfaces )
@@ -100,9 +93,14 @@ namespace CK.Setup
             // Maps the "other Poco interfaces" to "Untyped" object.
             foreach( var other in pocoSupport.OtherInterfaces )
             {
-                AddUntypedNullHandler( other.Key );
+                AddUntypedHandler( other.Key );
             }
 
+            return new AutoImplementationResult( nameof( GeneratePocoSupport ) );
+        }
+
+        AutoImplementationResult GeneratePocoSupport( IActivityMonitor monitor, ICodeGenerationContext c, IPocoSupportResult pocoSupport )
+        { 
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
             {
@@ -115,10 +113,10 @@ namespace CK.Setup
                     factory.Definition.BaseTypes.Add( new ExtendedTypeName( readerName ) );
                     factory.Append( interfaceName ).Append( ' ' ).Append( readerName ).Append( ".Read( ref System.Text.Json.Utf8JsonReader r )" ).NewLine()
                             .Append( " => r.TokenType == System.Text.Json.JsonTokenType.Null ? null : new " )
-                            .Append( root.PocoClass.Name ).Append( "( ref r, PocoDirectory );" ).NewLine();
+                            .Append( root.PocoClass.Name ).Append( "( ref r );" ).NewLine();
 
                 }
-                factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r, PocoDirectory );" ).NewLine();
+                factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r );" ).NewLine();
 
                 var pocoClass = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
 
@@ -127,18 +125,37 @@ namespace CK.Setup
                 ExtendPocoClass( root, pocoClass );
             }
 
+            return new AutoImplementationResult( nameof( Finalize ) );
+        }
+
+        void Finalize( IActivityMonitor monitor )
+        {
+            monitor.Info( $"Generating Json serialization with {_map.Count} mappings." );
             // Generates the code for "dynamic"/"untyped" object.
             FillDynamicMaps( _map );
             GenerateObjectWrite();
             GenerateObjectRead();
-
-            return AutoImplementationResult.Success;
         }
 
         void ExtendPocoClass( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
         {
             // Each Poco class is a IWriter and has a constructor that accepts a Utf8JsonReader.
             pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.PocoJsonSerializer.IWriter" ) );
+
+            // Define ToString() to return the Json Poco only if it is not already defined.
+            var toString = FunctionDefinition.Parse( "public override string ToString()" );
+            if( pocoClass.FindFunction( toString.Key, false ) == null )
+            {
+                pocoClass.CreateFunction( toString )
+                    .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
+                    .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
+                    .OpenBlock()
+                    .Append( "Write( w, false );" ).NewLine()
+                    .Append( "w.Flush();" ).NewLine()
+                    .CloseBlock()
+                    .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
+            }
+
             pocoClass.Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
                  .OpenBlock()
                  .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()
@@ -149,7 +166,7 @@ namespace CK.Setup
                  .Append( "if( withType ) w.WriteEndArray();" ).NewLine()
                  .CloseBlock();
 
-            pocoClass.Append( "public " ).Append( pocoClass.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoDirectory_CK d ) : this( d )" )
+            pocoClass.Append( "public " ).Append( pocoClass.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r ) : this()" )
                  .OpenBlock()
                  .Append( "Read( ref r );" )
                  .CloseBlock();
@@ -161,23 +178,23 @@ namespace CK.Setup
             {
                 foreach( var union in p.PropertyUnionTypes )
                 {
-                    TryFindOrCreateHandler( union );
+                    TryFindOrCreateHandler( union.Type );
                 }
 
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
 
-                var handler = TryFindOrCreateHandler( p.PropertyType );
+                var handler = TryFindOrCreateHandler( p.PropertyType, p.IsEventuallyNullable );
                 if( handler == null ) continue;
                 // If its an AutoInstantiated property with no setter, it cannot be null.
                 if( handler.IsNullable && p.AutoInstantiated && !p.HasDeclaredSetter )
                 {
-                    handler = handler.Info.NotNullHandler;
+                    handler = handler.Info.NonNullHandler;
                 }
-                handler.GenerateWrite( write, p.PropertyName, FromPocoClass );
+                handler.GenerateWrite( write, "_v" + p.Index );
 
                 read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( " : " )
                     .OpenBlock();
-                handler.GenerateRead( read, p.PropertyName, false, FromPocoClass );
+                handler.GenerateRead( read, "_v" + p.Index, false );
                 read.Append( "break; " )
                     .CloseBlock();
             }
@@ -224,6 +241,13 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 " ).NewLine();
             var read = pocoClass.CreatePart();
             pocoClass.Append( @"
+        default:
+        {
+            var t = r.TokenType; 
+            r.Skip();
+            if( t == System.Text.Json.JsonTokenType.StartArray || t == System.Text.Json.JsonTokenType.StartObject ) r.Read();
+            break;
+        }
     }
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) throw new System.Text.Json.JsonException( ""Expecting '}' to end a Poco."" );

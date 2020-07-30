@@ -11,7 +11,7 @@ namespace CK.Setup
     class ServiceSupportCodeGenerator
     {
         static readonly string _sourceServiceSupport = @"
-        public sealed class StObjServiceParameterInfo : IStObjServiceParameterInfo
+        sealed class StObjServiceParameterInfo : IStObjServiceParameterInfo
         {
             public StObjServiceParameterInfo( Type t, int p, string n, IReadOnlyList<Type> v, bool isEnum )
             {
@@ -33,7 +33,7 @@ namespace CK.Setup
             public IReadOnlyList<Type> Value { get; }
         }
 
-        public sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
+        sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
         {
             public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
             {
@@ -60,7 +60,7 @@ namespace CK.Setup
             public IReadOnlyCollection<Type> UniqueMappings { get; }
         }
 
-        public sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
+        sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
         {
             public StObjServiceClassFactoryInfo( Type t, Type finalType, IReadOnlyList<IStObjServiceParameterInfo> a, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
             {
@@ -273,7 +273,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
 
         void CreateServiceClassFactory( IStObjServiceFinalManualMapping c )
         {
-            var t = _infoType.CreateType( $"public class S{c.ManualMappingIndex} : StObjServiceClassFactoryInfo, IStObjServiceClassFactory" );
+            var t = _infoType.CreateType( $"class S{c.ManualMappingIndex} : StObjServiceClassFactoryInfo, IStObjServiceClassFactory" );
 
             t.CreateFunction( ctor =>
             {

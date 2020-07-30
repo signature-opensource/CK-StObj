@@ -10,21 +10,21 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
     {
         // Test with an alternate IScopedAutoService that is not the
         // "official" CK.Core.IScopedAutoService from CK.StObj.Model.
-        interface IScopedAutoService { }
+        public interface IScopedAutoService { }
 
-        interface IServiceRegistered : IScopedAutoService
+        public interface IServiceRegistered : IScopedAutoService
         {
         }
 
-        interface IServiceNotRegisteredSinceNotImplemented : IServiceRegistered
+        public interface IServiceNotRegisteredSinceNotImplemented : IServiceRegistered
         {
         }
 
-        class ServiceRegisteredImpl : IServiceRegistered
+        public class ServiceRegisteredImpl : IServiceRegistered
         {
         }
 
-        class ServiceNotRegisteredImpl : ServiceRegisteredImpl, IServiceNotRegisteredSinceNotImplemented
+        public class ServiceNotRegisteredImpl : ServiceRegisteredImpl, IServiceNotRegisteredSinceNotImplemented
         {
         }
 

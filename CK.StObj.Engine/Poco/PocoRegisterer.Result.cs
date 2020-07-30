@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using CK.Text;
 using System;
@@ -152,6 +153,13 @@ namespace CK.Setup
                             monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' but their type differ ({p.PropertyType.Name} vs. {other.PropertyType.Name})." );
                             return false;
                         }
+                        // Types are equal but NRT must be checked.
+                        var otherN = other.GetNullabilityInfo();
+                        if( !otherN.Equals( p.PropertyNullabilityInfo ) )
+                        {
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type {p.PropertyType.ToCSharpName()} but their type's Nullabilty differ." );
+                            return false;
+                        }
                     }
                 }
                 return true;
@@ -237,7 +245,8 @@ namespace CK.Setup
 
         class PocoPropertyInfo : IPocoPropertyInfo
         {
-            HashSet<Type>? _unionTypes;
+            Dictionary<Type,NullabilityTypeKind>? _unionTypes;
+            NullableTypeTree _nullableTypeTree;
 
             public bool AutoInstantiated { get; set; }
 
@@ -249,9 +258,20 @@ namespace CK.Setup
 
             public int Index { get; set; }
 
+            public NullabilityTypeInfo PropertyNullabilityInfo { get; set; }
+
+            public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree.Kind == NullabilityTypeKind.Unknown
+                                                                    ? (_nullableTypeTree = PropertyType.GetNullableTypeTree( PropertyNullabilityInfo ))
+                                                                    : _nullableTypeTree;
+
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
-            public IReadOnlyCollection<Type> PropertyUnionTypes => (IReadOnlyCollection<Type>?)_unionTypes ?? Type.EmptyTypes;
+            public IEnumerable<(Type Type,NullabilityTypeKind Kind)> PropertyUnionTypes => _unionTypes != null
+                                                                                    ? _unionTypes.Select( kv => (kv.Key,kv.Value) )
+                                                                                    : Enumerable.Empty<(Type,NullabilityTypeKind)>();
+            public bool IsEventuallyNullable => PropertyUnionTypes.Any()
+                                                    ? PropertyUnionTypes.Any( x => x.Kind.IsNullable() )
+                                                    : PropertyNullabilityInfo.Kind.IsNullable();
 
             public string PropertyName => DeclaredProperties[0].Name;
 
@@ -268,11 +288,16 @@ namespace CK.Setup
             public void AddUnionPropertyTypes( IReadOnlyList<Type> types )
             {
                 Debug.Assert( types.Count > 0 );
-                if( _unionTypes == null ) _unionTypes = new HashSet<Type>();
-                _unionTypes.AddRange( types );
+                if( _unionTypes == null ) _unionTypes = new Dictionary<Type, NullabilityTypeKind>();
+                // Different Poco can (re)define variants.
+                foreach( var t in types )
+                {
+                    _unionTypes[t] = t.GetNullabilityKind();
+                }
             }
 
             public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
+
         }
     }
 }

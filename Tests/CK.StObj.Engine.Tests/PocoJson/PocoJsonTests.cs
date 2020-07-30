@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -56,6 +57,17 @@ namespace CK.StObj.Engine.Tests.PocoJson
             o2.Hip.Should().Be( o.Hip );
         }
 
+        [Test]
+        public void poco_ToString_overridden_method_returns_its_Json_representation()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            var f = s.GetRequiredService<IPocoFactory<ITest>>();
+            var o = f.Create( o => { o.Power = 3712; o.Hip = "Here!"; } );
+            o.ToString().Should().Be( @"{""Power"":3712,""Hip"":""Here!""}" );
+        }
+
         public interface IPocoA : IPoco
         {
             [DefaultValue( "A" )]
@@ -99,8 +111,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IPocoWithGeneric : IPoco
         {
-            IPoco OnePoco { get; set; }
-            IPoco AnotherOnePoco { get; set; }
+            IPoco? OnePoco { get; set; }
+            IPoco? AnotherOnePoco { get; set; }
         }
 
         [Test]
@@ -159,22 +171,23 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         }
 
-        public interface IPocoWithBasicList : IPoco
+        public interface IPocoWithBasicNullableList : IPoco
         {
-            IList<int> Values { get; }
+            IList<int>? Values { get; }
 
-            ISet<DateTime> NullableCollection { get; set; }
+            ISet<DateTime>? NullableCollection { get; set; }
         }
 
         [Test]
         public void basic_lists_can_be_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicList ) );
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicNullableList ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
 
-            var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicList>>();
+            var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicNullableList>>();
 
             var lA = f.Create();
+            Debug.Assert( lA.Values != null );
             lA.Values.Add( -12 );
             lA.Values.Add( 3712 );
             lA.NullableCollection.Should().BeNull();
@@ -191,19 +204,20 @@ namespace CK.StObj.Engine.Tests.PocoJson
             lA3.Should().BeEquivalentTo( lA );
         }
 
-        public interface IPocoWithBasicList2 : IPocoWithBasicList
+        public interface IPocoWithBasicList2 : IPocoWithBasicNullableList
         {
-            new ISet<DateTime> NullableCollection { get; }
+            new ISet<DateTime>? NullableCollection { get; }
         }
 
         [Test]
         public void properties_can_be_nullable_but_AutoImplemented_as_long_as_one_interface_requires_it()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicList ), typeof( IPocoWithBasicList2 ) );
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicNullableList ), typeof( IPocoWithBasicList2 ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
 
-            var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicList>>();
+            var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicNullableList>>();
             var lA = f.Create();
+            Debug.Assert( lA.Values != null );
             lA.Values.Add( -12 );
             lA.Values.Add( 3712 );
             lA.NullableCollection.Should().NotBeNull( "IPocoWithBasicList2 has no setter: it is AutoImplemented." );
@@ -273,14 +287,33 @@ namespace CK.StObj.Engine.Tests.PocoJson
             } );
             var oSb = Serialize( oS, false );
             var oLb = Serialize( oL, false );
-            var oLFromS = Deserialize<IWithList>( services, oSb );
-            var oSFromL = Deserialize<IWithSet>( services, oLb );
+            var oLFromS = Deserialize<IWithList>( services, oSb.Span );
+            var oSFromL = Deserialize<IWithSet>( services, oLb.Span );
             Debug.Assert( oLFromS != null && oSFromL != null );
 
             oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
             oSFromL.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
         }
 
+
+        [Test]
+        public void missing_and_extra_properties_in_Json_are_ignored_Missing_have_their_DefaultValue_Extra_are_skipped()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+
+            string missingValue = @"{""Hip"": ""Hop"", ""Stranger"": [0,1,[]]}";
+            var noValue = Deserialize<ITest>( s, missingValue );
+            Debug.Assert( noValue != null );
+            noValue.Hip.Should().Be( "Hop" );
+            noValue.Power.Should().Be( 0 );
+
+            string missingHip = @"{""Power"": 871871, ""Another"": {""Nimp"": [87,54]}, ""Stranger"": []}";
+            var noHip = Deserialize<ITest>( s, missingHip );
+            Debug.Assert( noHip != null );
+            noHip.Hip.Should().Be( "Hello...", "This is the default Hip value." );
+            noHip.Power.Should().Be( 871871 );
+        }
 
         public interface IPocoCrossA : IPoco
         {
@@ -421,6 +454,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             }
         }
 
+        [ExternalName( "WithUnionType" )]
         public interface IWithUnionType : IPoco
         {
             [UnionType( typeof(IList<int>), typeof(int), typeof(IDictionary<int, string>) )]
@@ -453,25 +487,30 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
 
-        static byte[] Serialize( IPoco o, bool withType )
+        static ReadOnlyMemory<byte> Serialize( IPoco o, bool withType )
         {
-            var m = new MemoryStream();
+            var m = new ArrayBufferWriter<byte>();
             using( var w = new Utf8JsonWriter( m ) )
             {
                 o.Write( w, withType );
                 w.Flush();
             }
-            return m.ToArray();
+            return m.WrittenMemory;
         }
 
-        static T? Deserialize<T>( IServiceProvider services, byte[] b ) where T : class, IPoco
+        public static T? Deserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b ) where T : class, IPoco
         {
             var r = new Utf8JsonReader( b );
             var f = services.GetRequiredService<IPocoFactory<T>>();
             return f.Read( ref r );
         }
 
-        static T? Roundtrip<T>( IServiceProvider services, T? o ) where T : class, IPoco
+        public static T? Deserialize<T>( IServiceProvider services, string s ) where T : class, IPoco
+        {
+            return Deserialize<T>( services, Encoding.UTF8.GetBytes( s ) );
+        }
+
+        public static T? Roundtrip<T>( IServiceProvider services, T? o ) where T : class, IPoco
         {
             byte[] bin1;
             string bin1Text;

@@ -94,7 +94,7 @@ namespace CK.Core
             reader.Read();
             string name = reader.GetString();
             IPocoFactory? f = directory.Find( name );
-            if( f == null ) throw new JsonException( $"Json type '{name}' not found." );
+            if( f == null ) throw new JsonException( $"Poco type '{name}' not found." );
             reader.Read();
             var p = ((IFactoryReader)f).ReadTyped( ref reader );
             if( reader.TokenType != JsonTokenType.EndArray ) throw new JsonException( "Expecting Json Poco end array." );

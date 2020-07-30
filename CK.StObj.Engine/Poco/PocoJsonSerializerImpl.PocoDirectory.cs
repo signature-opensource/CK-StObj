@@ -11,16 +11,14 @@ namespace CK.Setup
 {
     public partial class PocoJsonSerializerImpl
     {
-        delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r );
-
         void FillDynamicMaps( Dictionary<object, IHandler> map )
         {
             PocoDirectory.Append( @"
             delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r );
             delegate void WriterFunction( System.Text.Json.Utf8JsonWriter w, object o );
 
-            Dictionary<string, ReaderFunction> _typeReaders = new Dictionary<string, ReaderFunction>();
-            Dictionary<Type, WriterFunction> _typeWriters = new Dictionary<Type, WriterFunction>();" ).NewLine();
+            static readonly Dictionary<string, ReaderFunction> _typeReaders = new Dictionary<string, ReaderFunction>();
+            static readonly Dictionary<Type, WriterFunction> _typeWriters = new Dictionary<Type, WriterFunction>();" ).NewLine();
 
             var ctor = PocoDirectory.FindOrCreateFunction( "public PocoDirectory_CK()" );
             foreach( var (type,handler) in map )
@@ -35,51 +33,52 @@ namespace CK.Setup
                 if( type is string name )
                 {
                     Debug.Assert( name == handler.Name );
-                    WriteTypeRead( ctor, handler );
-                    if( handler.Type.IsValueType )
-                    {
-                        // Nullable names are not registered.
-                        Debug.Assert( !handler.IsNullable );
-                        WriteTypeRead( ctor, handler.Info.NullHandler );
-                    }
+                    // Reading null is already handled: we can skip any nullable handler.
+                    // ValueType nullable names don't appear in the map. We add them as an alias.
+                    if( handler.IsNullable ) continue;
+
+                    ctor.OpenBlock()
+                        .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r ) {" )
+                        .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
+                    handler.GenerateRead( ctor, "o", true, true );
+                    ctor.NewLine().Append( "return o;" ).NewLine()
+                        .Append( "};" ).NewLine();
+                    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.Name ).Append( ", d );" ).NewLine();
+                    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.ToNullHandler().Name ).Append( ", d );" ).NewLine();
+
+                    ctor.CloseBlock();
                 }
                 else
                 {
-                    Debug.Assert( type is Type t && handler.Type == t );
+                    Debug.Assert( type is Type ttt && handler.Type == ttt );
                     ctor.Append( "_typeWriters.Add( " ).AppendTypeOf( handler.Type )
                         .Append( ", (w,o) => " )
                         .OpenBlock();
+
                     // Writing a null object is handled directly by the WriteObject code,
                     // If the Type is a Nullable<>, it must be written with the nullable
                     // marker (the '?' suffix) but we can skip the "if( variableName == null )" block.
-                    Type notNullableType = handler.IsNullable && handler.Type.IsValueType
-                                            ? handler.Info.NotNullHandler.Type
-                                            : handler.Type;
-                    handler.GenerateWrite( ctor, "((" + notNullableType.ToCSharpName() + ")o)", FromPocoDirectory, true, true );
+                    var nonNullTypeName = handler.Info.NonNullHandler.Type.ToCSharpName();
+                    if( handler.Info.ByRefWriter )
+                    {
+                        ctor.Append( nonNullTypeName ).Space().Append( "v = (" ).Append( nonNullTypeName ).Append( ")o;" ).NewLine();
+                        handler.GenerateWrite( ctor, "v", true, true );
+                    }
+                    else
+                    {
+                        handler.GenerateWrite( ctor, "((" + nonNullTypeName + ")o)", true, true );
+                    }
+
                     ctor.CloseBlock()
                         .Append( " );" ).NewLine();
                 }
-            }
-
-            static void WriteTypeRead( IFunctionScope ctor, IHandler handler )
-            {
-                // Reading null is already handled: we can skip the "if( variableName == null )" block.
-                ctor.Append( "_typeReaders.Add( " )
-                    .AppendSourceString( handler.Name )
-                    .Append( ", delegate( ref System.Text.Json.Utf8JsonReader r )" )
-                    .OpenBlock()
-                    .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
-                handler.GenerateRead( ctor, "o", true, FromPocoDirectory, true );
-                ctor.NewLine().Append( "return o;" )
-                    .CloseBlock()
-                    .Append( " );" ).NewLine();
             }
         }
 
         void GenerateObjectWrite()
         {
             PocoDirectory.Append( @"
-            internal void WriteObject( System.Text.Json.Utf8JsonWriter w, object o )
+            internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o )
             {
                 switch( o )
                 {
@@ -105,7 +104,7 @@ namespace CK.Setup
         void GenerateObjectRead()
         {
             PocoDirectory.Append( @"
-            internal object ReadObject( ref System.Text.Json.Utf8JsonReader r )
+            internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r )
             {
                 switch( r.TokenType )
                 {

@@ -65,13 +65,14 @@ namespace CK.Setup
                 if( f.EndsWith( ".cs" ) )
                 {
                     bool isPrimaryFile = idxFile == 0;
+                    var fPath = _originPath.AppendPart( f );
                     var t = GetCSFileTargetPath( idxFile++ );
                     if( File.Exists( t ) )
                     {
                         // The primary source file that has the signature is the first one.
                         if( isPrimaryFile )
                         {
-                            if( SignatureFileEquals( f, t ) )
+                            if( SignatureFileEquals( fPath, t ) )
                             {
                                 _monitor.Info( $"File signature matches: no change in primary project source file." );
                             }
@@ -92,7 +93,7 @@ namespace CK.Setup
                     {
                         _monitor.Trace( $"New project source file: '{t.LastPart}'." );
                     }
-                    DoMove( _monitor, _originPath.AppendPart( f ), t );
+                    DoMoveOrCopy( _monitor, fPath, t, copy: false );
                 }
                 else if( f.EndsWith( ".dll" ) || f.EndsWith( ".exe" ) ) continue;
                 else
@@ -104,10 +105,10 @@ namespace CK.Setup
             }
             // Cleaning "G{X}.cs" files only if at least one files has been generated:
             // On error or if no files have been generated (typically because of a successful available StObjMap
-            // match) we let the existing files as-is.
-            // Other files (that don't exist currently) are left as-is.
+            // match) we let ALL the existing files as-is.
             if( r.GeneratedFileNames.Count > 0 )
             {
+                // Implemented cleaning here is currently useless since there are no G{X}.cs where X > 0.
                 for(; ; )
                 {
                     var previous = GetCSFileTargetPath( idxFile++ );
@@ -124,7 +125,7 @@ namespace CK.Setup
             return !modified;
         }
 
-        internal static void DoMove( IActivityMonitor m, NormalizedPath f, NormalizedPath t )
+        internal static void DoMoveOrCopy( IActivityMonitor m, NormalizedPath f, NormalizedPath t, bool copy )
         {
             int retryCount = 0;
             retry:
@@ -132,23 +133,24 @@ namespace CK.Setup
             {
                 if( f != t.LastPart )
                 {
-                    m.Info( $"Moving generated file: '{f.LastPart}' to '{t}'." );
+                    m.Info( $"{(copy ? "Copy" : "Mov")}ing generated file: '{f.LastPart}' to '{t}'." );
                 }
                 else
                 {
-                    m.Info( $"Moving generated file: '{t}'." );
+                    m.Info( $"{(copy ? "Copy" : "Mov")}ing generated file: '{t}'." );
                 }
-                File.Move( f, t, true );
+                if( copy ) File.Copy( f, t, true );
+                else File.Move( f, t, true );
             }
             catch( Exception ex )
             {
                 if( retryCount++ < 3 )
                 {
-                    m.Warn( $"Failed to move project source file: '{f.LastPart}'. Retrying.", ex );
+                    m.Warn( $"Failed to {(copy ? "copy" : "move")} project source file: '{f.LastPart}'. Retrying.", ex );
                     Thread.Sleep( retryCount * 50 );
                     goto retry;
                 }
-                m.Error( $"Failed to move project source file: '{f.LastPart}'. Rethrowing.", ex );
+                m.Error( $"Failed to {(copy ? "copy" : "move")} project source file: '{f.LastPart}'. Rethrowing.", ex );
                 throw;
             }
         }

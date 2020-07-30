@@ -81,7 +81,7 @@ namespace CK.Setup
             if( created = (tB == null) )
             {
                 monitor.Trace( $"Creating ITypeScope builder for class: '{ns.FullName}.{name}'." );
-                tB = ns.CreateType( "public class "+ name );
+                tB = ns.CreateType( "internal class "+ name );
                 if( baseType != null )
                 {
                     if( baseType != typeof( object ) )

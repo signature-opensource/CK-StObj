@@ -176,6 +176,7 @@ namespace CK.Setup
                 _objectCollector.Add( t, null );
                 RegisterRegularType( t );
             }
+            
             return true;
         }
 

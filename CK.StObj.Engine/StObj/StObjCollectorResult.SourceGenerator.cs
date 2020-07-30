@@ -60,7 +60,7 @@ namespace CK.Setup
         /// <param name="informationalVersion">Optional informational version attribute content.</param>
         /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
         /// <returns>True on success, false on error.</returns>
-        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, Action<SecondPassCodeGeneration> collector )
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, List<SecondPassCodeGeneration> collector )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
@@ -116,16 +116,9 @@ namespace CK.Setup
                     // We don't generate nullable enabled code.
                     global.Append( "#nullable disable" ).NewLine();
 
-                    // Calls all ICodeGenerator items.
-                    foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
-                    {
-                        var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
-                        if( second != null ) collector( second );
-                    }
-                    
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
-                    nsStObj.Append( @"public class SignatureAttribute : Attribute" )
+                    nsStObj.Append( @"internal class SignatureAttribute : Attribute" )
                         .OpenBlock()
                         .Append( "public SignatureAttribute( string s ) {}" ).NewLine()
                         .Append( "public readonly static (SHA1Value Signature, IReadOnlyList<string> Names) V = ( SHA1Value.Parse( (string)typeof( SignatureAttribute ).Assembly.GetCustomAttributesData().First( a => a.AttributeType == typeof( SignatureAttribute ) ).ConstructorArguments[0].Value )" ).NewLine()
@@ -135,6 +128,13 @@ namespace CK.Setup
                     // Generates the StObjContextRoot implementation.
                     GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
+                    // Calls all ICodeGenerator items.
+                    foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
+                    {
+                        var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                        if( second != null ) collector.Add( second );
+                    }
+                    
                     // Asks every ImplementableTypeInfo to generate their code. 
                     // This step MUST always be done, even if CompileOption is None and GenerateSourceFiles is false
                     // since during this step, side effects MAY occur (this is typically the case of the first run where
@@ -185,7 +185,7 @@ namespace CK.Setup
             IActivityMonitor monitor,
             string finalFilePath,
             ICodeGenerationContext codeGenContext,
-            IEnumerable<SecondPassCodeGeneration> secondPass,
+            List<SecondPassCodeGeneration> secondPass,
             Func<SHA1Value,bool> availableStObjMap )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
@@ -197,10 +197,7 @@ namespace CK.Setup
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
-                    foreach( var s in secondPass )
-                    {
-                        s.RunSecondPass( monitor, codeGenContext );
-                    }
+                    SecondPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
                 }
                 if( errorSummary != null )
                 {
@@ -351,7 +348,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             ns.Append( _sourceGStObj ).NewLine();
             ns.Append( _sourceFinalGStObj ).NewLine();
 
-            var rootType = ns.CreateType( "public sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
+            var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
                                 .Append( "readonly GStObj[] _stObjs;" ).NewLine()
                                 .Append( "readonly GFinalStObj[] _finalStObjs;" ).NewLine()
                                 .Append( "readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine();
