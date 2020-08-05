@@ -118,7 +118,7 @@ namespace CK.Setup
             if( _startContext != null ) throw new InvalidOperationException( "Run can be called only once." );
             if( !PrepareAndCheckConfigurations() ) return false;
             if( _ckSetupConfig != null && !ApplyCKSetupConfiguration() ) return false;
-            var unifiedBinPath = BinPathConfiguration.CreateUnified( _monitor, _config.BinPaths, _config.GlobalExcludedTypes );
+            var unifiedBinPath = CreateUnifiedBinPathConfiguration( _monitor, _config.BinPaths, _config.GlobalExcludedTypes );
             if( unifiedBinPath == null ) return false;
             if( unifiedBinPath.Assemblies.Count == 0 )
             {
@@ -292,6 +292,15 @@ namespace CK.Setup
 
                 if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
                 ++idx;
+
+                var foundAspects = _config.Aspects.Select( r => b.GetAspectConfiguration( r.GetType() ) ).Where( c => c != null );
+                var aliens = b.AspectConfigurations.Except( foundAspects );
+                if( aliens.Any() )
+                {
+                    _monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a.Name.ToString() ).Concatenate()}. Available aspects are: {_config.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
+                    return false;
+                }
+
             }
             if( _config.BinPaths.GroupBy( c => c.Name ).Any( g => g.Count() > 1 ) )
             {
@@ -301,11 +310,11 @@ namespace CK.Setup
             return true;
         }
 
-        NormalizedPath MakeAbsolutePath( NormalizedPath pp )
+        NormalizedPath MakeAbsolutePath( NormalizedPath p )
         {
-            if( !pp.IsRooted ) pp = _config.BasePath.Combine( pp );
-            pp = pp.ResolveDots();
-            return pp;
+            if( !p.IsRooted ) p = _config.BasePath.Combine( p );
+            p = p.ResolveDots();
+            return p;
         }
 
         bool ApplyCKSetupConfiguration()
@@ -335,6 +344,52 @@ namespace CK.Setup
                 return true;
             }
         }
+
+        /// <summary>
+        /// Creates a <see cref="BinPathConfiguration"/> that unifies multiple <see cref="BinPathConfiguration"/>.
+        /// This configuration is the one used on the unified working directory.
+        /// This unified configuration doesn't contain any <see cref="BinPathConfiguration.AspectConfigurations"/>.
+        /// </summary>
+        /// <param name="monitor">Monitor for error.</param>
+        /// <param name="configurations">Multiple configurations.</param>
+        /// <param name="globalExcludedTypes">Optional types to exclude: see <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/>.</param>
+        /// <returns>The unified configuration or null on error.</returns>
+        static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor, IEnumerable<BinPathConfiguration> configurations, IEnumerable<string>? globalExcludedTypes = null )
+        {
+            var rootBinPath = new BinPathConfiguration();
+            rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
+            // The root (the Working directory) doesn't want any output by itself.
+            rootBinPath.GenerateSourceFiles = false;
+            Debug.Assert( rootBinPath.CompileOption == CompileOption.None );
+            // Assemblies and types are the union of the assemblies and types of the bin paths.
+            rootBinPath.Assemblies.AddRange( configurations.SelectMany( b => b.Assemblies ) );
+
+            var fusion = new Dictionary<string, BinPathConfiguration.TypeConfiguration>();
+            foreach( var c in configurations.SelectMany( b => b.Types ) )
+            {
+                if( fusion.TryGetValue( c.Name, out var exists ) )
+                {
+                    if( !c.Optional ) exists.Optional = false;
+                    if( exists.Kind != c.Kind )
+                    {
+                        monitor.Error( $"Invalid Type configuration accross BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
+                        return null;
+                    }
+                }
+                else fusion.Add( c.Name, new BinPathConfiguration.TypeConfiguration( c.Name, c.Kind, c.Optional ) );
+            }
+            rootBinPath.Types.AddRange( fusion.Values );
+
+            // Propagates root excluded types to all bin paths.
+            if( globalExcludedTypes != null )
+            {
+                rootBinPath.ExcludedTypes.AddRange( globalExcludedTypes );
+                foreach( var f in configurations ) f.ExcludedTypes.AddRange( rootBinPath.ExcludedTypes );
+            }
+            return rootBinPath;
+        }
+
+
 
         class TypeFilterFromConfiguration : IStObjTypeFilter
         {

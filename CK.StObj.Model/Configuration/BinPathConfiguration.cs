@@ -14,7 +14,7 @@ namespace CK.Setup
     /// either in source code or as compiled Dynamic Linked Library.
     /// <para>
     /// These configuration objects are shared with CKSetup configuration: CKSetup handles only the &lt;BinPath Path="..." /&gt;
-    /// element on imput (and adds a BinPath="..." attribute that contains the actual bin path folder - typically ending with /publish
+    /// element on input (and adds a BinPath="..." attribute that contains the actual bin path folder - typically ending with /publish
     /// after its work and before calling the StObj engine.
     /// </para>
     /// </summary>
@@ -72,7 +72,7 @@ namespace CK.Setup
             public bool Optional { get; set; }
 
             /// <summary>
-            /// Overridden to returne the Name - Kind and Optional value.
+            /// Overridden to return the Name - Kind and Optional value.
             /// This is used as the equality key when configurations are grouped into equivalency classes.
             /// </summary>
             /// <returns>A readable string.</returns>
@@ -89,10 +89,12 @@ namespace CK.Setup
             Assemblies = new HashSet<string>();
             ExcludedTypes = new HashSet<string>();
             Types = new List<TypeConfiguration>();
+            AspectConfigurations = new List<XElement>();
         }
 
         /// <summary>
         /// Initializes a new <see cref="BinPathConfiguration"/> from a Xml element.
+        /// All <see cref="AspectConfigurations"/> (extra elements) are cloned.
         /// </summary>
         /// <param name="e">The Xml element.</param>
         public BinPathConfiguration( XElement e )
@@ -100,7 +102,7 @@ namespace CK.Setup
             Name = (string?)e.Attribute( StObjEngineConfiguration.xName );
             Path = (string)e.Attribute( StObjEngineConfiguration.xPath );
             OutputPath = (string)e.Element( StObjEngineConfiguration.xOutputPath );
-            ProjectPath = (string)e.Element( StObjEngineConfiguration.ProjectPath );
+            ProjectPath = (string)e.Element( StObjEngineConfiguration.xProjectPath );
 
             if( e.Element( "SkipCompilation" ) != null )
             {
@@ -121,10 +123,23 @@ namespace CK.Setup
             ExcludedTypes = new HashSet<string>( StObjEngineConfiguration.FromXml( e, StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType ) );
 
             Types = e.Elements( StObjEngineConfiguration.xTypes ).Elements( StObjEngineConfiguration.xType ).Select( c => new TypeConfiguration( c ) ).ToList();
+
+            AspectConfigurations = e.Elements().Where( e => e.Name != StObjEngineConfiguration.xTypes
+                                                            && e.Name != StObjEngineConfiguration.xExcludedTypes
+                                                            && e.Name != StObjEngineConfiguration.xAssemblies
+                                                            && e.Name != StObjEngineConfiguration.xGenerateSourceFiles
+                                                            && e.Name != StObjEngineConfiguration.xCompileOption
+                                                            && e.Name != StObjEngineConfiguration.xProjectPath
+                                                            && e.Name != StObjEngineConfiguration.xOutputPath
+                                                            && e.Name != StObjEngineConfiguration.xPath
+                                                            && e.Name != StObjEngineConfiguration.xName )
+                                               .Select( e => new XElement( e ) )
+                                               .ToList();
         }
 
         /// <summary>
         /// Creates a xml element from this <see cref="BinPathConfiguration"/>.
+        /// <see cref="AspectConfigurations"/> are cloned.
         /// </summary>
         /// <returns>A new element.</returns>
         public XElement ToXml()
@@ -133,15 +148,17 @@ namespace CK.Setup
                                     String.IsNullOrWhiteSpace( Name ) ? null : new XAttribute( StObjEngineConfiguration.xName, Name ),
                                     new XAttribute( StObjEngineConfiguration.xPath, Path ),
                                     !OutputPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.xOutputPath, OutputPath ) : null,
-                                    !ProjectPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.ProjectPath, ProjectPath ) : null,
+                                    !ProjectPath.IsEmptyPath ? new XElement( StObjEngineConfiguration.xProjectPath, ProjectPath ) : null,
                                     new XElement( StObjEngineConfiguration.xCompileOption, CompileOption.ToString() ),
                                     GenerateSourceFiles ? null : new XElement( StObjEngineConfiguration.xGenerateSourceFiles, false ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly, Assemblies ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType, ExcludedTypes ),
-                                    Types.Select( t => new XElement( StObjEngineConfiguration.xType,
-                                                            new XAttribute( StObjEngineConfiguration.xName, t.Name ),
-                                                            t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
-                                                            t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) );
+                                    new XElement( StObjEngineConfiguration.xTypes,
+                                                    Types.Select( t => new XElement( StObjEngineConfiguration.xType,
+                                                                            new XAttribute( StObjEngineConfiguration.xName, t.Name ),
+                                                                            t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
+                                                                            t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) ),
+                                    AspectConfigurations.Select( e => new XElement( e ) ) );
         }
 
         /// <summary>
@@ -206,47 +223,52 @@ namespace CK.Setup
         public HashSet<string> ExcludedTypes { get; }
 
         /// <summary>
-        /// Creates a <see cref="BinPathConfiguration"/> that unifies multiple <see cref="BinPathConfiguration"/>.
-        /// This configuration is the one used on the unified working directory.
+        /// Gets a mutable set of <see cref="XElement"/> that are configurations for aspects.
+        /// Element names should match aspect's name ().
         /// </summary>
-        /// <param name="monitor">Monitor for error.</param>
-        /// <param name="configurations">Multiple configurations.</param>
-        /// <param name="globalExcludedTypes">Optional types to exclude: see <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/>.</param>
-        /// <returns>The unified configuration or null on error.</returns>
-        public static BinPathConfiguration? CreateUnified( IActivityMonitor monitor, IEnumerable<BinPathConfiguration> configurations, IEnumerable<string>? globalExcludedTypes = null )
+        public List<XElement> AspectConfigurations { get; }
+
+        /// <summary>
+        /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect type.
+        /// See <see cref="GetAspectConfiguration(string)"/>.
+        /// </summary>
+        /// <param name="aspect">The aspect's type.</param>
+        /// <returns>The element or null.</returns>
+        public XElement? GetAspectConfiguration( Type aspect ) => GetAspectConfiguration( aspect.Name );
+
+        /// <summary>
+        /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect type.
+        /// See <see cref="GetAspectConfiguration(string)"/>.
+        /// </summary>
+        /// <typeparam name="T">The aspect's type.</typeparam>
+        /// <returns>The element or null.</returns>
+        public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof(T).Name );
+
+        /// <summary>
+        /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect name:
+        /// combinations of "Configurations", "Configuration", "Config" suffixes and "Aspect" substring are removed.
+        /// </summary>
+        /// <param name="aspectName">The name of the aspect.</param>
+        /// <returns>The element or null.</returns>
+        public XElement? GetAspectConfiguration( string aspectName )
         {
-            var rootBinPath = new BinPathConfiguration();
-            rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
-            // The root (the Working directory) doesn't want any output by itself.
-            rootBinPath.GenerateSourceFiles = false;
-            Debug.Assert( rootBinPath.CompileOption == CompileOption.None );
-            // Assemblies and types are the union of the assemblies and types of the bin paths.
-            rootBinPath.Assemblies.AddRange( configurations.SelectMany( b => b.Assemblies ) );
-
-            var fusion = new Dictionary<string, TypeConfiguration>();
-            foreach( var c in configurations.SelectMany( b => b.Types ) )
+            XElement? e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == aspectName );
+            if( e != null ) return e;
+            string? noConf = null;
+            if( aspectName.EndsWith( "Configurations" ) ) noConf = aspectName.Substring( 0, aspectName.Length - 14 );
+            else if( aspectName.EndsWith( "Configuration" ) ) noConf = aspectName.Substring( 0, aspectName.Length - 13 );
+            else if( aspectName.EndsWith( "Config" ) ) noConf = aspectName.Substring( 0, aspectName.Length - 6 );
+            if( noConf != null )
             {
-                if( fusion.TryGetValue( c.Name, out var exists ) )
-                {
-                    if( !c.Optional ) exists.Optional = false;
-                    if( exists.Kind != c.Kind )
-                    {
-                        monitor.Error( $"Invalid Type configuration accross BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
-                        return null;
-                    }
-                }
-                else fusion.Add( c.Name, new TypeConfiguration( c.Name, c.Kind, c.Optional ) );
+                e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == noConf );
+                if( e != null ) return e;
             }
-            rootBinPath.Types.AddRange( fusion.Values );
-
-            // Propagates root excluded types to all bin paths.
-            if( globalExcludedTypes != null )
-            {
-                rootBinPath.ExcludedTypes.AddRange( globalExcludedTypes );
-                foreach( var f in configurations ) f.ExcludedTypes.AddRange( rootBinPath.ExcludedTypes );
-            }
-            return rootBinPath;
+            aspectName = aspectName.Replace( "Aspect", "" );
+            e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == aspectName );
+            if( e != null ) return e;
+            if( noConf != null ) noConf = noConf.Replace( "Aspect", "" );
+            e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == noConf );
+            return e;
         }
-
     }
 }

@@ -121,7 +121,7 @@ namespace CK.Setup
         /// <summary>
         /// The OutputPath element name.
         /// </summary>
-        static public readonly XName ProjectPath = XNamespace.None + "ProjectPath";
+        static public readonly XName xProjectPath = XNamespace.None + "ProjectPath";
 
         /// <summary>
         /// The GenerateSourceFiles element name.
@@ -207,7 +207,7 @@ namespace CK.Setup
         /// <summary>
         /// Serializes its content as a <see cref="XElement"/> and returns it.
         /// The <see cref="StObjEngineConfiguration"/> constructor will be able to read this element back.
-        /// Note that this Xml can also be read by as a CKSetup SetupConfiguration (in Shared Configuration Mode).
+        /// Note that this Xml can also be read as a CKSetup SetupConfiguration (in Shared Configuration Mode).
         /// </summary>
         /// <returns>The Xml element.</returns>
         public XElement ToXml()
