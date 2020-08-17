@@ -64,8 +64,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
-        /// <see cref="ICodeGenerator.Implement"/> typically registers services inside this container so that
-        /// deferred implementators (<see cref="AutoImplementationResult.ImplementorType"/>) can depend on them.
+        /// <see cref="IStObjEngineAspect"/> classes and <see cref="ICodeGenerator.Implement"/> methods typically registers services
+        /// inside this container so that deferred implementors (<see cref="AutoImplementationResult.ImplementorType"/>
+        /// or <see cref="AutoImplementationResult.MethodName"/>) can use them.
         /// </summary>
         ISimpleServiceContainer GlobalServiceContainer { get; }
 
@@ -79,7 +80,7 @@ namespace CK.Setup
         /// Gets whether the generated source code must be parsed and or compiled.
         /// <see cref="SaveSource"/> can be false and this can be <see cref="CompileOption.None"/>
         /// when <see cref="IsUnifiedRun"/> is true and the unified bin path doesn't correspond to any of the
-        /// different <see cref="BinPathConfiguration"/>.
+        /// existing <see cref="BinPathConfiguration"/>.
         /// </summary>
         CompileOption CompileOption { get; }
     }
