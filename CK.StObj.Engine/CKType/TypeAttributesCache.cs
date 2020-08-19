@@ -77,7 +77,7 @@ namespace CK.Setup
                 {
                     if( e.Attr is IAttributeContextBoundInitializer aM )
                     {
-                        aM.Initialize( this, e.M );
+                        aM.Initialize( monitor, this, e.M );
                         if( --initializerCount == 0 ) break;
                     }
                 }

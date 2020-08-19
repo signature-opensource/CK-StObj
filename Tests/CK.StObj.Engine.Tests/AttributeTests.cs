@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests
         {
             public static bool Initialized;
 
-            public void Initialize( ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            public void Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.Type.Should().Be( typeof( S1 ) );
@@ -58,7 +58,7 @@ namespace CK.StObj.Engine.Tests
         {
             public static bool Initialized;
 
-            void IAttributeContextBoundInitializer.Initialize( ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.Type.Should().Be( typeof( S2 ) );
@@ -105,7 +105,7 @@ namespace CK.StObj.Engine.Tests
 
             public static bool Initialized;
 
-            void IAttributeContextBoundInitializer.Initialize( ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.Type.Should().Be( typeof( S3 ) );
@@ -121,7 +121,7 @@ namespace CK.StObj.Engine.Tests
 
             }
 
-            public void Initialize( ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            public void Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
             {
                 throw new System.NotImplementedException( "This is never called since the delegated attribute OneAttributeImpl replaces this one." );
             }
@@ -226,7 +226,7 @@ namespace CK.StObj.Engine.Tests
                 owner.GetAllCustomAttributes<IAttributeTypeSample>().Should().BeEmpty( "In the constructor, no attribute are available." );
             }
 
-            void IAttributeContextBoundInitializer.Initialize( ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.GetAllCustomAttributes<IAttributeTypeSample>().Should().HaveCount( 2, "In the IAttributeContextBoundInitializer.Initialize, other attributes are available!" );
