@@ -28,7 +28,7 @@ namespace CK.Core
             {
                 throw new ArgumentException( "Duplicate names in attribute.", nameof( previousNames ) );
             }
-            CommandName = name;
+            Name = name;
             PreviousNames = previousNames;
         }
 
@@ -46,10 +46,9 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Gets the Poco name.
-        /// The name must not start with a '!'.
+        /// Gets the external name.
         /// </summary>
-        public string CommandName { get; }
+        public string Name { get; }
 
         /// <summary>
         /// Gets the previous names.
