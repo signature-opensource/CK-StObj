@@ -36,6 +36,7 @@ namespace CK.Testing.StObjEngine
             public GeneratedBinPath( SimpleEngineRunContext g )
             {
                 _container = new SimpleServiceContainer( g._globalServiceContainer );
+                Memory = new Dictionary<object, object?>();
             }
 
             /// <summary>
@@ -68,6 +69,9 @@ namespace CK.Testing.StObjEngine
             ISimpleServiceContainer IGeneratedBinPath.ServiceContainer => _container;
 
             IStObjEngineMap IGeneratedBinPath.EngineMap => Result!.EngineMap!;
+
+            public IDictionary<object, object?> Memory { get; }
+
 
             IReadOnlyCollection<BinPathConfiguration> IGeneratedBinPath.BinPathConfigurations => BinPathConfigurations;
         }

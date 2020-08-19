@@ -32,6 +32,7 @@ namespace CK.Setup
                 Result = result;
                 BinPathConfigurations = binPathConfigurations;
                 GroupedPaths = groupedPaths;
+                Memory = new Dictionary<object, object?>();
                 ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
                 ServiceContainer.Add( result.DynamicAssembly.GetPocoSupportResult() );
             }
@@ -45,6 +46,8 @@ namespace CK.Setup
             public IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
 
             public ISimpleServiceContainer ServiceContainer { get; }
+
+            public IDictionary<object, object?> Memory { get; }
 
             IGeneratedBinPath ICodeGenerationContext.UnifiedBinPath => _global.UnifiedBinPath;
 

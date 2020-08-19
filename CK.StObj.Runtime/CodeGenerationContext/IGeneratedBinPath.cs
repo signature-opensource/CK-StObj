@@ -32,6 +32,13 @@ namespace CK.Setup
         ISimpleServiceContainer ServiceContainer { get; }
 
         /// <summary>
+        /// Gets a shared dictionary associated to this generated bin path. 
+        /// Note that, just like the <see cref="ICodeGenerationContext.GlobalMemory"/>, use of such shared memory should be avoided as much as possible,
+        /// and if required should be properly encapsulated, typically by extension methods on this generated bin path.
+        /// </summary>
+        IDictionary<object, object?> Memory { get; }
+
+        /// <summary>
         /// Gets the name (or comma separated names) of the <see cref="BinPathConfigurations"/>.
         /// When no configuration exists, this is "CurrentTest" since only with Mock test objects can we have no BinPathConfigurations.
         /// </summary>
