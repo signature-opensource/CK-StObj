@@ -87,26 +87,24 @@ namespace CK.Setup
             }
         }
 
+
         /// <summary>
-        /// Gets all the type attribute providers from all <see cref="IStObjResult"/> (Real Objects) or <see cref="AutoServiceClassInfo"/>
-        /// without any duplicates (AutoService that are RealObjects don't appear twice).
+        /// Crappy hook...
         /// </summary>
-        /// <returns>The attribute providers.</returns>
-        public IEnumerable<ICKCustomAttributeTypeMultiProvider> AllTypeAttributeProviders
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered )
         {
-            get
-            {
-                Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
-                Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
+            // Compute the indexed AllTypesAttributesCache.
+            Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
+            Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
 
-                var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
-                              .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
-                              .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
-                              .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
+            var all = ordered.Select( o => o.Attributes )
+                          .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
+                          .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
+                          .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
 
-                Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
-                return all;
-            }
+            Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+
+            RealObjects.EngineMap.SetFinalOrderedResults( ordered, all.ToDictionary( c => c.Type ) );
         }
 
         /// <summary>

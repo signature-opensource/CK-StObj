@@ -297,7 +297,7 @@ namespace CK.Setup
                 var aliens = b.AspectConfigurations.Except( foundAspects );
                 if( aliens.Any() )
                 {
-                    _monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a.Name.ToString() ).Concatenate()}. Available aspects are: {_config.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
+                    _monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a!.Name.ToString() ).Concatenate()}. Available aspects are: {_config.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
                     return false;
                 }
 
@@ -449,7 +449,7 @@ namespace CK.Setup
                     _config.TraceDependencySorterInput,
                     _config.TraceDependencySorterOutput,
                     typeFilter, configurator, configurator,
-                    _config.BinPaths.Select( b => b.Name ) );
+                    _config.BinPaths.Select( b => b.Name! ) );
                 stObjC.RevertOrderingNames = _config.RevertOrderingNames;
                 using( _monitor.OpenInfo( "Registering types." ) )
                 {

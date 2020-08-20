@@ -18,11 +18,11 @@ namespace CK.Setup
         /// <summary>
         /// All the injected values.
         /// </summary>
-        public readonly List<object> Values;
+        public readonly List<object?> Values;
 
         public BuildValueCollector()
         {
-            Values = new List<object>();
+            Values = new List<object?>();
             Values.Add( null );
         }
 
@@ -33,7 +33,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="o">The value to store.</param>
         /// <returns>The index of the stored value.</returns>
-        public int RegisterValue( object o )
+        public int RegisterValue( object? o )
         {
             if( o == null ) return 0;
             int idx = Values.IndexOf( o, 1 );

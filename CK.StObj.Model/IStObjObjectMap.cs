@@ -16,14 +16,14 @@ namespace CK.Core
         /// </summary>
         /// <param name="t">Key type.</param>
         /// <returns>Most specialized StObj or null if no mapping exists for this type.</returns>
-        IStObj ToLeaf( Type t );
+        IStObj? ToLeaf( Type t );
 
         /// <summary>
         /// Gets the real object final implementation or null if no mapping exists.
         /// </summary>
         /// <param name="t">Key type (that must be a <see cref="IRealObject"/>).</param>
         /// <returns>Structured object instance or null if the type has not been mapped.</returns>
-        object Obtain( Type t );
+        object? Obtain( Type t );
 
         /// <summary>
         /// Gets all the real object final implementations that exist in this context.

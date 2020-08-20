@@ -556,7 +556,7 @@ namespace CK.Setup
                         AddMultipleMapping( tI );
                     }
                 }
-                _realObjectInterfaces = (IReadOnlyList<Type>)all ?? Type.EmptyTypes;
+                _realObjectInterfaces = (IReadOnlyList<Type>?)all ?? Type.EmptyTypes;
                 Generalization?.InitializeInterfaces( m, d );
             }
         }
@@ -567,7 +567,7 @@ namespace CK.Setup
             IActivityMonitor monitor,
             IServiceProvider services,
             StObjObjectEngineMap engineMap,
-            MutableItem generalization,
+            MutableItem? generalization,
             IDynamicAssembly tempAssembly,
             List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
             List<Type> abstractTails )

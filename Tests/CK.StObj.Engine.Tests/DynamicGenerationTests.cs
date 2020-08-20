@@ -84,8 +84,8 @@ namespace CK.StObj.Engine.Tests
 
                     Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
                     Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
-                    Assert.That( stObjs.ToHead( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
-                    Assert.That( stObjs.ToHead( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
+                    Assert.That( stObjs.ToHead( typeof( A ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( stObjs.ToHead( typeof( ASpec ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
                     ASpec theA = (ASpec)stObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
@@ -215,8 +215,8 @@ namespace CK.StObj.Engine.Tests
 
                     Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
                     Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
-                    Assert.That( stObjs.ToHead( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
-                    Assert.That( stObjs.ToHead( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
+                    Assert.That( stObjs.ToHead( typeof( A ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( stObjs.ToHead( typeof( ASpec ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
                     ASpec theA = (ASpec)stObjs.Obtain<A>();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );

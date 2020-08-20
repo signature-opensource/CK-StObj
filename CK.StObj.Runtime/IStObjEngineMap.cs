@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CK.Core;
 
 namespace CK.Setup
@@ -14,7 +15,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="t">The type.</param>
         /// <returns>The final implementation or null if no such final implementation exists for the type.</returns>
-        IStObjFinalClass Find( Type t );
+        IStObjFinalClass? Find( Type t );
 
         /// <summary>
         /// Gets the engine extended StObjs map.
@@ -25,6 +26,12 @@ namespace CK.Setup
         /// Gets the engine extended Service map.
         /// </summary>
         new IStObjServiceEngineMap Services { get; }
+
+        /// <summary>
+        /// Gets all the type's <see cref="ITypeAttributesCache"/>.
+        /// </summary>
+        IReadOnlyDictionary<Type, ITypeAttributesCache> AllTypesAttributesCache { get; }
+
 
     }
 }

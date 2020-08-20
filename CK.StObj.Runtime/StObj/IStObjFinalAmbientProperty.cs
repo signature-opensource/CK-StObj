@@ -16,13 +16,13 @@ namespace CK.Setup
         /// <summary>
         /// Gets the current value (<see cref="System.Type.Missing"/> as long as <see cref="SetValue"/> has not been called).
         /// </summary>
-        object Value { get; }
+        object? Value { get; }
 
         /// <summary>
         /// Sets a value for this property.
         /// </summary>
         /// <param name="value">Value to set. Type must be compatible.</param>
-        void SetValue( object value );
+        void SetValue( object? value );
 
     }
 }

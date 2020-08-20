@@ -49,7 +49,7 @@ namespace CK.Setup
         IEnumerable<object> GetCustomAttributes( MemberInfo m, Type attributeType );
 
         /// <summary>
-        /// Gets all the attributes that are assignable to the given <typeparamref name="T"/>.
+        /// Gets all the attributes that are assignable to the given <typeparamref name="T"/> on a MemberInfo (that can be a type).
         /// </summary>
         /// <typeparam name="T">Type of the attributes.</typeparam>
         /// <param name="m">The member info (can be a <see cref="Type"/>).</param>

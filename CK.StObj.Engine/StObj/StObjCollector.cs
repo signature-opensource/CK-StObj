@@ -15,8 +15,8 @@ namespace CK.Setup
     public partial class StObjCollector
     {
         readonly CKTypeCollector _cc;
-        readonly IStObjStructuralConfigurator _configurator;
-        readonly IStObjValueResolver _valueResolver;
+        readonly IStObjStructuralConfigurator? _configurator;
+        readonly IStObjValueResolver? _valueResolver;
         readonly IActivityMonitor _monitor;
         readonly DynamicAssembly _tempAssembly;
         int _registerFatalOrErrorCount;
@@ -41,15 +41,15 @@ namespace CK.Setup
             IServiceProvider serviceProvider,
             bool traceDepencySorterInput = false,
             bool traceDepencySorterOutput = false,
-            IStObjTypeFilter typeFilter = null,
-            IStObjStructuralConfigurator configurator = null,
-            IStObjValueResolver valueResolver = null,
-            IEnumerable<string> names = null )
+            IStObjTypeFilter? typeFilter = null,
+            IStObjStructuralConfigurator? configurator = null,
+            IStObjValueResolver? valueResolver = null,
+            IEnumerable<string>? names = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             _monitor = monitor;
             _tempAssembly = new DynamicAssembly();
-            Func<IActivityMonitor,Type,bool> tFilter = null;
+            Func<IActivityMonitor,Type,bool>? tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
             _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter );
             _configurator = configurator;
@@ -152,7 +152,7 @@ namespace CK.Setup
                 {
                     using( _monitor.OpenTrace( $"Registering assembly '{one}'." ) )
                     {
-                        Assembly a = null;
+                        Assembly? a = null;
                         try
                         {
                             a = Assembly.Load( one );
@@ -161,11 +161,14 @@ namespace CK.Setup
                         {
                             _monitor.Error( $"Error while loading assembly '{one}'.", ex );
                         }
-                        int nbAlready = _cc.RegisteredTypeCount;
-                        _cc.RegisterTypes( a.GetTypes() );
-                        int delta = _cc.RegisteredTypeCount - nbAlready;
-                        _monitor.CloseGroup( $"{delta} types(s) registered." );
-                        totalRegistered += delta;
+                        if( a != null )
+                        {
+                            int nbAlready = _cc.RegisteredTypeCount;
+                            _cc.RegisterTypes( a.GetTypes() );
+                            int delta = _cc.RegisteredTypeCount - nbAlready;
+                            _monitor.CloseGroup( $"{delta} types(s) registered." );
+                            totalRegistered += delta;
+                        }
                     }
                 }
             }
@@ -252,12 +255,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets or sets a function that will be called with the list of items once all of them are registered.
         /// </summary>
-        public Action<IEnumerable<IDependentItem>> DependencySorterHookInput { get; set; }
+        public Action<IEnumerable<IDependentItem>>? DependencySorterHookInput { get; set; }
 
         /// <summary>
         /// Gets or sets a function that will be called when items have been successfuly sorted.
         /// </summary>
-        public Action<IEnumerable<ISortedItem>> DependencySorterHookOutput { get; set; }
+        public Action<IEnumerable<ISortedItem>>? DependencySorterHookOutput { get; set; }
 
         /// <summary>
         /// Builds and returns a <see cref="StObjCollectorResult"/> if no error occurred during type registration.
@@ -276,6 +279,7 @@ namespace CK.Setup
             try
             {
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
+                Dictionary<Type, ITypeAttributesCache>? allTypesAttributesCache = null;
                 if( orderedItems != null )
                 {
                     // This is far from elegant but simplifies the engine object model:
@@ -283,7 +287,7 @@ namespace CK.Setup
                     // not exist and be replaced with intermediate - functional-like - value results).
                     // But this would be a massive refactoring and this internal mutable state is, to be honnest,
                     // quite convenient!
-                    typeResult.RealObjects.EngineMap.SetFinalOrderedResults( orderedItems );
+                    typeResult.SetFinalOrderedResults( orderedItems );
                     if( !RegisterServices( typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
@@ -299,7 +303,7 @@ namespace CK.Setup
             }
         }
 
-        (CKTypeCollectorResult, IReadOnlyList<MutableItem>, BuildValueCollector) CreateTypeAndObjectResults()
+        (CKTypeCollectorResult, IReadOnlyList<MutableItem>?, BuildValueCollector?) CreateTypeAndObjectResults()
         {
             bool error = false;
             using( _monitor.OnError( () => error = true ) )
@@ -323,7 +327,7 @@ namespace CK.Setup
                 if( error ) return (typeResult, null, null); 
 
                 StObjObjectEngineMap engineMap = typeResult.RealObjects.EngineMap;
-                IDependencySorterResult sortResult = null;
+                IDependencySorterResult? sortResult = null;
                 BuildValueCollector valueCollector = new BuildValueCollector();
                 using( _monitor.OpenInfo( "Topological graph ordering." ) )
                 {

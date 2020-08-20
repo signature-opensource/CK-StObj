@@ -171,7 +171,7 @@ namespace CK.Setup
         /// All attributes related to <see cref="Type"/> (either on the type itself or on any of its members) should be retrieved 
         /// thanks to this property otherwise stateful attributes will not work correctly.
         /// </remarks>
-        public ICKCustomAttributeTypeMultiProvider? Attributes => _attributes;
+        public ITypeAttributesCache? Attributes => _attributes;
 
         /// <summary>
         /// Gets whether this type has at least one <see cref="Specializations"/>

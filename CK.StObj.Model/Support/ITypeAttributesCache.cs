@@ -15,7 +15,7 @@ namespace CK.Setup
     /// Specialized <see cref="ICKCustomAttributeMultiProvider"/> bound to a <see cref="P:Type"/>. 
     /// Attributes of the Type itself MUST be available from this interface.
     /// </summary>
-    public interface ICKCustomAttributeTypeMultiProvider : ICKCustomAttributeMultiProvider
+    public interface ITypeAttributesCache : ICKCustomAttributeMultiProvider
     {
         /// <summary>
         /// Gets the type info to which this provider is bound.
@@ -39,7 +39,23 @@ namespace CK.Setup
         /// <typeparam name="T">Type of the attributes.</typeparam>
         /// <param name="memberOnly">True to ignore attributes of the type itself.</param>
         /// <returns>Enumeration of attributes (possibly empty).</returns>
-        IEnumerable<T> GetAllCustomAttributes<T>( bool memberOnly = false);
+        IEnumerable<T> GetAllCustomAttributes<T>( bool memberOnly = false );
+
+        /// <summary>
+        /// Gets all <see cref="Type"/>'s attributes that are assignable to the given <paramref name="attributeType"/>.
+        /// Theres is no members' attributes here.
+        /// </summary>
+        /// <param name="attributeType">Type of requested attributes.</param>
+        /// <returns>Enumeration of attributes (possibly empty).</returns>
+        IEnumerable<object> GetTypeCustomAttributes( Type attributeType );
+
+        /// <summary>
+        /// Gets all <see cref="Type"/>'s attributes that are assignable to the given type.
+        /// Theres is no members' attributes here.
+        /// </summary>
+        /// <typeparam name="T">Type of the attributes.</typeparam>
+        /// <returns>Enumeration of attributes (possibly empty).</returns>
+        IEnumerable<T> GetTypeCustomAttributes<T>();
 
     }
 }

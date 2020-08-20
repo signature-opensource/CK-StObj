@@ -155,7 +155,7 @@ namespace CK.Setup
         /// <summary>
         /// Called from Generalization to Specialization.
         /// </summary>
-        internal MutableItem( RealObjectClassInfo type, MutableItem generalization, StObjObjectEngineMap engineMap )
+        internal MutableItem( RealObjectClassInfo type, MutableItem? generalization, StObjObjectEngineMap engineMap )
         {
             EngineMap = engineMap;
             RealObjectType = type;
@@ -169,10 +169,7 @@ namespace CK.Setup
         /// Second step of initialization called once a valid Type path has been found.
         /// </summary>
         /// <param name="specialization">The specialization. Null if this is the leaf.</param>
-        /// <param name="implementableTypeInfo">
-        /// A valid implementable type info if <paramref name="specialization"/> is null (ie. we are on a leaf)
-        /// and Type is abstract.</param>
-        internal void InitializeBottomUp( MutableItem specialization, ImplementableTypeInfo implementableTypeInfo )
+        internal void InitializeBottomUp( MutableItem? specialization )
         {
             if( specialization != null )
             {
@@ -312,13 +309,13 @@ namespace CK.Setup
         /// Gets the generalization. 
         /// Null if this is the root of the specialization path.
         /// </summary>
-        public MutableItem Generalization { get; }
+        public MutableItem? Generalization { get; }
 
         /// <summary>
         /// Gets the specialization. 
         /// Null if this is a leaf.
         /// </summary>
-        public MutableItem Specialization { get; private set; }
+        public MutableItem? Specialization { get; private set; }
 
         /// <summary>
         /// Gets the provider for attributes. Attributes that are marked with <see cref="IAttributeContextBound"/> are cached
@@ -328,7 +325,7 @@ namespace CK.Setup
         /// All attributes related to ClassType (either on the type itself or on any of its members) should be retrieved 
         /// thanks to this method otherwise stateful attributes will not work correctly.
         /// </remarks>
-        public ICKCustomAttributeTypeMultiProvider Attributes => RealObjectType.Attributes;
+        public ITypeAttributesCache Attributes => RealObjectType.Attributes;
 
         /// <summary>
         /// Never null: it is this item if <see cref="Specialization"/> is null.

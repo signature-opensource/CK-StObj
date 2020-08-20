@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Reflection;
 using CSemVer;
 using CK.Core;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -25,7 +26,8 @@ namespace CK.Setup
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
         // during Real objects processing.
-        IReadOnlyList<MutableItem> _orderedStObjs;
+        IReadOnlyList<MutableItem>? _orderedStObjs;
+        Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
 
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
@@ -93,9 +95,9 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyList<string> Names { get; }
 
-        IStObjFinalClass IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
-                                                            ?? (IStObjFinalClass)_serviceSimpleMap.GetValueOrDefault( t )
-                                                            ?? (IStObjFinalClass)_serviceToObjectMap.GetValueOrDefault( t )
+        IStObjFinalClass? IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
+                                                            ?? (IStObjFinalClass?)_serviceSimpleMap.GetValueOrDefault( t )
+                                                            ?? (IStObjFinalClass?)_serviceToObjectMap.GetValueOrDefault( t )
                                                             ?? _serviceManualMap.GetValueOrDefault( t );
 
         /// <summary>
@@ -115,10 +117,10 @@ namespace CK.Setup
         /// </summary>
         /// <param name="t">Any mapped type.</param>
         /// <returns>The most abstract, less specialized, associated StObj.</returns>
-        internal MutableItem ToHighestImpl( Type t )
+        internal MutableItem? ToHighestImpl( Type t )
         {
             if( t == null ) throw new ArgumentNullException( "t" );
-            MutableItem c;
+            MutableItem? c;
             if( _map.TryGetValue( t, out c ) )
             {
                 if( c.RealObjectType.Type != t )
@@ -139,24 +141,27 @@ namespace CK.Setup
             return c;
         }
 
-        IStObjResult IStObjObjectEngineMap.ToHead( Type t ) => ToHighestImpl( t );
+        IStObjResult? IStObjObjectEngineMap.ToHead( Type t ) => ToHighestImpl( t );
 
-        object IStObjObjectMap.Obtain( Type t ) => _map.GetValueOrDefault( t )?.InitialObject;
+        object? IStObjObjectMap.Obtain( Type t ) => _map.GetValueOrDefault( t )?.InitialObject;
 
         IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finaImplementations.Select( m => m.FinalImplementation );
 
         IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _map.Where( kv => kv.Key is Type ).Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
 
-        IStObjResult IStObjObjectEngineMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
+        IStObjResult? IStObjObjectEngineMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
-        IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedStObjs => _orderedStObjs;
+        IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedStObjs => _orderedStObjs ?? Array.Empty<MutableItem>();
 
-        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered )
+        IReadOnlyDictionary<Type, ITypeAttributesCache> IStObjEngineMap.AllTypesAttributesCache => (IReadOnlyDictionary<Type, ITypeAttributesCache>?)_allTypesAttributesCache ?? ImmutableDictionary<Type, ITypeAttributesCache>.Empty;
+
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type, ITypeAttributesCache> allTypesAttributesCache )
         {
             _orderedStObjs = ordered;
+            _allTypesAttributesCache = allTypesAttributesCache;
         }
 
-        IStObj IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
+        IStObj? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
         void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
         {
@@ -174,7 +179,7 @@ namespace CK.Setup
             Debug.Assert( a != null );
             Debug.Assert( a.GetName().Name != null );
             var v = InformationalVersion.ReadFromAssembly( a ).Version;
-            return new VFeature( a.GetName().Name, v != null && v.IsValid ? v : SVersion.ZeroVersion );
+            return new VFeature( a.GetName().Name!, v != null && v.IsValid ? v : SVersion.ZeroVersion );
         }
     }
 }

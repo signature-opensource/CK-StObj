@@ -20,6 +20,6 @@ namespace CK.Setup
             Value = System.Type.Missing;
         }
 
-        public object Value { get; protected set; }
+        public object? Value { get; protected set; }
     }
 }

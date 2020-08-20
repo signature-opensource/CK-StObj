@@ -32,7 +32,7 @@ namespace CK.Setup
         /// for other kind of reference (<see cref="StObjMutableReferenceKind.Requires"/>, <see cref="StObjMutableReferenceKind.RequiredBy"/>, <see cref="StObjMutableReferenceKind.Group"/>, 
         /// <see cref="StObjMutableReferenceKind.Child"/> and <see cref="StObjMutableReferenceKind.Container"/>).
         /// </remarks>
-        new Type Type { get; set; }
+        new Type? Type { get; set; }
 
         /// <summary>
         /// Gets or sets whether this reference must be satisfied with an available <see cref="IStObjResult"/> if the <see cref="P:Type"/> is not set to null.

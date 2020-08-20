@@ -24,7 +24,7 @@ namespace CK.Setup
 
         public int Index => _param.Position;
 
-        public override string Name => _param.Name;
+        public override string Name => _param.Name!;
 
         public bool IsRealParameterOptional => _param.IsOptional;
 
@@ -34,7 +34,7 @@ namespace CK.Setup
 
         internal bool IsSetupLogger => _param.ParameterType == typeof( IActivityMonitor );
 
-        internal override MutableItem ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
+        internal override MutableItem? ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
         {
             return IsSetupLogger ? null : base.ResolveToStObj( monitor, collector );
         }
@@ -52,7 +52,7 @@ namespace CK.Setup
             return s;
         }
 
-        public void SetParameterValue( object value )
+        public void SetParameterValue( object? value )
         {
             Value = value;
         }

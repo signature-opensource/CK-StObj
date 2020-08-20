@@ -285,12 +285,12 @@ namespace CK.Setup
                     MutableItem last = deepestConcretes[0].Item1;
                     allSpecializations.Add( last );
                     var path = new List<MutableItem>();
-                    last.InitializeBottomUp( null, deepestConcretes[0].Item2 );
+                    last.InitializeBottomUp( null );
                     path.Add( last );
                     MutableItem spec = last, toInit = last;
                     while( (toInit = toInit.Generalization) != null )
                     {
-                        toInit.InitializeBottomUp( spec, null );
+                        toInit.InitializeBottomUp( spec );
                         path.Add( toInit );
                         spec = toInit;
                     }

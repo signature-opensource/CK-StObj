@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using CK.CodeGen;
 using CK.Core;
@@ -32,7 +33,10 @@ namespace CK.Setup
             CKTypeResult = typeResult;
             _tempAssembly = tempAssembly;
             _valueCollector = valueCollector;
-            if( valueCollector != null ) EngineMap = typeResult.RealObjects.EngineMap;
+            if( valueCollector != null )
+            {
+                EngineMap = typeResult.RealObjects.EngineMap;
+            }
         }
 
         /// <summary>

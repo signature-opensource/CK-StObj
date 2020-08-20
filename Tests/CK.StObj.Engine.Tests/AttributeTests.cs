@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests
         {
             public static bool Initialized;
 
-            public void Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.Type.Should().Be( typeof( S1 ) );
@@ -42,7 +42,8 @@ namespace CK.StObj.Engine.Tests
             AnAttributeWithInitializer.Initialized = false;
             var c = TestHelper.CreateStObjCollector( typeof( S1 ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.Should().Contain( a => a.Type == typeof( S1 ) );
+            Debug.Assert( r.EngineMap != null );
+            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S1 ) );
             AnAttributeWithInitializer.Initialized.Should().BeTrue();
         }
 
@@ -58,7 +59,7 @@ namespace CK.StObj.Engine.Tests
         {
             public static bool Initialized;
 
-            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.Type.Should().Be( typeof( S2 ) );
@@ -79,7 +80,8 @@ namespace CK.StObj.Engine.Tests
             DirectAttributeImpl.Initialized = false;
             var c = TestHelper.CreateStObjCollector( typeof( S2 ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.Should().Contain( a => a.Type == typeof( S2 ) );
+            Debug.Assert( r.EngineMap != null );
+            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S2 ) );
             DirectAttributeImpl.Initialized.Should().BeTrue();
         }
         #endregion
@@ -105,7 +107,7 @@ namespace CK.StObj.Engine.Tests
 
             public static bool Initialized;
 
-            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.Type.Should().Be( typeof( S3 ) );
@@ -121,7 +123,7 @@ namespace CK.StObj.Engine.Tests
 
             }
 
-            public void Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            public void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m )
             {
                 throw new System.NotImplementedException( "This is never called since the delegated attribute OneAttributeImpl replaces this one." );
             }
@@ -139,7 +141,8 @@ namespace CK.StObj.Engine.Tests
             OneAttributeImpl.Initialized = false;
             var c = TestHelper.CreateStObjCollector( typeof( S3 ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.Should().Contain( a => a.Type == typeof( S3 ) );
+            Debug.Assert( r.EngineMap != null );
+            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S3 ) );
             OneAttributeImpl.Initialized.Should().BeTrue();
         }
         #endregion
@@ -156,7 +159,7 @@ namespace CK.StObj.Engine.Tests
 
             public static bool Constructed;
 
-            public OneCtorAttributeImpl( AttributeTests thisTest, OneCtorAttribute a, ICKCustomAttributeTypeMultiProvider owner, Type type, MethodInfo m )
+            public OneCtorAttributeImpl( AttributeTests thisTest, OneCtorAttribute a, ITypeAttributesCache owner, Type type, MethodInfo m )
             {
                 _attribute = a ?? throw new ArgumentNullException( nameof( a ) );
                 Constructed = true;
@@ -200,7 +203,8 @@ namespace CK.StObj.Engine.Tests
             c.RegisterType( typeof( S4 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.Should().Contain( a => a.Type == typeof( S4 ) );
+            Debug.Assert( r.EngineMap != null );
+            r.EngineMap.AllTypesAttributesCache.Values.Should().Contain( a => a.Type == typeof( S4 ) );
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
         }
         #endregion
@@ -217,7 +221,7 @@ namespace CK.StObj.Engine.Tests
             public static bool Constructed;
             public static bool Initialized;
 
-            public OtherCtorAttributeImpl( OtherCtorAttribute a, ICKCustomAttributeTypeMultiProvider owner )
+            public OtherCtorAttributeImpl( OtherCtorAttribute a, ITypeAttributesCache owner )
             {
                 _attribute = a ?? throw new ArgumentNullException( nameof( a ) );
                 Constructed = true;
@@ -226,7 +230,7 @@ namespace CK.StObj.Engine.Tests
                 owner.GetAllCustomAttributes<IAttributeTypeSample>().Should().BeEmpty( "In the constructor, no attribute are available." );
             }
 
-            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ICKCustomAttributeTypeMultiProvider owner, MemberInfo m )
+            void IAttributeContextBoundInitializer.Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m )
             {
                 Initialized = true;
                 owner.GetAllCustomAttributes<IAttributeTypeSample>().Should().HaveCount( 2, "In the IAttributeContextBoundInitializer.Initialize, other attributes are available!" );
@@ -265,7 +269,8 @@ namespace CK.StObj.Engine.Tests
             c.RegisterType( typeof( S4 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.SelectMany( x => x.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 3 );
+            Debug.Assert( r.EngineMap != null );
+            r.EngineMap.AllTypesAttributesCache.Values.SelectMany( x => x.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 3 );
 
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
             OtherCtorAttributeImpl.Constructed.Should().BeTrue();
@@ -301,13 +306,14 @@ namespace CK.StObj.Engine.Tests
             c.RegisterType( typeof( S6 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
+            Debug.Assert( r.EngineMap != null );
 
-            r.CKTypeResult.AllTypeAttributeProviders
+            r.EngineMap.AllTypesAttributesCache.Values
                           .Select( attrs => attrs.Type )
                           .Where( t => !typeof(PocoDirectory).IsAssignableFrom( t ) )
                           .Should().BeEquivalentTo( typeof( S6 ), typeof( IServiceWithAttributeOnMember ) );
 
-            r.CKTypeResult.AllTypeAttributeProviders
+            r.EngineMap.AllTypesAttributesCache.Values
                           .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() )
                           .Should().HaveCount( 1 );
 
@@ -347,9 +353,10 @@ namespace CK.StObj.Engine.Tests
             c.RegisterType( typeof( S7 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
+            Debug.Assert( r.EngineMap != null );
 
-            r.CKTypeResult.AllTypeAttributeProviders.Select( attrs => attrs.Type ).Should().BeEquivalentTo( typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) );
-            r.CKTypeResult.AllTypeAttributeProviders.SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
+            r.EngineMap.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo( typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) );
+            r.EngineMap.AllTypesAttributesCache.Values.SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
 
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
         }

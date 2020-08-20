@@ -129,7 +129,7 @@ namespace CK.Setup
                     GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
                     // Calls all ICodeGenerator items.
-                    foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
+                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
                     {
                         var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector.Add( second );

@@ -39,7 +39,7 @@ namespace CK.StObj.Engine.Tests.Poco
             StObjCollectorResult result = BuildPocoSample( typeof( PackageWithBasicPoco ) );
             Debug.Assert( result.EngineMap != null );
 
-            IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) );
+            IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) )!;
             var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
             package.Factory.Should().NotBeNull();
         }
