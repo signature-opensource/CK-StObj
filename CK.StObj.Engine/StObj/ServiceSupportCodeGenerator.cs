@@ -211,7 +211,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                 foreach( var reg in m.RealObjectType.AllRegisterStartupServices )
                 {
                     if( reg == m.RealObjectType.RegisterStartupServices ) configure.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
-                    else configure.AppendTypeOf( reg.DeclaringType );
+                    else configure.AppendTypeOf( reg.DeclaringType! );
 
                     configure.Append( ".GetMethod(" )
                              .AppendSourceString( StObjContextRoot.RegisterStartupServicesMethodName )
@@ -234,7 +234,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                     configure.Append( "m = " );
                     if( parameters == m.RealObjectType.ConfigureServicesParameters )
                         configure.Append( "s.ClassType" );
-                    else configure.AppendTypeOf( parameters[0].Member.DeclaringType );
+                    else configure.AppendTypeOf( parameters[0].Member.DeclaringType! );
 
                     configure.Append( ".GetMethod(" )
                              .AppendSourceString( StObjContextRoot.ConfigureServicesMethodName )

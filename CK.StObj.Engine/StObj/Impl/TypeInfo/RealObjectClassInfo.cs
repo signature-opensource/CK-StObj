@@ -5,6 +5,9 @@ using CK.Core;
 using System.Reflection;
 using System.Diagnostics;
 
+#nullable disable
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+
 namespace CK.Setup
 {
     /// <summary>
@@ -467,7 +470,7 @@ namespace CK.Setup
         /// </summary>
         public IStObjTypeRootParentInfo BaseTypeInfo { get; }
 
-        public new RealObjectClassInfo Generalization => (RealObjectClassInfo)base.Generalization;
+        public new RealObjectClassInfo? Generalization => (RealObjectClassInfo?)base.Generalization;
 
         public IReadOnlyList<AmbientPropertyInfo> AmbientProperties { get; private set; }
 

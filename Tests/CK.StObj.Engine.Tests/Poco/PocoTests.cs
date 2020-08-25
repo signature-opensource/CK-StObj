@@ -97,7 +97,7 @@ namespace CK.StObj.Engine.Tests.Poco
             StObjCollectorResult result = BuildPocoSample();
             Debug.Assert( result.EngineMap != null, "No error." );
 
-            var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IBasicPoco>>();
+            var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IBasicPoco>>()!;
 
             Type pocoType = p.PocoClassType;
             Assert.That( typeof( IBasicPoco ).IsAssignableFrom( pocoType ) );

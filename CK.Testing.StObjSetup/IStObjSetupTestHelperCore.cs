@@ -18,7 +18,7 @@ namespace CK.Testing.StObjSetup
         bool StObjGenerateSourceFiles { get; set; }
 
         /// <summary>
-        /// Gets ors sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
+        /// Gets or sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
         /// Defaults to "StObjSetup/StObjRevertOrderingNames" configuration or false if the configuration does not exist.
         /// Note that this configuration can be reused by aspects that also use topology sort instead of introducing another similar option.
         /// </summary>

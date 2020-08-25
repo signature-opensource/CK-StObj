@@ -111,7 +111,7 @@ namespace CK.Setup
         /// <returns>A readable string.</returns>
         public static string ToStringClear( this CKTypeKind @this, bool isClass )
         {
-            string error = GetCombinationError( @this, isClass );
+            string? error = GetCombinationError( @this, isClass );
             return error == null ? ToStringFlags( @this ) : error;
         }
 
@@ -133,7 +133,7 @@ namespace CK.Setup
         /// <param name="this">This CK type kind.</param>
         /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>An error message or null.</returns>
-        public static string GetCombinationError( this CKTypeKind @this, bool isClass )
+        public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
         {
             if( @this < 0 || @this > CKTypeKindDetector.MaskPublicInfo )
             {
@@ -159,7 +159,7 @@ namespace CK.Setup
                 throw new Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
             }
 
-            string conflict = null;
+            string? conflict = null;
             if( isPoco )
             {
                 if( @this != CKTypeKind.IsPoco ) conflict = "Poco cannot be combined with any other aspect";

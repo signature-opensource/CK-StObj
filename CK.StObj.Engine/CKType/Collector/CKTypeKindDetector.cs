@@ -89,7 +89,7 @@ namespace CK.Setup
                 }
                 k |= CKTypeKind.IsFrontProcessService;
             }
-            string error = k.GetCombinationError( t.IsClass );
+            string? error = k.GetCombinationError( t.IsClass );
             if( error != null )
             {
                 m.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t}'." );
@@ -134,7 +134,7 @@ namespace CK.Setup
                 throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
             var updated = exist | kind;
-            string error = (updated & MaskPublicInfo).GetCombinationError( t.IsClass );
+            string? error = (updated & MaskPublicInfo).GetCombinationError( t.IsClass );
             if( error != null )
             {
                 m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as {ToStringFull( kind )}. Error: {error}" );

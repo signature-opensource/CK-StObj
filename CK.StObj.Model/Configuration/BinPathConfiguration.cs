@@ -195,7 +195,7 @@ namespace CK.Setup
         public CompileOption CompileOption { get; set; }
 
         /// <summary>
-        /// Gets whether generated source files should be generated and copied to <see cref="OutputPath"/> or .
+        /// Gets whether generated source files should be generated and copied to <see cref="OutputPath"/>.
         /// Defaults to true.
         /// </summary>
         public bool GenerateSourceFiles { get; set; }
@@ -224,7 +224,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets a mutable set of <see cref="XElement"/> that are configurations for aspects.
-        /// Element names should match aspect's name ().
+        /// Element names should match aspect's name (see <see cref="GetAspectConfiguration(string)"/>).
         /// </summary>
         public List<XElement> AspectConfigurations { get; }
 

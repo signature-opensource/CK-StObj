@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CK.Setup
 
@@ -8,12 +9,12 @@ namespace CK.Setup
     class StObjEngineAspectTrampoline<T>
     {
         readonly T _holder;
-        readonly List<Func<IActivityMonitor, T, bool>> _postActions;
+        readonly List<Func<IActivityMonitor, T, bool>?> _postActions;
 
         public StObjEngineAspectTrampoline( T holder )
         {
             _holder = holder;
-            _postActions = new List<Func<IActivityMonitor, T, bool>>();
+            _postActions = new List<Func<IActivityMonitor, T, bool>?>();
         }
 
         public void Push( Func<IActivityMonitor, T, bool> deferredAction )
@@ -32,6 +33,7 @@ namespace CK.Setup
                 while( i < _postActions.Count )
                 {
                     var a = _postActions[i];
+                    Debug.Assert( a != null );
                     _postActions[i++] = null;
                     try
                     {

@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace CK.Setup
@@ -68,7 +69,7 @@ namespace CK.Setup
                 return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassDescriptor>( kv.Key, kv.Value ) ).GetEnumerator();
             }
 
-            public bool TryGetValue( Type key, out IStObjServiceClassDescriptor value )
+            public bool TryGetValue( Type key, [MaybeNullWhen(false)]out IStObjServiceClassDescriptor value )
             {
                 value = null;
                 if( !_map.TryGetValue( key, out var c ) ) return false;
@@ -142,7 +143,7 @@ namespace CK.Setup
                 {
                     var ctor = c.GetSingleConstructor();
                     var parameters = ctor.GetParameters();
-                    var values = new object[parameters.Length];
+                    var values = new object?[parameters.Length];
                     for( int i = 0; i < parameters.Length; ++i )
                     {
                         var p = parameters[i];
@@ -202,7 +203,7 @@ namespace CK.Setup
                 return _map.Select( kv => new KeyValuePair<Type, IStObjServiceClassFactory>( kv.Key, kv.Value ) ).GetEnumerator();
             }
 
-            public bool TryGetValue( Type key, out IStObjServiceClassFactory value )
+            public bool TryGetValue( Type key, [MaybeNullWhen(false)]out IStObjServiceClassFactory value )
             {
                 value = null;
                 if( !_map.TryGetValue( key, out var c ) ) return false;

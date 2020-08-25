@@ -30,7 +30,7 @@ namespace CK.Setup
         /// Setting it to null removes all version constraints and setting it to a specific version
         /// states that subsequent version of the dependency should continue to be able to handle this component.
         /// </param>
-        public RequiredSetupDependencyAttribute( string assemblyName, string minDependencyVersion = MinDependencyVersionIsThisVersion )
+        public RequiredSetupDependencyAttribute( string assemblyName, string? minDependencyVersion = MinDependencyVersionIsThisVersion )
         {
             AssemblyName = assemblyName;
             MinDependencyVersion = minDependencyVersion;
@@ -48,6 +48,6 @@ namespace CK.Setup
         /// Setting it to null removes all version constraints and setting it to a specific version
         /// states that subsequent version of the setup dependency should continue to be able to handle this component.
         /// </summary>
-        public string MinDependencyVersion { get; }
+        public string? MinDependencyVersion { get; }
     }
 }

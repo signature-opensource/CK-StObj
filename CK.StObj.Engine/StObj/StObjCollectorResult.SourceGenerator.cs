@@ -66,6 +66,7 @@ namespace CK.Setup
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
             try
             {
+                Debug.Assert( _valueCollector != null );
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
                 using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
@@ -554,7 +555,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootType.Append( "public IReadOnlyCollection<VFeature> Features => _vFeatures;" ).NewLine();
         }
 
-        static void GenerateValue( ICodeWriter b, object o )
+        static void GenerateValue( ICodeWriter b, object? o )
         {
             if( o is IActivityMonitor )
             {

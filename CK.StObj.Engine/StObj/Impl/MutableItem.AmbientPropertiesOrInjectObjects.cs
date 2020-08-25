@@ -191,7 +191,7 @@ namespace CK.Setup
 
                         // Walks up the chain to locate the most abstract compatible slice.
                         {
-                            MutableItem genResolved = resolved.Generalization;
+                            MutableItem? genResolved = resolved.Generalization;
                             while( genResolved != null && sourceProp.PropertyType.IsAssignableFrom( genResolved.ClassType ) )
                             {
                                 resolved = genResolved;
@@ -228,7 +228,7 @@ namespace CK.Setup
                             // Walks up the chain to locate the most abstract compatible slice.
                             if( sourcePropChanged )
                             {
-                                MutableItem genResolved = resolved.Generalization;
+                                MutableItem? genResolved = resolved.Generalization;
                                 while( genResolved != null && sourceProp.PropertyType.IsAssignableFrom( genResolved.ClassType ) )
                                 {
                                     resolved = genResolved;
@@ -297,10 +297,10 @@ namespace CK.Setup
                 // Never seen this property: we must find it in our containers (since it is not defined by any StObj in the specialization chain).
                 if( a == null )
                 {
-                    MutableItem currentLevel = this;
+                    MutableItem? currentLevel = this;
                     do
                     {
-                        if( currentLevel.IsOwnContainer ) a = currentLevel._dContainer._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
+                        if( currentLevel.IsOwnContainer ) a = currentLevel._dContainer!._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
                         currentLevel = currentLevel.Generalization;
                     }
                     while( (a == null || a.Value == System.Type.Missing) && currentLevel != null );
@@ -324,20 +324,20 @@ namespace CK.Setup
                 {
                     if( a.AmbientPropertyInfo.ResolutionSource == PropertyResolutionSource.FromGeneralizationAndThenContainer )
                     {
-                        MutableItem currentLevel = _leafData.RootGeneralization;
+                        MutableItem? currentLevel = _leafData.RootGeneralization;
                         do
                         {
-                            if( currentLevel.IsOwnContainer ) foundFromOther = currentLevel._dContainer._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
+                            if( currentLevel.IsOwnContainer ) foundFromOther = currentLevel._dContainer!._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
                             currentLevel = currentLevel.Specialization;
                         }
                         while( (foundFromOther == null || foundFromOther.Value == System.Type.Missing) && currentLevel != null );
                     }
                     else if( a.AmbientPropertyInfo.ResolutionSource == PropertyResolutionSource.FromContainerAndThenGeneralization )
                     {
-                        MutableItem currentLevel = this;
+                        MutableItem? currentLevel = this;
                         do
                         {
-                            if( currentLevel.IsOwnContainer ) foundFromOther = currentLevel._dContainer._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
+                            if( currentLevel.IsOwnContainer ) foundFromOther = currentLevel._dContainer!._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
                             currentLevel = currentLevel.Generalization;
                         }
                         while( (foundFromOther == null || foundFromOther.Value == System.Type.Missing) && currentLevel != null );
@@ -349,10 +349,10 @@ namespace CK.Setup
                 // If not ("None" or "FromGeneralizationAndThenContainer") we have nothing to do.
                 if( a.AmbientPropertyInfo.ResolutionSource == PropertyResolutionSource.FromContainerAndThenGeneralization && a.MaxSpecializationDepthSet < RealObjectType.SpecializationDepth )
                 {
-                    MutableItem currentLevel = this;
+                    MutableItem? currentLevel = this;
                     do
                     {
-                        if( currentLevel.IsOwnContainer ) foundFromOther = currentLevel._dContainer._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
+                        if( currentLevel.IsOwnContainer ) foundFromOther = currentLevel._dContainer!._leafData.LeafSpecialization.EnsureCachedAmbientProperty( monitor, propertyType, name );
                         currentLevel = currentLevel.Generalization;
                     }
                     while( (foundFromOther == null || foundFromOther.Value == System.Type.Missing) && currentLevel != null && currentLevel.RealObjectType.SpecializationDepth > a.MaxSpecializationDepthSet );

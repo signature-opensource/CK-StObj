@@ -82,12 +82,12 @@ namespace CK.StObj.Engine.Tests
                     Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
                     IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
-                    Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
-                    Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
+                    Assert.That( stObjs.Obtain<B>()!.TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
+                    Assert.That( stObjs.Obtain<ASpec>()!.TheB, Is.SameAs( stObjs.Obtain<B>() ) );
                     Assert.That( stObjs.ToHead( typeof( A ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( stObjs.ToHead( typeof( ASpec ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
-                    ASpec theA = (ASpec)stObjs.Obtain<A>();
+                    ASpec theA = (ASpec)stObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
@@ -98,10 +98,10 @@ namespace CK.StObj.Engine.Tests
                     IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
                     Debug.Assert( c != null );
                     c.Should().NotBeNull();
-                    Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( c.StObjs.Obtain<ASpec>().TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
+                    Assert.That( c.StObjs.Obtain<B>()!.TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
+                    Assert.That( c.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
 
-                    ASpec theA = (ASpec)c.StObjs.Obtain<A>();
+                    ASpec theA = (ASpec)c.StObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
@@ -213,12 +213,12 @@ namespace CK.StObj.Engine.Tests
                     Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
                     IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
-                    Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
-                    Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
+                    Assert.That( stObjs.Obtain<B>()!.TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
+                    Assert.That( stObjs.Obtain<ASpec>()!.TheB, Is.SameAs( stObjs.Obtain<B>() ) );
                     Assert.That( stObjs.ToHead( typeof( A ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( stObjs.ToHead( typeof( ASpec ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
-                    ASpec theA = (ASpec)stObjs.Obtain<A>();
+                    ASpec theA = (ASpec)stObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
@@ -230,16 +230,16 @@ namespace CK.StObj.Engine.Tests
                     IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
                     c.Should().NotBeNull();
                     Debug.Assert( c != null );
-                    Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( c.StObjs.Obtain<ASpec>().TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
+                    Assert.That( c.StObjs.Obtain<B>()!.TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
+                    Assert.That( c.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
 
-                    ASpec theA = (ASpec)c.StObjs.Obtain<A>();
+                    ASpec theA = (ASpec)c.StObjs.Obtain<A>()!;
                     theA.Should().NotBeNull();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
 
                     Assert.That( theA.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
-                    Assert.That( c.StObjs.Obtain<B>().TheInjectedA, Is.SameAs( theA ) );
+                    Assert.That( c.StObjs.Obtain<B>()!.TheInjectedA, Is.SameAs( theA ) );
 
                     Assert.That( theA.StObjInitializeOnACalled, Is.True );
                     Assert.That( theA.StObjInitializeOnASpecCalled, Is.True );

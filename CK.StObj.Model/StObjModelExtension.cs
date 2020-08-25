@@ -23,9 +23,9 @@ namespace CK.Core
         /// <param name="this">This context.</param>
         /// <typeparam name="T">Type (that must be a Real Object).</typeparam>
         /// <returns>Structured object instance or null if the type has not been mapped.</returns>
-        public static T Obtain<T>( this IStObjObjectMap @this )
+        public static T? Obtain<T>( this IStObjObjectMap @this ) where T : class
         {
-            return (T)@this.Obtain( typeof( T ) );
+            return (T?)@this.Obtain( typeof( T ) );
         }
 
         /// <summary>

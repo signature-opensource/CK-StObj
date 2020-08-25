@@ -15,7 +15,7 @@ namespace CK.Setup
             public readonly AutoServiceClassInfo Class;
             public readonly InterfaceFamily Family;
 
-            List<CtorParameter> _params;
+            List<CtorParameter>? _params;
             bool _isHeadCandidate;
             bool _isHead;
 
@@ -50,10 +50,11 @@ namespace CK.Setup
                 Class = c;
             }
 
-            public IReadOnlyList<CtorParameter> Parameters => _params;
+            public IReadOnlyList<CtorParameter> Parameters => _params!;
 
             internal bool Initialize( IActivityMonitor m )
             {
+                Debug.Assert( Class.ConstructorParameters != null );
                 bool success = true;
                 _params = new List<CtorParameter>();
                 foreach( var p in Class.ConstructorParameters )
@@ -101,7 +102,7 @@ namespace CK.Setup
 
             public IReadOnlyCollection<SCRClass> Classes => _classes.Values;
 
-            public AutoServiceClassInfo Resolved { get; private set; }
+            public AutoServiceClassInfo? Resolved { get; private set; }
 
             InterfaceFamily()
             {
@@ -195,10 +196,11 @@ namespace CK.Setup
                 foreach( var c in classes )
                 {
                     Debug.Assert( c.IsIncluded
+                                  && c.Interfaces != null
                                   && (c.Interfaces.Count == 0 || c.Interfaces.Any( i => i.SpecializationDepth == 0 )) );
                     foreach( var baseInterface in c.Interfaces.Where( i => !i.IsSpecialized ) )
                     {
-                        InterfaceFamily currentF = null;
+                        InterfaceFamily? currentF = null;
                         var rootInterfaces = baseInterface.SpecializationDepth == 0
                                                 ? new[] { baseInterface }
                                                 : baseInterface.Interfaces.Where( i => i.SpecializationDepth == 0 );
@@ -274,7 +276,7 @@ namespace CK.Setup
 
             int IStObjServiceParameterInfo.Position => Parameter.Parameter.ParameterInfo.Position;
 
-            string IStObjServiceParameterInfo.Name => Parameter.Parameter.ParameterInfo.Name;
+            string IStObjServiceParameterInfo.Name => Parameter.Parameter.ParameterInfo.Name!;
 
             public bool IsEnumerated => Parameter.Parameter.IsEnumerated;
 
@@ -283,7 +285,7 @@ namespace CK.Setup
 
         class BuildClassInfo : IStObjServiceClassFactoryInfo
         {
-            IStObjServiceFinalManualMapping _finalMapping;
+            IStObjServiceFinalManualMapping? _finalMapping;
             bool _finalMappingDone;
 
             public AutoServiceClassInfo Class { get; }
@@ -300,7 +302,7 @@ namespace CK.Setup
             {
                 get
                 {
-                    Debug.Assert( _finalMappingDone, "Must be called only once GetFinalMapping has been called at least once." );
+                    Debug.Assert( _finalMappingDone && Class.FinalTypeKind.HasValue, "Must be called only once GetFinalMapping has been called at least once." );
                     return (Class.FinalTypeKind.Value & AutoServiceKind.IsScoped) != 0;
                 }
             }
@@ -314,7 +316,7 @@ namespace CK.Setup
                 }
             }
 
-            public IReadOnlyCollection<Type> MarshallableTypes => Class.MarshallableTypes;
+            public IReadOnlyCollection<Type> MarshallableTypes => Class.MarshallableTypes!;
 
             public IReadOnlyCollection<Type> MultipleMappings => Class.MultipleMappings;
 
@@ -326,7 +328,7 @@ namespace CK.Setup
 
             IReadOnlyList<IStObjServiceParameterInfo> IStObjServiceClassFactoryInfo.Assignments => Assignments;
 
-            public IStObjServiceFinalManualMapping GetFinalMapping(
+            public IStObjServiceFinalManualMapping? GetFinalMapping(
                 IActivityMonitor m,
                 StObjObjectEngineMap engineMap,
                 CKTypeKindDetector typeKindDetector,
@@ -421,6 +423,7 @@ namespace CK.Setup
                     }
                     foreach( var f in families )
                     {
+                        Debug.Assert( f.Resolved != null );
                         foreach( var i in f.Interfaces )
                         {
                             RegisterMapping( i.Type, f.Resolved, ref success );
@@ -435,6 +438,7 @@ namespace CK.Setup
             {
                 if( !c.IsRealObject )
                 {
+                    Debug.Assert( c.MostSpecialized != null );
                     RegisterMapping( c.ClassType, c.MostSpecialized, ref success );
                     foreach( var s in c.Specializations )
                     {
@@ -447,13 +451,10 @@ namespace CK.Setup
                 }
             }
 
-            void RegisterMapping(
-                Type t,
-                AutoServiceClassInfo final,
-                ref bool success )
+            void RegisterMapping( Type t, AutoServiceClassInfo final, ref bool success )
             {
                 Debug.Assert( _infos.Count == 0, "Currently, no manual instantiation is available since IEnumerable is not yet handled." );
-                IStObjServiceFinalManualMapping manual = null;
+                IStObjServiceFinalManualMapping? manual = null;
                 if( _infos.TryGetValue( final, out var build )
                     && (manual = build.GetFinalMapping( _monitor, _engineMap, _ambientTypeKindDetector, ref success )) != null )
                 {
@@ -492,7 +493,7 @@ namespace CK.Setup
                     // Registering Interfaces: Families creation from all most specialized classes' supported interfaces.
                     var allClasses = typeResult.AutoServices.RootClasses
                                         .Concat( typeResult.AutoServices.SubGraphRootClasses )
-                                        .Select( c => c.MostSpecialized );
+                                        .Select( c => c.MostSpecialized! );
                     Debug.Assert( allClasses.GroupBy( c => c ).All( g => g.Count() == 1 ) );
                     IReadOnlyCollection<InterfaceFamily> families = InterfaceFamily.Build( _monitor, engineMap, allClasses );
                     if( families.Count == 0 )

@@ -166,7 +166,7 @@ namespace CK.StObj.Engine.Tests
             var r = TestHelper.GetSuccessfulResult( collector );
             Debug.Assert( r.EngineMap != null, "No initialization error." );
 
-            var cb = r.EngineMap.StObjs.Obtain<CB>();
+            var cb = r.EngineMap.StObjs.Obtain<CB>()!;
             Assert.That( cb, Is.InstanceOf<CB3>() );
             Assert.That( cb.A, Is.InstanceOf<CA3>() );
         }
@@ -205,7 +205,7 @@ namespace CK.StObj.Engine.Tests
                 var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
 
-                var c = map.StObjs.Obtain<CPrivateSetter>();
+                var c = map.StObjs.Obtain<CPrivateSetter>()!;
                 Assert.That( c.A, Is.InstanceOf<CA2>() );
             }
         }

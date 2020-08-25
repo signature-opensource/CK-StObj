@@ -32,7 +32,7 @@ namespace CK.Testing.StObjMap
         IServiceProvider AutomaticServices { get; }
 
         /// <summary>
-        /// Creates an configures a pristine service provider based on the current <see cref="StObjMap"/>.
+        /// Creates and configures a pristine service provider based on the current <see cref="StObjMap"/>.
         /// The returned services can be configured thanks to the <see cref="AutomaticServicesConfiguring"/>
         /// and <see cref="AutomaticServicesConfigured"/> events.
         /// This throws if any error prevents the services to be correctly configured.

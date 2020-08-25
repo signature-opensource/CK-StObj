@@ -14,7 +14,7 @@ namespace CK.Setup
     /// <summary>
     /// Generic engine that runs a <see cref="StObjEngineConfiguration"/>.
     /// </summary>
-    public class StObjEngine
+    public partial class StObjEngine
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineConfiguration _config;
@@ -109,11 +109,25 @@ namespace CK.Setup
                                                     + b.Assemblies.Count * 117;
         }
 
+
         /// <summary>
         /// Runs the setup.
         /// </summary>
         /// <returns>True on success, false if an error occurred.</returns>
-        public bool Run()
+        public bool Run() => DoRun( null );
+
+        /// <summary>
+        /// Runs the setup, delegating the obtention of the <see cref="StObjCollectorResult"/> to an external resolver.
+        /// </summary>
+        /// <param name="resolver">The resolver to use.</param>
+        /// <returns>True on success, false if an error occurred.</returns>
+        public bool Run( IStObjCollectorResultResolver resolver )
+        {
+            if( resolver == null ) throw new ArgumentNullException( nameof( resolver ) );
+            return DoRun( resolver );
+        }
+
+        bool DoRun( IStObjCollectorResultResolver? resolver )
         {
             if( _startContext != null ) throw new InvalidOperationException( "Run can be called only once." );
             if( !PrepareAndCheckConfigurations() ) return false;
@@ -139,7 +153,7 @@ namespace CK.Setup
                     StObjEngineRunContext runCtx;
                     using( _monitor.OpenInfo( "Creating unified map." ) )
                     {
-                        StObjCollectorResult? firstRun = SafeBuildStObj( unifiedBinPath );
+                        StObjCollectorResult? firstRun = resolver != null ? resolver.GetUnifiedResult( unifiedBinPath ) : SafeBuildStObj( unifiedBinPath );
                         if( firstRun == null ) return _status.Success = false;
                         // Primary StObjMap has been successfully built, we can initialize the run context
                         // with this primary StObjMap and the bin paths that use it (including the unifiedBinPath).
@@ -151,7 +165,7 @@ namespace CK.Setup
                     {
                         using( _monitor.OpenInfo( $"Creating secondary map for BinPaths '{g.Select( b => b.Path.Path ).Concatenate( "', '" )}'." ) )
                         {
-                            StObjCollectorResult? rFolder = SafeBuildStObj( g.Key );
+                            StObjCollectorResult? rFolder = resolver != null ? resolver.GetSecondaryResult( g.Key, g ) : SafeBuildStObj( g.Key );
                             if( rFolder == null )
                             {
                                 _status.Success = false;
@@ -280,6 +294,11 @@ namespace CK.Setup
                 _config.BasePath = Environment.CurrentDirectory;
                 _monitor.Info( $"No BasePath. Using current directory '{_config.BasePath}'." );
             }
+            if( _config.BinPaths.GroupBy( c => c.Name ).Any( g => g.Count() > 1 ) )
+            {
+                _monitor.Error( $"BinPath configuration 'Name' must be unique. Duplicates found: {_config.BinPaths.GroupBy( c => c.Name ).Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
+                return false;
+            }
             int idx = 1;
             foreach( var b in _config.BinPaths )
             {
@@ -293,21 +312,61 @@ namespace CK.Setup
                 if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
                 ++idx;
 
-                var foundAspects = _config.Aspects.Select( r => b.GetAspectConfiguration( r.GetType() ) ).Where( c => c != null );
+                var foundAspects = _config.Aspects.Select( r => b.GetAspectConfiguration( r.GetType() ) ).Where( c => c != null ).Select( c => c! );
                 var aliens = b.AspectConfigurations.Except( foundAspects );
                 if( aliens.Any() )
                 {
-                    _monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a!.Name.ToString() ).Concatenate()}. Available aspects are: {_config.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
+                    _monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a.Name.ToString() ).Concatenate()}. Available aspects are: {_config.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
                     return false;
                 }
-
-            }
-            if( _config.BinPaths.GroupBy( c => c.Name ).Any( g => g.Count() > 1 ) )
-            {
-                _monitor.Error( $"BinPath configuration names must be unique. Duplicates: {_config.BinPaths.GroupBy( c => c.Name ).Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
-                return false;
+                foreach( var a in foundAspects )
+                {
+                    EvalKnownPaths( _monitor, b.Name, a.Name.LocalName, a, _config.BasePath, b.OutputPath, b.ProjectPath );
+                }
             }
             return true;
+
+            static void EvalKnownPaths( IActivityMonitor monitor, string binPathName, string aspectName, XElement element, NormalizedPath basePath, NormalizedPath outputPath, NormalizedPath projectPath )
+            {
+                foreach( var e in element.Elements() )
+                {
+                    if( !e.HasElements )
+                    {
+                        Debug.Assert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
+                        string? v = e.Value;
+                        if( v != null && v.Length >= 10 )
+                        {
+                            var vS = ReplacePattern( basePath, "{BasePath}", v );
+                            vS = ReplacePattern( outputPath, "{OutputPath}", vS );
+                            vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
+                            if( v != vS )
+                            {
+                                monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
+                                e.Value = vS;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath );
+                    }
+                }
+
+                static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
+                {
+                    int len = pattern.Length;
+                    if( v.Length >= len )
+                    {
+                        NormalizedPath result;
+                        if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
+                        {
+                            if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
+                            result = basePath.Combine( v.Substring( len ) ).ResolveDots();
+                        }
+                    }
+                    return v;
+                }
+            }
         }
 
         NormalizedPath MakeAbsolutePath( NormalizedPath p )
@@ -388,7 +447,6 @@ namespace CK.Setup
             }
             return rootBinPath;
         }
-
 
 
         class TypeFilterFromConfiguration : IStObjTypeFilter

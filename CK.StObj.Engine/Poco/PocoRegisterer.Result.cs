@@ -106,6 +106,7 @@ namespace CK.Setup
             bool _instantiationCycleDone;
             bool _instantiationCycleFlag;
 
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
             public ClassInfo( Type pocoClass,
                               Type pocoFactoryClass,
                               bool mustBeClosed,
@@ -126,6 +127,7 @@ namespace CK.Setup
                 PropertyList = propertyList;
                 ExternallyImplementedPropertyList = externallyImplementedPropertyList ?? Array.Empty<PropertyInfo>();
             }
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
             /// <summary>
             /// Checks that for each property definition with the same name, the return type is

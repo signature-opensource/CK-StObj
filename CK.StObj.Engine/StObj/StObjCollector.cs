@@ -279,7 +279,6 @@ namespace CK.Setup
             try
             {
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
-                Dictionary<Type, ITypeAttributesCache>? allTypesAttributesCache = null;
                 if( orderedItems != null )
                 {
                     // This is far from elegant but simplifies the engine object model:
@@ -448,7 +447,7 @@ namespace CK.Setup
 
                 MutableItem specialization = pathTypes[pathTypes.Count - 1];
 
-                object theObject = specialization.CreateStructuredObject( _monitor );
+                object? theObject = specialization.CreateStructuredObject( _monitor );
                 // If we failed to create an instance, we ensure that an error is logged and
                 // continue the process.
                 if( theObject == null )
@@ -465,7 +464,7 @@ namespace CK.Setup
                 Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Generalization" ) == null );
                 Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Specialization" ) == null );
                 MutableItem generalization = pathTypes[0];
-                MutableItem m = generalization;
+                MutableItem? m = generalization;
                 do
                 {
                     m.ConfigureTopDown( _monitor, generalization );

@@ -287,7 +287,7 @@ namespace CK.Setup
                     var path = new List<MutableItem>();
                     last.InitializeBottomUp( null );
                     path.Add( last );
-                    MutableItem spec = last, toInit = last;
+                    MutableItem? spec = last, toInit = last;
                     while( (toInit = toInit.Generalization) != null )
                     {
                         toInit.InitializeBottomUp( spec );

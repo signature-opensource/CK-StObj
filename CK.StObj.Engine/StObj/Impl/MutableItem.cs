@@ -19,12 +19,14 @@ namespace CK.Setup
     {
         class LeafData
         {
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
             public LeafData( MutableItem leaf, List<MutableAmbientProperty> ap, MutableInjectObject[] ac )
             {
                 LeafSpecialization = leaf;
                 AllAmbientProperties = ap;
                 AllInjectObjects = ac;
             }
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
             /// <summary>
             /// Useless to store it at each level.
@@ -60,7 +62,7 @@ namespace CK.Setup
             /// The ImplementableTypeInfo is not null only if the Type is abstract but
             /// a <see cref="ImplementableTypeInfo.StubType"/> has been successfuly created.
             /// </summary>
-            public ImplementableTypeInfo ImplementableTypeInfo => LeafSpecialization.RealObjectType.ImplementableTypeInfo;
+            public ImplementableTypeInfo? ImplementableTypeInfo => LeafSpecialization.RealObjectType.ImplementableTypeInfo;
 
             /// <summary>
             /// Useless to store it at each level.
@@ -71,10 +73,11 @@ namespace CK.Setup
 
             internal object CreateStructuredObject( Type typeIfNotImplementable )
             {
-                Type toInstantiate = ImplementableTypeInfo != null
+                Type toInstantiate = ImplementableTypeInfo?.StubType != null
                                         ? ImplementableTypeInfo.StubType
                                         : typeIfNotImplementable;
-                StructuredObject = Activator.CreateInstance( toInstantiate );
+                Debug.Assert( toInstantiate != null );
+                StructuredObject = Activator.CreateInstance( toInstantiate )!;
                 return StructuredObject;
             }
         }
@@ -104,15 +107,15 @@ namespace CK.Setup
         /// This is not null if this is the root of the specialization path (<see cref="Generalization"/> is null) and at least
         /// one of the base class has a StObjConstruct (with at least one parameter).
         /// </summary>
-        IReadOnlyList<(MethodInfo, IReadOnlyList<MutableParameter>)> _constructParametersAbove;
+        IReadOnlyList<(MethodInfo, IReadOnlyList<MutableParameter>)>? _constructParametersAbove;
         DependentItemKind _itemKind;
         List<StObjProperty> _stObjProperties;
         List<PropertySetter> _preConstruct;
 
         string _dFullName;
-        MutableItem _dContainer;
+        MutableItem? _dContainer;
         IReadOnlyList<MutableItem> _dRequires;
-        IReadOnlyList<MutableItem> _dRequiredBy;
+        IReadOnlyList<MutableItem>? _dRequiredBy;
         IReadOnlyList<MutableItem> _dChildren;
         IReadOnlyList<MutableItem> _dGroups;
 
@@ -148,6 +151,7 @@ namespace CK.Setup
         /// <summary>
         /// Only used for empty object pattern for markers.
         /// </summary>
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
         internal MutableItem()
         {
         }
@@ -164,6 +168,7 @@ namespace CK.Setup
             _ambientPropertiesEx = new ListAmbientProperty( this );
             _ambientInjectObjectsEx = new ListInjectSingleton( this );
         }
+#pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
         /// <summary>
         /// Second step of initialization called once a valid Type path has been found.
@@ -297,7 +302,7 @@ namespace CK.Setup
         /// The ImplementableTypeInfo is not null only if the Type is abstract but
         /// a <see cref="ImplementableTypeInfo.StubType"/> has been successfuly created.
         /// </summary>
-        public ImplementableTypeInfo ImplementableTypeInfo => _leafData.ImplementableTypeInfo;
+        public ImplementableTypeInfo? ImplementableTypeInfo => _leafData.ImplementableTypeInfo;
 
         /// <summary>
         /// Gets the final type: either the <see cref="FinalImplementation"/>.<see cref="ImplementableTypeInfo.StubType"/>
@@ -325,8 +330,14 @@ namespace CK.Setup
         /// All attributes related to ClassType (either on the type itself or on any of its members) should be retrieved 
         /// thanks to this method otherwise stateful attributes will not work correctly.
         /// </remarks>
-        public ITypeAttributesCache Attributes => RealObjectType.Attributes;
-
+        public ITypeAttributesCache Attributes
+        {
+            get
+            {
+                Debug.Assert( !RealObjectType.IsExcluded );
+                return RealObjectType.Attributes!;
+            }
+        }
         /// <summary>
         /// Never null: it is this item if <see cref="Specialization"/> is null.
         /// </summary>
@@ -360,13 +371,13 @@ namespace CK.Setup
 
         public IReadOnlyList<IStObjMutableParameter> ConstructParameters => _constructParameterEx;
 
-        public IEnumerable<(MethodInfo,IReadOnlyList<IStObjMutableParameter>)> ConstructParametersAbove =>_constructParametersAbove?.Select( mp => (mp.Item1, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
+        public IEnumerable<(MethodInfo,IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAbove => _constructParametersAbove?.Select( mp => (mp.Item1, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
 
         IReadOnlyList<IStObjAmbientProperty> IStObjMutableItem.SpecializedAmbientProperties => _ambientPropertiesEx; 
 
         IReadOnlyList<IStObjMutableInjectObject> IStObjMutableItem.SpecializedInjectObjects => _ambientInjectObjectsEx;
 
-        bool IStObjMutableItem.SetDirectPropertyValue( IActivityMonitor monitor, string propertyName, object value, string sourceDescription )
+        bool IStObjMutableItem.SetDirectPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription )
         {
             if( monitor == null ) throw new ArgumentNullException( "monitor", "Source:" + sourceDescription );
             if( String.IsNullOrEmpty( propertyName ) ) throw new ArgumentException( "Can not be null nor empty. Source:" + sourceDescription, "propertyName" );
@@ -388,10 +399,10 @@ namespace CK.Setup
             // Direct property set.
             // Targets the specialization to honor property covariance.
             var leafType = _leafData.LeafSpecialization.RealObjectType.Type;
-            PropertyInfo p = leafType.GetProperty( propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
+            PropertyInfo? p = leafType.GetProperty( propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
             if( p != null && p.DeclaringType != leafType )
             {
-                p = p.DeclaringType.GetProperty( propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
+                p = p.DeclaringType!.GetProperty( propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance );
             }
             if( p == null || !p.CanWrite )
             {
@@ -403,7 +414,7 @@ namespace CK.Setup
             return true;
         }
 
-        bool IStObjMutableItem.SetAmbientPropertyValue( IActivityMonitor monitor, string propertyName, object value, string sourceDescription )
+        bool IStObjMutableItem.SetAmbientPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription )
         {
             if( monitor == null ) throw new ArgumentNullException( "monitor", "Source:" + sourceDescription );
             if( String.IsNullOrEmpty( propertyName ) ) throw new ArgumentException( "Can not be null nor empty. Source:" + sourceDescription, "propertyName" );
@@ -420,7 +431,7 @@ namespace CK.Setup
             return false;
         }
 
-        bool IStObjMutableItem.SetAmbientPropertyConfiguration( IActivityMonitor monitor, string propertyName, Type type, StObjRequirementBehavior behavior, string sourceDescription )
+        bool IStObjMutableItem.SetAmbientPropertyConfiguration( IActivityMonitor monitor, string propertyName, Type type, StObjRequirementBehavior behavior, string? sourceDescription )
         {
             if( monitor == null ) throw new ArgumentNullException( "monitor", "Source:" + sourceDescription );
             if( String.IsNullOrEmpty( propertyName ) ) throw new ArgumentException( "Can not be null nor empty. Source:" + sourceDescription, "propertyName" );
@@ -434,7 +445,7 @@ namespace CK.Setup
             return false;        
         }
 
-        bool IStObjMutableItem.SetStObjPropertyValue( IActivityMonitor monitor, string propertyName, object value, string sourceDescription )
+        bool IStObjMutableItem.SetStObjPropertyValue( IActivityMonitor monitor, string propertyName, object value, string? sourceDescription )
         {
             if( monitor == null ) throw new ArgumentNullException( "monitor", "Source:" + sourceDescription );
             if( String.IsNullOrEmpty( propertyName ) ) throw new ArgumentException( "Can not be null nor empty. Source:" + sourceDescription, "propertyName" );
@@ -520,13 +531,13 @@ namespace CK.Setup
         {
             Debug.Assert( _container != null && _constructParameterEx != null );
             bool result = true;
-            _dFullName = RealObjectType.Type.FullName;
+            _dFullName = RealObjectType.Type.FullName!;
             _dContainer = _container.ResolveToStObj( monitor, EngineMap );
             // Requirement initialization.
             HashSet<MutableItem> req = new HashSet<MutableItem>();
             {
                 // Requires are... Required (when not configured as optional by IStObjStructuralConfigurator).
-                foreach( MutableItem dep in _requires.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ) )
+                foreach( MutableItem? dep in _requires.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ) )
                 {
                     if( dep != null ) req.Add( dep );
                 }
@@ -545,7 +556,7 @@ namespace CK.Setup
                 {
                     if( t.Value == System.Type.Missing )
                     {
-                        MutableItem dep = t.ResolveToStObj( monitor, EngineMap );
+                        MutableItem? dep = t.ResolveToStObj( monitor, EngineMap );
                         if( dep != null ) req.Add( dep );
                     }
                 }
@@ -556,17 +567,17 @@ namespace CK.Setup
             // RequiredBy initialization.
             if( _requiredBy.Count > 0 )
             {
-                _dRequiredBy = _requiredBy.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ).Where( m => m != null ).ToArray();
+                _dRequiredBy = _requiredBy.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ).Where( m => m != null ).Select( m => m! ).ToArray();
             }
             // Children Initialization.
             if( _children.Count > 0 )
             {
-                _dChildren = _children.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ).Where( m => m != null ).ToArray();
+                _dChildren = _children.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ).Where( m => m != null ).Select( m => m! ).ToArray();
             }
             // Groups Initialization.
             if( _groups.Count > 0 )
             {
-                _dGroups = _groups.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ).Where( m => m != null ).ToArray();
+                _dGroups = _groups.AsList.Select( r => r.ResolveToStObj( monitor, EngineMap ) ).Where( m => m != null ).Select( m => m! ).ToArray();
             }
             return result;
         }
@@ -695,16 +706,16 @@ namespace CK.Setup
         /// Overridden to return the Type full name.
         /// </summary>
         /// <returns>The type's full name.</returns>
-        public override string ToString() => RealObjectType.Type.FullName;
+        public override string ToString() => RealObjectType.Type.FullName!;
 
 
         #region IDependentItem/Ref Members
 
         string IDependentItem.FullName => _dFullName; 
 
-        IDependentItemRef IDependentItem.Generalization => Generalization; 
+        IDependentItemRef? IDependentItem.Generalization => Generalization; 
 
-        IDependentItemContainerRef IDependentItem.Container => _dContainer; 
+        IDependentItemContainerRef? IDependentItem.Container => _dContainer; 
 
         IEnumerable<IDependentItemRef> IDependentItemGroup.Children
         {
@@ -753,11 +764,11 @@ namespace CK.Setup
             }
         }
 
-        IEnumerable<IDependentItemRef> IDependentItem.RequiredBy
+        IEnumerable<IDependentItemRef>? IDependentItem.RequiredBy
         {
             get 
             {
-                IEnumerable<IDependentItemRef> r = _dRequiredBy;
+                IEnumerable<IDependentItemRef>? r = _dRequiredBy;
                 if( _trackAmbientPropertiesMode == TrackAmbientPropertiesMode.PropertyHolderRequiredByThis )
                 {
                     Debug.Assert( _trackedAmbientProperties != null );
@@ -768,7 +779,7 @@ namespace CK.Setup
             }
         }
 
-        object IDependentItem.StartDependencySort( IActivityMonitor m ) =>  null;
+        object? IDependentItem.StartDependencySort( IActivityMonitor m ) => null;
 
         string IDependentItemRef.FullName => _dFullName; 
 
@@ -786,9 +797,9 @@ namespace CK.Setup
 
         IStObjFinalImplementation IStObj.FinalImplementation => FinalImplementation;
 
-        IStObj IStObj.Generalization => Generalization; 
+        IStObj? IStObj.Generalization => Generalization; 
 
-        IStObj IStObj.Specialization => Specialization;
+        IStObj? IStObj.Specialization => Specialization;
 
         object IStObjFinalImplementation.Implementation => _leafData.StructuredObject;
 
@@ -798,17 +809,17 @@ namespace CK.Setup
 
         IReadOnlyCollection<Type> IStObjFinalClass.UniqueMappings => FinalImplementation.RealObjectType.UniqueMappingTypes;
 
-        IStObjResult IStObjResult.Generalization => Generalization; 
+        IStObjResult? IStObjResult.Generalization => Generalization; 
 
-        IStObjResult IStObjResult.Specialization => Specialization; 
+        IStObjResult? IStObjResult.Specialization => Specialization; 
 
         IStObjResult IStObjResult.RootGeneralization => _leafData.RootGeneralization; 
 
         IStObjResult IStObjResult.LeafSpecialization => _leafData.LeafSpecialization; 
 
-        IStObjResult IStObjResult.ConfiguredContainer => IsOwnContainer ? _dContainer : null; 
+        IStObjResult? IStObjResult.ConfiguredContainer => IsOwnContainer ? _dContainer : null; 
 
-        IStObjResult IStObjResult.Container => _dContainer; 
+        IStObjResult? IStObjResult.Container => _dContainer; 
 
         IReadOnlyList<IStObjResult> IStObjResult.Requires  => _dRequires; 
 
@@ -822,7 +833,7 @@ namespace CK.Setup
 
         object IStObjResult.GetStObjProperty( string propertyName )
         {
-            StObjProperty p = GetStObjProperty( propertyName );
+            StObjProperty? p = GetStObjProperty( propertyName );
             return p != null ? p.Value : System.Type.Missing;
         }
 
