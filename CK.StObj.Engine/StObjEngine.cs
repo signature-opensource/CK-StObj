@@ -294,11 +294,6 @@ namespace CK.Setup
                 _config.BasePath = Environment.CurrentDirectory;
                 _monitor.Info( $"No BasePath. Using current directory '{_config.BasePath}'." );
             }
-            if( _config.BinPaths.GroupBy( c => c.Name ).Any( g => g.Count() > 1 ) )
-            {
-                _monitor.Error( $"BinPath configuration 'Name' must be unique. Duplicates found: {_config.BinPaths.GroupBy( c => c.Name ).Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
-                return false;
-            }
             int idx = 1;
             foreach( var b in _config.BinPaths )
             {
@@ -323,6 +318,12 @@ namespace CK.Setup
                 {
                     EvalKnownPaths( _monitor, b.Name, a.Name.LocalName, a, _config.BasePath, b.OutputPath, b.ProjectPath );
                 }
+            }
+            // This must be done after the loop above (Name is set when empty).
+            if( _config.BinPaths.GroupBy( c => c.Name ).Any( g => g.Count() > 1 ) )
+            {
+                _monitor.Error( $"BinPath configuration 'Name' must be unique. Duplicates found: {_config.BinPaths.GroupBy( c => c.Name ).Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
+                return false;
             }
             return true;
 
