@@ -32,7 +32,7 @@ namespace CK.Setup
         ///   <item>a <see cref="MemberInfo"/> that is the decorated member.</item>
         ///   <item>a <see cref="Type"/> that is the Type that owns the decorated member.</item>
         ///   <item>
-        ///   a <see cref="ICKCustomAttributeTypeMultiProvider"/> that is the cache of all the attributes of the Type.
+        ///   a <see cref="ITypeAttributesCache"/> that is the cache of all the attributes of the Type.
         ///   (Note that if access to other attributes is required, <see cref="IAttributeContextBoundInitializer"/> must be used.)
         ///   </item>
         /// </list>

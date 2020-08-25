@@ -6,7 +6,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Specialized <see cref="ICKCustomAttributeProvider"/> to handle multiple <see cref="MemberInfo"/>.
-    /// The specialized <see cref="ICKCustomAttributeTypeMultiProvider"/> is bound to a <see cref="Type"/>
+    /// The specialized <see cref="ITypeAttributesCache"/> is bound to a <see cref="Type"/>
     /// and all its members but this interface actually applies to any set of attribute holders (it may be implemented for a whole assembly for instance).
     /// </summary>
     public interface ICKCustomAttributeMultiProvider : ICKCustomAttributeProvider

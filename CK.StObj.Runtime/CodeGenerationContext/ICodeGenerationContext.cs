@@ -9,6 +9,7 @@ namespace CK.Setup
     /// <summary>
     /// Global context that is provided to <see cref="IAutoImplementorType"/>, <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/>
     /// implement methods.
+    /// This context is bound to one <see cref="IGeneratedBinPath"/> (the <see cref="CurrentRun"/>) that groups 0 or more equivalent <see cref="BinPathConfiguration"/>.
     /// </summary>
     public interface ICodeGenerationContext
     {
