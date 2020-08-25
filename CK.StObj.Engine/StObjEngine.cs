@@ -134,11 +134,6 @@ namespace CK.Setup
             if( _ckSetupConfig != null && !ApplyCKSetupConfiguration() ) return false;
             var unifiedBinPath = CreateUnifiedBinPathConfiguration( _monitor, _config.BinPaths, _config.GlobalExcludedTypes );
             if( unifiedBinPath == null ) return false;
-            if( unifiedBinPath.Assemblies.Count == 0 )
-            {
-                _monitor.Error( "No Assemblies specified. Executing a setup with no content is an error." );
-                return false;
-            }
             // Groups similar configurations to optimize runs.
             var groups = _config.BinPaths.Append( unifiedBinPath ).GroupBy( Util.FuncIdentity, BinPathComparer.Default ).ToList();
             var rootGroup = groups.Single( g => g.Contains( unifiedBinPath ) );
@@ -153,7 +148,20 @@ namespace CK.Setup
                     StObjEngineRunContext runCtx;
                     using( _monitor.OpenInfo( "Creating unified map." ) )
                     {
-                        StObjCollectorResult? firstRun = resolver != null ? resolver.GetUnifiedResult( unifiedBinPath ) : SafeBuildStObj( unifiedBinPath );
+                        StObjCollectorResult? firstRun = null;
+                        if( resolver == null )
+                        {
+                            if( unifiedBinPath.Assemblies.Count == 0 )
+                            {
+                                _monitor.Error( "No Assemblies specified. Executing a setup with no content is an error." );
+                                return _status.Success = false;
+                            }
+                            firstRun = SafeBuildStObj( unifiedBinPath );
+                        }
+                        else
+                        {
+                            firstRun = resolver.GetUnifiedResult( unifiedBinPath );
+                        }
                         if( firstRun == null ) return _status.Success = false;
                         // Primary StObjMap has been successfully built, we can initialize the run context
                         // with this primary StObjMap and the bin paths that use it (including the unifiedBinPath).
