@@ -15,6 +15,9 @@ namespace CK.Setup
     /// Implements the Json serialization. This class extends the Poco classes to support
     /// the API exposed as extension methods by the CK.Core.PocoJsonSerializer static
     /// class (in CK.Poco.Json).
+    /// <para>
+    /// 
+    /// </para>
     /// </summary>
     public partial class PocoJsonSerializerImpl : ICodeGenerator, IJsonSerializationCodeGen
     {

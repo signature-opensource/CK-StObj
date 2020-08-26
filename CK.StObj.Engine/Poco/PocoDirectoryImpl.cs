@@ -12,8 +12,10 @@ namespace CK.Setup
 {
     /// <summary>
     /// Code source generator for <see cref="IPoco"/>.
+    /// Generates the implementation of the <see cref="PocoDirectory"/> abstract real object
+    /// and all the Poco final classes.
     /// </summary>
-    public class PocoSourceGenerator : AutoImplementorType
+    public class PocoDirectoryImpl : AutoImplementorType
     {
         /// <summary>
         /// Generates the <paramref name="scope"/> that is the PocoDirectory_CK class and

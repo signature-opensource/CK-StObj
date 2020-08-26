@@ -60,7 +60,7 @@ namespace CK.Setup
         /// <param name="informationalVersion">Optional informational version attribute content.</param>
         /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
         /// <returns>True on success, false on error.</returns>
-        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, List<SecondPassCodeGeneration> collector )
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, List<MultiPassCodeGeneration> collector )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
@@ -132,7 +132,7 @@ namespace CK.Setup
                     // Calls all ICodeGenerator items.
                     foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
                     {
-                        var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                        var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector.Add( second );
                     }
                     
@@ -186,7 +186,7 @@ namespace CK.Setup
             IActivityMonitor monitor,
             string finalFilePath,
             ICodeGenerationContext codeGenContext,
-            List<SecondPassCodeGeneration> secondPass,
+            List<MultiPassCodeGeneration> secondPass,
             Func<SHA1Value,bool> availableStObjMap )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
@@ -198,7 +198,7 @@ namespace CK.Setup
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
-                    SecondPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
+                    MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
                 }
                 if( errorSummary != null )
                 {

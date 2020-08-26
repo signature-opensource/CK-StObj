@@ -6,6 +6,11 @@ namespace CK.Setup
 {
     /// <summary>
     /// Provides services related to Json serialization support.
+    /// <para>
+    /// This service enables enums or collections types to be registered as Json serializable objects but don't
+    /// expose yet any support to register any type along with their serializer/deserializer code generator.
+    /// This could be done if supporting Json serialization of other type families than IPoco. 
+    /// </para>
     /// </summary>
     public interface IJsonSerializationCodeGen
     {

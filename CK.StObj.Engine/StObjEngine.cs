@@ -184,25 +184,26 @@ namespace CK.Setup
                     }
                     if( _status.Success )
                     {
-                        // This is where all aspects runs: this where CK.Setupable.Engine.SetupableAspect.Run():
+                        // This is where all aspects runs before Code generation: this is where CK.Setupable.Engine.SetupableAspect.Run():
                         // - Builds the ISetupItem items (that support 3 steps setup) associated to each StObj (relies on EngineMap.StObjs.OrderedStObjs).
                         // - Projects the StObj topological order on the ISetupItem items graph.
                         // - Calls the DynamicItemInitialize methods that can create new Setup items (typically as child of existing containers like SqlProcedure on SqlTable)
                         // - The ISetupItems are then sorted topologically (this is the second graph).
                         // - The Init/Install/Settle steps are executed.
-                        runCtx.RunAspects( () => _status.Success = false );
+                        runCtx.RunAspects( () => _status.Success = false, false );
                     }
+                    // Code Generation.
                     if( _status.Success )
                     {
                         string dllName = _config.GeneratedAssemblyName;
                         if( !dllName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) ) dllName += ".dll";
                         using( _monitor.OpenInfo( "Final Code Generation." ) )
                         {
-                            var secondPass = new (StObjEngineRunContext.GenBinPath GenContext, List<SecondPassCodeGeneration> SecondPasses)[runCtx.AllBinPaths.Count];
+                            var secondPass = new (StObjEngineRunContext.GenBinPath GenContext, List<MultiPassCodeGeneration> SecondPasses)[runCtx.AllBinPaths.Count];
                             int i = 0;
                             foreach( var g in runCtx.AllBinPaths )
                             {
-                                var second = new List<SecondPassCodeGeneration>();
+                                var second = new List<MultiPassCodeGeneration>();
                                 secondPass[i++] = (g, second);
                                 if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second ) )
                                 {
@@ -261,6 +262,11 @@ namespace CK.Setup
                             }
                         }
                     }
+                    if( _status.Success )
+                    {
+                        runCtx.RunAspects( () => _status.Success = false, true );
+                    }
+                    // Post Code Generation.
                     if( !_status.Success )
                     {
                         var errorPath = _status.LastErrorPath;

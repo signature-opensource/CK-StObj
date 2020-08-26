@@ -7,7 +7,7 @@ namespace CK.Core
     /// The Poco directory registers the <see cref="IPocoFactory"/> by their
     /// <see cref="IPocoFactory.Name"/> and <see cref="IPocoFactory.PreviousNames"/>.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.PocoSourceGenerator, CK.StObj.Engine" )]
+    [ContextBoundDelegation( "CK.Setup.PocoDirectoryImpl, CK.StObj.Engine" )]
     public abstract class PocoDirectory : IRealObject
     {
         /// <summary>

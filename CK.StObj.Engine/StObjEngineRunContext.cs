@@ -113,9 +113,9 @@ namespace CK.Setup
 
         public void PushDeferredAction( Func<IActivityMonitor, IStObjEngineRunContext, bool> postAction ) => _trampoline.Push( postAction );
 
-        internal void RunAspects( Func<bool> onError )
+        internal void RunAspects( Func<bool> onError, bool postCode )
         {
-            using( _monitor.OpenInfo( "Running Aspects." ) )
+            using( _monitor.OpenInfo( $"Running Aspects ({(postCode ? "Post" : "Before" )} Code Generation)." ) )
             {
                 foreach( var a in _startContext.Aspects )
                 {
@@ -123,7 +123,8 @@ namespace CK.Setup
                     {
                         try
                         {
-                            if( !a.Run( _monitor, this ) ) onError();
+                            bool success = postCode ? a.RunPostCode( _monitor, this ) : a.Run( _monitor, this );
+                            if( !success ) onError();
                         }
                         catch( Exception ex )
                         {

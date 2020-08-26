@@ -14,11 +14,11 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Encapsulates the result of the first run of code generation that requires a second run
+    /// Encapsulates the result of the first run of code generation that requires one (or more) subsequent runs
     /// with the help of a new instance or a method: dependency injection can be configured during the first pass
     /// and <see cref="Implementor"/> can use any required dependencies.
     /// </summary>
-    public abstract class SecondPassCodeGeneration
+    public abstract class MultiPassCodeGeneration
     {
         /// <summary>
         /// Gets the <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/>, <see cref="IAutoImplementorType"/>
@@ -79,14 +79,14 @@ namespace CK.Setup
         /// <param name="context">The code generation context.</param>
         /// <param name="passes">The result of the first pass.</param>
         /// <returns>True on success, false on error.</returns>
-        public static bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context, List<SecondPassCodeGeneration> passes )
+        public static bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context, List<MultiPassCodeGeneration> passes )
         {
             if( passes.Count > 0 )
             {
                 int passNumber = 0;
                 for(; ; )
                 {
-                    List<SecondPassCodeGeneration>? next = null;
+                    List<MultiPassCodeGeneration>? next = null;
                     using( monitor.OpenInfo( $"Running code generation pass n°{++passNumber} with {passes.Count} code generators." ) )
                     {
                         foreach( var s in passes )
@@ -97,7 +97,7 @@ namespace CK.Setup
                             }
                             if( s._subsequentRun != null )
                             {
-                                if( next == null ) next = new List<SecondPassCodeGeneration>();
+                                if( next == null ) next = new List<MultiPassCodeGeneration>();
                                 next.Add( s );
                             }
                         }
@@ -209,11 +209,11 @@ namespace CK.Setup
         /// <param name="scope">See <see cref="TypeScope"/>.</param>
         /// <param name="toImplement">See <see cref="Target"/>.</param>
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
-        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass<T>( IActivityMonitor monitor,
-                                                                                         IAutoImplementor<T> first,
-                                                                                         ICodeGenerationContext context,
-                                                                                         ITypeScope scope,
-                                                                                         T toImplement )
+        public static (bool Success, MultiPassCodeGeneration? SecondPass) FirstPass<T>( IActivityMonitor monitor,
+                                                                                        IAutoImplementor<T> first,
+                                                                                        ICodeGenerationContext context,
+                                                                                        ITypeScope scope,
+                                                                                        T toImplement )
             where T : MemberInfo
         {
             var r = first.Implement( monitor, toImplement, context, scope );
@@ -227,7 +227,7 @@ namespace CK.Setup
         /// <param name="first">The initial auto implementor.</param>
         /// <param name="context">The generation context.</param>
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
-        public static (bool Success, SecondPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor,
+        public static (bool Success, MultiPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor,
                                                                                       ICodeGenerator first,
                                                                                       ICodeGenerationContext context )
         {
@@ -235,7 +235,7 @@ namespace CK.Setup
             return HandleFirstResult<Type>( monitor, r, first, context, null, null );
         }
 
-        static (bool Success, SecondPassCodeGeneration? SecondPass) HandleFirstResult<T>( IActivityMonitor monitor, AutoImplementationResult r, object first, ICodeGenerationContext context, ITypeScope? scope, T? toImplement ) where T : MemberInfo
+        static (bool Success, MultiPassCodeGeneration? SecondPass) HandleFirstResult<T>( IActivityMonitor monitor, AutoImplementationResult r, object first, ICodeGenerationContext context, ITypeScope? scope, T? toImplement ) where T : MemberInfo
         {
             Debug.Assert( first is ICodeGenerator || first is IAutoImplementor<T> );
             Debug.Assert( (first is ICodeGenerator) == (toImplement == null) );
@@ -297,7 +297,7 @@ namespace CK.Setup
             return mA[0]!;
         }
 
-        private protected SecondPassCodeGeneration( object firstRunner, ITypeScope? s, MemberInfo implementor, MemberInfo? target )
+        private protected MultiPassCodeGeneration( object firstRunner, ITypeScope? s, MemberInfo implementor, MemberInfo? target )
         {
             FirstRunner = firstRunner;
             TypeScope = s;
@@ -307,7 +307,7 @@ namespace CK.Setup
 
         private protected abstract AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl );
 
-        sealed class CodeGeneratorResult : SecondPassCodeGeneration
+        sealed class CodeGeneratorResult : MultiPassCodeGeneration
         {
             public CodeGeneratorResult( ICodeGenerator first, MemberInfo implementor )
                 : base( first, null, implementor, null )
@@ -322,7 +322,7 @@ namespace CK.Setup
             }
         }
 
-        abstract class GenericLayer<T> : SecondPassCodeGeneration where T : MemberInfo
+        abstract class GenericLayer<T> : MultiPassCodeGeneration where T : MemberInfo
         {
             private protected GenericLayer( IAutoImplementor<T> firstRunner, ITypeScope s, MemberInfo implementor, T target )
                 : base( firstRunner, s, implementor, target )

@@ -203,7 +203,7 @@ namespace CK.Testing.StObjEngine
             var ctx = new SimpleEngineRunContext( result );
             ctx.UnifiedCodeContext.CompileOption = compileOption;
             ctx.UnifiedCodeContext.SaveSource = saveSource;
-            var secondPass = new List<SecondPassCodeGeneration>();
+            var secondPass = new List<MultiPassCodeGeneration>();
             string finalFilePath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
             if( !result.GenerateSourceCodeFirstPass( monitor, ctx.UnifiedCodeContext, null, secondPass ) ) return default;
             Func<SHA1Value, bool> mapFinder = v => StObjContextRoot.GetMapInfo( v, monitor ) != null;
