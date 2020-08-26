@@ -5,7 +5,7 @@ using CK.Core;
 namespace CK.Setup
 {
     /// <summary>
-    /// Classes that implement this interface can participate in code generation.
+    /// Classes that implement this interface can participate in CSharp code generation.
     /// </summary>
     /// <remarks>
     /// This is not defined in the CK.StObj.Model since this is typically implemented by attributes, but

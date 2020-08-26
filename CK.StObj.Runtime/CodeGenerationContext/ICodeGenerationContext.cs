@@ -30,11 +30,6 @@ namespace CK.Setup
         IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 
         /// <summary>
-        /// Gets the <see cref="IDynamicAssembly"/> to use to generate code of the <see cref="CurrentRun"/>.
-        /// </summary>
-        IDynamicAssembly Assembly { get; }
-
-        /// <summary>
         /// Gets whether this is the initial run (on the <see cref="UnifiedBinPath"/>) or a secondary run.
         /// </summary>
         bool IsUnifiedRun { get; }
@@ -70,6 +65,11 @@ namespace CK.Setup
         /// or <see cref="AutoImplementationResult.MethodName"/>) can use them.
         /// </summary>
         ISimpleServiceContainer GlobalServiceContainer { get; }
+
+        /// <summary>
+        /// Gets the <see cref="IDynamicAssembly"/> to use to generate code of the <see cref="CurrentRun"/>.
+        /// </summary>
+        IDynamicAssembly Assembly { get; }
 
         /// <summary>
         /// Gets whether the source code must eventually be saved.
