@@ -77,9 +77,9 @@ namespace CK.Testing.StObjEngine
         }
 
         /// <summary>
-        /// Mutable implementation of <see cref="ICodeGenerationContext"/>.
+        /// Mutable implementation of <see cref="ICSCodeGenerationContext"/>.
         /// </summary>
-        public class CodeGenerationContext : ICodeGenerationContext
+        public class CodeGenerationContext : ICSCodeGenerationContext
         {
             readonly StObjEngine.SimpleEngineRunContext _global;
             readonly GeneratedBinPath _currentRun;
@@ -125,14 +125,14 @@ namespace CK.Testing.StObjEngine
 
             void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
             {
-                if( UnifiedBinPath != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
+                if( UnifiedBinPath != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
                 if( addOrUpdate ) _global._unifiedRunCache[key] = o;
                 else _global._unifiedRunCache.Add( key, o );
             }
 
             object ICodeGenerationContext.GetUnifiedRunResult( string key )
             {
-                if( UnifiedBinPath == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
+                if( UnifiedBinPath == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
                 return _global._unifiedRunCache[key];
             }
         }

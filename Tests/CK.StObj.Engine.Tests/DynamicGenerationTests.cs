@@ -262,7 +262,7 @@ namespace CK.StObj.Engine.Tests
             /// Actual implementation that takes care of all the abstract properties.
             /// This doesn't handle abstract methods at all.
             /// </summary>
-            public class DefaultPropertyImplementationAttributeImpl : IAutoImplementorType, IAutoImplementorProperty
+            public class DefaultPropertyImplementationAttributeImpl : ICSCodeGeneratorType, IAutoImplementorProperty
             {
                 readonly DefaultPropertyImplementationAttribute _attr;
 
@@ -284,12 +284,12 @@ namespace CK.StObj.Engine.Tests
                 // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
                 public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
 
-                // We choose to implement all the properties as a whole in Implement method below: by returning AutoImplementationResult.Success
+                // We choose to implement all the properties as a whole in Implement method below: by returning CSCodeGenerationResult.Success
                 // we tell the engine: "Okay, I handled it, please continue your business."
                 // (We can also implement each property here and do nothing in the Implement method.)
-                AutoImplementationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
+                CSCodeGenerationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICSCodeGenerationContext c, ITypeScope typeBuilder ) => CSCodeGenerationResult.Success;
 
-                public AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     foreach( var p in classType.GetProperties() )
                     {
@@ -308,7 +308,7 @@ namespace CK.StObj.Engine.Tests
                         }
                         scope.Append( ";" ).NewLine();
                     }
-                    return AutoImplementationResult.Success;
+                    return CSCodeGenerationResult.Success;
                 }
             }
 
@@ -369,7 +369,7 @@ namespace CK.StObj.Engine.Tests
         }
 
         [Test]
-        public void IAutoImplementorType_implements_interface()
+        public void ICSCodeGenratorType_implements_interface()
         {
             new CTypeImplementor().DoTest();
         }
@@ -418,22 +418,22 @@ namespace CK.StObj.Engine.Tests
                 string IHelpTheCodeGeneration();
             }
 
-            public class AutoImpl1 : AutoImplementorType
+            public class AutoImpl1 : CSCodeGeneratorType
             {
                 class SourceCodeHelper1 : ISourceCodeHelper1
                 {
                     public string IHelpTheCodeGeneration() => "I'm great!";
                 }
 
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     var helper = new SourceCodeHelper1();
                     c.CurrentRun.ServiceContainer.Add( helper );
                     c.CurrentRun.ServiceContainer.Add<ISourceCodeHelper1>( helper );
-                    return new AutoImplementationResult( typeof( ActualImpl1 ) );
+                    return new CSCodeGenerationResult( typeof( ActualImpl1 ) );
                 }
 
-                class ActualImpl1 : AutoImplementorType
+                class ActualImpl1 : CSCodeGeneratorType
                 {
                     readonly SourceCodeHelper1 _h1;
                     readonly SourceCodeHelper2 _h2;
@@ -448,11 +448,11 @@ namespace CK.StObj.Engine.Tests
                         _h2 = h2;
                     }
 
-                    public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                    public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                     {
                         _theOwner.Should().NotBeNull();
                         monitor.Info( $"ActualImpl1: {_h1.IHelpTheCodeGeneration()}, {_h2.IAlsoHelpTheCodeGeneration()}." );
-                        return AutoImplementationResult.Success;
+                        return CSCodeGenerationResult.Success;
                     }
                 }
             }
@@ -467,15 +467,15 @@ namespace CK.StObj.Engine.Tests
                 public string ICannotHelpTheCodeGeneration() => "Because nobody added me :'(.";
             }
 
-            public class AutoImpl2 : AutoImplementorType
+            public class AutoImpl2 : CSCodeGeneratorType
             {
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     c.CurrentRun.ServiceContainer.Add( new SourceCodeHelper2() );
-                    return new AutoImplementationResult( typeof( ActualImpl2 ) );
+                    return new CSCodeGenerationResult( typeof( ActualImpl2 ) );
                 }
 
-                public class ActualImpl2 : AutoImplementorType
+                public class ActualImpl2 : CSCodeGeneratorType
                 {
                     readonly ISourceCodeHelper1 _h1;
                     readonly SourceCodeHelper2 _h2;
@@ -486,10 +486,10 @@ namespace CK.StObj.Engine.Tests
                         _h2 = h2;
                     }
 
-                    public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                    public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                     {
                         monitor.Info( $"ActualImpl2: {_h1.IHelpTheCodeGeneration()}, {_h2.IAlsoHelpTheCodeGeneration()}." );
-                        return AutoImplementationResult.Success;
+                        return CSCodeGenerationResult.Success;
                     }
                 }
             }
@@ -531,36 +531,36 @@ namespace CK.StObj.Engine.Tests
                 string IHelpTheCodeGeneration();
             }
 
-            public class AutoImpl1 : AutoImplementorType
+            public class AutoImpl1 : CSCodeGeneratorType
             {
                 class SourceCodeHelper : ISourceCodeHelper
                 {
                     public string IHelpTheCodeGeneration() => "I'm great!";
                 }
 
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     c.CurrentRun.ServiceContainer.Add<ISourceCodeHelper>( new SourceCodeHelper() );
-                    return AutoImplementationResult.Success;
+                    return CSCodeGenerationResult.Success;
                 }
             }
 
-            public class AutoImpl2 : AutoImplementorType
+            public class AutoImpl2 : CSCodeGeneratorType
             {
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
-                    return new AutoImplementationResult( nameof(DoImplement) );
+                    return new CSCodeGenerationResult( nameof(DoImplement) );
                 }
 
-                AutoImplementationResult DoImplement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                CSCodeGenerationResult DoImplement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
                 {
                     c.Should().NotBeNull();
                     scope.Should().NotBeNull();
                     monitor.Info( $"AutoImpl2: {helper.IHelpTheCodeGeneration()}." );
-                    return new AutoImplementationResult( nameof( FinalizeImpl ) );
+                    return new CSCodeGenerationResult( nameof( FinalizeImpl ) );
                 }
 
-                bool FinalizeImpl( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                bool FinalizeImpl( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
                 {
                     monitor.Info( $"AutoImpl in another pass: {helper.IHelpTheCodeGeneration()}." );
                     return true;

@@ -7,9 +7,9 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Global context that is provided to <see cref="IAutoImplementorType"/>, <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/>
-    /// implement methods.
+    /// Global context that is provided to code generators.
     /// This context is bound to one <see cref="IGeneratedBinPath"/> (the <see cref="CurrentRun"/>) that groups 0 or more equivalent <see cref="BinPathConfiguration"/>.
+    /// The <see cref="ICSCodeGenerationContext"/> specializes this code generation context to expose properties specific to CSharp code generation.
     /// </summary>
     public interface ICodeGenerationContext
     {
@@ -61,28 +61,10 @@ namespace CK.Setup
         /// <summary>
         /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
         /// <see cref="IStObjEngineAspect"/> classes and <see cref="ICodeGenerator.Implement"/> methods typically registers services
-        /// inside this container so that deferred implementors (<see cref="AutoImplementationResult.ImplementorType"/>
-        /// or <see cref="AutoImplementationResult.MethodName"/>) can use them.
+        /// inside this container so that deferred implementors (<see cref="CSCodeGenerationResult.ImplementorType"/>
+        /// or <see cref="CSCodeGenerationResult.MethodName"/>) can use them.
         /// </summary>
         ISimpleServiceContainer GlobalServiceContainer { get; }
 
-        /// <summary>
-        /// Gets the <see cref="IDynamicAssembly"/> to use to generate code of the <see cref="CurrentRun"/>.
-        /// </summary>
-        IDynamicAssembly Assembly { get; }
-
-        /// <summary>
-        /// Gets whether the source code must eventually be saved.
-        /// See <see cref="CompileOption"/>.
-        /// </summary>
-        bool SaveSource { get; }
-
-        /// <summary>
-        /// Gets whether the generated source code must be parsed and or compiled.
-        /// <see cref="SaveSource"/> can be false and this can be <see cref="CompileOption.None"/>
-        /// when <see cref="IsUnifiedRun"/> is true and the unified bin path doesn't correspond to any of the
-        /// existing <see cref="BinPathConfiguration"/>.
-        /// </summary>
-        CompileOption CompileOption { get; }
     }
 }

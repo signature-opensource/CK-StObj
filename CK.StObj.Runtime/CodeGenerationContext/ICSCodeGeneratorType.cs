@@ -13,15 +13,15 @@ namespace CK.Setup
     /// not by the original ("Model") attributes but by their delegated implementations that depend on
     /// the runtimes/engines (<see cref="ContextBoundDelegationAttribute.ActualAttributeTypeAssemblyQualifiedName"/>). 
     /// </remarks>
-    public interface IAutoImplementorType : IAutoImplementor<Type>
+    public interface ICSCodeGeneratorType : IAutoImplementor<Type>
     {
         /// <summary>
         /// Must check whether the given abstract method is handled by this implementor.
-        /// When null is returned, the method must be handled by another <see cref="IAutoImplementorType"/> or
+        /// When null is returned, the method must be handled by another <see cref="ICSCodeGeneratorType"/> or
         /// a <see cref="IAutoImplementorMethod"/>.
         /// <para>
-        /// A typical implementation (like the <see cref="AutoImplementorType"/> base type helper) returns this type implementor that also
-        /// implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/> with a simple return <see cref="AutoImplementationResult.Success"/> implementation.
+        /// A typical implementation (like the <see cref="CSCodeGeneratorType"/> base type helper) returns this type implementor that also
+        /// implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/> with a simple return <see cref="CSCodeGenerationResult.Success"/> implementation.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -31,11 +31,11 @@ namespace CK.Setup
 
         /// <summary>
         /// Must check whether the given abstract method is handled by this implementor.
-        /// When null is returned, the method must be handled by another <see cref="IAutoImplementorType"/> or
+        /// When null is returned, the method must be handled by another <see cref="ICSCodeGeneratorType"/> or
         /// a <see cref="IAutoImplementorProperty"/>.
         /// <para>
-        /// A typical implementation (like the <see cref="AutoImplementorType"/> base type helper) returns this type implementor that also
-        /// implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/> with a simple return <see cref="AutoImplementationResult.Success"/> implementation.
+        /// A typical implementation (like the <see cref="CSCodeGeneratorType"/> base type helper) returns this type implementor that also
+        /// implements <see cref="IAutoImplementorMethod"/> and <see cref="IAutoImplementorProperty"/> with a simple return <see cref="CSCodeGenerationResult.Success"/> implementation.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>

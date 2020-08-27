@@ -23,9 +23,9 @@ namespace CK.StObj.Engine.Tests.Poco
             int NormalOne { get; set; }
         }
 
-        public class GlobalSequenceGeneratorImpl : ICodeGenerator
+        public class GlobalSequenceGeneratorImpl : ICSCodeGenerator
         {
-            public AutoImplementationResult Implement( IActivityMonitor monitor, ICodeGenerationContext c )
+            public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
             {
                 foreach( var poco in c.Assembly.GetPocoSupportResult().Roots )
                 {
@@ -38,7 +38,7 @@ namespace CK.StObj.Engine.Tests.Poco
                         }
                     }
                 }
-                return AutoImplementationResult.Success;
+                return CSCodeGenerationResult.Success;
             }
         }
 

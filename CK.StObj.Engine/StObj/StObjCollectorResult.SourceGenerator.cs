@@ -52,15 +52,15 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Executes the first pass of code generation. This must be called on all <see cref="ICodeGenerationContext.AllBinPaths"/>, starting with
-        /// the <see cref="ICodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
+        /// Executes the first pass of code generation. This must be called on all <see cref="ICSCodeGenerationContext.AllBinPaths"/>, starting with
+        /// the <see cref="ICSCodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="codeGenContext">The code generation context that must be the one of this result.</param>
         /// <param name="informationalVersion">Optional informational version attribute content.</param>
         /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
         /// <returns>True on success, false on error.</returns>
-        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, List<MultiPassCodeGeneration> collector )
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext, string? informationalVersion, List<MultiPassCodeGeneration> collector )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
@@ -129,8 +129,8 @@ namespace CK.Setup
                     // Generates the StObjContextRoot implementation.
                     GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
-                    // Calls all ICodeGenerator items.
-                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
+                    // Calls all ICSCodeGenerator items.
+                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() ) )
                     {
                         var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector.Add( second );
@@ -167,15 +167,15 @@ namespace CK.Setup
 
         /// <summary>
         /// Finalizes the source code generation and compilation.
-        /// Sources (if <see cref="ICodeGenerationContext.SaveSource"/> is true) will be generated
+        /// Sources (if <see cref="ICSCodeGenerationContext.SaveSource"/> is true) will be generated
         /// in the <paramref name="finalFilePath"/> folder.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="finalFilePath">The final generated assembly full path.</param>
         /// <param name="codeGenContext">The code generation context.</param>
         /// <param name="secondPass">
-        /// The list of second passes actions to apply on the <see cref="ICodeGenerationContext"/> before
-        /// generating the source file and compiling them (<see cref="ICodeGenerationContext.CompileOption"/>).
+        /// The list of second passes actions to apply on the <see cref="ICSCodeGenerationContext"/> before
+        /// generating the source file and compiling them (<see cref="ICSCodeGenerationContext.CompileOption"/>).
         /// </param>
         /// <param name="availableStObjMap">
         /// Predicate that states whether a signature can be bound to an already available StObjMap.
@@ -185,7 +185,7 @@ namespace CK.Setup
         public CodeGenerateResult GenerateSourceCodeSecondPass(
             IActivityMonitor monitor,
             string finalFilePath,
-            ICodeGenerationContext codeGenContext,
+            ICSCodeGenerationContext codeGenContext,
             List<MultiPassCodeGeneration> secondPass,
             Func<SHA1Value,bool> availableStObjMap )
         {

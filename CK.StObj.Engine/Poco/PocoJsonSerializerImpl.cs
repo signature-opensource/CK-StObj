@@ -19,7 +19,7 @@ namespace CK.Setup
     /// 
     /// </para>
     /// </summary>
-    public partial class PocoJsonSerializerImpl : ICodeGenerator, IJsonSerializationCodeGen
+    public partial class PocoJsonSerializerImpl : ICSCodeGenerator, IJsonSerializationCodeGen
     {
         IActivityMonitor? _monitor;
         ITypeScope? _pocoDirectory;
@@ -40,8 +40,8 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="c">The code generation context.</param>
-        /// <returns>Always <see cref="AutoImplementationResult.Success"/>.</returns>
-        public AutoImplementationResult Implement( IActivityMonitor monitor, ICodeGenerationContext c )
+        /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
+        public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
             _monitor = monitor;
             _pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
@@ -53,7 +53,7 @@ namespace CK.Setup
             if( pocoSupport.Roots.Count == 0 )
             {
                 monitor.Info( "No Poco available. Skipping Poco serialization code generation." );
-                return new AutoImplementationResult( nameof( Finalize ) );
+                return new CSCodeGenerationResult( nameof( Finalize ) );
             }
 
             // IPoco and IClosedPoco are not in the "OtherInterfaces".
@@ -99,10 +99,10 @@ namespace CK.Setup
                 AddUntypedHandler( other.Key );
             }
 
-            return new AutoImplementationResult( nameof( GeneratePocoSupport ) );
+            return new CSCodeGenerationResult( nameof( GeneratePocoSupport ) );
         }
 
-        AutoImplementationResult GeneratePocoSupport( IActivityMonitor monitor, ICodeGenerationContext c, IPocoSupportResult pocoSupport )
+        CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport )
         { 
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
@@ -128,7 +128,7 @@ namespace CK.Setup
                 ExtendPocoClass( root, pocoClass );
             }
 
-            return new AutoImplementationResult( nameof( Finalize ) );
+            return new CSCodeGenerationResult( nameof( Finalize ) );
         }
 
         void Finalize( IActivityMonitor monitor )

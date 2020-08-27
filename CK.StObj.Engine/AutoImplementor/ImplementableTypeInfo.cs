@@ -25,12 +25,12 @@ namespace CK.Setup
         /// </summary>
         public class NoImplementationMarker : IAutoImplementorMethod, IAutoImplementorProperty
         {
-            AutoImplementationResult IAutoImplementor<MethodInfo>.Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
+            CSCodeGenerationResult IAutoImplementor<MethodInfo>.Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
 
-            AutoImplementationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope b )
+            CSCodeGenerationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICSCodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
@@ -50,9 +50,9 @@ namespace CK.Setup
         public readonly Type AbstractType;
 
         /// <summary>
-        /// Gets the <see cref="IAutoImplementorType"/>.
+        /// Gets the <see cref="ICSCodeGeneratorType"/>.
         /// </summary>
-        public readonly IReadOnlyList<IAutoImplementorType> TypeImplementors;
+        public readonly IReadOnlyList<ICSCodeGeneratorType> TypeImplementors;
 
         /// <summary>
         /// Gets the current property information for all abstract properties of the <see cref="AbstractType"/>.
@@ -69,7 +69,7 @@ namespace CK.Setup
         /// </summary>
         public Type? StubType => _stubType;
 
-        ImplementableTypeInfo( Type t, IAutoImplementorType[] typeImplementor, IReadOnlyList<ImplementableAbstractPropertyInfo> p, IReadOnlyList<ImplementableAbstractMethodInfo> m )
+        ImplementableTypeInfo( Type t, ICSCodeGeneratorType[] typeImplementor, IReadOnlyList<ImplementableAbstractPropertyInfo> p, IReadOnlyList<ImplementableAbstractMethodInfo> m )
         {
             AbstractType = t;
             PropertiesToImplement = p;
@@ -111,7 +111,7 @@ namespace CK.Setup
             // Gets whether the Type itself is marked with an attribute that claims that the type is handled.
             bool isTypeAutoImplemented = HasAutoImplementationClaim( attributeProvider, abstractType );
 
-            IAutoImplementorType[] typeImplementors = attributeProvider.GetCustomAttributes<IAutoImplementorType>( abstractType ).ToArray();
+            ICSCodeGeneratorType[] typeImplementors = attributeProvider.GetCustomAttributes<ICSCodeGeneratorType>( abstractType ).ToArray();
 
             var candidates = abstractType.GetMethods( BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public ).Where( m => !m.IsSpecialName && m.IsAbstract );
             int nbUncovered = 0;
@@ -220,7 +220,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="c">The target dynamic assembly.</param>
         /// <param name="secondPass">The second pass collector.</param>
-        public void RunFirstPass( IActivityMonitor monitor, ICodeGenerationContext c, List<MultiPassCodeGeneration> secondPass )
+        public void RunFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext c, List<MultiPassCodeGeneration> secondPass )
         {
             if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 

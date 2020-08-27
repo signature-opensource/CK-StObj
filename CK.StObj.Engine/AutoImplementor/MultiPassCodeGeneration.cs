@@ -21,7 +21,7 @@ namespace CK.Setup
     public abstract class MultiPassCodeGeneration
     {
         /// <summary>
-        /// Gets the <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/>, <see cref="IAutoImplementorType"/>
+        /// Gets the <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/>, <see cref="ICSCodeGeneratorType"/>
         /// or <see cref="ICodeGenerator"/> that initiated this second pass.
         /// </summary>
         public object FirstRunner { get; }
@@ -72,14 +72,14 @@ namespace CK.Setup
         ///     <item>If <see cref="Implementor"/> is a Type: instantiating it and executing its <see cref="IAutoImplementor{T}.Implement"/> method.</item>
         ///     <item>If <see cref="Implementor"/> is a MethodInfo: calling it.</item>
         /// </list>
-        /// Subsequent runs can use methods as long as a <see cref="AutoImplementationResult(string)"/> is returned by implemetors.
+        /// Subsequent runs can use methods as long as a <see cref="CSCodeGenerationResult(string)"/> is returned by implemetors.
         /// On error, a fatal or error message has necessarily been logged.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The code generation context.</param>
         /// <param name="passes">The result of the first pass.</param>
         /// <returns>True on success, false on error.</returns>
-        public static bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context, List<MultiPassCodeGeneration> passes )
+        public static bool RunSecondPass( IActivityMonitor monitor, ICSCodeGenerationContext context, List<MultiPassCodeGeneration> passes )
         {
             if( passes.Count > 0 )
             {
@@ -109,11 +109,11 @@ namespace CK.Setup
             return true;
         }
 
-        bool RunSecondPass( IActivityMonitor monitor, ICodeGenerationContext context )
+        bool RunSecondPass( IActivityMonitor monitor, ICSCodeGenerationContext context )
         {
             try
             {
-                AutoImplementationResult r;
+                CSCodeGenerationResult r;
                 if( Implementor is Type iType )
                 {
                     Debug.Assert( _secondRunner == null );
@@ -154,7 +154,7 @@ namespace CK.Setup
                     {
                         var p = parameters[i];
                         if( typeof( IActivityMonitor ) == p.ParameterType ) values[i] = monitor;
-                        else if( typeof( ICodeGenerationContext ) == p.ParameterType ) values[i] = context;
+                        else if( typeof( ICSCodeGenerationContext ) == p.ParameterType ) values[i] = context;
                         else if( typeof( MemberInfo ).IsAssignableFrom( p.ParameterType ) ) values[i] = Target;
                         else if( typeof( ITypeScope ) == p.ParameterType ) values[i] = TypeScope;
                         else
@@ -165,9 +165,9 @@ namespace CK.Setup
                         }
                     }
                     object? o = m.Invoke( _secondRunner, values );
-                    if( o == null ) r = AutoImplementationResult.Success;
-                    else if( o is AutoImplementationResult ) r = (AutoImplementationResult)o;
-                    else if( o is bool b ) r = b ? AutoImplementationResult.Success : AutoImplementationResult.Failed;
+                    if( o == null ) r = CSCodeGenerationResult.Success;
+                    else if( o is CSCodeGenerationResult ) r = (CSCodeGenerationResult)o;
+                    else if( o is bool b ) r = b ? CSCodeGenerationResult.Success : CSCodeGenerationResult.Failed;
                     else
                     {
                         monitor.Fatal( $"{ImplementorName} returned an unhandled type of object: {o}." );
@@ -211,7 +211,7 @@ namespace CK.Setup
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
         public static (bool Success, MultiPassCodeGeneration? SecondPass) FirstPass<T>( IActivityMonitor monitor,
                                                                                         IAutoImplementor<T> first,
-                                                                                        ICodeGenerationContext context,
+                                                                                        ICSCodeGenerationContext context,
                                                                                         ITypeScope scope,
                                                                                         T toImplement )
             where T : MemberInfo
@@ -228,17 +228,17 @@ namespace CK.Setup
         /// <param name="context">The generation context.</param>
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
         public static (bool Success, MultiPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor,
-                                                                                      ICodeGenerator first,
-                                                                                      ICodeGenerationContext context )
+                                                                                      ICSCodeGenerator first,
+                                                                                      ICSCodeGenerationContext context )
         {
             var r = first.Implement( monitor, context );
             return HandleFirstResult<Type>( monitor, r, first, context, null, null );
         }
 
-        static (bool Success, MultiPassCodeGeneration? SecondPass) HandleFirstResult<T>( IActivityMonitor monitor, AutoImplementationResult r, object first, ICodeGenerationContext context, ITypeScope? scope, T? toImplement ) where T : MemberInfo
+        static (bool Success, MultiPassCodeGeneration? SecondPass) HandleFirstResult<T>( IActivityMonitor monitor, CSCodeGenerationResult r, object first, ICSCodeGenerationContext context, ITypeScope? scope, T? toImplement ) where T : MemberInfo
         {
-            Debug.Assert( first is ICodeGenerator || first is IAutoImplementor<T> );
-            Debug.Assert( (first is ICodeGenerator) == (toImplement == null) );
+            Debug.Assert( first is ICSCodeGenerator || first is IAutoImplementor<T> );
+            Debug.Assert( (first is ICSCodeGenerator) == (toImplement == null) );
             if( r.HasError )
             {
                 monitor.Fatal( $"'{first.GetType().Name}.Implement' failed." );
@@ -249,9 +249,9 @@ namespace CK.Setup
             {
                 if( toImplement == null )
                 {
-                    if( !(typeof( ICodeGenerator ).IsAssignableFrom( r.ImplementorType )) )
+                    if( !(typeof( ICSCodeGenerator ).IsAssignableFrom( r.ImplementorType )) )
                     {
-                        monitor.Fatal( $"'{first.GetType().Name}.Implement' asked to use type '{r.ImplementorType}' that is not a ICodeGenerator." );
+                        monitor.Fatal( $"'{first.GetType().Name}.Implement' asked to use type '{r.ImplementorType}' that is not a ICSCodeGenerator." );
                         return (false, null);
                     }
                 }
@@ -271,7 +271,7 @@ namespace CK.Setup
             {
                 return toImplement switch
                 {
-                    null => (true, new CodeGeneratorResult( (ICodeGenerator)first, implementor )),
+                    null => (true, new CodeGeneratorResult( (ICSCodeGenerator)first, implementor )),
                     Type t => (true, new TypeResult( (IAutoImplementor<Type>)first, scope!, implementor, t )),
                     MethodInfo m => (true, new MethodResult( (IAutoImplementor<MethodInfo>)first, scope!, implementor, m )),
                     PropertyInfo p => (true, new PropertyResult( (IAutoImplementor<PropertyInfo>)first, scope!, implementor, p )),
@@ -305,20 +305,20 @@ namespace CK.Setup
             Target = target;
         }
 
-        private protected abstract AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl );
+        private protected abstract CSCodeGenerationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICSCodeGenerationContext context, object impl );
 
         sealed class CodeGeneratorResult : MultiPassCodeGeneration
         {
-            public CodeGeneratorResult( ICodeGenerator first, MemberInfo implementor )
+            public CodeGeneratorResult( ICSCodeGenerator first, MemberInfo implementor )
                 : base( first, null, implementor, null )
             {
             }
 
             public override string TargetName => String.Empty;
 
-            private protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
+            private protected override CSCodeGenerationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICSCodeGenerationContext context, object impl )
             {
-                return ((ICodeGenerator)impl).Implement( monitor, context );
+                return ((ICSCodeGenerator)impl).Implement( monitor, context );
             }
         }
 
@@ -333,7 +333,7 @@ namespace CK.Setup
 
             public new IAutoImplementor<T> FirstRunner => (IAutoImplementor<T>)base.FirstRunner;
 
-            private protected override AutoImplementationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICodeGenerationContext context, object impl )
+            private protected override CSCodeGenerationResult CallImplementorTypeMethod( IActivityMonitor monitor, ICSCodeGenerationContext context, object impl )
             {
                 Debug.Assert( !IsCodeGenerator && TypeScope != null );
                 Debug.Assert( impl is IAutoImplementor<T>, "This has been already tested." );

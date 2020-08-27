@@ -56,11 +56,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
         }
 
-        public class AAAAA : AutoImplementorType
+        public class AAAAA : CSCodeGeneratorType
         {
-            public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+            public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
             {
-                return AutoImplementationResult.Success;
+                return CSCodeGenerationResult.Success;
             }
         }
 

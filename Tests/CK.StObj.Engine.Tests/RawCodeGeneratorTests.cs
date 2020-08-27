@@ -14,7 +14,7 @@ namespace CK.StObj.Engine.Tests
     [TestFixture]
     public class RawCodeGeneratorTests
     {
-        public class CGen : ICodeGenerator
+        public class CGen : ICSCodeGenerator
         {
             public static bool Called;
 
@@ -22,10 +22,10 @@ namespace CK.StObj.Engine.Tests
             {
             }
 
-            public AutoImplementationResult Implement( IActivityMonitor monitor, ICodeGenerationContext codeGenContext )
+            public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
             {
                 Called = true;
-                return AutoImplementationResult.Success;
+                return CSCodeGenerationResult.Success;
             }
         }
 

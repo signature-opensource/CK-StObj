@@ -9,7 +9,7 @@ namespace CK.Setup
     /// equivalent of <see cref="AutoImplementationClaimAttribute"/>.
     /// </summary>
     /// <remarks>
-    /// See <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/> or <see cref="IAutoImplementorType"/>
+    /// See <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/> or <see cref="ICSCodeGeneratorType"/>
     /// that are able to actually implement methods and properties.
     /// <para>
     /// Attributes that support those interfaces can directly provide an implementation: when an attribute only support

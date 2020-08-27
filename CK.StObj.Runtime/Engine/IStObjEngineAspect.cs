@@ -68,7 +68,7 @@ namespace CK.Setup
         /// and following aspects are run, the final assembly is not generated and <see cref="Terminate"/> is
         /// called on all the aspects in reverse order.
         /// </returns>
-        bool RunPostCode( IActivityMonitor monitor, IStObjEngineRunContext context ) => true;
+        bool RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context ) => true;
 
         /// <summary>
         /// Called by the engine in reverse order after all aspects have <see cref="Run"/>.

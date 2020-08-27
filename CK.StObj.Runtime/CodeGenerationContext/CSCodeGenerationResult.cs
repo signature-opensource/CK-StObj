@@ -7,21 +7,22 @@ namespace CK.Setup
     /// <summary>
     /// Defines the outcome of the <see cref="ICodeGenerator.Implement"/> and <see cref="IAutoImplementor{T}.Implement"/>
     /// methods: either the implementation has been successfuly done, must be done by a dedicated type that must
-    /// be instantiated (and supports dependencies injection) or failed.
+    /// be instantiated (with dependencies injection support), must be done by calling another method on the same object
+    /// (with parameter dependencies injection support) or failed.
     /// </summary>
-    public readonly struct AutoImplementationResult
+    public readonly struct CSCodeGenerationResult
     {
         readonly bool _success;
 
         /// <summary>
         /// Express a successful, final, result.
         /// </summary>
-        public static readonly AutoImplementationResult Success = new AutoImplementationResult( true );
+        public static readonly CSCodeGenerationResult Success = new CSCodeGenerationResult( true );
 
         /// <summary>
         /// Express a failed, final, result.
         /// </summary>
-        public static readonly AutoImplementationResult Failed = new AutoImplementationResult( false );
+        public static readonly CSCodeGenerationResult Failed = new CSCodeGenerationResult( false );
 
         /// <summary>
         /// Gets whether an error occurred. When true, there is nothing more to do.
@@ -30,7 +31,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the type that must be instantiated and that will finalize the generation of the source code.
-        /// This type must be a <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/> or <see cref="IAutoImplementorType"/>
+        /// This type must be a <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/> or <see cref="ICSCodeGeneratorType"/>
         /// that must be the same as the initial implementor.
         /// </summary>
         public readonly Type? ImplementorType;
@@ -40,7 +41,7 @@ namespace CK.Setup
         /// </summary>
         public readonly string? MethodName;
 
-        AutoImplementationResult( bool success )
+        CSCodeGenerationResult( bool success )
         {
             _success = success;
             ImplementorType = null;
@@ -52,7 +53,7 @@ namespace CK.Setup
         /// See <see cref="ImplementorType"/>.
         /// </summary>
         /// <param name="implementor">The type to implement.</param>
-        public AutoImplementationResult( Type implementor )
+        public CSCodeGenerationResult( Type implementor )
         {
             _success = false;
             ImplementorType = implementor;
@@ -64,7 +65,7 @@ namespace CK.Setup
         /// See <see cref="MethodName"/>.
         /// </summary>
         /// <param name="unambiguousMethodName">The name of the metod to call.</param>
-        public AutoImplementationResult( string unambiguousMethodName )
+        public CSCodeGenerationResult( string unambiguousMethodName )
         {
             _success = false;
             ImplementorType = null;

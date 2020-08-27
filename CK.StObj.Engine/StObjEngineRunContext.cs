@@ -8,16 +8,17 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    class StObjEngineRunContext : IStObjEngineRunContext
+    class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineConfigureContext _startContext;
         readonly List<GenBinPath> _binPaths;
         readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
+        readonly StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext> _trampolinePostCode;
         readonly Dictionary<string, object> _unifiedRunCache;
         readonly Dictionary<object, object?> _codeGenerationGlobalMemory;
 
-        internal class GenBinPath : IGeneratedBinPath, ICodeGenerationContext
+        internal class GenBinPath : IGeneratedBinPath, ICSCodeGenerationContext
         {
             readonly StObjEngineRunContext _global;
 
@@ -61,24 +62,24 @@ namespace CK.Setup
 
             void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
             {
-                if( this != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
+                if( this != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
                 if( addOrUpdate ) _global._unifiedRunCache[key] = o;
                 else _global._unifiedRunCache.Add( key, o );
             }
 
             object ICodeGenerationContext.GetUnifiedRunResult( string key )
             {
-                if( this == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
+                if( this == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
                 return _global._unifiedRunCache[key];
             }
 
             IGeneratedBinPath ICodeGenerationContext.CurrentRun => this;
 
-            IDynamicAssembly ICodeGenerationContext.Assembly => Result.DynamicAssembly;
+            IDynamicAssembly ICSCodeGenerationContext.Assembly => Result.DynamicAssembly;
 
-            bool ICodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
+            bool ICSCodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
 
-            CompileOption ICodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
+            CompileOption ICSCodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
         }
 
 
@@ -89,6 +90,7 @@ namespace CK.Setup
             _startContext = startContext;
             _binPaths = new List<GenBinPath>();
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
+            _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
             _unifiedRunCache = new Dictionary<string, object>();
             _codeGenerationGlobalMemory = new Dictionary<object, object?>();
             AddResult( primaryCompatibleBinPaths, primaryResult );
@@ -101,7 +103,11 @@ namespace CK.Setup
 
         public IGeneratedBinPath UnifiedBinPath => _binPaths[0];
 
+        ICodeGenerationContext IStObjEnginePostCodeRunContext.UnifiedBinPath => _binPaths[0];
+
         IReadOnlyList<IGeneratedBinPath> IStObjEngineRunContext.AllBinPaths => _binPaths;
+
+        IReadOnlyList<ICodeGenerationContext> IStObjEnginePostCodeRunContext.AllBinPaths => _binPaths;
 
         public IReadOnlyList<GenBinPath> AllBinPaths => _binPaths;
 
@@ -112,6 +118,8 @@ namespace CK.Setup
         public IReadOnlyList<IStObjEngineAspect> Aspects => _startContext.Aspects;
 
         public void PushDeferredAction( Func<IActivityMonitor, IStObjEngineRunContext, bool> postAction ) => _trampoline.Push( postAction );
+
+        public void PushDeferredAction( Func<IActivityMonitor, IStObjEnginePostCodeRunContext, bool> postAction ) => _trampolinePostCode.Push( postAction );
 
         internal void RunAspects( Func<bool> onError, bool postCode )
         {
@@ -133,7 +141,8 @@ namespace CK.Setup
                         }
                     }
                 }
-                _trampoline.Execute( _monitor, onError );
+                if( postCode ) _trampolinePostCode.Execute( _monitor, onError );
+                else _trampoline.Execute( _monitor, onError );
             }
         }
 

@@ -222,7 +222,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             public string ActualCode { get; }
 
-            public AutoImplementationResult Implement( IActivityMonitor monitor, MethodInfo m, ICodeGenerationContext c, ITypeScope b )
+            public CSCodeGenerationResult Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope b )
             {
                 IFunctionScope mB = b.CreateOverride( m );
                 mB.Parent.Should().BeSameAs( b, "The function is ready to be implemented." );
@@ -230,7 +230,7 @@ namespace CK.StObj.Engine.Tests.Service
                 if( IsLambda ) mB.Append( "=> " ).Append( ActualCode ).Append( ';' ).NewLine();
                 else mB.Append( ActualCode );
 
-                return AutoImplementationResult.Success;
+                return CSCodeGenerationResult.Success;
             }
         }
 

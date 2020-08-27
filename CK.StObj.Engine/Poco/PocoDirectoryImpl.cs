@@ -15,7 +15,7 @@ namespace CK.Setup
     /// Generates the implementation of the <see cref="PocoDirectory"/> abstract real object
     /// and all the Poco final classes.
     /// </summary>
-    public class PocoDirectoryImpl : AutoImplementorType
+    public class PocoDirectoryImpl : CSCodeGeneratorType
     {
         /// <summary>
         /// Generates the <paramref name="scope"/> that is the PocoDirectory_CK class and
@@ -25,8 +25,8 @@ namespace CK.Setup
         /// <param name="classType">The <see cref="PocoDirectory"/> type.</param>
         /// <param name="c">Code generation context.</param>
         /// <param name="scope">The PocoDirectory_CK type scope.</param>
-        /// <returns>Always <see cref="AutoImplementationResult.Success"/>.</returns>
-        public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+        /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
+        public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
             Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );
 
@@ -44,7 +44,7 @@ namespace CK.Setup
                  .Append( "foreach( var n in f.PreviousNames ) _factories.Add( n, f );" ).NewLine()
                  .CloseBlock();
 
-            if( r.AllInterfaces.Count == 0 ) return AutoImplementationResult.Success;
+            if( r.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;
 
             foreach( var root in r.Roots )
             {
@@ -172,7 +172,7 @@ namespace CK.Setup
                        .NewLine();
                 }
             }
-            return AutoImplementationResult.Success;
+            return CSCodeGenerationResult.Success;
         }
     }
 }
