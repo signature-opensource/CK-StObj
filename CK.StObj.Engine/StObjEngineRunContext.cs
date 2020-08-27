@@ -62,14 +62,14 @@ namespace CK.Setup
 
             void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
             {
-                if( this != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
+                if( this != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
                 if( addOrUpdate ) _global._unifiedRunCache[key] = o;
                 else _global._unifiedRunCache.Add( key, o );
             }
 
             object ICodeGenerationContext.GetUnifiedRunResult( string key )
             {
-                if( this == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
+                if( this == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
                 return _global._unifiedRunCache[key];
             }
 

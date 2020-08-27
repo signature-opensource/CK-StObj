@@ -75,7 +75,7 @@ namespace CK.Setup
             _explicitRegisteredTypes.Add( type );
         }
 
-        public StObjEngineConfiguration ExternalConfiguration => _config;
+        public StObjEngineConfiguration StObjEngineConfiguration => _config;
 
         internal IReadOnlyList<Type> ExplicitRegisteredTypes => (IReadOnlyList<Type>?)_explicitRegisteredTypes ?? Type.EmptyTypes;
 

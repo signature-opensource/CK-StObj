@@ -60,9 +60,15 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
-        /// <see cref="IStObjEngineAspect"/> classes and <see cref="ICodeGenerator.Implement"/> methods typically registers services
-        /// inside this container so that deferred implementors (<see cref="CSCodeGenerationResult.ImplementorType"/>
+        /// <see cref="IStObjEngineAspect"/> classes typically registers services
+        /// inside this container so that code genrator can use them.
+        /// <para>
+        /// When a code generator supports a trampoline or any other means to defer a subsequent execution,
+        /// a code generation step can also registers any number of services that will be available to subsequent
+        /// code generator. A <see cref="ICSCodeGenerator.Implement"/> for instance can register services and 
+        /// deferred implementors (see <see cref="CSCodeGenerationResult.ImplementorType"/>
         /// or <see cref="CSCodeGenerationResult.MethodName"/>) can use them.
+        /// </para>
         /// </summary>
         ISimpleServiceContainer GlobalServiceContainer { get; }
 
