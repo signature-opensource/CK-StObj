@@ -457,7 +457,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [ExternalName( "WithUnionType" )]
         public interface IWithUnionType : IPoco
         {
-            [UnionType( typeof(IList<int>), typeof(int), typeof(IDictionary<int, string>) )]
+            [UnionType( typeof(IList<int>), typeof(int), typeof(IDictionary<int, string?>) )]
             object V { get; set; }
         }
 
@@ -469,7 +469,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var f = services.GetRequiredService<IPocoFactory<IWithUnionType>>();
             var a = f.Create( a =>
             {
-                a.V = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
+                a.V = new Dictionary<int, string?>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" }, { 3712, null } };
             } );
             Roundtrip( services, a );
 
