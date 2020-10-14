@@ -118,10 +118,11 @@ namespace CK.Setup
                                     GenerateSourceFiles ? null : new XElement( StObjEngineConfiguration.xGenerateSourceFiles, false ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xAssemblies, StObjEngineConfiguration.xAssembly, Assemblies ),
                                     StObjEngineConfiguration.ToXml( StObjEngineConfiguration.xExcludedTypes, StObjEngineConfiguration.xType, ExcludedTypes ),
-                                    Types.Select( t => new XElement( StObjEngineConfiguration.xType,
-                                                            new XAttribute( StObjEngineConfiguration.xName, t.Name ),
-                                                            t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
-                                                            t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) );
+                                    new XElement( StObjEngineConfiguration.xTypes,
+                                        Types.Select( t => new XElement( StObjEngineConfiguration.xType,
+                                                                new XAttribute( StObjEngineConfiguration.xName, t.Name ),
+                                                                t.Kind != AutoServiceKind.None ? new XAttribute( StObjEngineConfiguration.xKind, t.Kind ) : null,
+                                                                t.Optional ? new XAttribute( StObjEngineConfiguration.xOptional, true ) : null ) ) ) );
         }
 
         /// <summary>
