@@ -62,7 +62,7 @@ namespace CK.StObj.Engine.Tests.Service
         public class ThatIsNotPossible2 : IAmAMultipleRealObject2 { }
 
         [Test]
-        public void real_objects_can_support_multiple_interfaces_but_interfaces_cannot_be_IRealObjects_and_IsMultiple()
+        public void real_objects_can_support_IsMultiple_interfaces_but_interfaces_cannot_be_IRealObjects_and_IsMultiple()
         {
             {
                 var c = TestHelper.CreateStObjCollector();
@@ -88,6 +88,35 @@ namespace CK.StObj.Engine.Tests.Service
             var authProviders = result.Services.GetRequiredService<IEnumerable<IAuthProvider>>();
             authProviders.Should().HaveCount( 2 );
 
+        }
+
+
+        public class MulipleConsumer : IAutoService
+        {
+            public MulipleConsumer( IEnumerable<IAuthProvider> providers )
+            {
+                providers.Should().HaveCount( 2 );
+                Providers = providers.ToArray();
+            }
+
+            public IAuthProvider[] Providers { get; }
+        }
+
+        [Test]
+        public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( UserGoogle ) );
+            collector.RegisterType( typeof( UserOffice ) );
+            collector.RegisterType( typeof( MulipleConsumer ) );
+
+            var result = TestHelper.GetAutomaticServices( collector );
+            result.Map.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
+            var c = result.Services.GetRequiredService<MulipleConsumer>();
+            IStObjFinalImplementation g = result.Result.StObjs.ToStObj( typeof( IUserGoogle ) ).FinalImplementation;
+            IStObjFinalImplementation o = result.Result.StObjs.ToStObj( typeof( UserOffice ) ).FinalImplementation;
+
+            c.Providers.Should().BeEquivalentTo( g, o );
         }
 
         public interface IOfficialHostedService { }
