@@ -56,8 +56,12 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
+        /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registerer and the final, fully configured, service provider.</returns>
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices = null );
+        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) GetAutomaticServices(
+                                                                StObjCollector c,
+                                                                Action<StObjContextRoot.ServiceRegister>? configureServices = null,
+                                                                SimpleServiceContainer? startupServices = null );
 
         /// <summary>
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
