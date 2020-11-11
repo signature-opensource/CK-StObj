@@ -9,21 +9,21 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
     {
         // Test with an alternate IScopedAutoService that is not the
         // "official" CK.Core.IScopedAutoService from CK.StObj.Model.
-        interface IScopedAutoService { }
+        public interface IScopedAutoService { }
 
-        interface IServiceRegistered : IScopedAutoService
+        public interface IServiceRegistered : IScopedAutoService
         {
         }
 
-        interface IServiceNotRegisteredSinceNotImplemented : IServiceRegistered
+        public interface IServiceNotRegisteredSinceNotImplemented : IServiceRegistered
         {
         }
 
-        class ServiceRegisteredImpl : IServiceRegistered
+        public class ServiceRegisteredImpl : IServiceRegistered
         {
         }
 
-        class ServiceNotRegisteredImpl : ServiceRegisteredImpl, IServiceNotRegisteredSinceNotImplemented
+        public class ServiceNotRegisteredImpl : ServiceRegisteredImpl, IServiceNotRegisteredSinceNotImplemented
         {
         }
 
@@ -31,17 +31,17 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [TestCase( "NotRegisteringSpecializedType" )]
         public void service_interface_without_at_least_one_impl_are_ignored( string mode )
         {
-            var collector = mode == "ExcludingSpecializedType"
-                            ? CreateCKTypeCollector(  t => t != typeof( ServiceNotRegisteredImpl ) )
-                            : CreateCKTypeCollector();
-
-            collector.RegisterType( typeof( ServiceRegisteredImpl ) );
-            if( mode == "ExcludingSpecializedType" )
+            var r = CheckSuccess( c =>
             {
-                collector.RegisterType( typeof( ServiceNotRegisteredImpl ) );
-            }
-            
-            var r = CheckSuccess( collector );
+                c.RegisterType( typeof( ServiceRegisteredImpl ) );
+                if( mode == "ExcludingSpecializedType" )
+                {
+                    c.RegisterType( typeof( ServiceNotRegisteredImpl ) );
+                }
+            }, mode == "ExcludingSpecializedType"
+                            ? CreateCKTypeCollector( t => t != typeof( ServiceNotRegisteredImpl ) )
+                            : CreateCKTypeCollector() );
+
             var interfaces = r.AutoServices.LeafInterfaces;
             interfaces.Should().HaveCount( 1 );
             interfaces[0].Type.Should().Be( typeof( IServiceRegistered ) );
@@ -57,9 +57,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void registering_service_registers_specialized_interfaces_and_base_impl_but_mask_them()
         {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterType( typeof( ServiceNotRegisteredImpl ) );
-            var r = CheckSuccess( collector );
+            var r = CheckSuccess( collector => collector.RegisterType( typeof( ServiceNotRegisteredImpl ) ) );
             var interfaces = r.AutoServices.LeafInterfaces;
             interfaces.Should().HaveCount( 1 );
             var iSpec = interfaces[0];

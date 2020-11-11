@@ -546,6 +546,35 @@ namespace CK.StObj.Engine.Tests.Service
             }
         }
 
+        public interface IPublicService : IAutoService
+        {
+        }
+
+        interface IInternalInterface : IPublicService
+        {
+        }
+
+        // A public interface cannot extend an internal one: internal interfaces are leaves so we don't need to
+        // handle "holes" in the interface hierarchy.
+        // Such final internal CKType interfaces are simply ignored: they can be used internally by implementations.
+        //
+        // Error CS0061: Inconsistent accessibility: base interface 'FullServiceTests.IInternalInterface' is less accessible than interface 'FullServiceTests.IMorePublicService'	CK.StObj.Engine.Tests(netcoreapp3.1)	C:\Dev\CK\CK-Database-Projects\CK-StObj\Tests\CK.StObj.Engine.Tests\Service\FullServiceTests.cs	557	Active
+        //public interface IMorePublicService : IInternalInterface
+        //{
+        //}
+
+        public class TheService : IInternalInterface
+        {
+        }
+
+        [Test]
+        public void internal_interfaces_are_ignored()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( TheService ) );
+            TestHelper.GetSuccessfulResult( collector );
+        }
+
 
     }
 }

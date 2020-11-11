@@ -63,10 +63,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 CheckFailure( collector );
             }
             {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterType( typeof( PackageA ) );
-                collector.RegisterType( typeof( ServiceWithOneCtor ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterType( typeof( PackageA ) );
+                    collector.RegisterType( typeof( ServiceWithOneCtor ) );
+                } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
                 c.ConstructorInfo.Should().NotBeNull();
                 c.ConstructorParameters.Should().HaveCount( 1 );
@@ -74,10 +75,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 c.ConstructorParameters[0].Name.Should().Be( "a" );
             }
             {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterType( typeof( PackageA ) );
-                collector.RegisterType( typeof( ServiceWithDefaultCtor ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterType( typeof( PackageA ) );
+                    collector.RegisterType( typeof( ServiceWithDefaultCtor ) );
+                } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
                 c.ConstructorInfo.Should().NotBeNull();
                 c.ConstructorParameters.Should().BeEmpty();
@@ -107,13 +109,14 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [TestCase( "NotRegistered" )]
         public void ctor_parameters_can_be_unregistered_services_interfaces_since_they_may_be_registered_at_runtime( string mode )
         {
-            var collector = mode == "RegisteredDependentServiceButExcluded"
+            var r = CheckSuccess( collector =>
+            {
+                if( mode != "NotRegistered" ) collector.RegisterClass( typeof( ServiceForISRegistered ) );
+                collector.RegisterClass( typeof( Consumer1Service ) );
+            }, mode == "RegisteredDependentServiceButExcluded"
                             ? CreateCKTypeCollector( t => t != typeof( ServiceForISRegistered ) )
-                            : CreateCKTypeCollector();
+                            : CreateCKTypeCollector() );
 
-            if( mode != "NotRegistered" ) collector.RegisterClass( typeof( ServiceForISRegistered ) );
-            collector.RegisterClass( typeof( Consumer1Service ) );
-            var r = CheckSuccess( collector );
             var iRegistered = r.AutoServices.LeafInterfaces.SingleOrDefault( x => x.Type == typeof( ISRegistered ) );
             if( mode == "RegisteredDependentService" )
             {
@@ -168,10 +171,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         public void ctor_parameters_cannot_be_unregistered_service_classe_unless_it_is_excluded_and_parameter_has_a_default_null()
         {
             {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterClass( typeof( ServiceForISRegistered ) );
-                collector.RegisterClass( typeof( ConsumerWithClassDependencyService ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterClass( typeof( ServiceForISRegistered ) );
+                    collector.RegisterClass( typeof( ConsumerWithClassDependencyService ) );
+                } );
                 var dep = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceForISRegistered ) );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ConsumerWithClassDependencyService ) );
                 c.ConstructorParameters.Should().HaveCount( 3 );
@@ -191,10 +195,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 CheckFailure( collector );
             }
             {
-                var collector = CreateCKTypeCollector( t => t != typeof( ServiceForISRegistered ) );
-                collector.RegisterClass( typeof( ServiceForISRegistered ) );
-                collector.RegisterClass( typeof( ConsumerWithDefaultService ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterClass( typeof( ServiceForISRegistered ) );
+                    collector.RegisterClass( typeof( ConsumerWithDefaultService ) );
+                }, CreateCKTypeCollector( t => t != typeof( ServiceForISRegistered ) ) );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ConsumerWithDefaultService ) );
                 c.ConstructorParameters.Should().HaveCount( 3 );
