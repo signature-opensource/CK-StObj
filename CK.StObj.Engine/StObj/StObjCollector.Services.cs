@@ -60,7 +60,7 @@ namespace CK.Setup
                 {
                     if( p.ServiceInterface != null && Family.Interfaces.Contains( p.ServiceInterface ))
                     {
-                        if( !p.IsEnumerated )
+                        if( !p.IsEnumerable )
                         {
                             m.Error( $"Invalid parameter {p}: it can not be an Auto Service of its own family." );
                             success = false;
@@ -276,7 +276,7 @@ namespace CK.Setup
 
             string IStObjServiceParameterInfo.Name => Parameter.Parameter.ParameterInfo.Name;
 
-            public bool IsEnumerated => Parameter.Parameter.IsEnumerated;
+            public bool IsEnumerated => Parameter.Parameter.IsEnumerable;
 
             public IReadOnlyList<Type> Value { get; }
         }

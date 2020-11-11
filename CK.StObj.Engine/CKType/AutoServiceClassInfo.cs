@@ -43,44 +43,31 @@ namespace CK.Setup
             public readonly AutoServiceInterfaceInfo ServiceInterface;
 
             /// <summary>
-            /// Currently unused.
-            /// </summary>
-            public readonly AutoServiceClassInfo EnumeratedServiceClass;
-
-            /// <summary>
-            /// Currently unused.
-            /// </summary>
-            public readonly AutoServiceInterfaceInfo EnumeratedServiceInterface;
-
-            /// <summary>
             /// Gets whether this parameter is an <see cref="IAutoService"/>.
             /// </summary>
-            public bool IsAutoService { get; }
+            public bool IsAutoService => ServiceClass != null || ServiceInterface != null;
 
             /// <summary>
             /// Gets the final ServiceClassInfo: either the <see cref="AutoServiceClassInfo.MostSpecialized"/> or
-            /// the <see cref="AutoServiceInterfaceInfo.FinalResolved"/> from enumerated or direct Class or interface info.
+            /// the <see cref="AutoServiceInterfaceInfo.FinalResolved"/> from <see cref="ServiceClass"/> or <see cref="ServiceInterface"/>.
             /// Null if <see cref="IsAutoService"/> is false.
             /// Must be called once the mapping has been fully resolved at the interface level.
             /// </summary>
-            public AutoServiceClassInfo FinalServiceClass => IsEnumerated
-                                                                ? EnumeratedServiceClass?.MostSpecialized ?? EnumeratedServiceInterface?.FinalResolved
-                                                                : ServiceClass?.MostSpecialized ?? ServiceInterface?.FinalResolved;
+            public AutoServiceClassInfo? FinalServiceClass => ServiceClass?.MostSpecialized ?? ServiceInterface?.FinalResolved;
 
             /// <summary>
             /// Gets the (unwrapped) Type of this parameter.
-            /// When <see cref="IsEnumerated"/> is true, this is the type of the enumerated object:
-            /// for IReadOnlyList&lt;X&gt;, this is typeof(X) (either <see cref="EnumeratedServiceClass"/> or <see cref="EnumeratedServiceInterface"/>).
+            /// When <see cref="IsEnumerable"/> is true, this is the type of the enumerated object:
+            /// for IEnumerable&lt;X&gt;, this is typeof(X) (either <see cref="ServiceClass"/> or <see cref="ServiceInterface"/>).
             /// Otherwise, it is simply the parameter type: this is never null.
             /// </summary>
             public Type ParameterType { get; }
 
             /// <summary>
-            /// Gets whether this is an enumerable of IAutoService class or interface.
-            /// When true, <see cref="EnumeratedServiceClass"/> xor <see cref="EnumeratedServiceInterface"/> is not null
-            /// and <see cref="ServiceClass"/> and <see cref="ServiceInterface"/> are both null.
+            /// Gets whether this is an enumerable of <see cref="ServiceClass"/> or <see cref="ServiceInterface"/>.
+            /// When true, <see cref="ServiceClass"/> xor <see cref="ServiceInterface"/> is not null.
             /// </summary>
-            public bool IsEnumerated { get; }
+            public bool IsEnumerable { get; }
 
             /// <summary>
             /// Gets the zero-based position of the parameter in the parameter list.
@@ -101,18 +88,9 @@ namespace CK.Setup
                 Debug.Assert( (cS != null) ^ (iS != null) );
                 ParameterInfo = p;
                 ParameterType = cS?.ClassType ?? iS.Type;
-                if( isEnumerable )
-                {
-                    IsEnumerated = true;
-                    EnumeratedServiceClass = cS;
-                    EnumeratedServiceInterface = iS;
-                }
-                else
-                {
-                    ServiceClass = cS;
-                    ServiceInterface = iS;
-                }
-                IsAutoService = ServiceClass != null || ServiceInterface != null || EnumeratedServiceClass != null || EnumeratedServiceInterface != null;
+                IsEnumerable = isEnumerable;
+                ServiceClass = cS;
+                ServiceInterface = iS;
             }
 
             internal CtorParameter( ParameterInfo p )
@@ -928,9 +906,9 @@ namespace CK.Setup
                     allCtorParameters[p.Position] = ctorParameter;
 
                     // Temporary: Enumeration is not implemented yet.
-                    if( success && param.IsEnumerable )
+                    if( success && param.IsEnumerable /*&& (param.Lifetime & CKTypeKind.IsMultipleService) == 0*/ )
                     {
-                        m.Error( $"IEnumerable<T> or IReadOnlyList<T> where T is marked with IScopedAutoService or ISingletonAutoService is not supported yet: '{ClassType.FullName}' constructor cannot be handled." );
+                        m.Error( $"IEnumerable<T> or IReadOnlyList<T> where T ISingletonAutoService is not supported yet: '{ClassType.FullName}' constructor cannot be handled." );
                         success = false;
                     }
                 }
@@ -985,20 +963,24 @@ namespace CK.Setup
                     }
                 }
             }
-            // We only consider I(Scoped/Singleton)AutoService marked type parameters.
-            // If the IsMultipleService is set... this is an error (if isEnumerable computed above is false).
             var lifetime = collector.AmbientKindDetector.GetKind( m, tParam );
             var conflictMsg = lifetime.GetCombinationError( tParam.IsClass );
             if( conflictMsg == null )
             {
-                bool isMultitpleService = (lifetime & CKTypeKind.IsMultipleService) != 0;
-                if( (lifetime & CKTypeKind.IsAutoService) == 0 || isMultitpleService )
+                // Direct check here of the fact that a [IsMultiple] interface MUST NOT be a direct parameter. 
+                bool isMultipleService = (lifetime & CKTypeKind.IsMultipleService) != 0;
+                if( isMultipleService && !isEnumerable )
                 {
-                    if( isMultitpleService && !isEnumerable )
-                    {
-                        conflictMsg = $"Cannot depend on one instance of this type since it is marked as a 'Multiple' service.";
-                    }
-                    else return new CtorParameterData( true, null, null, isEnumerable, lifetime );
+                    conflictMsg = $"Cannot depend on one instance of this type since it is marked as a [IsMultiple] service (IEnumerable<{tParam.Name}> should be used).";
+                }
+            }
+            if( conflictMsg == null )
+            {
+                // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
+                // look for a AutoServiceClassInfo or a AutoServiceInterfaceInfo: we are done.
+                if( (lifetime & CKTypeKind.IsAutoService) == 0 )
+                {
+                    return new CtorParameterData( true, null, null, isEnumerable, lifetime );
                 }
             }
             if( conflictMsg != null )
@@ -1007,6 +989,7 @@ namespace CK.Setup
                 return new CtorParameterData( false, null, null, false, lifetime );
             }
 
+            Debug.Assert( conflictMsg == null && (lifetime & CKTypeKind.IsAutoService) != 0 );
             if( tParam.IsClass )
             {
                 var sClass = collector.FindServiceClassInfo( tParam );
