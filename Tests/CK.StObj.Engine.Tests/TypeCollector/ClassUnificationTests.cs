@@ -19,11 +19,12 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void basic_direct_unification_between_3_specializations()
         {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( UnifiedA ) );
-            collector.RegisterClass( typeof( AS1 ) );
-            collector.RegisterClass( typeof( AS2 ) );
-            var r = CheckSuccess( collector );
+            var r = CheckSuccess( collector =>
+            {
+                collector.RegisterClass( typeof( UnifiedA ) );
+                collector.RegisterClass( typeof( AS1 ) );
+                collector.RegisterClass( typeof( AS2 ) );
+            } );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
             var c = r.AutoServices.RootClasses[0].MostSpecialized;
             Debug.Assert( c != null );
@@ -33,10 +34,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void basic_direct_unification_between_2_specializations()
         {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( UnifiedAWithoutS2 ) );
-            collector.RegisterClass( typeof( AS1 ) );
-            var r = CheckSuccess( collector );
+            var r = CheckSuccess( collector =>
+            {
+                collector.RegisterClass( typeof( UnifiedAWithoutS2 ) );
+                collector.RegisterClass( typeof( AS1 ) );
+            } );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
             r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( UnifiedAWithoutS2 ) );
         }
@@ -51,13 +53,14 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void unification_with_intermediate_unifier()
         {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( _UnifiedA1 ) );
-            collector.RegisterClass( typeof( _UnifiedA2 ) );
-            collector.RegisterClass( typeof( _AS1 ) );
-            collector.RegisterClass( typeof( _AS2 ) );
-            collector.RegisterClass( typeof( _AS3 ) );
-            var r = CheckSuccess( collector );
+            var r = CheckSuccess( collector =>
+            {
+                collector.RegisterClass( typeof( _UnifiedA1 ) );
+                collector.RegisterClass( typeof( _UnifiedA2 ) );
+                collector.RegisterClass( typeof( _AS1 ) );
+                collector.RegisterClass( typeof( _AS2 ) );
+                collector.RegisterClass( typeof( _AS3 ) );
+            } );
             r.AutoServices.RootClasses.Should().HaveCount( 1 );
             r.AutoServices.RootClasses[0].MostSpecialized!.ClassType.Should().BeSameAs( typeof( _UnifiedA2 ) );
         }
@@ -72,13 +75,14 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void unification_with_intermediate_external_unifier()
         {
-            var collector = CreateCKTypeCollector();
-            collector.RegisterClass( typeof( ExternalUnifier ) );
-            collector.RegisterClass( typeof( e_UnifiedA2 ) );
-            collector.RegisterClass( typeof( e_AS1 ) );
-            collector.RegisterClass( typeof( e_AS2 ) );
-            collector.RegisterClass( typeof( e_AS3 ) );
-            var r = CheckSuccess( collector );
+            var r = CheckSuccess( collector =>
+            {
+                collector.RegisterClass( typeof( ExternalUnifier ) );
+                collector.RegisterClass( typeof( e_UnifiedA2 ) );
+                collector.RegisterClass( typeof( e_AS1 ) );
+                collector.RegisterClass( typeof( e_AS2 ) );
+                collector.RegisterClass( typeof( e_AS3 ) );
+            } );
             r.AutoServices.RootClasses.Should().HaveCount( 2 );
             r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( e_A ) ).MostSpecialized!.ClassType
                 .Should().BeSameAs( typeof( e_UnifiedA2 ) );
@@ -96,21 +100,23 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         public void unification_to_base_class()
         {
             {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterClass( typeof( u_AS1 ) );
-                collector.RegisterClass( typeof( u_AS2 ) );
-                collector.RegisterClass( typeof( u_UnifiedD ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterClass( typeof( u_AS1 ) );
+                    collector.RegisterClass( typeof( u_AS2 ) );
+                    collector.RegisterClass( typeof( u_UnifiedD ) );
+                } );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
                 r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
                     .Should().BeSameAs( typeof( u_UnifiedD ) );
             }
             {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterClass( typeof( u_AS1 ) );
-                collector.RegisterClass( typeof( u_AS2 ) );
-                collector.RegisterClass( typeof( u_UnifiedA ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterClass( typeof( u_AS1 ) );
+                    collector.RegisterClass( typeof( u_AS2 ) );
+                    collector.RegisterClass( typeof( u_UnifiedA ) );
+                } );
                 r.AutoServices.RootClasses.Should().HaveCount( 1 );
                 r.AutoServices.RootClasses.Single( c => c.ClassType == typeof( u_A ) ).MostSpecialized!.ClassType
                     .Should().BeSameAs( typeof( u_UnifiedA ) );
@@ -205,13 +211,14 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             {
                 foreach( var sub in new[] { typeof( s_SubUnifier1 ), typeof( s_SubUnifier2 ), typeof( s_SubUnifier3 ) } )
                 {
-                    var collector = CreateCKTypeCollector();
-                    collector.RegisterClass( typeof( s_AS1 ) );
-                    collector.RegisterClass( typeof( s_AS2a ) );
-                    collector.RegisterClass( typeof( s_AS2b ) );
-                    collector.RegisterClass( super );
-                    collector.RegisterClass( sub );
-                    CheckSuccess( collector );
+                    CheckSuccess( collector =>
+                    {
+                        collector.RegisterClass( typeof( s_AS1 ) );
+                        collector.RegisterClass( typeof( s_AS2a ) );
+                        collector.RegisterClass( typeof( s_AS2b ) );
+                        collector.RegisterClass( super );
+                        collector.RegisterClass( sub );
+                    } );
                 }
             }
         }

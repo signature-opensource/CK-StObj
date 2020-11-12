@@ -73,6 +73,14 @@ namespace CK.Setup
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
+            // The IHostEnvironment is a singleton (tied to the process, not marshallable).
+            SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
+
+            // The IServiceProvider itself is a Singleton.   
+            SetAutoServiceKind( "System.IServiceProvider, System.ComponentModel", AutoServiceKind.IsSingleton, isOptional: true );
+
+            // Other known singletons.
+            SetAutoServiceKind( "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
         }
 
         /// <summary>

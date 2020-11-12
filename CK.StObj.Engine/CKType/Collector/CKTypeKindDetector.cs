@@ -180,7 +180,7 @@ namespace CK.Setup
                 // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
                 // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IFrontAutoService are extending IAutoService...
                 // ...and unfortunately we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService
-                // ...and unfortunately we must also consider the ones with 2 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
+                // ...and unfortunately we must also consider the ones with 3 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
                 // that extends IFrontAutoService. 
                 if( t.IsInterface
                     && allInterfaces.Length <= 3
@@ -194,7 +194,11 @@ namespace CK.Setup
                     else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontService | CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                     else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                 }
-                if( k == CKTypeKind.None )
+                // If it's not one of the interface marker and it's not an internal interface, we analyze it.
+                // Any "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
+                // So, "internal interfaces" are leaves, we don't need to handle "holes" in the interface hierarchy and implementations are free to
+                // define and use them.
+                if( k == CKTypeKind.None && !(t.IsInterface && !t.IsPublic && !t.IsNestedPublic) )
                 {
                     Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                     Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );

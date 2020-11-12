@@ -54,12 +54,17 @@ namespace CK.Setup
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
-        /// Gets the ambient type detector.
+        /// Gets the type detector.
         /// </summary>
         public CKTypeKindDetector TypeKindDetector { get; }
 
         /// <summary>
         /// Gets whether an error exists that prevents the process to continue.
+        /// Note that errors or fatals that may have been emitted while registering types
+        /// are ignored here. The <see cref="StObjCollector"/> wraps all its work, including type registration
+        /// in a <see cref="ActivityMonitorExtension.OnError(IActivityMonitor, Action)"/> block and consider
+        /// any <see cref="LogLevel.Error"/> or <see cref="LogLevel.Fatal"/> to be fatal errors, but at this level,
+        /// those are ignored.
         /// </summary>
         /// <returns>
         /// False to continue the process (only warnings - or error considered as 

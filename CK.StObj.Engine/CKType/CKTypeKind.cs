@@ -49,10 +49,12 @@ namespace CK.Setup
         IsScoped = 16,
 
         /// <summary>
-        /// Multiple registration flag (services must be registered with TryAddEnumerable instead of TryAdd).
-        /// See <see cref="IsMultipleAttribute"/>. 
+        /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
         /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
         /// </summary>
+        /// <remarks>
+        /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
+        /// </remarks>
         IsMultipleService = 32,
 
         /// <summary>

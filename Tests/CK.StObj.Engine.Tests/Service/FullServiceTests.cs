@@ -295,7 +295,7 @@ namespace CK.StObj.Engine.Tests.Service
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
+                var sp = TestHelper.GetAutomaticServices( collector, startupServices: startupServices ).Services;
                 sp.GetRequiredService<IB>()
                     .BCanTalkToYou( TestHelper.Monitor, "Magic!" )
                     .Should().Be( 3172 );
@@ -347,7 +347,7 @@ namespace CK.StObj.Engine.Tests.Service
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
-                    var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
+                    var sp = TestHelper.GetAutomaticServices( collector, startupServices: startupServices ).Services;
                     sp.GetRequiredService<IA1>().Should().BeSameAs( sp.GetRequiredService<A>() );
                     sp.GetRequiredService<IB>().Should().BeSameAs( sp.GetRequiredService<B>() );
                     using( var scope = sp.CreateScope() )
@@ -385,7 +385,7 @@ namespace CK.StObj.Engine.Tests.Service
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
+                var sp = TestHelper.GetAutomaticServices( collector, startupServices: startupServices ).Services;
                 // We are using here the ScopedImplementation.
                 var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.DoSometing( TestHelper.Monitor );
@@ -416,7 +416,7 @@ namespace CK.StObj.Engine.Tests.Service
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var sp = TestHelper.GetAutomaticServices( collector, startupServices ).Services;
+                var sp = TestHelper.GetAutomaticServices( collector, startupServices: startupServices ).Services;
                 // We are using here the ScopedImplementation.
                 var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.Should().BeOfType<ScopedImplementation>();
@@ -442,7 +442,7 @@ namespace CK.StObj.Engine.Tests.Service
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var r = TestHelper.GetAutomaticServices( collector, startupServices );
+                var r = TestHelper.GetAutomaticServices( collector, startupServices: startupServices );
                 var sp = r.ServiceRegisterer.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
                 r.ServiceRegisterer.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
@@ -467,7 +467,7 @@ namespace CK.StObj.Engine.Tests.Service
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var r = TestHelper.GetAutomaticServices( collector, startupServices );
+                var r = TestHelper.GetAutomaticServices( collector, startupServices: startupServices );
                 var sp = r.ServiceRegisterer.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
             }
@@ -542,6 +542,35 @@ namespace CK.StObj.Engine.Tests.Service
                 var services = TestHelper.GetAutomaticServices( collector, null ).Services;
                 services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
             }
+        }
+
+        public interface IPublicService : IAutoService
+        {
+        }
+
+        interface IInternalInterface : IPublicService
+        {
+        }
+
+        // A public interface cannot extend an internal one: internal interfaces are leaves so we don't need to
+        // handle "holes" in the interface hierarchy.
+        // Such final internal CKType interfaces are simply ignored: they can be used internally by implementations.
+        //
+        // Error CS0061: Inconsistent accessibility: base interface 'FullServiceTests.IInternalInterface' is less accessible than interface 'FullServiceTests.IMorePublicService'	CK.StObj.Engine.Tests(netcoreapp3.1)	C:\Dev\CK\CK-Database-Projects\CK-StObj\Tests\CK.StObj.Engine.Tests\Service\FullServiceTests.cs	557	Active
+        //public interface IMorePublicService : IInternalInterface
+        //{
+        //}
+
+        public class TheService : IInternalInterface
+        {
+        }
+
+        [Test]
+        public void internal_interfaces_are_ignored()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( TheService ) );
+            TestHelper.GetSuccessfulResult( collector );
         }
 
 
