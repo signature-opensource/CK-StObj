@@ -506,7 +506,10 @@ namespace CK.StObj.Engine.Tests.Service
         {
             public ServiceWithValueTypeCtorParameters( bool requiredValueType )
             {
+                RequiredValueType = requiredValueType;
             }
+
+            public bool RequiredValueType { get; }
         }
 
         public class ServiceWithOptionalValueTypeCtorParameters : IAutoService
@@ -517,19 +520,41 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void ValueType_ctor_parameters_without_default_value_prevent_the_type_to_be_automatically_instantiated()
+        public void ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
-
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
-                var services = TestHelper.GetAutomaticServices( collector, null ).Services;
-                services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
+
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                {
+                    var services = TestHelper.GetAutomaticServices( collector, null ).Services;
+                    services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+                }
+                logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                            && e.Text.Contains( "This requires an explicit registration in the DI container" ) );
             }
-            logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                        && e.Text.Contains( "requires a manual instantiation function" ) );
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
+
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                {
+                    var s = TestHelper.GetAutomaticServices( collector, services =>
+                    {
+                        services.Services.AddSingleton( typeof( bool ), true );
+
+                    } ).Services;
+                    var resolved = s.GetService<ServiceWithValueTypeCtorParameters>();
+                    resolved.RequiredValueType.Should().BeTrue();
+
+                }
+                logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                            && e.Text.Contains( "This requires an explicit registration in the DI container" ) );
+            }
+
         }
 
         [Test]
