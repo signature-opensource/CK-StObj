@@ -62,7 +62,8 @@ namespace CK.Setup
             /// <summary>
             /// Gets the (unwrapped) Type of this parameter.
             /// When <see cref="IsEnumerable"/> is true, this is the type of the enumerated object:
-            /// for IEnumerable&lt;X&gt;, this is typeof(X) (either <see cref="ServiceClass"/> or <see cref="ServiceInterface"/>).
+            /// for IEnumerable&lt;X&gt;, this is typeof(X) (either <see cref="ServiceInterface"/> - since only [IsMultiple] interface
+            /// are accepted as IEnumerable{T} where T is a class or interface, or a value type).
             /// Otherwise, it is simply the parameter type: this is never null.
             /// </summary>
             public Type ParameterType { get; }
@@ -97,10 +98,11 @@ namespace CK.Setup
                 ServiceInterface = iS;
             }
 
-            internal CtorParameter( ParameterInfo p )
+            internal CtorParameter( ParameterInfo p, bool isEnumerable, Type parameterType )
             {
                 ParameterInfo = p;
-                ParameterType = p.ParameterType;
+                IsEnumerable = isEnumerable;
+                ParameterType = parameterType;
                 Debug.Assert( IsAutoService == false );
             }
 
@@ -456,9 +458,6 @@ namespace CK.Setup
                     // we don't need to process the parameters since we have nothing to learn...
                     bool isFrontMarshallable = (final & IsFrontMashallableMask) == IsFrontMashallableMask;
 
-                    // This may be exposed?
-                    bool requiresInstantiator = false;
-
                     foreach( var p in ConstructorParameters )
                     {
                         AutoServiceClassInfo? pC = null;
@@ -477,8 +476,7 @@ namespace CK.Setup
                                 {
                                     if( !p.ParameterInfo.HasDefaultValue )
                                     {
-                                        m.Warn( $"Parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This prevents automatic instantiation." );
-                                        requiresInstantiator = true;
+                                        m.Warn( $"Parameter '{p.Name}' of type '{p.ParameterType.Name}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This requires an explicit registration in the DI container." );
                                     }
                                     // Value type parameter with default value. Skip it.
                                     continue;
@@ -565,11 +563,6 @@ namespace CK.Setup
                     {
                         m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
                         final |= AutoServiceKind.IsSingleton;
-                    }
-                    // Warn about instantiation function.
-                    if( requiresInstantiator )
-                    {
-                        m.Warn( $"'{ClassType}' requires a manual instantiation function." );
                     }
                     // Conclude about Front aspect.
                     if( isFrontMarshallable )
@@ -939,22 +932,22 @@ namespace CK.Setup
                     var allCtorParameters = new CtorParameter[parameters.Length];
                     foreach( var p in parameters )
                     {
-                        var param = CreateCtorParameter( m, collector, p );
+                        var param = CreateCtorParameterData( m, collector, p );
                         success &= param.Success;
                         CtorParameter ctorParameter;
                         if( param.Class != null || param.Interface != null )
                         {
                             ctorParameter = new CtorParameter( p, param.Class, param.Interface, param.IsEnumerable );
                         }
-                        else ctorParameter = new CtorParameter( p );
+                        else ctorParameter = new CtorParameter( p, param.IsEnumerable, param.ParameterType );
                         allCtorParameters[p.Position] = ctorParameter;
 
                         // Temporary: Enumeration is not implemented yet.
-                    if( success && param.IsEnumerable /*&& (param.Lifetime & CKTypeKind.IsMultipleService) == 0*/ )
-                        {
-                            m.Error( $"IEnumerable<T> or IReadOnlyList<T> where T is marked with IScopedAutoService or ISingletonAutoService is not supported yet: '{ClassType.FullName}' constructor cannot be handled." );
-                            success = false;
-                        }
+                        //if( success && param.IsEnumerable /*&& (param.Lifetime & CKTypeKind.IsMultipleService) == 0*/ )
+                        //{
+                        //    m.Error( $"IEnumerable<T> or IReadOnlyList<T> where T ISingletonAutoService is not supported yet: '{ClassType.FullName}' constructor cannot be handled." );
+                        //    success = false;
+                        //}
                     }
                     ConstructorParameters = allCtorParameters;
                     ConstructorInfo = ctors[0];
@@ -970,19 +963,21 @@ namespace CK.Setup
             public readonly AutoServiceClassInfo? Class;
             public readonly AutoServiceInterfaceInfo? Interface;
             public readonly bool IsEnumerable;
-            public readonly CKTypeKind Lifetime;
+            public readonly CKTypeKind Kind;
+            public readonly Type ParameterType;
 
-            public CtorParameterData( bool success, AutoServiceClassInfo? c, AutoServiceInterfaceInfo? i, bool isEnumerable, CKTypeKind lt )
+            public CtorParameterData( bool success, AutoServiceClassInfo? c, AutoServiceInterfaceInfo? i, bool isEnumerable, CKTypeKind lt, Type parameterType )
             {
                 Success = success;
                 Class = c;
                 Interface = i;
                 IsEnumerable = isEnumerable;
-                Lifetime = lt;
+                Kind = lt;
+                ParameterType = parameterType;
             }
         }
 
-        CtorParameterData CreateCtorParameter(
+        CtorParameterData CreateCtorParameterData(
             IActivityMonitor m,
             CKTypeCollector collector,
             ParameterInfo p )
@@ -992,57 +987,75 @@ namespace CK.Setup
             if( tParam.IsGenericType )
             {
                 var tGen = tParam.GetGenericTypeDefinition();
-                if( tGen == typeof( IEnumerable<> )
-                    || tGen == typeof( IReadOnlyCollection<> )
-                    || tGen == typeof( IReadOnlyList<> ) )
+                if( tGen == typeof( IEnumerable<> ) )
                 {
                     isEnumerable = true;
                     tParam = tParam.GetGenericArguments()[0];
                 }
                 else 
                 {
-                    var genLifetime = collector.CKTypeKindDetector.GetKind( m, tGen );
-                    if( genLifetime != CKTypeKind.None )
+                    var genKind = collector.AmbientKindDetector.GetKind( m, tGen );
+                    if( genKind != CKTypeKind.None )
                     {
-                        return new CtorParameterData( true, null, null, false, genLifetime );
+                        return new CtorParameterData( true, null, null, false, genKind, tParam );
                     }
                 }
             }
-            var lifetime = collector.CKTypeKindDetector.GetKind( m, tParam );
-            var conflictMsg = lifetime.GetCombinationError( tParam.IsClass );
+            var kind = collector.AmbientKindDetector.GetKind( m, tParam );
+            bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
+
+            var conflictMsg = kind.GetCombinationError( tParam.IsClass );
             if( conflictMsg == null )
             {
-                // Direct check here of the fact that a [IsMultiple] interface MUST NOT be a direct parameter. 
-                bool isMultipleService = (lifetime & CKTypeKind.IsMultipleService) != 0;
-                if( isMultipleService && !isEnumerable )
+                // Direct check here of the fact that a [IsMultiple] interface MUST NOT be a direct, single, parameter. 
+                if( !isEnumerable && isMultipleService )
                 {
-                    conflictMsg = $"Cannot depend on one instance of this type since it is marked as a [IsMultiple] service (IEnumerable<{tParam.Name}> should be used).";
+                    conflictMsg = $"Cannot depend on one instance of this interface since it is marked as a [IsMultiple] service (IEnumerable<{tParam.Name}> should be used).";
+                }
+                else if( isEnumerable && !isMultipleService )
+                {
+                    conflictMsg = $"IEnumerable<T> requires that T is a [IsMultiple] interface.";
+                    if( tParam.IsClass )
+                    {
+                        conflictMsg += " In no way can T be a class.";
+                    }
+                    else if( tParam.IsInterface )
+                    {
+                        conflictMsg += $" '{tParam.Name}' must be either an IAutoService marked with [IsMultiple] attribute or be externally declared as a AutoTypeKind.IsMultipleService.";
+                    }
+                    else
+                    {
+                        // IEnumerable<ValueType> or other...
+                        // This may work depending on the runtime container configuration.
+                        // A War will be emitted by ComputeFinalTypeKind.
+                        conflictMsg = null;
+                    }
                 }
             }
             if( conflictMsg == null )
             {
                 // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
                 // look for a AutoServiceClassInfo or a AutoServiceInterfaceInfo: we are done.
-                if( (lifetime & CKTypeKind.IsAutoService) == 0 )
+                // Note that it can be externally qualified with a AutoServiceKind but it is not meant to be analyzed like a true IAutoService.
+                if( (kind & CKTypeKind.IsAutoService) == 0 )
                 {
-                    return new CtorParameterData( true, null, null, isEnumerable, lifetime );
+                    return new CtorParameterData( true, null, null, isEnumerable, kind, tParam );
                 }
             }
             Debug.Assert( p.Member.DeclaringType != null );
             if( conflictMsg != null )
             {
                 m.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor: {conflictMsg}" );
-                return new CtorParameterData( false, null, null, false, lifetime );
+                return new CtorParameterData( false, null, null, false, kind, tParam );
             }
-
-            Debug.Assert( conflictMsg == null && (lifetime & CKTypeKind.IsAutoService) != 0 );
+            Debug.Assert( conflictMsg == null && (kind & CKTypeKind.IsAutoService) != 0 );
             if( tParam.IsClass )
             {
                 var sClass = collector.FindServiceClassInfo( tParam );
                 if( sClass == null )
                 {
                     m.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor." );
-                    return new CtorParameterData( false, null, null, isEnumerable, lifetime );
+                    return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 if( !sClass.IsIncluded )
                 {
@@ -1053,7 +1066,7 @@ namespace CK.Setup
                     if( !p.HasDefaultValue )
                     {
                         m.Error( prefix + "can not be resolved." );
-                        return new CtorParameterData( false, null, null, isEnumerable, lifetime );
+                        return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                     }
                     m.Info( prefix + "will use its default value." );
                     sClass = null;
@@ -1062,17 +1075,17 @@ namespace CK.Setup
                 {
                     var prefix = $"Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
                     m.Error( prefix + "cannot be this class or one of its specializations." );
-                    return new CtorParameterData( false, null, null, isEnumerable, lifetime );
+                    return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 else if( sClass.TypeInfo.IsAssignableFrom( TypeInfo ) )
                 {
                     var prefix = $"Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
                     m.Error( prefix + "cannot be one of its base class." );
-                    return new CtorParameterData( false, null, null, isEnumerable, lifetime );
+                    return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
-                return new CtorParameterData( true, sClass, null, isEnumerable, lifetime );
+                return new CtorParameterData( true, sClass, null, isEnumerable, kind, tParam );
             }
-            return new CtorParameterData( true, null, collector.FindServiceInterfaceInfo( tParam ), isEnumerable, lifetime );
+            return new CtorParameterData( true, null, collector.FindServiceInterfaceInfo( tParam ), isEnumerable, kind, tParam );
         }
 
         /// <summary>

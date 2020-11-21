@@ -254,7 +254,7 @@ namespace CK.Setup
         /// <summary>
         /// Registers a new multiple mapping.
         /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
-        /// The type t must not already be registered (it can, of course be mapped to other finale types).
+        /// The type t must not already be registered (it can, of course be mapped to other final types).
         /// </summary>
         /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
         internal void AddMultipleMapping( Type t )
