@@ -85,15 +85,16 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 CheckFailure( collector );
             }
             {
+                CheckSuccess( collector =>
+                {
+                    collector.RegisterType( typeof( PackageA ) );
+                    collector.RegisterType( typeof( ServiceWithNonPublicCtorButAbstract ) );
+                } );
+            }
+            {
                 var r = CheckSuccess( collector =>
                 {
                     collector.RegisterType( typeof( PackageA ) );
-                collector.RegisterType( typeof( ServiceWithNonPublicCtorButAbstract ) );
-                CheckSuccess( collector );
-            }
-            {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterType( typeof( PackageA ) );
                     collector.RegisterType( typeof( ServiceWithOneCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
@@ -114,10 +115,11 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 c.ConstructorParameters.Should().BeEmpty();
             }
             {
-                var collector = CreateCKTypeCollector();
-                collector.RegisterType( typeof( PackageA ) );
-                collector.RegisterType( typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
-                var r = CheckSuccess( collector );
+                var r = CheckSuccess( collector =>
+                {
+                    collector.RegisterType( typeof( PackageA ) );
+                    collector.RegisterType( typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
+                } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
                 c.ConstructorInfo.Should().BeNull();
                 c.ConstructorParameters.Should().BeEmpty();

@@ -994,14 +994,14 @@ namespace CK.Setup
                 }
                 else 
                 {
-                    var genKind = collector.AmbientKindDetector.GetKind( m, tGen );
+                    var genKind = collector.CKTypeKindDetector.GetKind( m, tGen );
                     if( genKind != CKTypeKind.None )
                     {
                         return new CtorParameterData( true, null, null, false, genKind, tParam );
                     }
                 }
             }
-            var kind = collector.AmbientKindDetector.GetKind( m, tParam );
+            var kind = collector.CKTypeKindDetector.GetKind( m, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
             var conflictMsg = kind.GetCombinationError( tParam.IsClass );
