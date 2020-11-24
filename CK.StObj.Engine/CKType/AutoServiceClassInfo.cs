@@ -62,15 +62,18 @@ namespace CK.Setup
             /// <summary>
             /// Gets the (unwrapped) Type of this parameter.
             /// When <see cref="IsEnumerable"/> is true, this is the type of the enumerated object:
-            /// for IEnumerable&lt;X&gt;, this is typeof(X) (either <see cref="ServiceInterface"/> - since only [IsMultiple] interface
-            /// are accepted as IEnumerable{T} where T is a class or interface, or a value type).
+            /// for IEnumerable&lt;X&gt;, this is typeof(X) where X is a a <see cref="IsMultipleAttribute"/> interface,
+            /// or a value type.
             /// Otherwise, it is simply the parameter type: this is never null.
             /// </summary>
             public Type ParameterType { get; }
 
             /// <summary>
-            /// Gets whether this is an enumerable of <see cref="ServiceClass"/> or <see cref="ServiceInterface"/>.
-            /// When true, <see cref="ServiceClass"/> xor <see cref="ServiceInterface"/> is not null.
+            /// Gets whether this is an enumerable of a type that cannot be a class, a <see cref="ServiceClass"/>
+            /// or a <see cref="ServiceInterface"/> (they are both null if this is true).
+            /// <para>
+            /// Only IEnumerable of value types xor [IsMultiple] interfaces are accepted.
+            /// </para>
             /// </summary>
             public bool IsEnumerable { get; }
 
@@ -87,13 +90,11 @@ namespace CK.Setup
             internal CtorParameter(
                 ParameterInfo p,
                 AutoServiceClassInfo? cS,
-                AutoServiceInterfaceInfo? iS,
-                bool isEnumerable )
+                AutoServiceInterfaceInfo iS )
             {
                 Debug.Assert( (cS != null) ^ (iS != null) );
                 ParameterInfo = p;
                 ParameterType = cS?.ClassType ?? iS!.Type;
-                IsEnumerable = isEnumerable;
                 ServiceClass = cS;
                 ServiceInterface = iS;
             }
@@ -347,7 +348,7 @@ namespace CK.Setup
                 // An unused Auto Service interface (ie. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
-                Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces, IsRealObject ? (Action<Type>?)null : TypeInfo.AddMultipleMapping ).ToArray();
+                Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces, IsRealObject ? (Action<Type,CKTypeKind,CKTypeCollector>)null : TypeInfo.AddMultipleMapping ).ToArray();
             }
             return isConcretePath;
         }
@@ -433,12 +434,12 @@ namespace CK.Setup
 
         AutoServiceKind IStObjServiceClassDescriptor.AutoServiceKind => FinalTypeKind!.Value;
 
-        internal AutoServiceKind ComputeFinalTypeKind( IActivityMonitor m, CKTypeKindDetector typeKindDetector, ref bool success )
+        internal AutoServiceKind ComputeFinalTypeKind( IActivityMonitor m, IAutoServiceKindComputeFacade kindComputeFacade, ref bool success )
         {
             Debug.Assert( !TypeInfo.IsSpecialized, "This is called only on leaf, most specialized, class." );
             if( !FinalTypeKind.HasValue )
             {
-                var initial = typeKindDetector.GetKind( m, ClassType ).ToAutoServiceKind();
+                var initial = kindComputeFacade.KindDetector.GetKind( m, ClassType ).ToAutoServiceKind();
                 var final = initial;
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
                 {
@@ -462,29 +463,38 @@ namespace CK.Setup
                     {
                         AutoServiceClassInfo? pC = null;
                         AutoServiceKind kP;
-                        if( p.IsAutoService )
+                        string paramTypeName;
+                        CKTypeCollector.MultipleImpl? multiple;
+                        if( p.IsEnumerable && (multiple = kindComputeFacade.GetMultipleInterfaceDescriptor( p.ParameterType )) != null )
                         {
-                            Debug.Assert( p.FinalServiceClass != null );
-                            kP = (pC = p.FinalServiceClass).ComputeFinalTypeKind( m, typeKindDetector, ref success );
+                            kP = multiple.ComputeFinalTypeKind( m, kindComputeFacade, ref success );
+                            paramTypeName = $"IEnumerable<{p.ParameterType.Name}>";
+                        }
+                        else if( p.IsAutoService )
+                        {
+                            Debug.Assert( !p.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
+                            kP = (pC = p.FinalServiceClass).ComputeFinalTypeKind( m, kindComputeFacade, ref success );
+                            paramTypeName = p.ParameterType.Name;
                         }
                         else
                         {
-                            kP = typeKindDetector.GetKind( m, p.ParameterType ).ToAutoServiceKind();
+                            kP = kindComputeFacade.KindDetector.GetKind( m, p.ParameterType ).ToAutoServiceKind();
+                            paramTypeName = p.ParameterType.Name;
                             if( (kP & (AutoServiceKind.IsSingleton | AutoServiceKind.IsScoped)) == 0 )
                             {
                                 if( p.ParameterType.IsValueType || p.ParameterType == typeof(string) )
                                 {
                                     if( !p.ParameterInfo.HasDefaultValue )
                                     {
-                                        m.Warn( $"Parameter '{p.Name}' of type '{p.ParameterType.Name}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This requires an explicit registration in the DI container." );
+                                        m.Warn( $"Parameter '{p.Name}' of type '{paramTypeName}' is a {(p.ParameterType.IsValueType ? "value type" : "string" )} without default value. This requires an explicit registration in the DI container." );
                                     }
                                     // Value type parameter with default value. Skip it.
                                     continue;
                                 }
                                 else
                                 {
-                                    m.Info( $"External type '{p.ParameterType}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
-                                    var update = typeKindDetector.RestrictToScoped( m, p.ParameterType );
+                                    m.Info( $"Parameter '{p.Name}' is an external type '{paramTypeName}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
+                                    var update = kindComputeFacade.KindDetector.RestrictToScoped( m, p.ParameterType );
                                     if( update.HasValue ) kP = update.Value.ToAutoServiceKind();
                                     else success = false;
                                 }
@@ -496,12 +506,12 @@ namespace CK.Setup
                         {
                             if( (final & AutoServiceKind.IsSingleton) != 0 )
                             {
-                                m.Error( $"Lifetime error: Type '{ClassType}' is marked as IsSingleton but parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Scoped." );
+                                m.Error( $"Lifetime error: Type '{ClassType}' is marked as IsSingleton but parameter '{p.Name}' of type '{paramTypeName}' in constructor is Scoped." );
                                 success = false;
                             }
                             else if( (final & AutoServiceKind.IsScoped) == 0 )
                             {
-                                m.Info( $"Type '{ClassType}' must be Scoped since parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Scoped." );
+                                m.Info( $"Type '{ClassType}' must be Scoped since parameter '{p.Name}' of type '{paramTypeName}' in constructor is Scoped." );
                                 final |= AutoServiceKind.IsScoped;
                             }
                         }
@@ -515,7 +525,7 @@ namespace CK.Setup
                         if( newFinal != final )
                         {
                             // Upgrades from None, Process to Front...
-                            m.Trace( $"Type '{ClassType}' must be {newFinal & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}'." );
+                            m.Trace( $"Type '{ClassType}' must be {newFinal & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
                             final = newFinal;
                             // We don't have to worry about the IsFrontService that implies the IsScoped flag since this is already handled
                             // by the lifetime code above: if the current parameter is a FrontService then it is also a Scoped and any conflict
@@ -530,7 +540,7 @@ namespace CK.Setup
 
                         if( (kP & AutoServiceKind.IsMarshallable) == 0 )
                         {
-                            m.Warn( $"Type '{ClassType}' is not marked as marshallable and the constructor's parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' that is a Front service is not marshallable: it cannot be marked as marshallable." );
+                            m.Warn( $"Type '{ClassType}' is not marked as [IsMarshallable] and the constructor's parameter '{p.Name}' of type '{paramTypeName}' that is a Front service is not marshallable: it cannot be considered as marshallable." );
                             isAutomaticallyMarshallable = false;
                         }
                         else
@@ -558,6 +568,7 @@ namespace CK.Setup
                             }
                         }
                     }
+
                     // Conclude about lifetime.
                     if( (final & (AutoServiceKind.IsScoped|AutoServiceKind.IsSingleton)) == 0 )
                     {
@@ -597,203 +608,6 @@ namespace CK.Setup
             return FinalTypeKind.Value;
         }
 
-        ///// <summary>
-        ///// Ensures that the final lifetime and front kind are computed: <see cref="MustBeScopedLifetime"/> and <see cref="FinalTypeKind"/>
-        ///// will not be null once called.
-        ///// Returns the MustBeScopedLifetime (true if this Service implementation must be scoped and false for singleton) and service kind.
-        ///// </summary>
-        ///// <param name="m">The monitor to use.</param>
-        ///// <param name="typeKindDetector">The type detector (used to check singleton life times and promote mere IAutoService to singletons).</param>
-        ///// <param name="success">Success reference token.</param>
-        ///// <returns>First is True for scoped, false for singleton. Second is the front service.</returns>
-        //[Obsolete]
-        //internal (bool Scoped, AutoServiceKind Kind) GetFinalMustBeScopedAndFrontKind( IActivityMonitor m, CKTypeKindDetector typeKindDetector, ref bool success )
-        //{
-        //    Debug.Assert( !TypeInfo.IsSpecialized, "This is called only on leaf, most specialized, class." );
-        //    if( !MustBeScopedLifetime.HasValue )
-        //    {
-        //        foreach( var p in ConstructorAutoServiceParameters )
-        //        {
-        //            var c = p.ServiceClass?.MostSpecialized ?? p.ServiceInterface?.FinalResolved;
-        //            if( c != null )
-        //            {
-        //                bool scoped = c.GetFinalMustBeScopedAndFrontKind( m, typeKindDetector, ref success ).Scoped;
-        //                if( !MustBeScopedLifetime.HasValue && scoped )
-        //                {
-        //                    if( (TypeKind & CKTypeKind.IsSingleton) == CKTypeKind.IsSingleton )
-        //                    {
-        //                        m.Error( $"Lifetime error: Type '{ClassType}' is {nameof( ISingletonAutoService )} but parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Scoped." );
-        //                        success = false;
-        //                    }
-        //                    if( !MustBeScopedLifetime.HasValue )
-        //                    {
-        //                        m.Info( $"Type '{ClassType}' must be Scoped since parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' in constructor is Scoped." );
-        //                    }
-        //                    MustBeScopedLifetime = true;
-        //                }
-        //            }
-        //        }
-        //        if( !MustBeScopedLifetime.HasValue )
-        //        {
-        //            if( _requiredParametersToBeSingletons != null )
-        //            {
-        //                Debug.Assert( (TypeKind&CKTypeKind.LifetimeMask) == 0, "Lifetime is not specified." );
-        //                foreach( var external in _requiredParametersToBeSingletons )
-        //                {
-        //                    if( !typeKindDetector.IsSingleton( external.ParameterType ) )
-        //                    {
-        //                        m.Info( $"Type '{ClassType.Name}' must be Scoped since parameter '{external.Name}' of type '{external.ParameterType.Name}' in constructor is not a Singleton." );
-        //                        MustBeScopedLifetime = true;
-        //                        break;
-        //                    }
-        //                }
-        //            }
-        //            if( !MustBeScopedLifetime.HasValue )
-        //            {
-        //                MustBeScopedLifetime = false;
-        //                if( (TypeKind&CKTypeKind.IsSingleton) == 0 )
-        //                {
-        //                    m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
-        //                    var updated = typeKindDetector.PromoteToSingleton( m, ClassType );
-        //                    if( updated == null ) success = false; 
-        //                    else TypeKind = updated.Value;
-        //                }
-        //            }
-        //        }
-        //    }
-        //    if( !FinalTypeKind.HasValue )
-        //    {
-        //        const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService;
-        //        const AutoServiceKind FrontMask = FrontTypeMask | AutoServiceKind.IsMarshallable;
-
-        //        AutoServiceKind frontKind = typeKindDetector.GetKind( m, ClassType ).ToAutoServiceKind() & FrontMask;
-
-        //        // If this service is marshallable, it "handles" any of the FrontEnd/Process front service
-        //        // on which it relies.
-        //        // However a check must be done: a simple Process Front service cannot rely on a EndPoint Front service!
-        //        //
-        //        // If this service is not marshallable then all its parameters that are Front services must be marshallable
-        //        // so that this service can be "normally" created as long as its required dependencies have been marshalled.
-        //        //
-        //        bool frontSuccess = true;
-
-        //        if( (frontKind & (AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable)) == (AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable) )
-        //        {
-        //            // If we are on a Front service (the worst case) and this Service is IsMarshallable at its level, 
-        //            // we don't need to process the parameters since we have nothing to learn...
-        //            MarshallableTypes = MarshallableInProcessTypes = new[] { ClassType };
-        //        }
-        //        else
-        //        {
-        //            HashSet<Type> allMarshallableTypes = null;
-        //            HashSet<Type> frontMarshallableTypes = null;
-        //            // Lets's be optimistic: all parameters that are Front(Process) services (if any) will be mashallable, so this one
-        //            // can be used "on the other side" as if it was itself marshallable.
-        //            bool isAutomaticallyMarshallable = true;
-        //            // We have to analyze the parameters.
-        //            foreach( var p in AllConstructorParameters )
-        //            {
-        //                AutoServiceKind parameterKind;
-        //                AutoServiceClassInfo c = p.ServiceClass?.MostSpecialized ?? p.ServiceInterface?.FinalResolved;
-        //                if( c != null )
-        //                {
-        //                    parameterKind = c.GetFinalMustBeScopedAndFrontKind( m, typeKindDetector, ref success ).Kind;
-        //                    if( !success ) frontSuccess = false;
-        //                }
-        //                else
-        //                {
-        //                    parameterKind = typeKindDetector.GetKind( m, p.ParameterType ).ToAutoServiceKind();
-        //                }
-        //                // If the parameter is not a front service, we skip it.
-        //                if( (parameterKind & FrontTypeMask) == 0 ) continue;
-
-        //                var newFrontKind = frontKind | (parameterKind & FrontTypeMask);
-        //                if( newFrontKind != frontKind )
-        //                {
-        //                    m.Trace( $"Type '{ClassType}' must be {newFrontKind & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}'." );
-        //                    frontKind = newFrontKind;
-        //                }
-        //                // If this Service is marshallable, we don't have to worry about the parameters marshalling:
-        //                // they only impact the IsFront(Process)Service flag.
-        //                if( (frontKind & AutoServiceKind.IsMarshallable) != 0 || !isAutomaticallyMarshallable )
-        //                {
-        //                    // If we are on a FrontService, there is nothing more to achieve here: this is the worst case.
-        //                    if( (frontKind & AutoServiceKind.IsFrontService) != 0 ) break;
-        //                }
-        //                else
-        //                {
-        //                    if( (parameterKind & AutoServiceKind.IsMarshallable) == 0 )
-        //                    {
-        //                        m.Warn( $"Type '{ClassType}' is not marked as marshallable and the constructor's parameter '{p.Name}' of type '{p.ParameterInfo.ParameterType.Name}' that is a Front service is not marshallable: type '{ClassType}' cannot be marked as marshallable." );
-        //                        isAutomaticallyMarshallable = false;
-        //                    }
-        //                    else
-        //                    {
-        //                        if( allMarshallableTypes == null ) allMarshallableTypes = new HashSet<Type>();
-        //                        if( c != null )
-        //                        {
-        //                            allMarshallableTypes.AddRange( c.MarshallableTypes );
-        //                        }
-        //                        else
-        //                        {
-        //                            allMarshallableTypes.Add( p.ParameterInfo.ParameterType );
-        //                        }
-        //                        if( (parameterKind & AutoServiceKind.IsFrontService) != 0 )
-        //                        {
-        //                            if( frontMarshallableTypes == null ) frontMarshallableTypes = new HashSet<Type>();
-        //                            if( c != null )
-        //                            {
-        //                                frontMarshallableTypes.AddRange( c.MarshallableInProcessTypes );
-        //                            }
-        //                            else
-        //                            {
-        //                                frontMarshallableTypes.Add( p.ParameterInfo.ParameterType );
-        //                            }
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            if( frontSuccess )
-        //            {
-        //                if( isAutomaticallyMarshallable && allMarshallableTypes != null )
-        //                {
-        //                    Debug.Assert( allMarshallableTypes.Count > 0 );
-        //                    MarshallableTypes = allMarshallableTypes;
-        //                    frontKind |= AutoServiceKind.IsMarshallable;
-        //                    if( frontMarshallableTypes != null )
-        //                    {
-        //                        MarshallableInProcessTypes = frontMarshallableTypes;
-        //                    }
-        //                    else MarshallableInProcessTypes = Type.EmptyTypes;
-        //                }
-        //                else
-        //                {
-        //                    // This service is not a Front service OR it is not automatically marshallable.
-        //                    // We have nothing special to do: the set of Marshallable types is empty (this is not an error)
-        //                    // and this FinalFrontServiceKind will be 'None' or a EndPoint/Process service but without the IsMarshallable bit.
-        //                    MarshallableTypes = MarshallableInProcessTypes = Type.EmptyTypes;
-        //                }
-        //            }
-        //        }
-
-        //        if( MustBeScopedLifetime.Value ) frontKind |= AutoServiceKind.IsScoped;
-        //        else frontKind |= AutoServiceKind.IsSingleton;
-
-        //        if( frontSuccess )
-        //        {
-        //            if( (frontKind&AutoServiceKind.IsFrontProcessService) == 0 )
-        //            {
-        //                m.Debug( $"'{ClassType}' is not a front service." );
-        //            }
-        //            else
-        //            {
-        //                m.Trace( $"'{ClassType}' is a front service ({frontKind})." );
-        //            }
-        //        }
-        //        FinalTypeKind = frontKind;
-        //    }
-        //    return (MustBeScopedLifetime.Value, FinalTypeKind.Value);
-        //}
 
         /// <summary>
         /// This is called on the Service leaf and recursively on the Generalization.
@@ -937,17 +751,11 @@ namespace CK.Setup
                         CtorParameter ctorParameter;
                         if( param.Class != null || param.Interface != null )
                         {
-                            ctorParameter = new CtorParameter( p, param.Class, param.Interface, param.IsEnumerable );
+                        Debug.Assert( !param.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
+                        ctorParameter = new CtorParameter( p, param.Class, param.Interface );
                         }
                         else ctorParameter = new CtorParameter( p, param.IsEnumerable, param.ParameterType );
                         allCtorParameters[p.Position] = ctorParameter;
-
-                        // Temporary: Enumeration is not implemented yet.
-                        //if( success && param.IsEnumerable /*&& (param.Lifetime & CKTypeKind.IsMultipleService) == 0*/ )
-                        //{
-                        //    m.Error( $"IEnumerable<T> or IReadOnlyList<T> where T ISingletonAutoService is not supported yet: '{ClassType.FullName}' constructor cannot be handled." );
-                        //    success = false;
-                        //}
                     }
                     ConstructorParameters = allCtorParameters;
                     ConstructorInfo = ctors[0];
@@ -994,14 +802,14 @@ namespace CK.Setup
                 }
                 else 
                 {
-                    var genKind = collector.CKTypeKindDetector.GetKind( m, tGen );
+                    var genKind = collector.KindDetector.GetKind( m, tGen );
                     if( genKind != CKTypeKind.None )
                     {
                         return new CtorParameterData( true, null, null, false, genKind, tParam );
                     }
                 }
             }
-            var kind = collector.CKTypeKindDetector.GetKind( m, tParam );
+            var kind = collector.KindDetector.GetKind( m, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
             var conflictMsg = kind.GetCombinationError( tParam.IsClass );
@@ -1027,7 +835,7 @@ namespace CK.Setup
                     {
                         // IEnumerable<ValueType> or other...
                         // This may work depending on the runtime container configuration.
-                        // A War will be emitted by ComputeFinalTypeKind.
+                        // A Warn will be emitted by ComputeFinalTypeKind.
                         conflictMsg = null;
                     }
                 }

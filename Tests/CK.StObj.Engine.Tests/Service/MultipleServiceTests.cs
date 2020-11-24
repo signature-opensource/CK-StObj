@@ -203,7 +203,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces()
+        public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces_on_RealObjects_and_is_Singleton()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( UserGoogle ) );
@@ -267,7 +267,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var result = TestHelper.GetAutomaticServices( collector, services =>
                 {
                     // Here we use ServiceRegisterer that takes care of the registration with logs.
-                    services.Register( typeof(IOfficialHostedService), typeof(HNot), isScoped: false, allowMultipleRegistration: true );
+                    services.Register( typeof( IOfficialHostedService ), typeof( HNot ), isScoped: false, allowMultipleRegistration: true );
                     //
                     // We could also have used the standard ServiceCollection registration of the mapping:
                     // but without logs nor duplicate registration detection.
@@ -325,7 +325,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void IEnumerable_resolves_implementations_lifetimes()
+        public void IEnumerable_resolves_implementations_lifetimes_by_considering_final_implementations()
         {
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -338,6 +338,62 @@ namespace CK.StObj.Engine.Tests.Service
                 var m = result.Services.GetRequiredService<ManyConsumer>();
                 m.All.Should().BeEquivalentTo( result.Services.GetService<ManyAuto>(), result.Services.GetService<ManySingleton>() );
             }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( ManyAuto ) );
+                collector.RegisterType( typeof( ManyScoped ) );
+                collector.RegisterType( typeof( ManyConsumer ) );
+                var result = TestHelper.GetAutomaticServices( collector );
+                result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+
+                var m = result.Services.GetRequiredService<ManyConsumer>();
+                m.All.Should().BeEquivalentTo( result.Services.GetService<ManyAuto>(), result.Services.GetService<ManyScoped>() );
+            }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( ManyAuto ) );
+                collector.RegisterType( typeof( ManyScoped ) );
+                collector.RegisterType( typeof( ManySingleton ) );
+                collector.RegisterType( typeof( ManyConsumer ) );
+                var result = TestHelper.GetAutomaticServices( collector );
+                result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
+
+                var m = result.Services.GetRequiredService<ManyConsumer>();
+                m.All.Should().HaveCount( 3 )
+                              .And.Contain( result.Services.GetService<ManyAuto>() )
+                              .And.Contain( result.Services.GetService<ManySingleton>() )
+                              .And.Contain( result.Services.GetService<ManyScoped>() );
+            }
         }
+
+        [Test]
+        public void IEnumerable_Kind_can_be_explictly_configured_via_SetAutoServiceKind()
+        {
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.SetAutoServiceKind( typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped );
+                collector.RegisterType( typeof( ManyAuto ) );
+                collector.RegisterType( typeof( ManySingleton ) );
+                collector.RegisterType( typeof( ManyConsumer ) );
+                var result = TestHelper.GetAutomaticServices( collector );
+                result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Could be resolved as Singleton, but Scoped as stated." );
+
+                var m = result.Services.GetRequiredService<ManyConsumer>();
+                m.All.Should().BeEquivalentTo( result.Services.GetService<ManyAuto>(), result.Services.GetService<ManySingleton>() );
+            }
+        }
+
+        [Test]
+        public void IEnumerable_cannot_be_SetAutoServiceKind_Singleton_if_the_enumerated_interface_is_Scoped()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.SetAutoServiceKind( typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( typeof( IMany ), AutoServiceKind.IsScoped );
+            collector.RegisterType( typeof( ManyAuto ) );
+            collector.RegisterType( typeof( ManySingleton ) );
+            collector.RegisterType( typeof( ManyConsumer ) );
+            TestHelper.GetFailedResult( collector );
+        }
+
     }
 }

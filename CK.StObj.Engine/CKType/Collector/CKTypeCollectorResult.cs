@@ -22,14 +22,14 @@ namespace CK.Setup
             RealObjectCollectorResult c,
             AutoServiceCollectorResult s,
             IReadOnlyDictionary<Type,TypeAttributesCache?> regularTypes,
-            CKTypeKindDetector typeKindDetector )
+            IAutoServiceKindComputeFacade kindComputeFacade )
         {
             PocoSupport = pocoSupport;
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
             _regularTypes = regularTypes;
-            TypeKindDetector = typeKindDetector;
+            KindComputeFacade = kindComputeFacade;
         }
 
         /// <summary>
@@ -54,9 +54,9 @@ namespace CK.Setup
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
-        /// Gets the type detector.
+        /// Gets the AutoServiceKind compute façade.
         /// </summary>
-        public CKTypeKindDetector TypeKindDetector { get; }
+        internal IAutoServiceKindComputeFacade KindComputeFacade { get; }
 
         /// <summary>
         /// Gets whether an error exists that prevents the process to continue.

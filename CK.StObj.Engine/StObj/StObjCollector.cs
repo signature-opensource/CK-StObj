@@ -66,7 +66,7 @@ namespace CK.Setup
             // IOptionsMonitor is independent.
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
 
-            // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations are automatocally registered.
+            // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations that are IAutoServices are automatically registered.
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton|AutoServiceKind.IsMultipleService, isOptional: true );
 
             // Other well known services life time can be defined...
@@ -77,7 +77,7 @@ namespace CK.Setup
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
             // The IServiceProvider itself is a Singleton.   
-            SetAutoServiceKind( "System.IServiceProvider, System.ComponentModel", AutoServiceKind.IsSingleton, isOptional: true );
+            SetAutoServiceKind( typeof(IServiceProvider), AutoServiceKind.IsSingleton );
 
             // Other known singletons.
             SetAutoServiceKind( "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
@@ -110,7 +110,7 @@ namespace CK.Setup
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            else if( _cc.CKTypeKindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
+            else if( _cc.KindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
             {
                  return true;
             }
