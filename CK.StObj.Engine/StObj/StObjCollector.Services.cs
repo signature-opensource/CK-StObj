@@ -329,13 +329,13 @@ namespace CK.Setup
             public IStObjServiceFinalManualMapping GetFinalMapping(
                 IActivityMonitor m,
                 StObjObjectEngineMap engineMap,
-                CKTypeKindDetector typeKindDetector,
+                IAutoServiceKindComputeFacade kindComputeFacade,
                 ref bool success )
             {
                 if( !_finalMappingDone )
                 {
                     _finalMappingDone = true;
-                    Class.ComputeFinalTypeKind( m, typeKindDetector, ref success );
+                    Class.ComputeFinalTypeKind( m, kindComputeFacade, ref success );
                     if( Assignments.Any() )
                     {
                         _finalMapping = engineMap.CreateServiceFinalManualMapping( this );
@@ -383,18 +383,18 @@ namespace CK.Setup
         {
             readonly IActivityMonitor _monitor;
             readonly StObjObjectEngineMap _engineMap;
-            readonly CKTypeKindDetector _ambientTypeKindDetector;
+            readonly IAutoServiceKindComputeFacade _kindComputeFacade;
             readonly Dictionary<AutoServiceClassInfo, BuildClassInfo> _infos;
 
             public FinalRegisterer(
                 IActivityMonitor monitor,
                 StObjObjectEngineMap engineMap,
-                CKTypeKindDetector typeKindDetector )
+                IAutoServiceKindComputeFacade kindComputeFacade )
             {
                 _monitor = monitor;
                 _engineMap = engineMap;
                 _infos = new Dictionary<AutoServiceClassInfo, BuildClassInfo>();
-                _ambientTypeKindDetector = typeKindDetector;
+                _kindComputeFacade = kindComputeFacade;
             }
 
             /// <summary>
@@ -455,14 +455,14 @@ namespace CK.Setup
                 Debug.Assert( _infos.Count == 0, "Currently, no manual instantiation is available since IEnumerable is not yet handled." );
                 IStObjServiceFinalManualMapping manual = null;
                 if( _infos.TryGetValue( final, out var build )
-                    && (manual = build.GetFinalMapping( _monitor, _engineMap, _ambientTypeKindDetector, ref success )) != null )
+                    && (manual = build.GetFinalMapping( _monitor, _engineMap, _kindComputeFacade, ref success )) != null )
                 {
                     _monitor.Debug( $"Map '{t}' -> manual '{final}': '{manual}'." );
                     _engineMap.ManualMappings.Add( t, manual );
                 }
                 else
                 {
-                    final.ComputeFinalTypeKind( _monitor, _ambientTypeKindDetector, ref success );
+                    final.ComputeFinalTypeKind( _monitor, _kindComputeFacade, ref success );
                     _monitor.Debug( $"Map '{t}' -> '{final}'." );
                     if( final.IsRealObject )
                     {
@@ -501,7 +501,7 @@ namespace CK.Setup
                     }
                     else _monitor.Trace( $"{families.Count} Service families found." );
                     bool success = true;
-                    var manuals = new FinalRegisterer( _monitor, engineMap, typeResult.TypeKindDetector );
+                    var manuals = new FinalRegisterer( _monitor, engineMap, typeResult.KindComputeFacade );
                     foreach( var f in families )
                     {
                         success &= f.Resolve( _monitor, manuals );

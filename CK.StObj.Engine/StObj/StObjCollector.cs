@@ -75,18 +75,18 @@ namespace CK.Setup
             // IOptionsMonitor is independent.
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
 
-            // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations are automatocally registered.
+            // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations that are IAutoServices are automatically registered.
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton|AutoServiceKind.IsMultipleService, isOptional: true );
 
             // Other well known services life time can be defined...
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
-
+            SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
             // The IHostEnvironment is a singleton (tied to the process, not marshallable).
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
             // The IServiceProvider itself is a Singleton.   
-            SetAutoServiceKind( "System.IServiceProvider, System.ComponentModel", AutoServiceKind.IsSingleton, isOptional: true );
+            SetAutoServiceKind( typeof(IServiceProvider), AutoServiceKind.IsSingleton );
 
             // Other known singletons.
             SetAutoServiceKind( "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
@@ -119,7 +119,7 @@ namespace CK.Setup
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            else if( _cc.AmbientKindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
+            else if( _cc.KindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
             {
                  return true;
             }
@@ -231,72 +231,6 @@ namespace CK.Setup
             if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
             DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
         }
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are known to be singleton services.
-        ///// </summary>
-        ///// <param name="types">Types to register.</param>
-        //public void DefineAsExternalSingletons( IReadOnlyCollection<Type> types )
-        //{
-        //    if( types == null ) throw new ArgumentNullException( nameof( types ) );
-        //    DoDefineAsExternalSingletons( types, types.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are known to be scoped services.
-        ///// </summary>
-        ///// <param name="types">Types to register.</param>
-        //public void DefineAsExternalScoped( IReadOnlyCollection<Type> types )
-        //{
-        //    if( types == null ) throw new ArgumentNullException( nameof( types ) );
-        //    DoDefineAsExternalScoped( types, types.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types by their assembly qualified names that are known to be
-        ///// singleton services.
-        ///// </summary>
-        ///// <param name="typeNames">Assembly qualified names of the singleton types.</param>
-        //public void DefineAsExternalSingletons( IReadOnlyCollection<string> typeNames )
-        //{
-        //    if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-        //    DoDefineAsExternalSingletons( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types by their assembly qualified names that are known to be
-        ///// scoped services.
-        ///// </summary>
-        ///// <param name="typeNames">Assembly qualified names of the scoped types.</param>
-        //public void DefineAsExternalScoped( IReadOnlyCollection<string> typeNames )
-        //{
-        //    if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-        //    DoDefineAsExternalScoped( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are Front services of a certain <see cref="AutoServiceKind"/> (that must
-        ///// not be <see cref="AutoServiceKind.None"/>).
-        ///// </summary>
-        ///// <param name="types">Types to register.</param>
-        ///// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
-        //public void DefineAsExternalFrontService( IReadOnlyCollection<Type> types, AutoServiceKind kind )
-        //{
-        //    if( types == null ) throw new ArgumentNullException( nameof( types ) );
-        //    DoDefineAsExternalFrontService( types, types.Count, kind );
-        //}
-
-        ///// <summary>
-        ///// Explicitly registers a set of types that are Front services of a certain <see cref="AutoServiceKind"/> (that must
-        ///// not be <see cref="AutoServiceKind.None"/>).
-        ///// </summary>
-        ///// <param name="typeNames">Types to register.</param>
-        ///// <param name="kind">The kind of Front service. Must not be <see cref="AutoServiceKind.None"/>.</param>
-        //public void DefineAsExternalFrontService( IReadOnlyCollection<string> typeNames, AutoServiceKind kind )
-        //{
-        //    if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-        //    DoDefineAsExternalFrontService( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count, kind );
-        //}
 
         void DoRegisterTypes( IEnumerable<Type> types, int count )
         {

@@ -537,15 +537,15 @@ namespace CK.Setup
             }
         }
 
-        internal void InitializeInterfaces( IActivityMonitor m, CKTypeKindDetector d )
+        internal void InitializeInterfaces( IActivityMonitor m, CKTypeCollector collector )
         {
-            // If there is a path ambiguity we'll reach an already initialized parent.
+            // If there is a path ambiguity we'll reach an already initialized parent set of interfaces.
             if( _realObjectInterfaces == null )
             {
                 List<Type> all = null;
                 foreach( Type tI in Interfaces )
                 {
-                    var k = d.GetKind( m, tI );
+                    var k = collector.KindDetector.GetKind( m, tI );
                     if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                     {
                         if( all == null ) all = new List<Type>();
@@ -553,11 +553,11 @@ namespace CK.Setup
                     }
                     else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
                     {
-                        AddMultipleMapping( tI );
+                        AddMultipleMapping( tI, k, collector );
                     }
                 }
                 _realObjectInterfaces = (IReadOnlyList<Type>)all ?? Type.EmptyTypes;
-                Generalization?.InitializeInterfaces( m, d );
+                Generalization?.InitializeInterfaces( m, collector );
             }
         }
 

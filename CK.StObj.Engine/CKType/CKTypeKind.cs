@@ -89,7 +89,9 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
-        /// Gets the <see cref="AutoServiceKind"/>.
+        /// Gets the <see cref="AutoServiceKind"/> (masks the internal bits).
+        /// Note that a check of the "IsFrontService => IsFrontProcessService and IsScoped" rule
+        /// is made: an <see cref="ArgumentException"/> may be thrown.
         /// </summary>
         /// <param name="this">This type kind.</param>
         /// <returns>The Auto service kind.</returns>

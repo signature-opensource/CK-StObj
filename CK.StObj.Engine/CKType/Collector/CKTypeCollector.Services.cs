@@ -5,6 +5,8 @@ using System.Diagnostics;
 using CK.Setup;
 using CK.Core;
 
+#nullable enable annotations
+
 namespace CK.Setup
 {
     public partial class CKTypeCollector
@@ -28,7 +30,7 @@ namespace CK.Setup
         }
 
 
-        bool IsAutoService( Type t ) => (AmbientKindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( Type t ) => (KindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo FindServiceClassInfo( Type t )
         {
@@ -46,10 +48,11 @@ namespace CK.Setup
 
         /// <summary>
         /// Returns null if and only if the interface type is excluded.
+        /// This is only called by RegisterServiceInterfaces below (and recursively calls it).
         /// </summary>
         AutoServiceInterfaceInfo RegisterServiceInterface( Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface && lt == AmbientKindDetector.GetKind( _monitor, t ) );
+            Debug.Assert( t.IsInterface && lt == KindDetector.GetKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
             lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
             Debug.Assert( lt == CKTypeKind.IsAutoService
@@ -69,23 +72,23 @@ namespace CK.Setup
             return info;
         }
 
-        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, Action<Type> multipleImplementation = null )
+        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, Action<Type,CKTypeKind,CKTypeCollector>? multipleImplementation = null )
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind lt = AmbientKindDetector.GetKind( _monitor, iT );
-                var conflictMsg = lt.GetCombinationError( false );
+                CKTypeKind k = KindDetector.GetKind( _monitor, iT );
+                var conflictMsg = k.GetCombinationError( false );
                 if( conflictMsg != null )
                 {
                     _monitor.Error( $"Interface '{iT.FullName}': {conflictMsg}" );
                 }
-                else if( (lt & CKTypeKind.IsMultipleService) != 0 )
+                else if( (k & CKTypeKind.IsMultipleService) != 0 )
                 {
-                    multipleImplementation?.Invoke( iT );
+                    multipleImplementation?.Invoke( iT, k, this );
                 }
-                else if( (lt&CKTypeKind.IsAutoService) != 0 )
+                else if( (k&CKTypeKind.IsAutoService) != 0 )
                 {
-                    var r = RegisterServiceInterface( iT, lt );
+                    var r = RegisterServiceInterface( iT, k );
                     if( r != null ) yield return r;
                 }
             }
