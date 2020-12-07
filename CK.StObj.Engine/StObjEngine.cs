@@ -358,7 +358,7 @@ namespace CK.Setup
                     monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its weak type name ({weaken})." );
                     return false;
                 }
-                return _firstLayer.TypeFilter( monitor, t );
+                return _firstLayer?.TypeFilter( monitor, t ) ?? true;
             }
         }
 
