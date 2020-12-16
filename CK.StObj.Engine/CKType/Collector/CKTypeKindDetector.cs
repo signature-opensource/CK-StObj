@@ -175,6 +175,7 @@ namespace CK.Setup
                 && (t.IsClass || t.IsInterface) )
             {
                 Debug.Assert( k == CKTypeKind.None );
+
                 var baseType = t.BaseType;
                 var allInterfaces = t.GetInterfaces();
                 // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
@@ -200,145 +201,149 @@ namespace CK.Setup
                 // define and use them.
                 if( k == CKTypeKind.None && !(t.IsInterface && !t.IsPublic && !t.IsNestedPublic) )
                 {
-                    Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
-                    Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
-                    Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                    Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
-                    bool hasSuperDefiner = t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "CKTypeSuperDefinerAttribute" );
-                    bool hasDefiner = t.GetCustomAttributesData().Any( a => a.AttributeType.Name == "CKTypeDefinerAttribute" );
-                    if( hasSuperDefiner )
+                    Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
+                    var attrData = t.GetCustomAttributesData();
+                    if( !attrData.Any( a => a.AttributeType.Name == "StObjGen" ) )
                     {
+                        Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
+                        Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
+                        Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                        Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
+                        bool hasSuperDefiner = attrData.Any( a => a.AttributeType.Name == "CKTypeSuperDefinerAttribute" );
+                        bool hasDefiner = attrData.Any( a => a.AttributeType.Name == "CKTypeDefinerAttribute" );
+                        if( hasSuperDefiner )
+                        {
+                            if( hasDefiner )
+                            {
+                                m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t}' is useless since [CKTypeSuperDefiner] is also defined." );
+                            }
+                            hasDefiner = true;
+                        }
                         if( hasDefiner )
                         {
-                            m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t}' is useless since [CKTypeSuperDefiner] is also defined." );
-                        }
-                        hasDefiner = true;
-                    }
-                    if( hasDefiner )
-                    {
-                        // If this is a definer, we can skip any handling of potential Super Definer.
-                        // We also clear any IsMultipleService and IsMarshallable since thess flags are not transitive.
-                        foreach( var i in allInterfaces )
-                        {
-                            k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
-                        }
-                        k |= IsDefiner;
-                        if( hasSuperDefiner ) k |= IsSuperDefiner;
-                    }
-                    else
-                    {
-                        Debug.Assert( k == CKTypeKind.None );
-                        // If the base type is a SuperDefiner, then this is a Definer.
-                        if( baseType != null )
-                        {
-                            // IsMarshallable is not propagated.
-                            var kBase = RawGet( m, baseType ) & ~CKTypeKind.IsMarshallable;
-                            Debug.Assert( (kBase&CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
-                            if( (kBase & IsSuperDefiner) != 0 )
-                            {
-                                Debug.Assert( (kBase & IsDefiner) != 0 );
-                                k = kBase & ~IsSuperDefiner;
-                            }
-                            else k = kBase & ~IsDefiner;
-                        }
-                        if( (k&IsDefiner) != 0 )
-                        {
-                            // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
+                            // If this is a definer, we can skip any handling of potential Super Definer.
+                            // We also clear any IsMultipleService and IsMarshallable since thess flags are not transitive.
                             foreach( var i in allInterfaces )
                             {
                                 k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
                             }
+                            k |= IsDefiner;
+                            if( hasSuperDefiner ) k |= IsSuperDefiner;
                         }
                         else
                         {
-                            // We are not (yet?) a Definer.
-                            foreach( var i in allInterfaces )
+                            Debug.Assert( k == CKTypeKind.None );
+                            // If the base type is a SuperDefiner, then this is a Definer.
+                            if( baseType != null )
                             {
-                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
-                                if( (k & IsDefiner) == 0 // We are not yet a Definer...
-                                    && (kI & IsSuperDefiner) != 0 ) // ...but this base interface is a SuperDefiner.
+                                // IsMarshallable is not propagated.
+                                var kBase = RawGet( m, baseType ) & ~CKTypeKind.IsMarshallable;
+                                Debug.Assert( (kBase & CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
+                                if( (kBase & IsSuperDefiner) != 0 )
                                 {
-                                    // Really?
-                                    bool indirect = (baseType != null && i.IsAssignableFrom( baseType ))
-                                                     || allInterfaces.Any( baseInterface => i != baseInterface && i.IsAssignableFrom( baseInterface ) );
-                                    kI &= ~IsSuperDefiner;
-                                    if( !indirect ) kI |= IsDefiner;
+                                    Debug.Assert( (kBase & IsDefiner) != 0 );
+                                    k = kBase & ~IsSuperDefiner;
                                 }
-                                k |= kI & ~IsSuperDefiner;
+                                else k = kBase & ~IsDefiner;
+                            }
+                            if( (k & IsDefiner) != 0 )
+                            {
+                                // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
+                                foreach( var i in allInterfaces )
+                                {
+                                    k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                }
+                            }
+                            else
+                            {
+                                // We are not (yet?) a Definer.
+                                foreach( var i in allInterfaces )
+                                {
+                                    var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                    if( (k & IsDefiner) == 0 // We are not yet a Definer...
+                                        && (kI & IsSuperDefiner) != 0 ) // ...but this base interface is a SuperDefiner.
+                                    {
+                                        // Really?
+                                        bool indirect = (baseType != null && i.IsAssignableFrom( baseType ))
+                                                         || allInterfaces.Any( baseInterface => i != baseInterface && i.IsAssignableFrom( baseInterface ) );
+                                        kI &= ~IsSuperDefiner;
+                                        if( !indirect ) kI |= IsDefiner;
+                                    }
+                                    k |= kI & ~IsSuperDefiner;
+                                }
                             }
                         }
-                    }
-                    // Propagation from base and interfaces has been done.
-                    // If we're still None here, we look for an open generic definition.
-                    if( k == CKTypeKind.None && t.IsGenericType && !t.IsGenericTypeDefinition )
-                    {
-                        // A Generic Type definition can be a (Super)Definer or be a multiple service definition: this
-                        // applies directly to the specialized type.
-                        // Even the IsMarshallable is kept: we consider that a generic marshaller is possible!
-                        var tGen = t.GetGenericTypeDefinition();
-                        k = RawGet( m, tGen );
-                    }
-                    var attrData = t.GetCustomAttributesData();
-                    if( t.IsInterface )
-                    {
-                        if( attrData.Any( a => a.AttributeType.Name == "IsMultipleAttribute" ) )
+                        // Propagation from base and interfaces has been done.
+                        // If we're still None here, we look for an open generic definition.
+                        if( k == CKTypeKind.None && t.IsGenericType && !t.IsGenericTypeDefinition )
                         {
-                            k |= CKTypeKind.IsMultipleService;
+                            // A Generic Type definition can be a (Super)Definer or be a multiple service definition: this
+                            // applies directly to the specialized type.
+                            // Even the IsMarshallable is kept: we consider that a generic marshaller is possible!
+                            var tGen = t.GetGenericTypeDefinition();
+                            k = RawGet( m, tGen );
                         }
-                    }
-                    if( attrData.Any( a => a.AttributeType.Name == "IsMarshallableAttribute" ) )
-                    {
-                        k |= CKTypeKind.IsMarshallable;
-                    }
-                    // Check for errors and handle 
-                    if( k != CKTypeKind.None )
-                    {
-                        // Checking errors here that cannot be checked by the central GetCombinationError method.
-                        //
-                        if( !t.Assembly.IsDynamic && !(t.IsPublic || t.IsNestedPublic) )
+                        if( t.IsInterface )
                         {
-                            m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
-                        }
-                        if( t.IsClass )
-                        {
-                            Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
-                            if( (k & CKTypeKind.IsAutoService) != 0 )
+                            if( attrData.Any( a => a.AttributeType.Name == "IsMultipleAttribute" ) )
                             {
-                                foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
+                                k |= CKTypeKind.IsMultipleService;
+                            }
+                        }
+                        if( attrData.Any( a => a.AttributeType.Name == "IsMarshallableAttribute" ) )
+                        {
+                            k |= CKTypeKind.IsMarshallable;
+                        }
+                        // Check for errors and handle 
+                        if( k != CKTypeKind.None )
+                        {
+                            // Checking errors here that cannot be checked by the central GetCombinationError method.
+                            //
+                            if( !t.Assembly.IsDynamic && !(t.IsPublic || t.IsNestedPublic) )
+                            {
+                                m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                            }
+                            if( t.IsClass )
+                            {
+                                Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
+                                if( (k & CKTypeKind.IsAutoService) != 0 )
                                 {
-                                    Type marshallable = marshaller.GetGenericArguments()[0];
-                                    m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
-                                    SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
-
-                                    // The marshaller interface (the closed generic) is promoted to be an IAutoService since it must be
-                                    // mapped (without ambiguities) on the currently registering class (that is itself an IAutoService).
-                                    var exists = RawGet( m, marshaller );
-                                    if( (exists & CKTypeKind.IsAutoService) == 0 )
+                                    foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
                                     {
-                                        exists |= CKTypeKind.IsAutoService;
-                                        var error = exists.GetCombinationError( false );
-                                        if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
-                                        else
+                                        Type marshallable = marshaller.GetGenericArguments()[0];
+                                        m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
+                                        SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
+
+                                        // The marshaller interface (the closed generic) is promoted to be an IAutoService since it must be
+                                        // mapped (without ambiguities) on the currently registering class (that is itself an IAutoService).
+                                        var exists = RawGet( m, marshaller );
+                                        if( (exists & CKTypeKind.IsAutoService) == 0 )
                                         {
-                                            m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
-                                            _cache[marshaller] = exists;
+                                            exists |= CKTypeKind.IsAutoService;
+                                            var error = exists.GetCombinationError( false );
+                                            if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
+                                            else
+                                            {
+                                                m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
+                                                _cache[marshaller] = exists;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        else
-                        {
-                            Debug.Assert( t.IsInterface );
-                            // We are registering classes (not interfaces): the combination errors for classes are (at least should be) checked by the
-                            // root register code.
-                            // Here we check and log an error for any interface combination error. Some errors don't propagate to their final classes
-                            // like for instance the fact that a IRealObject interface cannot be marked IsMultiple (the attribute applies only to the
-                            // interface it decorates).
-                            // We may have test here only these kind of specific errors (currently only this one), however we consider that it is better
-                            // and safer to rely on the central GetCombinationError() method: this method concentrates all the checks.
-                            var error = (k&MaskPublicInfo).GetCombinationError( false );
-                            if( error != null ) m.Error( $"Invalid interface '{t.FullName}' kind: {error}" );
+                            else
+                            {
+                                Debug.Assert( t.IsInterface );
+                                // We are registering classes (not interfaces): the combination errors for classes are (at least should be) checked by the
+                                // root register code.
+                                // Here we check and log an error for any interface combination error. Some errors don't propagate to their final classes
+                                // like for instance the fact that a IRealObject interface cannot be marked IsMultiple (the attribute applies only to the
+                                // interface it decorates).
+                                // We may have test here only these kind of specific errors (currently only this one), however we consider that it is better
+                                // and safer to rely on the central GetCombinationError() method: this method concentrates all the checks.
+                                var error = (k & MaskPublicInfo).GetCombinationError( false );
+                                if( error != null ) m.Error( $"Invalid interface '{t.FullName}' kind: {error}" );
+                            }
                         }
                     }
                 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -31,7 +32,8 @@ namespace CK.Setup
 
             _memory = new Dictionary<object, object?>();
             Code = CodeWorkspace.Create();
-            Code.Global.Append( "[assembly:CK.Setup.ExcludeFromSetup()]" ).NewLine();
+            Debug.Assert( typeof( StObjGenAttribute ).FullName == "CK.Core.StObjGenAttribute" );
+            Code.TypeCreated += t => t.Definition.Attributes.Ensure( CodeAttributeTarget.Type ).Attributes.Add( new AttributeDefinition( "CK.Core.StObjGen" ) );
         }
 
         /// <inheritdoc />
