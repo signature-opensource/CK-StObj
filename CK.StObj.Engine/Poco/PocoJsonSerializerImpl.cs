@@ -149,7 +149,8 @@ namespace CK.Setup
             var toString = FunctionDefinition.Parse( "public override string ToString()" );
             if( pocoClass.FindFunction( toString.Key, false ) == null )
             {
-                pocoClass.CreateFunction( toString )
+                pocoClass.GeneratedByComment()
+                    .CreateFunction( toString )
                     .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
                     .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
                     .OpenBlock()
@@ -159,7 +160,7 @@ namespace CK.Setup
                     .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
             }
 
-            pocoClass.Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
+            pocoClass.GeneratedByComment().Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
                  .OpenBlock()
                  .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()
                  .Append( "w.WriteStartObject();" ).NewLine();
@@ -214,7 +215,7 @@ namespace CK.Setup
         /// <returns>The part in the switch statement.</returns>
         ITypeScopePart GenerateReadBody( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
         {
-            pocoClass.Append( "public void Read( ref System.Text.Json.Utf8JsonReader r )" )
+            pocoClass.GeneratedByComment().Append( "public void Read( ref System.Text.Json.Utf8JsonReader r )" )
               .OpenBlock()
               .Append( @"
 bool isDef = r.TokenType == System.Text.Json.JsonTokenType.StartArray;

@@ -33,7 +33,8 @@ namespace CK.Setup
             IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
 
             // PocoDirectory_CK class.
-            scope.FindOrCreateFunction( "internal PocoDirectory_CK()" )
+            scope.GeneratedByComment()
+                 .FindOrCreateFunction( "internal PocoDirectory_CK()" )
                  .Append( "Instance = this;" );
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()

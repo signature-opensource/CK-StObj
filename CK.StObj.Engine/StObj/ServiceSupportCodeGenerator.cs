@@ -106,7 +106,7 @@ namespace CK.Setup
         {
             _infoType.Namespace.Append( _sourceServiceSupport );
 
-            _rootType.Append( @"
+            _rootType.GeneratedByComment().Append( @"
 readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
 readonly IStObjFinalImplementation[] _objectServiceMappingList;
 readonly Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
@@ -273,7 +273,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
 
         void CreateServiceClassFactory( IStObjServiceFinalManualMapping c )
         {
-            var t = _infoType.CreateType( $"class S{c.ManualMappingIndex} : StObjServiceClassFactoryInfo, IStObjServiceClassFactory" );
+            var t = _infoType.GeneratedByComment().CreateType( $"class S{c.ManualMappingIndex} : StObjServiceClassFactoryInfo, IStObjServiceClassFactory" );
 
             t.CreateFunction( ctor =>
             {
