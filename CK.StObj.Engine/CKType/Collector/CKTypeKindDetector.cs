@@ -49,6 +49,9 @@ namespace CK.Setup
         // The IsMultiple reason is an external definition.
         const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 11);
 
+        // A [StObjGen] attribute exists: the type is not handled.
+        const CKTypeKind IsStObjGen = (CKTypeKind)(PrivateStart << 12);
+
 
         readonly Dictionary<Type, CKTypeKind> _cache;
 
@@ -150,10 +153,6 @@ namespace CK.Setup
         /// Checks whether the type supports a IAutoService, IScopedAutoService, ISingletonAutoService, IFrontAutoService, IMarshalledAutoService, 
         /// or IRealObject interface or has been explicitly registered as a <see cref="CKTypeKind.IsScoped"/> or <see cref="CKTypeKind.IsSingleton"/>.
         /// <para>
-        /// Only the interface name matters (namespace is ignored) and the interface
-        /// must be a pure marker, there must be no declared members.
-        /// </para>
-        /// <para>
         /// The result can be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind, bool)"/>.
         /// </para>
         /// </summary>
@@ -166,6 +165,23 @@ namespace CK.Setup
             return (k & (IsDefiner|IsSuperDefiner)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
+        }
+
+        /// <summary>
+        /// Same as <see cref="GetKind"/> except that if a <see cref="StObjGenAttribute"/> exists on the
+        /// type, null is returned instead of the <see cref="CKTypeKind.None"/>.
+        /// </summary>
+        /// <param name="m"></param>
+        /// <param name="t"></param>
+        /// <param name="m">The monitor to use.</param>
+        /// <param name="t">The type that can be an interface or a class.</param>
+        /// <returns>The CK type kind (may be invalid) or null if [StObjGen] attribute exists on the type.</returns>
+        public CKTypeKind? GetExtendedKind( IActivityMonitor m, Type t )
+        {
+            var k = RawGet( m, t );
+            return (k & (IsDefiner | IsSuperDefiner)) == 0
+                        ? (k == IsStObjGen ? null : k & MaskPublicInfo)
+                   : CKTypeKind.None;
         }
 
         CKTypeKind RawGet( IActivityMonitor m, Type t )
@@ -203,7 +219,11 @@ namespace CK.Setup
                 {
                     Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
                     var attrData = t.GetCustomAttributesData();
-                    if( !attrData.Any( a => a.AttributeType.Name == "StObjGen" ) )
+                    if( attrData.Any( a => a.AttributeType.Name == "StObjGen" ) )
+                    {
+                        k = IsStObjGen;
+                    }
+                    else 
                     {
                         Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                         Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
@@ -365,6 +385,7 @@ namespace CK.Setup
             if( (t & IsMarshallableReasonMarshaller) != 0 ) c += " [FrontType:MarshallableSinceMarshallerExists]";
             if( (t & IsFrontTypeReasonExternal) != 0 ) c += " [FrontType:External]";
             if( (t & IsMultipleReasonExternal) != 0 ) c += " [Multiple:External]";
+            if( (t & IsStObjGen) != 0 ) c += " [StObjGen]";
             return c;
         }
 

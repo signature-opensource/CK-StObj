@@ -151,23 +151,26 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind lt = KindDetector.GetKind( _monitor, t );
-            var conflictMsg = lt.GetCombinationError( true );
-            if( conflictMsg != null )
+            CKTypeKind? lt = KindDetector.GetExtendedKind( _monitor, t );
+            if( lt != null )
             {
-                _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
-            }
-            else
-            {
-                if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                var conflictMsg = lt.Value.GetCombinationError( true );
+                if( conflictMsg != null )
                 {
-                    objectInfo = RegisterObjectClassInfo( t, acParent );
-                    Debug.Assert( objectInfo != null );
+                    _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
                 }
-                if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
+                else
                 {
-                    serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
-                    Debug.Assert( serviceInfo != null );
+                    if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                    {
+                        objectInfo = RegisterObjectClassInfo( t, acParent );
+                        Debug.Assert( objectInfo != null );
+                    }
+                    if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
+                    {
+                        serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
+                        Debug.Assert( serviceInfo != null );
+                    }
                 }
             }
             // Marks the type as a registered one and gives it a chance to carry
@@ -175,7 +178,7 @@ namespace CK.Setup
             if( objectInfo == null && serviceInfo == null )
             {
                 _objectCollector.Add( t, null );
-                RegisterRegularType( t );
+                if( lt != null ) RegisterRegularType( t );
             }
             
             return true;
@@ -213,9 +216,10 @@ namespace CK.Setup
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                var c = _typeFilter(_monitor,t)
-                           ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
-                           : null;
+                // Ignores the type if type filter says so or if a [StObjGen] attribute exists.
+                var c = _typeFilter( _monitor, t ) && KindDetector.GetExtendedKind( _monitor, t ) != null
+                               ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
+                               : null;
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
