@@ -63,6 +63,17 @@ namespace CK.Testing.StObjMap
         IStObjMap StObjMap { get; }
 
         /// <summary>
+        /// Gets whether a failed attempt to obtain the <see cref="StObjMap"/> should be ignored: subsequent attempt to
+        /// get it will trigger a full resolution.
+        /// By default, this is "StObjMap/StObjMapRetryOnError" configuration that is false: if the first attempt to obtain the
+        /// current <see cref="StObjMap"/> failed, subsequent obtentions immediatey throw.
+        /// <para>
+        /// Note that calls to <see cref="ResetStObjMap(bool)"/> resets any current load error.
+        /// </para>
+        /// </summary>
+        bool StObjMapRetryOnError { get; set; }
+
+        /// <summary>
         /// Fires whenever the <see cref="StObjMap"/> is accessed.
         /// This allows external code to handle map lifetime: see <see cref="StObjMapAccessedEventArgs"/>.
         /// </summary>
