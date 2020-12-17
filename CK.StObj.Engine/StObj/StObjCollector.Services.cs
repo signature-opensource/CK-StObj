@@ -337,7 +337,7 @@ namespace CK.Setup
                 if( !_finalMappingDone )
                 {
                     _finalMappingDone = true;
-                    Class.ComputeFinalTypeKind( m, kindComputeFacade, ref success );
+                    Class.ComputeFinalTypeKind( m, kindComputeFacade, new Stack<AutoServiceClassInfo>(), ref success );
                     if( Assignments.Any() )
                     {
                         _finalMapping = engineMap.CreateServiceFinalManualMapping( this );
@@ -463,17 +463,20 @@ namespace CK.Setup
                 }
                 else
                 {
-                    final.ComputeFinalTypeKind( _monitor, _kindComputeFacade, ref success );
-                    _monitor.Debug( $"Map '{t}' -> '{final}'." );
-                    if( final.IsRealObject )
+                    final.ComputeFinalTypeKind( _monitor, _kindComputeFacade, new Stack<AutoServiceClassInfo>(), ref success );
+                    if( success )
                     {
-                        _engineMap.RegisterServiceFinalObjectMapping( t, final.TypeInfo );
+                        _monitor.Debug( $"Map '{t}' -> '{final}'." );
+                        if( final.IsRealObject )
+                        {
+                            _engineMap.RegisterServiceFinalObjectMapping( t, final.TypeInfo );
+                        }
+                        else
+                        {
+                            _engineMap.RegisterFinalSimpleMapping( t, final );
+                        }
+                        if( t != final.ClassType ) final.TypeInfo.AddUniqueMapping( t );
                     }
-                    else
-                    {
-                        _engineMap.RegisterFinalSimpleMapping( t, final );
-                    }
-                    if( t != final.ClassType ) final.TypeInfo.AddUniqueMapping( t );
                 }
             }
         }

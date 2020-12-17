@@ -126,7 +126,12 @@ namespace CK.Setup
                         Debug.Assert( info.ServiceClass != null );
                         var impl = info.ServiceClass.MostSpecialized;
                         Debug.Assert( impl != null );
-                        var k = impl.ComputeFinalTypeKind( m, ctx, ref success );
+                        // We provide a new empty "cycle detection context" to the class constructors: IEnumerable
+                        // of interfaces break potential cycles since they handle their own cycle by resolving to
+                        // the "worst" non marshallable IsFrontService|IsScoped.
+                        // We consider that if the IEnumerable (or one of its class) cannot be resolved by the DI container,
+                        // it's not our problem here.
+                        var k = impl.ComputeFinalTypeKind( m, ctx, new Stack<AutoServiceClassInfo>(), ref success );
                         // Check for scope lifetime.
                         if( !isScoped )
                         {

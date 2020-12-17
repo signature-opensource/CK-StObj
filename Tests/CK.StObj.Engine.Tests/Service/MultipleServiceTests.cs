@@ -100,7 +100,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( MayWork ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var s = TestHelper.GetAutomaticServices( collector, null ).Services;
@@ -114,7 +114,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( MayWork ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> logs = null;
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var explicitInstance = new[] { 42, 3712 };

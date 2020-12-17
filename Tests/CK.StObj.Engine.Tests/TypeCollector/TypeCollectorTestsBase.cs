@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                         f );
         }
 
-        public static CKTypeCollectorResult CheckSuccess( Action<CKTypeCollector> registerTypes, CKTypeCollector existing = null )
+        public static CKTypeCollectorResult CheckSuccess( Action<CKTypeCollector> registerTypes, CKTypeCollector? existing = null )
         {
             bool error = false;
             using( TestHelper.Monitor.OnError( () => error = true ) )
