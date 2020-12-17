@@ -219,9 +219,10 @@ namespace CK.Setup
                 {
                     Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
                     var attrData = t.GetCustomAttributesData();
-                    if( attrData.Any( a => a.AttributeType.Name == "StObjGen" ) )
+                    if( attrData.Any( a => a.AttributeType.Name == "StObjGenAttribute" ) )
                     {
                         k = IsStObjGen;
+                        m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
                     }
                     else 
                     {
