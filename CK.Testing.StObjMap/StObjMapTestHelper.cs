@@ -207,7 +207,20 @@ namespace CK.Testing
             {
                 try
                 {
-                    var a = Assembly.LoadFrom( Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" ) );
+                    var p = Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
+                    var pSig = p + StObjEngineConfiguration.ExistsSignatureFileExtension;
+                    if( File.Exists( pSig ) )
+                    {
+                        var sig = File.ReadAllText( pSig );
+                        var m = StObjContextRoot.GetMapInfo( SHA1Value.Parse( sig ), _monitor.Monitor );
+                        if( m != null )
+                        {
+                            _monitor.Monitor.CloseGroup( $"Found existing map from signature file {assemblyName}.dll{StObjEngineConfiguration.ExistsSignatureFileExtension}: {m}." );
+                            return StObjContextRoot.GetStObjMap( m, _monitor.Monitor );
+                        }
+                        _monitor.Monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyName}.dll{StObjEngineConfiguration.ExistsSignatureFileExtension}'. Tyring to load the assembly." );
+                    }
+                    var a = Assembly.LoadFrom( p );
                     return StObjContextRoot.Load( a, _monitor.Monitor );
                 }
                 catch( Exception ex )

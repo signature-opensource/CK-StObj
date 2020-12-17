@@ -95,7 +95,9 @@ namespace CK.Setup
                     }
                     DoMoveOrCopy( _monitor, fPath, t, copy: false );
                 }
-                else if( f.EndsWith( ".dll" ) || f.EndsWith( ".exe" ) ) continue;
+                else if( f.EndsWith( ".dll" )
+                         || f.EndsWith( ".exe" )
+                         || f.EndsWith( StObjEngineConfiguration.ExistsSignatureFileExtension ) ) continue;
                 else
                 {
                     // Other generated files?
@@ -116,7 +118,7 @@ namespace CK.Setup
                     {
                         using( _monitor.OpenTrace( $"Deleting old project source file '{previous.LastPart}'." ) )
                         {
-                            SafeDelete( previous );
+                            SafeDelete( _monitor, previous );
                         }
                     }
                     else break;
@@ -155,7 +157,8 @@ namespace CK.Setup
             }
         }
 
-        void SafeDelete( NormalizedPath filePath )
+
+        internal static void SafeDelete( IActivityMonitor monitor, NormalizedPath filePath )
         {
             try
             {
@@ -163,7 +166,7 @@ namespace CK.Setup
             }
             catch( Exception ex )
             {
-                _monitor.Error( ex );
+                monitor.Error( $"Error while deleting file '{filePath}'. Ignored.", ex );
             }
         }
 

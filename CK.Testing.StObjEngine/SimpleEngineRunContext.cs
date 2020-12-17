@@ -206,8 +206,9 @@ namespace CK.Testing.StObjEngine
             var secondPass = new List<MultiPassCodeGeneration>();
             string finalFilePath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" );
             if( !result.GenerateSourceCodeFirstPass( monitor, ctx.UnifiedCodeContext, null, secondPass ) ) return default;
-            Func<SHA1Value, bool> mapFinder = v => StObjContextRoot.GetMapInfo( v, monitor ) != null;
-            if( skipEmbeddedStObjMap ) mapFinder = v => false;
+            Func<IActivityMonitor, SHA1Value, bool> mapFinder = skipEmbeddedStObjMap
+                            ? ( m, v ) => false
+                            : ( m, v ) => StObjContextRoot.GetMapInfo( v, m ) != null;
             return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, secondPass, mapFinder );
         }
 

@@ -109,7 +109,6 @@ namespace CK.Setup
                                                     + b.Assemblies.Count * 117;
         }
 
-
         /// <summary>
         /// Runs the setup.
         /// </summary>
@@ -213,9 +212,9 @@ namespace CK.Setup
                             }
                             if( _status.Success )
                             {
-                                Func<SHA1Value, bool> stObjMapAvailable = _config.AvailableStObjMapSignatures.Count > 0
-                                                                            ? _config.AvailableStObjMapSignatures.Contains
-                                                                            : (Func<SHA1Value, bool>)(v => StObjContextRoot.GetMapInfo( v, _monitor ) != null);
+                                Func<IActivityMonitor, SHA1Value, bool> stObjMapAvailable = _config.AvailableStObjMapSignatures.Count > 0
+                                                                            ? (m,v) => _config.AvailableStObjMapSignatures.Contains( v )
+                                                                            : (m,v) => StObjContextRoot.GetMapInfo( v, m ) != null;
                                 foreach( var (g, secondPasses) in secondPass )
                                 {
                                     var head = g.GroupedPaths.Key;
@@ -237,9 +236,9 @@ namespace CK.Setup
                                                 foreach( var file in gR.GeneratedFileNames )
                                                 {
                                                     ProjectSourceFileHandler.DoMoveOrCopy( _monitor,
-                                                                                     head.OutputPath.Combine( file ),
-                                                                                     outPath.Combine( file ),
-                                                                                     copy: file.EndsWith( ".dll" ) );
+                                                                                           head.OutputPath.Combine( file ),
+                                                                                           outPath.Combine( file ),
+                                                                                           copy: file.EndsWith( ".dll" ) );
                                                 }
                                             }
                                             // Once done, if there is a ProjectPath that is not the OutputPath, then

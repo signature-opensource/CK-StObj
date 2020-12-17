@@ -74,9 +74,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
         /// </param>
         /// <returns>This services collection.</returns>
-        /// <remarks>
-        /// On NetCore runtime, Assembly.LoadFrom is used to resolves the assembly from its full path.
-        /// </remarks>
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer? startupServices = null )
         {
             var a = Assembly.Load( new AssemblyName( assemblyName ) );

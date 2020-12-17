@@ -179,8 +179,9 @@ namespace CK.Setup
         /// generating the source file and compiling them (<see cref="ICSCodeGenerationContext.CompileOption"/>).
         /// </param>
         /// <param name="availableStObjMap">
-        /// Predicate that states whether a signature can be bound to an already available StObjMap.
-        /// When true is returned, the process stops as early as possible and the available map should be used.
+        /// Predicate to find an already available StObjMap from the signature. When an existing map is found, the process
+        /// stops as early as possible and the available map should be used.
+        /// See <see cref="StObjContextRoot.GetAvailableMapInfos(IActivityMonitor?)"/>.
         /// </param>
         /// <returns>A Code generation result.</returns>
         public CodeGenerateResult GenerateSourceCodeSecondPass(
@@ -188,7 +189,7 @@ namespace CK.Setup
             string finalFilePath,
             ICSCodeGenerationContext codeGenContext,
             List<MultiPassCodeGeneration> secondPass,
-            Func<SHA1Value,bool> availableStObjMap )
+            Func<IActivityMonitor,SHA1Value,bool> availableStObjMap )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
@@ -218,6 +219,7 @@ namespace CK.Setup
                     monitor.Info( "Configured GenerateSourceFile is false and CompileOption is None: nothing more to do." );
                     return new CodeGenerateResult( true, generatedFileNames );
                 }
+                // The signature may be externally injected one day but currently, we always compute it.
                 SHA1Value signature = SHA1Value.ZeroSHA1;
 
                 // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
@@ -240,9 +242,13 @@ namespace CK.Setup
                     monitor.Info( $"Using provided file signature: {signature}." );
                 }
 
-                if( availableStObjMap( signature ) )
+                if( availableStObjMap( monitor, signature ) )
                 {
-                    monitor.Info( "An existing StObjMap with the signature exists: skipping the generation." );
+                    var fSignature = finalFilePath + StObjEngineConfiguration.ExistsSignatureFileExtension;
+                    monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and creating signature file '{fSignature}'." );
+                    File.WriteAllText( fSignature, signature.ToString() );
+                    generatedFileNames.Add( fSignature );
+                    Debug.Assert( generatedFileNames.Count == 1 );
                     return new CodeGenerateResult( true, generatedFileNames, signature );
                 }
 
