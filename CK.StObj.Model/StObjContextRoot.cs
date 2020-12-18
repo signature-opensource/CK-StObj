@@ -250,7 +250,7 @@ namespace CK.Core
             if( string.IsNullOrEmpty( assemblyName ) ) throw new ArgumentNullException( nameof( assemblyName ) );
 
             // We could support here that if a / or \ appear in the name, then its a path and then we could use Assembly.LoadFile.
-            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) < 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
+            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
 
             string assemblyNameWithExtension; 
             if( assemblyName.EndsWith( ".dll" ) || assemblyName.EndsWith( ".exe" ) )
