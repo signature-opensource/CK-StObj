@@ -513,7 +513,7 @@ namespace CK.StObj.Engine.Tests
                     TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
                 }
                 logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
-                logs.Should().Contain( e => e.Text == "ActualImpl2: I'm great!, I'm SOOOO great!." );
+                logs.Should().NotContain( e => e.Text.Contains( "Because nobody added me" ) );
             }
 
         }

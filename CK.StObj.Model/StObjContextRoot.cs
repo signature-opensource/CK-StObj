@@ -209,12 +209,12 @@ namespace CK.Core
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static IStObjMap? Load( Assembly a, IActivityMonitor? monitor = null )
         {
+            if( a == null ) throw new ArgumentNullException( nameof( a ) );
             lock( _alreadyHandled )
             {
                 var info = LockedGetMapInfo( a, ref monitor );
                 if( info == null ) return null;
                 return LockedGetStObjMap( info, ref monitor );
-
             }
         }
 
@@ -237,6 +237,67 @@ namespace CK.Core
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Attempts to load a StObjMap from an assembly name.
+        /// </summary>
+        /// <param name="assemblyName">The assembly name.</param>
+        /// <param name="monitor">Optional monitor to use.</param>
+        /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
+        public static IStObjMap? Load( string assemblyName, IActivityMonitor? monitor = null )
+        {
+            if( string.IsNullOrEmpty( assemblyName ) ) throw new ArgumentNullException( nameof( assemblyName ) );
+
+            // We could support here that if a / or \ appear in the name, then its a path and then we could use Assembly.LoadFile.
+            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) < 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
+
+            string assemblyNameWithExtension; 
+            if( assemblyName.EndsWith( ".dll" ) || assemblyName.EndsWith( ".exe" ) )
+            {
+                assemblyNameWithExtension = assemblyName;
+                assemblyName = assemblyName.Substring( 0, assemblyName.Length - 4 );
+            }
+            else
+            {
+                assemblyNameWithExtension = assemblyName + ".dll";
+            }
+            string assemblyFullPath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyNameWithExtension );
+            string assemblyFullPathSig = assemblyFullPath + Setup.StObjEngineConfiguration.ExistsSignatureFileExtension;
+
+            lock( _alreadyHandled )
+            {
+                monitor = LockedEnsureMonitor( monitor );
+                using( monitor.OpenInfo( $"Loading StObj map from '{assemblyName}'." ) )
+                {
+                    try
+                    {
+                        StObjMapInfo? info;
+                        if( System.IO.File.Exists( assemblyFullPathSig ) )
+                        {
+                            var sig = System.IO.File.ReadAllText( assemblyFullPathSig );
+                            LockedGetAvailableMapInfos( ref monitor );
+                            info = _alreadyHandled.GetValueOrDefault( sig );
+                            if( info != null )
+                            {
+                                monitor.CloseGroup( $"Found existing map from signature file {assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}: {info}." );
+                                return LockedGetStObjMap( info, ref monitor );
+                            }
+                            monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}'. Tyring to load the assembly." );
+                        }
+                        var a = Assembly.LoadFile( assemblyFullPath );
+                        info = LockedGetMapInfo( a, ref monitor );
+                        if( info == null ) return null;
+                        return LockedGetStObjMap( info, ref monitor );
+                    }
+                    catch( Exception ex )
+                    {
+                        monitor.Error( ex );
+                        return null;
+                    }
+                }
+            }
+
         }
     }
 }

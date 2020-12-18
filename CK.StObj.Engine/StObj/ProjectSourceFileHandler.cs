@@ -105,9 +105,9 @@ namespace CK.Setup
                     throw new NotImplementedException( $"Other generated files that .cs are not yet handled: {f}" );
                 }
             }
-            // Cleaning "G{X}.cs" files only if at least one files has been generated:
-            // On error or if no files have been generated (typically because of a successful available StObjMap
-            // match) we let ALL the existing files as-is.
+            // Cleaning "G{X}.cs" files only if at least one C# file has been generated:
+            // On error or if no files have been generated (typically because of a successful available
+            // StObjMap match) we let ALL the existing files as-is.
             if( idxCSFile > 0 )
             {
                 // Implemented cleaning here is currently useless since there are no G{X}.cs where X > 0.
