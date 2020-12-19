@@ -91,7 +91,7 @@ namespace CK.Setup
             internal CtorParameter(
                 ParameterInfo p,
                 AutoServiceClassInfo? cS,
-                AutoServiceInterfaceInfo iS )
+                AutoServiceInterfaceInfo? iS )
             {
                 Debug.Assert( (cS != null) ^ (iS != null) );
                 ParameterInfo = p;
@@ -769,8 +769,8 @@ namespace CK.Setup
                         CtorParameter ctorParameter;
                         if( param.Class != null || param.Interface != null )
                         {
-                        Debug.Assert( !param.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
-                        ctorParameter = new CtorParameter( p, param.Class, param.Interface );
+                            Debug.Assert( !param.IsEnumerable, "A [IsMultiple] interface cancels its IAutoService trait (if any)." );
+                            ctorParameter = new CtorParameter( p, param.Class, param.Interface );
                         }
                         else ctorParameter = new CtorParameter( p, param.IsEnumerable, param.ParameterType );
                         allCtorParameters[p.Position] = ctorParameter;
