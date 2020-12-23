@@ -396,7 +396,7 @@ namespace CK.Setup
             using( _monitor.OpenInfo( "Applying CKSetup configuration." ) )
             {
                 var binPaths = _ckSetupConfig.Elements( StObjEngineConfiguration.xBinPaths ).SingleOrDefault();
-                if( binPaths == null ) throw new ArgumentException( $"Missing &lt;BinPaths&gt; element in '{_ckSetupConfig}'." );
+                if( binPaths == null ) throw new ArgumentException( $"Missing &lt;BinPaths&gt; single element in '{_ckSetupConfig}'." );
                 foreach( XElement xB in binPaths.Elements( StObjEngineConfiguration.xBinPath ) )
                 {
                     var assemblies = xB.Descendants()
