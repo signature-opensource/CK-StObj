@@ -479,7 +479,14 @@ namespace CK.Setup
                 // Type.FullName is null if the current instance represents a generic type parameter, an array
                 // type, pointer type, or byref type based on a type parameter, or a generic type
                 // that is not a generic type definition but contains unresolved type parameters.
-                if( t.FullName == null ) throw new ArgumentException( "Invalid type", nameof( t ) );
+                // This FullName is also null for (at least) classes nested into nested generic classes.
+                // In all cases, we emit a warn and fiters this beast out.
+                if( t.FullName == null )
+                {
+                    System.Reflection.MemberInfo? d = (System.Reflection.MemberInfo?)t.DeclaringType ?? t.DeclaringMethod;
+                    monitor.Warn( $"Type has no FullName: '{t.Name}'{(d != null ? $" declared by '{d}'" : "")}. It is excluded." );
+                    return false;
+                }
                 Debug.Assert( t.AssemblyQualifiedName != null, "Since FullName is defined." );
                 if( _excludedTypes.Contains( t.Name ) )
                 {

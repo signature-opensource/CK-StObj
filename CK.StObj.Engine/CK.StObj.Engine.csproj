@@ -9,7 +9,7 @@
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>
-    <LangVersion>preview</LangVersion>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

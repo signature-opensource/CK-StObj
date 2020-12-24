@@ -46,7 +46,7 @@ namespace CK.Setup
             if( serviceProvider == null ) throw new ArgumentNullException( nameof( serviceProvider ) );
             if( tempAssembly == null ) throw new ArgumentNullException( nameof( tempAssembly ) );
             _monitor = monitor;
-            _typeFilter = typeFilter ?? ((m,type) => true);
+            _typeFilter = typeFilter ?? ((m,type) => type.FullName != null);
             _tempAssembly = tempAssembly;
             _serviceProvider = serviceProvider;
             _assemblies = new HashSet<Assembly>();
