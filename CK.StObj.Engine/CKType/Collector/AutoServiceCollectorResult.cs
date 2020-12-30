@@ -17,8 +17,8 @@ namespace CK.Setup
             IReadOnlyList<AutoServiceInterfaceInfo> leafInterfaces,
             IReadOnlyList<AutoServiceInterfaceInfo> rootInterfaces,
             IReadOnlyList<AutoServiceClassInfo> rootClasses,
-            IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>> classAmbiguities,
-            IReadOnlyList<Type> abstractTails,
+            IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
+            IReadOnlyList<Type>? abstractTails,
             IReadOnlyList<AutoServiceClassInfo> subGraphs )
         {
             AllInterfaces = allInterfaces;
@@ -54,10 +54,15 @@ namespace CK.Setup
         /// Gets the root service implementations found.
         /// Specializations are not exposed here.
         /// Use <see cref="AutoServiceClassInfo.MostSpecialized"/> that is necessarily not null
-        /// if no error occured to obtain the final class to use and <see cref="AutoServiceClassInfo.Specializations"/>
+        /// if no error occurred to obtain the final class to use and <see cref="AutoServiceClassInfo.Specializations"/>
         /// to discover sub graphs of mapped classes.
         /// </summary>
         public IReadOnlyList<AutoServiceClassInfo> RootClasses { get; }
+
+        /// <summary>
+        /// Gets all classe that is <see cref="RootClasses"/> and all their recursive <see cref="AutoServiceClassInfo.Specializations"/>.
+        /// </summary>
+        public IEnumerable<AutoServiceClassInfo> AllClasses => RootClasses.Concat( RootClasses.SelectMany( r => r.AllSpecializations ) );
 
         /// <summary>
         /// Gets all the class ambiguities: the first item of each list is the ambiguity, following

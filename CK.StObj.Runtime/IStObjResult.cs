@@ -25,7 +25,7 @@ namespace CK.Setup
         /// All attributes related to this <see cref="IStObj.ClassType"/> (either on the type itself or on any of its members)
         /// should be retrieved thanks to this method otherwise stateful attributes will not work correctly.
         /// </remarks>
-        ICKCustomAttributeTypeMultiProvider Attributes { get; }
+        ITypeAttributesCache Attributes { get; }
 
         /// <summary>
         /// Gets kind of structure object for this StObj. It can be a <see cref="DependentItemKindSpec.Item"/>, 
@@ -37,13 +37,13 @@ namespace CK.Setup
         /// Gets the parent <see cref="IStObjResult"/> in the inheritance chain (the one associated to the base class of this <see cref="IStObj.ClassType"/>).
         /// May be null.
         /// </summary>
-        new IStObjResult Generalization { get; }
+        new IStObjResult? Generalization { get; }
 
         /// <summary>
         /// Gets the child <see cref="IStObjResult"/> in the inheritance chain.
         /// May be null.
         /// </summary>
-        new IStObjResult Specialization { get; }
+        new IStObjResult? Specialization { get; }
 
         /// <summary>
         /// Gets the ultimate generalization <see cref="IStObjResult"/> in the inheritance chain. Never null (can be this object itself).
@@ -59,13 +59,13 @@ namespace CK.Setup
         /// Gets the configured container for this object. If this <see cref="Container"/> has been inherited 
         /// from its <see cref="Generalization"/>, this ConfiguredContainer is null.
         /// </summary>
-        IStObjResult ConfiguredContainer { get; }
+        IStObjResult? ConfiguredContainer { get; }
 
         /// <summary>
         /// Gets the container of this object. If no container has been explicitly associated for the object, this is the
         /// container of its <see cref="Generalization"/> (if it exists). May be null.
         /// </summary>
-        IStObjResult Container { get; }
+        IStObjResult? Container { get; }
 
         /// <summary>
         /// Gets a list of required objects. This list combines the requirements of this items (explicitly required types, 
@@ -95,7 +95,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="propertyName">Name of the property. Must not be null nor empty.</param>
         /// <returns>The <see cref="System.Type.Missing"/> marker if the property has not been defined.</returns>
-        object GetStObjProperty( string propertyName );
+        object? GetStObjProperty( string propertyName );
         
     }
 }

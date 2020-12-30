@@ -11,23 +11,29 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
     public class TypeCollectorTestsBase
     {
 
-        public static CKTypeCollector CreateCKTypeCollector( Func<Type, bool> typeFilter = null )
+        public static CKTypeCollector CreateCKTypeCollector( Func<Type, bool>? typeFilter = null )
         {
-            Func<IActivityMonitor, Type, bool> f = null;
+            Func<IActivityMonitor, Type, bool>? f = null;
             if( typeFilter != null ) f = ( m, t ) => typeFilter( t );
             return new CKTypeCollector(
                         TestHelper.Monitor,
                         new SimpleServiceContainer(),
-                        new DynamicAssembly( new Dictionary<string, object>() ),
+                        new DynamicAssembly(),
                         f );
         }
 
-        public static CKTypeCollectorResult CheckSuccess( CKTypeCollector c )
+        public static CKTypeCollectorResult CheckSuccess( Action<CKTypeCollector> registerTypes, CKTypeCollector? existing = null )
         {
-            var r = c.GetResult();
-            r.LogErrorAndWarnings( TestHelper.Monitor );
-            r.HasFatalError.Should().Be( false, "There must be no error." );
-            return r;
+            bool error = false;
+            using( TestHelper.Monitor.OnError( () => error = true ) )
+            {
+                if( existing == null ) existing = CreateCKTypeCollector();
+                registerTypes( existing );
+                var r = existing.GetResult();
+                r.LogErrorAndWarnings( TestHelper.Monitor );
+                (r.HasFatalError || error ).Should().Be( false, "There must be no error." );
+                return r;
+            }
         }
 
         public static CKTypeCollectorResult CheckFailure( CKTypeCollector c )

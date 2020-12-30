@@ -12,8 +12,6 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <!-- IDynamicAssembly exposes IList<ICodeGeneratorModule> SourceModules { get; } -->
-    <PackageReference Include="CK.CodeGen.Roslyn" />
     <PackageReference Include="CK.CodeGen" />
     <PackageReference Include="CK.Reflection" />
     <PackageReference Include="CK.Setup.Dependency" />

@@ -3,7 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-
+using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
@@ -41,9 +41,11 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( SampleService ) );
             collector.RegisterType( typeof( SampleService2 ) );
-            var r = TestHelper.GetSuccessfulResult( collector );
-            r.Services.SimpleMappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
-            r.Services.SimpleMappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+
+            map.Services.SimpleMappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
+            map.Services.SimpleMappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
         }
 
         [Local.ReplaceAutoService( "CK.StObj.Engine.Tests.Service.ServiceTests+SampleService2, CK.StObj.Engine.Tests" )]
@@ -58,10 +60,12 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( SampleService ) );
             collector.RegisterType( typeof( SampleService2 ) );
             collector.RegisterType( typeof( SampleService3 ) );
-            var r = TestHelper.GetSuccessfulResult( collector );
-            r.Services.SimpleMappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
-            r.Services.SimpleMappings[typeof( SampleService2 )].ClassType.Should().Be( typeof( SampleService2 ) );
-            r.Services.SimpleMappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+
+            map.Services.SimpleMappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
+            map.Services.SimpleMappings[typeof( SampleService2 )].ClassType.Should().Be( typeof( SampleService2 ) );
+            map.Services.SimpleMappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
         }
 
 
@@ -101,10 +105,12 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( Obj ) );
                 var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
+                Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
+
                 // On runtime data.
-                collectorResult.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
-                collectorResult.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
-                collectorResult.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
+                collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
+                collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
                 // On generated data.
                 map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
                 map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
@@ -130,11 +136,12 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ObjSpec ) );
             var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
+            Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
             // On runtime data.
-            collectorResult.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
-            collectorResult.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            collectorResult.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
-            collectorResult.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
+            collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
+            collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+            collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
+            collectorResult.EngineMap.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
             // On generated data.
             map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
             map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
@@ -165,14 +172,15 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ObjSpecFinal ) );
             var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
+            Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
             // On runtime data.
-            collectorResult.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            collectorResult.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
-            collectorResult.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+            collectorResult.EngineMap.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
+            collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.EngineMap.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
+            collectorResult.EngineMap.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
             // On generated data.
             map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
             map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
@@ -263,30 +271,12 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void services_via_interfaces_cyclic_dependencies_are_NOT_detected()
+        public void services_via_interfaces_cyclic_dependencies_are_detected()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( StupidServiceViaInterface1 ) );
             collector.RegisterType( typeof( StupidServiceViaInterface2 ) );
-            // The cycle is not detected and for whatever reason, the faulty resolution
-            // "fails fast" the test (no exception, no update to the test status).
-            //
-            // To detect this we need to analyze the ctor (the one bound to an interface) parameters
-            // once the Service resolution has been done and that we know the mapping from the service
-            // interfaces to their classes.
-            // The idea may be, for all MostSpecialized ServiceClass:
-            // - to extend the AutoServiceClassInfo._ctorParmetersClosure that currently contains
-            //   only Class infos with new classes resolved from the Interface parameters and then check again.
-            // - to directly check CtorParameter that are a ServiceInterface.
-            //
-            // It seems that (re)using the closure is not the way to go: here we are not interested in
-            // the transitive generalisation's dependency set. We should focus on the direct dependencies of
-            // a Class: it is the same dependency set as for the IAutoService handling.
-            // 
-            Assume.That( false, "Tests framework sucks... Is it NUnit, VSTest, the integration?" );
-            var r = TestHelper.GetAutomaticServices( collector );
-            var noWay1 = r.Services.GetRequiredService<StupidServiceViaInterface1>();
-            var noWay2 = r.Services.GetRequiredService<StupidServiceViaInterface2>();
+            TestHelper.GetFailedResult( collector );
         }
 
         #region issue https://gitlab.com/signature-code/CK-Setup/issues/3 (wrong repository :D).
@@ -318,9 +308,10 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( B ) );
             collector.RegisterType( typeof( SqlCallContext ) );
             var r = TestHelper.GetAutomaticServices( collector );
-            r.Result.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
-            r.Result.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
-            r.Result.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
+            Debug.Assert( r.Result.EngineMap != null, "No initialization error." );
+            r.Result.EngineMap.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
+            r.Result.EngineMap.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
+            r.Result.EngineMap.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
 
             // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
             var rootA = r.Services.GetRequiredService<A>();
@@ -344,5 +335,22 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         #endregion
+
+        [CK.Core.StObjGen]
+        public class SampleServiceGenerated : ISampleService
+        {
+        }
+
+        [Test]
+        public void StObjGen_attribute_excludes_the_type()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( SampleServiceGenerated ) );
+            collector.RegisterType( typeof( SampleService ) );
+            var r = TestHelper.GetAutomaticServices( collector );
+            r.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
+        }
+
+
     }
 }

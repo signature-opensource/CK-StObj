@@ -20,6 +20,8 @@ namespace CK.Testing
         readonly IMonitorTestHelper _monitor;
         readonly string _originGeneratedAssemblyName;
         string _generatedAssemblyName;
+        bool _stObjMapRetryOnError;
+        bool _lastStObjMapLoadFailed; 
         static int _resetNumer;
 
         DateTime _lastLoadedMapUtc;
@@ -43,10 +45,11 @@ namespace CK.Testing
             _config = config;
             _monitor = monitor;
             _generatedAssemblyName = _originGeneratedAssemblyName = _config.Get( "StObjMap/GeneratedAssemblyName", StObjEngineConfiguration.DefaultGeneratedAssemblyName );
+            _stObjMapRetryOnError = _config.GetBoolean( "StObjMap/StObjMapRetryOnError" ) ?? false;
             if( _generatedAssemblyName.IndexOf( ".Reset.", StringComparison.OrdinalIgnoreCase ) >= 0 )
             {
                 throw new ArgumentException( "Must not contain '.Reset.' substring.", "StObjMap/GeneratedAssemblyName" );
-            }
+            }           
         }
 
         IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService( null );
@@ -69,7 +72,7 @@ namespace CK.Testing
             return _automaticServices!;
         }
 
-        private ServiceProvider DoCreateAutomaticServices( SimpleServiceContainer? startupServices, IStObjMap current )
+        ServiceProvider DoCreateAutomaticServices( SimpleServiceContainer? startupServices, IStObjMap current )
         {
             var services = new ServiceCollection();
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, services, startupServices );
@@ -121,6 +124,12 @@ namespace CK.Testing
 
         string IStObjMapTestHelperCore.GeneratedAssemblyName => _generatedAssemblyName;
 
+        bool IStObjMapTestHelperCore.StObjMapRetryOnError
+        {
+            get => _stObjMapRetryOnError;
+            set => _stObjMapRetryOnError = value;
+        }
+
         IStObjMap IStObjMapTestHelperCore.StObjMap => DoGetStObjMap();
 
         IStObjMap DoGetStObjMap()
@@ -135,14 +144,25 @@ namespace CK.Testing
                         h( this, EventArgs.Empty );
                     }
                 }
+                _lastStObjMapLoadFailed = false;
                 _map = DoLoadStObjMap( _generatedAssemblyName, true );
-                if( _map == null ) throw new Exception( "Unable to load StObjMap. See logs for details." );
+                if( _map == null )
+                {
+                    _lastStObjMapLoadFailed = true;
+                    throw new Exception( "Unable to load StObjMap. See logs for details." );
+                }
                 _lastAccessMapUtc = _lastLoadedMapUtc = DateTime.UtcNow;
             }
 
             if( _map == null )
             {
-                using( _monitor.Monitor.OpenInfo( "Accessing null StObj map." ) )
+                if( _lastStObjMapLoadFailed && !_stObjMapRetryOnError )
+                {
+                    throw new Exception( "Previous attempt to load the StObj map failed and StObjMapRetryOnError is false." );
+                }
+                var msg = "Accessing null StObj map.";
+                if( _lastStObjMapLoadFailed ) msg += " (Previous attempt to load it failed but retrying since StObjMapRetryOnError is true.)";
+                using( _monitor.Monitor.OpenInfo( msg ) )
                 {
                     Load();
                 }
@@ -181,26 +201,7 @@ namespace CK.Testing
                         : DoLoadStObjMap( assemblyName );
         }
 
-        IStObjMap? DoLoadStObjMap( string assemblyName )
-        {
-            using( _monitor.Monitor.OpenInfo( $"Loading StObj map from '{assemblyName}'." ) )
-            {
-                try
-                {
-#if NET461
-                    var a = Assembly.Load( new AssemblyName( assemblyName ) );
-#else
-                    var a = Assembly.LoadFrom( Path.Combine( AppContext.BaseDirectory, assemblyName + ".dll" ) );
-#endif
-                    return StObjContextRoot.Load( a, StObjContextRoot.DefaultStObjRuntimeBuilder, _monitor.Monitor );
-                }
-                catch( Exception ex )
-                {
-                    _monitor.Monitor.Error( ex );
-                    return null;
-                }
-            }
-        }
+        IStObjMap? DoLoadStObjMap( string assemblyName ) => StObjContextRoot.Load( assemblyName, _monitor.Monitor );
 
         void IStObjMapTestHelperCore.ResetStObjMap( bool deleteGeneratedBinFolderAssembly ) => DoResetStObjMap( deleteGeneratedBinFolderAssembly );
 
@@ -212,6 +213,7 @@ namespace CK.Testing
             _generatedAssemblyName = $"{_originGeneratedAssemblyName}.Reset.{num}";
             _monitor.Monitor.Info( $"Reseting StObjMap: Generated assembly name is now: {_generatedAssemblyName}." );
             if( deleteGeneratedBinFolderAssembly ) DoDeleteGeneratedAssemblies( _monitor.BinFolder );
+            _lastStObjMapLoadFailed = false;
         }
 
         int IStObjMapTestHelperCore.DeleteGeneratedAssemblies( string directory ) => DoDeleteGeneratedAssemblies( directory );

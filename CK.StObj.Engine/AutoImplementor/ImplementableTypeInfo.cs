@@ -5,14 +5,17 @@ using System.Linq;
 using System.Reflection;
 using CK.Reflection;
 using CK.CodeGen;
-using CK.CodeGen.Abstractions;
 using System.Reflection.Emit;
 using CK.Core;
+using CK.Text;
+using CK.Setup;
+
+#nullable enable
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Handles abstract Type and <see cref="IAttributeAutoImplemented"/>, <see cref="IAutoImplementorMethod"/>
+    /// Handles abstract Type and <see cref="IAutoImplementationClaimAttribute"/>, <see cref="IAutoImplementorMethod"/>
     /// and <see cref="IAutoImplementorProperty"/> members.
     /// </summary>
     public class ImplementableTypeInfo
@@ -22,12 +25,12 @@ namespace CK.Setup
         /// </summary>
         public class NoImplementationMarker : IAutoImplementorMethod, IAutoImplementorProperty
         {
-            bool IAutoImplementorMethod.Implement( IActivityMonitor monitor, MethodInfo m, IDynamicAssembly dynamicAssembly, ITypeScope b )
+            CSCodeGenerationResult IAutoImplementor<MethodInfo>.Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
 
-            bool IAutoImplementorProperty.Implement( IActivityMonitor monitor, PropertyInfo p, IDynamicAssembly dynamicAssembly, ITypeScope b )
+            CSCodeGenerationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICSCodeGenerationContext c, ITypeScope b )
             {
                 throw new NotSupportedException();
             }
@@ -39,12 +42,17 @@ namespace CK.Setup
         /// </summary>
         public static readonly NoImplementationMarker UnimplementedMarker = new NoImplementationMarker();
 
-        Type _stubType;
+        Type? _stubType;
 
         /// <summary>
         /// Gets the starting type that must be automatically implemented.
         /// </summary>
         public readonly Type AbstractType;
+
+        /// <summary>
+        /// Gets the <see cref="ICSCodeGeneratorType"/>.
+        /// </summary>
+        public readonly IReadOnlyList<ICSCodeGeneratorType> TypeImplementors;
 
         /// <summary>
         /// Gets the current property information for all abstract properties of the <see cref="AbstractType"/>.
@@ -59,97 +67,136 @@ namespace CK.Setup
         /// <summary>
         /// Gets the stub type. Null if <see cref="CreateStubType"/> has not been called yet.
         /// </summary>
-        public Type StubType => _stubType;
+        public Type? StubType => _stubType;
 
-        ImplementableTypeInfo( Type t, IReadOnlyList<ImplementableAbstractPropertyInfo> p, IReadOnlyList<ImplementableAbstractMethodInfo> m )
+        ImplementableTypeInfo( Type t, ICSCodeGeneratorType[] typeImplementor, IReadOnlyList<ImplementableAbstractPropertyInfo> p, IReadOnlyList<ImplementableAbstractMethodInfo> m )
         {
             AbstractType = t;
             PropertiesToImplement = p;
             MethodsToImplement = m;
+            TypeImplementors = typeImplementor;
         }
 
         /// <summary>
-        /// Attempts to create a new <see cref="ImplementableTypeInfo"/>. If the type is marked with <see cref="PreventAutoImplementationAttribute"/> or that one
-        /// of its abstract methods (or properties) misses <see cref="IAttributeAutoImplemented"/> or <see cref="IAutoImplementorMethod"/> (<see cref="IAutoImplementorProperty"/>
+        /// Attempts to create a new <see cref="ImplementableTypeInfo"/>.
+        /// <para>
+        /// </para>
+        /// If the type is marked with <see cref="PreventAutoImplementationAttribute"/> or that the type misses
+        /// a <see cref="IAutoImplementationClaimAttribute"/> (or the <see cref="AutoImplementationClaimAttribute"/>) and one of
+        /// its abstract methods (or properties) misses <see cref="IAutoImplementationClaimAttribute"/> or <see cref="IAutoImplementorMethod"/> (<see cref="IAutoImplementorProperty"/>
         /// for properties), null is returned.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="abstractType">Abstract type to automatically implement if possible.</param>
         /// <param name="attributeProvider">Attributes provider that will be used.</param>
         /// <returns>An instance of <see cref="ImplementableTypeInfo"/> or null if the type is not automatically implementable.</returns>
-        static public ImplementableTypeInfo CreateImplementableTypeInfo( IActivityMonitor monitor, Type abstractType, ICKCustomAttributeProvider attributeProvider )
+        static public ImplementableTypeInfo? CreateImplementableTypeInfo( IActivityMonitor monitor, Type abstractType, ICKCustomAttributeProvider attributeProvider )
         {
+            static bool HasAutoImplementationClaim( ICKCustomAttributeProvider attributeProvider, MemberInfo m )
+            {
+                return attributeProvider.IsDefined( m, typeof( IAutoImplementationClaimAttribute ) )
+                       || m.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) );
+            }
+
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( abstractType == null ) throw new ArgumentNullException( nameof( abstractType ) );
-            if( !abstractType.IsAbstract ) throw new ArgumentException( "Type must be abstract.", nameof( abstractType ) );
+            if( !abstractType.IsClass || !abstractType.IsAbstract ) throw new ArgumentException( "Type must be an abstract class.", nameof( abstractType ) );
             if( attributeProvider == null ) throw new ArgumentNullException( nameof( attributeProvider ) );
 
-            if( abstractType.GetCustomAttributesData().Any( d => d.AttributeType.Name == "PreventAutoImplementationAttribute" ) )
+            if( abstractType.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( PreventAutoImplementationAttribute ) ) )
             {
-                monitor.Trace( $"Type {abstractType} is marked with a [PreventAutoImplementationAttribute]. Auto implementation is skipped." );
+                monitor.Trace( $"Type {abstractType} is marked with a [{nameof( PreventAutoImplementationAttribute )}]. Auto implementation is skipped." );
                 return null;
             }
+            // Gets whether the Type itself is marked with an attribute that claims that the type is handled.
+            bool isTypeAutoImplemented = HasAutoImplementationClaim( attributeProvider, abstractType );
+
+            ICSCodeGeneratorType[] typeImplementors = attributeProvider.GetCustomAttributes<ICSCodeGeneratorType>( abstractType ).ToArray();
+
             var candidates = abstractType.GetMethods( BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public ).Where( m => !m.IsSpecialName && m.IsAbstract );
             int nbUncovered = 0;
             List<ImplementableAbstractMethodInfo> methods = new List<ImplementableAbstractMethodInfo>();
             foreach( var m in candidates )
             {
                 ++nbUncovered;
-                IAutoImplementorMethod impl = attributeProvider.GetCustomAttributes<IAutoImplementorMethod>( m ).SingleOrDefault();
-                if( impl == null && attributeProvider.IsDefined( m, typeof( IAttributeAutoImplemented ) ) ) impl = UnimplementedMarker;
+                // First, consider any IAutoImplementorMethod attribute.
+                IAutoImplementorMethod? impl = attributeProvider.GetCustomAttributes<IAutoImplementorMethod>( m ).SingleOrDefault();
+                if( impl == null )
+                {
+                    // Second, ask the type.
+                    IAutoImplementorMethod? tImpl = typeImplementors.Select( t => t.HandleMethod( monitor, m ) ).FirstOrDefault( i => i != null );
+                    if( (impl = tImpl) == null )
+                    {
+                        // Third, use the ultimate workaround to avoid an error right now and defer the resolution (if possible).
+                        if( isTypeAutoImplemented || HasAutoImplementationClaim( attributeProvider, m ) ) impl = UnimplementedMarker;
+                    }
+                }
                 if( impl != null )
                 {
                     --nbUncovered;
                     methods.Add( new ImplementableAbstractMethodInfo( m, impl ) );
+                }
+                else
+                {
+                    monitor.Warn( $"Unable to find auto implementor for abstract method {m.DeclaringType}.{m.Name}." );
                 }
             }
             List<ImplementableAbstractPropertyInfo> properties = new List<ImplementableAbstractPropertyInfo>();
             var pCandidates = abstractType.GetProperties( BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public );
             foreach( var p in pCandidates )
             {
-                MethodInfo mGet = p.GetGetMethod( true );
-                MethodInfo mSet = p.GetSetMethod( true );
+                MethodInfo? mGet = p.GetGetMethod( true );
+                MethodInfo? mSet = p.GetSetMethod( true );
                 bool isAbstract = (mGet != null && mGet.IsAbstract) || (mSet != null && mSet.IsAbstract);
                 if( isAbstract )
                 {
                     ++nbUncovered;
-                    if( mGet == null || mSet == null || !mGet.IsAbstract || !mSet.IsAbstract )
+                    // First, consider any IAutoImplementorMethod attribute.
+                    IAutoImplementorProperty? impl = attributeProvider.GetCustomAttributes<IAutoImplementorProperty>( p ).SingleOrDefault();
+                    if( impl == null )
                     {
-                        monitor.Error( $"Property {p.DeclaringType}.{p.Name} is not a valid abstract property (both getter and setter must exist and be abstract)." );
+                        // Second, ask the type.
+                        IAutoImplementorProperty? tImpl = typeImplementors.Select( t => t.HandleProperty( monitor, p ) ).FirstOrDefault( i => i != null );
+                        if( (impl = tImpl) == null )
+                        {
+                            // Third, use the ultimate workaround to avoid an error right now and defer the resolution (if possible).
+                            if( isTypeAutoImplemented || HasAutoImplementationClaim( attributeProvider, p ) ) impl = UnimplementedMarker;
+                        }
+                    }
+                    if( impl != null )
+                    {
+                        --nbUncovered;
+                        properties.Add( new ImplementableAbstractPropertyInfo( p, impl ) );
                     }
                     else
                     {
-                        IAutoImplementorProperty impl = attributeProvider.GetCustomAttributes<IAutoImplementorProperty>( p ).SingleOrDefault();
-                        if( impl == null && attributeProvider.IsDefined( p, typeof( IAttributeAutoImplemented ) ) ) impl = UnimplementedMarker;
-                        if( impl != null )
-                        {
-                            --nbUncovered;
-                            properties.Add( new ImplementableAbstractPropertyInfo( p, impl ) );
-                        }
+                        monitor.Warn( $"Unable to find auto implementor for abstract property {p.DeclaringType}.{p.Name}." );
                     }
                 }
             }
-            if( nbUncovered > 0 ) return null;
-            return new ImplementableTypeInfo( abstractType, properties, methods );
+            if( nbUncovered > 0 )
+            {
+                // We are missing something.
+                return null;
+            }
+            return new ImplementableTypeInfo( abstractType, typeImplementors, properties, methods );
         }
 
         /// <summary>
-        /// Implements the <see cref="StubType"/> in a dynamic assembly that 
-        /// specializes <see cref="AbstractType"/> and returns it.
+        /// Implements the <see cref="StubType"/> in a dynamic assembly that specializes <see cref="AbstractType"/> and returns it.
         /// </summary>
         /// <param name="monitor">Logger to use.</param>
         /// <param name="assembly">Dynamic assembly.</param>
         /// <returns>The newly created type in the dynamic assembly. Null if an error occurred.</returns>
-        public Type CreateStubType( IActivityMonitor monitor, IDynamicAssembly assembly )
+        public Type? CreateStubType( IActivityMonitor monitor, IDynamicAssembly assembly )
         {
             if( _stubType != null ) throw new InvalidOperationException( "Must be called only if StubType is null." );
             try
             {
                 TypeAttributes tA = TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;
-                TypeBuilder b = assembly.StubModuleBuilder.DefineType( assembly.AutoNextTypeName( AbstractType.Name ), tA, AbstractType );
-                // Relayed constructors replicates all their potential attributes (included attributes on parameters).
-                // We do not replicate attributes on parameters here. 
-                b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, ( parameter, CustomAttributeData ) => false );
+                TypeBuilder b = assembly.StubModuleBuilder.DefineType( assembly.GetAutoImplementedTypeName( AbstractType ), tA, AbstractType );
+                // Relayed constructors replicates all their potential attributes (except attributes on parameters).
+                b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, (param,attributeData) => false );
                 foreach( var am in MethodsToImplement )
                 {
                     CK.Reflection.EmitHelper.ImplementEmptyStubMethod( b, am.Method, false );
@@ -158,7 +205,7 @@ namespace CK.Setup
                 {
                     CK.Reflection.EmitHelper.ImplementStubProperty( b, ap.Property, false );
                 }
-                return _stubType = b.CreateTypeInfo().AsType();
+                return _stubType = b.CreateType();
             }
             catch( Exception ex )
             {
@@ -168,49 +215,57 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Generates the code of this Type and returns its full name.
+        /// Generates the code of this Type.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="a">The target dynamic assembly.</param>
-        /// <returns>The full name of the generated type.</returns>
-        public string GenerateType( IActivityMonitor monitor, IDynamicAssembly a )
+        /// <param name="c">The target dynamic assembly.</param>
+        /// <param name="secondPass">The second pass collector.</param>
+        public void RunFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext c, List<MultiPassCodeGeneration> secondPass )
         {
-            var cB = a.DefaultGenerationNamespace.CreateType( t => t.Append( "public class " )
-                                                                    .Append( _stubType.Name )
-                                                                    .Append( " : " )
-                                                                    .AppendCSharpName( AbstractType ) );
-            cB.AppendPassThroughConstructors( AbstractType );
+            if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
+
+            ITypeScope cB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, _stubType );
+
+            // Calls all Type level implementors first.
+            foreach( var impl in TypeImplementors )
+            {
+                var second = MultiPassCodeGeneration.FirstPass( monitor, impl, c, cB, AbstractType ).SecondPass;
+                if( second != null ) secondPass.Add( second );
+            }
+            // Calls all method implementors.
             foreach( var am in MethodsToImplement )
             {
                 IAutoImplementorMethod m = am.ImplementorToUse;
-                if( m == null || m == UnimplementedMarker )
+                if( m != UnimplementedMarker )
                 {
-                    monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' has no valid associated IAutoImplementorMethod." );
-                }
-                else
-                {
-                    if( !m.Implement( monitor, am.Method, a, cB ) )
+                    if( m == null )
                     {
-                        monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' can not be implemented by its IAutoImplementorMethod." );
+                        monitor.Fatal( $"Method '{AbstractType}.{am.Method.Name}' has no valid associated IAutoImplementorMethod." );
+                    }
+                    else
+                    {
+                        var second = MultiPassCodeGeneration.FirstPass( monitor, m, c, cB, am.Method ).SecondPass;
+                        if( second != null ) secondPass.Add( second );
                     }
                 }
             }
+            // Finishes with all property implementors.
             foreach( var ap in PropertiesToImplement )
             {
                 IAutoImplementorProperty p = ap.ImplementorToUse;
-                if( p == null || p == UnimplementedMarker )
+                if( p != UnimplementedMarker )
                 {
-                    monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' has no valid associated IAutoImplementorProperty." );
-                }
-                else
-                {
-                    if( !p.Implement( monitor, ap.Property, a, cB ) )
+                    if( p == null )
                     {
-                        monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' can not be implemented by its IAutoImplementorProperty." );
+                        monitor.Fatal( $"Property '{AbstractType}.{ap.Property.Name}' has no valid associated IAutoImplementorProperty." );
+                    }
+                    else
+                    {
+                        var second = MultiPassCodeGeneration.FirstPass( monitor, p, c, cB, ap.Property ).SecondPass;
+                        if( second != null ) secondPass.Add( second );
                     }
                 }
             }
-            return cB.FullName;
         }
 
         /// <summary>

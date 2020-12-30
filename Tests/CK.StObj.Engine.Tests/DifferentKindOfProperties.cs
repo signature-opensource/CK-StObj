@@ -2,7 +2,8 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-
+using SmartAnalyzers.CSharpExtensions.Annotations;
+using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
@@ -14,20 +15,20 @@ namespace CK.StObj.Engine.Tests
         public class ObjA : IRealObject
         {
             [AmbientProperty]
-            public ObjB NoProblem { get; set; }
+            public ObjB? NoProblem { get; set; }
         }
 
         public class ObjB : IRealObject
         {
             [StObjProperty]
             [AmbientProperty]
-            public ObjA TwoAttributes { get; set; } 
+            public ObjA? TwoAttributes { get; set; } 
         }
 
         public class ObjSpecA : ObjA
         {
             [StObjProperty]
-            public new ObjB NoProblem { get; set; }
+            public new ObjB? NoProblem { get; set; }
         }
 
         [StObjProperty( PropertyName = "NoProblem", PropertyType = typeof(object) )]
@@ -73,7 +74,7 @@ namespace CK.StObj.Engine.Tests
         public class DuplicateStObjProperty : IRealObject
         {
             [StObjProperty]
-            public object Albert { get; set; }
+            public object? Albert { get; set; }
         }
 
         [Test]
@@ -101,6 +102,7 @@ namespace CK.StObj.Engine.Tests
         public class InvalidRealObjectProperty : IRealObject
         {
             [InjectObject]
+            [InitRequired]
             public ScopedService NotAnRealObjectPropertyType { get; protected set; }
         }
 
@@ -131,6 +133,7 @@ namespace CK.StObj.Engine.Tests
         public class CB : IRealObject
         {
             [InjectObject]
+            [InitRequired]
             public CA A { get; set; }
         }
 
@@ -156,22 +159,22 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void CovariantPropertiesSupport()
         {
-            {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( CB3 ) );
-                collector.RegisterType( typeof( CA3 ) );
-                var r = collector.GetResult(  );
-                Assert.That( r.HasFatalError, Is.False );
-                var cb = r.StObjs.Obtain<CB>();
-                Assert.That( cb, Is.InstanceOf<CB3>() );
-                Assert.That( cb.A, Is.InstanceOf<CA3>() );
-            }
+            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+            collector.RegisterType( typeof( CB3 ) );
+            collector.RegisterType( typeof( CA3 ) );
+
+            var r = TestHelper.GetSuccessfulResult( collector );
+            Debug.Assert( r.EngineMap != null, "No initialization error." );
+
+            var cb = r.EngineMap.StObjs.Obtain<CB>()!;
+            Assert.That( cb, Is.InstanceOf<CB3>() );
+            Assert.That( cb.A, Is.InstanceOf<CA3>() );
         }
 
         public class CMissingSetterOnTopDefiner : IRealObject
         {
             [InjectObject]
-            public CA2 A { get { return null; } }
+            public CA2? A => null;
         }
 
         [Test]
@@ -188,6 +191,7 @@ namespace CK.StObj.Engine.Tests
         public class CPrivateSetter : IRealObject
         {
             [InjectObject]
+            [InitRequired]
             public CA2 A { get; private set; }
         }
 
@@ -198,9 +202,10 @@ namespace CK.StObj.Engine.Tests
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( CPrivateSetter ) );
                 collector.RegisterType( typeof( CA2 ) );
-                var r = collector.GetResult( );
-                Assert.That( r.HasFatalError, Is.False );
-                var c = r.StObjs.Obtain<CPrivateSetter>();
+                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( map != null, "No initialization error." );
+
+                var c = map.StObjs.Obtain<CPrivateSetter>()!;
                 Assert.That( c.A, Is.InstanceOf<CA2>() );
             }
         }

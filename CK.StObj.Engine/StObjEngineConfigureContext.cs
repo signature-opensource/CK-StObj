@@ -30,16 +30,12 @@ namespace CK.Setup
                 }
             }
 
-            protected override object GetDirectService( Type serviceType )
+            protected override object? GetDirectService( Type serviceType )
             {
                 object s = base.GetDirectService( serviceType );
-                if( s == null )
+                if( s == null && (serviceType == typeof(IActivityMonitor) || serviceType == typeof(ActivityMonitor)) )
                 {
-                    if( serviceType == typeof(IActivityMonitor)
-                        || serviceType == typeof(ActivityMonitor) )
-                    {
-                        s = _c._monitor;
-                    }
+                    s = _c._monitor;
                 }
                 return s;
             }
@@ -55,7 +51,7 @@ namespace CK.Setup
         readonly StObjEngineConfigurator _configurator;
         readonly StObjEngineAspectTrampoline<IStObjEngineConfigureContext> _trampoline;
 
-        List<Type> _explicitRegisteredTypes;
+        List<Type>? _explicitRegisteredTypes;
 
         internal StObjEngineConfigureContext( IActivityMonitor monitor, StObjEngineConfiguration config, IStObjEngineStatus status )
         {
@@ -79,9 +75,9 @@ namespace CK.Setup
             _explicitRegisteredTypes.Add( type );
         }
 
-        public StObjEngineConfiguration ExternalConfiguration => _config;
+        public StObjEngineConfiguration StObjEngineConfiguration => _config;
 
-        internal IReadOnlyList<Type> ExplicitRegisteredTypes =>_explicitRegisteredTypes;
+        internal IReadOnlyList<Type> ExplicitRegisteredTypes => (IReadOnlyList<Type>?)_explicitRegisteredTypes ?? Type.EmptyTypes;
 
         public IReadOnlyList<IStObjEngineAspect> Aspects => _aspects;
 
@@ -102,8 +98,7 @@ namespace CK.Setup
                 foreach( var c in configs )
                 {
                     if( c == null ) continue;
-                    string aspectTypeName = null;
-                    aspectTypeName = c.AspectType;
+                    string aspectTypeName = c.AspectType;
                     if( String.IsNullOrWhiteSpace( aspectTypeName ) )
                     {
                         success = onError();
@@ -121,7 +116,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            IStObjEngineAspect a = (IStObjEngineAspect)_configureOnlycontainer.SimpleObjectCreate( _monitor, t );
+                            IStObjEngineAspect? a = (IStObjEngineAspect?)_configureOnlycontainer.SimpleObjectCreate( _monitor, t );
                             if( a == null ) success = onError();
                             else
                             {

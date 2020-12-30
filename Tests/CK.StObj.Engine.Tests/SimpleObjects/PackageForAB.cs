@@ -19,7 +19,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects
         public int ConstructCount { get; protected set; }
 
         // Adds an optional parameter otherwise parameter less StObjConstruct are not called.
-        void StObjConstruct( IAmNotHere opt = null )
+        void StObjConstruct( IAmNotHere? opt = null )
         {
             Assert.That( ConstructCount, Is.EqualTo( 0 ), "First construct." );
             SimpleObjectsTrace.LogMethod( GetType().GetMethod( "StObjConstruct", BindingFlags.Instance | BindingFlags.NonPublic ) );

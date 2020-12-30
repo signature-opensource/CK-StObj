@@ -16,7 +16,7 @@ namespace CK.Setup
     /// </summary>
     internal abstract class MutableReferenceOptional : MutableReference
     {
-        MutableItem _resolved;
+        MutableItem? _resolved;
 
         internal MutableReferenceOptional( MutableItem owner, StObjMutableReferenceKind kind )
             : base( owner, kind )
@@ -32,7 +32,7 @@ namespace CK.Setup
 
         public bool IsOptional { get; set; }
 
-        internal MutableItem CachedResolvedStObj 
+        internal MutableItem? CachedResolvedStObj 
         { 
             get 
             {
@@ -41,7 +41,7 @@ namespace CK.Setup
             } 
         }
 
-        internal override MutableItem ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
+        internal override MutableItem? ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
         {
             if( _resolved != UnresolvedMarker ) return _resolved;
             if( Type == null && !IsOptional )

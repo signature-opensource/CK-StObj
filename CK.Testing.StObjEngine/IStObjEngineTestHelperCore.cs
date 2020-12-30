@@ -43,21 +43,46 @@ namespace CK.Testing.StObjEngine
         StObjCollectorResult? GetFailedResult( StObjCollector c );
 
         /// <summary>
+        /// Compiles from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
+        /// </summary>
+        /// <param name="c">The collector.</param>
+        /// <param name="compileOption">Compilation behavior.</param>
+        /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
+        GenerateCodeResult GenerateCode( StObjCollector c, CompileOption compileOption = CompileOption.None );
+
+        /// <summary>
+        /// Compiles from a successful <see cref="StObjCollectorResult"/>. <see cref="StObjCollectorResult.HasFatalError"/> must be
+        /// false otherwise an <see cref="ArgumentException"/> is thrown.
+        /// <para>
+        /// This is a minimalist helper that simply calls <see cref="SimpleEngineRunContext.TryGenerateAssembly"/> with an
+        /// assembly name that is <c>DateTime.Now.ToString( "Service_yyMdHmsffff" )</c>.
+        /// </para>
+        /// </summary>
+        /// <param name="result">The collector result.</param>
+        /// <param name="compileOption">Compilation behavior.</param>
+        /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
+        GenerateCodeResult GenerateCode( StObjCollectorResult result, CompileOption compileOption = CompileOption.None );
+
+        /// <summary>
         /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <returns>The (successful) collector result and the ready-to-use map.</returns>
-        (StObjCollectorResult Result, IStObjMap Map) CompileStObjMap( StObjCollector c );
+        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c );
 
         /// <summary>
-        /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileStObjMap(StObjCollector)"/> and returns all
+        /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileAndLoadStObjMap(StObjCollector)"/> and returns all
         /// the intermediate results: the (successful) collector result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service registerer
         /// and the final, fully configured, service provider.
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
+        /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registerer and the final, fully configured, service provider.</returns>
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices = null );
+        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) GetAutomaticServices(
+                                                                StObjCollector c,
+                                                                Action<StObjContextRoot.ServiceRegister>? configureServices = null,
+                                                                SimpleServiceContainer? startupServices = null );
 
         /// <summary>
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.

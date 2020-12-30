@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects
 {
     public class ObjectALevel1 : ObjectA
     {
-        ObjectBLevel1 _oB;
+        ObjectBLevel1? _oB;
 
         void StObjConstruct( [Container]PackageForABLevel1 package, ObjectBLevel1 oB )
         {

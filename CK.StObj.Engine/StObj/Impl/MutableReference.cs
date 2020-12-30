@@ -53,11 +53,11 @@ namespace CK.Setup
         /// with <see cref="System.Reflection.ParameterInfo.ParameterType"/> for parameters and with provided type 
         /// for other kind of reference (<see cref="StObjMutableReferenceKind.Requires"/>, <see cref="StObjMutableReferenceKind.RequiredBy"/> and <see cref="StObjMutableReferenceKind.Container"/>).
         /// </summary>
-        public Type Type { get; set; }
+        public Type? Type { get; set; }
 
-        internal virtual MutableItem ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
+        internal virtual MutableItem? ResolveToStObj( IActivityMonitor monitor, StObjObjectEngineMap collector )
         {
-            MutableItem result = null;
+            MutableItem? result = null;
             if( Type != null && StObjRequirementBehavior != StObjRequirementBehavior.ExternalReference )
             {
                 result = collector.ToHighestImpl( Type );
@@ -78,6 +78,7 @@ namespace CK.Setup
             }
             else if( StObjRequirementBehavior == Setup.StObjRequirementBehavior.WarnIfNotStObj )
             {
+                Debug.Assert( Type != null );
                 if( !skipWarnOnValueType || !(Type.IsValueType || Type == typeof( string )) )
                 {
                     Warn( monitor, text );

@@ -34,6 +34,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Runs the aspect once the StObjs graphs have been successfully build.
+        /// Except for the first aspect, when this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
+        /// up to the implementation to decide to skip its own process in this case.
+        /// <para>
+        /// Note that a default implementation is defined that simply returns true (this methods
+        /// does not require an implementation).
+        /// </para>
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="context">Run context.</param>
@@ -43,7 +49,26 @@ namespace CK.Setup
         /// and following aspects are run, the final assembly is not generated and <see cref="Terminate"/> is
         /// called on all the aspects in reverse order.
         /// </returns>
-        bool Run( IActivityMonitor monitor, IStObjEngineRunContext context );
+        bool Run( IActivityMonitor monitor, IStObjEngineRunContext context ) => true;
+
+        /// <summary>
+        /// Runs the aspect once the Code generation has been successfully done.
+        /// Except for the first aspect, when this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
+        /// up to the implementation to decide to skip its own process in this case.
+        /// <para>
+        /// Note that a default implementation is defined that simply returns true (this methods
+        /// does not require an implementation).
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">Monitor to use.</param>
+        /// <param name="context">Run context.</param>
+        /// <returns>
+        /// Must return true on succes, false if any error occured (errors must be logged).
+        /// Returning false does not stop the engine: <see cref="IStObjEngineStatus.Success"/> is set to false
+        /// and following aspects are run, the final assembly is not generated and <see cref="Terminate"/> is
+        /// called on all the aspects in reverse order.
+        /// </returns>
+        bool RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context ) => true;
 
         /// <summary>
         /// Called by the engine in reverse order after all aspects have <see cref="Run"/>.

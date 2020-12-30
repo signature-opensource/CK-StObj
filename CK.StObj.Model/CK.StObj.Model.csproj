@@ -10,12 +10,15 @@
 Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStObjMap, StObjContextRoot.
     </Description>
   </PropertyGroup>
+  
   <ItemGroup>
     <PackageReference Include="CSemVer" />
     <PackageReference Include="CK.ActivityMonitor.SimpleSender" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
+  
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  
 </Project>

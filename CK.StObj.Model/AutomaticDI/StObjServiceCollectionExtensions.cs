@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         /// <summary>
         /// Calls <see cref="AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/> after
-        /// a <see cref="StObjContextRoot.Load(Assembly, IStObjRuntimeBuilder, IActivityMonitor)"/> of the map.
+        /// having obtained the map with <see cref="StObjContextRoot.Load(Assembly, IActivityMonitor)"/>.
         /// <para>
         /// Assembly load conflicts may occur here. In such case, you should use the CK.WeakAssemblyNameResolver package
         /// and wrap the call this way:
@@ -39,17 +39,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>This services collection.</returns>
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer? startupServices = null )
         {
-            if( stobjAssembly == null ) throw new ArgumentNullException( nameof( stobjAssembly ) );
-            var map = StObjContextRoot.Load( stobjAssembly );
-            if( map == null )
-                throw new ArgumentException( $"The assembly {stobjAssembly.FullName} was not found or is not a valid StObj map assembly." );
+            var map = StObjContextRoot.Load( stobjAssembly, monitor );
+            if( map == null ) throw new ArgumentException( $"The assembly {stobjAssembly.FullName} was not found or is not a valid generated assembly." );
             return AddStObjMap( services, monitor, map, startupServices );
         }
 
         /// <summary>
         /// Calls <see cref="AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/> after
-        /// having loaded the assembly and <see cref="StObjContextRoot.Load(Assembly, IStObjRuntimeBuilder, IActivityMonitor)"/> the
-        /// map.
+        /// having obtained the map with <see cref="StObjContextRoot.Load(Assembly, IActivityMonitor)"/>.
         /// <para>
         /// Assembly load conflicts may occur here. In such case, you should use the CK.WeakAssemblyNameResolver package
         /// and wrap the call this way:
@@ -68,20 +65,18 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services">This services.</param>
         /// <param name="monitor">Monitor to use.</param>
-        /// <param name="assemblyName">The assembly name (without .ddl suffix).</param>
+        /// <param name="assemblyName">The assembly name (with or without '.dll' or '.exe' suffix).</param>
         /// <param name="startupServices">
         /// Optional simple container that may provide startup services. This is not used to build IRealObject
         /// (they must be independent of any "dynamic" services), however registered services become available to
         /// any <see cref="StObjContextRoot.ConfigureServicesMethodName"/> methods by parameter injection.
         /// </param>
         /// <returns>This services collection.</returns>
-        /// <remarks>
-        /// On NetCore runtime, Assembly.LoadFrom is used to resolves the assembly from its full path.
-        /// </remarks>
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, string assemblyName, SimpleServiceContainer? startupServices = null )
         {
-            var a = Assembly.Load( new AssemblyName( assemblyName ) );
-            return AddStObjMap( services, monitor, a, startupServices );
+            var map = StObjContextRoot.Load( assemblyName, monitor );
+            if( map == null ) throw new ArgumentException( $"The assembly '{assemblyName}' was not found or is not a valid generated assembly." );
+            return AddStObjMap( services, monitor, map, startupServices );
         }
 
         /// <summary>

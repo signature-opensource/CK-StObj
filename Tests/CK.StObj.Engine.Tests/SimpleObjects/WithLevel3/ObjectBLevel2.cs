@@ -1,6 +1,7 @@
 using System.Reflection;
 using NUnit.Framework;
 using CK.Core;
+using SmartAnalyzers.CSharpExtensions.Annotations;
 
 namespace CK.StObj.Engine.Tests.SimpleObjects.WithLevel3
 {
@@ -14,7 +15,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects.WithLevel3
     [StObj( Container = typeof( PackageForABLevel1 ) )]
     public class ObjectBLevel2 : ObjectBLevel1, IAbstractionBOnLevel2
     {
-        IAbstractionALevel3 _a3;
+        IAbstractionALevel3? _a3;
 
         void StObjConstruct( [Container]PackageForABLevel1 package, IAbstractionALevel3 a3 )
         {

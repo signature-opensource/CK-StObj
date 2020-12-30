@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Reflection;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -12,24 +14,29 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeCollectorResult
     {
+        readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
+
         internal CKTypeCollectorResult(
             ISet<Assembly> assemblies,
-            IPocoSupportResult pocoSupport,
+            IPocoSupportResult? pocoSupport,
             RealObjectCollectorResult c,
             AutoServiceCollectorResult s,
-            CKTypeKindDetector typeKindDetector )
+            IReadOnlyDictionary<Type,TypeAttributesCache?> regularTypes,
+            IAutoServiceKindComputeFacade kindComputeFacade )
         {
             PocoSupport = pocoSupport;
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
-            TypeKindDetector = typeKindDetector;
+            _regularTypes = regularTypes;
+            KindComputeFacade = kindComputeFacade;
         }
 
         /// <summary>
         /// Gets all the registered Poco information.
+        /// Null if an error occurred while computing it.
         /// </summary>
-        public IPocoSupportResult PocoSupport { get; }
+        public IPocoSupportResult? PocoSupport { get; }
 
         /// <summary>
         /// Gets the set of asssemblies for which at least one type has been registered.
@@ -37,7 +44,7 @@ namespace CK.Setup
         public ISet<Assembly> Assemblies { get; }
 
         /// <summary>
-        /// Gets the reults for <see cref="IRealObject"/> objects.
+        /// Gets the results for <see cref="IRealObject"/> objects.
         /// </summary>
         public RealObjectCollectorResult RealObjects { get; }
 
@@ -47,12 +54,17 @@ namespace CK.Setup
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
-        /// Gets the ambient type detector.
+        /// Gets the AutoServiceKind compute façade.
         /// </summary>
-        public CKTypeKindDetector TypeKindDetector { get; }
+        internal IAutoServiceKindComputeFacade KindComputeFacade { get; }
 
         /// <summary>
         /// Gets whether an error exists that prevents the process to continue.
+        /// Note that errors or fatals that may have been emitted while registering types
+        /// are ignored here. The <see cref="StObjCollector"/> wraps all its work, including type registration
+        /// in a <see cref="ActivityMonitorExtension.OnError(IActivityMonitor, Action)"/> block and consider
+        /// any <see cref="LogLevel.Error"/> or <see cref="LogLevel.Fatal"/> to be fatal errors, but at this level,
+        /// those are ignored.
         /// </summary>
         /// <returns>
         /// False to continue the process (only warnings - or error considered as 
@@ -68,15 +80,36 @@ namespace CK.Setup
         {
             get
             {
-                var all = RealObjects.EngineMap.AllSpecializations.Select( m => m.ImplementableTypeInfo )
+                var all = RealObjects.EngineMap.FinalImplementations.Select( m => m.ImplementableTypeInfo )
                             // Filters out the Service implementation that are RealObject.
-                            .Concat( AutoServices.RootClasses.Select( c => c.MostSpecialized.IsRealObject ? null : c.MostSpecialized.ImplementableTypeInfo ) )
-                            .Concat( AutoServices.SubGraphRootClasses.Select( c => c.MostSpecialized.IsRealObject ? null : c.MostSpecialized.ImplementableTypeInfo ) )
-                            .Where( i => i != null );
+                            .Concat( AutoServices.RootClasses.Select( c => c.IsRealObject ? null : c.MostSpecialized!.ImplementableTypeInfo ) )
+                            .Concat( AutoServices.SubGraphRootClasses.Select( c => c.IsRealObject ? null : c.MostSpecialized!.ImplementableTypeInfo ) )
+                            .Where( i => i != null )
+                            .Select( i => i! );
 
-                Debug.Assert( all.GroupBy( i => i ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+                Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
                 return all;
             }
+        }
+
+
+        /// <summary>
+        /// Crappy hook...
+        /// </summary>
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered )
+        {
+            // Compute the indexed AllTypesAttributesCache.
+            Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
+            Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
+
+            var all = ordered.Select( o => o.Attributes )
+                          .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
+                          .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
+                          .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
+
+            Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+
+            RealObjects.EngineMap.SetFinalOrderedResults( ordered, all.ToDictionary( c => c.Type ) );
         }
 
         /// <summary>
@@ -88,10 +121,7 @@ namespace CK.Setup
             if( monitor == null ) throw new ArgumentNullException( nameof(monitor) );
             using( monitor.OpenTrace( $"Collector summary:" ) )
             {
-                if( PocoSupport == null )
-                {
-                    monitor.Fatal( $"Poco support failed!" );
-                }
+                if( PocoSupport == null ) monitor.Fatal( $"Poco support failed!" );
                 RealObjects.LogErrorAndWarnings( monitor );
                 AutoServices.LogErrorAndWarnings( monitor );
             }

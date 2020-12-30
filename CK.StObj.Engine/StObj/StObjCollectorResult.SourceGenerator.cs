@@ -1,14 +1,16 @@
+using CK.CodeGen;
+using CK.Core;
+using CK.Setup;
+using CK.Text;
+using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using CK.Core;
-using System.Reflection;
-using System.IO;
-using CK.CodeGen;
-using CK.Text;
-using CK.CodeGen.Abstractions;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+
+#nullable enable
 
 namespace CK.Setup
 {
@@ -16,39 +18,81 @@ namespace CK.Setup
     {
         /// <summary>
         /// Captures code generation result.
+        /// The default values is a failed result.
         /// </summary>
         public readonly struct CodeGenerateResult
         {
+            readonly IReadOnlyList<string> _fileNames;
+
             /// <summary>
             /// Gets whether the generation succeeded.
             /// </summary>
             public readonly bool Success;
 
             /// <summary>
+            /// Gets the generated file signature.
+            /// Null whenever success is false.
+            /// This can be non null when Success is false if an error occurred
+            /// during the parse or compilation of the source files.
+            /// </summary>
+            public readonly SHA1Value? GeneratedSignature;
+
+            /// <summary>
             /// Gets the list of files that have been generated: the assembly itself and
             /// any source code or other files.
             /// </summary>
-            public readonly IReadOnlyList<string> GeneratedFileNames;
+            public IReadOnlyList<string> GeneratedFileNames => _fileNames ?? Array.Empty<string>();
 
-            internal CodeGenerateResult( bool success, IReadOnlyList<string> fileNames )
+            internal CodeGenerateResult( bool success, IReadOnlyList<string> fileNames, SHA1Value? s = null )
             {
                 Success = success;
-                GeneratedFileNames = fileNames;
+                _fileNames = fileNames;
+                GeneratedSignature = s;
             }
         }
 
-        CodeGenerateResult GenerateSourceCode( IActivityMonitor monitor, string finalFilePath, bool saveSource, bool skipCompilation )
+        /// <summary>
+        /// Executes the first pass of code generation. This must be called on all <see cref="ICSCodeGenerationContext.AllBinPaths"/>, starting with
+        /// the <see cref="ICSCodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="codeGenContext">The code generation context that must be the one of this result.</param>
+        /// <param name="informationalVersion">Optional informational version attribute content.</param>
+        /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext, string? informationalVersion, List<MultiPassCodeGeneration> collector )
         {
-            List<string> generatedFileNames = new List<string>();
+            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
+            if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
             try
             {
-                // Retrieves CK._g workspace.
-                var ws = _tempAssembly.DefaultGenerationNamespace.Workspace;
-
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry> errorSummary = null;
-                using( monitor.OpenInfo( "Generating source code." ) )
+                Debug.Assert( _valueCollector != null );
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
+                using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
+                    using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
+                    {
+                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
+                        {
+                            item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
+                        }
+                    }
+
+                    // Retrieves CK._g workspace.
+                    var ws = _tempAssembly.Code;
+                    // Gets the global name space and starst with the informational version (if any),
+                    // and, once for all, basic namespaces that we always want available.
+                    var global = ws.Global;
+
+                    if( !string.IsNullOrWhiteSpace( informationalVersion ) )
+                    {
+                        global.BeforeNamespace.Append( "[assembly:System.Reflection.AssemblyInformationalVersion(" )
+                              .AppendSourceString( informationalVersion )
+                              .Append( ")]" )
+                              .NewLine();
+                    }
+
                     // Injects System.Reflection and setup assemblies into the
                     // workspace that will be used to generate source code.
                     ws.EnsureAssemblyReference( typeof( BindingFlags ) );
@@ -58,28 +102,105 @@ namespace CK.Setup
                     }
                     else
                     {
-                        ws.EnsureAssemblyReference( typeof(StObjContextRoot).Assembly );
+                        ws.EnsureAssemblyReference( typeof( StObjContextRoot ).Assembly );
                     }
-                    // Gets the global name space and injects, once for all, basic namespaces that we
-                    // always want available.
-                    var global = ws.Global.EnsureUsing( "CK.Core" )
-                                          .EnsureUsing( "System" )
-                                          .EnsureUsing( "System.Collections.Generic" )
-                                          .EnsureUsing( "System.Linq" )
-                                          .EnsureUsing( "System.Text" )
-                                          .EnsureUsing( "System.Reflection" );
 
+                    // Injects, once for all, basic namespaces that we always want available into the global namespace.
+                    global.EnsureUsing( "CK.Core" )
+                          .EnsureUsing( "System" )
+                          .EnsureUsing( "System.Collections.Generic" )
+                          .EnsureUsing( "System.Linq" )
+                          .EnsureUsing( "System.Threading.Tasks" )
+                          .EnsureUsing( "System.Text" )
+                          .EnsureUsing( "System.Reflection" );
+
+                    // We don't generate nullable enabled code.
+                    global.Append( "#nullable disable" ).NewLine();
+
+                    // Generates the Signature attribute implementation.
+                    var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
+                    nsStObj.GeneratedByComment().NewLine()
+                        .Append( @"internal class SignatureAttribute : Attribute" )
+                        .OpenBlock()
+                        .Append( "public SignatureAttribute( string s ) {}" ).NewLine()
+                        .Append( "public readonly static (SHA1Value Signature, IReadOnlyList<string> Names) V = ( SHA1Value.Parse( (string)typeof( SignatureAttribute ).Assembly.GetCustomAttributesData().First( a => a.AttributeType == typeof( SignatureAttribute ) ).ConstructorArguments[0].Value )" ).NewLine()
+                        .Append( ", " ).AppendArray( EngineMap.Names ).Append( " );" )
+                        .CloseBlock();
+
+                    // Generates the StObjContextRoot implementation.
+                    GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
+
+                    // Calls all ICSCodeGenerator items.
+                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() ) )
+                    {
+                        var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                        if( second != null ) collector.Add( second );
+                    }
+                    
                     // Asks every ImplementableTypeInfo to generate their code. 
-                    // This step MUST always be done, even if SkipCompilation is true and GenerateSourceFiles is false
+                    // This step MUST always be done, even if CompileOption is None and GenerateSourceFiles is false
                     // since during this step, side effects MAY occur (this is typically the case of the first run where
                     // the "reality cache" is created).
                     foreach( var t in CKTypeResult.TypesToImplement )
                     {
-                        t.GenerateType( monitor, _tempAssembly );
+                        t.RunFirstPass( monitor, codeGenContext, collector );
                     }
+                }
+                if( errorSummary != null )
+                {
+                    using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                    {
+                        foreach( var e in errorSummary )
+                        {
+                            monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
+                        }
+                    }
+                    return false;
+                }
+                return true;
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While generating final source code.", ex );
+                return false;
+            }
+        }
 
-                    // Generates the StObjContextRoot implementation.
-                    GenerateStObjContextRootSource( monitor, global.FindOrCreateNamespace( "CK.StObj" ) );
+        /// <summary>
+        /// Finalizes the source code generation and compilation.
+        /// Sources (if <see cref="ICSCodeGenerationContext.SaveSource"/> is true) will be generated
+        /// in the <paramref name="finalFilePath"/> folder.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="finalFilePath">The final generated assembly full path.</param>
+        /// <param name="codeGenContext">The code generation context.</param>
+        /// <param name="secondPass">
+        /// The list of second passes actions to apply on the <see cref="ICSCodeGenerationContext"/> before
+        /// generating the source file and compiling them (<see cref="ICSCodeGenerationContext.CompileOption"/>).
+        /// </param>
+        /// <param name="availableStObjMap">
+        /// Predicate to find an already available StObjMap from the signature. When an existing map is found, the process
+        /// stops as early as possible and the available map should be used.
+        /// See <see cref="StObjContextRoot.GetAvailableMapInfos(IActivityMonitor?)"/>.
+        /// </param>
+        /// <returns>A Code generation result.</returns>
+        public CodeGenerateResult GenerateSourceCodeSecondPass(
+            IActivityMonitor monitor,
+            string finalFilePath,
+            ICSCodeGenerationContext codeGenContext,
+            List<MultiPassCodeGeneration> secondPass,
+            Func<IActivityMonitor,SHA1Value,bool> availableStObjMap )
+        {
+            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
+            if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
+            List<string> generatedFileNames = new List<string>();
+            try
+            {
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
+                using( monitor.OpenInfo( $"Generating source code (second pass) for: {codeGenContext.CurrentRun.Names}." ) )
+                using( monitor.CollectEntries( entries => errorSummary = entries ) )
+                {
+                    MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
                 }
                 if( errorSummary != null )
                 {
@@ -92,28 +213,87 @@ namespace CK.Setup
                     }
                     return new CodeGenerateResult( false, generatedFileNames );
                 }
-                using( monitor.OpenInfo( skipCompilation
-                                            ? "Generating source code, parsing using C# v7.3 language version, skipping compilation."
-                                            : "Compiling source code (using C# v7.3 language version)." ) )
+                // Code generation itself succeeds.
+                if( !codeGenContext.SaveSource && codeGenContext.CompileOption == CompileOption.None )
                 {
-                    var g = new CodeGenerator( CodeWorkspace.Factory );
-                    g.ParseOptions = new CSharpParseOptions( LanguageVersion.CSharp7_3 );
-                    g.Modules.AddRange( _tempAssembly.SourceModules );
-                    var result = g.Generate( ws, finalFilePath, skipCompilation );
-                    if( saveSource && result.Sources != null )
-                    {
-                        for( int i = 0; i < result.Sources.Count; ++i )
-                        {
-                            string sourceFile = $"{finalFilePath}.{i}.cs";
-                            monitor.Info( $"Saved source file: {sourceFile}" );
-                            File.WriteAllText( sourceFile, result.Sources[i].ToString() );
-                            generatedFileNames.Add( Path.GetFileName( sourceFile ) );
-                        }
-                    }
-                    if( result.Success ) generatedFileNames.Add( Path.GetFileName( finalFilePath ) );
-                    result.LogResult( monitor );
-                    return new CodeGenerateResult( result.Success, generatedFileNames );
+                    monitor.Info( "Configured GenerateSourceFile is false and CompileOption is None: nothing more to do." );
+                    return new CodeGenerateResult( true, generatedFileNames );
                 }
+                // The signature may be externally injected one day but currently, we always compute it.
+                SHA1Value signature = SHA1Value.ZeroSHA1;
+
+                // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
+                // without the signature header, a part is injected at the top of the file (before anything else) and
+                // the final big string is built only once.
+                var ws = codeGenContext.Assembly.Code;
+                if( signature.IsZero || signature == SHA1Value.EmptySHA1 )
+                {
+                    using( var s = new SHA1Stream() )
+                    using( var w = new StreamWriter( s ) )
+                    {
+                        ws.WriteGlobalSource( w );
+                        w.Flush();
+                        signature = s.GetFinalResult();
+                    }
+                    monitor.Info( $"Computed file signature: {signature}." );
+                }
+                else
+                {
+                    monitor.Info( $"Using provided file signature: {signature}." );
+                }
+
+                if( availableStObjMap( monitor, signature ) )
+                {
+                    var fSignature = finalFilePath + StObjEngineConfiguration.ExistsSignatureFileExtension;
+                    monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and creating signature file '{fSignature}'." );
+                    File.WriteAllText( fSignature, signature.ToString() );
+                    generatedFileNames.Add( fSignature );
+                    Debug.Assert( generatedFileNames.Count == 1 );
+                    return new CodeGenerateResult( true, generatedFileNames, signature );
+                }
+
+                // Injects the SHA1 signature at the top.
+                ws.Global.BeforeNamespace.CreatePart( top: true ).Append( @"[assembly: CK.StObj.Signature( " ).AppendSourceString( signature.ToString() ).Append( " )]" );
+
+                // The source code is available.
+                string code = ws.GetGlobalSource();
+
+                // If asked to do so, we always save it, even if parsing or compilation fails. 
+                if( codeGenContext.SaveSource )
+                {
+                    var sourceFile = finalFilePath + ".cs";
+                    File.WriteAllText( sourceFile, code );
+                    generatedFileNames.Add( Path.GetFileName( sourceFile ) );
+                    monitor.Info( $"Saved source file: {sourceFile}." );
+                }
+                if( codeGenContext.CompileOption == CompileOption.None )
+                {
+                    monitor.Info( "Configured CompileOption is None: nothing more to do." );
+                    return new CodeGenerateResult( true, generatedFileNames, signature );
+                }
+
+                using( monitor.OpenInfo( codeGenContext.CompileOption == CompileOption.Compile
+                                            ? "Compiling source code (using C# v8.0 language version)."
+                                            : "Only parsing source code, using C# v8.0 language version (skipping compilation)." ) )
+                {
+                    var result = CodeGenerator.Generate( code,
+                                                         codeGenContext.CompileOption == CompileOption.Parse ? null : finalFilePath,
+                                                         ws.AssemblyReferences,
+                                                         new CSharpParseOptions( LanguageVersion.CSharp8 ) );
+
+                    if( result.Success && codeGenContext.CompileOption == CompileOption.Compile )
+                    {
+                        generatedFileNames.Add( Path.GetFileName( finalFilePath ) );
+                    }
+                    result.LogResult( monitor );
+                    if( !result.Success )
+                    {
+                        monitor.Debug( code );
+                        monitor.CloseGroup( "Failed" );
+                    }
+                    return new CodeGenerateResult( result.Success, generatedFileNames, signature );
+                }
+                
             }
             catch( Exception ex )
             {
@@ -125,11 +305,12 @@ namespace CK.Setup
         const string _sourceGStObj = @"
 class GStObj : IStObj
 {
-    public GStObj( Type t, IStObj g, IStObjMap m )
+    public GStObj( Type t, IStObj g, IStObjMap m, int idx )
     {
         ClassType = t;
         Generalization = g;
         StObjMap = m;
+        IndexOrdered = idx;
     }
 
     public Type ClassType { get; }
@@ -142,50 +323,61 @@ class GStObj : IStObj
 
     public IStObjFinalImplementation FinalImplementation { get; internal set; }
 
+    public int IndexOrdered { get; }
+
     internal StObjMapping AsMapping => new StObjMapping( this, FinalImplementation );
 }";
         const string _sourceFinalGStObj = @"
 class GFinalStObj : GStObj, IStObjFinalImplementation
 {
-    public GFinalStObj( IStObjRuntimeBuilder rb, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m )
-            : base( t, g, m )
+    public GFinalStObj( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m, int idx )
+            : base( t, g, m, idx )
     {
         FinalImplementation = this;
-        Implementation = rb.CreateInstance( actualType );
+        Implementation = impl;
         MultipleMappings = mult;
         UniqueMappings = uniq;
     }
 
     public object Implementation { get; }
 
+    public Type FinalType => ClassType;
+
+    public bool IsScoped => false;
+
     public IReadOnlyCollection<Type> MultipleMappings { get; }
 
     public IReadOnlyCollection<Type> UniqueMappings { get; }
 }";
-        void GenerateStObjContextRootSource( IActivityMonitor monitor, INamespaceScope ns )
+        void GenerateStObjContextRootSource( IActivityMonitor monitor, INamespaceScope ns, IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            ns.Append( _sourceGStObj ).NewLine();
-            ns.Append( _sourceFinalGStObj ).NewLine();
+            Debug.Assert( EngineMap != null );
 
-            var rootType = ns.CreateType( "public class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
+            ns.GeneratedByComment().NewLine()
+              .Append( _sourceGStObj ).NewLine()
+              .Append( _sourceFinalGStObj ).NewLine();
+
+            var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
                                 .Append( "readonly GStObj[] _stObjs;" ).NewLine()
                                 .Append( "readonly GFinalStObj[] _finalStObjs;" ).NewLine()
                                 .Append( "readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine();
 
-            var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}(IActivityMonitor monitor, IStObjRuntimeBuilder rb)" );
+            var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}( IActivityMonitor monitor )" );
 
-            rootCtor.Append( $"_stObjs = new GStObj[{OrderedStObjs.Count}];" ).NewLine()
-                    .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.AllSpecializations.Count}];" ).NewLine();
+            rootCtor.Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
+                    .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.FinalImplementations.Count}];" ).NewLine();
             int iStObj = 0;
             int iImplStObj = 0;
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( var m in orderedStObjs )
             {
+                Debug.Assert( (m.Specialization != null) == (m != m.FinalImplementation) );
                 string generalization = m.Generalization == null ? "null" : $"_stObjs[{m.Generalization.IndexOrdered}]";
                 rootCtor.Append( $"_stObjs[{iStObj++}] = " );
                 if( m.Specialization == null )
                 {
-                    rootCtor.Append( $"_finalStObjs[{iImplStObj++}] = new GFinalStObj( rb, " )
-                            .AppendTypeOf( m.ImplementableTypeInfo?.StubType ?? m.RealObjectType.Type ).Append( ", " ).NewLine()
+                    rootCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
+                            .AppendCSharpName( m.FinalImplementation.FinalType ).Append("(), " )
+                            .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();
                 }
@@ -193,22 +385,22 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
                 rootCtor.AppendTypeOf( m.ClassType ).Append( ", " )
                         .Append( generalization )
-                        .Append( ", this );" ).NewLine();
+                        .Append( ", this, " ).Append( m.IndexOrdered ).Append( " );" ).NewLine();
 
             }
 
             rootCtor.Append( $"_map = new Dictionary<Type,GFinalStObj>();" ).NewLine();
             var allMappings = CKTypeResult.RealObjects.EngineMap.RawMappings;
             // We skip highest implementation Type mappings (ie. RealObjectInterfaceKey keys) since 
-            // there is no ToStObj mapping (to root generalization) on final (runtime) IStObjMap.
+            // there is no ToHead mapping (to root generalization) on final (runtime) IStObjMap.
             foreach( var e in allMappings.Where( e => e.Key is Type ) )
             {
                 rootCtor.Append( $"_map.Add( " ).AppendTypeOf( (Type)e.Key )
                         .Append( ", (GFinalStObj)_stObjs[" ).Append( e.Value.IndexOrdered ).Append( "] );" ).NewLine();
             }
-            if( OrderedStObjs.Count > 0 )
+            if( orderedStObjs.Count > 0 )
             {
-                rootCtor.Append( $"int iStObj = {OrderedStObjs.Count};" ).NewLine()
+                rootCtor.Append( $"int iStObj = {orderedStObjs.Count};" ).NewLine()
                        .Append( "while( --iStObj >= 0 ) {" ).NewLine()
                        .Append( " var o = _stObjs[iStObj];" ).NewLine()
                        .Append( " if( o.Specialization == null ) {" ).NewLine()
@@ -224,14 +416,15 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                        .Append( "}" ).NewLine();
             }
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 if( m.PreConstructProperties != null )
                 {
                     foreach( var setter in m.PreConstructProperties )
                     {
+                        Debug.Assert( setter.Property.DeclaringType != null );
                         Type decl = setter.Property.DeclaringType;
-                        string varName;
+                        string? varName;
                         var key = ValueTuple.Create( decl, setter.Property.Name );
                         if(!propertyCache.TryGetValue( key, out varName ))
                         {
@@ -260,7 +453,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     foreach( var mp in m.ConstructParametersAbove )
                     {
                         Debug.Assert( mp.Item2.Count > 0 );
-                        rootCtor.AppendTypeOf( mp.Item1.DeclaringType );
+                        rootCtor.AppendTypeOf( mp.Item1.DeclaringType! );
                         CallConstructMethod( rootCtor, m, mp.Item2 );
                     }
                 }
@@ -271,12 +464,13 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     CallConstructMethod( rootCtor, m, m.ConstructParameters );
                 }
             }
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 if( m.PostBuildProperties != null )
                 {
                     foreach( var p in m.PostBuildProperties )
                     {
+                        Debug.Assert( p.Property.DeclaringType != null );
                         Type decl = p.Property.DeclaringType;
                         rootCtor.AppendTypeOf( decl )
                                .Append( $".GetProperty( \"{p.Property.Name}\", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic )" )
@@ -286,12 +480,12 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     }
                 }
             }
-            foreach( MutableItem m in OrderedStObjs )
+            foreach( MutableItem m in orderedStObjs )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {
                     if( init == m.RealObjectType.StObjInitialize ) rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
-                    else rootCtor.AppendTypeOf( init.DeclaringType );
+                    else rootCtor.AppendTypeOf( init.DeclaringType! );
 
                     rootCtor.Append( ".GetMethod(")
                             .AppendSourceString( StObjContextRoot.InitializeMethodName )
@@ -302,13 +496,12 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 }
             }
 
-            rootType.Append( "public string MapName => " ).AppendSourceString( MapName ).Append( ";" ).NewLine()
+            rootType.Append( "" ).NewLine()
                     .Append( @"
             public IStObjObjectMap StObjs => this;
 
-            Type IStObjTypeMap.ToLeafType( Type t ) => GToLeaf( t )?.ClassType;
-            bool IStObjTypeMap.IsMapped( Type t ) => _map.ContainsKey( t );
-            IEnumerable<Type> IStObjTypeMap.Types => _map.Keys;
+            IReadOnlyList<string> IStObjMap.Names => CK.StObj.SignatureAttribute.V.Names;
+            SHA1Value IStObjMap.GeneratedSignature => CK.StObj.SignatureAttribute.V.Signature;
 
             IStObj IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
             object IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
@@ -321,10 +514,10 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             " );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
-            serviceGen.CreateServiceSupportCode( _liftedMap );
-            serviceGen.CreateConfigureServiceMethod( OrderedStObjs );
+            serviceGen.CreateServiceSupportCode( EngineMap.Services );
+            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
 
-            GenerateVFeatures( monitor, rootType, rootCtor, _liftedMap.Features );
+            GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }
 
         static void CallConstructMethod( IFunctionScope rootCtor, MutableItem m, IEnumerable<IStObjMutableParameter> parameters )
@@ -370,7 +563,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootType.Append( "public IReadOnlyCollection<VFeature> Features => _vFeatures;" ).NewLine();
         }
 
-        static void GenerateValue( ICodeWriter b, object o )
+        static void GenerateValue( ICodeWriter b, object? o )
         {
             if( o is IActivityMonitor )
             {

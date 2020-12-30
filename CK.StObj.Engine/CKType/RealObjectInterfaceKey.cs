@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -19,9 +21,9 @@ namespace CK.Setup
             InterfaceType = ambientObjectInterface;
         }
 
-        public override bool Equals( object obj )
+        public override bool Equals( object? obj )
         {
-            RealObjectInterfaceKey k = obj as RealObjectInterfaceKey;
+            RealObjectInterfaceKey? k = obj as RealObjectInterfaceKey;
             return k != null && k.InterfaceType == InterfaceType;
         }
 

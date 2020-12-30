@@ -31,9 +31,6 @@ namespace CK.Testing
             _stObjMap = stObjMap;
             stObjMap.StObjMapLoading += OnStObjMapLoading;
 
-            var oldConfig = config.GetConfigValue( "DBSetup/GenerateSourceFiles" );
-            if( oldConfig.HasValue ) throw new Exception( $"Configuration DBSetup/GenerateSourceFiles entry in '{oldConfig.Value.BasePath}' must be updated to StObjSetup/StObjGenerateSourceFiles."  );
-
             _generateSourceFiles = config.GetBoolean( "StObjSetup/StObjGenerateSourceFiles" ) ?? true;
             _revertOrderingNames = config.GetBoolean( "StObjSetup/StObjRevertOrderingNames" ) ?? false;
             _traceGraphOrdering = config.GetBoolean( "StObjSetup/StObjTraceGraphOrdering" ) ?? false;
@@ -73,8 +70,10 @@ namespace CK.Testing
             };
             var b = new BinPathConfiguration
             {
+                CompileOption = CompileOption.Compile,
                 Path = helper.BinFolder,
-                GenerateSourceFiles = helper.StObjGenerateSourceFiles
+                GenerateSourceFiles = helper.StObjGenerateSourceFiles,
+                ProjectPath = helper.TestProjectFolder
             };
             stObjConf.BinPaths.Add( b );
 

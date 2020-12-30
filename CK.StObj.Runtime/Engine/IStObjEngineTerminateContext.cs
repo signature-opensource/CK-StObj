@@ -24,10 +24,17 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 
+
         /// <summary>
-        /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.
+        /// Gets the unified bin path.
+        /// This is the first to be processed.
         /// </summary>
-        IReadOnlyList<IStObjResult> OrderedStObjs { get; }
+        IGeneratedBinPath UnifiedBinPath { get; }
+
+        /// <summary>
+        /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="UnifiedBinPath"/>.
+        /// </summary>
+        IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 
         /// <summary>
         /// Pushes a defered action.

@@ -10,15 +10,15 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
     [TestFixture]
     public class CKTypeKindDetectorTests
     {
-        class Nop { }
+        public class Nop { }
 
-        class Obj : IRealObject { }
+        public class Obj : IRealObject { }
 
-        class Serv : IAutoService { }
+        public class Serv : IAutoService { }
 
-        class Scoped : IScopedAutoService { }
+        public class Scoped : IScopedAutoService { }
 
-        class Singleton : ISingletonAutoService { }
+        public class Singleton : ISingletonAutoService { }
 
         [Test]
         public void basic_type_detection()
@@ -31,10 +31,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( Singleton ) ).Should().Be( CKTypeKind.IsAutoService | CKTypeKind.IsSingleton );
         }
 
-        class SpecObj : Obj { }
-        class SpecServ : Serv { }
-        class SpecScoped : Scoped { }
-        class SpecSingleton : Singleton { }
+        public class SpecObj : Obj { }
+        public class SpecServ : Serv { }
+        public class SpecScoped : Scoped { }
+        public class SpecSingleton : Singleton { }
 
         [Test]
         public void specialized_type_detection()
@@ -61,10 +61,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( SingletonDefiner ) ).Should().Be( CKTypeKind.None );
         }
 
-        class SpecObjDefiner : ObjDefiner { }
-        class SpecServDefiner : ServDefiner { }
-        class SpecScopedDefiner : ScopedDefiner { }
-        class SpecSingletonDefiner : SingletonDefiner { }
+        public class SpecObjDefiner : ObjDefiner { }
+        public class SpecServDefiner : ServDefiner { }
+        public class SpecScopedDefiner : ScopedDefiner { }
+        public class SpecSingletonDefiner : SingletonDefiner { }
 
         [Test]
         public void specialization_of_Definers_are_ambient()
@@ -92,10 +92,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetKind( TestHelper.Monitor, typeof( SingletonDefinerLevel2 ) ).Should().Be( CKTypeKind.None );
         }
 
-        class SpecObjDefinerLevel2 : ObjDefinerLevel2 { }
-        class SpecServDefinerLevel2 : ServDefinerLevel2 { }
-        class SpecScopedDefinerLevel2 : ScopedDefinerLevel2 { }
-        class SpecSingletonDefinerLevel2 : SingletonDefinerLevel2 { }
+        public class SpecObjDefinerLevel2 : ObjDefinerLevel2 { }
+        public class SpecServDefinerLevel2 : ServDefinerLevel2 { }
+        public class SpecScopedDefinerLevel2 : ScopedDefinerLevel2 { }
+        public class SpecSingletonDefinerLevel2 : SingletonDefinerLevel2 { }
 
         [Test]
         public void specialization_of_DefinersLevel2_are_ambient()

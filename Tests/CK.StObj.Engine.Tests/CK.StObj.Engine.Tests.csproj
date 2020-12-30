@@ -6,14 +6,24 @@
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
     <IsPackable>false</IsPackable>
+    <Nullable>enable</Nullable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
+  
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NUnit" />
     <PackageReference Include="NUnit3TestAdapter" />
+    <!--<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />-->
   </ItemGroup>
   <ItemGroup>
+    <!-- see https://cezarypiatek.github.io/post/immutable-types-with-roslyn/ -->
+    <PackageReference Include="SmartAnalyzers.CSharpExtensions.Annotations" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\CK.Poco.Json\CK.Poco.Json.csproj" />
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
   </ItemGroup>
 </Project>

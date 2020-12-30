@@ -5,7 +5,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Template class that implements a Chain of Responsibility pattern on the different hooks called
-    /// during the StObj build phasis (except the <see cref="IStObjRuntimeBuilder"/> methods).
+    /// during the StObj build phase.
     /// These configuration layers must be added to a <see cref="StObjEngineConfigurator"/>.
     /// It does nothing at its level except calling the <see cref="Next"/> configurator if it is not null.
     /// Methods are defined here in the order where they are called.

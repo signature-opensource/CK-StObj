@@ -10,6 +10,8 @@ using static CK.Testing.StObjEngineTestHelper;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.Xml.Linq;
+using System.Diagnostics;
+using CK.Text;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -31,15 +33,26 @@ namespace CK.StObj.Engine.Tests
 
         public XElement SerializeXml( XElement e )
         {
-            return new XElement( StObjEngineConfiguration.xAspect,
-                        new XAttribute( StObjEngineConfiguration.xVersion, Version ),
-                        new XElement( "Data", Data ) );
+            e.Add( new XAttribute( StObjEngineConfiguration.xVersion, Version ),
+                   new XElement( "Data", Data ) );
+            return e;
         }
 
         public int Version { get; } = 2;
 
 
         public string Data { get; set; }
+    }
+
+    public class AnotherAspectConfiguration : IStObjEngineAspectConfiguration
+    {
+        public string AspectType => "Sample.AnotherAspectSample, In.An.Assembly.That.Depends.On.CK.StObj.Runtime";
+
+        public AnotherAspectConfiguration( XElement e )
+        {
+        }
+
+        public XElement SerializeXml( XElement e ) => e;
     }
 
 
@@ -65,15 +78,21 @@ namespace CK.StObj.Engine.Tests
             <Type Name=""CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine"" />
         </ExcludedTypes>
         <OutputPath>Another/Relative</OutputPath>
-        <SkipCompilation>true</SkipCompilation>
+        <CompileOption>Parse</CompileOption>
         <GenerateSourceFiles>True</GenerateSourceFiles>
+        <AnotherAspect>
+            <Path>comm/ands</Path>
+        </AnotherAspect>
+        <Sample>
+            <Param>Test</Param>
+        </Sample>
     </BinPath>
     <BinPath Path=""/Absolute/[Debug|Release]Path/Bin"">
       <Assemblies />
       <Types />
       <ExcludedTypes />
       <OutputPath>Another/relative/path</OutputPath>
-      <SkipCompilation>true</SkipCompilation>
+      <CompileOption>Compile</CompileOption>
       <GenerateSourceFiles>True</GenerateSourceFiles>
     </BinPath>
   </BinPaths>
@@ -88,10 +107,11 @@ namespace CK.StObj.Engine.Tests
   </GlobalExcludedTypes>
   <Aspect Type=""CK.StObj.Engine.Tests.SampleAspectConfiguration, CK.StObj.Engine.Tests"" Version=""1"">
   </Aspect>
+  <Aspect Type=""CK.StObj.Engine.Tests.AnotherAspectConfiguration, CK.StObj.Engine.Tests"">
+  </Aspect>
 
 </Setup>
-" ); 
-
+" );
 
         [Test]
         public void parsing_a_configuration()
@@ -118,9 +138,21 @@ namespace CK.StObj.Engine.Tests
             t3.Kind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsSingleton );
             t3.Optional.Should().BeTrue();
 
+            var bSample = b1.GetAspectConfiguration<SampleAspectConfiguration>();
+            Debug.Assert( bSample != null );
+            bSample.Element( "Param" )?.Value.Should().Be( "Test" );
+            b1.GetAspectConfiguration( "SampleAspectConfiguration" ).Should().BeSameAs( bSample );
+            b1.GetAspectConfiguration( "SampleConfiguration" ).Should().BeSameAs( bSample );
+            b1.GetAspectConfiguration( "Sample" ).Should().BeSameAs( bSample );
+            b1.GetAspectConfiguration( "SampleAspect" ).Should().BeSameAs( bSample );
+
+            var bAnother = b1.GetAspectConfiguration<AnotherAspectConfiguration>();
+            Debug.Assert( bAnother != null );
+            bSample.Element( "Path" )?.Value.Should().Be( "comm/ands" );
+
             b1.ExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
             b1.OutputPath.Should().Be( new Text.NormalizedPath( "Another/Relative" ) );
-            b1.SkipCompilation.Should().BeTrue();
+            b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
 
             c.GeneratedAssemblyName.Should().Be( "Not the default CK.StObj.AutoAssembly" );
@@ -129,10 +161,53 @@ namespace CK.StObj.Engine.Tests
             c.TraceDependencySorterOutput.Should().BeTrue();
             c.RevertOrderingNames.Should().BeTrue();
             c.GlobalExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
-            c.Aspects.Should().HaveCount( 1 );
+            c.Aspects.Should().HaveCount( 2 );
             c.Aspects[0].Should().BeAssignableTo<SampleAspectConfiguration>();
+            c.Aspects[1].Should().BeAssignableTo<AnotherAspectConfiguration>();
         }
 
+
+        [Test]
+        public void configuration_to_xml()
+        {
+            StObjEngineConfiguration c1 = new StObjEngineConfiguration( _config );
+            var e1 = c1.ToXml();
+            e1 = NormalizeWithoutAnyOrder( e1 );
+
+            StObjEngineConfiguration c2 = new StObjEngineConfiguration( e1 );
+            var e2 = c2.ToXml();
+            e2 = NormalizeWithoutAnyOrder( e2 );
+
+            e1.Should().BeEquivalentTo( e2 );
+        }
+
+        static XElement NormalizeWithoutAnyOrder( XElement element )
+        {
+            if( element.HasElements )
+            {
+                return new XElement(
+                    element.Name,
+                    element.Attributes().OrderBy( a => a.Name.ToString() ),
+                    element.Elements()
+                        .OrderBy( a => a.Name.ToString() )
+                        .Select( e => NormalizeWithoutAnyOrder( e ) )
+                        .OrderBy( e => e.Attributes().Count() )
+                        .OrderBy( e => e.Attributes()
+                                        .Select( a => a.Value )
+                                        .Concatenate( "\u0001" ) )
+                        .ThenBy( e => e.Value ) );
+            }
+            if( element.IsEmpty || string.IsNullOrEmpty( element.Value ) )
+            {
+                return new XElement( element.Name,
+                                     element.Attributes()
+                                            .OrderBy( a => a.Name.ToString() ) );
+            }
+            return new XElement( element.Name,
+                                 element.Attributes()
+                                        .OrderBy( a => a.Name.ToString() ),
+                                 element.Value );
+        }
 
     }
 }

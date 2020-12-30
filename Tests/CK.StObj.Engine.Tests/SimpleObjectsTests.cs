@@ -9,6 +9,10 @@ using FluentAssertions;
 using static CK.Testing.StObjEngineTestHelper;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using System.ComponentModel;
+using SmartAnalyzers.CSharpExtensions.Annotations;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -45,6 +49,7 @@ namespace CK.StObj.Engine.Tests
         public class AmbientInject : IRealObject
         {
             [InjectObject]
+            [InitRequired]
             public Auto Service { get; private set; }
         }
 
@@ -78,23 +83,24 @@ namespace CK.StObj.Engine.Tests
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterTypes( types.ToList() );
             
-            var result = TestHelper.GetSuccessfulResult( collector );
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
 
-            IStObjResult oa = result.StObjs.ToStObj( typeof(ObjectA) );
-            oa.Container.ClassType.Should().Be( typeof( PackageForAB ) );
+            IStObjResult oa = map.StObjs.ToHead( typeof(ObjectA) )!;
+            oa.Container!.ClassType.Should().Be( typeof( PackageForAB ) );
             oa.LeafSpecialization.ClassType.Should().Be( typeof( ObjectALevel3 ) );
 
-            IStObjResult oa1 = result.StObjs.ToStObj( typeof( ObjectALevel1 ) );
+            IStObjResult oa1 = map.StObjs.ToHead( typeof( ObjectALevel1 ) )!;
             oa1.Generalization.Should().BeSameAs( oa );
-            oa1.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ) );
+            oa1.Container!.ClassType.Should().Be( typeof( PackageForABLevel1 ) );
 
-            IStObjResult oa2 = result.StObjs.ToStObj( typeof( ObjectALevel2 ) );
+            IStObjResult oa2 = map.StObjs.ToHead( typeof( ObjectALevel2 ) )!;
             oa2.Generalization.Should().BeSameAs( oa1 );
-            oa2.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
+            oa2.Container!.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
 
-            IStObjResult oa3 = result.StObjs.ToStObj( typeof( ObjectALevel3 ) );
+            IStObjResult oa3 = map.StObjs.ToHead( typeof( ObjectALevel3 ) )!;
             oa3.Generalization.Should().BeSameAs( oa2 );
-            oa3.Container.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
+            oa3.Container!.ClassType.Should().Be( typeof( PackageForABLevel1 ), "Inherited." );
             oa.RootGeneralization.ClassType.Should().Be( typeof( ObjectA ) );
         }
 
@@ -213,10 +219,10 @@ namespace CK.StObj.Engine.Tests
 
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterTypes( types.ToList() );
-                var result = collector.GetResult(  );
-                Assert.That( result.HasFatalError, Is.False );
+                var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+                Debug.Assert( map != null, "No initialization error." );
 
-                IStObjResult theObject = result.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) );
+                IStObjResult theObject = map.StObjs.ToLeaf( typeof(SimpleObjects.LoggerInjection.LoggerInjected) )!;
                 Assert.That( theObject, Is.Not.Null );
                 Assert.That( theObject.FinalImplementation.Implementation, Is.Not.Null.And.InstanceOf<SimpleObjects.LoggerInjection.LoggerInjected>() );
             }
@@ -247,6 +253,7 @@ namespace CK.StObj.Engine.Tests
 
             void ConfigureServices( in StObjContextRoot.ServiceRegister register ) => ++ConfigureServicesCallCount;
 
+            [InitRequired]
             public Dep0 Dep0 { get; private set; }
         }
 
@@ -265,6 +272,7 @@ namespace CK.StObj.Engine.Tests
 
             void ConfigureServices( in StObjContextRoot.ServiceRegister register ) => ++ConfigureServicesCallCount;
 
+            [InitRequired]
             public Dep1 Dep1 { get; private set; }
         }
 
@@ -281,6 +289,7 @@ namespace CK.StObj.Engine.Tests
 
             void ConfigureServices( in StObjContextRoot.ServiceRegister register ) => ++ConfigureServicesCallCount;
 
+            [InitRequired]
             public Dep2 Dep2 { get; private set; }
         }
 
@@ -395,5 +404,18 @@ namespace CK.StObj.Engine.Tests
         }
         #endregion
 
+        public abstract class MissingAutoImplementation : IRealObject
+        {
+            public abstract void Nop();
+        }
+
+        [Test]
+        public void missing_AutoImplementation_attributes()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( MissingAutoImplementation ) );
+            var m = TestHelper.GetSuccessfulResult( c ).EngineMap;
+            Debug.Assert( m != null );
+            m.StObjs.FinalImplementations.Where( i => !(i.Implementation is PocoDirectory) ).Should().BeEmpty();
+        }
     }
 }

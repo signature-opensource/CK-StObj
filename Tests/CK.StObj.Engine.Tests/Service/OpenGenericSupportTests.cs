@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -36,10 +37,12 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ClassService ) );
-            var r = TestHelper.GetSuccessfulResult( collector );
-            r.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-            r.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
-            r.Services.SimpleMappings[typeof( ClassService )].IsScoped.Should().BeFalse();
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+
+            map.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+            map.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+            map.Services.SimpleMappings[typeof( ClassService )].IsScoped.Should().BeFalse();
         }
 
         public interface InterfaceService : IMyServiceTemplate<int>
@@ -60,11 +63,13 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ClassFromInterfaceService ) );
             var r = TestHelper.GetAutomaticServices( collector );
-            r.Result.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-            r.Result.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+            Debug.Assert( r.Result.EngineMap != null, "No initialization error." );
 
-            r.Result.Services.SimpleMappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
-            r.Result.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo( typeof(InterfaceService) );
+            r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+            r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+
+            r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
+            r.Result.EngineMap.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo( typeof(InterfaceService) );
 
             r.Services.GetService<InterfaceService>().Should().Be( r.Services.GetService<ClassFromInterfaceService>() );
         }

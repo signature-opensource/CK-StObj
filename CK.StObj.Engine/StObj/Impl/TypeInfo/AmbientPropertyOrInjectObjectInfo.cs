@@ -48,8 +48,8 @@ namespace CK.Setup
             Type t, 
             int definerSpecializationDepth,
             List<StObjPropertyInfo> stObjProperties, 
-            out IList<AmbientPropertyInfo> apListResult,
-            out IList<InjectObjectInfo> injectedListResult )
+            out IList<AmbientPropertyInfo>? apListResult,
+            out IList<InjectObjectInfo>? injectedListResult )
         {
             Debug.Assert( stObjProperties != null );
             
@@ -58,7 +58,7 @@ namespace CK.Setup
             injectedListResult = null;
             foreach( var p in properties )
             {
-                StObjPropertyAttribute stObjAttr = p.GetCustomAttribute<StObjPropertyAttribute>(false);
+                StObjPropertyAttribute? stObjAttr = p.GetCustomAttribute<StObjPropertyAttribute>(false);
                 if( stObjAttr != null )
                 {
                     string nP = String.IsNullOrEmpty( stObjAttr.PropertyName ) ? p.Name : stObjAttr.PropertyName;
@@ -71,8 +71,8 @@ namespace CK.Setup
                     stObjProperties.Add( new StObjPropertyInfo( t, stObjAttr.ResolutionSource, nP, tP, p ) );
                     // Continue to detect Ambient properties. Properties that are both Ambient and StObj must be detected.
                 }
-                AmbientPropertyAttribute ap = p.GetCustomAttribute<AmbientPropertyAttribute>( false );
-                IAmbientPropertyOrInjectObjectAttribute ac = p.GetCustomAttribute<InjectObjectAttribute>( false );
+                AmbientPropertyAttribute? ap = p.GetCustomAttribute<AmbientPropertyAttribute>( false );
+                IAmbientPropertyOrInjectObjectAttribute? ac = p.GetCustomAttribute<InjectObjectAttribute>( false );
                 if( ac != null || ap != null )
                 {
                     if( stObjAttr != null || (ac != null && ap != null) )
@@ -80,7 +80,7 @@ namespace CK.Setup
                         monitor.Error( $"Property named '{p.Name}' for '{p.DeclaringType}' can not be both an Ambient Singleton, an Ambient Property or a StObj property." );
                         continue;
                     }
-                    IAmbientPropertyOrInjectObjectAttribute attr = ac ?? ap;
+                    IAmbientPropertyOrInjectObjectAttribute attr = ac ?? ap!;
                     string kindName = attr.IsAmbientProperty ? AmbientPropertyInfo.KindName : InjectObjectInfo.KindName;
 
                     var mGet = p.GetGetMethod( true );
@@ -91,6 +91,7 @@ namespace CK.Setup
                     }
                     if( attr.IsAmbientProperty )
                     {
+                        Debug.Assert( ap != null );
                         if( apListResult == null ) apListResult = new List<AmbientPropertyInfo>();
                         var amb = new AmbientPropertyInfo( p, attr.IsOptionalDefined, attr.IsOptional, ap.IsResolutionSourceDefined, ap.ResolutionSource, definerSpecializationDepth, apListResult.Count );
                         apListResult.Add( amb );

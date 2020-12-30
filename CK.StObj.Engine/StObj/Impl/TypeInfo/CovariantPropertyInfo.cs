@@ -21,7 +21,7 @@ namespace CK.Setup
         readonly PropertyInfo _p;
         int _index;
         int _definerSpecializationDepth;
-        PropertyInfo _settablePropertyInfo;
+        PropertyInfo? _settablePropertyInfo;
 
         internal CovariantPropertyInfo( PropertyInfo p, int definerSpecializationDepth, int index )
         {
@@ -33,7 +33,7 @@ namespace CK.Setup
 
         public string Name => _p.Name; 
         public Type PropertyType => _p.PropertyType;
-        public Type DeclaringType => _p.DeclaringType;
+        public Type DeclaringType => _p.DeclaringType!;
         public PropertyInfo PropertyInfo => _p;
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the property to use to set the value (it corresponds to the top definer).
         /// </summary>
-        public PropertyInfo SettablePropertyInfo => _settablePropertyInfo;
+        public PropertyInfo SettablePropertyInfo => _settablePropertyInfo!;
 
         public virtual string Kind => KindName; 
 
@@ -90,7 +90,7 @@ namespace CK.Setup
                 // Adds 'above' into 'collector' before returning it.
                 foreach( T a in above )
                 {
-                    T exists = null;
+                    T? exists = null;
                     int idxExists = nbFromAbove;
                     while( idxExists < collector.Count && (exists = collector[idxExists]).Name != a.Name ) ++idxExists;
                     if( idxExists == collector.Count )
@@ -99,6 +99,7 @@ namespace CK.Setup
                     }
                     else
                     {
+                        Debug.Assert( exists != null );
                         exists.SetGeneralizationInfo( monitor, a );
                         collector.RemoveAt( idxExists );
                         exists._index = nbFromAbove;

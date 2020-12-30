@@ -17,6 +17,11 @@ namespace CK.Core
         IStObjObjectMap StObjs { get; }
 
         /// <summary>
+        /// Gets a <see cref="SHA1Value"/> that uniquely identifies this map.
+        /// </summary>
+        SHA1Value GeneratedSignature { get; }
+
+        /// <summary>
         /// Gets the Services map.
         /// This is for advanced use: <see cref="StObjServiceCollectionExtensions.AddStObjMap(IServiceCollection, IActivityMonitor, IStObjMap, SimpleServiceContainer)"/>
         /// handles everything that needs to be done before using all the services and objects.
@@ -24,10 +29,10 @@ namespace CK.Core
         IStObjServiceMap Services { get; }
 
         /// <summary>
-        /// Gets the name of this StObj map.
-        /// Never null, defaults to the empty string.
+        /// Gets the names of this StObj map.
+        /// Never empty, defaults to a single empty string.
         /// </summary>
-        string MapName { get; }
+        IReadOnlyList<string> Names { get; }
 
         /// <summary>
         /// Gets the set of <see cref="VFeature"/> that is contained in this map.

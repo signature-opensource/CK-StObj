@@ -33,7 +33,7 @@ namespace CK.Setup
 
         public int IndexOf( object item )
         {
-            MutableReference m = item as MutableReference;
+            MutableReference? m = item as MutableReference;
             return m != null ? IndexOf( m ) : Int32.MinValue;
         }
 

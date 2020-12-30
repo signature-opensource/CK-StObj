@@ -17,6 +17,15 @@ namespace CK.Setup
         public const string DefaultGeneratedAssemblyName = "CK.StObj.AutoAssembly";
 
         /// <summary>
+        /// File extension added to the "<see cref="StObjEngineConfiguration.GeneratedAssemblyName"/>.dll" file
+        /// that contains the SHA1 signature of an existing map. In such case, the assembly generation is skipped
+        /// and the existing map should be used.
+        /// See <see cref="StObjContextRoot.GetMapInfo(SHA1Value, IActivityMonitor?)"/>.
+        /// </summary>
+        public const string ExistsSignatureFileExtension = ".exists.txt";
+
+
+        /// <summary>
         /// Gets the mutable list of all configuration aspects that must participate to setup.
         /// </summary>
         public List<IStObjEngineAspectConfiguration> Aspects { get; }
@@ -88,6 +97,13 @@ namespace CK.Setup
         /// from any BinPath.
         /// </summary>
         public HashSet<string> GlobalExcludedTypes { get; }
+
+        /// <summary>
+        /// Gets a mutable set of SHA1 file signatures. Whenever any generated source file's signature
+        /// appears in this list, the source file is not generated nor compiled: the available map should
+        /// be used.
+        /// </summary>
+        public HashSet<SHA1Value> AvailableStObjMapSignatures { get; }
 
     }
 }

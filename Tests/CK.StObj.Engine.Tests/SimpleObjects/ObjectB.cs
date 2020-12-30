@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.SimpleObjects
 {
     public class ObjectB : IRealObject
     {
-        IAbstractionA _a;
+        IAbstractionA? _a;
 
         public int ConstructCount { get; protected set; }
 

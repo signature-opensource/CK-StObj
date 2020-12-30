@@ -6,10 +6,10 @@ namespace CK.StObj.Engine.Tests
 {
     class StructuralConfiguratorHelper : IStObjTypeFilter, IStObjStructuralConfigurator
     {
-        readonly Action<IStObjMutableItem> _conf;
-        readonly Func<Type,bool> _typeFilter;
+        readonly Action<IStObjMutableItem>? _conf;
+        readonly Func<Type,bool>? _typeFilter;
 
-        public StructuralConfiguratorHelper( Action<IStObjMutableItem> conf = null, Func<Type, bool> typefilter = null )
+        public StructuralConfiguratorHelper( Action<IStObjMutableItem>? conf = null, Func<Type, bool>? typefilter = null )
         {
             _conf = conf;
             _typeFilter = typefilter;

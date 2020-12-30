@@ -4,6 +4,8 @@ using System.Linq;
 using CK.Text;
 using CK.Core;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -31,6 +33,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the internal mappings.
+        /// This map is "lifted" and eventually exposed on the final <see cref="StObjCollectorResult.EngineMap"/>.
         /// </summary>
         internal StObjObjectEngineMap EngineMap { get; }
 
@@ -75,7 +78,7 @@ namespace CK.Setup
         public void LogErrorAndWarnings( IActivityMonitor monitor )
         {
             if( monitor == null ) throw new ArgumentNullException( "monitor" );
-            using( monitor.OpenTrace( $"Real Objects: {EngineMap.MappedTypeCount} mappings for {_concreteClassesPath.Count} concrete paths." ) )
+            using( monitor.OpenTrace( $"Real Objects: {EngineMap.RawMappings.Count} mappings for {_concreteClassesPath.Count} concrete paths." ) )
             {
                 foreach( var a in InterfaceAmbiguities )
                 {

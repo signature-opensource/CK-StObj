@@ -6,6 +6,10 @@
 #endregion
 
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+
 namespace CK.Core
 {
     /// <summary>
@@ -19,9 +23,16 @@ namespace CK.Core
         /// <param name="this">This context.</param>
         /// <typeparam name="T">Type (that must be a Real Object).</typeparam>
         /// <returns>Structured object instance or null if the type has not been mapped.</returns>
-        public static T Obtain<T>( this IStObjObjectMap @this )
+        public static T? Obtain<T>( this IStObjObjectMap @this ) where T : class
         {
-            return (T)@this.Obtain( typeof( T ) );
+            return (T?)@this.Obtain( typeof( T ) );
         }
+
+        /// <summary>
+        /// Gets all the mappings from <see cref="IAutoService"/> without duplicates. It is simply the
+        /// concatenation of <see cref="IStObjServiceMap.ObjectMappingList"/>, <see cref="IStObjServiceMap.SimpleMappingList"/>
+        /// and <see cref="IStObjServiceMap.ManualMappingList"/>.
+        /// </summary>
+        public static IEnumerable<IStObjFinalClass> GetAllMappings( this IStObjServiceMap @this ) => @this.ObjectMappingList.Cast<IStObjFinalClass>().Concat( @this.SimpleMappingList ).Concat( @this.ManualMappingList );
     }
 }

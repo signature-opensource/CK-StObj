@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#nullable enable
+
 namespace CK.Setup
 {
     /// <summary>
@@ -11,20 +13,20 @@ namespace CK.Setup
     /// Attributes must be retrieved thanks to <see cref="Attributes"/>.
     /// This type information are built top-down (from generalization to most specialized type).
     /// <para>
-    /// An CKTypeInfo can be either a <see cref="AutoServiceClassInfo"/> or an independent one (this is a concrete class)
-    /// that is associated to a <see cref="AutoServiceClassInfo"/> (via ServiceClass). 
+    /// A CKTypeInfo can be either a <see cref="RealObjectClassInfo"/> (RealObjectClassInfo inherits from CKTypeInfo) or
+    /// an independent one (this is a concrete class) that is associated to a <see cref="AutoServiceClassInfo"/> (<see cref="AutoServiceClassInfo.TypeInfo"/>). 
     /// </para>
     /// </summary>
     public class CKTypeInfo
     {
-        readonly TypeAttributesCache _attributes;
+        readonly TypeAttributesCache? _attributes;
         readonly Type[] _interfacesCache;
-        CKTypeInfo _nextSibling;
-        CKTypeInfo _firstChild;
+        CKTypeInfo? _nextSibling;
+        CKTypeInfo? _firstChild;
         int _specializationCount;
         bool _initializeImplementableTypeInfo;
-        List<Type> _uniqueMappings;
-        List<Type> _multipleMappings;
+        List<Type>? _uniqueMappings;
+        List<Type>? _multipleMappings;
 
         /// <summary>
         /// Initializes a new <see cref="CKTypeInfo"/> from a base one (its <see cref="Generalization"/>) if it exists and a type.
@@ -35,11 +37,13 @@ namespace CK.Setup
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="isExcluded">True to actually exclude this type from the registration.</param>
         /// <param name="serviceClass">Service class is mandatory if this is an independent Type info.</param>
-        internal CKTypeInfo( IActivityMonitor monitor, CKTypeInfo parent, Type t, IServiceProvider services, bool isExcluded, AutoServiceClassInfo serviceClass )
+        internal CKTypeInfo( IActivityMonitor monitor, CKTypeInfo? parent, Type t, IServiceProvider services, bool isExcluded, AutoServiceClassInfo? serviceClass )
         {
             Debug.Assert( (serviceClass == null) == (this is RealObjectClassInfo) );
             ServiceClass = serviceClass;
             Generalization = parent;
+            Type = t;
+            _interfacesCache = System.Type.EmptyTypes;
             if( (parent?.IsExcluded ?? false) )
             {
                 monitor.Warn( $"Type {t.FullName} is excluded since its parent is excluded." );
@@ -71,9 +75,10 @@ namespace CK.Setup
             get
             {
                 if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
-                return (IReadOnlyCollection<Type>)_uniqueMappings ?? Type.EmptyTypes;
+                return (IReadOnlyCollection<Type>?)_uniqueMappings ?? Type.EmptyTypes;
             }
         }
+
         /// <summary>
         /// Gets the unique mappings to this type that MUST be a leaf:
         /// an <see cref="InvalidOperationException"/> is thrown if <see cref="IsSpecialized"/> is true.
@@ -83,22 +88,22 @@ namespace CK.Setup
             get
             {
                 if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
-                return (IReadOnlyCollection<Type>)_multipleMappings ?? Type.EmptyTypes;
+                return (IReadOnlyCollection<Type>?)_multipleMappings ?? Type.EmptyTypes;
             }
         }
-
 
         /// <summary>
         /// Gets the service classe information for this type if there is one.
         /// If this <see cref="CKTypeInfo"/> is an independent one, then this is necessarily not null.
-        /// If this is a <see cref="RealObjectClassInfo"/> this can be null or not.
+        /// If this is a <see cref="RealObjectClassInfo"/> this can be null if the Real object doesn't
+        /// support any IAutoService interfaces.
         /// </summary>
-        public AutoServiceClassInfo ServiceClass { get; internal set; }
+        public AutoServiceClassInfo? ServiceClass { get; internal set; }
 
         /// <summary>
         /// Gets the Type that is decorated.
         /// </summary>
-        public Type Type => _attributes.Type;
+        public Type Type { get; }
 
         /// <summary>
         /// Gets all the interfaces supported by this <see cref="Type"/> (the array is cached once for all).
@@ -116,13 +121,13 @@ namespace CK.Setup
         /// This property is valid even if this type is excluded (however this CKTypeInfo does not
         /// appear in generalization's <see cref="Specializations"/>).
         /// </summary>
-        public CKTypeInfo Generalization { get; }
+        public CKTypeInfo? Generalization { get; }
 
         /// <summary>
         /// Gets the <see cref="ImplementableTypeInfo"/> if this <see cref="Type"/>
         /// is abstract, null otherwise.
         /// </summary>
-        public ImplementableTypeInfo ImplementableTypeInfo { get; private set; }
+        public ImplementableTypeInfo? ImplementableTypeInfo { get; private set; }
 
         /// <summary>
         /// Gets whether this Type (that is abstract) must actually be considered as an abstract type or not.
@@ -132,7 +137,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="assembly">The dynamic assembly to use for generated types.</param>
         /// <returns>Concrete Type builder or null.</returns>
-        internal protected ImplementableTypeInfo InitializeImplementableTypeInfo( IActivityMonitor monitor, IDynamicAssembly assembly )
+        internal protected ImplementableTypeInfo? InitializeImplementableTypeInfo( IActivityMonitor monitor, IDynamicAssembly assembly )
         {
             Debug.Assert( Type.IsAbstract && assembly != null && !IsExcluded );
 
@@ -140,10 +145,16 @@ namespace CK.Setup
             _initializeImplementableTypeInfo = true;
 
             var combined = new List<ICKCustomAttributeProvider>();
-            var p = this;
-            do { combined.Add( p.Attributes ); p = p.Generalization; } while( p != null );
+            CKTypeInfo? p = this;
+            do
+            {
+                Debug.Assert( p.Attributes != null );
+                combined.Add( p.Attributes );
+                p = p.Generalization;
+            }
+            while( p != null );
 
-            ImplementableTypeInfo autoImpl = ImplementableTypeInfo.CreateImplementableTypeInfo( monitor, Type, new CustomAttributeProviderComposite( combined ) );
+            var autoImpl = ImplementableTypeInfo.CreateImplementableTypeInfo( monitor, Type, new CustomAttributeProviderComposite( combined ) );
             if( autoImpl != null && autoImpl.CreateStubType( monitor, assembly ) != null )
             {
                 return ImplementableTypeInfo = autoImpl;
@@ -160,7 +171,7 @@ namespace CK.Setup
         /// All attributes related to <see cref="Type"/> (either on the type itself or on any of its members) should be retrieved 
         /// thanks to this property otherwise stateful attributes will not work correctly.
         /// </remarks>
-        public ICKCustomAttributeTypeMultiProvider Attributes => _attributes;
+        public ITypeAttributesCache? Attributes => _attributes;
 
         /// <summary>
         /// Gets whether this type has at least one <see cref="Specializations"/>
@@ -182,7 +193,7 @@ namespace CK.Setup
         {
             get
             {
-                CKTypeInfo c = _firstChild;
+                var c = _firstChild;
                 while( c != null )
                 {
                     yield return c;
@@ -194,11 +205,12 @@ namespace CK.Setup
         internal bool IsAssignableFrom( CKTypeInfo child )
         {
             Debug.Assert( child != null );
+            CKTypeInfo? c = child;
             do
             {
-                if( child == this ) return true;
+                if( c == this ) return true;
             }
-            while( (child = child.Generalization) != null );
+            while( (c = c.Generalization) != null );
             return false;
         }
 
@@ -212,7 +224,7 @@ namespace CK.Setup
             }
             else
             {
-                CKTypeInfo c = _firstChild;
+                var c = _firstChild;
                 while( c != null && c._nextSibling != child ) c = c._nextSibling;
                 if( c != null )
                 {
@@ -242,18 +254,25 @@ namespace CK.Setup
         /// <summary>
         /// Registers a new multiple mapping.
         /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
-        /// The type t must not already be registered (it can, of course be mapped to other finale types).
+        /// The type t must not already be registered (it can, of course be mapped to other final types).
         /// </summary>
         /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
-        internal void AddMultipleMapping( Type t )
+        /// <param name="k">The kind from the <see cref="CKTypeKindDetector"/>.</param>
+        /// <param name="collector">The type collector.</param>
+        internal void AddMultipleMapping( Type t, CKTypeKind k, CKTypeCollector collector )
         {
             Debug.Assert( !IsSpecialized, "We are on the leaf." );
             Debug.Assert( t != Type, $"Multiple mapping {ToString()} must not be mapped to itself." );
             Debug.Assert( t.IsAssignableFrom( Type ), $"Multiple mapping '{t}' must be assignable from {ToString()}!" );
             Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Multiple mapping '{t}' already registered in {ToString()}." );
             Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Multiple mapping '{t}' already registered in UNIQUE mappings of {ToString()}." );
+            Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
             if( _multipleMappings == null ) _multipleMappings = new List<Type>();
             _multipleMappings.Add( t );
+            if( (k&(CKTypeKind.IsFrontService|CKTypeKind.IsMarshallable)) != (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
+            {
+                collector.RegisterMultipleInterfaces( t, k, this );
+            }
         }
 
         /// <summary>
@@ -263,6 +282,7 @@ namespace CK.Setup
         public override string ToString()
         {
             var s = Type.FullName;
+            Debug.Assert( s != null, "Null FullName is for generic parameters." );
             if( ServiceClass != null ) s += "|IsService";
             if( this is RealObjectClassInfo ) s += "|IsObject";
             if( IsExcluded ) s += "|IsExcluded";

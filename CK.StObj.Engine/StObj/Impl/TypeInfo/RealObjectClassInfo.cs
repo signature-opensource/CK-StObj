@@ -5,6 +5,9 @@ using CK.Core;
 using System.Reflection;
 using System.Diagnostics;
 
+#nullable disable
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+
 namespace CK.Setup
 {
     /// <summary>
@@ -467,7 +470,7 @@ namespace CK.Setup
         /// </summary>
         public IStObjTypeRootParentInfo BaseTypeInfo { get; }
 
-        public new RealObjectClassInfo Generalization => (RealObjectClassInfo)base.Generalization;
+        public new RealObjectClassInfo? Generalization => (RealObjectClassInfo?)base.Generalization;
 
         public IReadOnlyList<AmbientPropertyInfo> AmbientProperties { get; private set; }
 
@@ -537,15 +540,15 @@ namespace CK.Setup
             }
         }
 
-        internal void InitializeInterfaces( IActivityMonitor m, CKTypeKindDetector d )
+        internal void InitializeInterfaces( IActivityMonitor m, CKTypeCollector collector )
         {
-            // If there is a path ambiguity we'll reach an already initialized parent.
+            // If there is a path ambiguity we'll reach an already initialized parent set of interfaces.
             if( _realObjectInterfaces == null )
             {
                 List<Type> all = null;
                 foreach( Type tI in Interfaces )
                 {
-                    var k = d.GetKind( m, tI );
+                    var k = collector.KindDetector.GetKind( m, tI );
                     if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                     {
                         if( all == null ) all = new List<Type>();
@@ -553,11 +556,11 @@ namespace CK.Setup
                     }
                     else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
                     {
-                        AddMultipleMapping( tI );
+                        AddMultipleMapping( tI, k, collector );
                     }
                 }
-                _realObjectInterfaces = (IReadOnlyList<Type>)all ?? Type.EmptyTypes;
-                Generalization?.InitializeInterfaces( m, d );
+                _realObjectInterfaces = (IReadOnlyList<Type>?)all ?? Type.EmptyTypes;
+                Generalization?.InitializeInterfaces( m, collector );
             }
         }
 
@@ -567,7 +570,7 @@ namespace CK.Setup
             IActivityMonitor monitor,
             IServiceProvider services,
             StObjObjectEngineMap engineMap,
-            MutableItem generalization,
+            MutableItem? generalization,
             IDynamicAssembly tempAssembly,
             List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
             List<Type> abstractTails )
@@ -598,5 +601,11 @@ namespace CK.Setup
             return concreteBelow;
         }
 
+        /// <summary>
+        /// Marker for this real object if and only if this real object implements a (obviously singleton) Service.
+        /// This is an awful optimization trick for <see cref="StObjObjectEngineMap.RegisterServiceFinalObjectMapping(Type, CKTypeInfo)"/>.
+        /// This avoids a HashSet to remove duplicates and a lookup in the Type => MutableItem final map.
+        /// </summary>
+        internal MutableItem AutoServiceImpl;
     }
 }

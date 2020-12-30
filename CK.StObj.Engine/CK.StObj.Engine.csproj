@@ -8,9 +8,13 @@
     <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
+    <Nullable>enable</Nullable>
+    <LangVersion>9.0</LangVersion>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
+    <PackageReference Include="CK.CodeGen.Roslyn" />
     <PackageReference Include="CK.Core" />
   </ItemGroup>
   <ItemGroup>

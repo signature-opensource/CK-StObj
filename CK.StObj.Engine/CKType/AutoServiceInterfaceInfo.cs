@@ -2,6 +2,9 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
+
+#nullable enable
 
 namespace CK.Setup
 {
@@ -15,7 +18,12 @@ namespace CK.Setup
         /// <summary>
         /// The interface type.
         /// </summary>
-        public Type Type { get; }
+        public Type Type => Attributes.Type;
+
+        /// <summary>
+        /// Gets the attribute cache for this type.
+        /// </summary>
+        public TypeAttributesCache Attributes { get; }
 
         /// <summary>
         /// Gets the initial type kind that is the result of the marker interfaces, attributes
@@ -43,7 +51,7 @@ namespace CK.Setup
         /// is used to handle actual lifetime checks without requiring another
         /// dictionary index.
         /// </summary>
-        public AutoServiceClassInfo FinalResolved { get; internal set; }
+        public AutoServiceClassInfo? FinalResolved { get; internal set; }
 
         /// <summary>
         /// Gets the base service interfaces that are specialized by this one.
@@ -58,12 +66,12 @@ namespace CK.Setup
         public override string ToString() => $"{(IsSpecialized ? "[Specialized]" : "")}{Type}";
 
 
-        internal AutoServiceInterfaceInfo( Type t, CKTypeKind lt, IEnumerable<AutoServiceInterfaceInfo> baseInterfaces )
+        internal AutoServiceInterfaceInfo( TypeAttributesCache type, CKTypeKind lt, IEnumerable<AutoServiceInterfaceInfo> baseInterfaces )
         {
             Debug.Assert( lt == CKTypeKind.IsAutoService
                             || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
                             || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
-            Type = t;
+            Attributes = type;
             InitialTypeKind = lt;
             AutoServiceInterfaceInfo[] bases = Array.Empty<AutoServiceInterfaceInfo>();
             int depth = 0;

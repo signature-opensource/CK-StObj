@@ -17,16 +17,25 @@ namespace CK.Setup
         /// <summary>
         /// Gets the external configuration object.
         /// </summary>
-        StObjEngineConfiguration ExternalConfiguration { get; }
+        StObjEngineConfiguration StObjEngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered
         /// Concrete type mapping to aspects instances are automatically registered.
+        /// <para>
+        /// At the very start of the process, this container is the one that is given to the StObjCollector
+        /// and will be eventually used by the TypeAttributesCache to instantiate any <see cref="ContextBoundDelegationAttribute"/>
+        /// objects.
+        /// </para>
+        /// <para>
+        /// At the end of the process, this container is used as the base service provider of code generation (see
+        /// <see cref="ICSCodeGenerationContext.GlobalServiceContainer"/>).
+        /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }
 
         /// <summary>
-        /// Registers a configuration only service. This is used to comunicate the fact that the registered service
+        /// Registers a configuration only service. This is used to communicate the fact that the registered service
         /// should only be used by the other following aspects only from their <see cref="IStObjEngineAspect.Configure"/> method.
         /// </summary>
         /// <typeparam name="T">Actual type of the service.</typeparam>
