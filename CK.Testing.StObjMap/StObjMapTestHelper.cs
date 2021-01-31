@@ -54,7 +54,7 @@ namespace CK.Testing
 
         IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService( null );
 
-        IServiceProvider IStObjMapTestHelperCore.CreateAutomaticServices( SimpleServiceContainer? startupServices ) => DoCreateAutomaticServices( startupServices, DoGetStObjMap() );
+        ServiceProvider IStObjMapTestHelperCore.CreateAutomaticServices( SimpleServiceContainer? startupServices ) => DoCreateAutomaticServices( startupServices, DoGetStObjMap() );
 
         IServiceProvider DoGetAutomaticService( SimpleServiceContainer? startupServices )
         {
