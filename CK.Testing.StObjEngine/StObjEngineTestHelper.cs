@@ -138,7 +138,7 @@ namespace CK.Testing
             return new GenerateCodeResult( result, r, embedded );
         }
 
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services)
+        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, ServiceProvider Services)
                         IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c,
                                                                          Action<StObjContextRoot.ServiceRegister>? configureServices,
                                                                          SimpleServiceContainer? startupServices )

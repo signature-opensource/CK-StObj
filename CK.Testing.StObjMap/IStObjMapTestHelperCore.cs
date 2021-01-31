@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace CK.Testing.StObjMap
@@ -33,13 +34,16 @@ namespace CK.Testing.StObjMap
 
         /// <summary>
         /// Creates and configures a pristine service provider based on the current <see cref="StObjMap"/>.
-        /// The returned services can be configured thanks to the <see cref="AutomaticServicesConfiguring"/>
+        /// The returned services can be automatically configured thanks to the <see cref="AutomaticServicesConfiguring"/>
         /// and <see cref="AutomaticServicesConfigured"/> events.
         /// This throws if any error prevents the services to be correctly configured.
+        /// <para>
+        /// Note that the <see cref="ServiceProvider"/> is a <see cref="IDisposable"/> object: it SHOULD be disposed once done with it.
+        /// </para>
         /// </summary>
         /// <param name="startupServices">Optional startup services container.</param>
         /// <returns>A new service provider.</returns>
-        IServiceProvider CreateAutomaticServices( SimpleServiceContainer? startupServices = null );
+        ServiceProvider CreateAutomaticServices( SimpleServiceContainer? startupServices = null );
 
         /// <summary>
         /// Fires before the future <see cref="AutomaticServices"/> or a new one created by <see cref="CreateAutomaticServices(SimpleServiceContainer?)"/>

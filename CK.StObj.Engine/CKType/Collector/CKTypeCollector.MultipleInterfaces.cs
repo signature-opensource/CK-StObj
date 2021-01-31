@@ -36,6 +36,10 @@ namespace CK.Setup
                 _itemKind = iKind;
                 _rawImpls = new List<CKTypeInfo>();
                 _rawImpls.Add( first );
+                // These properties are null until ComputeFinalTypeKind is called.
+                // (Offensive) I prefer assuming this nullity here rather than setting empty arrays.
+                MarshallableTypes = null!;
+                MarshallableInProcessTypes = null!;
             }
 
             internal MultipleImpl( Type tEnum, Type tI )
@@ -45,6 +49,8 @@ namespace CK.Setup
                 // Ite missa est.
                 _isComputed = true;
                 _finalKind = AutoServiceKind.IsFrontService | AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsScoped | AutoServiceKind.IsMarshallable;
+                MarshallableTypes = null!;
+                MarshallableInProcessTypes = null!;
             }
 
 
