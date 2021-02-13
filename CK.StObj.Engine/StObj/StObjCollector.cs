@@ -81,6 +81,7 @@ namespace CK.Setup
 
             // Other known singletons.
             SetAutoServiceKind( "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Configuration.IConfigurationRoot, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
         }
 
         /// <summary>
