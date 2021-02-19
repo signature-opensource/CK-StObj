@@ -242,11 +242,13 @@ namespace CK.Setup
                     monitor.Info( $"Using provided file signature: {signature}." );
                 }
 
+                var fSignature = finalFilePath + StObjEngineConfiguration.ExistsSignatureFileExtension;
+                monitor.Info( $"Creating signature file '{fSignature}'." );
+                File.WriteAllText( fSignature, signature.ToString() );
+
                 if( availableStObjMap( monitor, signature ) )
                 {
-                    var fSignature = finalFilePath + StObjEngineConfiguration.ExistsSignatureFileExtension;
-                    monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and creating signature file '{fSignature}'." );
-                    File.WriteAllText( fSignature, signature.ToString() );
+                    monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and the compilation." );
                     generatedFileNames.Add( fSignature );
                     Debug.Assert( generatedFileNames.Count == 1 );
                     return new CodeGenerateResult( true, generatedFileNames, signature );
