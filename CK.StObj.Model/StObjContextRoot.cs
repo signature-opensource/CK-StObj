@@ -83,21 +83,22 @@ namespace CK.Core
             var attr = a.GetCustomAttributesData().FirstOrDefault( m => m.AttributeType.Name == "SignatureAttribute" && m.AttributeType.Namespace == "CK.StObj" );
             if( attr != null )
             {
-                using( monitor.OpenInfo( $"Analysing '{a.FullName}' assembly." ) )
+                using( monitor.OpenInfo( $"Analyzing '{a.FullName}' assembly." ) )
                 {
                     info = StObjMapInfo.Create( monitor, a, attr );
                     if( info != null )
                     {
-                        if( _alreadyHandled.TryGetValue( info.GeneratedSignature, out var exists ) )
+                        var sha1S = info.GeneratedSignature.ToString();
+                        if( _alreadyHandled.TryGetValue( sha1S, out var exists ) )
                         {
                             Debug.Assert( exists != null );
                             monitor.Info( $"StObjMap found replaces the one from '{exists.AssemblyName}' that has the same signature." );
-                            _alreadyHandled[info.GeneratedSignature] = info;
+                            _alreadyHandled[sha1S] = info;
                             _availableMaps.Remove( exists );
                         }
                         else
                         {
-                            _alreadyHandled.Add( info.GeneratedSignature, info );
+                            _alreadyHandled.Add( sha1S, info );
                         }
                         _availableMaps.Add( info );
                     }
@@ -283,7 +284,11 @@ namespace CK.Core
                                 monitor.CloseGroup( $"Found existing map from signature file {assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}: {info}." );
                                 return LockedGetStObjMap( info, ref monitor );
                             }
-                            monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}'. Tyring to load the assembly." );
+                            monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' ({sig}). Trying to load the assembly." );
+                        }
+                        else
+                        {
+                            monitor.Warn( $"No Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' found. Trying to load the assembly." );
                         }
                         var a = Assembly.LoadFile( assemblyFullPath );
                         info = LockedGetMapInfo( a, ref monitor );
