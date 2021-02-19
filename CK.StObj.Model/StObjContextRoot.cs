@@ -122,7 +122,7 @@ namespace CK.Core
             lock( _alreadyHandled )
             {
                 LockedGetAvailableMapInfos( ref monitor );
-                return _alreadyHandled.GetValueOrDefault( signature );
+                return _alreadyHandled.GetValueOrDefault( signature.ToString() );
             }
         }
 
@@ -230,7 +230,7 @@ namespace CK.Core
             lock( _alreadyHandled )
             {
                 LockedGetAvailableMapInfos( ref monitor );
-                if( _alreadyHandled.TryGetValue( signature, out var info ) )
+                if( _alreadyHandled.TryGetValue( signature.ToString(), out var info ) )
                 {
                     Debug.Assert( info != null );
                     return LockedGetStObjMap( info, ref monitor );
