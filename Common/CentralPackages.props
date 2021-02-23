@@ -11,7 +11,7 @@
     <PackageReference Update="CK.CodeGen.Roslyn" Version="1.0.2--0003-develop" />
     <PackageReference Update="CK.CodeGen" Version="1.0.2--0003-develop" />
     <PackageReference Update="CK.Reflection" Version="9.0.3--0002-develop" />
-    <PackageReference Update="CK.Setup.Dependency" Version="10.3.3--0003-develop" />
+    <PackageReference Update="CK.Setup.Dependency" Version="10.3.3--0004-develop" />
     <PackageReference Update="CK.Core" Version="13.2.2--0008-develop" />
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.0.0" />
   </ItemGroup>
