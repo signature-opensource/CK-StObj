@@ -83,7 +83,7 @@ namespace CK.Setup
 
         static public IReadOnlyList<T> MergeWithAboveProperties<T>( IActivityMonitor monitor, IReadOnlyList<T> above, IList<T> collector ) where T : CovariantPropertyInfo
         {
-            if( collector == null || collector.Count == 0 ) return above ?? Util.Array.Empty<T>();
+            if( collector == null || collector.Count == 0 ) return above ?? Array.Empty<T>();
             int nbFromAbove = 0;
             if( above != null )
             {

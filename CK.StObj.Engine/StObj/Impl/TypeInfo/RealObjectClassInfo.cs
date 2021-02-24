@@ -49,9 +49,9 @@ namespace CK.Setup
                         result = new TypeInfoForBaseClasses();
                         if( t == typeof( object ) )
                         {
-                            result.AmbientProperties = Util.Array.Empty<AmbientPropertyInfo>();
-                            result.InjectObjects = Util.Array.Empty<InjectObjectInfo>();
-                            result.StObjProperties = Util.Array.Empty<StObjPropertyInfo>();
+                            result.AmbientProperties = Array.Empty<AmbientPropertyInfo>();
+                            result.InjectObjects = Array.Empty<InjectObjectInfo>();
+                            result.StObjProperties = Array.Empty<StObjPropertyInfo>();
                         }
                         else
                         {
@@ -169,8 +169,8 @@ namespace CK.Setup
             {
                 if( type == typeof( object ) )
                 {
-                    apListResult = Util.Array.Empty<AmbientPropertyInfo>();
-                    acListResult = Util.Array.Empty<InjectObjectInfo>();
+                    apListResult = Array.Empty<AmbientPropertyInfo>();
+                    acListResult = Array.Empty<InjectObjectInfo>();
                 }
                 else
                 {
