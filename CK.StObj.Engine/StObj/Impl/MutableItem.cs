@@ -276,7 +276,7 @@ namespace CK.Setup
             }
             else
             {
-                _constructParameterEx = Util.Array.Empty<MutableParameter>();
+                _constructParameterEx = Array.Empty<MutableParameter>();
             }
         }
 

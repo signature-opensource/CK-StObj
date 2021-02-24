@@ -57,7 +57,7 @@ namespace CK.Setup
             if( traceDepencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
             if( traceDepencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
 
-            // The IActivityMobitor is by design a scoped service.It is not Optional (since it necessarily exists).
+            // The IActivityMobitor is by design a scoped service. It is not Optional (since it necessarily exists).
             SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
 
             // Registration must be done from the most specific types to the basic ones: here we must start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
@@ -81,6 +81,7 @@ namespace CK.Setup
 
             // Other known singletons.
             SetAutoServiceKind( "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Configuration.IConfigurationRoot, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
         }
 
         /// <summary>
