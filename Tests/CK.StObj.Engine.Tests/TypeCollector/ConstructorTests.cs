@@ -12,12 +12,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
     [TestFixture]
     public class ConstructorTests : TypeCollectorTestsBase
     {
-        [StObj( ItemKind = DependentItemKindSpec.Container )]
-        public class PackageA : IRealObject
-        {
-        }
 
-        //[AutoService( typeof( PackageA ) )]
+        // This fails.
         public class ServiceWith2Ctors : IScopedAutoService
         {
             public ServiceWith2Ctors()
@@ -30,7 +26,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         }
 
 
-        //[AutoService( typeof( PackageA ) )]
         public class ServiceWithOneCtor : IScopedAutoService
         {
             public ServiceWithOneCtor( int a )
@@ -74,27 +69,23 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             {
                 var collector = CreateCKTypeCollector();
-                collector.RegisterType( typeof( PackageA ) );
                 collector.RegisterType( typeof( ServiceWith2Ctors ) );
                 CheckFailure( collector );
             }
             {
                 var collector = CreateCKTypeCollector();
-                collector.RegisterType( typeof( PackageA ) );
                 collector.RegisterType( typeof( ServiceWithNonPublicCtor ) );
                 CheckFailure( collector );
             }
             {
                 CheckSuccess( collector =>
                 {
-                    collector.RegisterType( typeof( PackageA ) );
                     collector.RegisterType( typeof( ServiceWithNonPublicCtorButAbstract ) );
                 } );
             }
             {
                 var r = CheckSuccess( collector =>
                 {
-                    collector.RegisterType( typeof( PackageA ) );
                     collector.RegisterType( typeof( ServiceWithOneCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
@@ -107,7 +98,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             {
                 var r = CheckSuccess( collector =>
                 {
-                    collector.RegisterType( typeof( PackageA ) );
                     collector.RegisterType( typeof( ServiceWithDefaultCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
@@ -117,7 +107,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             {
                 var r = CheckSuccess( collector =>
                 {
-                    collector.RegisterType( typeof( PackageA ) );
                     collector.RegisterType( typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
