@@ -555,6 +555,51 @@ namespace CK.StObj.Engine.Tests.Service
 
         }
 
+        // This works only if the type 'int[]' is available at runtime in the DI container.
+        // And since its lifetime is not known, ServiceWithVaryingParams will be scoped.
+        public class ServiceWithVaryingParams : IScopedAutoService
+        {
+            public ServiceWithVaryingParams( params int[] things )
+            {
+                Things = things;
+            }
+
+            public IReadOnlyList<int> Things { get; }
+        }
+
+        [Test]
+        public void varying_params_requires_an_explicit_registration_in_the_DI_container_at_runtime()
+        {
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( ServiceWithVaryingParams ) );
+
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
+                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                {
+                    var services = TestHelper.GetAutomaticServices( collector, null ).Services;
+                    services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
+                }
+            }
+            {
+                var collector = TestHelper.CreateStObjCollector();
+                collector.RegisterType( typeof( ServiceWithVaryingParams ) );
+
+                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
+                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                {
+                    var s = TestHelper.GetAutomaticServices( collector, services =>
+                    {
+                        services.Services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
+
+                    } ).Services;
+                    var resolved = s.GetService<ServiceWithVaryingParams>();
+                    resolved.Things.Should().BeEquivalentTo( 1, 2, 3 );
+                }
+            }
+
+        }
+
         [Test]
         public void ValueType_ctor_parameters_with_default_value_are_ignored()
         {

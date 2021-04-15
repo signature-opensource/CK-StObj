@@ -738,14 +738,14 @@ namespace CK.Setup
             if( _ctorBinding.HasValue ) return _ctorBinding.Value;
             bool success = false;
             var ctors = ClassType.GetConstructors();
-            if( ctors.Length > 1 ) m.Error( $"Multiple public constructors found for '{ClassType.FullName}'. Only one must exist." );
+            if( ctors.Length > 1 ) m.Error( $"Multiple public constructors found for '{ClassType.FullName}'. Only one must exist. Consider using factory methods that relays to protected constructors for explicit initialization." );
             else
             {
                 success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
                 if( ctors.Length == 0 )
                 {
                     // There is no public constructor: if the class is abstract we cannot conclude anything since the
-                    // generated implementation can do whaterver it wants to satisfy any of its base constructor.
+                    // generated implementation can do whatever it wants to satisfy any of its base constructor.
                     if( ClassType.IsAbstract )
                     {
                         // We can only consider that this type has no constructor parameters.
