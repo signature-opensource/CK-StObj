@@ -7,7 +7,7 @@
     <PackageReference Update="CK.Testing.Monitoring" Version="2.1.0" />
     <PackageReference Update="CK.Testing.CKSetup" Version="14.1.0" />
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="14.1.0" />
-    <PackageReference Update="CSemVer" Version="9.0.4" />
+    <PackageReference Update="CSemVer" Version="9.1.0" />
     <PackageReference Update="CK.CodeGen.Roslyn" Version="2.1.0" />
     <PackageReference Update="CK.CodeGen" Version="2.1.0" />
     <PackageReference Update="CK.Reflection" Version="9.0.2" />
