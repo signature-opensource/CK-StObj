@@ -8,6 +8,8 @@ namespace CK.Setup
 {
     /// <summary>
     /// Exposes the result of <see cref="IPoco"/> interfaces support.
+    /// This is available in the <see cref="IGeneratedBinPath.ServiceContainer"/> of the
+    /// <see cref="ICodeGenerationContext.CurrentRun"/>.
     /// </summary>
     public interface IPocoSupportResult
     {
@@ -38,7 +40,7 @@ namespace CK.Setup
         /// Gets the dictionary of all interface types that are not <see cref="IPoco"/> but are supported by at least one Poco, mapped
         /// to the list of roots that support them.
         /// <para>
-        /// Keys are not <see cref="IPoco"/> interfaces (technically they may be IPoco but then they are "cancelled" by
+        /// Keys are not <see cref="IPoco"/> interfaces (technically they may be IPoco but then they are "canceled" by
         /// a <see cref="CKTypeDefinerAttribute"/> or <see cref="CKTypeSuperDefinerAttribute"/>): this set complements and
         /// doesn't intersect <see cref="AllInterfaces"/>.
         /// </para>

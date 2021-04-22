@@ -11,7 +11,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Internal mutable implementation of <see cref="IStObjObjectEngineMap"/> that handles <see cref="MutableItem"/>.
-    /// The internal participants have write access to it. I'm not proud of this (there are definitly cleaner
+    /// The internal participants have write access to it. I'm not proud of this (there are definitely cleaner
     /// ways to organize this) but it works...
     /// The map is instantiated by CKTypeCollector.GetRealObjectResult and then
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
@@ -34,7 +34,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="names">The final map names.</param>
         /// <param name="allSpecializations">
-        /// Predimensioned array that will be filled with actual
+        /// Pre-dimensioned array that will be filled with actual
         /// mutable items by <see cref="StObjCollector.GetResult()"/>.
         /// </param>
         /// <param name="typeKindDetector">The type kind detector.</param>

@@ -31,6 +31,7 @@ namespace CK.Setup
             Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );
 
             IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
+            Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof(IPocoSupportResult) ), "The PocoSupportResult is also available at the GeneratedBinPath." );
 
             // PocoDirectory_CK class.
             scope.GeneratedByComment()
