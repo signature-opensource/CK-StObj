@@ -34,7 +34,7 @@ namespace CK.Setup
             Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof(IPocoSupportResult) ), "The PocoSupportResult is also available at the GeneratedBinPath." );
 
             // PocoDirectory_CK class.
-            scope.GeneratedByComment()
+            scope.GeneratedByComment().NewLine()
                  .FindOrCreateFunction( "internal PocoDirectory_CK()" )
                  .Append( "Instance = this;" );
 
@@ -61,6 +61,23 @@ namespace CK.Setup
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
                 // can refer to the _factory to access the factory extended code without cast.
+                //
+                // This static internal field is an awful shortcut but it makes things simpler and more efficient
+                // than looking up the factory in the DI (and downcasting it) each time we need it.
+                // This simplification has been done for Cris Command implementation: a ICommand exposes
+                // its ICommandModel: we used to inject the ICommandModel (that is the extended PocoFactory) in the ICommand
+                // PocoClass ctor from the factory methods. It worked but it was complex... and, eventually, there
+                // can (today) but most importantly there SHOULD, be only one StObjMap/Concrete generated code in an
+                // assembly. Maybe one day, the StObj instances themselves can be made static (since they are some kind of
+                // "absolute singletons").
+                //
+                // Note to myself: this "static shortcut" is valid because we are on a "final generation", not on a
+                // local, per-module, intermediate, code generation like .Net 5 Code Generators.
+                // How this kind of shortcuts could be implemented with .Net 5 Code Generators? It seems that it could but
+                // there will be as many "intermediate statics" as there are "levels of assemblies"? Or, there will be only
+                // one static (the first one) and the instance will be replaced by the subsequent assemblies? In all cases,
+                // diamond problem will have to be ultimately resolved at the final leaf... Just like we do!
+                // 
                 tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
                   .NewLine();
                 tB.Append( "IPocoFactory IPocoClass.Factory => _factory;" ).NewLine();

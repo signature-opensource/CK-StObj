@@ -6,7 +6,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Defines the outcome of the <see cref="ICodeGenerator.Implement"/> and <see cref="IAutoImplementor{T}.Implement"/>
-    /// methods: either the implementation has been successfuly done, must be done by a dedicated type that must
+    /// methods: either the implementation has been successfully done, must be done by a dedicated type that must
     /// be instantiated (with dependencies injection support), must be done by calling another method on the same object
     /// (with parameter dependencies injection support) or failed.
     /// </summary>
@@ -49,7 +49,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Initializes a new result with a type that must be instanciated.
+        /// Initializes a new result with a type that must be instantiated.
         /// See <see cref="ImplementorType"/>.
         /// </summary>
         /// <param name="implementor">The type to implement.</param>

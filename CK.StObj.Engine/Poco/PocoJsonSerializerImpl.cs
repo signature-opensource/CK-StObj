@@ -149,8 +149,9 @@ namespace CK.Setup
             var toString = FunctionDefinition.Parse( "public override string ToString()" );
             if( pocoClass.FindFunction( toString.Key, false ) == null )
             {
-                pocoClass.GeneratedByComment()
+                pocoClass
                     .CreateFunction( toString )
+                    .GeneratedByComment().NewLine()
                     .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
                     .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
                     .OpenBlock()
@@ -160,10 +161,11 @@ namespace CK.Setup
                     .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
             }
 
-            pocoClass.GeneratedByComment().NewLine().Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
-                 .OpenBlock()
-                 .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()
-                 .Append( "w.WriteStartObject();" ).NewLine();
+            pocoClass.GeneratedByComment().NewLine()
+                     .Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
+                     .OpenBlock()
+                     .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()
+                     .Append( "w.WriteStartObject();" ).NewLine();
             var write = pocoClass.CreatePart();
             pocoClass.NewLine()
                  .Append( "w.WriteEndObject();" ).NewLine()
