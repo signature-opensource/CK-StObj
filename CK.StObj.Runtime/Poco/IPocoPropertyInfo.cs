@@ -10,7 +10,7 @@ namespace CK.Setup
     /// <summary>
     /// Describes Poco property.
     /// </summary>
-    public interface IPocoPropertyInfo
+    public interface IPocoPropertyInfo : IAnnotationSet
     {
         /// <summary>
         /// Gets whether this property is a <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;
@@ -23,6 +23,18 @@ namespace CK.Setup
         /// defines a setter then a setter will eventually be generated even if <see cref="AutoInstantiated"/> is true.
         /// </summary>
         bool HasDeclaredSetter { get; }
+
+        /// <summary>
+        /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
+        /// Note that if the default value is defined by more than one interface, it is guaranteed to be the same.
+        /// </summary>
+        bool HasDefaultValue { get; }
+
+        /// <summary>
+        /// Gets the default value. This must be considered if and only if <see cref="HasDefaultValue"/> is true.
+        /// If this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/> (HasDefaultValue is false), this is null.
+        /// </summary>
+        object? DefaultValue { get; }
 
         /// <summary>
         /// Gets the default value as a source string or a null if this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/>.
@@ -55,7 +67,7 @@ namespace CK.Setup
         NullableTypeTree PropertyNullableTypeTree { get; }
 
         /// <summary>
-        /// Gets whether this property should not be null: either it is a union with at least one <see cref="NullabilityTypeKind.IsNullable"/>
+        /// Gets whether this property may eventually be null: either it is a union with at least one <see cref="NullabilityTypeKind.IsNullable"/>
         /// flag, or it is not an union and the <see cref="PropertyNullabilityInfo"/> itself has the flag set.
         /// </summary>
         bool IsEventuallyNullable { get; }

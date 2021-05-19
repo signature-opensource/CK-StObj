@@ -8,9 +8,15 @@ namespace CK.Core
 {
     /// <summary>
     /// Decorates an interface, a class or an enum with its name and optional previous names.
-    /// Without this attribute, the type name is the <see cref="Type.FullName"/>.
-    /// For Poco interfaces, the primary interface that defines the Poco sets the Poco's name: it must
+    /// <para>
+    /// Without this attribute, the type name is the <see cref="Type.FullName"/>, an external name must "look like" a
+    /// .Net full type name (optional namespace and type name). Open generics should expose their generic parameter
+    /// type names (like &lt;T&gt; or &lt;TKey,TValue&gt;) rather than just the 'count.
+    /// </para>
+    /// <para>
+    /// For Poco interfaces, the primary interface that defines the Poco settles the Poco's type name: it must
     /// be set on the primary interface.
+    /// </para>
     /// </summary>
     [AttributeUsage( AttributeTargets.Interface|AttributeTargets.Class|AttributeTargets.Enum, AllowMultiple = false, Inherited = false )]
     public class ExternalNameAttribute : Attribute
@@ -37,11 +43,11 @@ namespace CK.Core
             if( String.IsNullOrWhiteSpace( name ) )
             {
                 if( name == null ) throw new ArgumentNullException( nameof( name ) );
-                throw new ArgumentException( $"Poco name must not be empty or whitespace.", nameof( name ) );
+                throw new ArgumentException( $"External name must not be empty or whitespace.", nameof( name ) );
             }
             if( name.StartsWith( '!' ) )
             {
-                throw new ArgumentException( $"Poco name must not start with a '!': '{name}'.", nameof( name ) );
+                throw new ArgumentException( $"External name must not start with a '!': '{name}'.", nameof( name ) );
             }
         }
 

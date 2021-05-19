@@ -228,7 +228,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the container type to which this service is associated.
         /// This can be null (service is considered to reside in the final package) or
-        /// if an error occured.
+        /// if an error occurred.
         /// For Service Chaining Resolution to be available (either to depend on or be used by others),
         /// services must be associated to one container.
         /// </summary>

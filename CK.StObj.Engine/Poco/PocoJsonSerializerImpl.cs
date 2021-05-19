@@ -123,7 +123,7 @@ namespace CK.Setup
 
                 var pocoClass = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
 
-                // Generates the Poco class Read and Write methhods.
+                // Generates the Poco class Read and Write methods.
                 // UnionTypes on properties are registered.
                 ExtendPocoClass( root, pocoClass );
             }

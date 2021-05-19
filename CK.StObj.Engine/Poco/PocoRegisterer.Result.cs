@@ -81,6 +81,8 @@ namespace CK.Setup
 
         class ClassInfo : IPocoRootInfo
         {
+            AnnotationSetImpl _annotations;
+
             public Type PocoClass { get; }
             public Type PocoFactoryClass { get; }
             public string Name { get; set; }
@@ -227,6 +229,20 @@ namespace CK.Setup
                 PreviousNames = previousNames;
                 return true;
             }
+
+            public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
+
+            public object? Annotation( Type type ) => _annotations.Annotation( type );
+
+            public T? Annotation<T>() where T : class => _annotations.Annotation<T>();
+
+            public IEnumerable<object> Annotations( Type type ) => _annotations.Annotations( type );
+
+            public IEnumerable<T> Annotations<T>() where T : class => _annotations.Annotations<T>();
+
+            public void RemoveAnnotations( Type type ) => _annotations.RemoveAnnotations( type );
+
+            public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
         }
 
         class InterfaceInfo : IPocoInterfaceInfo
@@ -234,6 +250,8 @@ namespace CK.Setup
             public readonly ClassInfo Root;
             public Type PocoInterface { get; }
             public Type PocoFactoryInterface { get; }
+
+            AnnotationSetImpl _annotations;
 
             IPocoRootInfo IPocoInterfaceInfo.Root => Root;
 
@@ -243,18 +261,38 @@ namespace CK.Setup
                 PocoInterface = pocoInterface;
                 PocoFactoryInterface = pocoFactoryInterface;
             }
+
+            public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
+
+            public object? Annotation( Type type ) => _annotations.Annotation( type );
+
+            public T? Annotation<T>() where T : class => _annotations.Annotation<T>();
+
+            public IEnumerable<object> Annotations( Type type ) => _annotations.Annotations( type );
+
+            public IEnumerable<T> Annotations<T>() where T : class => _annotations.Annotations<T>();
+
+            public void RemoveAnnotations( Type type ) => _annotations.RemoveAnnotations( type );
+
+            public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
+
         }
 
         class PocoPropertyInfo : IPocoPropertyInfo
         {
             Dictionary<Type,NullabilityTypeKind>? _unionTypes;
             NullableTypeTree _nullableTypeTree;
+            AnnotationSetImpl _annotations;
 
             public bool AutoInstantiated { get; set; }
 
             public bool HasDeclaredSetter { get; set; }
 
             public bool Setter { get; set; }
+
+            public bool HasDefaultValue { get; set; }
+
+            public object? DefaultValue { get; set; }
 
             public string? DefaultValueSource { get; set; }
 
@@ -300,6 +338,19 @@ namespace CK.Setup
 
             public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
 
+            public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
+
+            public object? Annotation( Type type ) => _annotations.Annotation( type );
+
+            public T? Annotation<T>() where T : class => _annotations.Annotation<T>();
+
+            public IEnumerable<object> Annotations( Type type ) => _annotations.Annotations( type );
+
+            public IEnumerable<T> Annotations<T>() where T : class => _annotations.Annotations<T>();
+
+            public void RemoveAnnotations( Type type ) => _annotations.RemoveAnnotations( type );
+
+            public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
         }
     }
 }

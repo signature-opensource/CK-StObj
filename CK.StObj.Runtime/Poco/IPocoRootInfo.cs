@@ -9,7 +9,7 @@ namespace CK.Setup
     /// Defines information for a unified Poco type: this is associated to the
     /// final <see cref="IPocoFactory"/> interface.
     /// </summary>
-    public interface IPocoRootInfo
+    public interface IPocoRootInfo : IAnnotationSet
     {
         /// <summary>
         /// Gets the final, unified, type that implements all <see cref="Interfaces"/>.

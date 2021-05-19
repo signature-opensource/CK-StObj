@@ -340,7 +340,7 @@ namespace CK.Setup
                             propertyList.Add( implP );
                             implP.PropertyNullabilityInfo = p.GetNullabilityInfo();
                         }
-                        // As soon as one interface doesn't declare a setter and the type is an instantiable one,
+                        // As soon as one interface doesn't declare a setter and the type can be instantiated,
                         // we flag this property's AutoInstantiated property.
                         if( p.CanWrite )
                         {
@@ -446,6 +446,8 @@ namespace CK.Setup
             var first = aDefs.FirstOrDefault();
             if( first.Prop != null )
             {
+                p.HasDefaultValue = true;
+                p.DefaultValue = first.Value;
                 var w = new StringCodeWriter();
                 string defaultSource = p.DefaultValueSource = w.Append( first.Value ).ToString();
                 foreach( var other in aDefs.Skip( 1 ) )
