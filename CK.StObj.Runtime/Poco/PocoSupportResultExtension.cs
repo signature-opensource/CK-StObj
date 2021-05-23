@@ -57,7 +57,7 @@ namespace CK.Setup
                     return;
                 }
             }
-            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco (that are not marked with [CKTypeDefiner] or[CKTypeSuperDefiner]), ISet<>;, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
+            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), ISet<>;, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
         }
     }
 }

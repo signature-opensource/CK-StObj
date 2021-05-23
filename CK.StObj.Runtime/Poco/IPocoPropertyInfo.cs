@@ -19,8 +19,9 @@ namespace CK.Setup
         bool AutoInstantiated { get; }
 
         /// <summary>
-        /// Gets whether this property is always readonly. If at least one of the <see cref="DeclaredProperties"/>
-        /// defines a setter then a setter will eventually be generated even if <see cref="AutoInstantiated"/> is true.
+        /// Gets whether this property has no setter across all the interfaces where it appears.
+        /// If at least one of the <see cref="DeclaredProperties"/> defines a setter then a setter will eventually be generated
+        /// even if <see cref="AutoInstantiated"/> is true.
         /// </summary>
         bool HasDeclaredSetter { get; }
 
