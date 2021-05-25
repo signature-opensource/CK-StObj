@@ -78,7 +78,7 @@ namespace CK.Setup
         /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
         /// assignable to any of the variants.
         /// </summary>
-        IEnumerable<(Type Type, NullabilityTypeKind Kind)> PropertyUnionTypes { get; }
+        IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }
 
         /// <summary>
         /// Gets the property name.

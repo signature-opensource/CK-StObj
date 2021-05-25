@@ -12,6 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 #nullable enable
 
@@ -309,6 +310,11 @@ namespace CK.Setup
             foreach( var i in expanded )
             {
                 tB.AddInterfaceImplementation( i );
+
+                // Analyzing interface properties.
+                // For union types, the UnionTypes nested struct fields are cached once.
+                PropertyInfo[]? unionTypesDef = null; 
+
                 foreach( var p in i.GetProperties() )
                 {
                     PocoPropertyInfo? implP = null;
@@ -370,22 +376,76 @@ namespace CK.Setup
                                 }
                             }
                         }
-                        var unionTypes = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
-                        if( unionTypes != null )
+                        // UnionType handling.
+                        var uAttr = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
+                        if( uAttr != null )
                         {
-                            if( unionTypes.Types.Count == 0 )
+                            bool isPropertyNullable = implP.PropertyNullabilityInfo.Kind.IsNullable();
+                            List<string>? typeDeviants = null;
+                            List<string>? nullDeviants = null;
+
+                            if( unionTypesDef == null )
                             {
-                                monitor.Warn( $"[UnionType] attributes on '{i.FullName}.{p.Name}' is empty. It is ignored." );
-                            }
-                            else
-                            {
-                                var deviants = unionTypes.Types.Where( u => !p.PropertyType.IsAssignableFrom( u ) );
-                                if( deviants.Any() )
+                                Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
+                                if( u == null )
                                 {
-                                    monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union types '{deviants.Select( d => d.Name ).Concatenate("' ,'")}' are incompatible with to the property type '{p.PropertyType.Name}'." );
+                                    monitor.Error( $"[UnionType] attribute on '{i.FullName}.{p.Name}' requires a nested 'struct UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
                                     return null;
                                 }
-                                implP.AddUnionPropertyTypes( unionTypes.Types );
+                                unionTypesDef = u.GetProperties();
+                            }
+                            var f = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
+                            if( f == null )
+                            {
+                                monitor.Error( $"The nested struct UnionTypes requires a public value tuple '{p.Name}' property." );
+                                return null;
+                            }
+                            if( !typeof( ITuple ).IsAssignableFrom( f.PropertyType ) )
+                            {
+                                monitor.Error( $"The '{p.Name}' property of the nested struct UnionTypes must be a value tuple (current type is {f.PropertyType.Name})." );
+                                return null;
+                            }
+                            var nullableTypeTrees = f.GetNullableTypeTree();
+                            bool atLeastOneVariantIsNullable = false;
+                            foreach( var sub in nullableTypeTrees.SubTypes )
+                            {
+                                if( !p.PropertyType.IsAssignableFrom( sub.Type ) )
+                                {
+                                    if( typeDeviants == null ) typeDeviants = new List<string>();
+                                    typeDeviants.Add( sub.ToString() );
+                                }
+                                // If the property is nullable, the variants can be nullable or not.
+                                // If the property is not nullable then the variants MUST NOT be nullable.
+                                if( sub.Kind.IsNullable() )
+                                {
+                                    if( !isPropertyNullable )
+                                    {
+                                        if( nullDeviants == null ) nullDeviants = new List<string>();
+                                        nullDeviants.Add( sub.ToString() );
+                                    }
+                                    atLeastOneVariantIsNullable = true;
+                                }
+                            }
+                            if( typeDeviants != null )
+                            {
+                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
+                            }
+                            if( nullDeviants != null )
+                            {
+                                Debug.Assert( !isPropertyNullable );
+                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union type{(nullDeviants.Count > 1 ? "s" : "")} '{nullDeviants.Concatenate( "' ,'" )}' must NOT be nullable since '{p.PropertyType.Name} {p.Name} {{ get; }}' is not nullable." );
+                                return null;
+                            }
+                            if( isPropertyNullable && !atLeastOneVariantIsNullable )
+                            {
+                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. None of the union types are nullable but '{p.PropertyType.Name}? {p.Name} {{ get; }}' is nullable." );
+                                return null;
+                            }
+                            if( typeDeviants != null ) return null;
+                            if( !implP.AddUnionPropertyTypes( monitor, nullableTypeTrees.SubTypes, uAttr.CanBeExtended ) )
+                            {
+                                monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned types must be the same." );
+                                return null;
                             }
                         }
                     }

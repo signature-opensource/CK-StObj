@@ -18,7 +18,7 @@ namespace CK.Setup
     {
         class Result : IPocoSupportResult
         {
-            readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedInterfaces;
+            readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedAllInterfaces;
             public readonly List<ClassInfo> Roots;
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
@@ -28,7 +28,7 @@ namespace CK.Setup
             {
                 Roots = new List<ClassInfo>();
                 AllInterfaces = new Dictionary<Type, InterfaceInfo>();
-                _exportedInterfaces = AllInterfaces.AsCovariantReadOnly<Type, InterfaceInfo, IPocoInterfaceInfo>();
+                _exportedAllInterfaces = AllInterfaces.AsCovariantReadOnly<Type, InterfaceInfo, IPocoInterfaceInfo>();
                 OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
                 NamedRoots = new Dictionary<string, IPocoRootInfo>();
             }
@@ -39,7 +39,7 @@ namespace CK.Setup
 
             IPocoInterfaceInfo? IPocoSupportResult.Find( Type pocoInterface ) => AllInterfaces.GetValueOrDefault( pocoInterface );
 
-            IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedInterfaces;
+            IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedAllInterfaces;
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
 
@@ -77,6 +77,55 @@ namespace CK.Setup
                 }
                 return success;
             }
+
+            public bool IsAssignableFrom( IPocoPropertyInfo target, IPocoPropertyInfo from )
+            {
+                if( from == null ) throw new ArgumentNullException( nameof( from ) );
+                if( target == null ) throw new ArgumentNullException( nameof( target ) );
+                if( target == from ) return true;
+                if( from.PropertyUnionTypes.Any() )
+                {
+                    foreach( var f in from.PropertyUnionTypes )
+                    {
+                        if( !IsAssignableFrom( target, f.Type, f.Kind ) ) return false;
+
+                    }
+                    return true;
+                }
+                return IsAssignableFrom( target, from.PropertyType, from.PropertyNullabilityInfo.Kind );
+            }
+
+            public bool IsAssignableFrom( IPocoPropertyInfo target, Type from, NullabilityTypeKind fromNullability )
+            {
+                if( from == null ) throw new ArgumentNullException( nameof( from ) );
+                if( target == null ) throw new ArgumentNullException( nameof( target ) );
+                if( target.PropertyUnionTypes.Any() )
+                {
+                    foreach( var t in target.PropertyUnionTypes )
+                    {
+                        if( IsAssignableFrom( t.Type, t.Kind, from, fromNullability ) ) return true;
+                    }
+                    return false;
+                }
+                return IsAssignableFrom( target.PropertyType, target.PropertyNullabilityInfo.Kind, from, fromNullability );
+            }
+
+            public bool IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability )
+            {
+                if( from == null ) throw new ArgumentNullException( nameof( from ) );
+                if( target == null ) throw new ArgumentNullException( nameof( target ) );
+                // A non nullable cannot be assigned from a nullable.
+                if( !targetNullability.IsNullable() && fromNullability.IsNullable() )
+                {
+                    return false;
+                }
+                return target == from
+                        || target.IsAssignableFrom( from )
+                        || (AllInterfaces.TryGetValue( target, out var tP )
+                            && AllInterfaces.TryGetValue( from, out var fP )
+                            && tP.Root == fP.Root);
+            }
+
         }
 
         class ClassInfo : IPocoRootInfo
@@ -161,7 +210,7 @@ namespace CK.Setup
                         var otherN = other.GetNullabilityInfo();
                         if( !otherN.Equals( p.PropertyNullabilityInfo ) )
                         {
-                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type {p.PropertyType.ToCSharpName()} but their type's Nullabilty differ." );
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type {p.PropertyType.ToCSharpName()} but their type's Nullability differ." );
                             return false;
                         }
                     }
@@ -280,9 +329,10 @@ namespace CK.Setup
 
         class PocoPropertyInfo : IPocoPropertyInfo
         {
-            Dictionary<Type,NullabilityTypeKind>? _unionTypes;
             NullableTypeTree _nullableTypeTree;
             AnnotationSetImpl _annotations;
+            IReadOnlyList<NullableTypeTree>? _unionTypes;
+            bool _unionTypesCanBeExtended;
 
             public bool AutoInstantiated { get; set; }
 
@@ -306,9 +356,9 @@ namespace CK.Setup
 
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
-            public IEnumerable<(Type Type,NullabilityTypeKind Kind)> PropertyUnionTypes => _unionTypes != null
-                                                                                    ? _unionTypes.Select( kv => (kv.Key,kv.Value) )
-                                                                                    : Enumerable.Empty<(Type,NullabilityTypeKind)>();
+            public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes != null
+                                                                            ? _unionTypes
+                                                                            : Enumerable.Empty<NullableTypeTree>();
             public bool IsEventuallyNullable => PropertyUnionTypes.Any()
                                                     ? PropertyUnionTypes.Any( x => x.Kind.IsNullable() )
                                                     : PropertyNullabilityInfo.Kind.IsNullable();
@@ -325,18 +375,56 @@ namespace CK.Setup
                 Index = index;
             }
 
-            public void AddUnionPropertyTypes( IReadOnlyList<Type> types )
+            public bool AddUnionPropertyTypes( IActivityMonitor monitor, IReadOnlyList<NullableTypeTree> types, bool typesCanBeExtended )
             {
                 Debug.Assert( types.Count > 0 );
-                if( _unionTypes == null ) _unionTypes = new Dictionary<Type, NullabilityTypeKind>();
-                // Different Poco can (re)define variants.
+                if( _unionTypes == null )
+                {
+                    _unionTypes = types;
+                    _unionTypesCanBeExtended = typesCanBeExtended;
+                    return true;
+                }
+                bool success = true;
+                List<NullableTypeTree>? extended = null;
                 foreach( var t in types )
                 {
-                    _unionTypes[t] = t.GetNullabilityKind();
+                    if( !_unionTypes.Contains( t ) )
+                    {
+                        if( !_unionTypesCanBeExtended )
+                        {
+                            monitor.Error( $"Existing union type cannot be extended. Type '{t}' is a new one (existing types are: '{_unionTypes.Select( t => t.ToString() ).Concatenate( "', '" )}')." );
+                            success = false;
+                        }
+                        else
+                        {
+                            if( extended == null ) extended = _unionTypes as List<NullableTypeTree> ?? new List<NullableTypeTree>( _unionTypes );
+                            extended.Add( t );
+                        }
+                    }
                 }
+                if( success )
+                {
+                    if( !typesCanBeExtended )
+                    {
+                        _unionTypesCanBeExtended = false;
+                        foreach( var t in _unionTypes )
+                        {
+                            if( !types.Contains( t ) )
+                            {
+                                monitor.Error( $"Current union type definition cannot be extended. Existing union type defines type '{t}' that is not defined by these union types '{types.Select( t => t.ToString() ).Concatenate( "', '" )}')." );
+                                success = false;
+                            }
+                        }
+                    }
+                    if( success && extended != null )
+                    {
+                        _unionTypes = extended;
+                    }
+                }
+                return success;
             }
 
-            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate("', '")}'.";
+            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.FullName ).Concatenate( "', '" )}'.";
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

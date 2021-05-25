@@ -53,10 +53,12 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
+        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes().Where( t => t != typeof( ICannotBe ) );
+
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes() );
+            var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.ToArray() );
             var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
             Debug.Assert( poco != null );
 
@@ -74,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             // With IFinal1 only: ICommandAuthDeviceId is not here.
             {
-                var c = TestHelper.CreateStObjCollector( typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes().Where( t => t != typeof( IFinal2 ) ).ToArray() );
+                var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => t != typeof( IFinal2 ) ).ToArray() );
                 var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
                 Debug.Assert( poco != null );
 
@@ -87,7 +89,7 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             // Without IPoco at all: no definers are referenced.
             {
-                var c = TestHelper.CreateStObjCollector( typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes().Where( t => !t.Name.StartsWith("IFinal") ).ToArray() );
+                var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => !t.Name.StartsWith("IFinal") ).ToArray() );
                 var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
                 Debug.Assert( poco != null );
 

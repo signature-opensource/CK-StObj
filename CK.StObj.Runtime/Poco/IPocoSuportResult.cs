@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
@@ -49,6 +50,39 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces { get; }
+
+        /// <summary>
+        /// Handles the <paramref name="from"/>'s <see cref="IPocoPropertyInfo.PropertyUnionTypes"/> (if any): each
+        /// of them must be assignable (and nullability compatible) to the <paramref name="target"/> Poco property.
+        /// </summary>
+        /// <param name="target">The target Poco property.</param>
+        /// <param name="from">The source Poco property.</param>
+        /// <returns>True if target is assignable from source.</returns>
+        bool IsAssignableFrom( IPocoPropertyInfo target, IPocoPropertyInfo from );
+
+        /// <summary>
+        /// Handles the target's <see cref="IPocoPropertyInfo.PropertyUnionTypes"/> (if any): at least
+        /// one of them must be assignable (and nullability compatible) with the <paramref name="from"/>
+        /// for the Poco property to be assignable.
+        /// </summary>
+        /// <param name="target">The target Poco property.</param>
+        /// <param name="from">The source type.</param>
+        /// <param name="fromNullability">The source nullability.</param>
+        /// <returns>True if target is assignable from source.</returns>
+        bool IsAssignableFrom( IPocoPropertyInfo target, Type from, NullabilityTypeKind fromNullability );
+
+        /// <summary>
+        /// Extends the standard <see cref="Type.IsAssignableFrom(Type?)"/> by checking if
+        /// both <paramref name="target"/> and <paramref name="from"/> belong to the same
+        /// Poco's <see cref="IPocoRootInfo.Interfaces"/> (and that a non nullable target cannot
+        /// be assigned from a nullable source).
+        /// </summary>
+        /// <param name="target">The target type</param>
+        /// <param name="targetNullability">The target nullability: A non nullable cannot be assigned from a nullable.</param>
+        /// <param name="from">The source type.</param>
+        /// <param name="fromNullability">The source nullability.</param>
+        /// <returns>True if target is assignable from source.</returns>
+        bool IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability );
 
     }
 }

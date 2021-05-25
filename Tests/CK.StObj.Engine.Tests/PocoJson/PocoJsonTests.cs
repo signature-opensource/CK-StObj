@@ -457,8 +457,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [ExternalName( "WithUnionType" )]
         public interface IWithUnionType : IPoco
         {
-            [UnionType( typeof(IList<int>), typeof(int), typeof(IDictionary<int, string?>) )]
-            object V { get; set; }
+            [UnionType]
+            object? V { get; set; }
+
+            struct UnionTypes
+            {
+                public (IList<int>, int?, IDictionary<int, string?>) V { get; }
+            }
         }
 
         [Test]
@@ -479,11 +484,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
             a.V = new List<int>() { 45, 87, 87, 254, 87 };
             Roundtrip( services, a );
 
-            // UnionType restricts the type but allows null.
+            // Null is allowed here (because of the nullable int).
             a.V = null!;
             Roundtrip( services, a );
 
-            a.Invoking( x => x.V = "lj" ).Should().Throw<ArgumentException>();
+            a.Invoking( x => x.V = "lj" ).Should().Throw<ArgumentException>( "String is not allowed." );
         }
 
 

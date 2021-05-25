@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
 
@@ -198,7 +199,8 @@ namespace CK.Setup
             foreach( var a in e.Elements( xAspect ) )
             {
                 string type = (string)a.AttributeRequired( xType );
-                Type tAspect = SimpleTypeFinder.WeakResolver( type, true );
+                Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
+                Debug.Assert( tAspect != null );
                 IStObjEngineAspectConfiguration aspect = (IStObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a );
                 Aspects.Add( aspect );
             }

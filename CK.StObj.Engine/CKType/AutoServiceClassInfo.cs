@@ -561,6 +561,7 @@ namespace CK.Setup
                                     if( allMarshallableTypes == null ) allMarshallableTypes = new HashSet<Type>();
                                     if( pC != null )
                                     {
+                                        Debug.Assert( pC.MarshallableTypes != null, "EnsureCtorBinding has been called." );
                                         allMarshallableTypes.AddRange( pC.MarshallableTypes );
                                     }
                                     else
@@ -572,6 +573,7 @@ namespace CK.Setup
                                         if( frontMarshallableTypes == null ) frontMarshallableTypes = new HashSet<Type>();
                                         if( pC != null )
                                         {
+                                            Debug.Assert( pC.MarshallableInProcessTypes != null, "EnsureCtorBinding has been called." );
                                             frontMarshallableTypes.AddRange( pC.MarshallableInProcessTypes );
                                         }
                                         else

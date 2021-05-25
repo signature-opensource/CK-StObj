@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -27,5 +28,11 @@ namespace CK.Setup
         IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => ImmutableDictionary<Type, IReadOnlyList<IPocoRootInfo>>.Empty;
 
         IPocoInterfaceInfo? IPocoSupportResult.Find( Type pocoInterface ) => null;
+
+        bool IPocoSupportResult.IsAssignableFrom( IPocoPropertyInfo target, IPocoPropertyInfo from ) => false;
+
+        bool IPocoSupportResult.IsAssignableFrom( IPocoPropertyInfo target, Type from, NullabilityTypeKind fromNullability ) => false;
+
+        bool IPocoSupportResult.IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability ) => false;
     }
 }

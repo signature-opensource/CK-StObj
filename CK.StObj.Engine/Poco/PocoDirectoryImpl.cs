@@ -139,7 +139,7 @@ namespace CK.Setup
                                 .Append( "if( !_c" ).Append( fieldName )
                                 .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
                                 .OpenBlock()
-                                .Append( "throw new ArgumentException( \"Unexpected Type '{tV}' in UnionType\");" )
+                                .Append( "throw new ArgumentException( $\"Unexpected Type '{tV}' in UnionType\");" )
                                 .CloseBlock();
                         }
                         if( isTechnicallyNullable )
