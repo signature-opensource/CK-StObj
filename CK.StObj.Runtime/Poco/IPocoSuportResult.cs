@@ -63,7 +63,7 @@ namespace CK.Setup
         /// <summary>
         /// Handles the target's <see cref="IPocoPropertyInfo.PropertyUnionTypes"/> (if any): at least
         /// one of them must be assignable (and nullability compatible) with the <paramref name="from"/>
-        /// for the Poco property to be assignable.
+        /// type for the Poco property to be assignable.
         /// </summary>
         /// <param name="target">The target Poco property.</param>
         /// <param name="from">The source type.</param>
