@@ -189,13 +189,10 @@ namespace CK.Setup
 
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
 
-                var handler = TryFindOrCreateHandler( p.PropertyType, p.IsEventuallyNullable );
+                var handler = TryFindOrCreateHandler( p.PropertyType, p.IsNullable );
                 if( handler == null ) continue;
-                // If its an AutoInstantiated property with no setter, it cannot be null.
-                if( handler.IsNullable && p.AutoInstantiated && !p.HasDeclaredSetter )
-                {
-                    handler = handler.Info.NonNullHandler;
-                }
+
+                Debug.Assert( handler.IsNullable == p.IsNullable );
                 handler.GenerateWrite( write, "_v" + p.Index );
 
                 read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( " : " )

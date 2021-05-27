@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -148,7 +149,7 @@ namespace CK.Core
             }
         }
 
-        static List<StObjMapInfo> LockedGetAvailableMapInfos( ref IActivityMonitor? monitor )
+        static List<StObjMapInfo> LockedGetAvailableMapInfos( [NotNullIfNotNull("monitor")] ref IActivityMonitor? monitor )
         {
             var all = AppDomain.CurrentDomain.GetAssemblies();
             if( all.Length != _allAssemblyCount )
@@ -183,7 +184,7 @@ namespace CK.Core
             }
         }
 
-        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, ref IActivityMonitor? monitor )
+        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
         {
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             monitor = LockedEnsureMonitor( monitor );
@@ -297,6 +298,7 @@ namespace CK.Core
                     }
                     catch( Exception ex )
                     {
+                        Debug.Assert( monitor != null, "Not detected by nullable analysis..." );
                         monitor.Error( ex );
                         return null;
                     }

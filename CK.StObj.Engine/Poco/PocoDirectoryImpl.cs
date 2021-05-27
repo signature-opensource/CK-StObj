@@ -94,9 +94,7 @@ namespace CK.Setup
                 foreach( var p in root.PropertyList )
                 {
                     Type propType = p.PropertyType;
-                    // We always implement a setter except if we are auto instantiating the value and NONE of the properties are writable.
                     bool isUnionType = p.PropertyUnionTypes.Any();
-                    bool generateSetter = !p.AutoInstantiated || p.HasDeclaredSetter || isUnionType;
 
                     var typeName = propType.ToCSharpName();
                     string fieldName = "_v" + p.Index;
@@ -109,9 +107,9 @@ namespace CK.Setup
                     tB.NewLine();
 
                     tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
-                    Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
+                    Debug.Assert( !p.IsReadOnly || p.DefaultValueSource == null, "Readonly with [DefaultValue] has already raised an error." );
                    
-                    if( p.AutoInstantiated )
+                    if( p.IsReadOnly )
                     {
                         // Generates in constructor.
                         r.GenerateAutoInstantiatedNewAssignation( ctorB, fieldName, p.PropertyType );
@@ -120,13 +118,13 @@ namespace CK.Setup
                     tB.OpenBlock()
                       .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine();
 
-                    if( generateSetter )
+                    if( !p.IsReadOnly )
                     {
                         tB.Append( "set" )
                           .OpenBlock();
 
                         bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
-                        bool isEventuallyNullable = p.IsEventuallyNullable;
+                        bool isNullable = p.PropertyNullabilityInfo.Kind.IsNullable();
 
                         if( isTechnicallyNullable )
                         {
@@ -145,7 +143,7 @@ namespace CK.Setup
                         if( isTechnicallyNullable )
                         {
                             tB.CloseBlock();
-                            if( !isEventuallyNullable )
+                            if( !isNullable )
                             {
                                 tB.Append( "else throw new ArgumentNullException();" ).NewLine();
                             }

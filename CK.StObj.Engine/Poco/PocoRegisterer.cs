@@ -183,7 +183,7 @@ namespace CK.Setup
                 hasNameError |= !cInfo.InitializeNames( monitor );
             }
             return hasNameError
-                   || r.CheckPropertiesVarianceAndInstantiationCycle( monitor )
+                   || r.CheckPropertiesVarianceAndInstantiationCycleError( monitor )
                    || !r.BuildNameIndex( monitor )
                    ? null
                    : r;
@@ -307,6 +307,7 @@ namespace CK.Setup
             // For each expanded interfaces (all of them: the Interfaces and the OtherInterfaces):
             // - Implements the interface on the PocoClass (tB).
             // - Registers the properties and creates the PocoPropertyInfo.
+            bool hasPropertyError = false;
             foreach( var i in expanded )
             {
                 tB.AddInterfaceImplementation( i );
@@ -317,13 +318,12 @@ namespace CK.Setup
 
                 foreach( var p in i.GetProperties() )
                 {
-                    PocoPropertyInfo? implP = null;
                     // As soon as a property claims to be implemented, we remove it from the properties.
                     if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
                     {
                         if( externallyImplementedPropertyList == null ) externallyImplementedPropertyList = new List<PropertyInfo>();
                         externallyImplementedPropertyList.Add( p );
-                        if( properties.TryGetValue( p.Name, out implP ) )
+                        if( properties.TryGetValue( p.Name, out var implP ) )
                         {
                             propertyList.RemoveAt( implP.Index );
                             for( int idx = implP.Index; idx < propertyList.Count; ++idx )
@@ -334,123 +334,11 @@ namespace CK.Setup
                     }
                     else
                     {
-                        if( properties.TryGetValue( p.Name, out implP ) )
-                        {
-                            implP.DeclaredProperties.Add( p );
-                            implP.HasDeclaredSetter |= p.CanWrite;
-                        }
-                        else
-                        {
-                            implP = new PocoPropertyInfo( p, propertyList.Count );
-                            properties.Add( p.Name, implP );
-                            propertyList.Add( implP );
-                            implP.PropertyNullabilityInfo = p.GetNullabilityInfo();
-                        }
-                        // As soon as one interface doesn't declare a setter and the type can be instantiated,
-                        // we flag this property's AutoInstantiated property.
-                        if( p.CanWrite )
-                        {
-                            implP.HasDeclaredSetter = true;
-                        }
-                        else
-                        {
-                            if( expanded.Contains( p.PropertyType ) )
-                            {
-                                monitor.Error( $"Poco Cyclic dependency error: automatically instantiated property '{i.FullName}.{p.Name}' references its own Poco type." );
-                                return null;
-                            }
-                            if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) )
-                            {
-                                // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
-                                // instantiation cycles is deferred when the global result is built.
-                                implP.AutoInstantiated = true;
-                            }
-                            else if( p.PropertyType.IsGenericType )
-                            {
-                                Type genType = p.PropertyType.GetGenericTypeDefinition();
-                                if( genType == typeof( IList<> ) || genType == typeof( List<> )
-                                        || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
-                                        || genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
-                                {
-                                    implP.AutoInstantiated = true;
-                                }
-                            }
-                        }
-                        // UnionType handling.
-                        var uAttr = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
-                        if( uAttr != null )
-                        {
-                            bool isPropertyNullable = implP.PropertyNullabilityInfo.Kind.IsNullable();
-                            List<string>? typeDeviants = null;
-                            List<string>? nullDeviants = null;
-
-                            if( unionTypesDef == null )
-                            {
-                                Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
-                                if( u == null )
-                                {
-                                    monitor.Error( $"[UnionType] attribute on '{i.FullName}.{p.Name}' requires a nested 'struct UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
-                                    return null;
-                                }
-                                unionTypesDef = u.GetProperties();
-                            }
-                            var f = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
-                            if( f == null )
-                            {
-                                monitor.Error( $"The nested struct UnionTypes requires a public value tuple '{p.Name}' property." );
-                                return null;
-                            }
-                            if( !typeof( ITuple ).IsAssignableFrom( f.PropertyType ) )
-                            {
-                                monitor.Error( $"The '{p.Name}' property of the nested struct UnionTypes must be a value tuple (current type is {f.PropertyType.Name})." );
-                                return null;
-                            }
-                            var nullableTypeTrees = f.GetNullableTypeTree();
-                            bool atLeastOneVariantIsNullable = false;
-                            foreach( var sub in nullableTypeTrees.SubTypes )
-                            {
-                                if( !p.PropertyType.IsAssignableFrom( sub.Type ) )
-                                {
-                                    if( typeDeviants == null ) typeDeviants = new List<string>();
-                                    typeDeviants.Add( sub.ToString() );
-                                }
-                                // If the property is nullable, the variants can be nullable or not.
-                                // If the property is not nullable then the variants MUST NOT be nullable.
-                                if( sub.Kind.IsNullable() )
-                                {
-                                    if( !isPropertyNullable )
-                                    {
-                                        if( nullDeviants == null ) nullDeviants = new List<string>();
-                                        nullDeviants.Add( sub.ToString() );
-                                    }
-                                    atLeastOneVariantIsNullable = true;
-                                }
-                            }
-                            if( typeDeviants != null )
-                            {
-                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
-                            }
-                            if( nullDeviants != null )
-                            {
-                                Debug.Assert( !isPropertyNullable );
-                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union type{(nullDeviants.Count > 1 ? "s" : "")} '{nullDeviants.Concatenate( "' ,'" )}' must NOT be nullable since '{p.PropertyType.Name} {p.Name} {{ get; }}' is not nullable." );
-                                return null;
-                            }
-                            if( isPropertyNullable && !atLeastOneVariantIsNullable )
-                            {
-                                monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. None of the union types are nullable but '{p.PropertyType.Name}? {p.Name} {{ get; }}' is nullable." );
-                                return null;
-                            }
-                            if( typeDeviants != null ) return null;
-                            if( !implP.AddUnionPropertyTypes( monitor, nullableTypeTrees.SubTypes, uAttr.CanBeExtended ) )
-                            {
-                                monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned types must be the same." );
-                                return null;
-                            }
-                        }
+                        hasPropertyError &= HandlePocoProperty( monitor, expanded, properties, propertyList, ref unionTypesDef, i, p );
                     }
                 }
             }
+            if( hasPropertyError ) return null;
 
             // Implements the stubs for each externally implemented property.
             if( externallyImplementedPropertyList != null )
@@ -467,23 +355,14 @@ namespace CK.Setup
             {
                 if( !InitializeDefaultValue( p, monitor ) ) return null;
 
-                if( p.AutoInstantiated )
+                if( p.IsReadOnly && p.DefaultValueSource != null )
                 {
-                    if( p.DefaultValueSource != null )
-                    {
-                        monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attriblute: [DefaultValue( {p.DefaultValueSource} )]." );
-                        return null;
-                    }
-                }
-                else if( !p.HasDeclaredSetter )
-                {
-                    Debug.Assert( p.DeclaredProperties.All( x => !x.CanWrite ) );
-                    var pNoWrite = p.DeclaredProperties.First();
-                    monitor.Warn( $"Property '{pNoWrite.DeclaringType!.FullName}.{p.PropertyName}' has no setter. Since its type ({p.PropertyType.Name}) is not a IPoco or a ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,> a setter will be implemented and the value will have its default value." );
+                    monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attribute: [DefaultValue( {p.DefaultValueSource} )]." );
+                    return null;
                 }
                 foreach( var propInfo in p.DeclaredProperties )
                 {
-                    EmitHelper.ImplementStubProperty( tB, propInfo, isVirtual: false, alwaysImplementSetter: !p.AutoInstantiated );
+                    EmitHelper.ImplementStubProperty( tB, propInfo, isVirtual: false );
                 }
             }
 
@@ -494,6 +373,157 @@ namespace CK.Setup
             Debug.Assert( tPocoFactory != null );
 
             return new ClassInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList, externallyImplementedPropertyList );
+        }
+
+        static bool HandlePocoProperty( IActivityMonitor monitor,
+                                        HashSet<Type> expanded,
+                                        Dictionary<string, PocoPropertyInfo> properties,
+                                        List<PocoPropertyInfo> propertyList,
+                                        ref PropertyInfo[]? unionTypesDef,
+                                        Type interfaceType,
+                                        PropertyInfo p )
+        {
+            // We cannot check the equality of property type here because we need to consider IPoco families: we
+            // have to wait that all of them have been registered.
+            // ClassInfo.CheckPropertiesVariance checks the type and the nullability.
+            var isReadOnly = !p.CanWrite;
+            if( properties.TryGetValue( p.Name, out var implP ) )
+            {
+                implP.DeclaredProperties.Add( p );
+                if( implP.IsReadOnly != isReadOnly )
+                {
+                    Type iW = implP.DeclaredProperties[0].DeclaringType!;
+                    Type iR = interfaceType;
+                    if( isReadOnly ) (iR, iW) = (iW, iR);
+                    monitor.Error( $"Interface '{iR}' and '{iW}' both declare property '{p.Name}' but the first is readonly and the latter is read/write. The same property must be readonly or read/write for all the interfaces that define it." );
+                    return false;
+                }
+            }
+            else
+            {
+                implP = new PocoPropertyInfo( p, propertyList.Count );
+                properties.Add( p.Name, implP );
+                propertyList.Add( implP );
+                if( !p.CanRead )
+                {
+                    monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' cannot be read." );
+                    return false;
+                }
+                var nullability = p.GetNullabilityInfo();
+                if( nullability.Kind.IsNullable() && isReadOnly )
+                {
+                    monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' type is nullable and readonly (it has no setter). This is forbidden since value will always be null." );
+                    return false;
+                }
+                if( isReadOnly )
+                {
+                    bool isAllowedType = false;
+                    if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) )
+                    {
+                        if( expanded.Contains( p.PropertyType ) )
+                        {
+                            monitor.Error( $"Poco Cyclic dependency error: readonly property '{interfaceType.FullName}.{p.Name}' references its own Poco type." );
+                            return false;
+                        }
+                        isAllowedType = true;
+                        // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
+                        // instantiation cycles is deferred when the global result is built.
+                    }
+                    else if( p.PropertyType.IsGenericType )
+                    {
+                        Type genType = p.PropertyType.GetGenericTypeDefinition();
+                        isAllowedType = genType == typeof( IList<> ) || genType == typeof( List<> )
+                                        || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
+                                        || genType == typeof( ISet<> ) || genType == typeof( HashSet<> );
+                    }
+                    if( !isAllowedType )
+                    {
+                        monitor.Error( $"Invalid Poco readonly property '{interfaceType.FullName}.{p.Name}': read only property type can only be another IPoco or a IList<>, List<>, IDictionary<,>, Dictionary<,>, ISet<> or HashSet<>. (Property's type is '{p.PropertyType.Name}'.)" );
+                        return false;
+                    }
+                }
+                implP.IsReadOnly = isReadOnly;
+                implP.PropertyNullabilityInfo = nullability;
+            }
+            // UnionType handling.
+            // If the property is a union, it cannot be readonly (just like for null). 
+            var uAttr = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
+            if( uAttr != null )
+            {
+                if( implP.IsReadOnly )
+                {
+                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or a IList<>, List<>, IDictionary<,>, Dictionary<,>, ISet<> or HashSet<>." );
+                    return false;
+                }
+                bool isPropertyNullable = implP.PropertyNullabilityInfo.Kind.IsNullable();
+                List<string>? typeDeviants = null;
+                List<string>? nullDeviants = null;
+
+                if( unionTypesDef == null )
+                {
+                    Type? u = interfaceType.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
+                    if( u == null )
+                    {
+                        monitor.Error( $"[UnionType] attribute on '{interfaceType.FullName}.{p.Name}' requires a nested 'struct UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
+                        return false;
+                    }
+                    unionTypesDef = u.GetProperties();
+                }
+                var f = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
+                if( f == null )
+                {
+                    monitor.Error( $"The nested struct UnionTypes requires a public value tuple '{p.Name}' property." );
+                    return false;
+                }
+                if( !typeof( ITuple ).IsAssignableFrom( f.PropertyType ) )
+                {
+                    monitor.Error( $"The '{p.Name}' property of the nested struct UnionTypes must be a value tuple (current type is {f.PropertyType.Name})." );
+                    return false;
+                }
+                var nullableTypeTrees = f.GetNullableTypeTree();
+                bool atLeastOneVariantIsNullable = false;
+                foreach( var sub in nullableTypeTrees.SubTypes )
+                {
+                    if( !p.PropertyType.IsAssignableFrom( sub.Type ) )
+                    {
+                        if( typeDeviants == null ) typeDeviants = new List<string>();
+                        typeDeviants.Add( sub.ToString() );
+                    }
+                    // If the property is nullable, the variants can be nullable or not.
+                    // If the property is not nullable then the variants MUST NOT be nullable.
+                    if( sub.Kind.IsNullable() )
+                    {
+                        if( !isPropertyNullable )
+                        {
+                            if( nullDeviants == null ) nullDeviants = new List<string>();
+                            nullDeviants.Add( sub.ToString() );
+                        }
+                        atLeastOneVariantIsNullable = true;
+                    }
+                }
+                if( typeDeviants != null )
+                {
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
+                }
+                if( nullDeviants != null )
+                {
+                    Debug.Assert( !isPropertyNullable );
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(nullDeviants.Count > 1 ? "s" : "")} '{nullDeviants.Concatenate( "' ,'" )}' must NOT be nullable since '{p.PropertyType.Name} {p.Name} {{ get; }}' is not nullable." );
+                    return false;
+                }
+                if( isPropertyNullable && !atLeastOneVariantIsNullable )
+                {
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. None of the union types are nullable but '{p.PropertyType.Name}? {p.Name} {{ get; }}' is nullable." );
+                    return false;
+                }
+                if( typeDeviants != null ) return false;
+                if( !implP.AddUnionPropertyTypes( monitor, nullableTypeTrees.SubTypes, uAttr.CanBeExtended ) )
+                {
+                    monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned types must be the same." );
+                    return false;
+                }
+            }
+            return true;
         }
 
         bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )

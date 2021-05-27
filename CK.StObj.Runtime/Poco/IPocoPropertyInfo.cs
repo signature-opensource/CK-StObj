@@ -9,25 +9,24 @@ namespace CK.Setup
 {
     /// <summary>
     /// Describes Poco property.
+    /// This handles potentially more than one <see cref="DeclaredProperties"/> that must be identical across the different interfaces.
     /// </summary>
     public interface IPocoPropertyInfo : IAnnotationSet
     {
         /// <summary>
         /// Gets whether this property is a <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;
-        /// and that at least one of the <see cref="DeclaredProperties"/> is read only.
+        /// AND that all the <see cref="DeclaredProperties"/> are read only AND that this property is NOT nullable AND <see cref="PropertyUnionTypes"/> is empty.
+        /// <para>
+        /// Note that DeclaredProperties must all be read/write (with a getter and a setter) or all be read only otherwise an error is raised.
+        /// </para>
         /// </summary>
-        bool AutoInstantiated { get; }
-
-        /// <summary>
-        /// Gets whether this property has no setter across all the interfaces where it appears.
-        /// If at least one of the <see cref="DeclaredProperties"/> defines a setter then a setter will eventually be generated
-        /// even if <see cref="AutoInstantiated"/> is true.
-        /// </summary>
-        bool HasDeclaredSetter { get; }
+        bool IsReadOnly { get; }
 
         /// <summary>
         /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
-        /// Note that if the default value is defined by more than one interface, it is guaranteed to be the same.
+        /// Note that if the default value is defined by more than one interface, it must be the same (this is checked) and that if this
+        /// is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;,
+        /// IDictionary&lt;,&gt; or Dictionary&lt;,&gt; cannot have default values).
         /// </summary>
         bool HasDefaultValue { get; }
 
@@ -59,8 +58,14 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the <see cref="NullabilityTypeInfo"/> of this property.
+        /// This unifies the <see cref="PropertyUnionTypes"/>'s nullabilities.
         /// </summary>
         NullabilityTypeInfo PropertyNullabilityInfo { get; }
+
+        /// <summary>
+        /// Gets whether this property is nullable (simple relay to PropertyNullabilityInfo.Kind).
+        /// </summary>
+        bool IsNullable { get; }
 
         /// <summary>
         /// Gets the <see cref="NullableTypeTree"/> of this property.
@@ -68,15 +73,11 @@ namespace CK.Setup
         NullableTypeTree PropertyNullableTypeTree { get; }
 
         /// <summary>
-        /// Gets whether this property may eventually be null: either it is a union with at least one <see cref="NullabilityTypeKind.IsNullable"/>
-        /// flag, or it is not an union and the <see cref="PropertyNullabilityInfo"/> itself has the flag set.
-        /// </summary>
-        bool IsEventuallyNullable { get; }
-
-        /// <summary>
         /// Gets the set of types that defines the union type with their nullability kind.
         /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
-        /// assignable to any of the variants.
+        /// assignable to any of the variants and nullability is coherent: as soon as one of the allowed type
+        /// is nullable then this <see cref="PropertyNullabilityInfo"/> is nullable and when all of the allowed types
+        /// are not nullable then this property type is not nullable.
         /// </summary>
         IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }
 

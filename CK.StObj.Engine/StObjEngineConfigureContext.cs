@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace CK.Setup
 {
@@ -32,7 +33,7 @@ namespace CK.Setup
 
             protected override object? GetDirectService( Type serviceType )
             {
-                object s = base.GetDirectService( serviceType );
+                object? s = base.GetDirectService( serviceType );
                 if( s == null && (serviceType == typeof(IActivityMonitor) || serviceType == typeof(ActivityMonitor)) )
                 {
                     s = _c._monitor;
@@ -108,7 +109,8 @@ namespace CK.Setup
                     {
                         // Registers the configuration instance itself.
                         _container.Add( c.GetType(), c, null );
-                        Type t = SimpleTypeFinder.WeakResolver( aspectTypeName, true );
+                        Type? t = SimpleTypeFinder.WeakResolver( aspectTypeName, true );
+                        Debug.Assert( t != null );
                         if( !aspectsType.Add( t ) )
                         {
                             success = onError();

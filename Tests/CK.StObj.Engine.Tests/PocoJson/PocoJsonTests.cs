@@ -171,68 +171,6 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         }
 
-        public interface IPocoWithBasicNullableList : IPoco
-        {
-            IList<int>? Values { get; }
-
-            ISet<DateTime>? NullableCollection { get; set; }
-        }
-
-        [Test]
-        public void basic_lists_can_be_nullable()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicNullableList ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
-
-            var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicNullableList>>();
-
-            var lA = f.Create();
-            Debug.Assert( lA.Values != null );
-            lA.Values.Add( -12 );
-            lA.Values.Add( 3712 );
-            lA.NullableCollection.Should().BeNull();
-
-            var lA2 = Roundtrip( s, lA );
-            Debug.Assert( lA2 != null );
-            lA2.Should().BeEquivalentTo( lA );
-
-            lA.NullableCollection = new HashSet<DateTime>();
-            lA.NullableCollection.Add( DateTime.UtcNow );
-
-            var lA3 = Roundtrip( s, lA );
-            Debug.Assert( lA3 != null );
-            lA3.Should().BeEquivalentTo( lA );
-        }
-
-        public interface IPocoWithBasicList2 : IPocoWithBasicNullableList
-        {
-            new ISet<DateTime>? NullableCollection { get; }
-        }
-
-        [Test]
-        public void properties_can_be_nullable_but_AutoImplemented_as_long_as_one_interface_requires_it()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithBasicNullableList ), typeof( IPocoWithBasicList2 ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
-
-            var f = s.GetRequiredService<IPocoFactory<IPocoWithBasicNullableList>>();
-            var lA = f.Create();
-            Debug.Assert( lA.Values != null );
-            lA.Values.Add( -12 );
-            lA.Values.Add( 3712 );
-            lA.NullableCollection.Should().NotBeNull( "IPocoWithBasicList2 has no setter: it is AutoImplemented." );
-
-            var lA2 = Roundtrip( s, lA );
-            Debug.Assert( lA2 != null );
-            lA2.Should().BeEquivalentTo( lA );
-
-            lA.NullableCollection = null!;
-
-            var lA3 = Roundtrip( s, lA );
-            Debug.Assert( lA3 != null );
-            lA3.Should().BeEquivalentTo( lA );
-        }
-
         public interface ITestSetNumbers : ITest
         {
             HashSet<int> Numbers { get; }
@@ -437,21 +375,15 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [Test]
         public void IPoco_types_properties_must_be_known()
         {
+            // Here we don't add IPocoWithDictionary: Dictionary<string, int> and Dictionary<int,string> are not registered.
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var a = f.Create( a =>
             {
-                var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoCrossA ) );
-                TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeFalse();
-            }
-            {
-                // Here we don't add IPocoWithDictionary: Dictionary<string, int> and Dictionary<int,string> are not registered.
-                var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
-                var services = TestHelper.GetAutomaticServices( c ).Services;
-                var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
-                var a = f.Create( a =>
-                {
-                    a.Value = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
-                } );
-                a.Invoking( x => Roundtrip( services, x ) ).Should().Throw<JsonException>();
-            }
+                a.Value = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
+            } );
+            a.Invoking( x => Roundtrip( services, x ) ).Should().Throw<JsonException>();
         }
 
         [ExternalName( "WithUnionType" )]

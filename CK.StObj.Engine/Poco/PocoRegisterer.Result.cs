@@ -43,7 +43,7 @@ namespace CK.Setup
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
 
-            public bool CheckPropertiesVarianceAndInstantiationCycle( IActivityMonitor monitor )
+            public bool CheckPropertiesVarianceAndInstantiationCycleError( IActivityMonitor monitor )
             {
                 List<PropertyInfo>? clashPath = null;
                 foreach( var c in Roots )
@@ -53,8 +53,11 @@ namespace CK.Setup
                 }
                 if( clashPath != null )
                 {
-                    clashPath.Reverse();
-                    monitor.Error( $"Auto instantiable Poco property cycle detected: '{clashPath.Select( p => $"{p.DeclaringType!.FullName}.{p.Name}" ).Concatenate( "' -> '" )}." );
+                    if( clashPath.Count > 0 )
+                    {
+                        clashPath.Reverse();
+                        monitor.Error( $"Poco readonly property cycle detected: '{clashPath.Select( p => $"{p.DeclaringType!.FullName}.{p.Name}" ).Concatenate( "' -> '" )}." );
+                    }
                     return true;
                 }
                 return false;
@@ -194,23 +197,23 @@ namespace CK.Setup
             {
                 foreach( var p in PropertyList )
                 {
-                    var refType = p.PropertyType;
+                    var refType = p.PropertyNullableTypeTree;
                     foreach( var other in p.DeclaredProperties.Skip( 1 ) )
                     {
-                        bool isSameOrPocoFamily = refType == other.PropertyType
-                                                    || (allInterfaces.TryGetValue( refType, out var i1 )
+                        bool isSameOrPocoFamily = refType.Type == other.PropertyType
+                                                    || (allInterfaces.TryGetValue( refType.Type, out var i1 )
                                                        && allInterfaces.TryGetValue( other.PropertyType, out var i2 )
                                                        && i1.Root == i2.Root);
                         if( !isSameOrPocoFamily )
                         {
-                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' but their type differ ({p.PropertyType.Name} vs. {other.PropertyType.Name})." );
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' but their type differ ('{refType}' vs. '{other.GetNullableTypeTree()}')." );
                             return false;
                         }
                         // Types are equal but NRT must be checked.
                         var otherN = other.GetNullabilityInfo();
                         if( !otherN.Equals( p.PropertyNullabilityInfo ) )
                         {
-                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type {p.PropertyType.ToCSharpName()} but their type's Nullability differ." );
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type but their nullability differ ('{refType}' vs. '{other.PropertyType.GetNullableTypeTree( otherN )}')." );
                             return false;
                         }
                     }
@@ -225,7 +228,7 @@ namespace CK.Setup
                 _instantiationCycleDone = true;
                 _instantiationCycleFlag = true;
 
-                var createdPocos = PropertyList.Where( p => p.AutoInstantiated && typeof( IPoco ).IsAssignableFrom( p.PropertyType ) );
+                var createdPocos = PropertyList.Where( p => p.IsReadOnly && typeof( IPoco ).IsAssignableFrom( p.PropertyType ) );
                 if( createdPocos.Any() )
                 {
                     HashSet<ClassInfo>? classes = null;
@@ -234,9 +237,12 @@ namespace CK.Setup
                         if( !allInterfaces.TryGetValue( p.PropertyType, out InterfaceInfo? target ) )
                         {
                             // The IPoco interface type is NOT registered as a IPoco.
-                            // This MAY be possible: we don't consider this to be a IPoco.
-                            p.AutoInstantiated = false;
-                            monitor.Warn( $"Auto instantiable Poco property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}': the property type {p.PropertyType.Name} is not registered. This property will be a read only property initialized to null." );
+                            // We fail on this (we have no way to create the instance).
+                            monitor.Error( $"Poco readonly property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}': the property type {p.PropertyType.Name} is a IPoco that is not registered." );
+                            // Trick: we instantiate an empty clashPath to signal this case: a resulting
+                            // empty path is an unregistered IPoco (and error has been logged).
+                            clashPath = new List<PropertyInfo>();
+                            return false;
                         }
                         else
                         {
@@ -334,11 +340,7 @@ namespace CK.Setup
             IReadOnlyList<NullableTypeTree>? _unionTypes;
             bool _unionTypesCanBeExtended;
 
-            public bool AutoInstantiated { get; set; }
-
-            public bool HasDeclaredSetter { get; set; }
-
-            public bool Setter { get; set; }
+            public bool IsReadOnly { get; set; }
 
             public bool HasDefaultValue { get; set; }
 
@@ -350,6 +352,8 @@ namespace CK.Setup
 
             public NullabilityTypeInfo PropertyNullabilityInfo { get; set; }
 
+            public bool IsNullable => PropertyNullabilityInfo.Kind.IsNullable();
+
             public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree.Kind == NullabilityTypeKind.Unknown
                                                                     ? (_nullableTypeTree = PropertyType.GetNullableTypeTree( PropertyNullabilityInfo ))
                                                                     : _nullableTypeTree;
@@ -359,9 +363,6 @@ namespace CK.Setup
             public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes != null
                                                                             ? _unionTypes
                                                                             : Enumerable.Empty<NullableTypeTree>();
-            public bool IsEventuallyNullable => PropertyUnionTypes.Any()
-                                                    ? PropertyUnionTypes.Any( x => x.Kind.IsNullable() )
-                                                    : PropertyNullabilityInfo.Kind.IsNullable();
 
             public string PropertyName => DeclaredProperties[0].Name;
 

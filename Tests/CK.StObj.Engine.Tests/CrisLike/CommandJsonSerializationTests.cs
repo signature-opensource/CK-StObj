@@ -16,31 +16,31 @@ namespace CK.StObj.Engine.Tests.CrisLike
         [ExternalName( "SimpleCommand" )]
         public interface ISimpleCommand : ICommand
         {
-            string? SimpleValue { get; }
+            string? SimpleValue { get; set; }
         }
 
         [ExternalName( "AuthCommand" )]
-        public interface IAuthCommand : IAuthenticatedCommandPart
+        public interface IAuthCommand : ICommandAuthUnsafe
         {
-            string? SimpleValue { get; }
+            string? SimpleValue { get; set; }
         }
 
-        [ExternalName( "CriticalAuthCommand" )]
-        public interface ICriticalAuthCommand : IAuthenticatedCriticalCommandPart
+        [ExternalName( "CriticalCommand" )]
+        public interface ICriticalCommand : ICommandAuthCritical
         {
-            string? SimpleValue { get; }
+            string? SimpleValue { get; set; }
         }
 
-        [ExternalName( "AuthDeviceCommand" )]
-        public interface IAuthDeviceCommand : IAuthenticatedDeviceCommandPart
+        [ExternalName( "DeviceCommand" )]
+        public interface IDeviceCommand : ICommandAuthDeviceId
         {
-            string? SimpleValue { get; }
+            string? SimpleValue { get; set; }
         }
 
         [ExternalName( "FullAuthCommand" )]
-        public interface IFullAuthCommand : IAuthenticatedDeviceCommandPart, IAuthenticatedImpersonationCommandPart, IAuthenticatedCriticalCommandPart
+        public interface IFullAuthCommand : ICommandAuthDeviceId, ICommandAuthImpersonation, ICommandAuthCritical
         {
-            string? SimpleValue { get; }
+            string? SimpleValue { get; set; }
         }
 
         [Test]
@@ -50,16 +50,16 @@ namespace CK.StObj.Engine.Tests.CrisLike
                                                      typeof( CrisCommandDirectoryLike ),
                                                      typeof( ISimpleCommand ),
                                                      typeof( IAuthCommand ),
-                                                     typeof( ICriticalAuthCommand ),
-                                                     typeof( IAuthDeviceCommand ),
+                                                     typeof( ICriticalCommand ),
+                                                     typeof( IDeviceCommand ),
                                                      typeof( IFullAuthCommand ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
             Debug.Assert( services != null );
 
             TestRoundTrip<ISimpleCommand>( services );
             TestRoundTrip<IAuthCommand>( services );
-            TestRoundTrip<ICriticalAuthCommand>( services );
-            TestRoundTrip<IAuthDeviceCommand>( services );
+            TestRoundTrip<ICriticalCommand>( services );
+            TestRoundTrip<IDeviceCommand>( services );
             TestRoundTrip<IFullAuthCommand>( services );
 
             void TestRoundTrip<T>( IServiceProvider services ) where T : class, ICommand
@@ -70,15 +70,15 @@ namespace CK.StObj.Engine.Tests.CrisLike
                 var cmd = factory.Create();
                 // We don't want a common part for this field: use reflection.
                 cmd.GetType().GetProperty( "SimpleValue" )!.SetValue( cmd, "Tested Value" );
-                if( cmd is IAuthenticatedCommandPart auth )
+                if( cmd is ICommandAuthUnsafe auth )
                 {
                     auth.ActorId = 3712;
                 }
-                if( cmd is IAuthenticatedDeviceCommandPart dev )
+                if( cmd is ICommandAuthDeviceId dev )
                 {
                     dev.DeviceId = "The device identifier...";
                 }
-                if( cmd is IAuthenticatedImpersonationCommandPart imp )
+                if( cmd is ICommandAuthImpersonation imp )
                 {
                     imp.ActualActorId = 37123712;
                 }
@@ -87,17 +87,17 @@ namespace CK.StObj.Engine.Tests.CrisLike
                 Debug.Assert( cmd2 != null );
 
                 cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );
-                if( cmd is IAuthenticatedCommandPart )
+                if( cmd is ICommandAuthUnsafe )
                 {
-                    ((IAuthenticatedCommandPart)cmd2).ActorId.Should().Be( 3712 );
+                    ((ICommandAuthUnsafe)cmd2).ActorId.Should().Be( 3712 );
                 }
-                if( cmd is IAuthenticatedDeviceCommandPart )
+                if( cmd is ICommandAuthDeviceId )
                 {
-                    ((IAuthenticatedDeviceCommandPart)cmd2).DeviceId.Should().Be( "The device identifier..." );
+                    ((ICommandAuthDeviceId)cmd2).DeviceId.Should().Be( "The device identifier..." );
                 }
-                if( cmd is IAuthenticatedImpersonationCommandPart )
+                if( cmd is ICommandAuthImpersonation )
                 {
-                    ((IAuthenticatedImpersonationCommandPart)cmd2).ActualActorId.Should().Be( 37123712 );
+                    ((ICommandAuthImpersonation)cmd2).ActualActorId.Should().Be( 37123712 );
                 }
             }
         }

@@ -4,9 +4,8 @@ using System.Text;
 
 namespace CK.StObj.Engine.Tests.CrisLike
 {
-
-    public interface IAmbientValuesCollectCommand : ICommand<IAmbientValues>
+    public interface ICommandAuthUnsafe : ICommandPart
     {
+        int ActorId { get; set; }
     }
-
 }
