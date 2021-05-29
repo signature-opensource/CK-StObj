@@ -114,8 +114,9 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
-                    // We don't generate nullable enabled code.
-                    global.Append( "#nullable disable" ).NewLine();
+                    // We don't generate nullable enabled code nor comments.
+                    global.Append( "#nullable disable" ).NewLine()
+                          .Append( "#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member" ).NewLine();
 
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );

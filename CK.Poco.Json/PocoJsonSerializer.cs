@@ -6,7 +6,8 @@ using System.Xml.Schema;
 namespace CK.Core
 {
     /// <summary>
-    /// Provides serialization and deserialization as Json for <see cref="IPoco"/>.
+    /// Provides serialization and deserialization as Json for (at least) <see cref="IPoco"/>
+    /// objects.
     /// </summary>
     [ContextBoundDelegation( "CK.Setup.PocoJsonSerializerImpl, CK.StObj.Engine" )]
     public static class PocoJsonSerializer

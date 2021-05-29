@@ -16,7 +16,11 @@ namespace CK.Setup
     /// the API exposed as extension methods by the CK.Core.PocoJsonSerializer static
     /// class (in CK.Poco.Json).
     /// <para>
-    /// 
+    /// There is no CK.Poco.Json.Engine: the Json serializer is here but triggered by the
+    /// existence of the CK.Poco.Json.
+    /// </para>
+    /// <para>
+    /// This service is exposed by the <see cref="IJsonSerializationCodeGen"/> interface
     /// </para>
     /// </summary>
     public partial class PocoJsonSerializerImpl : ICSCodeGenerator, IJsonSerializationCodeGen

@@ -363,7 +363,7 @@ namespace CK.Setup
                      .Append( "r.Read();" );
 
             }
-            return (fWrite, fRead, new TypeInfo( in reg, "M<" + keyHandler.Name + "," + valueHandler.Name + ">" ));
+            return (fWrite, fRead, new TypeInfo( in reg, "M(" + keyHandler.Name + "," + valueHandler.Name + ")" ));
         }
 
         (IFunctionScope fWrite, IFunctionScope fRead, TypeInfo info) CreateStringMapFunctions( in TypeInfo.RegKey reg, Type tValue )
@@ -446,7 +446,7 @@ namespace CK.Setup
                      .Append( "r.Read();" );
             }
 
-            return (fWrite, fRead, new TypeInfo( in reg, (isList ? "L<" : "S<") + itemHandler.Name + ">" ));
+            return (fWrite, fRead, new TypeInfo( in reg, (isList ? "L(" : "S(") + itemHandler.Name + ")" ));
         }
 
         static bool LiftNullableValueType( ref Type t )

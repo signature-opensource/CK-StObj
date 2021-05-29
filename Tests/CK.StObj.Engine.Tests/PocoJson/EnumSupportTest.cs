@@ -31,10 +31,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Working = Code.Pending; o.Result = "CodeGen!"; } );
-            var o2 = PocoJsonTests.Roundtrip( s, o );
+            var o2 = (ITest)JsonTestHelper.Roundtrip( directory, o );
 
             Debug.Assert( o2 != null );
             o2.Working.Should().Be( Code.Pending );

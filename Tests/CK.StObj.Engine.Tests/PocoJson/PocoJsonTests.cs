@@ -30,16 +30,15 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             ITest? nullPoco = null;
 
-            ITest? o2 = Roundtrip( s, nullPoco );
-            o2.Should().BeNull();
+            JsonTestHelper.Roundtrip( directory, nullPoco ).Should().BeNull();
 
             IPoco? nullUnknwonPoco = null;
 
-            IPoco? o3 = Roundtrip( s, nullUnknwonPoco );
-            o3.Should().BeNull();
+            JsonTestHelper.Roundtrip( directory, nullUnknwonPoco ).Should().BeNull();
         }
 
         [Test]
@@ -47,12 +46,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Power = 3712; o.Hip += "CodeGen!"; } );
-            var o2 = Roundtrip( s, o );
-
-            Debug.Assert( o2 != null );
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
             o2.Power.Should().Be( o.Power );
             o2.Hip.Should().Be( o.Hip );
         }
@@ -98,11 +96,12 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
             var a = fA.Create( a => { a.B2.ValB = "B2"; a.B2.C.ValC = "B2.C"; } );
 
-            var a2 = Roundtrip( s, a );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
             Debug.Assert( a2 != null );
             a2.B2.ValB.Should().Be( "B2" );
             a2.B2.C.ValC.Should().Be( "B2.C" );
@@ -120,20 +119,19 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithGeneric ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var fG = s.GetRequiredService<IPocoFactory<IPocoWithGeneric>>();
             var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
 
             var g = fG.Create();
 
-            var gWithNull = Roundtrip( s, g );
-            Debug.Assert( gWithNull != null );
+            var gWithNull = JsonTestHelper.Roundtrip( directory, g );
             gWithNull.OnePoco.Should().BeNull();
             gWithNull.AnotherOnePoco.Should().BeNull();
 
             g.OnePoco = fA.Create();
-            var gWithA = Roundtrip( s, g );
-            Debug.Assert( gWithA != null );
+            var gWithA = JsonTestHelper.Roundtrip( directory, g );
             gWithA.OnePoco.Should().NotBeNull();
             gWithA.AnotherOnePoco.Should().BeNull();
         }
@@ -145,6 +143,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithGeneric ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var fG = s.GetRequiredService<IPocoFactory<IPocoWithGeneric>>();
 
@@ -155,19 +154,18 @@ namespace CK.StObj.Engine.Tests.PocoJson
             g1.OnePoco = g2;
             g2.OnePoco = g3;
 
-            var gCool = Roundtrip( s, g1 );
+            var gCool = JsonTestHelper.Roundtrip( directory, g1 );
 
             g2.AnotherOnePoco = g3;
-            var gDup = Roundtrip( s, g2 );
-            Debug.Assert( gDup != null );
+            var gDup = JsonTestHelper.Roundtrip( directory, g2 );
             gDup.AnotherOnePoco.Should().NotBeNull().And.NotBeSameAs( gDup.OnePoco );
             gDup.OnePoco.Should().NotBeNull();
 
             g2.AnotherOnePoco = g1;
-            g1.Invoking( fail => Roundtrip( s, fail ) ).Should().Throw<InvalidOperationException>();
+            g1.Invoking( fail => JsonTestHelper.Roundtrip( directory, fail ) ).Should().Throw<InvalidOperationException>();
 
             g2.AnotherOnePoco = g2;
-            g1.Invoking( fail => Roundtrip( s, fail ) ).Should().Throw<InvalidOperationException>();
+            g1.Invoking( fail => JsonTestHelper.Roundtrip( directory, fail ) ).Should().Throw<InvalidOperationException>();
 
         }
 
@@ -181,6 +179,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITestSetNumbers ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITestSetNumbers>>();
             var o = f.Create( o =>
@@ -189,7 +188,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 o.Hip += "CodeGen!";
                 o.Numbers.AddRangeArray( 12, 87, 12, 54, 12 );
             } );
-            var o2 = Roundtrip( s, o );
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
             Debug.Assert( o2 != null );
             o2.Power.Should().Be( o.Power );
             o2.Hip.Should().Be( o.Hip );
@@ -223,10 +222,10 @@ namespace CK.StObj.Engine.Tests.PocoJson
             {
                 o.Numbers.AddRangeArray( 1, 2, 3, 4, 5, 1, 2, 3, 4, 5 );
             } );
-            var oSb = Serialize( oS, false );
-            var oLb = Serialize( oL, false );
-            var oLFromS = Deserialize<IWithList>( services, oSb.Span );
-            var oSFromL = Deserialize<IWithSet>( services, oLb.Span );
+            var oSb = JsonTestHelper.Serialize( oS, false );
+            var oLb = JsonTestHelper.Serialize( oL, false );
+            var oLFromS = JsonTestHelper.Deserialize<IWithList>( services, oSb.Span );
+            var oSFromL = JsonTestHelper.Deserialize<IWithSet>( services, oLb.Span );
             Debug.Assert( oLFromS != null && oSFromL != null );
 
             oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
@@ -241,13 +240,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var s = TestHelper.GetAutomaticServices( c ).Services;
 
             string missingValue = @"{""Hip"": ""Hop"", ""Stranger"": [0,1,[]]}";
-            var noValue = Deserialize<ITest>( s, missingValue );
+            var noValue = JsonTestHelper.Deserialize<ITest>( s, missingValue );
             Debug.Assert( noValue != null );
             noValue.Hip.Should().Be( "Hop" );
             noValue.Power.Should().Be( 0 );
 
             string missingHip = @"{""Power"": 871871, ""Another"": {""Nimp"": [87,54]}, ""Stranger"": []}";
-            var noHip = Deserialize<ITest>( s, missingHip );
+            var noHip = JsonTestHelper.Deserialize<ITest>( s, missingHip );
             Debug.Assert( noHip != null );
             noHip.Hip.Should().Be( "Hello...", "This is the default Hip value." );
             noHip.Power.Should().Be( 871871 );
@@ -271,20 +270,21 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void cross_poco_serialization()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoCrossA ), typeof( IPocoCrossB ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
-            var fA = services.GetRequiredService<IPocoFactory<IPocoCrossA>>();
+            var fA = s.GetRequiredService<IPocoFactory<IPocoCrossA>>();
             var a = fA.Create( a =>
             {
                 a.B.MsgB = "From A.B.";
             } );
 
-            var a2 = Roundtrip( services, a );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
             Debug.Assert( a2 != null );
             a2.B.MsgB.Should().Be( "From A.B." );
 
             a.B.A = a;
-            a.Invoking( fail => Roundtrip( services, fail ) ).Should().Throw<InvalidOperationException>();
+            a.Invoking( fail => JsonTestHelper.Roundtrip( directory, fail ) ).Should().Throw<InvalidOperationException>();
         }
 
         public interface IPocoWithDictionary : IPoco
@@ -298,15 +298,16 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void dictionary_with_a_string_key_is_a_Json_object_otherwise_it_is_an_array_of_2_cells_array()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithDictionary ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
-            var fA = services.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
+            var fA = s.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
             var a = fA.Create( a =>
             {
                 a.Map.Add( 1, "Toto" );
                 a.ClassicalJson.Add( "key", 3712 );
             } );
-            var a2 = Roundtrip( services, a );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
 
             a2.Should().BeEquivalentTo( a );
         }
@@ -320,14 +321,15 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void basic_types_properties_as_Object_are_supported()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
-            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
             var a = f.Create( a =>
             {
                 a.Value = 1;
             } );
-            var a2 = Roundtrip( services, a );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
             a2.Should().BeEquivalentTo( a );
         }
 
@@ -335,10 +337,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void IPoco_types_properties_as_Object_are_supported()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ), typeof( IPocoWithDictionary ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
-            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
-            var fO = services.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
+            var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var fO = s.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
             var o = fO.Create( o =>
             {
                 o.ClassicalJson.Add( "Name", 712 );
@@ -349,7 +352,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             {
                 a.Value = o;
             } );
-            var a2 = Roundtrip( services, a );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
             a2.Should().BeEquivalentTo( a );
         }
 
@@ -357,19 +360,20 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void IPoco_types_properties_as_known_Collections_are_supported()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ), typeof( IPocoWithDictionary ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             // IPocoWithDictionary brings Dictionary<string, int> and Dictionary<int,string>.
-            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
             var a = f.Create( a =>
             {
                 a.Value = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
             } );
-            var a2 = Roundtrip( services, a );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
             a2.Should().BeEquivalentTo( a );
 
             a.Value = new Dictionary<string, int>() { { "One", 1 }, { "Two", 2 }, { "Three", 3 } };
-            Roundtrip( services, a ).Should().BeEquivalentTo( a );
+            JsonTestHelper.Roundtrip( directory, a ).Should().BeEquivalentTo( a );
         }
 
         [Test]
@@ -377,13 +381,14 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             // Here we don't add IPocoWithDictionary: Dictionary<string, int> and Dictionary<int,string> are not registered.
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
-            var f = services.GetRequiredService<IPocoFactory<IPocoWithObject>>();
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+            var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
             var a = f.Create( a =>
             {
                 a.Value = new Dictionary<int, string>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
             } );
-            a.Invoking( x => Roundtrip( services, x ) ).Should().Throw<JsonException>();
+            a.Invoking( x => JsonTestHelper.Roundtrip( directory, x ) ).Should().Throw<JsonException>();
         }
 
         [ExternalName( "WithUnionType" )]
@@ -403,99 +408,25 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithUnionType ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = services.GetService<PocoDirectory>();
             var f = services.GetRequiredService<IPocoFactory<IWithUnionType>>();
             var a = f.Create( a =>
             {
                 a.V = new Dictionary<int, string?>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" }, { 3712, null } };
             } );
-            Roundtrip( services, a );
+            JsonTestHelper.Roundtrip( directory, a, t => TestHelper.Monitor.Info( t ) );
 
             a.V = 56;
-            Roundtrip( services, a );
+            JsonTestHelper.Roundtrip( directory, a );
 
             a.V = new List<int>() { 45, 87, 87, 254, 87 };
-            Roundtrip( services, a );
+            JsonTestHelper.Roundtrip( directory, a );
 
             // Null is allowed here (because of the nullable int).
             a.V = null!;
-            Roundtrip( services, a );
+            JsonTestHelper.Roundtrip( directory, a );
 
             a.Invoking( x => x.V = "lj" ).Should().Throw<ArgumentException>( "String is not allowed." );
-        }
-
-
-        static ReadOnlyMemory<byte> Serialize( IPoco o, bool withType )
-        {
-            var m = new ArrayBufferWriter<byte>();
-            using( var w = new Utf8JsonWriter( m ) )
-            {
-                o.Write( w, withType );
-                w.Flush();
-            }
-            return m.WrittenMemory;
-        }
-
-        public static T? Deserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b ) where T : class, IPoco
-        {
-            var r = new Utf8JsonReader( b );
-            var f = services.GetRequiredService<IPocoFactory<T>>();
-            return f.Read( ref r );
-        }
-
-        public static T? Deserialize<T>( IServiceProvider services, string s ) where T : class, IPoco
-        {
-            return Deserialize<T>( services, Encoding.UTF8.GetBytes( s ) );
-        }
-
-        public static T? Roundtrip<T>( IServiceProvider services, T? o ) where T : class, IPoco
-        {
-            byte[] bin1;
-            string bin1Text;
-            var directory = services.GetService<PocoDirectory>();
-            using( var m = new MemoryStream() )
-            {
-                try
-                {
-                    using( var w = new Utf8JsonWriter( m ) )
-                    {
-                        o.Write( w, true );
-                        w.Flush();
-                    }
-                    bin1 = m.ToArray();
-                    bin1Text = Encoding.UTF8.GetString( bin1 );
-                }
-                catch( Exception )
-                {
-                    // On error, bin1 and bin1Text can be inspected here.
-                    throw;
-                }
-
-                var r1 = new Utf8JsonReader( bin1 );
-
-                var o2 = directory.ReadPocoValue( ref r1 );
-
-                m.Position = 0;
-                using( var w2 = new Utf8JsonWriter( m ) )
-                {
-                    o2.Write( w2, true );
-                    w2.Flush();
-                }
-                var bin2 = m.ToArray();
-
-                bin1.Should().BeEquivalentTo( bin2 );
-
-                // Is this an actual Poco or a definer?
-                // When it's a definer, there is no factory!
-                var f = services.GetService<IPocoFactory<T>>();
-                if( f != null )
-                {
-                    var r2 = new Utf8JsonReader( bin2 );
-                    var o3 = f.Read( ref r2 );
-                    return o3;
-                }
-                return (T?)o2;
-            }
-
         }
 
 

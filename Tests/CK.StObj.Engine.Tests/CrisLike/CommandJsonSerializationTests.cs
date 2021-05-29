@@ -65,6 +65,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
             void TestRoundTrip<T>( IServiceProvider services ) where T : class, ICommand
             {
                 var factory = services.GetRequiredService<IPocoFactory<T>>();
+                var directory = services.GetService<PocoDirectory>();
+
                 Debug.Assert( factory != null );
 
                 var cmd = factory.Create();
@@ -83,7 +85,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
                     imp.ActualActorId = 37123712;
                 }
 
-                var cmd2 = PocoJson.PocoJsonTests.Roundtrip( services, cmd );
+                var cmd2 = JsonTestHelper.Roundtrip( directory, cmd );
                 Debug.Assert( cmd2 != null );
 
                 cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );

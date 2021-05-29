@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
@@ -182,8 +183,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_and_null_is_allowed_if_one_of_the_variant_is_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
 
             p.Thing = 34;
@@ -195,6 +198,9 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.Invoking( x => x.Thing = 25.88 ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
+
+            var p2 = JsonTestHelper.Roundtrip( directory, p );
+            p.Should().BeEquivalentTo( p2 );
         }
 
         public interface IPocoWithUnionTypeNoNullable : IPoco
@@ -211,8 +217,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_if_none_of_the_variant_is_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
 
             p.Thing = 34;
@@ -222,6 +230,9 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
+
+            var p2 = JsonTestHelper.Roundtrip( directory, p );
+            p.Should().BeEquivalentTo( p2 );
         }
 
         public interface IPocoNonExtendable : IPoco
@@ -353,8 +364,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
             var p = s.GetRequiredService<IPocoFactory<IPoco2>>().Create();
 
             // Thing allows int, decimal, string and List<string> (not nullable!)
@@ -368,6 +381,9 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>( "Null is forbidden." );
             p.Invoking( x => x.Thing = new Dictionary<string,object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
 
+            var p2 = JsonTestHelper.Roundtrip( directory, p, t => TestHelper.Monitor.Info( t ) );
+            p.Should().BeEquivalentTo( p2 );
+
             // AnotherThing allows int, double?, string? and List<string?>?
             p.AnotherThing = 34;
             p.AnotherThing.Should().Be( 34 );
@@ -377,6 +393,9 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.Invoking( x => x.AnotherThing = (Decimal)555 ).Should().Throw<ArgumentException>( "Not an allowed type." );
             p.Invoking( x => x.AnotherThing = new Dictionary<string, object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
+
+            var p3 = JsonTestHelper.Roundtrip( directory, p );
+            p.Should().BeEquivalentTo( p3 );
         }
 
 

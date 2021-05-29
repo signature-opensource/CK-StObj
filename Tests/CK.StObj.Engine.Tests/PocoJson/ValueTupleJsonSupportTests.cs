@@ -23,12 +23,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithTuple ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithTuple>>();
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
-            var o2 = PocoJsonTests.Roundtrip( s, o );
-
-            Debug.Assert( o2 != null );
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
             o2.Hop.Should().Be( ("CodeGen!", 3712) );
         }
 
@@ -42,18 +41,16 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithNullableTuple ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithNullableTuple>>();
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
-            var o2 = PocoJsonTests.Roundtrip( s, o );
-
-            Debug.Assert( o2 != null );
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
             o2.Hop.Should().Be( ("CodeGen!", 3712) );
 
             o.Hop = null;
 
-            var o3 = PocoJsonTests.Roundtrip( s, o );
-            Debug.Assert( o3 != null );
+            var o3 = JsonTestHelper.Roundtrip( directory, o );
             o3.Hop.Should().BeNull();
         }
 
