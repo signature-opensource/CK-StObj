@@ -27,10 +27,17 @@ namespace CK.Setup
 
         TypeInfo AddTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null, DirectType d = DirectType.None, bool isAbstractType = false )
         {
-            return AddTypeInfo( new TypeInfo( GetNextRegKey( t ), name, previousNames, d, isAbstractType ) );
+            return AddTypeInfoToTheMap( new TypeInfo( GetNextRegKey( t ), name, previousNames, d, isAbstractType ) );
         }
 
-        TypeInfo AddTypeInfo( TypeInfo i )
+        /// <summary>
+        /// Registers the <see cref="TypeInfo.Type"/>, the <see cref="TypeInfo.Name"/> and all <see cref="TypeInfo.PreviousNames"/>
+        /// onto the <see cref="TypeInfo.NonNullHandler"/> and if the type is a value type, its Nullable&lt;Type&gt; is mapped to
+        /// the <see cref="TypeInfo.NullHandler"/>.
+        /// </summary>
+        /// <param name="i">The TypeInfo to register.</param>
+        /// <returns>The registered TypeInfo.</returns>
+        TypeInfo AddTypeInfoToTheMap( TypeInfo i )
         {
             // For Value type, we register the Nullable<T> type.
             // Registering the nullable "name?" is useless for everybody: FillDynamicMap will do the job.
@@ -60,7 +67,7 @@ namespace CK.Setup
         void InitializeMap()
         {
             // Direct types.
-            AddTypeInfo( TypeInfo.Untyped );
+            AddTypeInfoToTheMap( TypeInfo.Untyped );
             AddTypeInfo( typeof( int ), "int", null, DirectType.Int );
             AddTypeInfo( typeof( bool ), "bool", null, DirectType.Bool );
             AddTypeInfo( typeof( string ), "string", null, DirectType.String );
@@ -301,7 +308,7 @@ namespace CK.Setup
                           }
                           read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( " );" );
                       } );
-            AddTypeInfo( info );
+            AddTypeInfoToTheMap( info );
             // The interface is directly mapped to the non null handler.
             AddTypeHandlerAlias( tInterface, info.NonNullHandler );
             return info.NullHandler;
