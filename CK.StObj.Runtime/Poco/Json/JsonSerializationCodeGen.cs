@@ -785,109 +785,32 @@ namespace CK.Setup.Json
                     }
                 }
                 // Generates the code for "dynamic"/"untyped" object.
-                FillDynamicMaps( _map );
-                GenerateObjectWrite();
-                GenerateObjectRead();
+
+                // Reading must handle the [TypeName,...] array: it needs a lookup from the "type name" to the handler to use: this is the goal of
+                // the _typeReaders dictionary that we initialize here (no concurrency issue, no lock here: once built the dictionary will only
+                // be read).
+                GenerateDynamicRead( _map );
+
+                // Writing must handle the object instance to write. Null reference/value type can be handled immediately (by writing "null").
+                // When not null, we are dealing only with concrete types here: the object MUST be of an allowed concrete type, an abstraction
+                // that wouldn't be one of the allowed concrete type must NOT be handled!
+                // That's why we can use a direct pattern matching on the object's type for the write method (after having ordered types with specializations
+                // first to correctly handle base types mapped to a different handler than its specialization).
+                GenerateDynamicWrite( _typeInfos );
+
                 monitor.CloseGroup( "Success." );
                 return true;
             }
         }
 
-        void FillDynamicMaps( Dictionary<object, IJsonCodeGenHandler> map )
+        void GenerateDynamicRead( Dictionary<object, IJsonCodeGenHandler> map )
         {
             _pocoDirectory.GeneratedByComment()
                           .Append( @"
             delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r );
-            delegate void WriterFunction( System.Text.Json.Utf8JsonWriter w, object o );
 
             static readonly Dictionary<string, ReaderFunction> _typeReaders = new Dictionary<string, ReaderFunction>();
-            static readonly Dictionary<Type, WriterFunction> _typeWriters = new Dictionary<Type, WriterFunction>();" ).NewLine();
 
-            var ctor = _pocoDirectory.FindOrCreateFunction( "public PocoDirectory_CK()" )
-                                     .GeneratedByComment();
-            foreach( var (type, handler) in map )
-            {
-                // Skips direct types that are handled...directly.
-                if( handler.Info.DirectType != JsonDirectType.None && handler.Info.DirectType != JsonDirectType.Untyped ) continue;
-
-                // Write is called on o.GetType(): this is the concrete type, it is useless to map an abstract type.
-                // And since Read reads back what has been written...
-                if( handler.IsAbstractType ) continue;
-
-                if( type is string name )
-                {
-                    Debug.Assert( name == handler.Name );
-                    // Reading null is already handled: we can skip any nullable handler.
-                    // ValueType nullable names don't appear in the map. We add them as an alias.
-                    if( handler.IsNullable ) continue;
-
-                    ctor.OpenBlock()
-                        .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r ) {" )
-                        .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
-                    handler.GenerateRead( ctor, "o", true, true );
-                    ctor.NewLine().Append( "return o;" ).NewLine()
-                        .Append( "};" ).NewLine();
-                    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.Name ).Append( ", d );" ).NewLine();
-                    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.ToNullHandler().Name ).Append( ", d );" ).NewLine();
-
-                    ctor.CloseBlock();
-                }
-                else
-                {
-                    Debug.Assert( type is Type ttt && handler.Type == ttt );
-                    ctor.Append( "_typeWriters.Add( " ).AppendTypeOf( handler.Type )
-                        .Append( ", (w,o) => " )
-                        .OpenBlock();
-
-                    // Writing a null object is handled directly by the WriteObject code,
-                    // If the Type is a Nullable<>, it must be written with the nullable
-                    // marker (the '?' suffix) but we can skip the "if( variableName == null )" block.
-                    var nonNullTypeName = handler.Info.NonNullHandler.Type.ToCSharpName();
-                    if( handler.Info.ByRefWriter )
-                    {
-                        ctor.Append( nonNullTypeName ).Append( " v = (" ).Append( nonNullTypeName ).Append( ")o;" ).NewLine();
-                        handler.GenerateWrite( ctor, "v", true, true );
-                    }
-                    else
-                    {
-                        handler.GenerateWrite( ctor, "((" + nonNullTypeName + ")o)", true, true );
-                    }
-
-                    ctor.CloseBlock()
-                        .Append( " );" ).NewLine();
-                }
-            }
-        }
-
-        void GenerateObjectWrite()
-        {
-            _pocoDirectory.Append( @"
-            internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o )
-            {
-                switch( o )
-                {
-                    case null: w.WriteNullValue(); break;
-                    case string v: w.WriteStringValue( v ); break;
-                    case int v: w.WriteNumberValue( v ); break;
-                    case bool v: w.WriteBooleanValue( v ); break;
-                    default:
-                        {
-                            var t = o.GetType();
-                            if( !_typeWriters.TryGetValue( t, out var writer ) )
-                            {
-                                throw new System.Text.Json.JsonException( $""Unregistered type '{t.AssemblyQualifiedName}'."" );
-                            }
-                            writer( w, o );
-                            break;
-                        }
-                }
-            }
-            " );
-        }
-
-        void GenerateObjectRead()
-        {
-            _pocoDirectory.Append( @"
             internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r )
             {
                 switch( r.TokenType )
@@ -899,7 +822,7 @@ namespace CK.Setup.Json
                     case System.Text.Json.JsonTokenType.True: { r.Read(); return true; }
                     default:
                         {
-                            r.Read();
+                            r.Read(); // [
                             var n = r.GetString();
                             r.Read();
                             if( !_typeReaders.TryGetValue( n, out var reader ) )
@@ -907,12 +830,108 @@ namespace CK.Setup.Json
                                 throw new System.Text.Json.JsonException( $""Unregistered type name '{n}'."" );
                             }
                             var o = reader( ref r );
-                            r.Read();
+                            r.Read(); // ]
                             return o;
                         }
                 }
             }
 " );
+
+            // Configures the _typeReaders dictionary in the constructor.
+            var ctor = _pocoDirectory.FindOrCreateFunction( "public PocoDirectory_CK()" )
+                                     .GeneratedByComment();
+            foreach( var (typeOrName, handler) in map )
+            {
+                // Skips direct types that are handled...directly.
+                if( handler.Info.DirectType != JsonDirectType.None && handler.Info.DirectType != JsonDirectType.Untyped ) continue;
+
+                // Write is called on the object's concrete type, it is useless to map an abstract type here since Read reads
+                // back what has been written...
+                if( handler.IsAbstractType ) continue;
+
+                // Only consider names here (Type is for the Write!).
+                if( !(typeOrName is string name) ) continue;
+
+                Debug.Assert( name == handler.Name );
+                // Reading null is already handled: we can skip any nullable handler.
+                // ValueType nullable names don't appear in the map. We add them as an alias.
+                if( handler.IsNullable ) continue;
+
+                ctor.OpenBlock()
+                    .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r ) {" )
+                    .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
+                handler.GenerateRead( ctor, "o", assignOnly: true, skipIfNullBlock: true );
+                ctor.NewLine().Append( "return o;" ).NewLine()
+                    .Append( "};" ).NewLine();
+                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.Name ).Append( ", d );" ).NewLine();
+                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.ToNullHandler().Name ).Append( ", d );" ).NewLine();
+
+                ctor.CloseBlock();
+            }
+
+        }
+
+        void GenerateDynamicWrite( List<JsonTypeInfo> types )
+        {
+            int Compare( Type t1, Type t2 )
+            {
+                if( t1 == t2 ) return 0;
+                if( t1.IsValueType )
+                {
+                    if( t2.IsValueType )
+                    {
+                        return t1.IsEnum
+                                ? (t2.IsEnum ? 0 : 1)
+                                : (t2.IsEnum ? -1 : 0);
+                    }
+                    return -1;
+                }
+                if( t2.IsValueType ) return 1;
+                return t1.IsAssignableFrom( t2 )
+                                         ? 1
+                                         : (t2.IsAssignableFrom( t1 )
+                                            ? -1
+                                            : 0);
+            }
+            Debug.Assert( Compare( typeof( int ), typeof( int ) ) == 0 );
+            Debug.Assert( Compare( typeof( JsonDirectType ), typeof( JsonDirectType ) ) == 0 );
+            Debug.Assert( Compare( typeof( string ), typeof( string ) ) == 0 );
+            Debug.Assert( Compare( typeof( int ), typeof( JsonDirectType ) ) < 0 );
+            Debug.Assert( Compare( typeof( JsonDirectType ), typeof( int ) ) > 0 );
+            Debug.Assert( Compare( typeof( string ), typeof( int ) ) > 0 );
+            Debug.Assert( Compare( typeof( string ), typeof( JsonDirectType ) ) > 0 );
+            Debug.Assert( Compare( typeof( int ), typeof( string ) ) < 0 );
+            Debug.Assert( Compare( typeof( JsonDirectType ), typeof( string ) ) < 0 );
+            Debug.Assert( Compare( typeof( TypeInfoConfigurationRequiredEventArg ), typeof( EventArgs ) ) < 0 );
+            Debug.Assert( Compare( typeof( EventArgs ), typeof( TypeInfoConfigurationRequiredEventArg ) ) > 0 );
+
+            _pocoDirectory
+                    .GeneratedByComment()
+                .Append( @"
+internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o )
+{
+    switch( o )
+    {
+        case null: w.WriteNullValue(); break;
+        case string v: w.WriteStringValue( v ); break;
+        case int v: w.WriteNumberValue( v ); break;
+        case bool v: w.WriteBooleanValue( v ); break;" ).NewLine()
+        .CreatePart( out var mappings ).Append( @"
+        default: throw new System.Text.Json.JsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" );
+    }
+}" );
+            // Ordering is: value types, enums, reference types.
+            types.Sort( ( t1, t2 ) => Compare( t1.Type, t2.Type ) );
+            foreach( var t in types )
+            {
+                // Skips direct types.
+                if( t.DirectType != JsonDirectType.None ) continue;
+
+                mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
+                Debug.Assert( !t.NonNullHandler.IsAbstractType, "Only concrete Types are JsonTypeInfo, abstract types are just mappings." );
+                t.NonNullHandler.GenerateWrite( mappings, "v", withType: true, skipIfNullBlock: true );
+                mappings.NewLine().Append( "break;" ).NewLine();
+            }
         }
 
         #endregion
