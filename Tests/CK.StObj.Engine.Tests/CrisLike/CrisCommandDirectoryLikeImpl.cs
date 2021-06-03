@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
                                             ICSCodeGenerationContext c,
                                             ITypeScope scope,
                                             IPocoSupportResult poco,
-                                            IJsonSerializationCodeGen? json = null )
+                                            Setup.Json.JsonSerializationCodeGen? json = null )
         {
             if( classType != typeof( CrisCommandDirectoryLike ) ) throw new InvalidOperationException( "Applies only to the CrisCommandDirectoryLike class." );
 

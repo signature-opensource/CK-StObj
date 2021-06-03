@@ -73,5 +73,18 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
 
+        public interface IArrayMustHaveSetter : IPoco
+        {
+            int[] A { get; }
+        }
+
+        [Test]
+        public void Array_property_cannot_be_auto_instantiated()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IArrayMustHaveSetter ) );
+            TestHelper.GetFailedResult( c );
+        }
+
+
     }
 }

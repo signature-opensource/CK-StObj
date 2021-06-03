@@ -207,7 +207,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void List_and_Set_can_read_each_other()
+        public void Set_and_List_can_read_each_other()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithSet ), typeof( IWithList ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -230,6 +230,40 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
             oSFromL.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
+        }
+
+        public interface IWithArray : IPoco
+        {
+            int[] Numbers { get; set; }
+        }
+
+        [Test]
+        public void Set_and_Array_can_read_each_other()
+        {
+            // Implementation uses this fact: an array is a IList.
+            typeof( int[] ).Should().BeAssignableTo<IList<int>>();
+
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithArray ), typeof( IWithSet ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+
+            var fSet = services.GetRequiredService<IPocoFactory<IWithSet>>();
+            var fArray = services.GetRequiredService<IPocoFactory<IWithArray>>();
+            var oS = fSet.Create( o =>
+            {
+                o.Numbers.AddRangeArray( 12, 87, 12, 54, 12 );
+            } );
+            var oA = fArray.Create( o =>
+            {
+                o.Numbers = new int[] { 1, 2, 3, 4, 5, 1, 2, 3, 4, 5 };
+            } );
+            var oSb = JsonTestHelper.Serialize( oS, false );
+            var oAb = JsonTestHelper.Serialize( oA, false );
+            var oAFromS = JsonTestHelper.Deserialize<IWithArray>( services, oSb.Span );
+            var oSFromA = JsonTestHelper.Deserialize<IWithSet>( services, oAb.Span );
+            Debug.Assert( oAFromS != null && oSFromA != null );
+
+            oAFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
+            oSFromA.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
         }
 
 

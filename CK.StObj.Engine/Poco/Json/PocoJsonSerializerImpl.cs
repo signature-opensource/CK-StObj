@@ -1,15 +1,11 @@
 using CK.CodeGen;
 using CK.Core;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 
 #nullable enable
 
-namespace CK.Setup
+namespace CK.Setup.Json
 {
     /// <summary>
     /// Implements the Json serialization. This class extends the Poco classes to support
@@ -17,28 +13,14 @@ namespace CK.Setup
     /// class (in CK.Poco.Json).
     /// <para>
     /// There is no CK.Poco.Json.Engine: the Json serializer is here but triggered by the
-    /// existence of the CK.Poco.Json.
+    /// existence of the CK.Poco.Json package.
     /// </para>
     /// <para>
-    /// This service is exposed by the <see cref="IJsonSerializationCodeGen"/> interface
+    /// This instantiates the Runtime <see cref="Json.JsonSerializationCodeGen"/> service and exposes it.
     /// </para>
     /// </summary>
-    public partial class PocoJsonSerializerImpl : ICSCodeGenerator, IJsonSerializationCodeGen
+    public partial class PocoJsonSerializerImpl : ICSCodeGenerator
     {
-        IActivityMonitor? _monitor;
-        ITypeScope? _pocoDirectory;
-
-        IActivityMonitor Monitor => _monitor!;
-
-        ITypeScope PocoDirectory => _pocoDirectory!;
-
-        void IJsonSerializationCodeGen.RegisterEnumOrCollectionType( Type t )
-        {
-            TryFindOrCreateHandler( t );
-        }
-
-        bool IJsonSerializationCodeGen.IsKnownType( Type t ) => _map.ContainsKey( t );
-
         /// <summary>
         /// Extends PocoDirectory_CK, the factories and the Poco classes.
         /// </summary>
@@ -47,27 +29,32 @@ namespace CK.Setup
         /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
-            _monitor = monitor;
-            _pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
-            InitializeMap();
+            var pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            var jsonCodeGen = new JsonSerializationCodeGen( monitor, pocoDirectory );
             // Exposes this as a service to others.
-            c.CurrentRun.ServiceContainer.Add<IJsonSerializationCodeGen>( this );
+            c.CurrentRun.ServiceContainer.Add( jsonCodeGen );
+            return new CSCodeGenerationResult( nameof( AllowAllPocoTypes ) );
+        }
 
-            var pocoSupport = c.Assembly.GetPocoSupportResult();
+        // Step 1: Allows the registered Poco types on the JsonSerializationCodeGen.
+        //         Creates the CodeReader/Writer for the Poco classes that use the Poco.Write
+        //         and the Poco deserialization constructor that will be generated in the next step.
+        CSCodeGenerationResult AllowAllPocoTypes( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
+        { 
             if( pocoSupport.Roots.Count == 0 )
             {
                 monitor.Info( "No Poco available. Skipping Poco serialization code generation." );
-                return new CSCodeGenerationResult( nameof( Finalize ) );
+                return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
             }
 
             // IPoco and IClosedPoco are not in the "OtherInterfaces".
-            AddUntypedHandler( typeof( IPoco ) );
-            AddUntypedHandler( typeof( IClosedPoco ) );
+            jsonCodeGen.AddUntypedHandler( typeof( IPoco ) );
+            jsonCodeGen.AddUntypedHandler( typeof( IClosedPoco ) );
 
             // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
             foreach( var root in pocoSupport.Roots )
             {
-                var typeInfo = AddTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
+                var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
                                 ( ICodeWriter write, string variableName )
                                         => write.Append( variableName ).Append( ".Write( w, false );" ),
                                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -94,19 +81,21 @@ namespace CK.Setup
                                 } );
                 foreach( var i in root.Interfaces )
                 {
-                    AddTypeHandlerAlias( i.PocoInterface, typeInfo.NullHandler );
+                    jsonCodeGen.AddTypeHandlerAlias( i.PocoInterface, typeInfo.NullHandler );
                 }
             }
             // Maps the "other Poco interfaces" to "Untyped" object.
             foreach( var other in pocoSupport.OtherInterfaces )
             {
-                AddUntypedHandler( other.Key );
+                jsonCodeGen.AddUntypedHandler( other.Key );
             }
 
             return new CSCodeGenerationResult( nameof( GeneratePocoSupport ) );
         }
 
-        CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport )
+        // Step 2: Generates the Read & Write methods.
+        //         This is where the Poco's properties types are transitively allowed.
+        CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
         { 
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
@@ -129,22 +118,12 @@ namespace CK.Setup
 
                 // Generates the Poco class Read and Write methods.
                 // UnionTypes on properties are registered.
-                ExtendPocoClass( root, pocoClass );
+                ExtendPocoClass( root, jsonCodeGen, pocoClass );
             }
-
-            return new CSCodeGenerationResult( nameof( Finalize ) );
+            return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
         }
 
-        void Finalize( IActivityMonitor monitor )
-        {
-            monitor.Info( $"Generating Json serialization with {_map.Count} mappings." );
-            // Generates the code for "dynamic"/"untyped" object.
-            FillDynamicMaps( _map );
-            GenerateObjectWrite();
-            GenerateObjectRead();
-        }
-
-        void ExtendPocoClass( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
+        void ExtendPocoClass( IPocoRootInfo pocoInfo, JsonSerializationCodeGen jsonCodeGen, ITypeScope pocoClass )
         {
             // Each Poco class is a IWriter and has a constructor that accepts a Utf8JsonReader.
             pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.PocoJsonSerializer.IWriter" ) );
@@ -188,12 +167,12 @@ namespace CK.Setup
             {
                 foreach( var union in p.PropertyUnionTypes )
                 {
-                    TryFindOrCreateHandler( union.Type );
+                    jsonCodeGen.AllowType( union.Type );
                 }
 
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
 
-                var handler = TryFindOrCreateHandler( p.PropertyType, p.IsNullable );
+                var handler = jsonCodeGen.AllowType( p.PropertyType, p.IsNullable );
                 if( handler == null ) continue;
 
                 Debug.Assert( handler.IsNullable == p.IsNullable );
@@ -267,6 +246,10 @@ if( isDef )
 " ).CloseBlock();
             return read;
         }
+
+        // Step 3: Calls JsonSerializationCodeGen.FinalizeCodeGeneration that will generate
+        //         the global Read & Write of "untyped" objects method. 
+        void FinalizeJsonSupport( IActivityMonitor monitor, JsonSerializationCodeGen jsonCodeGen ) => jsonCodeGen.FinalizeCodeGeneration( monitor );
 
     }
 }
