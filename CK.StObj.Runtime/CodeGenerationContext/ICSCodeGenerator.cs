@@ -5,7 +5,10 @@ using CK.Core;
 namespace CK.Setup
 {
     /// <summary>
-    /// Classes that implement this interface can participate in CSharp code generation.
+    /// Classes that implement this interface can participate in CSharp code generation or any other kind of generation.
+    /// It is independent of any type and can use the <see cref="CSCodeGenerationResult"/> to redirect
+    /// with a method that expects one or more specific service (like <see cref="Json.JsonSerializationCodeGen"/>
+    /// for instance).
     /// </summary>
     /// <remarks>
     /// This is not defined in the CK.StObj.Model since this is typically implemented by attributes, but
@@ -21,7 +24,7 @@ namespace CK.Setup
         /// <param name="codeGenContext">Code generation context with its Dynamic assembly being implemented.</param>
         /// <returns>
         /// The <see cref="CSCodeGenerationResult"/>. If a <see cref="CSCodeGenerationResult.ImplementorType"/> is specified,
-        /// it must implement this <see cref="ICodeGenerator"/> interface.
+        /// it must implement this <see cref="ICSCodeGenerator"/> interface.
         /// On error, the error must be logged into the <paramref name="monitor"/>.
         /// </returns>
         CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext );

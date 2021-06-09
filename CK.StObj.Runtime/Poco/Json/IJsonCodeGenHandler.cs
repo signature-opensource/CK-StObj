@@ -6,16 +6,20 @@ using System.Text;
 namespace CK.Setup.Json
 {
     /// <summary>
-    /// The code writer delegate is in charge of generating the write code.
-    /// This is configured on TypeInfo by <see cref="TypeInfo.Configure(CodeWriter, CodeReader)"/> and
-    /// used by handlers bound to the type when <see cref="IHandler.GenerateWrite"/> is called.
+    /// The code writer delegate is in charge of generating the write code into a <see cref="System.Text.Json.Utf8JsonWriter"/>
+    /// variable named "w".
+    /// <para>
+    /// This is configured on JsonTypeInfo by <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> and
+    /// used by handlers bound to the type when <see cref="IJsonCodeGenHandler.GenerateWrite"/> is called.
+    /// </para>
     /// </summary>
     /// <param name="write">The code writer to uses.</param>
     /// <param name="variableName">The variable name to write.</param>
     public delegate void CodeWriter( ICodeWriter write, string variableName );
 
     /// <summary>
-    /// The code reader delegate is in charge of generating the read code.
+    /// The code reader delegate is in charge of generating the read code from a  <see cref="System.Text.Json.Utf8JsonReader"/>
+    /// variable named "r".
     /// See <see cref="CodeWriter"/>.
     /// </summary>
     /// <param name="read">The code writer to use.</param>
@@ -33,9 +37,9 @@ namespace CK.Setup.Json
     {
         /// <summary>
         /// Gets the type handled.
-        /// It can differ from the <see cref="TypeInfo.Type"/> if it's
+        /// It can differ from the <see cref="JsonTypeInfo.Type"/> if it's
         /// a value type and <see cref="IsNullable"/> is true (type is <see cref="Nullable{T}"/>)
-        /// or if this <see cref="IsAbstractType"/> is true.
+        /// or if this <see cref="IsMappedType"/> is true.
         /// </summary>
         Type Type { get; }
 
@@ -45,16 +49,20 @@ namespace CK.Setup.Json
         string Name { get; }
 
         /// <summary>
-        /// Gets the <see cref="TypeInfo"/>.
+        /// Gets the <see cref="JsonTypeInfo"/>.
         /// </summary>
-        JsonTypeInfo Info { get; }
+        JsonTypeInfo TypeInfo { get; }
 
         /// <summary>
         /// Gets whether this <see cref="Type"/> is not the same as the actual <see cref="TypeInfo.Type"/>
-        /// and that it is not unambiguously mapped to it: the actual type name must be written in order
+        /// and that it is not unambiguously mapped to it: the mapped type name must be written in order
         /// to resolve it.
+        /// <para>
+        /// Note that the type name is also written if <see cref="JsonTypeInfo.IsFinal"/> is false (since a base class
+        /// may reference a specialization) and that it is written by the generic/untyped WriteObject.
+        /// </para>
         /// </summary>
-        bool IsAbstractType { get; }
+        bool IsMappedType { get; }
 
         /// <summary>
         /// Gets whether this <see cref="Type"/> must be considered as a nullable one.
@@ -62,11 +70,19 @@ namespace CK.Setup.Json
         bool IsNullable { get; }
 
         /// <summary>
+        /// Gets whether <see cref="GenerateRead(ICodeWriter, string, bool, bool)"/> or <see cref="GenerateWrite(ICodeWriter, string, bool?, bool)"/>
+        /// can be called.
+        /// For all handlers to be ready, <see cref="JsonSerializationCodeGen.FinalizeCodeGeneration(Core.IActivityMonitor)"/> must have
+        /// been successfully called.
+        /// </summary>
+        bool IsReady { get; }
+
+        /// <summary>
         /// Generates the code required to write a value stored in <paramref name="variableName"/>.
         /// </summary>
         /// <param name="write">The code writer.</param>
         /// <param name="variableName">The variable name.</param>
-        /// <param name="withType">True or false to override <see cref="IsAbstractType"/>.</param>
+        /// <param name="withType">True or false to override (<see cref="IsMappedType"/> || !<see cref="JsonTypeInfo.IsFinal"/>).</param>
         /// <param name="skipIfNullBlock">
         /// True to skip the "if( variableName == null )" block whenever <see cref="IsNullable"/> is true.
         /// This <see cref="Type"/> and <see cref="Name"/> are kept as-is.
@@ -80,13 +96,13 @@ namespace CK.Setup.Json
         /// <param name="variableName">The variable name.</param>
         /// <param name="assignOnly">True to force the assignment of the variable, not trying to reuse it (typically because it is known to be uninitialized).</param>
         /// <param name="skipIfNullBlock">
-        /// True to skip the "if( variableName == null )" block even if <see cref="IsNullable"/> is true.
+        /// True to skip the "if( variableName == null )" block even if <see cref="IsNullable"/> is true (typically because the variable is known to be not null).
         /// </param>
         void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false );
 
         /// <summary>
         /// Creates a handler for type that is mapped to this one.
-        /// Its <see cref="IsAbstractType"/> is true.
+        /// Its <see cref="IsMappedType"/> is true.
         /// </summary>
         /// <param name="t">The mapped type.</param>
         /// <returns>An handler for the type.</returns>

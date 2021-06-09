@@ -1,5 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -21,7 +23,13 @@ namespace CK.Setup.Json
     /// </summary>
     public partial class PocoJsonSerializerImpl : ICSCodeGenerator
     {
+        // Filled when the Poco properties types have been registered on the JsonSerializationCodeGen.
+        // These actions generate the actual red/write code of the Read and Write methods once the
+        // Json types have been finalized.
+        readonly List<Action> _finalReadWrite = new List<Action>();
+
         /// <summary>
+        /// Instantiates the <see cref="JsonSerializationCodeGen"/> and exposes it in the services.
         /// Extends PocoDirectory_CK, the factories and the Poco classes.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -96,7 +104,8 @@ namespace CK.Setup.Json
         // Step 2: Generates the Read & Write methods.
         //         This is where the Poco's properties types are transitively allowed.
         CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
-        { 
+        {
+            bool success = true;
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
             {
@@ -118,13 +127,17 @@ namespace CK.Setup.Json
 
                 // Generates the Poco class Read and Write methods.
                 // UnionTypes on properties are registered.
-                ExtendPocoClass( root, jsonCodeGen, pocoClass );
+                success &= ExtendPocoClass( root, jsonCodeGen, pocoClass );
             }
-            return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
+            return success
+                    ? new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) )
+                    : CSCodeGenerationResult.Failed;
         }
 
-        void ExtendPocoClass( IPocoRootInfo pocoInfo, JsonSerializationCodeGen jsonCodeGen, ITypeScope pocoClass )
+        bool ExtendPocoClass( IPocoRootInfo pocoInfo, JsonSerializationCodeGen jsonCodeGen, ITypeScope pocoClass )
         {
+            bool success = true;
+
             // Each Poco class is a IWriter and has a constructor that accepts a Utf8JsonReader.
             pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.PocoJsonSerializer.IWriter" ) );
 
@@ -167,23 +180,38 @@ namespace CK.Setup.Json
             {
                 foreach( var union in p.PropertyUnionTypes )
                 {
-                    jsonCodeGen.AllowType( union.Type );
+                    jsonCodeGen.GetHandler( union.Type );
                 }
-
-                write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
-
-                var handler = jsonCodeGen.AllowType( p.PropertyType, p.IsNullable );
-                if( handler == null ) continue;
-
+                var handler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
+                if( handler == null )
+                {
+                    success = false;
+                    continue;
+                }
                 Debug.Assert( handler.IsNullable == p.IsNullable );
-                handler.GenerateWrite( write, "_v" + p.Index );
 
-                read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( " : " )
-                    .OpenBlock();
-                handler.GenerateRead( read, "_v" + p.Index, false );
-                read.Append( "break; " )
-                    .CloseBlock();
+                // Actual Read/Write generation cannot be done here (it must be postponed).
+                // This loop registers/allows the poco property types but writing them requires
+                // to know whether those types are final or not (the call to GetHandler triggers
+                // the type registration).
+                // We store (using closure) the property, the write and read parts and the handler
+                // (to avoid another lookup) and wait for the FinalizeJsonSupport to be called.
+                _finalReadWrite.Add( () =>
+                {
+                    var fieldName = "_v" + p.Index;
+
+                    write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
+                    handler.GenerateWrite( write, fieldName );
+
+                    read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
+                        .OpenBlock();
+                    handler.GenerateRead( read, fieldName, false );
+                    read.Append( "break; " )
+                        .CloseBlock();
+                } );
+
             }
+            return success;
         }
 
         /// <summary>
@@ -249,7 +277,15 @@ if( isDef )
 
         // Step 3: Calls JsonSerializationCodeGen.FinalizeCodeGeneration that will generate
         //         the global Read & Write of "untyped" objects method. 
-        void FinalizeJsonSupport( IActivityMonitor monitor, JsonSerializationCodeGen jsonCodeGen ) => jsonCodeGen.FinalizeCodeGeneration( monitor );
+        void FinalizeJsonSupport( IActivityMonitor monitor, JsonSerializationCodeGen jsonCodeGen )
+        {
+            if( jsonCodeGen.FinalizeCodeGeneration( monitor ) )
+            {
+                foreach( var a in _finalReadWrite ) a();
+            }
+        }
+
+
 
     }
 }

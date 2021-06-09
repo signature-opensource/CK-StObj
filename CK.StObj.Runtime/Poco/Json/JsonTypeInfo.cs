@@ -11,161 +11,15 @@ namespace CK.Setup.Json
     /// Centralized type representation that holds the null and non-null handlers and
     /// carries the <see cref="CodeReader"/> and <see cref="CodeWriter"/> delegates.
     /// </summary>
-    public class JsonTypeInfo : IAnnotationSet
+    public partial class JsonTypeInfo : IAnnotationSet
     {
         /// <summary>
         /// Singleton for "object".
-        /// Its handlers are <see cref="IJsonCodeGenHandler.IsAbstractType"/>.
+        /// Its handlers are <see cref="IJsonCodeGenHandler.IsMappedType"/>.
         /// </summary>
         public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
 
         AnnotationSetImpl _annotations;
-
-        class Handler : IJsonCodeGenHandler
-        {
-            public JsonTypeInfo Info { get; }
-            public bool IsNullable { get; }
-            public Type Type { get; }
-            public string Name { get; }
-            public bool IsAbstractType { get; }
-
-            readonly Handler _otherHandler;
-
-            public Handler( JsonTypeInfo info, Type t, bool isNullable, bool isAbstractType )
-            {
-                IsNullable = isNullable;
-                IsAbstractType = isAbstractType;
-                Info = info;
-                Type = t;
-                Name = info.Name;
-                if( isNullable )
-                {
-                    Type = GetNullableType( t );
-                    Name += '?';
-                }
-                _otherHandler = new Handler( this );
-            }
-
-            Handler( Handler other )
-            {
-                _otherHandler = other;
-                IsNullable = !other.IsNullable;
-                IsAbstractType = other.IsAbstractType;
-                Info = other.Info;
-                Name = other.Info.Name;
-                if( IsNullable )
-                {
-                    Type = GetNullableType( other.Type );
-                    Name += '?';
-                }
-                else Type = other.Type;
-            }
-
-            static Type GetNullableType( Type t )
-            {
-                if( t.IsValueType )
-                {
-                    t = typeof( Nullable<> ).MakeGenericType( t );
-                }
-                return t;
-            }
-
-            public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipNullable = false )
-            {
-                if( Info.DirectType == JsonDirectType.Untyped )
-                {
-                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" ).NewLine();
-                    return;
-                }
-                bool isNullable = IsNullable && !skipNullable;
-                if( isNullable )
-                {
-                    write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
-                            .Append( "else " )
-                            .OpenBlock();
-                }
-                switch( Info.DirectType )
-                {
-                    case JsonDirectType.Number: write.Append( "w.WriteNumberValue( " ).Append( variableName ).Append( " );" ); break;
-                    case JsonDirectType.String: write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( " );" ); break;
-                    case JsonDirectType.Boolean: write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" ); break;
-                    default:
-                        {
-                            bool writeType = (withType.HasValue ? withType.Value : IsAbstractType);
-                            if( writeType )
-                            {
-                                write.Append( "w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( Name ).Append( ");" ).NewLine();
-                            }
-                            Debug.Assert( Info.CodeWriter != null );
-                            bool hasBlock = false;
-                            if( isNullable && Type.IsValueType )
-                            {
-                                if( Info.ByRefWriter )
-                                {
-                                    hasBlock = true;
-                                    write.OpenBlock()
-                                         .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
-                                    variableName = "notNull";
-                                }
-                                else variableName += ".Value";
-                            }
-                            Info.CodeWriter( write, variableName );
-                            if( hasBlock )
-                            {
-                                write.CloseBlock();
-                            }
-                            if( writeType )
-                            {
-                                write.Append( "w.WriteEndArray();" ).NewLine();
-                            }
-                            break;
-                        }
-                }
-                if( isNullable ) write.CloseBlock();
-            }
-
-            public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false )
-            {
-                if( Info.DirectType == JsonDirectType.Untyped )
-                {
-                    read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r );" ).NewLine();
-                    return;
-                }
-                bool isNullable = IsNullable && !skipIfNullBlock;
-                if( isNullable )
-                {
-                    read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
-                        .OpenBlock()
-                        .Append( variableName ).Append( " = null;" ).NewLine()
-                        .Append( "r.Read();" )
-                        .CloseBlock()
-                        .Append( "else" )
-                        .OpenBlock();
-                }
-                switch( Info.DirectType )
-                {
-                    case JsonDirectType.Number: read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" ); break;
-                    case JsonDirectType.String: read.Append( variableName ).Append( " = r.GetString(); r.Read();" ); break;
-                    case JsonDirectType.Boolean: read.Append( variableName ).Append( " = r.GetBoolean(); r.Read();" ); break;
-                    default:
-                        {
-                            Debug.Assert( Info.CodeReader != null );
-                            Info.CodeReader( read, variableName, assignOnly, isNullable );
-                            break;
-                        }
-                }
-                if( isNullable ) read.CloseBlock();
-            }
-
-            public IJsonCodeGenHandler CreateAbstract( Type t )
-            {
-                return new Handler( Info, t, IsNullable, true );
-            }
-
-            public IJsonCodeGenHandler ToNullHandler() => IsNullable ? this : _otherHandler;
-
-            public IJsonCodeGenHandler ToNonNullHandler() => IsNullable ? _otherHandler : this;
-        }
 
         /// <summary>
         /// Gets the primary type.
@@ -174,9 +28,14 @@ namespace CK.Setup.Json
         public Type Type { get; }
 
         /// <summary>
-        /// A unique incremented integer as a string.
+        /// The unique incremented integer <see cref="Number"/> as a string.
         /// </summary>
         public string NumberName { get; }
+
+        /// <summary>
+        /// A unique incremented integer.
+        /// </summary>
+        public int Number { get; }
 
         /// <summary>
         /// Nullable type handler.
@@ -210,16 +69,31 @@ namespace CK.Setup.Json
         /// </summary>
         public JsonDirectType DirectType { get; }
 
+        /// <summary>
+        /// Gets or sets whether this type is final: it is known to have no specialization.
+        /// When let to null (the default), all registered types are automatically challenged before
+        /// generating the code.
+        /// <para>
+        /// The rule is rather simple: as soon as another <see cref="JsonTypeInfo.Type"/> can
+        /// satisfy this type (i.e. this type is assignable from the other), then this type is
+        /// not final.
+        /// </para>
+        /// </summary>
+        public bool? IsFinal { get; set; }
+
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None, bool isAbstractType = false )
+        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None, bool? isFinal = null )
         {
             Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null) );
             Type = t;
+            Number = number;
             NumberName = number.ToString();
             Name = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
             DirectType = d;
-            NonNullHandler = new Handler( this, Type, false, isAbstractType );
+            if( isFinal == null && t.IsValueType ) isFinal = true;
+            IsFinal = isFinal;
+            NonNullHandler = new Handler( this, Type, false, isFinal == false );
             NullHandler = NonNullHandler.ToNullHandler();
         }
 
@@ -230,8 +104,10 @@ namespace CK.Setup.Json
             Type = typeof( object );
             Name = String.Empty;
             PreviousNames = Array.Empty<string>();
+            Number = -1;
             NumberName = String.Empty;
             DirectType = JsonDirectType.Untyped;
+            IsFinal = false;
             NonNullHandler = new Handler( this, Type, false, true );
             NullHandler = NonNullHandler.ToNullHandler();
         }
@@ -269,6 +145,99 @@ namespace CK.Setup.Json
             return this;
         }
 
+
+        /// <summary>
+        /// Calls <see cref="CodeReader"/> inside code that handles reading null.
+        /// Note that <see cref="IsFinal"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
+        /// </summary>
+        /// <param name="read">The code target.</param>
+        /// <param name="variableName">The variable name.</param>
+        /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible.</param>
+        /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
+        public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
+        {
+            if( !IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateRead can be called." );
+            if( isNullable )
+            {
+                read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
+                    .OpenBlock()
+                    .Append( variableName ).Append( " = null;" ).NewLine()
+                    .Append( "r.Read();" )
+                    .CloseBlock()
+                    .Append( "else" )
+                    .OpenBlock();
+            }
+            switch( DirectType )
+            {
+                case JsonDirectType.Number: read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" ); break;
+                case JsonDirectType.String: read.Append( variableName ).Append( " = r.GetString(); r.Read();" ); break;
+                case JsonDirectType.Boolean: read.Append( variableName ).Append( " = r.GetBoolean(); r.Read();" ); break;
+                default:
+                    {
+                        Debug.Assert( CodeReader != null );
+                        CodeReader( read, variableName, assignOnly, isNullable );
+                        break;
+                    }
+            }
+            if( isNullable ) read.CloseBlock();
+        }
+
+        /// <summary>
+        /// Calls <see cref="CodeWriter"/> inside code that handles type discriminator and nullable.
+        /// Note that <see cref="IsFinal"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
+        /// </summary>
+        /// <param name="write">The code target.</param>
+        /// <param name="variableName">The variable name.</param>
+        /// <param name="isNullable">Whether null value must be handled.</param>
+        /// <param name="writeTypeName">The non null type name if type discriminator must be written.</param>
+        public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, string? writeTypeName )
+        {
+            if( !IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateWrite can be called." );
+            if( isNullable )
+            {
+                write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
+                        .Append( "else " )
+                        .OpenBlock();
+            }
+            switch( DirectType )
+            {
+                case JsonDirectType.Number: write.Append( "w.WriteNumberValue( " ).Append( variableName ).Append( " );" ); break;
+                case JsonDirectType.String: write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( " );" ); break;
+                case JsonDirectType.Boolean: write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" ); break;
+                default:
+                    {
+                        if( writeTypeName != null )
+                        {
+                            write.Append( "w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( writeTypeName ).Append( ");" ).NewLine();
+                        }
+                        Debug.Assert( CodeWriter != null );
+                        bool hasBlock = false;
+                        if( isNullable && Type.IsValueType )
+                        {
+                            if( ByRefWriter )
+                            {
+                                hasBlock = true;
+                                write.OpenBlock()
+                                     .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
+                                variableName = "notNull";
+                            }
+                            else variableName += ".Value";
+                        }
+                        CodeWriter( write, variableName );
+                        if( hasBlock )
+                        {
+                            write.CloseBlock();
+                        }
+                        if( writeTypeName != null )
+                        {
+                            write.Append( "w.WriteEndArray();" ).NewLine();
+                        }
+                        break;
+                    }
+            }
+            if( isNullable ) write.CloseBlock();
+        }
+
         /// <inheritdoc />
         public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -289,5 +258,7 @@ namespace CK.Setup.Json
 
         /// <inheritdoc />
         public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
+
+        public override string ToString() => Type.ToString();
     }
 }
