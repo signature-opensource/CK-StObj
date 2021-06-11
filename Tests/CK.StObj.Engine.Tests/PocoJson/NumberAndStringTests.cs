@@ -20,8 +20,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
     [TestFixture]
     public partial class NumberAndStringTests
     {
-        [ExternalName( "Numerics" )]
-        public interface INumerics : IPoco
+        [ExternalName( "BasicTypes" )]
+        public interface IAllBasicTypes : IPoco
         {
             byte Byte { get; set; }
             sbyte SByte { get; set; }
@@ -33,16 +33,22 @@ namespace CK.StObj.Engine.Tests.PocoJson
             ulong ULong { get; set; }
             float Float { get; set; }
             double Double { get; set; }
+            decimal Decimal { get; set; }
+            BigInteger BigInt { get; set; }
+            DateTime DateTime { get; set; }
+            DateTimeOffset DateTimeOffset { get; set; }
+            TimeSpan TimeSpan { get; set; }
+            Guid Guid { get; set; }
         }
 
         [Test]
-        public void all_numerics_successfully_roundtrip()
+        public void all_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( INumerics ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllBasicTypes ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
 
-            var nMax = s.GetService<IPocoFactory<INumerics>>().Create();
+            var nMax = s.GetService<IPocoFactory<IAllBasicTypes>>().Create();
             nMax.Byte = Byte.MaxValue;
             nMax.SByte = SByte.MaxValue;
             nMax.Short = Int16.MaxValue;
@@ -53,8 +59,14 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMax.ULong = UInt64.MaxValue;
             nMax.Float = Single.MaxValue;
             nMax.Double = Double.MaxValue;
+            nMax.Decimal = Decimal.MaxValue;
+            nMax.BigInt = BigInteger.Parse( "12345678901234567890123456789012345678901234567890123456789012345678901234567890" );
+            nMax.DateTime = Util.UtcMaxValue;
+            nMax.DateTimeOffset = DateTimeOffset.MaxValue;
+            nMax.TimeSpan = TimeSpan.MaxValue;
+            nMax.Guid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
 
-            var nMin = s.GetService<IPocoFactory<INumerics>>().Create();
+            var nMin = s.GetService<IPocoFactory<IAllBasicTypes>>().Create();
             nMin.Byte = Byte.MinValue;
             nMin.SByte = SByte.MinValue;
             nMin.Short = Int16.MinValue;
@@ -65,6 +77,12 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMin.ULong = UInt64.MinValue;
             nMin.Float = Single.MinValue;
             nMin.Double = Double.MinValue;
+            nMin.Decimal = Decimal.MinValue;
+            nMin.BigInt = BigInteger.Parse( "-12345678901234567890123456789012345678901234567890123456789012345678901234567890" );
+            nMin.DateTime = Util.UtcMinValue;
+            nMin.DateTimeOffset = DateTimeOffset.MinValue;
+            nMin.TimeSpan = TimeSpan.MinValue;
+            nMin.Guid = Guid.Empty;
 
             var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text => TestHelper.Monitor.Info( $"INumerics(max) serialization: " + text ) );
             nMax2.Should().BeEquivalentTo( nMax );

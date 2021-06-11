@@ -34,7 +34,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 && (parseMethodParameters = parseMethod.GetParameters()).Length == 1
                 && parseMethodParameters[0].ParameterType == typeof( string ) )
             {
-                // The write is very simple: writes a the ToString() result as a Json string.
+                // The write is very simple: writes the ToString() as a Json string.
                 // The read calls the static Parse on the reader.
 
                 if( toSupport.GetExternalNames( e.Monitor, out var name, out var previousNames ) )

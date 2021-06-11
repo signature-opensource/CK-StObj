@@ -11,7 +11,12 @@ namespace CK.Core
     /// <para>
     /// Without this attribute, the type name is the <see cref="Type.FullName"/>, an external name must "look like" a
     /// .Net full type name (optional namespace and type name). Open generics should expose their generic parameter
-    /// type names (like &lt;T&gt; or &lt;TKey,TValue&gt;) rather than just the 'count.
+    /// type names between parentheses - like <c>MyClass(T)</c> or <c>BiList(T1,T2)</c> - rather than just the 'count.
+    /// </para>
+    /// <para>
+    /// Using parentheses rather than angle brackets like <c>BiList&lt;T1,T2&gt;</c> makes this name "more easily exportable".
+    /// For example, in JSON, &lt;&gt; are - by default - encoded as "\u003C\u003E". And  &lt; or &gt; are forbidden in
+    /// file names.
     /// </para>
     /// <para>
     /// For Poco interfaces, the primary interface that defines the Poco settles the Poco's type name: it must

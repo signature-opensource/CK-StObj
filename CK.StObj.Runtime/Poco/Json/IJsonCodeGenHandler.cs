@@ -39,7 +39,7 @@ namespace CK.Setup.Json
         /// Gets the type handled.
         /// It can differ from the <see cref="JsonTypeInfo.Type"/> if it's
         /// a value type and <see cref="IsNullable"/> is true (type is <see cref="Nullable{T}"/>)
-        /// or if this <see cref="IsMappedType"/> is true.
+        /// or if this <see cref="IsTypeMapping"/> is true.
         /// </summary>
         Type Type { get; }
 
@@ -62,7 +62,7 @@ namespace CK.Setup.Json
         /// may reference a specialization) and that it is written by the generic/untyped WriteObject.
         /// </para>
         /// </summary>
-        bool IsMappedType { get; }
+        bool IsTypeMapping { get; }
 
         /// <summary>
         /// Gets whether this <see cref="Type"/> must be considered as a nullable one.
@@ -70,19 +70,11 @@ namespace CK.Setup.Json
         bool IsNullable { get; }
 
         /// <summary>
-        /// Gets whether <see cref="GenerateRead(ICodeWriter, string, bool, bool)"/> or <see cref="GenerateWrite(ICodeWriter, string, bool?, bool)"/>
-        /// can be called.
-        /// For all handlers to be ready, <see cref="JsonSerializationCodeGen.FinalizeCodeGeneration(Core.IActivityMonitor)"/> must have
-        /// been successfully called.
-        /// </summary>
-        bool IsReady { get; }
-
-        /// <summary>
         /// Generates the code required to write a value stored in <paramref name="variableName"/>.
         /// </summary>
         /// <param name="write">The code writer.</param>
         /// <param name="variableName">The variable name.</param>
-        /// <param name="withType">True or false to override (<see cref="IsMappedType"/> || !<see cref="JsonTypeInfo.IsFinal"/>).</param>
+        /// <param name="withType">True or false to override (<see cref="IsTypeMapping"/> || !<see cref="JsonTypeInfo.IsFinal"/>).</param>
         /// <param name="skipIfNullBlock">
         /// True to skip the "if( variableName == null )" block whenever <see cref="IsNullable"/> is true.
         /// This <see cref="Type"/> and <see cref="Name"/> are kept as-is.
@@ -102,7 +94,7 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Creates a handler for type that is mapped to this one.
-        /// Its <see cref="IsMappedType"/> is true.
+        /// Its <see cref="IsTypeMapping"/> is true.
         /// </summary>
         /// <param name="t">The mapped type.</param>
         /// <returns>An handler for the type.</returns>

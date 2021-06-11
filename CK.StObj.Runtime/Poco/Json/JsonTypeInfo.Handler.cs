@@ -12,14 +12,14 @@ namespace CK.Setup.Json
             public bool IsNullable { get; }
             public Type Type { get; }
             public string Name { get; }
-            public bool IsMappedType { get; }
+            public bool IsTypeMapping { get; }
 
             readonly Handler _otherHandler;
 
-            public Handler( JsonTypeInfo info, Type t, bool isNullable, bool isAbstractType )
+            public Handler( JsonTypeInfo info, Type t, bool isNullable, bool isTypeMapping )
             {
                 IsNullable = isNullable;
-                IsMappedType = isAbstractType;
+                IsTypeMapping = isTypeMapping;
                 TypeInfo = info;
                 Type = t;
                 Name = info.Name;
@@ -35,7 +35,7 @@ namespace CK.Setup.Json
             {
                 _otherHandler = other;
                 IsNullable = !other.IsNullable;
-                IsMappedType = other.IsMappedType;
+                IsTypeMapping = other.IsTypeMapping;
                 TypeInfo = other.TypeInfo;
                 Name = other.TypeInfo.Name;
                 if( IsNullable )
@@ -55,25 +55,21 @@ namespace CK.Setup.Json
                 return t;
             }
 
-            public bool IsReady => TypeInfo.IsFinal.HasValue;
-
             public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipNullable = false )
             {
-                if( !TypeInfo.IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateWrite can be called." );
-                if( TypeInfo.DirectType == JsonDirectType.Untyped || !TypeInfo.IsFinal.Value )
+                if( !TypeInfo.IsFinal )
                 {
                     write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" ).NewLine();
                     return;
                 }
                 bool isNullable = IsNullable && !skipNullable;
-                string? writeTypeName = (withType.HasValue ? withType.Value : IsMappedType) ? Name : null;
+                string? writeTypeName = (withType.HasValue ? withType.Value : IsTypeMapping) ? Name : null;
                 TypeInfo.GenerateWrite( write, variableName, isNullable, writeTypeName );
             }
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false )
             {
-                if( !TypeInfo.IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateRead can be called." );
-                if( TypeInfo.DirectType == JsonDirectType.Untyped || TypeInfo.IsFinal == false )
+                if( !TypeInfo.IsFinal )
                 {
                     read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r );" ).NewLine();
                     return;

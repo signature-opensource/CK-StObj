@@ -15,7 +15,7 @@ namespace CK.Setup.Json
     {
         /// <summary>
         /// Singleton for "object".
-        /// Its handlers are <see cref="IJsonCodeGenHandler.IsMappedType"/>.
+        /// Its handlers are <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
         /// </summary>
         public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
 
@@ -71,18 +71,14 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
-        /// When let to null (the default), all registered types are automatically challenged before
-        /// generating the code.
-        /// <para>
-        /// The rule is rather simple: as soon as another <see cref="JsonTypeInfo.Type"/> can
-        /// satisfy this type (i.e. this type is assignable from the other), then this type is
-        /// not final.
-        /// </para>
+        /// This is initially true (except if the type is sealed) but as soon as a type that can be assigned
+        /// to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
+        /// this becomes false.
         /// </summary>
-        public bool? IsFinal { get; set; }
+        public bool IsFinal { get; internal set; }
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None, bool? isFinal = null )
+        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None )
         {
             Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null) );
             Type = t;
@@ -91,9 +87,8 @@ namespace CK.Setup.Json
             Name = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
             DirectType = d;
-            if( isFinal == null && t.IsValueType ) isFinal = true;
-            IsFinal = isFinal;
-            NonNullHandler = new Handler( this, Type, false, isFinal == false );
+            IsFinal = true;
+            NonNullHandler = new Handler( this, Type, false, false );
             NullHandler = NonNullHandler.ToNullHandler();
         }
 
@@ -148,7 +143,6 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Calls <see cref="CodeReader"/> inside code that handles reading null.
-        /// Note that <see cref="IsFinal"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="read">The code target.</param>
         /// <param name="variableName">The variable name.</param>
@@ -156,7 +150,6 @@ namespace CK.Setup.Json
         /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
         public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
         {
-            if( !IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateRead can be called." );
             if( isNullable )
             {
                 read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
@@ -184,7 +177,6 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Calls <see cref="CodeWriter"/> inside code that handles type discriminator and nullable.
-        /// Note that <see cref="IsFinal"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="write">The code target.</param>
         /// <param name="variableName">The variable name.</param>
@@ -192,7 +184,6 @@ namespace CK.Setup.Json
         /// <param name="writeTypeName">The non null type name if type discriminator must be written.</param>
         public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, string? writeTypeName )
         {
-            if( !IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateWrite can be called." );
             if( isNullable )
             {
                 write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()

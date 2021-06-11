@@ -36,7 +36,15 @@ namespace CK.Setup.Json
         /// </summary>
         readonly Dictionary<object, IJsonCodeGenHandler> _map;
         readonly List<JsonTypeInfo> _typeInfos;
-        int _typeInfoCurrentCount;
+        int _typeInfoAutoNumber;
+        // The index in the _typeInfos list where reference types that must be sorted
+        // from "less IsAssignableFrom" (specialization) to "most IsAssignableFrom" (generalization)
+        // so that switch case entries are correctly ordered.
+        // Before this mark, there are the Value Types and the Untyped (object): InitializeMap
+        // starts to count.
+        int _typeInfoRefTypeStartIdx;
+
+
         bool? _finalizedCall;
 
         /// <summary>
@@ -88,12 +96,13 @@ namespace CK.Setup.Json
         /// <param name="t">The type.</param>
         /// <param name="name">The serialized type name.</param>
         /// <param name="previousNames">Optional previous names.</param>
-        /// <param name="d">Optional <see cref="DirectType"/>.</param>
         /// <returns>A new type info.</returns>
-        public JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None )
+        public JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null ) => CreateTypeInfo( t, name, previousNames, JsonDirectType.None );
+
+        JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames, JsonDirectType d )
         {
             if( t.IsValueType && Nullable.GetUnderlyingType( t ) != null ) throw new ArgumentException( "Must not be a Nullable<T> value type.", nameof( t ) );
-            return new JsonTypeInfo( t, _typeInfoCurrentCount++, name, previousNames, d, null );
+            return new JsonTypeInfo( t, _typeInfoAutoNumber++, name, previousNames, d );
         }
 
         /// <summary>
@@ -133,6 +142,14 @@ namespace CK.Setup.Json
                     _map.Add( p, i.NonNullHandler );
                 }
                 _map.Add( i.NullHandler.Type, i.NullHandler );
+                if( _typeInfoRefTypeStartIdx == 0 )
+                {
+                    _typeInfos.Add( i );
+                }
+                else
+                {
+                    _typeInfos.Insert( _typeInfoRefTypeStartIdx++, i );
+                }
             }
             else
             {
@@ -142,8 +159,36 @@ namespace CK.Setup.Json
                 {
                     _map.Add( p, i.NullHandler );
                 }
+                if( _typeInfoRefTypeStartIdx == 0 )
+                {
+                    _typeInfos.Add( i );
+                }
+                else
+                {
+                    if( i.Type.IsSealed )
+                    {
+                        _typeInfos.Insert( _typeInfoRefTypeStartIdx++, i );
+                    }
+                    else
+                    {
+                        // Finds the first type that can be assigned to the new one:
+                        // the new one must appear before it.
+                        // And since we found a type that is ambiguous, we can conclude
+                        // that it's IsFinal flag is false.
+                        int idx;
+                        for( idx = _typeInfoRefTypeStartIdx; idx < _typeInfos.Count; ++idx )
+                        {
+                            var atIdx = _typeInfos[idx];
+                            if( atIdx.Type.IsAssignableFrom( i.Type ) )
+                            {
+                                atIdx.IsFinal = false;
+                                break;
+                            }
+                        }
+                        _typeInfos.Insert( idx, i );
+                    }
+                }
             }
-            _typeInfos.Add( i );
             return i;
         }
 
@@ -331,7 +376,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Allows an untyped type: it is handled as an 'object', the type name of the
         /// concrete object will be the first item of a 2-cells array, the second being the object's value
-        /// (Type information is also written when <see cref="IJsonCodeGenHandler.IsMappedType"/> is true
+        /// (Type information is also written when <see cref="IJsonCodeGenHandler.IsTypeMapping"/> is true
         /// or <see cref="JsonTypeInfo.IsFinal"/> is false).
         /// </summary>
         /// <param name="t">The untyped, abstract, type to register.</param>
@@ -343,9 +388,10 @@ namespace CK.Setup.Json
 
         void InitializeMap()
         {
+            Debug.Assert( _typeInfoRefTypeStartIdx == 0 );
             // Direct types.
             AllowTypeInfo( JsonTypeInfo.Untyped );
-            AllowTypeInfo( CreateTypeInfo( typeof( string ), "string", previousNames: null, JsonDirectType.String ) ).IsFinal = true;
+            AllowTypeInfo( CreateTypeInfo( typeof( string ), "string", previousNames: null, JsonDirectType.String ) );
             AllowTypeInfo( CreateTypeInfo( typeof( bool ), "bool", previousNames: null, JsonDirectType.Boolean ) );
             AllowTypeInfo( CreateTypeInfo( typeof( int ), "int", previousNames: null, JsonDirectType.Number ) );
 
@@ -371,16 +417,20 @@ namespace CK.Setup.Json
                 } )
                 .IsFinal = true;
 
-            AllowTypeInfo( typeof( Guid ), "g" ).Configure( WriteString,
+            AllowTypeInfo( typeof( Guid ), "Guid" ).Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetGuid(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( Decimal ), "Decimal" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( decimal ), "decimal" ).Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
+                },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = r.GetDecimal(); r.Read();" );
+                    read.Append( variableName ).Append( " = Decimal.Parse( r.GetString() ); r.Read();" );
                 } );
 
             AllowTypeInfo( typeof( uint ), "uint" ).Configure( WriteNumber,
@@ -401,16 +451,24 @@ namespace CK.Setup.Json
                     read.Append( variableName ).Append( " = r.GetSingle(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( long ), "long" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( long ), "long" ).Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
+                },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = r.GetInt64(); r.Read();" );
+                    read.Append( variableName ).Append( " = Int64.Parse( r.GetString() ); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( ulong ), "ulong" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( ulong ), "ulong" ).Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
+                },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = r.GetUInt64(); r.Read();" );
+                    read.Append( variableName ).Append( " = UInt64.Parse( r.GetString() ); r.Read();" );
                 } );
 
             AllowTypeInfo( typeof( byte ), "byte" ).Configure( WriteNumber,
@@ -437,6 +495,16 @@ namespace CK.Setup.Json
                     read.Append( variableName ).Append( " = r.GetUInt16(); r.Read();" );
                 } );
 
+            AllowTypeInfo( typeof( System.Numerics.BigInteger ), "BigInteger" ).Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( \"R\", System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = System.Numerics.BigInteger.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ); r.Read();" );
+                } );
+
             AllowTypeInfo( typeof( DateTime ), "DateTime" ).Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
@@ -452,12 +520,13 @@ namespace CK.Setup.Json
             AllowTypeInfo( typeof( TimeSpan ), "TimeSpan" ).Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
-                    write.Append( "w.WriteNumberValue( " ).Append( variableName ).Append( ".Ticks );" );
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Ticks.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = TimeSpan.FromTicks( r.GetInt64() ); r.Read();" );
+                    read.Append( variableName ).Append( " = TimeSpan.FromTicks( Int64.Parse( r.GetString() ) ); r.Read();" );
                 } );
+            _typeInfoRefTypeStartIdx = _typeInfos.Count;
         }
 
         IJsonCodeGenHandler ConfigureAndAddTypeInfoForListSetAndMap( JsonTypeInfo info, IFunctionScope fWrite, IFunctionScope fRead, Type tInterface )
@@ -848,12 +917,12 @@ namespace CK.Setup.Json
                 // Writing must handle the object instance to write. Null reference/value type can be handled immediately (by writing "null").
                 // When not null, we are dealing only with concrete types here: the object MUST be of an allowed concrete type, an abstraction
                 // that wouldn't be one of the allowed concrete type must NOT be handled!
-                // That's why we can use a direct pattern matching on the object's type for the write method (after having ordered types with specializations
-                // first to correctly handle base types mapped to a different handler than its specialization) and computed the IsFinal flag.
-                GenerateDynamicWriteAndComputeIsFinal( monitor, _typeInfos );
+                // That's why we can use a direct pattern matching on the object's type for the write method (reference types are ordered from specializations
+                // to generalization).
+                GenerateDynamicWrite( monitor, _typeInfos );
 
                 // Reading must handle the [TypeName,...] array: it needs a lookup from the "type name" to the handler to use: this is the goal of
-                // the _typeReaders dictionary that we initialize here (no concurrency issue, no lock here: once built the dictionary will only
+                // the _typeReaders dictionary that we initialize here (no concurrency issue, no lock to generate: once built the dictionary will only
                 // be read).
                 GenerateDynamicRead( _map );
 
@@ -931,104 +1000,10 @@ namespace CK.Setup.Json
 
                 ctor.CloseBlock();
             }
-
-            //foreach( var (typeOrName, handler) in map )
-            //{
-            //    // Skips direct types that are handled...directly.
-            //    if( handler.TypeInfo.DirectType != JsonDirectType.None && handler.TypeInfo.DirectType != JsonDirectType.Untyped ) continue;
-
-            //    // Write is called on the object's concrete type, it is useless to map an abstract type here since Read reads
-            //    // back what has been written...
-            //    if( handler.IsMappedType ) continue;
-
-            //    // Only consider names here (Type is for the Write!).
-            //    if( !(typeOrName is string name) ) continue;
-
-            //    Debug.Assert( name == handler.Name );
-            //    // Reading null is already handled: we can skip any nullable handler.
-            //    // ValueType nullable names don't appear in the map. We add them as an alias.
-            //    if( handler.IsNullable ) continue;
-
-            //    ctor.OpenBlock()
-            //        .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r ) {" )
-            //        .AppendCSharpName( handler.Type ).Append( " o;" ).NewLine();
-            //    handler.GenerateRead( ctor, "o", assignOnly: true, skipIfNullBlock: true );
-            //    ctor.NewLine().Append( "return o;" ).NewLine()
-            //        .Append( "};" ).NewLine();
-            //    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.Name ).Append( ", d );" ).NewLine();
-            //    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( handler.ToNullHandler().Name ).Append( ", d );" ).NewLine();
-
-            //    ctor.CloseBlock();
-            //}
-
         }
 
-        void GenerateDynamicWriteAndComputeIsFinal( IActivityMonitor monitor, List<JsonTypeInfo> types )
+        void GenerateDynamicWrite( IActivityMonitor monitor, List<JsonTypeInfo> types )
         {
-            // We are using the sort to handle the IsFinal since, for reference type, we call
-            // IsAssignableFrom between types.
-            int Compare( JsonTypeInfo i1, JsonTypeInfo i2 )
-            {
-                var t1 = i1.Type;
-                var t2 = i2.Type;
-                if( t1 == t2 ) return 0;
-                if( t1.IsValueType )
-                {
-                    if( t2.IsValueType )
-                    {
-                        return t1.IsEnum
-                                ? (t2.IsEnum ? 0 : 1)
-                                : (t2.IsEnum ? -1 : 0);
-                    }
-                    return -1;
-                }
-                if( t2.IsValueType ) return 1;
-                if( t1.IsAssignableFrom( t2 ) )
-                {
-                    SetFalseFinal( i1, i2 );
-                    return 1;
-                }
-                if( t2.IsAssignableFrom( t1 ) )
-                {
-                    SetFalseFinal( i2, i1 );
-                    return -1;
-                }
-                // IsAssignableFrom defines only a partial order. Quicksort fails on such partial order:
-                // by introducing an artificial tail order, we obtain a total order that will always work.
-                return i1.Number - i2.Number;
-            }
-
-            void SetFalseFinal( JsonTypeInfo t, JsonTypeInfo subordinate )
-            {
-                if( t.IsFinal.HasValue )
-                {
-                    if( t.IsFinal.Value )
-                    {
-                        monitor.Warn( $"Json Type '{t.Name}' is marked final but '{subordinate.Name}' is assignable to it. This will create an ambiguity in the mapping." );
-                    }
-                }
-                else
-                {
-                    t.IsFinal = false;
-                }
-            }
-
-#if DEBUG
-            static JsonTypeInfo T<T>() => new JsonTypeInfo( typeof( T ), 1, "" );
-
-            Debug.Assert( Compare( T<int>(), T<int>() ) == 0 );
-            Debug.Assert( Compare( T<JsonDirectType>(), T<JsonDirectType>() ) == 0 );
-            Debug.Assert( Compare( T<string>(), T<string>() ) == 0 );
-            Debug.Assert( Compare( T<int>(), T<JsonDirectType>() ) < 0 );
-            Debug.Assert( Compare( T<JsonDirectType>(), T<int>() ) > 0 );
-            Debug.Assert( Compare( T<string>(), T<int>() ) > 0 );
-            Debug.Assert( Compare( T<string>(), T<JsonDirectType>() ) > 0 );
-            Debug.Assert( Compare( T<int>(), T<string>() ) < 0 );
-            Debug.Assert( Compare( T<JsonDirectType>(), T<string>() ) < 0 );
-            Debug.Assert( Compare( T<TypeInfoConfigurationRequiredEventArg>(), T<EventArgs>() ) < 0 );
-            Debug.Assert( Compare( T<EventArgs>(), T<TypeInfoConfigurationRequiredEventArg>() ) > 0 );
-#endif
-
             _pocoDirectory
                     .GeneratedByComment()
                 .Append( @"
@@ -1044,49 +1019,14 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o )
         default: throw new System.Text.Json.JsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" );
     }
 }" );
-            // Ordering is: value types first, then enums, and then most specialized reference types to more generic reference types.
-            types.Sort( Compare );
             foreach( var t in types )
             {
                 // Skips direct types.
                 if( t.DirectType != JsonDirectType.None ) continue;
-
-                if( !t.IsFinal.HasValue )
-                {
-                    // The first unknown IsFinal triggers the computation of all of them.
-                    // If everything is known, there's no overhead.
-                    ComputeIsFinal( monitor, types );
-                }
                 mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
-                Debug.Assert( !t.NonNullHandler.IsMappedType, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
+                Debug.Assert( !t.NonNullHandler.IsTypeMapping, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
                 t.GenerateWrite( mappings, "v", false, t.Name );
                 mappings.NewLine().Append( "break;" ).NewLine();
-            }
-
-            void ComputeIsFinal( IActivityMonitor monitor, List<JsonTypeInfo> types )
-            {
-                Debug.Assert( types[^1].Type == typeof( object ) && types[^1].IsFinal == false );
-                int iStart = -1;
-                foreach( var t0 in types )
-                {
-                    ++iStart;
-                    if( !t0.Type.IsValueType ) break;
-                }
-                int iEnd = types.Count - 1;
-                while( iStart <= --iEnd )
-                {
-                    var t = types[iEnd];
-                    if( t.IsFinal.HasValue ) continue;
-                    for( int i = iEnd; i >= iStart; )
-                    {
-                        if( t.Type.IsAssignableFrom( types[--i].Type ) )
-                        {
-                            Debug.Assert( t.Type != types[i].Type );
-                            SetFalseFinal( t, types[i] );
-                        }
-                    }
-                    if( !t.IsFinal.HasValue ) t.IsFinal = true;
-                }
             }
         }
 
