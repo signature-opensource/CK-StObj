@@ -84,10 +84,10 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMin.TimeSpan = TimeSpan.MinValue;
             nMin.Guid = Guid.Empty;
 
-            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text => TestHelper.Monitor.Info( $"INumerics(max) serialization: " + text ) );
+            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"INumerics(max) serialization: " + t ) );
             nMax2.Should().BeEquivalentTo( nMax );
 
-            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text => TestHelper.Monitor.Info( $"INumerics(min) serialization: " + text ) );
+            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"INumerics(min) serialization: " + t ) );
             nMin2.Should().BeEquivalentTo( nMin );
         }
 

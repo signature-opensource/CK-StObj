@@ -448,7 +448,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             {
                 a.V = new Dictionary<int, string?>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" }, { 3712, null } };
             } );
-            JsonTestHelper.Roundtrip( directory, a, t => TestHelper.Monitor.Info( t ) );
+            JsonTestHelper.Roundtrip( directory, a, text: t => TestHelper.Monitor.Info( t ) );
 
             a.V = 56;
             JsonTestHelper.Roundtrip( directory, a );

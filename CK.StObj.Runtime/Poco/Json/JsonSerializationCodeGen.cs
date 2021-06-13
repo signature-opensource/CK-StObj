@@ -315,11 +315,11 @@ namespace CK.Setup.Json
                         info.Configure(
                                   ( ICodeWriter write, string variableName ) =>
                                   {
-                                      write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, " ).Append( variableName ).Append( " );" );
+                                      write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, " ).Append( variableName ).Append( ", options );" );
                                   },
                                   ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                                   {
-                                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( variableName ).Append( " );" );
+                                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( variableName ).Append( ", options );" );
                                   } );
                         handler = AllowTypeInfo( info ).NullHandler;
                     }
@@ -535,7 +535,7 @@ namespace CK.Setup.Json
             info.Configure(
                       ( ICodeWriter write, string variableName ) =>
                       {
-                          write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, " ).Append( variableName ).Append( " );" );
+                          write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, " ).Append( variableName ).Append( ", options );" );
                       },
                       ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                       {
@@ -557,7 +557,7 @@ namespace CK.Setup.Json
                           {
                               read.Append( variableName ).Append( " = new " ).AppendCSharpName( info.Type ).Append( "();" ).NewLine();
                           }
-                          read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( " );" );
+                          read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( ", options );" );
                       } );
             AllowTypeInfo( info );
             // The interface is directly mapped to the non null handler.
@@ -578,8 +578,8 @@ namespace CK.Setup.Json
 
             string funcSuffix = keyHandler.TypeInfo.NumberName + "_" + valueHandler.TypeInfo.NumberName;
             // Trick: the reader/writer functions accepts the interface rather than the concrete type.
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteM_" + funcSuffix + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadM_" + funcSuffix + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c )" );
+            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteM_" + funcSuffix + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadM_" + funcSuffix + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
             IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
             if( fWrite != null )
@@ -634,8 +634,8 @@ namespace CK.Setup.Json
 
             string valueTypeName = valueHandler.Type.ToCSharpName();
             var concreteTypeName = "Dictionary<string," + valueTypeName + ">";
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteO_" + valueHandler.TypeInfo.NumberName + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadO_" + valueHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c )" );
+            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteO_" + valueHandler.TypeInfo.NumberName + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadO_" + valueHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
             IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
             if( fWrite != null )
@@ -679,7 +679,7 @@ namespace CK.Setup.Json
 
             if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler, out string? itemTypeName ) ) return default;
 
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadLOrS_" + itemHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, ICollection<" + itemTypeName + "> c )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadLOrS_" + itemHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, ICollection<" + itemTypeName + "> c, PocoJsonSerializerOptions options )" );
             IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
             if( fRead == null )
             {
@@ -707,14 +707,14 @@ namespace CK.Setup.Json
 
             if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler, out string? itemTypeName ) ) return default;
 
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadArray_" + itemHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + itemTypeName + "[] a )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadArray_" + itemHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + itemTypeName + "[] a, PocoJsonSerializerOptions options )" );
             IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
             if( fRead == null )
             {
                 fRead = _pocoDirectory.CreateFunction( fReadDef );
                 fRead.OpenBlock()
                      .Append( "var c = new List<" + itemTypeName + ">();" ).NewLine()
-                     .Append( "ReadLOrS_" + itemHandler.TypeInfo.NumberName + "( ref r, c );" ).NewLine()
+                     .Append( "ReadLOrS_" + itemHandler.TypeInfo.NumberName + "( ref r, c, options );" ).NewLine()
                      .Append( "a = c.ToArray();" ).NewLine()
                      .CloseBlock();
             }
@@ -732,7 +732,7 @@ namespace CK.Setup.Json
             if( itemHandler != null )
             {
                 itemTypeName = itemHandler.Type.ToCSharpName();
-                var fWriteDef = FunctionDefinition.Parse( "internal static void WriteE_" + itemHandler.TypeInfo.NumberName + "( System.Text.Json.Utf8JsonWriter w, IEnumerable<" + itemTypeName + "> c )" );
+                var fWriteDef = FunctionDefinition.Parse( "internal static void WriteE_" + itemHandler.TypeInfo.NumberName + "( System.Text.Json.Utf8JsonWriter w, IEnumerable<" + itemTypeName + "> c, PocoJsonSerializerOptions options )" );
                 fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
                 if( fWrite == null )
                 {
@@ -806,8 +806,8 @@ namespace CK.Setup.Json
 
             var valueTupleName = t.ToCSharpName();
             // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + valueTupleName + " v )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + valueTupleName + " v )" );
+            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
 
             IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
@@ -845,7 +845,7 @@ namespace CK.Setup.Json
                 .Configure(
                   ( ICodeWriter write, string variableName ) =>
                   {
-                      write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, ref " ).Append( variableName ).Append( " );" );
+                      write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, ref " ).Append( variableName ).Append( ", options );" );
                   },
                   ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                   {
@@ -856,7 +856,7 @@ namespace CK.Setup.Json
                               .AppendCSharpName( info.Type ).Space().Append( "notNull;" ).NewLine();
                           vName = "notNull";
                       }
-                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( vName ).Append( " );" );
+                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( vName ).Append( ", options );" );
                       if( isNullable )
                       {
                           read.Append( variableName ).Append( " = notNull;" )
@@ -952,11 +952,11 @@ namespace CK.Setup.Json
         {
             _pocoDirectory.GeneratedByComment()
                           .Append( @"
-            delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r );
+            delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options );
 
             static readonly Dictionary<string, ReaderFunction> _typeReaders = new Dictionary<string, ReaderFunction>();
 
-            internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r )
+            internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )
             {
                 switch( r.TokenType )
                 {
@@ -974,7 +974,7 @@ namespace CK.Setup.Json
                             {
                                 throw new System.Text.Json.JsonException( $""Unregistered type name '{n}'."" );
                             }
-                            var o = reader( ref r );
+                            var o = reader( ref r, options );
                             r.Read(); // ]
                             return o;
                         }
@@ -990,7 +990,7 @@ namespace CK.Setup.Json
                 // Skips direct types that are handled...directly.
                 if( t.DirectType != JsonDirectType.None || t.DirectType == JsonDirectType.Untyped ) continue;
                 ctor.OpenBlock()
-                    .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r ) {" )
+                    .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
                     .AppendCSharpName( t.Type ).Append( " o;" ).NewLine();
                 t.GenerateRead( ctor, "o", assignOnly: true, isNullable: false );
                 ctor.NewLine().Append( "return o;" ).NewLine()
@@ -1007,7 +1007,7 @@ namespace CK.Setup.Json
             _pocoDirectory
                     .GeneratedByComment()
                 .Append( @"
-internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o )
+internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, PocoJsonSerializerOptions options )
 {
     switch( o )
     {

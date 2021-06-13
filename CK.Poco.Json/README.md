@@ -3,11 +3,26 @@
 This package triggers the code generation of Json serialization and deserialization of Poco. Poco are the **roots of serialization**,
 they bootstrap the serialization and deserialization process.
 
-Even if other types can be supported, serialized data must be subordinated to a Poco (it must appear below a Poco property).
-
-The way this work is more complex that the basics System.Text.Json since it is not a converter (see [here](https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to)
-for instance) that must be written but the code that generates the code to read/write objects. More complex but also deeply "type safe" and
+The key aspects of this serialization are:
+- Serialization starts with Poco: data must be subordinated to a Poco, it must ultimately be referenced by a Poco property: see [Registered types only](#registered-types-only) below.
+- We do NOT handle graphs: the serialized object must not reference itself: cycles are error.
+- The serialization code is generated, this does not use reflection. The way this work is more complex that the basics System.Text.Json. More complex but also deeply "type safe" and
 potentially more efficient.
+- Adding code generation to support specific types or types family is possible. Recall that it is not a converter (see [here](https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to)
+for instance) that must be written but the code that generates the code to read/write the object.
+An example is available in the tests [here](../Tests/CK.StObj.Engine.Tests/PocoJson/JsonSerializerViaToStringAndParseGenerator.cs).
+
+## Usage
+
+This package exposes two extension methods, one on every IPoco (write, serialize) and one on the PocoDirectory singleton (to read, deserialize):
+```csharp
+public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true ) {...}
+public static IPoco? ReadPocoValue( this PocoDirectory directory, ref Utf8JsonReader reader ) {...}
+```
+
+Note that when written the Poco can be null (the extension method handles it and emits a `null`).
+This package also overrides the Poco's class implementation `ToString()` method (if this method is not already generated) so that
+the JSON representation of the Poco is returned (this comes in handy when debugging).
 
 ## Basic types
 
@@ -20,8 +35,10 @@ byte[] (encoded in [base64](https://source.dot.net/#System.Text.Json/System/Text
 
 The following complex types are handled:
 
-- A `T[]` (array), `IList<T>`, `List<T>`, `ISet<T>`, `Set<T>` is serialized as an array (the C# types can be interchanged). 
-- A `IDictionary<,>` or `Dictionary<,>` is serialized as a Json object when the type of the key is string and as an array of 2-cells arrays when the key is an object. 
+- A `T[]` (array), `IList<T>`, `List<T>`, `ISet<T>`, `Set<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
+- A `IDictionary<,>` or `Dictionary<,>` is serialized as 
+  - a Json object when the type of the key is string 
+  - and as an array of 2-cells arrays when the key is an object. 
 - Value tuples are serialized as arrays.
 
 Nullable value types and nullable reference types are automatically handled.
@@ -106,7 +123,7 @@ The C# `Person[]` can contain 3 different types of objects. Each item needs to b
 
 When the same array of Persons is known only as an object[] (or any other non-unique "base" type like the non-generic `ICollection`),
 then the array itself requires its type:
-`["A(Person)",[["Student",{"Name":"A", "Age":12}],["Person",{"Name":"E"}],["Teacher",{"Name":"T","IsChief:false}]]]`
+`["Person[]",[["Student",{"Name":"A", "Age":12}],["Person",{"Name":"E"}],["Teacher",{"Name":"T","IsChief:false}]]]`
 
 ### The type name
 
@@ -157,9 +174,9 @@ If we want to preserve typings between C# and ECMASCript client, the client must
 front end developers!). Actually C# types are not expected on the client side. Most often, front end developers want a simple `number` whatever the C# counterpart
 is (byte, sbyte, etc.).
 
-This implies a kind of [type erasure](https://en.wikipedia.org/wiki/Type_erasure) that maps float, single, small integers up to the Int32 to `number` and big
-integers to `BigInt`. In this mode, client code manipulates a `power` property as `number` and if this property is eventually a ushort (on the server side),
-it is up to the client to check this before sending it back (and the server will validate its inputs anyway).  
+This implies a kind of [type erasure](https://en.wikipedia.org/wiki/Type_erasure) that maps float, single, small integers up to the Int32 to `Number` and big
+integers to `BigInt` (not the same as the the C# `BigInteger`). In this mode, client code manipulates a `power` property as `number` and if this property is
+eventually a ushort (on the server side), it is up to the client to check this before sending it back (and the server will validate its inputs anyway).  
 
 We then consider 3 different "modes" to serialize things:
   - **Server**

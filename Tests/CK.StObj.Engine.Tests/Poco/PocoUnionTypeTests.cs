@@ -381,7 +381,7 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>( "Null is forbidden." );
             p.Invoking( x => x.Thing = new Dictionary<string,object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
 
-            var p2 = JsonTestHelper.Roundtrip( directory, p, t => TestHelper.Monitor.Info( t ) );
+            var p2 = JsonTestHelper.Roundtrip( directory, p, text: t => TestHelper.Monitor.Info( t ) );
             p.Should().BeEquivalentTo( p2 );
 
             // AnotherThing allows int, double?, string? and List<string?>?

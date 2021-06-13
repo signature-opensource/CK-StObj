@@ -59,7 +59,7 @@ namespace CK.Setup.Json
             {
                 if( !TypeInfo.IsFinal )
                 {
-                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ");" ).NewLine();
+                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ", options );" ).NewLine();
                     return;
                 }
                 bool isNullable = IsNullable && !skipNullable;
@@ -71,7 +71,7 @@ namespace CK.Setup.Json
             {
                 if( !TypeInfo.IsFinal )
                 {
-                    read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r );" ).NewLine();
+                    read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
                     return;
                 }
                 bool isNullable = IsNullable && !skipIfNullBlock;
