@@ -223,7 +223,7 @@ namespace CK.Setup.Json
         /// <param name="pocoInfo">The poco root information.</param>
         /// <param name="pocoClass">The target class to generate.</param>
         /// <returns>The part in the switch statement.</returns>
-        ITypeScopePart GenerateReadBody( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
+        static ITypeScopePart GenerateReadBody( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
         {
             pocoClass.GeneratedByComment().NewLine().Append( "public void Read( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
               .OpenBlock()

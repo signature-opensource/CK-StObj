@@ -44,7 +44,8 @@ namespace CK.Setup.Json
         // starts to count.
         int _typeInfoRefTypeStartIdx;
 
-
+        // The list of readers for "ECMAScript standard" mode. Initialized with "BigInt" and "Number".
+        List<ECMAScriptStandardReader> _standardReaders;
         bool? _finalizedCall;
 
         /// <summary>
@@ -61,6 +62,7 @@ namespace CK.Setup.Json
             _typeInfos = new List<JsonTypeInfo>();
             _reentrancy = new Stack<Type>();
             _finalReadWrite = new List<Action<IActivityMonitor>>();
+            _standardReaders = new List<ECMAScriptStandardReader>();
             InitializeMap();
         }
 
@@ -243,7 +245,7 @@ namespace CK.Setup.Json
                     else if( t.IsGenericType )
                     {
                         var tGen = t.GetGenericTypeDefinition();
-                        if( tGen.Namespace == "System" && tGen.Name.StartsWith( "ValueTuple`" ) )
+                        if( tGen.Namespace == "System" && tGen.Name.StartsWith( "ValueTuple`", StringComparison.Ordinal ) )
                         {
                             info = TryRegisterInfoForValueTuple( t, t.GetGenericArguments() );
                         }
@@ -405,7 +407,25 @@ namespace CK.Setup.Json
                 write.Append( "w.WriteNumberValue( " ).Append( variableName ).Append( " );" );
             }
 
-            // Reference types are not marked final by default (Value types are).
+            // Currently default format is ok but when BigInteger will be handled like any other
+            // long by the reader/writer then we'll need the "R" format for it (unless the https://github.com/dotnet/runtime/issues/54016
+            // is resolved).
+            // ==> We keep the function factory here for the moment.
+            static CodeWriter WriteECMAScripSafeNumber( string? toStringFormat = null )
+            {
+                return ( write, variableName ) =>
+                {
+                    write.Append( "if( options == null || options.Mode == PocoSerializerMode.Server ) w.WriteNumberValue( " ).Append( variableName ).Append( " );" ).NewLine()
+                         .Append( "else w.WriteStringValue( " )
+                         .Append( variableName ).Append( ".ToString( " );
+                    if( toStringFormat != null )
+                    {
+                        write.AppendSourceString( toStringFormat ).Append( ", " );
+                    }
+                    write.Append( "System.Globalization.NumberFormatInfo.InvariantInfo ) );" ).NewLine();
+                };
+            }
+
             AllowTypeInfo( typeof( byte[] ), "byte[]" ).Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
@@ -414,8 +434,7 @@ namespace CK.Setup.Json
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetBytesFromBase64(); r.Read();" );
-                } )
-                .IsFinal = true;
+                } );
 
             AllowTypeInfo( typeof( Guid ), "Guid" ).Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -423,87 +442,92 @@ namespace CK.Setup.Json
                     read.Append( variableName ).Append( " = r.GetGuid(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( decimal ), "decimal" ).Configure(
-                ( ICodeWriter write, string variableName ) =>
-                {
-                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
-                },
+            AllowTypeInfo( typeof( decimal ), "decimal" ).Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = Decimal.Parse( r.GetString() ); r.Read();" );
-                } );
+                    // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
+                    read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? Decimal.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetDecimal(); r.Read();" );
+                } )
+                .SetECMAScriptStandardName( "BigInt" );
 
             AllowTypeInfo( typeof( uint ), "uint" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetUInt32(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( double ), "double" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetDouble(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( float ), "float" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetSingle(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
-            AllowTypeInfo( typeof( long ), "long" ).Configure(
-                ( ICodeWriter write, string variableName ) =>
-                {
-                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
-                },
+            AllowTypeInfo( typeof( long ), "long" ).Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = Int64.Parse( r.GetString() ); r.Read();" );
-                } );
+                    // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
+                    read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? Int64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetInt64(); r.Read();" );
+                } )
+                .SetECMAScriptStandardName( "BigInt" );
 
-            AllowTypeInfo( typeof( ulong ), "ulong" ).Configure(
-                ( ICodeWriter write, string variableName ) =>
-                {
-                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
-                },
+            AllowTypeInfo( typeof( ulong ), "ulong" ).Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = UInt64.Parse( r.GetString() ); r.Read();" );
-                } );
+                    // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
+                    read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? UInt64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) :  r.GetUInt64(); r.Read();" );
+                } )
+                .SetECMAScriptStandardName( "BigInt" );
 
             AllowTypeInfo( typeof( byte ), "byte" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetByte(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( sbyte ), "sbyte" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetSByte(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( short ), "short" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetInt16(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( ushort ), "ushort" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetUInt16(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( System.Numerics.BigInteger ), "BigInteger" ).Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
+                    // Use the BigInteger.ToString(String) method with the "R" format specifier to generate the string representation of the BigInteger value.
+                    // Otherwise, the string representation of the BigInteger preserves only the 50 most significant digits of the original value, and data may
+                    // be lost when you use the Parse method to restore the BigInteger value.
                     write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( \"R\", System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = System.Numerics.BigInteger.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "BigInt" );
 
             AllowTypeInfo( typeof( DateTime ), "DateTime" ).Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -518,14 +542,13 @@ namespace CK.Setup.Json
                 } );
 
             AllowTypeInfo( typeof( TimeSpan ), "TimeSpan" ).Configure(
-                ( ICodeWriter write, string variableName ) =>
-                {
-                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Ticks.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
-                },
+                ( ICodeWriter write, string variableName ) => WriteECMAScripSafeNumber()( write, variableName + ".Ticks" ),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = TimeSpan.FromTicks( Int64.Parse( r.GetString() ) ); r.Read();" );
+                    read.Append( variableName ).Append( " = TimeSpan.FromTicks( r.TokenType == System.Text.Json.JsonTokenType.String ? Int64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetInt64() ); r.Read();" );
                 } );
+            _standardReaders.Add( new ECMAScriptStandardNumberReader() );
+            _standardReaders.Add( new ECMAScriptStandardBigIntReader() );
             _typeInfoRefTypeStartIdx = _typeInfos.Count;
         }
 
@@ -924,7 +947,7 @@ namespace CK.Setup.Json
                 // Reading must handle the [TypeName,...] array: it needs a lookup from the "type name" to the handler to use: this is the goal of
                 // the _typeReaders dictionary that we initialize here (no concurrency issue, no lock to generate: once built the dictionary will only
                 // be read).
-                GenerateDynamicRead( _map );
+                GenerateDynamicRead();
 
                 string message = "While raising JsonTypeFinalized.";
                 try
@@ -948,7 +971,7 @@ namespace CK.Setup.Json
             }
         }
 
-        void GenerateDynamicRead( Dictionary<object, IJsonCodeGenHandler> map )
+        void GenerateDynamicRead()
         {
             _pocoDirectory.GeneratedByComment()
                           .Append( @"
@@ -1000,6 +1023,16 @@ namespace CK.Setup.Json
 
                 ctor.CloseBlock();
             }
+
+            foreach( var t in _standardReaders )
+            {
+                var f = _pocoDirectory.Append( "static object ECMAScriptStandardRead_" ).Append( t.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
+                                      .OpenBlock();
+                t.GenerateRead( f );
+                _pocoDirectory.CloseBlock();
+
+                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.Name ).Append( ", ECMAScriptStandardRead_" ).Append( t.Name ).Append( " );" ).NewLine();
+            }
         }
 
         void GenerateDynamicWrite( IActivityMonitor monitor, List<JsonTypeInfo> types )
@@ -1025,7 +1058,7 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, P
                 if( t.DirectType != JsonDirectType.None ) continue;
                 mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
                 Debug.Assert( !t.NonNullHandler.IsTypeMapping, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
-                t.GenerateWrite( mappings, "v", false, t.Name );
+                t.GenerateWrite( mappings, "v", false, true );
                 mappings.NewLine().Append( "break;" ).NewLine();
             }
         }

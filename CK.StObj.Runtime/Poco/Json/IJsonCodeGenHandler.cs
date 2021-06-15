@@ -7,7 +7,7 @@ namespace CK.Setup.Json
 {
     /// <summary>
     /// The code writer delegate is in charge of generating the write code into a <see cref="System.Text.Json.Utf8JsonWriter"/>
-    /// variable named "w".
+    /// variable named "w" and a PocoJsonSerializerOptions variable named "options".
     /// <para>
     /// This is configured on JsonTypeInfo by <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> and
     /// used by handlers bound to the type when <see cref="IJsonCodeGenHandler.GenerateWrite"/> is called.
@@ -19,7 +19,7 @@ namespace CK.Setup.Json
 
     /// <summary>
     /// The code reader delegate is in charge of generating the read code from a  <see cref="System.Text.Json.Utf8JsonReader"/>
-    /// variable named "r".
+    /// variable named "r" and a PocoJsonSerializerOptions variable named "options".
     /// See <see cref="CodeWriter"/>.
     /// </summary>
     /// <param name="read">The code writer to use.</param>

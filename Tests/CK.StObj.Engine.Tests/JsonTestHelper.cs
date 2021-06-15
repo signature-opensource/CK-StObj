@@ -66,6 +66,7 @@ namespace CK.StObj.Engine.Tests
                     }
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
+                    text?.Invoke( bin1Text );
                 }
                 catch( Exception )
                 {
@@ -80,14 +81,12 @@ namespace CK.StObj.Engine.Tests
                 m.Position = 0;
                 using( var w2 = new Utf8JsonWriter( m ) )
                 {
-                    o2.Write( w2, true );
+                    o2.Write( w2, true, options );
                     w2.Flush();
                 }
                 var bin2 = m.ToArray();
 
                 bin1.Should().BeEquivalentTo( bin2 );
-
-                text?.Invoke( bin1Text );
 
                 return (T?)o2;
             }

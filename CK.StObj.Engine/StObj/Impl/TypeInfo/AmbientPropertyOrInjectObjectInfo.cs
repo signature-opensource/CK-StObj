@@ -53,7 +53,8 @@ namespace CK.Setup
         {
             Debug.Assert( stObjProperties != null );
             
-            var properties = t.GetProperties( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly ).Where( p => !p.Name.Contains( '.' ) );
+            var properties = t.GetProperties( BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly )
+                              .Where( p => !p.Name.Contains( '.', StringComparison.Ordinal ) );
             apListResult = null;
             injectedListResult = null;
             foreach( var p in properties )

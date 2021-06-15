@@ -48,6 +48,8 @@ namespace CK.Setup
         /// <returns>The type instance.</returns>
         public static T? GetCachedInstance<T>( this IDictionary<object, object?> @this, Func<T?> creator ) where T : class
         {
+            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
+            if( creator == null ) throw new ArgumentNullException( nameof( creator ) );
             if( !TryGetCachedInstance<T>( @this, out var result ) )
             {
                 result = creator();

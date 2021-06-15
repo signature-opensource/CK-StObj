@@ -63,8 +63,7 @@ namespace CK.Setup.Json
                     return;
                 }
                 bool isNullable = IsNullable && !skipNullable;
-                string? writeTypeName = (withType.HasValue ? withType.Value : IsTypeMapping) ? Name : null;
-                TypeInfo.GenerateWrite( write, variableName, isNullable, writeTypeName );
+                TypeInfo.GenerateWrite( write, variableName, isNullable, withType.HasValue ? withType.Value : IsTypeMapping );
             }
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false )

@@ -44,7 +44,7 @@ namespace CK.Setup
         /// and <see cref="ICodeGenerationContext.GlobalServiceContainer"/>.
         /// </para>
         /// </summary>
-        public readonly Type? ImplementorType;
+        public Type? ImplementorType { get; }
 
         /// <summary>
         /// Gets the name of a method (that can be private) of the initial implementor that will continue the generation of the source code.
@@ -54,7 +54,7 @@ namespace CK.Setup
         /// and <see cref="ICodeGenerationContext.GlobalServiceContainer"/>.
         /// </para>
         /// </summary>
-        public readonly string? MethodName;
+        public string? MethodName { get; }
 
         CSCodeGenerationResult( bool success )
         {

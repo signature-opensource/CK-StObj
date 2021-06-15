@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests.Poco
     public class PocoUnionTypeTests
     {
         // Error:
-        // [UnionType] attribute on 'IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'struct UnionTypes { public (int?,string) Thing { get; } }' with the types (here, (int?,string) is just an example of course).
+        // [UnionType] attribute on 'IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'class UnionTypes { public (int?,string) Thing { get; } }' with the types (here, (int?,string) is just an example of course).
         public interface IInvalidPocoWithUnionTypeMissUnionTypes : IPoco
         {
             [UnionType]
@@ -23,26 +23,26 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         // Error:
-        // The nested struct UnionTypes requires a public value tuple 'Thing' property.
+        // The nested class UnionTypes requires a public value tuple 'Thing' property.
         public interface IInvalidPocoWithUnionTypeMissFieldDefinition : IPoco
         {
             [UnionType]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string, int) NotTheThing { get; }
             }
         }
 
         // Error:
-        // The 'Thing' property of the nested struct UnionTypes must be a value tuple (current type is String).
+        // The 'Thing' property of the nested class UnionTypes must be a value tuple (current type is String).
         public interface IInvalidPocoWithUnionTypeInvalidFieldDefinition : IPoco
         {
             [UnionType]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public string Thing { get; }
             }
@@ -66,7 +66,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             string Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string, int) Thing { get; }
             }
@@ -79,7 +79,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             IPoco Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string, DateTime) Thing { get; }
             }
@@ -92,7 +92,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             int Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (IPoco, int) Thing { get; }
             }
@@ -116,7 +116,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string, int?) Thing { get; }
             }
@@ -129,7 +129,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (IPoco?, string?, int) Thing { get; }
             }
@@ -151,7 +151,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object? Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string, int) Thing { get; }
             }
@@ -172,7 +172,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object AnotherThing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 // There can be duplicate types. We don't care.
                 public (int?, string, string?, List<string>) Thing { get; }
@@ -208,7 +208,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (decimal, int) Thing { get; }
             }
@@ -240,7 +240,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (decimal, int, double) Thing { get; }
             }
@@ -251,7 +251,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             new object Thing { get; set; }
 
-            new struct UnionTypes
+            new class UnionTypes
             {
                 public (decimal, int, double, string) Thing { get; }
             }
@@ -262,7 +262,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             new object Thing { get; set; }
 
-            new struct UnionTypes
+            new class UnionTypes
             {
                 public (decimal, int) Thing { get; }
             }
@@ -286,7 +286,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object? AnotherThing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string[]?, string?, List<string>?) AnotherThing { get; }
             }
@@ -297,7 +297,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object? AnotherThing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string[]?, string?) AnotherThing { get; }
             }
@@ -308,14 +308,14 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType]
             object? AnotherThing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (string[]?, string?, List<string>?, ISet<string>?) AnotherThing { get; }
             }
         }
 
         [Test]
-        public void Union_property_types_cannot_be_extended_by_default_accros_independent_interfaces()
+        public void Union_property_types_cannot_be_extended_by_default_accross_independent_interfaces()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentLess ) );
             TestHelper.GetFailedResult( c );
@@ -328,7 +328,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType( CanBeExtended = true )]
             object Thing { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (decimal, int) Thing { get; }
             }
@@ -342,7 +342,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType( CanBeExtended = true )]
             object? AnotherThing { get; set; }
 
-            new struct UnionTypes
+            new class UnionTypes
             {
                 public (string, List<string>) Thing { get; }
 
@@ -355,7 +355,7 @@ namespace CK.StObj.Engine.Tests.Poco
             [UnionType( CanBeExtended = true )]
             object? AnotherThing { get; set; }
 
-            new struct UnionTypes
+            new class UnionTypes
             {
                 public (string?,List<string?>?) AnotherThing { get; }
             }

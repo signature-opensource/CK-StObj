@@ -431,7 +431,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             [UnionType]
             object? V { get; set; }
 
-            struct UnionTypes
+            class UnionTypes
             {
                 public (IList<int>, int?, IDictionary<int, string?>) V { get; }
             }

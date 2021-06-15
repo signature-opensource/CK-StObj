@@ -54,6 +54,12 @@ namespace CK.Setup.Json
         public string Name { get; }
 
         /// <summary>
+        /// Gets the name used when "ECMAScript standard" is used: this is almost always <see cref="Name"/> (big integers use "Number" or "BigInt").
+        /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
+        /// </summary>
+        public string ECMAScriptStandardName { get; private set; }
+
+        /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
         /// This should be used for large struct.
         /// </summary>
@@ -68,6 +74,8 @@ namespace CK.Setup.Json
         /// Gets the <see cref="JsonDirectType"/>.
         /// </summary>
         public JsonDirectType DirectType { get; }
+
+        //public string GetExchangeName( PocoJsonSerializerOptions options ) => "";
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
@@ -84,7 +92,7 @@ namespace CK.Setup.Json
             Type = t;
             Number = number;
             NumberName = number.ToString();
-            Name = name;
+            ECMAScriptStandardName = Name = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
             DirectType = d;
             IsFinal = true;
@@ -95,9 +103,9 @@ namespace CK.Setup.Json
         // Untyped singleton object.
         JsonTypeInfo()
         {
-            // _writer and _reader are unused and let to null.
+            // CodeReader and CodeWriter are unused and let to null.
             Type = typeof( object );
-            Name = String.Empty;
+            ECMAScriptStandardName = Name = String.Empty;
             PreviousNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
@@ -137,6 +145,18 @@ namespace CK.Setup.Json
         public JsonTypeInfo SetByRefWriter()
         {
             ByRefWriter = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the name to use when using "ECMAScript Standard" serialization mode.
+        /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
+        /// </summary>
+        /// <param name="name">The name to use.</param>
+        /// <returns>This type info.</returns>
+        public JsonTypeInfo SetECMAScriptStandardName( string name )
+        {
+            ECMAScriptStandardName = name;
             return this;
         }
 
@@ -181,8 +201,8 @@ namespace CK.Setup.Json
         /// <param name="write">The code target.</param>
         /// <param name="variableName">The variable name.</param>
         /// <param name="isNullable">Whether null value must be handled.</param>
-        /// <param name="writeTypeName">The non null type name if type discriminator must be written.</param>
-        public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, string? writeTypeName )
+        /// <param name="writeTypeName">True if type discriminator must be written.</param>
+        public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, bool writeTypeName )
         {
             if( isNullable )
             {
@@ -197,9 +217,12 @@ namespace CK.Setup.Json
                 case JsonDirectType.Boolean: write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" ); break;
                 default:
                     {
-                        if( writeTypeName != null )
+                        if( writeTypeName )
                         {
-                            write.Append( "w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( writeTypeName ).Append( ");" ).NewLine();
+                            write.Append( "w.WriteStartArray(); w.WriteStringValue( options?.Mode == PocoSerializerMode.ECMAScriptStandard ? " )
+                                 .AppendSourceString( ECMAScriptStandardName )
+                                 .Append( " : " )
+                                 .AppendSourceString( Name ).Append( ");" ).NewLine();
                         }
                         Debug.Assert( CodeWriter != null );
                         bool hasBlock = false;
@@ -219,7 +242,7 @@ namespace CK.Setup.Json
                         {
                             write.CloseBlock();
                         }
-                        if( writeTypeName != null )
+                        if( writeTypeName )
                         {
                             write.Append( "w.WriteEndArray();" ).NewLine();
                         }

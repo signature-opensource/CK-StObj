@@ -27,7 +27,9 @@ namespace CK.Core
             if( annotation == null ) throw new ArgumentNullException( nameof( annotation ) );
             if( _a == null )
             {
-                _a = annotation is object?[]? new object?[] { annotation } : annotation;
+                _a = annotation is object[]
+                        ? new object?[] { annotation }
+                        : annotation;
             }
             else
             {

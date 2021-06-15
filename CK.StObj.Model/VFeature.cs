@@ -76,7 +76,7 @@ namespace CK.Core
         /// Returns a hash based on <see cref="Name"/> and <see cref="Version"/>.
         /// </summary>
         /// <returns>The has code.</returns>
-        public override int GetHashCode() => IsValid ? Version.GetHashCode() ^ Name.GetHashCode() : 0;
+        public override int GetHashCode() => IsValid ? Version.GetHashCode() ^ Name.GetHashCode( StringComparison.Ordinal ) : 0;
 
         /// <summary>
         /// Overridden to return <see cref="Name"/>/<see cref="Version"/> or the empty string
@@ -94,9 +94,9 @@ namespace CK.Core
         /// <returns>The resulting instance that may be invalid.</returns>
         public static VFeature TryParse( string instanceName )
         {
-            int idx = instanceName.LastIndexOf( '/' );
+            int idx = instanceName?.LastIndexOf( '/' ) ?? 0;
             if( idx > 0
-                && idx < instanceName.Length - 3
+                && idx < instanceName!.Length - 3
                 && SVersion.TryParse( instanceName.Substring( idx + 1 ), out var version ) )
             {
                 var n = instanceName.Substring( 0, idx );

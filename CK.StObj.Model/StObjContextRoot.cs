@@ -255,7 +255,7 @@ namespace CK.Core
             if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
 
             string assemblyNameWithExtension; 
-            if( assemblyName.EndsWith( ".dll" ) || assemblyName.EndsWith( ".exe" ) )
+            if( assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) || assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
             {
                 assemblyNameWithExtension = assemblyName;
                 assemblyName = assemblyName.Substring( 0, assemblyName.Length - 4 );

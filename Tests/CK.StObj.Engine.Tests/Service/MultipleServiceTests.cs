@@ -108,7 +108,7 @@ namespace CK.StObj.Engine.Tests.Service
                     resolved.Ints.Should().BeEmpty();
                 }
                 logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container" ) );
+                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -129,7 +129,7 @@ namespace CK.StObj.Engine.Tests.Service
 
                 }
                 logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container" ) );
+                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
 
         }

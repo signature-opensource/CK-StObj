@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             public Person( string name )
             {
-                if( name.Contains( '|' ) ) throw new ArgumentException( "Invalid | in name.", nameof( Name ) );
+                if( name.Contains( '|', StringComparison.Ordinal ) ) throw new ArgumentException( "Invalid | in name.", nameof( Name ) );
                 Name = name;
             }
 
@@ -121,7 +121,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             root.ToString().Should().Be( "{\"Person\":\"Sartre|3712\"}" );
 
             // But the deserialization calls Person.Parse.
-            FluentActions.Invoking( () => JsonTestHelper.Roundtrip( directory, root ) ).Should().Throw<ArgumentException>().Where( ex => ex.Message.StartsWith( "Invalid | in name." ) );
+            FluentActions.Invoking( () => JsonTestHelper.Roundtrip( directory, root ) ).Should().Throw<ArgumentException>().Where( ex => ex.Message.StartsWith( "Invalid | in name.", StringComparison.OrdinalIgnoreCase ) );
         }
 
         [Test]
