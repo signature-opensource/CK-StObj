@@ -464,7 +464,7 @@ namespace CK.Setup
                     Type? u = interfaceType.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
                     if( u == null )
                     {
-                        monitor.Error( $"[UnionType] attribute on '{interfaceType.FullName}.{p.Name}' requires a nested 'struct UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
+                        monitor.Error( $"[UnionType] attribute on '{interfaceType.FullName}.{p.Name}' requires a nested 'class UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
                         return false;
                     }
                     unionTypesDef = u.GetProperties();
@@ -472,12 +472,12 @@ namespace CK.Setup
                 var f = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
                 if( f == null )
                 {
-                    monitor.Error( $"The nested struct UnionTypes requires a public value tuple '{p.Name}' property." );
+                    monitor.Error( $"The nested class UnionTypes requires a public value tuple '{p.Name}' property." );
                     return false;
                 }
                 if( !typeof( ITuple ).IsAssignableFrom( f.PropertyType ) )
                 {
-                    monitor.Error( $"The '{p.Name}' property of the nested struct UnionTypes must be a value tuple (current type is {f.PropertyType.Name})." );
+                    monitor.Error( $"The '{p.Name}' property of the nested class UnionTypes must be a value tuple (current type is {f.PropertyType.Name})." );
                     return false;
                 }
                 var nullableTypeTrees = f.GetNullableTypeTree();

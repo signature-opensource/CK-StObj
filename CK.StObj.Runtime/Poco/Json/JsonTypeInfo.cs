@@ -15,7 +15,7 @@ namespace CK.Setup.Json
     {
         /// <summary>
         /// Singleton for "object".
-        /// Its handlers are <see cref="IJsonCodeGenHandler.IsMappedType"/>.
+        /// Its handlers are <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
         /// </summary>
         public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
 
@@ -54,6 +54,12 @@ namespace CK.Setup.Json
         public string Name { get; }
 
         /// <summary>
+        /// Gets the name used when "ECMAScript standard" is used: this is almost always <see cref="Name"/> (big integers use "Number" or "BigInt").
+        /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
+        /// </summary>
+        public string ECMAScriptStandardName { get; private set; }
+
+        /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
         /// This should be used for large struct.
         /// </summary>
@@ -69,40 +75,37 @@ namespace CK.Setup.Json
         /// </summary>
         public JsonDirectType DirectType { get; }
 
+        //public string GetExchangeName( PocoJsonSerializerOptions options ) => "";
+
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
-        /// When let to null (the default), all registered types are automatically challenged before
-        /// generating the code.
-        /// <para>
-        /// The rule is rather simple: as soon as another <see cref="JsonTypeInfo.Type"/> can
-        /// satisfy this type (i.e. this type is assignable from the other), then this type is
-        /// not final.
-        /// </para>
+        /// This is initially true (except if the type is sealed) but as soon as a type that can be assigned
+        /// to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
+        /// this becomes false.
         /// </summary>
-        public bool? IsFinal { get; set; }
+        public bool IsFinal { get; internal set; }
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None, bool? isFinal = null )
+        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None )
         {
             Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null) );
             Type = t;
             Number = number;
             NumberName = number.ToString();
-            Name = name;
+            ECMAScriptStandardName = Name = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
             DirectType = d;
-            if( isFinal == null && t.IsValueType ) isFinal = true;
-            IsFinal = isFinal;
-            NonNullHandler = new Handler( this, Type, false, isFinal == false );
+            IsFinal = true;
+            NonNullHandler = new Handler( this, Type, false, false );
             NullHandler = NonNullHandler.ToNullHandler();
         }
 
         // Untyped singleton object.
         JsonTypeInfo()
         {
-            // _writer and _reader are unused and let to null.
+            // CodeReader and CodeWriter are unused and let to null.
             Type = typeof( object );
-            Name = String.Empty;
+            ECMAScriptStandardName = Name = String.Empty;
             PreviousNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
@@ -145,10 +148,21 @@ namespace CK.Setup.Json
             return this;
         }
 
+        /// <summary>
+        /// Sets the name to use when using "ECMAScript Standard" serialization mode.
+        /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
+        /// </summary>
+        /// <param name="name">The name to use.</param>
+        /// <returns>This type info.</returns>
+        public JsonTypeInfo SetECMAScriptStandardName( string name )
+        {
+            ECMAScriptStandardName = name;
+            return this;
+        }
+
 
         /// <summary>
         /// Calls <see cref="CodeReader"/> inside code that handles reading null.
-        /// Note that <see cref="IsFinal"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="read">The code target.</param>
         /// <param name="variableName">The variable name.</param>
@@ -156,7 +170,6 @@ namespace CK.Setup.Json
         /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
         public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
         {
-            if( !IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateRead can be called." );
             if( isNullable )
             {
                 read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
@@ -184,15 +197,13 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Calls <see cref="CodeWriter"/> inside code that handles type discriminator and nullable.
-        /// Note that <see cref="IsFinal"/> must be true otherwise an <see cref="InvalidOperationException"/> is thrown.
         /// </summary>
         /// <param name="write">The code target.</param>
         /// <param name="variableName">The variable name.</param>
         /// <param name="isNullable">Whether null value must be handled.</param>
-        /// <param name="writeTypeName">The non null type name if type discriminator must be written.</param>
-        public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, string? writeTypeName )
+        /// <param name="writeTypeName">True if type discriminator must be written.</param>
+        public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, bool writeTypeName )
         {
-            if( !IsFinal.HasValue ) throw new InvalidOperationException( $"Json Type '{Name}' requires Json Type finalization before GenerateWrite can be called." );
             if( isNullable )
             {
                 write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
@@ -206,9 +217,12 @@ namespace CK.Setup.Json
                 case JsonDirectType.Boolean: write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" ); break;
                 default:
                     {
-                        if( writeTypeName != null )
+                        if( writeTypeName )
                         {
-                            write.Append( "w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( writeTypeName ).Append( ");" ).NewLine();
+                            write.Append( "w.WriteStartArray(); w.WriteStringValue( options?.Mode == PocoSerializerMode.ECMAScriptStandard ? " )
+                                 .AppendSourceString( ECMAScriptStandardName )
+                                 .Append( " : " )
+                                 .AppendSourceString( Name ).Append( ");" ).NewLine();
                         }
                         Debug.Assert( CodeWriter != null );
                         bool hasBlock = false;
@@ -228,7 +242,7 @@ namespace CK.Setup.Json
                         {
                             write.CloseBlock();
                         }
-                        if( writeTypeName != null )
+                        if( writeTypeName )
                         {
                             write.Append( "w.WriteEndArray();" ).NewLine();
                         }

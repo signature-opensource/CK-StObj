@@ -121,7 +121,8 @@ namespace CK.Setup
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
                     nsStObj.GeneratedByComment().NewLine()
-                        .Append( @"internal class SignatureAttribute : Attribute" )
+                        .Append( "[AttributeUsage(AttributeTargets.Assembly)]" ).NewLine()
+                        .Append( @"internal sealed class SignatureAttribute : Attribute" )
                         .OpenBlock()
                         .Append( "public SignatureAttribute( string s ) {}" ).NewLine()
                         .Append( "public readonly static (SHA1Value Signature, IReadOnlyList<string> Names) V = ( SHA1Value.Parse( (string)typeof( SignatureAttribute ).Assembly.GetCustomAttributesData().First( a => a.AttributeType == typeof( SignatureAttribute ) ).ConstructorArguments[0].Value )" ).NewLine()

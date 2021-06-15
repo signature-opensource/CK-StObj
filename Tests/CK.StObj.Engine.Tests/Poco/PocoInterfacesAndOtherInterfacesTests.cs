@@ -89,7 +89,7 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             // Without IPoco at all: no definers are referenced.
             {
-                var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => !t.Name.StartsWith("IFinal") ).ToArray() );
+                var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => !t.Name.StartsWith( "IFinal", StringComparison.Ordinal ) ).ToArray() );
                 var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
                 Debug.Assert( poco != null );
 

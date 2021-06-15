@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             public Person( string name )
             {
-                if( name.Contains( '|' ) ) throw new ArgumentException( "Invalid | in name.", nameof( Name ) );
+                if( name.Contains( '|', StringComparison.Ordinal ) ) throw new ArgumentException( "Invalid | in name.", nameof( Name ) );
                 Name = name;
             }
 
@@ -76,13 +76,6 @@ namespace CK.StObj.Engine.Tests.PocoJson
             public override string ToString() => $"{Name}|{CurrentLevel}";
         }
 
-        /// <summary>
-        /// Activates the support Json serialization for any type (not already Json aware) that has a
-        /// static Parse method: ToString() is written and Parse is called to deserialize the instance.
-        /// </summary>
-        [ContextBoundDelegation( "CK.StObj.Engine.Tests.PocoJson.JsonSerializerViaToStringAndParseGenerator, CK.StObj.Engine.Tests" )]
-        public static class JsonStringParseSupport { }
-
         [ExternalName( "TestWithPersonTeacherAndStudent" )]
         public interface ITest : IPoco
         {
@@ -104,7 +97,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             root.Teacher = new Teacher( "Paul", "Aggreg" );
             root.Student = new Student( "Sartre", 3712 );
 
-            var root2 = JsonTestHelper.Roundtrip( directory, root, text => TestHelper.Monitor.Info( $"ITest serialization: " + text ) );
+            var root2 = JsonTestHelper.Roundtrip( directory, root, text: t => TestHelper.Monitor.Info( $"ITest serialization: " + t ) );
             root2.Should().BeEquivalentTo( root );
         }
 
@@ -128,7 +121,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             root.ToString().Should().Be( "{\"Person\":\"Sartre|3712\"}" );
 
             // But the deserialization calls Person.Parse.
-            FluentActions.Invoking( () => JsonTestHelper.Roundtrip( directory, root ) ).Should().Throw<ArgumentException>().Where( ex => ex.Message.StartsWith( "Invalid | in name." ) );
+            FluentActions.Invoking( () => JsonTestHelper.Roundtrip( directory, root ) ).Should().Throw<ArgumentException>().Where( ex => ex.Message.StartsWith( "Invalid | in name.", StringComparison.OrdinalIgnoreCase ) );
         }
 
         [Test]

@@ -7,6 +7,8 @@ using System.Xml.Linq;
 using System.IO;
 using CK.Text;
 
+#pragma warning disable CA1001 // Types that own disposable fields should be disposable (StObjEngine._status is used only 
+
 #nullable enable
 
 namespace CK.Setup
@@ -238,7 +240,7 @@ namespace CK.Setup
                                                     ProjectSourceFileHandler.DoMoveOrCopy( _monitor,
                                                                                            head.OutputPath.Combine( file ),
                                                                                            outPath.Combine( file ),
-                                                                                           copy: file.EndsWith( ".dll" ) );
+                                                                                           copy: file.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) );
                                                 }
                                             }
                                             // Once done, if there is a ProjectPath that is not the OutputPath, then

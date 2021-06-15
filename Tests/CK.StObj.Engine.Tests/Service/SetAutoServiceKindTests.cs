@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
-        public class Service : IService, IAutoService
+        public class TheService : IService, IAutoService
         {
         }
 
@@ -25,12 +25,12 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.SetAutoServiceKind( "CK.StObj.Engine.Tests.Service.SetAutoServiceKindTests+IService, CK.StObj.Engine.Tests", AutoServiceKind.IsScoped | AutoServiceKind.IsMultipleService, isOptional );
-            collector.RegisterType( typeof( Service ) );
+            collector.RegisterType( typeof( TheService ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            var d = map.Services.SimpleMappings[typeof( Service )];
+            var d = map.Services.SimpleMappings[typeof( TheService )];
             d.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
             d.MultipleMappings.Should().Contain( typeof( IService ) );
         }

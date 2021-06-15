@@ -64,7 +64,7 @@ namespace CK.Setup.Json
             {
                 var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
                                 ( ICodeWriter write, string variableName )
-                                        => write.Append( variableName ).Append( ".Write( w, false );" ),
+                                        => write.Append( variableName ).Append( ".Write( w, false, options );" ),
                                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                                 {
                                     if( !assignOnly )
@@ -73,7 +73,7 @@ namespace CK.Setup.Json
                                         {
                                             read.Append( "if( " ).Append( variableName ).Append( " != null ) " ).NewLine();
                                         }
-                                        read.Append( "((" ).AppendCSharpName( root.PocoClass ).Append( ')' ).Append( variableName ).Append( ')' ).Append( ".Read( ref r );" );
+                                        read.Append( "((" ).AppendCSharpName( root.PocoClass ).Append( ')' ).Append( variableName ).Append( ')' ).Append( ".Read( ref r, options );" );
                                         if( isNullable )
                                         {
                                             read.NewLine().Append( "else" ).NewLine();
@@ -84,7 +84,7 @@ namespace CK.Setup.Json
                                     {
                                         read.Append( variableName )
                                             .Append( " = new " ).AppendCSharpName( root.PocoClass )
-                                            .Append( "( ref r );" );
+                                            .Append( "( ref r, options );" );
                                     }
                                 } );
                 foreach( var i in root.Interfaces )
@@ -116,12 +116,12 @@ namespace CK.Setup.Json
                     var readerName = "PocoJsonSerializer.IFactoryReader<" + interfaceName + ">";
 
                     factory.Definition.BaseTypes.Add( new ExtendedTypeName( readerName ) );
-                    factory.Append( interfaceName ).Append( ' ' ).Append( readerName ).Append( ".Read( ref System.Text.Json.Utf8JsonReader r )" ).NewLine()
+                    factory.Append( interfaceName ).Append( ' ' ).Append( readerName ).Append( ".Read( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" ).NewLine()
                             .Append( " => r.TokenType == System.Text.Json.JsonTokenType.Null ? null : new " )
-                            .Append( root.PocoClass.Name ).Append( "( ref r );" ).NewLine();
+                            .Append( root.PocoClass.Name ).Append( "( ref r, options );" ).NewLine();
 
                 }
-                factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r );" ).NewLine();
+                factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r, options );" ).NewLine();
 
                 var pocoClass = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
 
@@ -151,14 +151,14 @@ namespace CK.Setup.Json
                     .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
                     .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
                     .OpenBlock()
-                    .Append( "Write( w, false );" ).NewLine()
+                    .Append( "Write( w, false, null );" ).NewLine()
                     .Append( "w.Flush();" ).NewLine()
                     .CloseBlock()
                     .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
             }
 
             pocoClass.GeneratedByComment().NewLine()
-                     .Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType )" )
+                     .Append( "public void Write( System.Text.Json.Utf8JsonWriter w, bool withType, PocoJsonSerializerOptions options )" )
                      .OpenBlock()
                      .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()
                      .Append( "w.WriteStartObject();" ).NewLine();
@@ -168,9 +168,9 @@ namespace CK.Setup.Json
                  .Append( "if( withType ) w.WriteEndArray();" ).NewLine()
                  .CloseBlock();
 
-            pocoClass.Append( "public " ).Append( pocoClass.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r ) : this()" )
+            pocoClass.Append( "public " ).Append( pocoClass.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) : this()" )
                  .OpenBlock()
-                 .Append( "Read( ref r );" )
+                 .Append( "Read( ref r, options );" )
                  .CloseBlock();
 
             // Poco has a Read method but it is not (currently) exposed.
@@ -223,9 +223,9 @@ namespace CK.Setup.Json
         /// <param name="pocoInfo">The poco root information.</param>
         /// <param name="pocoClass">The target class to generate.</param>
         /// <returns>The part in the switch statement.</returns>
-        ITypeScopePart GenerateReadBody( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
+        static ITypeScopePart GenerateReadBody( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
         {
-            pocoClass.GeneratedByComment().NewLine().Append( "public void Read( ref System.Text.Json.Utf8JsonReader r )" )
+            pocoClass.GeneratedByComment().NewLine().Append( "public void Read( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
               .OpenBlock()
               .Append( @"
 bool isDef = r.TokenType == System.Text.Json.JsonTokenType.StartArray;

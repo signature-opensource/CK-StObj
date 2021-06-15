@@ -19,27 +19,27 @@ namespace CK.StObj.Engine.Tests
         /// <param name="o">The poco.</param>
         /// <param name="withType">True to emit types.</param>
         /// <returns>The bytes.</returns>
-        public static ReadOnlyMemory<byte> Serialize( IPoco o, bool withType )
+        public static ReadOnlyMemory<byte> Serialize( IPoco o, bool withType, PocoJsonSerializerOptions? options = null )
         {
             var m = new ArrayBufferWriter<byte>();
             using( var w = new Utf8JsonWriter( m ) )
             {
-                o.Write( w, withType );
+                o.Write( w, withType, options: options );
                 w.Flush();
             }
             return m.WrittenMemory;
         }
 
-        public static T? Deserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b ) where T : class, IPoco
+        public static T? Deserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
         {
             var r = new Utf8JsonReader( b );
             var f = services.GetRequiredService<IPocoFactory<T>>();
-            return f.Read( ref r );
+            return f.Read( ref r, options );
         }
 
-        public static T? Deserialize<T>( IServiceProvider services, string s ) where T : class, IPoco
+        public static T? Deserialize<T>( IServiceProvider services, string s, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
         {
-            return Deserialize<T>( services, Encoding.UTF8.GetBytes( s ) );
+            return Deserialize<T>( services, Encoding.UTF8.GetBytes( s ), options );
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace CK.StObj.Engine.Tests
         /// <param name="text">Optional Json text hook called on success.</param>
         /// <returns>The deserialized Poco.</returns>
         [return: NotNullIfNotNull( "o" )]
-        public static T? Roundtrip<T>( PocoDirectory directory, T? o, Action<string>? text = null ) where T : class, IPoco
+        public static T? Roundtrip<T>( PocoDirectory directory, T? o, PocoJsonSerializerOptions? options = null, Action<string>? text = null ) where T : class, IPoco
         {
             byte[] bin1;
             string bin1Text;
@@ -61,11 +61,12 @@ namespace CK.StObj.Engine.Tests
                 {
                     using( var w = new Utf8JsonWriter( m ) )
                     {
-                        o.Write( w, true );
+                        o.Write( w, true, options );
                         w.Flush();
                     }
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
+                    text?.Invoke( bin1Text );
                 }
                 catch( Exception )
                 {
@@ -75,19 +76,17 @@ namespace CK.StObj.Engine.Tests
 
                 var r1 = new Utf8JsonReader( bin1 );
 
-                var o2 = directory.ReadPocoValue( ref r1 );
+                var o2 = directory.ReadPocoValue( ref r1, options );
 
                 m.Position = 0;
                 using( var w2 = new Utf8JsonWriter( m ) )
                 {
-                    o2.Write( w2, true );
+                    o2.Write( w2, true, options );
                     w2.Flush();
                 }
                 var bin2 = m.ToArray();
 
                 bin1.Should().BeEquivalentTo( bin2 );
-
-                text?.Invoke( bin1Text );
 
                 return (T?)o2;
             }

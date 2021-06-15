@@ -1,5 +1,6 @@
 using CK.Core;
 using CK.Setup;
+using System;
 using System.Text.Json;
 using System.Xml.Schema;
 
@@ -22,11 +23,12 @@ namespace CK.Core
             /// Writes this IPoco as Json.
             /// </summary>
             /// <param name="writer">The Json writer.</param>
+            /// <param name="options">The options.</param>
             /// <param name="withType">
             /// When true, a 2-cells array contains the Poco's name first and then the Poco's value.
             /// When false, the Poco's value object is directly written.
             /// </param>
-            void Write( Utf8JsonWriter writer, bool withType );
+            void Write( Utf8JsonWriter writer, bool withType, PocoJsonSerializerOptions? options = null );
         }
 
         /// <summary>
@@ -36,14 +38,17 @@ namespace CK.Core
         {
             /// <summary>
             /// Non generic version of <see cref="IFactoryReader{T}.Read(ref Utf8JsonReader)"/> method,
-            /// the type must be known.
+            /// the type must be known an the data must not be <c>null</c>.
+            /// <para>
             /// If the reader is <see cref="JsonTokenType.StartArray"/>, it must be a 2-cells array
             /// with this Poco's type that comes first (otherwise an exception is thrown).
             /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
+            /// </para>
             /// </summary>
             /// <param name="reader">The Json reader.</param>
+            /// <param name="options">The options.</param>
             /// <returns>A new Poco.</returns>
-            IPoco ReadTyped( ref Utf8JsonReader reader );
+            IPoco ReadTyped( ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null );
         }
 
         /// <summary>
@@ -60,7 +65,8 @@ namespace CK.Core
             /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
             /// </summary>
             /// <param name="reader">The Json reader.</param>
-            T? Read( ref Utf8JsonReader reader );
+            /// <param name="options">The options.</param>
+            T? Read( ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null );
         }        
 
         /// <summary>
@@ -74,46 +80,52 @@ namespace CK.Core
         /// and then the Poco's value.
         /// When false, the Poco's value object is directly written.
         /// </param>
-        public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true )
+        /// <param name="options">The options.</param>
+        public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true, PocoJsonSerializerOptions? options = null )
         {
+            if( writer == null ) throw new ArgumentNullException( nameof( writer ) );
             if( o == null ) writer.WriteNullValue();
-            else ((IWriter)o).Write( writer, withType );
+            else ((IWriter)o).Write( writer, withType, options );
         }
 
         /// <summary>
         /// Reads a <see cref="IPoco"/> (that can be null) from the Json reader
         /// that must have been written with its type.
         /// </summary>
-        /// <param name="directory">This directory.</param>
+        /// <param name="this">This directory.</param>
         /// <param name="reader">The Json reader.</param>
+        /// <param name="options">The options.</param>
         /// <returns>The Poco.</returns>
-        public static IPoco? ReadPocoValue( this PocoDirectory directory, ref Utf8JsonReader reader )
+        public static IPoco? ReadPocoValue( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null )
         {
+            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
             if( CheckNullStart( ref reader, "expecting Json Poco array or null value." ) ) return null;
 
             if( reader.TokenType != JsonTokenType.StartArray ) throw new JsonException( "Expecting Json Poco array." );
             reader.Read();
             string name = reader.GetString();
-            IPocoFactory? f = directory.Find( name );
+            IPocoFactory? f = @this.Find( name );
             if( f == null ) throw new JsonException( $"Poco type '{name}' not found." );
             reader.Read();
-            var p = ((IFactoryReader)f).ReadTyped( ref reader );
+            var p = ((IFactoryReader)f).ReadTyped( ref reader, options );
             if( reader.TokenType != JsonTokenType.EndArray ) throw new JsonException( "Expecting Json Poco end array." );
             reader.Read();
             return p;
         }
 
         /// <summary>
-        /// Reads a Poco from a Json reader.
+        /// Reads a typed Poco from a Json reader.
         /// </summary>
         /// <typeparam name="T">The poco type.</typeparam>
-        /// <param name="f">This poco factory.</param>
+        /// <param name="this">This poco factory.</param>
         /// <param name="reader">The reader.</param>
+        /// <param name="options">The options.</param>
         /// <returns>The Poco.</returns>
-        public static T? Read<T>( this IPocoFactory<T> f, ref Utf8JsonReader reader ) where T : class, IPoco
+        public static T? Read<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
         {
+            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
             if( CheckNullStart( ref reader, "expecting Json object, Json array or null value." ) ) return null;
-            return ((IFactoryReader<T>)f).Read( ref reader );
+            return ((IFactoryReader<T>)@this).Read( ref reader, options );
         }
 
         static bool CheckNullStart( ref Utf8JsonReader reader, string error )

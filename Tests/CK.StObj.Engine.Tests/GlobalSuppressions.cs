@@ -6,3 +6,5 @@
 using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage( "Style", "IDE0060:Remove unused parameter", Justification = "This is a Test assembly." )]
+[assembly: SuppressMessage( "Naming", "CA1707:Identifiers should not contain underscores", Justification = "In a Test assembly, this is how tests should be named." )]
+[assembly: SuppressMessage( "Usage", "CA1801:Review unused parameters", Justification = "This is a Test assembly. We often need to mock methods with no implementation." )]

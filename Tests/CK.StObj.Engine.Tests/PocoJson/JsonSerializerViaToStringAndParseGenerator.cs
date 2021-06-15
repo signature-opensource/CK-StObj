@@ -9,7 +9,16 @@ namespace CK.StObj.Engine.Tests.PocoJson
 {
     /// <summary>
     /// This generates Json serialization for any type (not already Json aware) that has a
-    /// static Parse method: ToString() is written and Parse is called to deserialize the instance.
+    /// static Parse( string ) method: ToString() is written and Parse( string ) is called
+    /// to deserialize the instance.
+    /// <para>
+    /// This is just a sample, this should not be used in any code base (at least without
+    /// major improvements).
+    /// </para>
+    /// <para>
+    /// To automatically activate this generator, just reference the static <see cref="JsonStringParseSupport"/>
+    /// type defined below.
+    /// </para>
     /// </summary>
     public class JsonSerializerViaToStringAndParseGenerator : ICSCodeGenerator
     {
@@ -34,7 +43,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 && (parseMethodParameters = parseMethod.GetParameters()).Length == 1
                 && parseMethodParameters[0].ParameterType == typeof( string ) )
             {
-                // The write is very simple: writes a the ToString() result as a Json string.
+                // The write is very simple: writes the ToString() as a Json string.
                 // The read calls the static Parse on the reader.
 
                 if( toSupport.GetExternalNames( e.Monitor, out var name, out var previousNames ) )
@@ -52,5 +61,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
             }
         }
     }
+
+    /// <summary>
+    /// "Model type" that activates the support Json serialization for any type (not already Json aware) that has a
+    /// static Parse method: ToString() is written and Parse is called to deserialize the instance.
+    /// </summary>
+    [ContextBoundDelegation( "CK.StObj.Engine.Tests.PocoJson.JsonSerializerViaToStringAndParseGenerator, CK.StObj.Engine.Tests" )]
+    public static class JsonStringParseSupport { }
+
 
 }

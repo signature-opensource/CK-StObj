@@ -20,7 +20,7 @@ namespace CK.Setup
         /// <param name="providers">Multiple providers. Must not be null.</param>
         public CustomAttributeProviderComposite( IEnumerable<ICKCustomAttributeProvider> providers )
         {
-            if( providers == null ) throw new ArgumentNullException( "providers" ); 
+            if( providers == null ) throw new ArgumentNullException( nameof( providers ) ); 
             _providers = providers;
         }
 

@@ -17,9 +17,6 @@ namespace CK.Setup
     /// </summary>
     public class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
-        const CKTypeKind CKTypeKindAutoSingleton = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton;
-        const CKTypeKind CKTypeKindAutoScoped = CKTypeKind.IsAutoService | CKTypeKind.IsScoped;
-
         HashSet<AutoServiceClassInfo>? _ctorParmetersClosure;
         // Memorizes the EnsureCtorBinding call state.
         bool? _ctorBinding;

@@ -9,7 +9,7 @@ namespace CK.Core
     /// Defines multiples allowed types on a Poco property thanks to the type of a value type.
     /// This attribute can be applied only on IPoco properties.
     /// <para>
-    /// The allowed types are defined thanks to the local UnionTypes struct
+    /// The allowed types are defined thanks to the local UnionTypes class
     /// that exposes one public value tuple property for each union type.
     /// <code>
     ///     public interface IPocoWithUnionType : IPoco
@@ -20,7 +20,7 @@ namespace CK.Core
     ///         [UnionType]
     ///         object AnotherThing { get; set; }
     /// 
-    ///         struct UnionTypes
+    ///         class UnionTypes
     ///         {
     ///             public (int?, string, string?, List&lt;string&gt;) Thing { get; }
     ///             public (int, string, List&lt;string?&gt;) AnotherThing { get; }
@@ -30,12 +30,12 @@ namespace CK.Core
     /// </para>
     /// </summary>
     /// <remarks>
-    /// Note that this not-so-funny UnionTypes struct and its properties are the only way to capture the
+    /// Note that this not-so-funny UnionTypes class and its properties are the only way to capture the
     /// types with their Nullable Reference Type information since the typeof operator doesn't capture
     /// any NRT information.
     /// <para>
-    /// Public properties have been chosen (against nicer/shorter private fields) in order to avoid
-    /// any warnings (unused fields).
+    /// Class (rather that struct) and public properties have been chosen (against nicer/shorter private fields) in order
+    /// to avoid any warnings (unused fields).
     /// </para>
     /// </remarks>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
