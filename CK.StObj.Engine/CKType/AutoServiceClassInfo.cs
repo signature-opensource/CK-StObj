@@ -32,17 +32,17 @@ namespace CK.Setup
             /// The parameter info.
             /// This is never null.
             /// </summary>
-            public readonly ParameterInfo ParameterInfo;
+            public ParameterInfo ParameterInfo { get; }
 
             /// <summary>
             /// Not null if this parameter is a service class (ie. a IAutoService implementation).
             /// </summary>
-            public readonly AutoServiceClassInfo? ServiceClass;
+            public AutoServiceClassInfo? ServiceClass { get; }
 
             /// <summary>
             /// Not null if this parameter is a service interface (a <see cref="IAutoService"/>).
             /// </summary>
-            public readonly AutoServiceInterfaceInfo? ServiceInterface;
+            public AutoServiceInterfaceInfo? ServiceInterface { get; }
 
             /// <summary>
             /// Gets whether this parameter is an <see cref="IAutoService"/>.
@@ -124,7 +124,7 @@ namespace CK.Setup
             bool isExcluded,
             RealObjectClassInfo? objectInfo )
         {
-            Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the the asociated Service, we must be the only one." );
+            Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
             if( objectInfo != null )
             {
                 TypeInfo = objectInfo;
@@ -216,7 +216,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the supported service interfaces.
-        /// This is not null only if <see cref="IsIncluded"/> is true (ie. this class is not excluded
+        /// This is not null only if <see cref="IsIncluded"/> is true (i.e. this class is not excluded
         /// and is on a concrete path) and may be empty if there is no service interface (the
         /// implementation itself is marked with any <see cref="IScopedAutoService"/> marker).
         /// </summary>
@@ -306,7 +306,6 @@ namespace CK.Setup
         internal bool InitializePath(
                         IActivityMonitor monitor,
                         CKTypeCollector collector,
-                        AutoServiceClassInfo? generalization,
                         IDynamicAssembly tempAssembly,
                         List<AutoServiceClassInfo> lastConcretes,
                         ref List<Type>? abstractTails )
@@ -322,7 +321,7 @@ namespace CK.Setup
             foreach( AutoServiceClassInfo c in Specializations )
             {
                 Debug.Assert( !c.TypeInfo.IsExcluded );
-                isConcretePath |= c.InitializePath( monitor, collector, this, tempAssembly, lastConcretes, ref abstractTails );
+                isConcretePath |= c.InitializePath( monitor, collector, tempAssembly, lastConcretes, ref abstractTails );
             }
             if( !isConcretePath )
             {

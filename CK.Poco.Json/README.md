@@ -171,7 +171,7 @@ expects. On the client side, a numeric can be:
 
 If we want to preserve typings between C# and ECMASCript client, the client must support a dedicated type for byte, sbyte, short, ushort, float (single), etc.
 (these boxed numbers' main responsibility being to restrict the value to their domain definition). This can be considered overkill (and will deeply hurt
-front end developers!). Actually C# types are not expected on the client side. Most often, front end developers want a simple `number` whatever the C# counterpart
+front end developers!). Actually C# types are not expected on the client side. Most often, front end developers want a simple `number` whatever the C#/Server counterpart
 is (byte, sbyte, etc.).
 
 This implies a kind of [type erasure](https://en.wikipedia.org/wiki/Type_erasure) that maps float, single, small integers up to the Int32 to `Number` and big
@@ -179,19 +179,20 @@ integers to `BigInt` (not the same as the the C# `BigInteger`). In this mode, cl
 eventually a ushort (on the server side), it is up to the client to check this before sending it back (and the server will validate its inputs anyway).  
 
 We then consider 3 different "modes" to serialize things:
-  - **Server**
+  - **Server:**
     - This mode must not be used with an ECMAScript client since it will not be able to exchange big integers.
     - **Data representation:** Uses JSON capabilities to represent numbers without constraints.
     - **Type Mapping:** None. A '`byte` is a `byte`. A `Dictionary<float,sbyte>` is a `M(float,sbyte)`.
   - **ECMAScript safe:**
     - This mode guaranties that data representation can be read by an ECMAScript client.
-    - **Data representation:** Big integers are written and read as strings.
+    - **Data representation:** Big integers (long, ulong, decimal and System.Numerics.BigInteger) are written and read as strings.
     - **Type Mapping:** None (same as Server).
   - **ECMAScript standard:**
     - This mode simplifies the types for an ECMAScript client.
     - **Data representation:** Big integers are written and read as strings (same as ECMAScript safe).
     - **Type Mapping:** This mode introduces 2 purely client types that are "Number" and "BigInt". The float, single, small integers up to the Int32 are 
    exchanged as `Number` and big integers (long, ulong, BigIntegers) are exchanged as `BigInt`.
+
 
 
 ### Implementation notes about "ECMAScript safe" mode number handling

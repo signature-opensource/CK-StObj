@@ -160,7 +160,7 @@ namespace CK.Setup
                 {
                     var c = _serviceRoots[i];
                     deepestConcretes.Clear();
-                    if( !c.InitializePath( _monitor, this, null, _tempAssembly, deepestConcretes, ref abstractTails ) )
+                    if( !c.InitializePath( _monitor, this, _tempAssembly, deepestConcretes, ref abstractTails ) )
                     {
                         _monitor.Warn( $"Service '{c.ClassType}' is abstract. It is ignored." );
                         _serviceRoots.RemoveAt( i-- );

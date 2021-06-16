@@ -47,22 +47,22 @@ namespace CK.Setup
         /// <summary>
         /// Gets the starting type that must be automatically implemented.
         /// </summary>
-        public readonly Type AbstractType;
+        public Type AbstractType { get; }
 
         /// <summary>
         /// Gets the <see cref="ICSCodeGeneratorType"/>.
         /// </summary>
-        public readonly IReadOnlyList<ICSCodeGeneratorType> TypeImplementors;
+        public IReadOnlyList<ICSCodeGeneratorType> TypeImplementors { get; }
 
         /// <summary>
         /// Gets the current property information for all abstract properties of the <see cref="AbstractType"/>.
         /// </summary>
-        public readonly IReadOnlyList<ImplementableAbstractPropertyInfo> PropertiesToImplement;
+        public IReadOnlyList<ImplementableAbstractPropertyInfo> PropertiesToImplement { get; }
 
         /// <summary>
         /// Gets the current method information for all abstract methods of the <see cref="AbstractType"/>.
         /// </summary>
-        public readonly IReadOnlyList<ImplementableAbstractMethodInfo> MethodsToImplement;
+        public IReadOnlyList<ImplementableAbstractMethodInfo> MethodsToImplement { get; }
 
         /// <summary>
         /// Gets the stub type. Null if <see cref="CreateStubType"/> has not been called yet.

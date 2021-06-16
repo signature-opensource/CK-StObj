@@ -101,6 +101,7 @@ namespace CK.Setup.Json
         {
             read.GeneratedByComment()
                 .Append( @"
+    if( r.TokenType != System.Text.Json.JsonTokenType.String ) throw new System.Text.Json.JsonException( $""BigInt input type must be string. Token is '{{r.TokenType}}'."" );
     var s = r.GetString();
     r.Read();
     if( Int64.TryParse( s, System.Globalization.NumberStyles.Integer, System.Globalization.NumberFormatInfo.InvariantInfo, out var l ) )
@@ -115,7 +116,11 @@ namespace CK.Setup.Json
     {
         return d;
     }
-    return System.Numerics.BigInteger.Parse( s, System.Globalization.NumberFormatInfo.InvariantInfo );" );
+    if( System.Numerics.BigInteger.TryParse( s, System.Globalization.NumberStyles.Integer, System.Globalization.NumberFormatInfo.InvariantInfo, out var b ) )
+    {
+        return b;
+    }
+    throw new System.IO.InvalidDataException( ""BigInt input type is invalid. Cannot parse a long, ulong or BigInteger from: "" + s );" );
         }
     }
 

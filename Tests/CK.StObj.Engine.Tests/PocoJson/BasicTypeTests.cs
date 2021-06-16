@@ -190,7 +190,6 @@ namespace CK.StObj.Engine.Tests.PocoJson
                     FluentActions.Invoking( () => convert( number ) ).Should().Throw<OverflowException>();
                 }
             }
-
             Check( "b", Convert.ToByte );
             Check( "sb", Convert.ToSByte );
             Check( "s", Convert.ToInt16 );

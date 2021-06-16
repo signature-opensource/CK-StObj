@@ -148,7 +148,7 @@ namespace CK.Setup
                                 tB.Append( "else throw new ArgumentNullException();" ).NewLine();
                             }
                         }
-                        tB.Append( fieldName ).Append( " = value;" ).NewLine()
+                        tB.Append( fieldName ).Append( " = value;" )
                           .CloseBlock();
                     }
                     tB.CloseBlock();

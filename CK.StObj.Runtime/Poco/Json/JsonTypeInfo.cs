@@ -91,7 +91,7 @@ namespace CK.Setup.Json
             Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null) );
             Type = t;
             Number = number;
-            NumberName = number.ToString();
+            NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
             ECMAScriptStandardName = Name = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
             DirectType = d;
