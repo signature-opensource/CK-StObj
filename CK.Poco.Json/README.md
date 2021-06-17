@@ -1,13 +1,12 @@
 # Json serialization
 
-This package triggers the code generation of Json serialization and deserialization of Poco. Poco are the **roots of serialization**,
+This package triggers the code generation of Json serialization and deserialization of [Poco](https://en.wikipedia.org/wiki/Plain_old_CLR_object). Poco are the **roots of serialization**,
 they bootstrap the serialization and deserialization process.
 
 The key aspects of this serialization are:
 - Serialization starts with Poco: data must be subordinated to a Poco, it must ultimately be referenced by a Poco property: see [Registered types only](#registered-types-only) below.
-- We do NOT handle graphs: the serialized object must not reference itself: cycles are error.
-- The serialization code is generated, this does not use reflection. The way this work is more complex that the basics System.Text.Json. More complex but also deeply "type safe" and
-potentially more efficient.
+- We do NOT handle graphs: the serialized object must not reference itself: cycles will lead to an error.
+- The serialization code is generated, this does not use reflection.
 - Adding code generation to support specific types or types family is possible. Recall that it is not a converter (see [here](https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to)
 for instance) that must be written but the code that generates the code to read/write the object.
 An example is available in the tests [here](../Tests/CK.StObj.Engine.Tests/PocoJson/JsonSerializerViaToStringAndParseGenerator.cs).
@@ -21,6 +20,8 @@ public static IPoco? ReadPocoValue( this PocoDirectory directory, ref Utf8JsonRe
 ```
 
 Note that when written the Poco can be null (the extension method handles it and emits a `null`).
+
+
 This package also overrides the Poco's class implementation `ToString()` method (if this method is not already generated) so that
 the JSON representation of the Poco is returned (this comes in handy when debugging).
 
