@@ -142,11 +142,17 @@ Basic types use their alias or type name: "bool", "string, "int", "long", "ulong
 "DateTimeOffset", "TimeSpan", "byte[]", "Guid" and "BigInteger".
 
 For automatically handled types:
-- Arrays use "T[]": "bool[]", "Guid[]".
-- Lists use "L(T)": "L(uint)".
-- Dictionaries use "M(TKey,TValue)": "M(int,string)".
-- Sets use "S(T)": "S(decimal)".
-- Value types use their nice bracket form: "(int,string,double)".
+- **Arrays** use `T[]`: `bool[]`, `Guid[]`. The representation is a JSON array.
+- **Lists** use `L(T)`: `L(uint)`. The representation is a JSON array. In **"ECMAScript safe" mode only**
+- **Sets** use `S(T)`: `S(decimal)`. The representation is a JSON array.
+- **Dictionaries with a string key** `O(TValue)`: `O(byte)`. The representation is a JSON object: a `Dictionary<string,TValue>` is exposed as a "dynamic objects". 
+- **Dictionaries** use `M(TKey,TValue)`: `M(int,string)`. The representation is a JSON array of 2-cells array (the key and the value). 
+- **Value types** use their nice bracket form: `(int,string,double)`. The representation is a JSON array.
+
+From an ECMAScript client, `T[]` and `L(T)` are essentially the same: in "ECMAScript standard" mode, only `T[]` is exposed (see below).
+
+Since `S(T)` specifies that the array doesn't contain duplicates and that can be handled with a [ECMAScript Set object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set),
+the types are different.
 
 ## Roundtrip-able serializations: "pure Json" and "ECMAScript safe"
 
@@ -158,10 +164,21 @@ cannot be write and read back safely. Only integer values between [Number.MIN_SA
 and [Number.MAX_SAFE_INTEGER](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER) (53 bits) are safe on the ECMAScript side.
 
 Among the basic types, the long (Int64), ulong (UInt64) and Decimal representations are not ECMAScript compliant. They must use a string representation, just like [JsonNumberHandling.WriteAsString](https://docs.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonnumberhandling)
-specifies it. There are in fact 2 different serializations: the "pure Json" and the "ECMAScript safe". Introducing this complexity only because of big integers handling
-may seem overkill... However, by putting more thoughts in the "ECMAScript safe" mode, it can do much more than just correctly handling the serialization of these big integers.
+specifies it. There are in fact 2 different serializations: the "pure Json" and the "ECMAScript safe".
 
-### The "ECMAScript standard" mode 
+To stay on the safe side and to simplify the implementation, long, ulong, decimal and BigInteger are all written and read with string.
+
+### Implementation notes about "ECMAScript safe" mode number handling
+
+The [JsonNumberHandling](https://docs.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonnumberhandling) is NOT available on the Utf8JsonWriter API.
+It is handled by the "Serialization" layer. And the APIs to [write (WriteNumberValueAsString(ulong))](https://source.dot.net/#System.Text.Json/System/Text/Json/Writer/Utf8JsonWriter.WriteValues.UnsignedNumber.cs,112)
+or [read (GetUInt64WithQuotes)](https://source.dot.net/#System.Text.Json/System/Text/Json/Reader/Utf8JsonReader.TryGet.cs,383) quoted long or unsigned long (same for Decimal) are not publicly
+exposed on the Utf8Writer/Reader.
+
+> We currently handle long, ulong, decimal, BigInteger and TimeSpan (BigInteger and TimeSpan have no direct support) by writing/reading and parsing strings.
+> Waiting for https://github.com/dotnet/runtime/issues/54016 and https://github.com/dotnet/runtime/issues/1784 (for BigInteger) for a more efficient implementation.
+
+## The "ECMAScript standard" mode 
 
 To be "ECMAScript safe", it is enough to de/serialize big integers as strings. But we can go a little bit farther by thinking to the types that an ECMAScript client
 expects. On the client side, a numeric can be:
@@ -171,38 +188,100 @@ expects. On the client side, a numeric can be:
 
 If we want to preserve typings between C# and ECMASCript client, the client must support a dedicated type for byte, sbyte, short, ushort, float (single), etc.
 (these boxed numbers' main responsibility being to restrict the value to their domain definition). This can be considered overkill (and will deeply hurt
-front end developers!). Actually C# types are not expected on the client side. Most often, front end developers want a simple `number` whatever the C# counterpart
+front end developers!). Actually C# types are not expected on the client side. Most often, front end developers want a simple `number` whatever the C#/Server counterpart
 is (byte, sbyte, etc.).
 
 This implies a kind of [type erasure](https://en.wikipedia.org/wiki/Type_erasure) that maps float, single, small integers up to the Int32 to `Number` and big
 integers to `BigInt` (not the same as the the C# `BigInteger`). In this mode, client code manipulates a `power` property as `number` and if this property is
 eventually a ushort (on the server side), it is up to the client to check this before sending it back (and the server will validate its inputs anyway).  
 
-We then consider 3 different "modes" to serialize things:
-  - **Server**
-    - This mode must not be used with an ECMAScript client since it will not be able to exchange big integers.
-    - **Data representation:** Uses JSON capabilities to represent numbers without constraints.
-    - **Type Mapping:** None. A '`byte` is a `byte`. A `Dictionary<float,sbyte>` is a `M(float,sbyte)`.
+We then consider 2 different "modes" to serialize things:
   - **ECMAScript safe:**
     - This mode guaranties that data representation can be read by an ECMAScript client.
-    - **Data representation:** Big integers are written and read as strings.
-    - **Type Mapping:** None (same as Server).
+    - **Type Mapping:** None. A '`byte` is a `byte`. A `Dictionary<float,sbyte>` is a `M(float,sbyte)`.
   - **ECMAScript standard:**
     - This mode simplifies the types for an ECMAScript client.
-    - **Data representation:** Big integers are written and read as strings (same as ECMAScript safe).
     - **Type Mapping:** This mode introduces 2 purely client types that are "Number" and "BigInt". The float, single, small integers up to the Int32 are 
-   exchanged as `Number` and big integers (long, ulong, BigIntegers) are exchanged as `BigInt`.
+   exchanged as `Number` and big integers (long, ulong, decimal, BigIntegers) are exchanged as `BigInt`.
 
+### Impacts of the type erasure in "ECMAScript standard" mode.
 
-### Implementation notes about "ECMAScript safe" mode number handling
+Mapping multiple C# types to only `Number` and `BigInt` must be "complete". No C# type like `sbyte` must be exposed to the Client. It means that
+collection handling is impacted: a `Dictionary<float,sbyte>` becomes a `M(Number,Number)`, a `Dictionary<string,decimal>` becomes a `O(BigInt)`.
 
-The [JsonNumberHandling](https://docs.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonnumberhandling) is NOT available on the Utf8JsonWriter API.
-It is handled by the "Serialization" layer. And the APIs to [write (WriteNumberValueAsString(ulong))](https://source.dot.net/#System.Text.Json/System/Text/Json/Writer/Utf8JsonWriter.WriteValues.UnsignedNumber.cs,112)
-or [read (GetUInt64WithQuotes)](https://source.dot.net/#System.Text.Json/System/Text/Json/Reader/Utf8JsonReader.TryGet.cs,383) quoted long or unsigned long (same for Decimal) are not publicly
-exposed on the Utf8Writer/Reader.
+_Note:_ the type erasure of `T[]` and `List<T>` (both are mapped to `T[]`) has been introduced before.
 
-> We currently handle long, ulong, decimal, BigInteger and TimeSpan (BigInteger and TimeSpan have no direct support) by writing/reading strings.
-> Waiting for https://github.com/dotnet/runtime/issues/54016 and https://github.com/dotnet/runtime/issues/1784 (for BigInteger) for a more efficient implementation.
+This obviously generates ambiguities when reading the JSON sent by a CLient. But the good news is that this is a concern only for polymorphism
+of heterogeneous types, not the polymorphism of specialized classes or interfaces.
+"Polymorphic heterogeneous types" is provided by either by an `object` or by a UnionType.
+
+#### Reading an `object`.
+Choices have to be made and this is fine: the developer put no constraint on the type (either because it doesn't directly use the property) or because
+it discovers its type dynamically. Our main concern here is to follow the _Least Surprise Principle_ and handle the incoming data.
+
+- For `T[]`, we choose to instantiate a `List<T>`. Having a dynamic list rather than a fixed-length array is often more convenient.
+- For `BigInt`, an alternative exists:
+
+  - Always choose the C# `BigInteger`. No risk but this type is less common (and known) than `long`, `ulong` and `decimal`.
+  - Choose among `long`, `ulong`, `decimal` and `BigInteger` based on the number's value, privileging the smallest type. We should have more `long` than `BigInteger`.
+
+> `BigInteger` is not common. We choose here the second option: a `BigInt` resolves to `long`, `ulong`, `decimal` or `BigInteger`. 
+
+- For `Number`, since there is more target types, even more options exist:
+
+  - Always choose a `double`. No risk. 
+  - Choose the smallest type that can hold the number:
+    -  Consider all the possible types:
+````csharp
+public static object ToSmallestType( double d )
+{
+    // When a fractional part exists, it's always a double
+    // (converting to float here would lose precision).
+    // This is the fastest way to detect a fractional part.
+    if( (d % 1) == 0 )
+    {
+        // It is an integer.
+        if( d < 0 )
+        {
+            // Negative integer.
+            if( d < Int32.MinValue ) return d;
+            if( d < Int16.MinValue ) return (int)d;
+            if( d < SByte.MinValue ) return (short)d;
+            return (sbyte)d;
+        }
+        // Positive integer.
+        if( d > UInt32.MaxValue ) return d;
+        if( d > Int32.MaxValue ) return (uint)d;
+        if( d > UInt16.MaxValue ) return (int)d;
+        if( d > Int16.MaxValue ) return (ushort)d;
+        if( d > Byte.MaxValue ) return (short)d;
+        if( d > SByte.MaxValue ) return (byte)d;
+        return (sbyte)d;
+    }
+    return d;
+}
+```` 
+    -  Some types are less commonly used than others. Should we remove the `sbyte`? the `ushort`?
+
+> `Number` is ambiguous. We choose to avoid downcast and to keep id simple: a `Number` will always be a `double`. It will be up to the developer
+> to handle its `object` the way she wants (with the above or a variation of it).
+
+#### Reading an `UnionType`.
+
+The unified type of an `UnionType` can only be `object` if value types (like numeric types) appear in the definition. However, 
+an `object` type constrained by a `UnionType` deeply differs from an unconstrained one.
+
+The following definitions are ambiguous:
+- When there's more `Number` (regardless of their nullabilities) like a `(int?, double)` or a `(byte, float, int)`.
+- When collections resolves to the same "ECMAScript Standard" mapping: `(double[],IList<int?>?)` are both `Number[]`.
+
+The following definitions are not ambiguous:
+- When big numbers coexist with numbers: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
+- When ECMAScript collections differ: `(IList<int>,HashSet<double>)` maps to `Number[]|S(BigInt)`.
+
+Ambiguities are detected and an error is emitted: the "ECMAScript standard" mode restricts the possible types of an `UnionType`.
+As soon as this **CK.Poco.Json** package is installed, such ambiguous `UnionType` fail.
+
 
 
 ```csharp

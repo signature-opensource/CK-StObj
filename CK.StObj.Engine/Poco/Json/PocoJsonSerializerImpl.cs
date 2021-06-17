@@ -178,38 +178,118 @@ namespace CK.Setup.Json
 
             foreach( var p in pocoInfo.PropertyList )
             {
-                foreach( var union in p.PropertyUnionTypes )
+                if( p.PropertyUnionTypes.Any() )
                 {
-                    jsonCodeGen.GetHandler( union.Type );
+                    // Analyses the UnionTypes and create the handler for each of them.
+                    // - Forbids ambiguous mapping for ECMAScriptStandard: all numerics are mapped to "Number".
+                    // - The ECMAScriptStandard projected name must be unique (and is associated to its actual handler).
+                    var unionHandlers = new Dictionary<string, IJsonCodeGenHandler>();
+                    foreach( var union in p.PropertyUnionTypes )
+                    {
+                        var h = jsonCodeGen.GetHandler( union.Type, union.Kind.IsNullable() );
+                        if( h == null )
+                        {
+                            success = false;
+                            continue;
+                        }
+                        unionHandlers.Add( h.Name, h );
+
+                    }
+
                 }
-                var handler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
-                if( handler == null )
+                else
                 {
-                    success = false;
-                    continue;
+                    var handler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
+                    if( handler == null )
+                    {
+                        success = false;
+                        continue;
+                    }
+                    Debug.Assert( handler.IsNullable == p.IsNullable );
+
+                    // Actual Read/Write generation cannot be done here (it must be postponed).
+                    // This loop registers/allows the poco property types but writing them requires
+                    // to know whether those types are final or not (the call to GetHandler triggers
+                    // the type registration).
+                    // We store (using closure) the property, the write and read parts and the handler(s)
+                    // (to avoid another lookup) and wait for the FinalizeJsonSupport to be called.
+                    _finalReadWrite.Add( () =>
+                    {
+                        var fieldName = "_v" + p.Index;
+
+                        write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
+                        handler.GenerateWrite( write, fieldName );
+
+                        read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
+                            .OpenBlock();
+                        handler.GenerateRead( read, fieldName, false );
+                        read.Append( "break; " )
+                            .CloseBlock();
+                    } );
                 }
-                Debug.Assert( handler.IsNullable == p.IsNullable );
+                #region Old
+                //var handler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
+                //if( handler == null )
+                //{
+                //    success = false;
+                //    continue;
+                //}
+                //Debug.Assert( handler.IsNullable == p.IsNullable );
 
-                // Actual Read/Write generation cannot be done here (it must be postponed).
-                // This loop registers/allows the poco property types but writing them requires
-                // to know whether those types are final or not (the call to GetHandler triggers
-                // the type registration).
-                // We store (using closure) the property, the write and read parts and the handler
-                // (to avoid another lookup) and wait for the FinalizeJsonSupport to be called.
-                _finalReadWrite.Add( () =>
-                {
-                    var fieldName = "_v" + p.Index;
+                //// Actual Read/Write generation cannot be done here (it must be postponed).
+                //// This loop registers/allows the poco property types but writing them requires
+                //// to know whether those types are final or not (the call to GetHandler triggers
+                //// the type registration).
+                //// We store (using closure) the property, the write and read parts and the handler(s)
+                //// (to avoid another lookup) and wait for the FinalizeJsonSupport to be called.
+                //_finalReadWrite.Add( () =>
+                //{
+                //    var fieldName = "_v" + p.Index;
 
-                    write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
-                    handler.GenerateWrite( write, fieldName );
+                //    write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
+                //    handler.GenerateWrite( write, fieldName );
 
-                    read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
-                        .OpenBlock();
-                    handler.GenerateRead( read, fieldName, false );
-                    read.Append( "break; " )
-                        .CloseBlock();
-                } );
+                //    read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
+                //        .OpenBlock();
+                //    if( p.IsReadOnly )
+                //    {
+                //        handler.GenerateRead( read, fieldName, false );
+                //    }
+                //    else
+                //    {
+                //        read.AppendCSharpName( p.PropertyType ).Append( " raw;" ).NewLine();
+                //        handler.GenerateRead( read, "raw", true );
 
+                //        bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
+                //        bool isNullable = p.PropertyNullabilityInfo.Kind.IsNullable();
+                //        if( isTechnicallyNullable )
+                //        {
+                //            read.Append( "if( raw != null )" )
+                //                .OpenBlock();
+                //        }
+                //        if( p.PropertyUnionTypes.Any() )
+                //        {
+                //            read.Append( "Type tV = raw.GetType();" ).NewLine()
+                //                .Append( "if( !_c" ).Append( fieldName )
+                //                .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
+                //                .OpenBlock()
+                //                .Append( "throw new System.IO.InvalidDataException( $\"Unexpected Type '{tV}' for UnionType: " ).Append( p.ToString()! ).Append( "\");" )
+                //                .CloseBlock();
+                //        }
+                //        if( isTechnicallyNullable )
+                //        {
+                //            read.CloseBlock();
+                //            if( !isNullable )
+                //            {
+                //                read.Append( "else throw new System.IO.InvalidDataException( $\"Invalid null for " ).Append( p.ToString()! ).Append( "\");" ).NewLine();
+                //            }
+                //        }
+                //        read.Append( fieldName ).Append( " = raw;" );
+                //    }
+                //    read.Append( "break; " )
+                //        .CloseBlock();
+                //} ); 
+                #endregion
             }
             return success;
         }

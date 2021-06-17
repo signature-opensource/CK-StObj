@@ -191,7 +191,7 @@ namespace CK.Setup
 
         static readonly MethodInfo _typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
 
-        ClassInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        static ClassInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
             string pocoTypeName = assembly.GetAutoImplementedTypeName( interfaces[0] );
@@ -385,7 +385,7 @@ namespace CK.Setup
         {
             // We cannot check the equality of property type here because we need to consider IPoco families: we
             // have to wait that all of them have been registered.
-            // ClassInfo.CheckPropertiesVariance checks the type and the nullability.
+            // ClassInfo.CheckPropertiesVarianceAndUnionTypes checks the type and the nullability.
             var isReadOnly = !p.CanWrite;
             if( properties.TryGetValue( p.Name, out var implP ) )
             {
@@ -517,7 +517,14 @@ namespace CK.Setup
                     return false;
                 }
                 if( typeDeviants != null ) return false;
-                if( !implP.AddUnionPropertyTypes( monitor, nullableTypeTrees.SubTypes, uAttr.CanBeExtended ) )
+
+                var types = nullableTypeTrees.SubTypes.ToList();
+                if( types.Any( t => t.Type == typeof( object ) ) ) 
+                {
+                    monitor.Error( $"{implP}': UnionTypes cannot define the type 'object' since this would erase all possible types." );
+                    return false;
+                }
+                if( !implP.AddUnionPropertyTypes( monitor, nullableTypeTrees.SubTypes.ToList(), uAttr.CanBeExtended ) )
                 {
                     monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned types must be the same." );
                     return false;
@@ -526,7 +533,7 @@ namespace CK.Setup
             return true;
         }
 
-        bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )
+        static bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )
         {
             bool success = true;
             var aDefs = p.DeclaredProperties.Select( x => (Prop: x, x.GetCustomAttribute<DefaultValueAttribute>()) )

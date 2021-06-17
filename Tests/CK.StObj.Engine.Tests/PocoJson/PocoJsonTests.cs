@@ -171,11 +171,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface ITestSetNumbers : ITest
         {
-            HashSet<int> Numbers { get; }
+            HashSet<decimal> Numbers { get; }
         }
 
-        [Test]
-        public void Set_serialization()
+        [TestCase( PocoSerializerMode.Server )]
+        [TestCase( PocoSerializerMode.ECMAScriptSafe )]
+        [TestCase( PocoSerializerMode.ECMAScriptStandard )]
+        public void Set_serialization( PocoSerializerMode mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITestSetNumbers ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
@@ -188,7 +190,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 o.Hip += "CodeGen!";
                 o.Numbers.AddRangeArray( 12, 87, 12, 54, 12 );
             } );
-            var o2 = JsonTestHelper.Roundtrip( directory, o );
+            var o2 = JsonTestHelper.Roundtrip( directory, o, new PocoJsonSerializerOptions { Mode = mode }, text: t => TestHelper.Monitor.Info( t ) );
             Debug.Assert( o2 != null );
             o2.Power.Should().Be( o.Power );
             o2.Hip.Should().Be( o.Hip );
@@ -290,6 +292,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             IPocoCrossB B { get; }
 
+            [DefaultValue( "A message." )]
             string MsgA { get; set; }
         }
 
