@@ -74,7 +74,8 @@ namespace CK.Setup.Json
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" );
-                } );
+                } )
+                .SetECMAScriptStandardName( "Number" );
 
             AllowTypeInfo( typeof( byte[] ), "byte[]", StartTokenType.String ).Configure(
                 ( ICodeWriter write, string variableName ) =>

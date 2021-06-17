@@ -203,7 +203,6 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-
                     // Actual Read/Write generation cannot be done here (it must be postponed).
                     // This loop registers/allows the poco property types (the call to GetHandler triggers
                     // the type registration) but writing them requires to know whether those types are final or not .
@@ -226,12 +225,9 @@ namespace CK.Setup.Json
                 }
                 if( !isECMAScriptStandardCompliant )
                 {
-                    writeHeader.Append( "if( options != null && options.Mode == PocoJsonSerializerMode.ECMAScriptStandard ) throw new NotSupportedException( \"Poco '" )
-                                .Append( pocoInfo.Name )
-                                .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
-                    readHeader.Append( "if( options != null && options.Mode == PocoJsonSerializerMode.ECMAScriptStandard ) throw new NotSupportedException( \"Poco '" )
-                                .Append( pocoInfo.Name )
-                                .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
+                    writeHeader.And( readHeader ).Append( "if( options != null && options.Mode == PocoJsonSerializerMode.ECMAScriptStandard ) throw new NotSupportedException( \"Poco '" )
+                                                 .Append( pocoInfo.Name )
+                                                 .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
                 }
                 #region Old
                 //var handler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );

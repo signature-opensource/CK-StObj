@@ -20,155 +20,70 @@ namespace CK.StObj.Engine.Tests.PocoJson
     [TestFixture]
     public partial class ECMAScriptStandardUnionTypeSerializationTests
     {
+        public static readonly PocoJsonSerializerOptions Standard = new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard };
+
+        public interface IOther : IPoco { public int Value { get; set; } }
+
         [ExternalName("UT")]
-        public interface IAllIntegers : IPoco
+        public interface INotCompliant1 : IPoco
         {
             [UnionType]
-            object DoubleOrString { get; set; }
-
-            [UnionType( CanBeExtended = true )]
-            object? NullablesOrNot { get; set; }
-
-            [UnionType]
-            object AllIntegers { get; set; }
+            public object Thing { get; set; }
 
             class UnionTypes
             {
-                public (double, string) DoubleOrString { get; }
-                public (int?, int) NullablesOrNot { get; }
-                public (sbyte, byte, short, ushort, int, uint, long, ulong, decimal, BigInteger) AllIntegers { get; }
+                public (double, int) Thing { get; }
+            }
+        }
+
+        [ExternalName("UT")]
+        public interface INotCompliant2 : IPoco
+        {
+            [UnionType]
+            public object Thing { get; set; }
+
+            class UnionTypes
+            {
+                public (List<int>, int[]) Thing { get; }
+            }
+        }
+
+        [ExternalName("UT")]
+        public interface INotCompliant3 : IPoco
+        {
+            [UnionType]
+            public object Thing { get; set; }
+
+            class UnionTypes
+            {
+                public (List<int>, int?[]) Thing { get; }
+            }
+        }
+
+        [ExternalName("UT")]
+        public interface INotCompliant4 : IPoco
+        {
+            [UnionType]
+            public object Thing { get; set; }
+
+            class UnionTypes
+            {
+                public (List<(int,string)>, (int,string)?[]) Thing { get; }
             }
         }
 
         [Test]
-        public void all_integer_roundtrip()
+        public void Non_compliant_Poco_are_detected()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllIntegers ) );
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( INotCompliant1 ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
             var directory = services.GetService<PocoDirectory>();
 
-            var u = services.GetService<IPocoFactory<IAllIntegers>>().Create();
+            var u = services.GetService<IPocoFactory<INotCompliant1>>().Create();
 
-            string? serialized = null;
-
-            var u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
-            Debug.Assert( serialized != null );
-            TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
-            u2.Should().BeEquivalentTo( u );
-            // Unitialized non nullable reference property is actually null.
-            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":null,""NullablesOrNot"":null,""AllIntegers"":null}]" );
-
-            u.DoubleOrString = 3712.0;
-            u.NullablesOrNot = 3712;
-            u.AllIntegers = BigInteger.Parse( Decimal.MaxValue.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) + "3712", System.Globalization.NumberFormatInfo.InvariantInfo );
-
-            u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
-            TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
-            u2.Should().BeEquivalentTo( u );
-            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":3712.0,""NullablesOrNot"":[""int"",3712],""AllIntegers"":[""BigInteger"",""792281625142643375935439503353712""]}]" );
-
-            u.DoubleOrString = "a string";
-            u.NullablesOrNot = null; // null resolved of null.
-            u.AllIntegers = Decimal.MaxValue; // The Decimal.MaxValue is read as a Decimal.
-
-            u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
-            TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
-            u2.Should().BeEquivalentTo( u );
-            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""decimal"",""79228162514264337593543950335""]}]" );
-
-            u.AllIntegers = (short)-32000;
-            u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
-            TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
-            u2.Should().BeEquivalentTo( u );
-            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""short"",-32000]}]" );
-        }
-
-
-        public interface IUnionTypes : IPoco
-        {
-            [UnionType]
-            object IntOrString { get; set; }
-
-            [UnionType]
-            object AllIntegers { get; set; }
-
-            [UnionType]
-            object ByteOrDouble { get; set; }
-
-            class UnionTypes
-            {
-                public (int, string) IntOrString { get; }
-                public (int?, int) NullablesOrNot { get; }
-                public (sbyte, byte, short, ushort, int, uint, long, ulong, decimal, BigInteger) AllIntegers { get; }
-                public (byte, double) ByteOrDouble { get; }
-            }
-        }
-
-        [TestCase( @"{""AllIntegers"":3712}", 3712 )] // Defaults to int.
-        [TestCase( @"{""AllIntegers"":[""Number"",-47]}", (sbyte)-47 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",-129]}", (short)-129 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",32767]}", (short)32767 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",-32768]}", (short)-32768 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",-32769]}", (int)-32769 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",32768]}", (ushort)32768 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",65535]}", (ushort)65535 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",65536]}", (int)65536 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",2147483647]}", (int)2147483647 )]
-        [TestCase( @"{""AllIntegers"":[""Number"",2147483648]}", (uint)2147483648 )] // uint
-        [TestCase( @"{""AllIntegers"":[""Number"",4294967295]}", (uint)4294967295 )]
-
-        [TestCase( @"{""AllIntegers"":[""Number"",4294967296]}", "Error:InvalidDataException" )] // Above UInt32: quotes are required.
-        [TestCase( @"{""AllIntegers"":[""Number"",4294967296]}", "Error:InvalidDataException" )]
-
-        [TestCase( @"{""AllIntegers"":[""BigInt"",4294967296]}", "Error:JsonException" )] // BigInt MUST be a string.
-        [TestCase( @"{""AllIntegers"":[""BigInt"",""4294967296""]}", (long)4294967296 )] 
-        [TestCase( @"{""AllIntegers"":[""BigInt"",""9223372036854775807""]}", (long)9223372036854775807 )] 
-        [TestCase( @"{""AllIntegers"":[""BigInt"",""9223372036854775808""]}", (ulong)9223372036854775808 )] 
-        [TestCase( @"{""AllIntegers"":[""BigInt"",""18446744073709551615""]}", (ulong)18446744073709551615 )] 
-        [TestCase( @"{""AllIntegers"":[""BigInt"",""79228162514264337593543950335""]}", "Decimal:79228162514264337593543950335" )] // Decimal (max value)
-        [TestCase( @"{""AllIntegers"":[""BigInt"",""792281625142643375935439503353712""]}", "BigInteger:792281625142643375935439503353712" )] // Greater than Decimal: BigInteger.
-
-        [TestCase( @"{""ByteOrDouble"":[""Number"",0]}", (byte)0 )]
-        [TestCase( @"{""ByteOrDouble"":[""Number"",1]}", (byte)1 )]
-        public void reading_values_ECMAScriptStandard_mode( string s, object value )
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IUnionTypes ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
-
-            object? GetReadValue( IUnionTypes o )
-            {
-                var pName = s.Split( '"' )[1];
-                var p = o.GetType().GetProperty( pName );
-                Debug.Assert( p != null );
-                return p.GetValue( o )!;
-            }
-
-            Type? expectedException = null;
-            if( value is string sV )
-            {
-                if( sV.StartsWith( "BigInteger:", StringComparison.Ordinal ) ) value = BigInteger.Parse( sV.Substring( 11 ), System.Globalization.NumberFormatInfo.InvariantInfo );
-                else if( sV.StartsWith( "Decimal:", StringComparison.Ordinal ) ) value = Decimal.Parse( sV.Substring( 8 ), System.Globalization.NumberFormatInfo.InvariantInfo );
-                else if( sV.StartsWith( "Error:", StringComparison.Ordinal ) )
-                {
-                    if( sV.Contains( "JsonException", StringComparison.Ordinal ) ) expectedException = typeof( JsonException );
-                    else if( sV.Contains( "InvalidDataException", StringComparison.Ordinal ) ) expectedException = typeof( InvalidDataException );
-                    else throw new NotSupportedException();
-                }
-                else throw new NotSupportedException();
-            }
-
-            if( expectedException != null )
-            {
-                FluentActions.Invoking( () => JsonTestHelper.Deserialize<IUnionTypes>( services, s, new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard } ) )
-                             .Should().Throw<Exception>().Which.Should().BeOfType( expectedException );
-            }
-            else
-            {
-                var a = JsonTestHelper.Deserialize<IUnionTypes>( services, s, new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard } );
-                var read = GetReadValue( a );
-                read.Should().Be( value );
-                read.Should().BeOfType( value.GetType() );
-            }
+            FluentActions.Invoking( () => u.JsonSerialize( true, Standard ) ).Should().Throw<NotSupportedException>();
+            FluentActions.Invoking( () => u.JsonSerialize( false, Standard ) ).Should().Throw<NotSupportedException>();
+            FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", Standard ) ).Should().Throw<NotSupportedException>();
         }
 
     }
