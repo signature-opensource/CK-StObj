@@ -48,7 +48,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
                 if( toSupport.GetExternalNames( e.Monitor, out var name, out var previousNames ) )
                 {
-                    e.JsonCodeGen.AllowTypeInfo( toSupport, name, previousNames ).Configure(
+                    e.JsonCodeGen.AllowTypeInfo( toSupport, name, StartTokenType.String, previousNames ).Configure(
                         ( write, variableName ) =>
                         {
                             write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString() );" ).NewLine();

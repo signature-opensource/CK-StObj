@@ -11,18 +11,10 @@ namespace CK.Core
     public class PocoJsonSerializerOptions
     {
         /// <summary>
-        /// Initializes a new default options.
-        /// </summary>
-        public PocoJsonSerializerOptions()
-        {
-            Mode = PocoSerializerMode.Server;
-        }
-
-        /// <summary>
         /// Gets or sets the serialization mode.
-        /// Defaults to <see cref="PocoSerializerMode.Server"/>.
+        /// Defaults to <see cref="PocoJsonSerializerMode.ECMAScriptSafe"/>.
         /// </summary>
-        public PocoSerializerMode Mode { get; set; }
+        public PocoJsonSerializerMode Mode { get; set; }
 
     }
 }

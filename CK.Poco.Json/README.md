@@ -279,7 +279,7 @@ The following definitions are not ambiguous:
 - When big numbers coexist with numbers: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
 - When ECMAScript collections differ: `(IList<int>,HashSet<double>)` maps to `Number[]|S(BigInt)`.
 
-Ambiguities are detected and an error is emitted: the "ECMAScript standard" mode restricts the possible types of an `UnionType`.
+Ambiguities are detected and an errors are emitted: the "ECMAScript standard" mode restricts the possible types of an `UnionType`.
 As soon as this **CK.Poco.Json** package is installed, such ambiguous `UnionType` fail.
 
 

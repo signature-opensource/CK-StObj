@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 
 namespace CK.Setup.Json
 {
@@ -14,7 +15,7 @@ namespace CK.Setup.Json
     public partial class JsonTypeInfo : IAnnotationSet
     {
         /// <summary>
-        /// Singleton for "object".
+        /// Singleton for untyped "object".
         /// Its handlers are <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
         /// </summary>
         public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
@@ -60,6 +61,11 @@ namespace CK.Setup.Json
         public string ECMAScriptStandardName { get; private set; }
 
         /// <summary>
+        /// Gets whether this <see cref="Name"/> differs from this <see cref="ECMAScriptStandardName"/>.
+        /// </summary>
+        public bool HasECMAScriptStandardName => ECMAScriptStandardName != Name;
+
+        /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
         /// This should be used for large struct.
         /// </summary>
@@ -71,11 +77,20 @@ namespace CK.Setup.Json
         public IReadOnlyList<string> PreviousNames { get; }
 
         /// <summary>
-        /// Gets the <see cref="JsonDirectType"/>.
+        /// Gets the token type that starts the representation.
         /// </summary>
-        public JsonDirectType DirectType { get; }
+        public StartTokenType StartTokenType { get; }
 
-        //public string GetExchangeName( PocoJsonSerializerOptions options ) => "";
+        /// <summary>
+        /// Gets whether this is the untyped "object".
+        /// </summary>
+        public bool IsUntypedType => Type == typeof( object );
+
+        /// <summary>
+        /// Intrinsic types don't need any type marker: Boolean (JSON True and False tokens), string (JSON String token)
+        /// and double (JSON Number token).
+        /// </summary>
+        public bool IsIntrinsic => StartTokenType == StartTokenType.Boolean || Type == typeof( string ) || Type == typeof( double );
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
@@ -86,15 +101,15 @@ namespace CK.Setup.Json
         public bool IsFinal { get; internal set; }
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null, JsonDirectType d = JsonDirectType.None )
+        internal JsonTypeInfo( Type t, int number, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
         {
             Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null) );
             Type = t;
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
+            StartTokenType = startTokenType;
             ECMAScriptStandardName = Name = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
-            DirectType = d;
             IsFinal = true;
             NonNullHandler = new Handler( this, Type, false, false );
             NullHandler = NonNullHandler.ToNullHandler();
@@ -109,7 +124,7 @@ namespace CK.Setup.Json
             PreviousNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
-            DirectType = JsonDirectType.Untyped;
+            StartTokenType = StartTokenType.Array;
             IsFinal = false;
             NonNullHandler = new Handler( this, Type, false, true );
             NullHandler = NonNullHandler.ToNullHandler();
@@ -170,6 +185,8 @@ namespace CK.Setup.Json
         /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
         public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
         {
+            if( CodeReader == null ) throw new InvalidOperationException( "CodeReader has not been set." );
+            // We currently ignore null input when the value is not nullable.
             if( isNullable )
             {
                 read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
@@ -180,18 +197,7 @@ namespace CK.Setup.Json
                     .Append( "else" )
                     .OpenBlock();
             }
-            switch( DirectType )
-            {
-                case JsonDirectType.Number: read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" ); break;
-                case JsonDirectType.String: read.Append( variableName ).Append( " = r.GetString(); r.Read();" ); break;
-                case JsonDirectType.Boolean: read.Append( variableName ).Append( " = r.GetBoolean(); r.Read();" ); break;
-                default:
-                    {
-                        Debug.Assert( CodeReader != null );
-                        CodeReader( read, variableName, assignOnly, isNullable );
-                        break;
-                    }
-            }
+            CodeReader( read, variableName, assignOnly, isNullable );
             if( isNullable ) read.CloseBlock();
         }
 
@@ -204,50 +210,50 @@ namespace CK.Setup.Json
         /// <param name="writeTypeName">True if type discriminator must be written.</param>
         public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, bool writeTypeName )
         {
+            if( CodeWriter == null ) throw new InvalidOperationException( "CodeWriter has not been set." );
             if( isNullable )
             {
                 write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
                         .Append( "else " )
                         .OpenBlock();
             }
-            switch( DirectType )
+            if( IsIntrinsic )
             {
-                case JsonDirectType.Number: write.Append( "w.WriteNumberValue( " ).Append( variableName ).Append( " );" ); break;
-                case JsonDirectType.String: write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( " );" ); break;
-                case JsonDirectType.Boolean: write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" ); break;
-                default:
+                CodeWriter( write, variableName );
+            }
+            else
+            {
+                if( writeTypeName )
+                {
+                    write.Append( "w.WriteStartArray(); w.WriteStringValue( " );
+                    if( HasECMAScriptStandardName )
                     {
-                        if( writeTypeName )
-                        {
-                            write.Append( "w.WriteStartArray(); w.WriteStringValue( options?.Mode == PocoSerializerMode.ECMAScriptStandard ? " )
-                                 .AppendSourceString( ECMAScriptStandardName )
-                                 .Append( " : " )
-                                 .AppendSourceString( Name ).Append( ");" ).NewLine();
-                        }
-                        Debug.Assert( CodeWriter != null );
-                        bool hasBlock = false;
-                        if( isNullable && Type.IsValueType )
-                        {
-                            if( ByRefWriter )
-                            {
-                                hasBlock = true;
-                                write.OpenBlock()
-                                     .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
-                                variableName = "notNull";
-                            }
-                            else variableName += ".Value";
-                        }
-                        CodeWriter( write, variableName );
-                        if( hasBlock )
-                        {
-                            write.CloseBlock();
-                        }
-                        if( writeTypeName )
-                        {
-                            write.Append( "w.WriteEndArray();" ).NewLine();
-                        }
-                        break;
+                        write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( ECMAScriptStandardName )
+                             .Append( " : " );
                     }
+                    write.AppendSourceString( Name ).Append( " );" ).NewLine();
+                }
+                bool hasBlock = false;
+                if( isNullable && Type.IsValueType )
+                {
+                    if( ByRefWriter )
+                    {
+                        hasBlock = true;
+                        write.OpenBlock()
+                                .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
+                        variableName = "notNull";
+                    }
+                    else variableName += ".Value";
+                }
+                CodeWriter( write, variableName );
+                if( hasBlock )
+                {
+                    write.CloseBlock();
+                }
+                if( writeTypeName )
+                {
+                    write.Append( "w.WriteEndArray();" ).NewLine();
+                }
             }
             if( isNullable ) write.CloseBlock();
         }

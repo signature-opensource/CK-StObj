@@ -13,6 +13,9 @@ namespace CK.Setup.Json
             public Type Type { get; }
             public string Name { get; }
             public bool IsTypeMapping { get; }
+            // Must be dynamic (TypeInfo.ECMAScriptStandardName is set after the instantiation).
+            public string ECMAScriptStandardName => IsNullable ? TypeInfo.ECMAScriptStandardName + "?" : TypeInfo.ECMAScriptStandardName;
+            public bool HasECMAScriptStandardName => TypeInfo.HasECMAScriptStandardName;
 
             readonly Handler _otherHandler;
 

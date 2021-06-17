@@ -274,7 +274,7 @@ namespace CK.Setup
                 Type iCreate = typeof( IPocoFactory<> ).MakeGenericType( i );
                 tBF.AddInterfaceImplementation( iCreate );
                 {
-                    MethodBuilder m = tBF.DefineMethod( "C" + expanded.Count.ToString(), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, Type.EmptyTypes );
+                    MethodBuilder m = tBF.DefineMethod( "C" + expanded.Count.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, Type.EmptyTypes );
                     ILGenerator g = m.GetILGenerator();
                     g.Emit( OpCodes.Ldnull );
                     g.Emit( OpCodes.Ret );

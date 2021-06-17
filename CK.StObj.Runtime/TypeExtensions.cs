@@ -35,8 +35,8 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the <see cref="ExternalNameAttribute"/> names or this <see cref="Type.FullName"/> (and
-        /// emits a warning if the full name is used).
+        /// Gets the <see cref="ExternalNameAttribute"/> names or this <see cref="Type.FullName"/>.
+        /// Emits a warning if the full name is used, and errors if the name exists and is invalid.
         /// </summary>
         /// <param name="t">This type.</param>
         /// <param name="monitor">The monitor to use.</param>

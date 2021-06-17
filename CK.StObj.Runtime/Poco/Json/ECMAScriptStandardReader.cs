@@ -24,8 +24,11 @@ namespace CK.Setup.Json
         /// <param name="read">The target code.</param>
         public abstract void GenerateRead( ICodeWriter read );
 
-        public static object BestCast( double d )
+        public static object ToSmallestType( double d )
         {
+            // This is the fastest way to detect a fractional part.
+            // When a fractional part exists, it's always a double
+            // (converting to float here would lose precision).
             if( (d % 1) == 0 )
             {
                 // It is an integer.

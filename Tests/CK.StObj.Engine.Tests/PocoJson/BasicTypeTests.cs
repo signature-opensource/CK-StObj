@@ -42,9 +42,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             IList<object> PObjects { get; }
         }
 
-        [TestCase( PocoSerializerMode.Server )]
-        [TestCase( PocoSerializerMode.ECMAScriptSafe )]
-        public void all_basic_types_roundtrip_in_server_and_ECMAScriptSafeMode( PocoSerializerMode mode )
+        public void all_basic_types_roundtrip( PocoJsonSerializerMode mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllBasicTypes ) ); ;
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -134,7 +132,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void types_roundtrip_with_max_values_in_ECMAScriptStandard_mode_except_for_floats_that_are_always_read_as_doubles()
+        public void types_roundtrip_with_MAX_values_in_ECMAScriptStandard_mode_except_for_floats_that_are_always_read_as_doubles()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllBasicTypes ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -146,7 +144,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // them in [-1.0,1.0].)
             nMax.PObjects[nMax.PObjects.IndexOf( o => o is float )] = 0.1;
 
-            var options = new PocoJsonSerializerOptions { Mode = PocoSerializerMode.ECMAScriptStandard };
+            var options = new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard };
 
             var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, options, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(max) ECMAScriptStandard serialization: " + t ) );
             nMax2.Should().BeEquivalentTo( nMax );

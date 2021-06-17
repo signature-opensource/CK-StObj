@@ -18,13 +18,13 @@ using static CK.Testing.StObjEngineTestHelper;
 namespace CK.StObj.Engine.Tests.PocoJson
 {
     [TestFixture]
-    public partial class UnionTypeSerializationTests
+    public partial class ECMAScriptStandardUnionTypeSerializationTests
     {
-        [ExternalName( "UT" )]
+        [ExternalName("UT")]
         public interface IAllIntegers : IPoco
         {
             [UnionType]
-            object IntOrString { get; set; }
+            object DoubleOrString { get; set; }
 
             [UnionType( CanBeExtended = true )]
             object? NullablesOrNot { get; set; }
@@ -34,16 +34,14 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (int, string) IntOrString { get; }
+                public (double, string) DoubleOrString { get; }
                 public (int?, int) NullablesOrNot { get; }
                 public (sbyte, byte, short, ushort, int, uint, long, ulong, decimal, BigInteger) AllIntegers { get; }
             }
         }
 
-        [TestCase( PocoSerializerMode.Server )]
-        [TestCase( PocoSerializerMode.ECMAScriptStandard )]
-        [TestCase( PocoSerializerMode.ECMAScriptSafe )]
-        public void union_types_with_integers_roundtrip_only_when_read_is_unambiguously_one_of_the_types( PocoSerializerMode mode )
+        [Test]
+        public void all_integer_roundtrip()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllIntegers ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -51,69 +49,38 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             var u = services.GetService<IPocoFactory<IAllIntegers>>().Create();
 
-            var options = new PocoJsonSerializerOptions { Mode = mode };
             string? serialized = null;
 
-            var u2 = JsonTestHelper.Roundtrip( directory, u, options, text: t => serialized = t );
+            var u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
             Debug.Assert( serialized != null );
             TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
             u2.Should().BeEquivalentTo( u );
             // Unitialized non nullable reference property is actually null.
-            serialized.Should().Be( @"[""UT"",{""IntOrString"":null,""NullablesOrNot"":null,""AllIntegers"":null}]" );
+            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":null,""NullablesOrNot"":null,""AllIntegers"":null}]" );
 
-            // This is not ambiguous since only ints are at stake and the big number can obviously only be a BigInteger.
-            u.IntOrString = 3712;
+            u.DoubleOrString = 3712.0;
             u.NullablesOrNot = 3712;
             u.AllIntegers = BigInteger.Parse( Decimal.MaxValue.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) + "3712", System.Globalization.NumberFormatInfo.InvariantInfo );
 
-            u2 = JsonTestHelper.Roundtrip( directory, u, options, text: t => serialized = t );
+            u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
             TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
             u2.Should().BeEquivalentTo( u );
-            if( mode == PocoSerializerMode.ECMAScriptStandard )
-            {
-                // In ECMAScriptStandard, "BigInt" is the ECMAScript name of long, ulong, decimal and System.Numerics.BigInteger.
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":3712,""NullablesOrNot"":3712,""AllIntegers"":[""BigInt"",""792281625142643375935439503353712""]}]" );
-            }
-            else
-            {
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":3712,""NullablesOrNot"":3712,""AllIntegers"":[""BigInteger"",""792281625142643375935439503353712""]}]" );
-            }
+            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":3712.0,""NullablesOrNot"":[""int"",3712],""AllIntegers"":[""BigInteger"",""792281625142643375935439503353712""]}]" );
 
-            // This is not ambiguous.
-            u.IntOrString = "a string"; // string is self described.
+            u.DoubleOrString = "a string";
             u.NullablesOrNot = null; // null resolved of null.
             u.AllIntegers = Decimal.MaxValue; // The Decimal.MaxValue is read as a Decimal.
 
-            u2 = JsonTestHelper.Roundtrip( directory, u, options, text: t => serialized = t );
+            u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
             TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
             u2.Should().BeEquivalentTo( u );
-            if( mode == PocoSerializerMode.ECMAScriptStandard )
-            {
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""BigInt"",""79228162514264337593543950335""]}]" );
-            }
-            else if( mode == PocoSerializerMode.ECMAScriptSafe )
-            {
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""decimal"",""79228162514264337593543950335""]}]" );
-            }
-            else
-            {
-                Debug.Assert( mode == PocoSerializerMode.Server );
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""decimal"",79228162514264337593543950335]}]" );
-            }
+            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""decimal"",""79228162514264337593543950335""]}]" );
 
-            // This is not ambiguous: The "best" type for -32000 is a signed 16 bits.
             u.AllIntegers = (short)-32000;
-            u2 = JsonTestHelper.Roundtrip( directory, u, options, text: t => serialized = t );
+            u2 = JsonTestHelper.Roundtrip( directory, u, null, text: t => serialized = t );
             TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
             u2.Should().BeEquivalentTo( u );
-            if( mode == PocoSerializerMode.ECMAScriptStandard )
-            {
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""Number"",-32000]}]" );
-            }
-            else
-            {
-                serialized.Should().Be( @"[""UT"",{""IntOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""short"",-32000]}]" );
-            }
+            serialized.Should().Be( @"[""UT"",{""DoubleOrString"":""a string"",""NullablesOrNot"":null,""AllIntegers"":[""short"",-32000]}]" );
         }
 
 
@@ -192,12 +159,12 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             if( expectedException != null )
             {
-                FluentActions.Invoking( () => JsonTestHelper.Deserialize<IUnionTypes>( services, s, new PocoJsonSerializerOptions { Mode = PocoSerializerMode.ECMAScriptStandard } ) )
+                FluentActions.Invoking( () => JsonTestHelper.Deserialize<IUnionTypes>( services, s, new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard } ) )
                              .Should().Throw<Exception>().Which.Should().BeOfType( expectedException );
             }
             else
             {
-                var a = JsonTestHelper.Deserialize<IUnionTypes>( services, s, new PocoJsonSerializerOptions { Mode = PocoSerializerMode.ECMAScriptStandard } );
+                var a = JsonTestHelper.Deserialize<IUnionTypes>( services, s, new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard } );
                 var read = GetReadValue( a );
                 read.Should().Be( value );
                 read.Should().BeOfType( value.GetType() );

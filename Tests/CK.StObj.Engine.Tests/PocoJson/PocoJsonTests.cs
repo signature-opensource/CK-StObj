@@ -174,10 +174,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
             HashSet<decimal> Numbers { get; }
         }
 
-        [TestCase( PocoSerializerMode.Server )]
-        [TestCase( PocoSerializerMode.ECMAScriptSafe )]
-        [TestCase( PocoSerializerMode.ECMAScriptStandard )]
-        public void Set_serialization( PocoSerializerMode mode )
+        [TestCase( PocoJsonSerializerMode.ECMAScriptSafe )]
+        [TestCase( PocoJsonSerializerMode.ECMAScriptStandard )]
+        public void Set_serialization( PocoJsonSerializerMode mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITestSetNumbers ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;

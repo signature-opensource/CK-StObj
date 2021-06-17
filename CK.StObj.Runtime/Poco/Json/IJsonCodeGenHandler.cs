@@ -49,6 +49,16 @@ namespace CK.Setup.Json
         string Name { get; }
 
         /// <summary>
+        /// Gets the <see cref="JsonTypeInfo.ECMAScriptStandardName"/> with '?' suffix if <see cref="IsNullable"/> is true.
+        /// </summary>
+        string ECMAScriptStandardName { get; }
+
+        /// <summary>
+        /// Gets whether this <see cref="Name"/> differs from this <see cref="ECMAScriptStandardName"/>.
+        /// </summary>
+        bool HasECMAScriptStandardName { get; }
+
+        /// <summary>
         /// Gets the <see cref="JsonTypeInfo"/>.
         /// </summary>
         JsonTypeInfo TypeInfo { get; }
