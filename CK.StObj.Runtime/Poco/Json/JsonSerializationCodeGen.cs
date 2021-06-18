@@ -120,7 +120,7 @@ namespace CK.Setup.Json
         }
 
         /// <summary>
-        /// Registers the <see cref="JsonTypeInfo.Type"/>, the <see cref="JsonTypeInfo.Name"/> and all <see cref="JsonTypeInfo.PreviousNames"/>
+        /// Registers the <see cref="JsonTypeInfo.Type"/>, the <see cref="JsonTypeInfo.JsonName"/> and all <see cref="JsonTypeInfo.PreviousNames"/>
         /// onto the <see cref="JsonTypeInfo.NonNullHandler"/> and if the type is a value type, its Nullable&lt;Type&gt; is mapped to
         /// the <see cref="JsonTypeInfo.NullHandler"/>.
         /// <para>
@@ -137,7 +137,7 @@ namespace CK.Setup.Json
             if( i.Type.IsValueType )
             {
                 _map.Add( i.Type, i.NonNullHandler );
-                _map.Add( i.Name, i.NonNullHandler );
+                _map.Add( i.JsonName, i.NonNullHandler );
                 foreach( var p in i.PreviousNames )
                 {
                     _map.Add( p, i.NonNullHandler );
@@ -155,7 +155,7 @@ namespace CK.Setup.Json
             else
             {
                 _map.Add( i.Type, i.NullHandler );
-                _map.Add( i.Name, i.NullHandler );
+                _map.Add( i.JsonName, i.NullHandler );
                 foreach( var p in i.PreviousNames )
                 {
                     _map.Add( p, i.NullHandler );
@@ -308,9 +308,15 @@ namespace CK.Setup.Json
                 }
                 else if( t.IsArray )
                 {
+                    // To read an array T[] we use an intermediate List<T>.
+                    Type tItem = t.GetElementType()!;
+                    Type tList = typeof( List<> ).MakeGenericType( tItem );
+                    if( GetHandler( tList ) == null ) return null;
+
+                    // The List<T> is now handled: generates the array.
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
-                    (fWrite, fRead, info) = CreateArrayFunctions( t );
+                    (fWrite, fRead, info) = CreateArrayFunctions( t, tItem );
                     if( info != null )
                     {
                         info.Configure(
@@ -353,13 +359,10 @@ namespace CK.Setup.Json
                     return null;
                 }
             }
-            if( handler != null )
+            // Honor the optional null/not null handler (override the default handler type).
+            if( nullableHandler != null )
             {
-                // Honor the optional null/not null handler (override the default handler type).
-                if( nullableHandler != null )
-                {
-                    handler = nullableHandler.Value ? handler.ToNullHandler() : handler.ToNonNullHandler();
-                }
+                handler = nullableHandler.Value ? handler.ToNullHandler() : handler.ToNonNullHandler();
             }
             return handler;
         }
@@ -367,24 +370,26 @@ namespace CK.Setup.Json
         /// <summary>
         /// Adds a type alias mapping to a handler (typically to a concrete type).
         /// </summary>
-        /// <param name="t">The type to map.</param>
-        /// <param name="handler">The handler to use.</param>
-        public void AddTypeHandlerAlias( Type t, IJsonCodeGenHandler handler )
+        /// <param name="type">The type to map.</param>
+        /// <param name="target">The mapped type.</param>
+        public void AllowTypeAlias( Type type, JsonTypeInfo target )
         {
-            _map.Add( t, handler.CreateAbstract( t ) );
+            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            if( !type.IsClass && !type.IsInterface ) throw new ArgumentException( "Must be a class or an interface.", nameof( type ) );
+            if( target == null ) throw new ArgumentNullException( nameof( target ) );
+            _map.Add( type, new JsonTypeInfo.HandlerForUnambiguousMapping( target.NullHandler, type ) );
         }
 
         /// <summary>
-        /// Allows an untyped type: it is handled as an 'object', the type name of the
-        /// concrete object will be the first item of a 2-cells array, the second being the object's value
-        /// (Type information is also written when <see cref="IJsonCodeGenHandler.IsTypeMapping"/> is true
-        /// or <see cref="JsonTypeInfo.IsFinal"/> is false).
+        /// Allows an interface with potentially multiple implementations: it is handled as an
+        /// 'object'. Type information will be written (<see cref="IJsonCodeGenHandler.IsTypeMapping"/> is true ).
         /// </summary>
-        /// <param name="t">The untyped, abstract, type to register.</param>
-        /// <param name="nullable">Whether this is the nullable or non-nullable type that must be registered.</param>
-        public void AddUntypedHandler( Type t, bool nullable = true )
+        /// <param name="type">The untyped, abstract, type to register.</param>
+        public void AllowInterfaceToUntyped( Type type )
         {
-            _map.Add( t, nullable ? JsonTypeInfo.Untyped.NullHandler.CreateAbstract( t ) : JsonTypeInfo.Untyped.NonNullHandler.CreateAbstract( t ) );
+            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            if( !type.IsInterface ) throw new ArgumentException( "Must be a an interface.", nameof( type ) );
+            _map.Add( type, new JsonTypeInfo.HandlerForObjectMapping( type ) );
         }
 
         static bool LiftNullableValueType( ref Type t )

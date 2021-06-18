@@ -72,18 +72,26 @@ namespace CK.StObj.Engine.Tests.PocoJson
             }
         }
 
-        [Test]
-        public void Non_compliant_Poco_are_detected()
+        [TestCase( typeof( INotCompliant1 ) )]
+        [TestCase( typeof( INotCompliant2 ) )]
+        [TestCase( typeof( INotCompliant3 ) )]
+        [TestCase( typeof( INotCompliant4 ) )]
+        public void Non_compliant_Poco_are_detected( Type t )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( INotCompliant1 ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), t );
+                var services = TestHelper.GetAutomaticServices( c ).Services;
+                var directory = services.GetService<PocoDirectory>();
 
-            var u = services.GetService<IPocoFactory<INotCompliant1>>().Create();
+                var u = ((IPocoFactory)services.GetRequiredService( typeof(IPocoFactory<>).MakeGenericType( t ) )).Create();
 
-            FluentActions.Invoking( () => u.JsonSerialize( true, Standard ) ).Should().Throw<NotSupportedException>();
-            FluentActions.Invoking( () => u.JsonSerialize( false, Standard ) ).Should().Throw<NotSupportedException>();
-            FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", Standard ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => u.JsonSerialize( true, Standard ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => u.JsonSerialize( false, Standard ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", Standard ) ).Should().Throw<NotSupportedException>();
+
+                entries.Should().Contain( e => e.Text.Contains( "De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException.", StringComparison.Ordinal ) );
+            }
         }
 
     }

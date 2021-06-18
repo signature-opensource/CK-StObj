@@ -17,20 +17,28 @@ namespace CK.Setup.Json
         JsonTypeInfo? TryRegisterInfoForValueTuple( Type t, Type[] types )
         {
             IJsonCodeGenHandler[] handlers = new IJsonCodeGenHandler[types.Length];
-            var b = new StringBuilder( "[" );
+            var jsonName = new StringBuilder( "[" );
+            var jsJsonName = new StringBuilder( "[" );
             for( int i = 0; i < types.Length; i++ )
             {
-                if( i > 0 ) b.Append( ',' );
+                if( i > 0 )
+                {
+                    jsonName.Append( ',' );
+                    jsJsonName.Append( ',' );
+                }
                 var h = GetHandler( types[i] );
                 if( h == null ) return null;
                 handlers[i] = h;
-                b.Append( h.Name );
+                jsonName.Append( h.JsonName );
+                jsJsonName.Append( h.ECMAScriptStandardJsonName );
             }
-            b.Append( ']' );
-            JsonTypeInfo info = AllowTypeInfo( t, b.ToString(), StartTokenType.Array );
+            jsonName.Append( ']' );
+            jsJsonName.Append( ']' );
+            JsonTypeInfo info = AllowTypeInfo( t, jsonName.ToString(), StartTokenType.Array ).SetECMAScriptStandardName( jsJsonName.ToString() );
 
             var valueTupleName = t.ToCSharpName();
             // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/
+            // We use a 'ref' instead (ValueTuple TypeInfo below use SetByRefWriter).
             var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
             var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
 
@@ -72,17 +80,17 @@ namespace CK.Setup.Json
                   {
                       write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, ref " ).Append( variableName ).Append( ", options );" );
                   },
-                  ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                  ( ICodeWriter read, string variableName, bool assignOnly, bool variableCanBeNull ) =>
                   {
                       string vName = variableName;
-                      if( isNullable )
+                      if( variableCanBeNull )
                       {
                           read.OpenBlock()
-                              .AppendCSharpName( info.Type ).Space().Append( "notNull;" ).NewLine();
+                              .AppendCSharpName( info.Type ).Append( " notNull;" ).NewLine();
                           vName = "notNull";
                       }
                       read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( vName ).Append( ", options );" );
-                      if( isNullable )
+                      if( variableCanBeNull )
                       {
                           read.Append( variableName ).Append( " = notNull;" )
                               .CloseBlock();

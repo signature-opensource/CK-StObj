@@ -56,8 +56,8 @@ namespace CK.Setup.Json
             }
 
             // IPoco and IClosedPoco are not in the "OtherInterfaces".
-            jsonCodeGen.AddUntypedHandler( typeof( IPoco ) );
-            jsonCodeGen.AddUntypedHandler( typeof( IClosedPoco ) );
+            jsonCodeGen.AllowInterfaceToUntyped( typeof( IPoco ) );
+            jsonCodeGen.AllowInterfaceToUntyped( typeof( IClosedPoco ) );
 
             // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
             foreach( var root in pocoSupport.Roots )
@@ -89,13 +89,13 @@ namespace CK.Setup.Json
                                 } );
                 foreach( var i in root.Interfaces )
                 {
-                    jsonCodeGen.AddTypeHandlerAlias( i.PocoInterface, typeInfo.NullHandler );
+                    jsonCodeGen.AllowTypeAlias( i.PocoInterface, typeInfo );
                 }
             }
             // Maps the "other Poco interfaces" to "Untyped" object.
             foreach( var other in pocoSupport.OtherInterfaces )
             {
-                jsonCodeGen.AddUntypedHandler( other.Key );
+                jsonCodeGen.AllowInterfaceToUntyped( other.Key );
             }
 
             return new CSCodeGenerationResult( nameof( GeneratePocoSupport ) );
@@ -192,7 +192,6 @@ namespace CK.Setup.Json
                     success = false;
                     continue;
                 }
-                Debug.Assert( mainHandler.IsNullable == p.IsNullable );
                 if( p.PropertyUnionTypes.Any() )
                 {
                     if( !HandleUnionType( monitor, jsonCodeGen, write, read, ref isECMAScriptStandardCompliant, p, mainHandler ) )
@@ -307,18 +306,20 @@ namespace CK.Setup.Json
             {
                 var h = jsonCodeGen.GetHandler( union.Type, union.Kind.IsNullable() );
                 if( h == null ) return false;
-                if( h.HasECMAScriptStandardName )
+                handlers.Add( h );
+                if( h.HasECMAScriptStandardJsonName )
                 {
-                    var n = h.ECMAScriptStandardName;
+                    var n = h.ECMAScriptStandardJsonName;
                     if( checkDuplicatedStandardName.TryGetValue( n, out var exists ) )
                     {
-                        monitor.Warn( $"{p}: UnionType '{h.TypeInfo.Type}' and '{exists.TypeInfo.Type}' are mapped to the same ECMAScript standard name: '{n}'. This leads to an ambiguity in 'ECMAScript standard'. This will not be ECMAScriptStandard compliant." );
+                        monitor.Warn( $"{p} UnionType '{h.TypeInfo.Type}' and '{exists.TypeInfo.Type}' are mapped to the same ECMAScript standard name: '{n}'. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
                         isECMAScriptStandardCompliant = false;
-                        break;
                     }
-                    checkDuplicatedStandardName.Add( n, h );
+                    else
+                    {
+                        checkDuplicatedStandardName.Add( n, h );
+                    }
                 }
-                handlers.Add( h );
             }
             _finalReadWrite.Add( () =>
             {

@@ -16,7 +16,6 @@ namespace CK.Setup.Json
     {
         /// <summary>
         /// Singleton for untyped "object".
-        /// Its handlers are <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
         /// </summary>
         public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
 
@@ -41,7 +40,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Nullable type handler.
         /// </summary>
-        public IJsonCodeGenHandler NullHandler { get; }
+        public IJsonCodeGenHandler NullHandler => NonNullHandler.ToNullHandler();
 
         /// <summary>
         /// Not nullable type handler.
@@ -49,25 +48,25 @@ namespace CK.Setup.Json
         public IJsonCodeGenHandler NonNullHandler { get; }
 
         /// <summary>
-        /// Gets the type name. Uses the ExternalNameAttribute, the type full name
+        /// Gets the JSON type name. Uses the ExternalNameAttribute, the type full name
         /// or a generated name for generic List, Set and Dictionary. 
         /// </summary>
-        public string Name { get; }
+        public string JsonName { get; }
 
         /// <summary>
-        /// Gets the name used when "ECMAScript standard" is used: this is almost always <see cref="Name"/> (big integers use "Number" or "BigInt").
+        /// Gets the JSON name used when "ECMAScript standard" is used.
         /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
         /// </summary>
-        public string ECMAScriptStandardName { get; private set; }
+        public string ECMAScriptStandardJsonName { get; private set; }
 
         /// <summary>
-        /// Gets whether this <see cref="Name"/> differs from this <see cref="ECMAScriptStandardName"/>.
+        /// Gets whether this <see cref="JsonName"/> differs from this <see cref="ECMAScriptStandardJsonName"/>.
         /// </summary>
-        public bool HasECMAScriptStandardName => ECMAScriptStandardName != Name;
+        public bool HasECMAScriptStandardJsonName => ECMAScriptStandardJsonName != JsonName;
 
         /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
-        /// This should be used for large struct.
+        /// This should be used for large struct (this used for value tuples).
         /// </summary>
         public bool ByRefWriter { get; private set; }
 
@@ -103,16 +102,24 @@ namespace CK.Setup.Json
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
         internal JsonTypeInfo( Type t, int number, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
         {
-            Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null) );
+            Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null), "Type is a reference type or a non nullable value type." );
             Type = t;
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
             StartTokenType = startTokenType;
-            ECMAScriptStandardName = Name = name;
+            // By default, the ECMAScriptStandardJsonName is the JsonName.
+            ECMAScriptStandardJsonName = JsonName = name;
             PreviousNames = previousNames ?? Array.Empty<string>();
+            // By default IsFinal is true.
             IsFinal = true;
-            NonNullHandler = new Handler( this, Type, false, false );
-            NullHandler = NonNullHandler.ToNullHandler();
+            if( t.IsValueType )
+            {
+                NonNullHandler = new HandlerForValueType( this );
+            }
+            else
+            {
+                NonNullHandler = new HandlerForReferenceType( this );
+            }
         }
 
         // Untyped singleton object.
@@ -120,14 +127,13 @@ namespace CK.Setup.Json
         {
             // CodeReader and CodeWriter are unused and let to null.
             Type = typeof( object );
-            ECMAScriptStandardName = Name = String.Empty;
+            ECMAScriptStandardJsonName = JsonName = "object";
             PreviousNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
             StartTokenType = StartTokenType.Array;
             IsFinal = false;
-            NonNullHandler = new Handler( this, Type, false, true );
-            NullHandler = NonNullHandler.ToNullHandler();
+            NonNullHandler = new HandlerForObjectMapping( Type );
         }
 
         /// <summary>
@@ -171,7 +177,7 @@ namespace CK.Setup.Json
         /// <returns>This type info.</returns>
         public JsonTypeInfo SetECMAScriptStandardName( string name )
         {
-            ECMAScriptStandardName = name;
+            ECMAScriptStandardJsonName = name;
             return this;
         }
 
@@ -182,12 +188,12 @@ namespace CK.Setup.Json
         /// <param name="read">The code target.</param>
         /// <param name="variableName">The variable name.</param>
         /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible.</param>
-        /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
-        public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
+        /// <param name="isNullableVariable">True if the variable can be set to null, false if it cannot be set to null.</param>
+        public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullableVariable )
         {
             if( CodeReader == null ) throw new InvalidOperationException( "CodeReader has not been set." );
             // We currently ignore null input when the value is not nullable.
-            if( isNullable )
+            if( isNullableVariable )
             {
                 read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
                     .OpenBlock()
@@ -197,8 +203,8 @@ namespace CK.Setup.Json
                     .Append( "else" )
                     .OpenBlock();
             }
-            CodeReader( read, variableName, assignOnly, isNullable );
-            if( isNullable ) read.CloseBlock();
+            CodeReader( read, variableName, assignOnly, isNullableVariable );
+            if( isNullableVariable ) read.CloseBlock();
         }
 
         /// <summary>
@@ -206,12 +212,12 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="write">The code target.</param>
         /// <param name="variableName">The variable name.</param>
-        /// <param name="isNullable">Whether null value must be handled.</param>
+        /// <param name="variableCanBeNull">Whether null value of the <paramref name="variableName"/> must be handled.</param>
         /// <param name="writeTypeName">True if type discriminator must be written.</param>
-        public void GenerateWrite( ICodeWriter write, string variableName, bool isNullable, bool writeTypeName )
+        public void GenerateWrite( ICodeWriter write, string variableName, bool variableCanBeNull, bool writeTypeName )
         {
             if( CodeWriter == null ) throw new InvalidOperationException( "CodeWriter has not been set." );
-            if( isNullable )
+            if( variableCanBeNull )
             {
                 write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
                         .Append( "else " )
@@ -226,15 +232,15 @@ namespace CK.Setup.Json
                 if( writeTypeName )
                 {
                     write.Append( "w.WriteStartArray(); w.WriteStringValue( " );
-                    if( HasECMAScriptStandardName )
+                    if( HasECMAScriptStandardJsonName )
                     {
-                        write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( ECMAScriptStandardName )
+                        write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( ECMAScriptStandardJsonName )
                              .Append( " : " );
                     }
-                    write.AppendSourceString( Name ).Append( " );" ).NewLine();
+                    write.AppendSourceString( JsonName ).Append( " );" ).NewLine();
                 }
                 bool hasBlock = false;
-                if( isNullable && Type.IsValueType )
+                if( variableCanBeNull && Type.IsValueType )
                 {
                     if( ByRefWriter )
                     {
@@ -255,7 +261,7 @@ namespace CK.Setup.Json
                     write.Append( "w.WriteEndArray();" ).NewLine();
                 }
             }
-            if( isNullable ) write.CloseBlock();
+            if( variableCanBeNull ) write.CloseBlock();
         }
 
         /// <inheritdoc />

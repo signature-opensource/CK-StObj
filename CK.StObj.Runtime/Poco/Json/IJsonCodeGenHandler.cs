@@ -25,7 +25,7 @@ namespace CK.Setup.Json
     /// <param name="read">The code writer to use.</param>
     /// <param name="variableName">The variable name.</param>
     /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible.</param>
-    /// <param name="isNullable">True if the variable can be null, false if it cannot be null.</param>
+    /// <param name="isNullable">True if the variable can be set to null, false if it cannot be set to null.</param>
     public delegate void CodeReader( ICodeWriter read, string variableName, bool assignOnly, bool isNullable );
 
 
@@ -44,19 +44,24 @@ namespace CK.Setup.Json
         Type Type { get; }
 
         /// <summary>
-        /// Gets the name with '?' suffix if <see cref="IsNullable"/> is true.
+        /// Gets the JSON (safe mode) name with '?' suffix if <see cref="IsNullable"/> is true.
         /// </summary>
-        string Name { get; }
+        string JsonName { get; }
 
         /// <summary>
-        /// Gets the <see cref="JsonTypeInfo.ECMAScriptStandardName"/> with '?' suffix if <see cref="IsNullable"/> is true.
+        /// Gets the <see cref="JsonTypeInfo.NumberName"/> with 'N' suffix if <see cref="IsNullable"/> is true.
         /// </summary>
-        string ECMAScriptStandardName { get; }
+        string NumberName => IsNullable ? TypeInfo.NumberName + "N" : TypeInfo.NumberName;
 
         /// <summary>
-        /// Gets whether this <see cref="Name"/> differs from this <see cref="ECMAScriptStandardName"/>.
+        /// Gets the <see cref="JsonTypeInfo.ECMAScriptStandardJsonName"/>..
         /// </summary>
-        bool HasECMAScriptStandardName { get; }
+        string ECMAScriptStandardJsonName { get; }
+
+        /// <summary>
+        /// Gets whether this <see cref="JsonName"/> differs from this <see cref="ECMAScriptStandardJsonName"/>.
+        /// </summary>
+        bool HasECMAScriptStandardJsonName { get; }
 
         /// <summary>
         /// Gets the <see cref="JsonTypeInfo"/>.
@@ -69,7 +74,7 @@ namespace CK.Setup.Json
         /// to resolve it.
         /// <para>
         /// Note that the type name is also written if <see cref="JsonTypeInfo.IsFinal"/> is false (since a base class
-        /// may reference a specialization) and that it is written by the generic/untyped WriteObject.
+        /// may reference a specialization).
         /// </para>
         /// </summary>
         bool IsTypeMapping { get; }
@@ -85,11 +90,7 @@ namespace CK.Setup.Json
         /// <param name="write">The code writer.</param>
         /// <param name="variableName">The variable name.</param>
         /// <param name="withType">True or false to override (<see cref="IsTypeMapping"/> || !<see cref="JsonTypeInfo.IsFinal"/>).</param>
-        /// <param name="skipIfNullBlock">
-        /// True to skip the "if( variableName == null )" block whenever <see cref="IsNullable"/> is true.
-        /// This <see cref="Type"/> and <see cref="Name"/> are kept as-is.
-        /// </param>
-        void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null, bool skipIfNullBlock = false );
+        void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null );
 
         /// <summary>
         /// Generates the code required to read a value into a <paramref name="variableName"/>.
@@ -97,18 +98,7 @@ namespace CK.Setup.Json
         /// <param name="read">The code reader.</param>
         /// <param name="variableName">The variable name.</param>
         /// <param name="assignOnly">True to force the assignment of the variable, not trying to reuse it (typically because it is known to be uninitialized).</param>
-        /// <param name="skipIfNullBlock">
-        /// True to skip the "if( variableName == null )" block even if <see cref="IsNullable"/> is true (typically because the variable is known to be not null).
-        /// </param>
-        void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool skipIfNullBlock = false );
-
-        /// <summary>
-        /// Creates a handler for type that is mapped to this one.
-        /// Its <see cref="IsTypeMapping"/> is true.
-        /// </summary>
-        /// <param name="t">The mapped type.</param>
-        /// <returns>An handler for the type.</returns>
-        IJsonCodeGenHandler CreateAbstract( Type t );
+        void GenerateRead( ICodeWriter read, string variableName, bool assignOnly );
 
         /// <summary>
         /// Returns either this handler or its nullable companion.

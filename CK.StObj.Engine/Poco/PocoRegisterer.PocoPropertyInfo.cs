@@ -124,12 +124,12 @@ namespace CK.Setup
                             bool tNIsNullable = tN.Kind.IsNullable();
                             if( tJN.Kind.IsNullable() == tNIsNullable )
                             {
-                                monitor.Warn( $"{ToString()}: UnionType '{t.ToCSharpName()}' duplicate found. Removing one of them." );
+                                monitor.Warn( $"{ToString()} UnionType '{t.ToCSharpName()}' duplicate found. Removing one of them." );
                                 _unionTypes.RemoveAt( j-- );
                             }
                             else
                             {
-                                monitor.Warn( $"{ToString()}: UnionType '{t.ToCSharpName()}' appear as nullable and non nullable. Removing the non nullable one." );
+                                monitor.Warn( $"{ToString()} UnionType '{t.ToCSharpName()}' appear as nullable and non nullable. Removing the non nullable one." );
                                 if( tNIsNullable )
                                 {
                                     _unionTypes.RemoveAt( j-- );
@@ -143,13 +143,13 @@ namespace CK.Setup
                         }
                         else if( tJ.IsAssignableFrom( t ) )
                         {
-                            monitor.Warn( $"{ToString()}: UnionType '{tJ.ToCSharpName()}' is assignable from (is more general than) '{t.ToCSharpName()}'. Removing the second one." );
+                            monitor.Warn( $"{ToString()} UnionType '{tJ.ToCSharpName()}' is assignable from (is more general than) '{t.ToCSharpName()}'. Removing the second one." );
                             _unionTypes.RemoveAt( i-- );
                             break;
                         }
                         else if( t.IsAssignableFrom( tJ ) )
                         {
-                            monitor.Warn( $"{ToString()}: UnionType '{t.ToCSharpName()}' is assignable from (is more general than) '{tJ.ToCSharpName()}'. Removing the second one." );
+                            monitor.Warn( $"{ToString()} UnionType '{t.ToCSharpName()}' is assignable from (is more general than) '{tJ.ToCSharpName()}'. Removing the second one." );
                             _unionTypes.RemoveAt( j-- );
                         }
                     }
@@ -161,7 +161,7 @@ namespace CK.Setup
                 return true;
             }
 
-            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.GetExternalNameOrFullName() ).Concatenate( "', '" )}'.";
+            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on Poco interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.GetExternalNameOrFullName() ).Concatenate( "', '" )}'.";
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
