@@ -30,7 +30,7 @@ namespace CK.Setup.Json
                 if( h == null ) return null;
                 handlers[i] = h;
                 jsonName.Append( h.JsonName );
-                jsJsonName.Append( h.ECMAScriptStandardJsonName );
+                jsJsonName.Append( h.TypeInfo.ECMAScriptStandardJsonName );
             }
             jsonName.Append( ']' );
             jsJsonName.Append( ']' );

@@ -133,7 +133,6 @@ namespace CK.Setup.Json
         {
             if( _finalizedCall.HasValue ) throw new InvalidOperationException( nameof( IsFinalized ) );
             // For Value type, we register the Nullable<T> type.
-            // Registering the nullable "name?" for everybody is useless: it will be injected in the _typeReaders map.
             if( i.Type.IsValueType )
             {
                 _map.Add( i.Type, i.NonNullHandler );
@@ -158,7 +157,11 @@ namespace CK.Setup.Json
                 _map.Add( i.JsonName, i.NullHandler );
                 foreach( var p in i.PreviousNames )
                 {
-                    _map.Add( p, i.NullHandler );
+                    if( !_map.TryAdd( p, i.NullHandler ) )
+                    {
+                        var exist = _map[p];
+                        _monitor.Warn( $"Previous name '{p}' for '{i}' with '{exist.Type}'. It is ignored." );
+                    }
                 }
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {

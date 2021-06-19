@@ -13,8 +13,6 @@ namespace CK.Setup.Json
             public Type Type { get; }
             public string JsonName => _mapping.JsonName;
             public bool IsTypeMapping => true;
-            public string ECMAScriptStandardJsonName => _mapping.ECMAScriptStandardJsonName;
-            public bool HasECMAScriptStandardJsonName => _mapping.HasECMAScriptStandardJsonName;
 
             readonly IJsonCodeGenHandler _mapping;
 

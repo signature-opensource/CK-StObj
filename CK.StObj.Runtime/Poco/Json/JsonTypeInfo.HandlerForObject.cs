@@ -13,8 +13,6 @@ namespace CK.Setup.Json
             public Type Type { get; }
             public string JsonName => TypeInfo.JsonName;
             public bool IsTypeMapping => Type != typeof(object);
-            public string ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
-            public bool HasECMAScriptStandardJsonName => TypeInfo.HasECMAScriptStandardJsonName;
 
             public HandlerForObjectMapping( Type t )
             {

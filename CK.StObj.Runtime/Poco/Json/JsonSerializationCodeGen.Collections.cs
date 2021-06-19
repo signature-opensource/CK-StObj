@@ -110,7 +110,7 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tMap, "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")", StartTokenType.Array )
-                       .SetECMAScriptStandardName( "M(" + keyHandler.ECMAScriptStandardJsonName + "," + valueHandler.ECMAScriptStandardJsonName + ")" );
+                       .SetECMAScriptStandardName( "M(" + keyHandler.TypeInfo.ECMAScriptStandardJsonName + "," + valueHandler.TypeInfo.ECMAScriptStandardJsonName + ")" );
             return (fWrite, fRead, info);
         }
 
@@ -158,7 +158,7 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tMap, "O(" + valueHandler.JsonName + ")", StartTokenType.Object )
-                      .SetECMAScriptStandardName( "O(" + valueHandler.ECMAScriptStandardJsonName + ")" );
+                      .SetECMAScriptStandardName( "O(" + valueHandler.TypeInfo.ECMAScriptStandardJsonName + ")" );
             return (fWrite, fRead, info);
         }
 
@@ -186,7 +186,7 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tColl, (isList ? "L(" : "S(") + itemHandler.JsonName + ")", StartTokenType.Array )
-                       .SetECMAScriptStandardName( isList ? itemHandler.ECMAScriptStandardJsonName + "[]" : "S(" + itemHandler.ECMAScriptStandardJsonName + ")" );
+                       .SetECMAScriptStandardName( isList ? itemHandler.TypeInfo.ECMAScriptStandardJsonName + "[]" : "S(" + itemHandler.TypeInfo.ECMAScriptStandardJsonName + ")" );
 
             return (fWrite, fRead, info);
         }
@@ -212,7 +212,7 @@ namespace CK.Setup.Json
                      .CloseBlock();
             }
             var info = CreateTypeInfo( tArray, itemHandler.JsonName + "[]", StartTokenType.Array )
-                       .SetECMAScriptStandardName( itemHandler.ECMAScriptStandardJsonName + "[]" );
+                       .SetECMAScriptStandardName( itemHandler.TypeInfo.ECMAScriptStandardJsonName + "[]" );
             return (fWrite, fRead, info);
         }
 

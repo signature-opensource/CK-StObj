@@ -307,9 +307,9 @@ namespace CK.Setup.Json
                 var h = jsonCodeGen.GetHandler( union.Type, union.Kind.IsNullable() );
                 if( h == null ) return false;
                 handlers.Add( h );
-                if( h.HasECMAScriptStandardJsonName )
+                if( h.TypeInfo.HasECMAScriptStandardJsonName )
                 {
-                    var n = h.ECMAScriptStandardJsonName;
+                    var n = h.TypeInfo.ECMAScriptStandardJsonName;
                     if( checkDuplicatedStandardName.TryGetValue( n, out var exists ) )
                     {
                         monitor.Warn( $"{p} UnionType '{h.TypeInfo.Type}' and '{exists.TypeInfo.Type}' are mapped to the same ECMAScript standard name: '{n}'. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );

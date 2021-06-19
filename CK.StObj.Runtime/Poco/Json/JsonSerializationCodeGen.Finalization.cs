@@ -158,12 +158,12 @@ namespace CK.Setup.Json
 
             foreach( var t in _standardReaders )
             {
-                var f = _pocoDirectory.Append( "static object ECMAScriptStandardRead_" ).Append( t.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
+                var f = _pocoDirectory.Append( "static object ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
                                       .OpenBlock();
                 t.GenerateRead( f );
                 _pocoDirectory.CloseBlock();
 
-                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.Name ).Append( ", ECMAScriptStandardRead_" ).Append( t.Name ).Append( " );" ).NewLine();
+                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.JsonName ).Append( ", ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( " );" ).NewLine();
             }
         }
 

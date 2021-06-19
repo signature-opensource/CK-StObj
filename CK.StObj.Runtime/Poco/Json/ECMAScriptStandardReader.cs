@@ -5,17 +5,21 @@ using System.Text;
 
 namespace CK.Setup.Json
 {
+    /// <summary>
+    /// This participates in the generic (untyped) read function that is used
+    /// to read 'object'.
+    /// </summary>
     public abstract class ECMAScriptStandardReader
     {
-        protected ECMAScriptStandardReader( string name )
+        protected ECMAScriptStandardReader( string jsonName )
         {
-            Name = name;
+            JsonName = jsonName;
         }
 
         /// <summary>
-        /// Gets the exported name.
+        /// Gets the json name.
         /// </summary>
-        public string Name { get; }
+        public string JsonName { get; }
 
         /// <summary>
         /// Generates the code based on a <see cref="System.Text.Json.Utf8JsonReader"/> variable named "r" and
@@ -74,7 +78,7 @@ namespace CK.Setup.Json
     {
         return b;
     }
-    throw new System.IO.InvalidDataException( ""BigInt input type is invalid. Cannot parse a long, ulong or BigInteger from: "" + s );" );
+    throw new System.IO.InvalidDataException( ""BigInt input type is invalid. Cannot parse a long, ulong, decimal or BigInteger from: "" + s );" );
         }
     }
 

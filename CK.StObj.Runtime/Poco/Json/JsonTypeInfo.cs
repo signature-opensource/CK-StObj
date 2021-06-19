@@ -8,6 +8,30 @@ using System.Text.Json;
 
 namespace CK.Setup.Json
 {
+    public readonly struct ECMAScriptStandardJsonName
+    {
+        public bool IsCanonical { get; }
+
+        public string Name { get; }
+
+        public ECMAScriptStandardJsonName( string name, bool isCanonical )
+        {
+            IsCanonical = isCanonical;
+            Name = name;
+        }
+
+        public override bool Equals( object? obj ) => obj is ECMAScriptStandardJsonName o ? Equals( o ) : false;
+
+        public bool Equals( ECMAScriptStandardJsonName o ) => IsCanonical == o.IsCanonical && Name == o.Name;
+
+        public override int GetHashCode() => Name.GetHashCode( StringComparison.Ordinal );
+
+        public static bool operator ==( ECMAScriptStandardJsonName left, ECMAScriptStandardJsonName right ) => left.Equals( right );
+
+        public static bool operator !=( ECMAScriptStandardJsonName left, ECMAScriptStandardJsonName right ) => !(left == right);
+    }
+
+
     /// <summary>
     /// Centralized type representation that holds the null and non-null handlers and
     /// carries the <see cref="CodeReader"/> and <see cref="CodeWriter"/> delegates.
@@ -49,13 +73,15 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Gets the JSON type name. Uses the ExternalNameAttribute, the type full name
-        /// or a generated name for generic List, Set and Dictionary. 
+        /// or a generated name for arrays, generic List, Set and Dictionary.
+        /// Only nullable handlers have a different name (that is this one suffixed by '?').
         /// </summary>
         public string JsonName { get; }
 
         /// <summary>
         /// Gets the JSON name used when "ECMAScript standard" is used.
-        /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
+        /// For non collection types, an <see cref="ECMAScriptStandardReader"/> should be registered for this name
+        /// so that 'object' can be read.
         /// </summary>
         public string ECMAScriptStandardJsonName { get; private set; }
 
@@ -66,7 +92,7 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
-        /// This should be used for large struct (this used for value tuples).
+        /// This should be used for large struct (this is used for value tuples).
         /// </summary>
         public bool ByRefWriter { get; private set; }
 
