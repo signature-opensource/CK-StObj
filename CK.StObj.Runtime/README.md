@@ -10,8 +10,8 @@ any setup mechanism, as "Models" they solely focus on:
 
 The *implementations* types that the attributes target reside in Engine (or Runtime) assemblies that are dynamically loaded during the Setup phase:
 they exist only during Setup to build the reality (creating Sql or powershell install or upgrade scripts for instance) and/or to generate code that
-will automatically implement functionalities (based on the "Model", typically by providing the implementation of an abstract method: the Model is
-the method signature).
+will automatically implement functionalities (based on the "Model", typically by providing the implementation of an abstract method: the Model providing
+the method signature and enough information, typically thanks to minimal Model attributes).
 
 Actually, the fact that the *implementations* are in external assemblies is not required (this is to obtain the leanest and meanest possible *runtime*
 System). For tests, we can define the *implementation* next to the *ContextBoundDelegationAttribute*.

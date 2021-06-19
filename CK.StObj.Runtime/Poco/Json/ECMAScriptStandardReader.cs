@@ -5,17 +5,21 @@ using System.Text;
 
 namespace CK.Setup.Json
 {
+    /// <summary>
+    /// This participates in the generic (untyped) read function that is used
+    /// to read 'object'.
+    /// </summary>
     public abstract class ECMAScriptStandardReader
     {
-        protected ECMAScriptStandardReader( string name )
+        protected ECMAScriptStandardReader( string jsonName )
         {
-            Name = name;
+            JsonName = jsonName;
         }
 
         /// <summary>
-        /// Gets the exported name.
+        /// Gets the json name.
         /// </summary>
-        public string Name { get; }
+        public string JsonName { get; }
 
         /// <summary>
         /// Generates the code based on a <see cref="System.Text.Json.Utf8JsonReader"/> variable named "r" and
@@ -23,32 +27,6 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="read">The target code.</param>
         public abstract void GenerateRead( ICodeWriter read );
-
-        public static object BestCast( double d )
-        {
-            if( (d % 1) == 0 )
-            {
-                // It is an integer.
-                if( d < 0 )
-                {
-                    // Negative integer.
-                    if( d < Int32.MinValue ) return d;
-                    if( d < Int16.MinValue ) return (int)d;
-                    if( d < SByte.MinValue ) return (short)d;
-                    return (sbyte)d;
-                }
-                // Positive integer.
-                if( d > UInt32.MaxValue ) return d;
-                if( d > Int32.MaxValue ) return (uint)d;
-                if( d > UInt16.MaxValue ) return (int)d;
-                if( d > Int16.MaxValue ) return (ushort)d;
-                if( d > Byte.MaxValue ) return (short)d;
-                if( d > SByte.MaxValue ) return (byte)d;
-                return (sbyte)d;
-            }
-            return d;
-        }
-
 
     }
 
@@ -67,26 +45,6 @@ namespace CK.Setup.Json
                     ? double.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo )
                     : r.GetDouble();
     r.Read();
-    if( (d % 1) == 0 ) // This tests whether the double has a fractional part.
-    {
-        // It is an integer.
-        if( d < 0 )
-        {
-            // Negative integer.
-            if( d < Int32.MinValue ) return d;
-            if( d < Int16.MinValue ) return (int)d;
-            if( d < SByte.MinValue ) return (short)d;
-            return (sbyte)d;
-        }
-        // Positive integer.
-        if( d > UInt32.MaxValue ) return d;
-        if( d > Int32.MaxValue ) return (uint)d;
-        if( d > UInt16.MaxValue ) return (int)d;
-        if( d > Int16.MaxValue ) return (ushort)d;
-        if( d > Byte.MaxValue ) return (short)d;
-        if( d > SByte.MaxValue ) return (byte)d;
-        return (sbyte)d;
-    }
     return d;" );
         }
     }
@@ -120,7 +78,7 @@ namespace CK.Setup.Json
     {
         return b;
     }
-    throw new System.IO.InvalidDataException( ""BigInt input type is invalid. Cannot parse a long, ulong or BigInteger from: "" + s );" );
+    throw new System.IO.InvalidDataException( ""BigInt input type is invalid. Cannot parse a long, ulong, decimal or BigInteger from: "" + s );" );
         }
     }
 

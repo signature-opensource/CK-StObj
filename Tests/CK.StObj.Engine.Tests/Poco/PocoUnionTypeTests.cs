@@ -283,8 +283,10 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetSuccessfulResult( c );
 
                 entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Person' is assignable from (is more general than) 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Student'. Removing the second one.", StringComparison.Ordinal ) )
-                    .And.Contain( t => t.Contains( "Property 'YetAnotherThing' of type 'Object' on interfaces: 'I3'.: UnionType 'string' duplicate found. Removing one of them.", StringComparison.Ordinal ) );
+                    .Contain( t => t.Contains( "Property 'YetAnotherThing' of type 'Object' on Poco interfaces: 'I3'. UnionType 'string' duplicate found. Removing one of them.", StringComparison.Ordinal ) );
+
+                entries.Select( e => e.Text ).Should()
+                    .Contain( t => t.Contains( "'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Person' is assignable from (is more general than) 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Student'. Removing the second one.", StringComparison.Ordinal ) );
             }
         }
 

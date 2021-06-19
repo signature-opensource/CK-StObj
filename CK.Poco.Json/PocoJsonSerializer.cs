@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Setup;
 using System;
+using System.Buffers;
 using System.Text.Json;
 using System.Xml.Schema;
 
@@ -89,6 +90,25 @@ namespace CK.Core
         }
 
         /// <summary>
+        /// Serializes this Poco (that can be null) into UTF-8 Json bytes.
+        /// </summary>
+        /// <param name="this">The poco (can be null).</param>
+        /// <param name="withType">True to emit this Poco type.</param>
+        /// <param name="options">Options to use.</param>
+        /// <returns>The Utf8 bytes.</returns>
+        public static ReadOnlyMemory<byte> JsonSerialize( this IPoco? @this, bool withType, PocoJsonSerializerOptions? options = null )
+        {
+            var m = new ArrayBufferWriter<byte>();
+            using( var w = new Utf8JsonWriter( m ) )
+            {
+                @this.Write( w, withType, options: options );
+                w.Flush();
+            }
+            return m.WrittenMemory;
+        }
+
+
+        /// <summary>
         /// Reads a <see cref="IPoco"/> (that can be null) from the Json reader
         /// that must have been written with its type.
         /// </summary>
@@ -96,7 +116,7 @@ namespace CK.Core
         /// <param name="reader">The Json reader.</param>
         /// <param name="options">The options.</param>
         /// <returns>The Poco.</returns>
-        public static IPoco? ReadPocoValue( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null )
+        public static IPoco? Read( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null )
         {
             if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
             if( CheckNullStart( ref reader, "expecting Json Poco array or null value." ) ) return null;
@@ -114,7 +134,26 @@ namespace CK.Core
         }
 
         /// <summary>
+        /// Reads a <see cref="IPoco"/> (that can be null) from a JSON string.
+        /// The Poco must have been written with its type.
+        /// </summary>
+        /// <param name="this">This directory.</param>
+        /// <param name="s">The string to read.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The Poco.</returns>
+        public static IPoco? JsonDeserialize( this PocoDirectory @this, string s, PocoJsonSerializerOptions? options = null )
+        {
+            var r = new Utf8JsonReader( System.Text.Encoding.UTF8.GetBytes( s ).AsSpan() );
+            return Read( @this, ref r, options );
+        }
+
+        /// <summary>
         /// Reads a typed Poco from a Json reader.
+        /// <para>
+        /// If the reader is <see cref="JsonTokenType.StartArray"/>, it must be a 2-cells array
+        /// with this Poco's type that comes first (otherwise an exception is thrown).
+        /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
+        /// </para>
         /// </summary>
         /// <typeparam name="T">The poco type.</typeparam>
         /// <param name="this">This poco factory.</param>

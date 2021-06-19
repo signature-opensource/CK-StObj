@@ -174,10 +174,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
             HashSet<decimal> Numbers { get; }
         }
 
-        [TestCase( PocoSerializerMode.Server )]
-        [TestCase( PocoSerializerMode.ECMAScriptSafe )]
-        [TestCase( PocoSerializerMode.ECMAScriptStandard )]
-        public void Set_serialization( PocoSerializerMode mode )
+        [TestCase( PocoJsonSerializerMode.ECMAScriptSafe )]
+        [TestCase( PocoJsonSerializerMode.ECMAScriptStandard )]
+        public void Set_serialization( PocoJsonSerializerMode mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITestSetNumbers ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
@@ -224,8 +223,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             {
                 o.Numbers.AddRangeArray( 1, 2, 3, 4, 5, 1, 2, 3, 4, 5 );
             } );
-            var oSb = JsonTestHelper.Serialize( oS, false );
-            var oLb = JsonTestHelper.Serialize( oL, false );
+            var oSb = oS.JsonSerialize( false );
+            var oLb = oL.JsonSerialize( false );
             var oLFromS = JsonTestHelper.Deserialize<IWithList>( services, oSb.Span );
             var oSFromL = JsonTestHelper.Deserialize<IWithSet>( services, oLb.Span );
             Debug.Assert( oLFromS != null && oSFromL != null );
@@ -258,8 +257,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             {
                 o.Numbers = new int[] { 1, 2, 3, 4, 5, 1, 2, 3, 4, 5 };
             } );
-            var oSb = JsonTestHelper.Serialize( oS, false );
-            var oAb = JsonTestHelper.Serialize( oA, false );
+            var oSb = oS.JsonSerialize( false );
+            var oAb = oA.JsonSerialize( false );
             var oAFromS = JsonTestHelper.Deserialize<IWithArray>( services, oSb.Span );
             var oSFromA = JsonTestHelper.Deserialize<IWithSet>( services, oAb.Span );
             Debug.Assert( oAFromS != null && oSFromA != null );

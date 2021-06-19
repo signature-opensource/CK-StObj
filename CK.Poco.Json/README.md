@@ -196,10 +196,10 @@ integers to `BigInt` (not the same as the the C# `BigInteger`). In this mode, cl
 eventually a ushort (on the server side), it is up to the client to check this before sending it back (and the server will validate its inputs anyway).  
 
 We then consider 2 different "modes" to serialize things:
-  - **ECMAScript safe:**
+  - **ECMAScript safe:** - polymorphic round-tripping is guaranteed.
     - This mode guaranties that data representation can be read by an ECMAScript client.
     - **Type Mapping:** None. A '`byte` is a `byte`. A `Dictionary<float,sbyte>` is a `M(float,sbyte)`.
-  - **ECMAScript standard:**
+  - **ECMAScript standard:** - No polymorphic round-tripping.
     - This mode simplifies the types for an ECMAScript client.
     - **Type Mapping:** This mode introduces 2 purely client types that are "Number" and "BigInt". The float, single, small integers up to the Int32 are 
    exchanged as `Number` and big integers (long, ulong, decimal, BigIntegers) are exchanged as `BigInt`.
@@ -264,7 +264,7 @@ public static object ToSmallestType( double d )
     -  Some types are less commonly used than others. Should we remove the `sbyte`? the `ushort`?
 
 > `Number` is ambiguous. We choose to avoid downcast and to keep id simple: a `Number` will always be a `double`. It will be up to the developer
-> to handle its `object` the way she wants (with the above or a variation of it).
+> to handle its `object` the way she wants (with the above code or a variation of it).
 
 #### Reading an `UnionType`.
 
@@ -272,16 +272,23 @@ The unified type of an `UnionType` can only be `object` if value types (like num
 an `object` type constrained by a `UnionType` deeply differs from an unconstrained one.
 
 The following definitions are ambiguous:
-- When there's more `Number` (regardless of their nullabilities) like a `(int?, double)` or a `(byte, float, int)`.
+- When there's more `Number` (regardless of their nullabilities) like a `(int?, byte)` or a `(byte, float, int)`.
 - When collections resolves to the same "ECMAScript Standard" mapping: `(double[],IList<int?>?)` are both `Number[]`.
 
 The following definitions are not ambiguous:
 - When big numbers coexist with numbers: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
-- When ECMAScript collections differ: `(IList<int>,HashSet<double>)` maps to `Number[]|S(BigInt)`.
+- When ECMAScript collections differ: `(IList<int>,HashSet<double>)` maps to `Number[]|S(Number)`.
 
-Ambiguities are detected and an error is emitted: the "ECMAScript standard" mode restricts the possible types of an `UnionType`.
-As soon as this **CK.Poco.Json** package is installed, such ambiguous `UnionType` fail.
+Ambiguities are detected and warnings are emitted. Such ambiguous `UnionType` the Poco will not be "ECMAScriptStandard" compliant
+and a `NotSupportedException` will be thrown at runtime.
 
+> A Poco has [UnionType] property that is not "ECMAScriptStandard" compliant doesn't prevent the Poco to be de/serialized in default safe mode (nor
+> in any other kind of serialization). Only trying to de/serialize it in "ECMAScriptStandard" mode will fail with a `NotSupportedException`.
+
+
+__Note__: The current implementation is very strict about ambiguities. If **needed**, detection could be smarter: if we group the union types
+by their standard representation and if, in each group there exists the "standard mapping", then we could handle it (for example `(IList<int>,double[],int,double)`
+can be safely deserialized into `double[]` or `double`).
 
 
 ```csharp

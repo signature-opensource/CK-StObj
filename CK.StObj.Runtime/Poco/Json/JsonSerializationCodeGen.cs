@@ -63,7 +63,7 @@ namespace CK.Setup.Json
             _reentrancy = new Stack<Type>();
             _finalReadWrite = new List<Action<IActivityMonitor>>();
             _standardReaders = new List<ECMAScriptStandardReader>();
-            InitializeMap();
+            InitializeBasicTypes();
         }
 
         /// <summary>
@@ -97,14 +97,13 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="t">The type.</param>
         /// <param name="name">The serialized type name.</param>
+        /// <param name="startTokenType">The start token type.</param>
         /// <param name="previousNames">Optional previous names.</param>
         /// <returns>A new type info.</returns>
-        public JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null ) => CreateTypeInfo( t, name, previousNames, JsonDirectType.None );
-
-        JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames, JsonDirectType d )
+        public JsonTypeInfo CreateTypeInfo( Type t, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
         {
-            if( t.IsValueType && Nullable.GetUnderlyingType( t ) != null ) throw new ArgumentException( "Must not be a Nullable<T> value type.", nameof( t ) );
-            return new JsonTypeInfo( t, _typeInfoAutoNumber++, name, previousNames, d );
+            if( t == null || (t.IsValueType && Nullable.GetUnderlyingType( t ) != null) ) throw new ArgumentException( "Must not be a null nor a Nullable<T> value type.", nameof( t ) );
+            return new JsonTypeInfo( t, _typeInfoAutoNumber++, name, startTokenType, previousNames );
         }
 
         /// <summary>
@@ -115,13 +114,13 @@ namespace CK.Setup.Json
         /// <param name="name">The serialized name.</param>
         /// <param name="previousNames">Optional list of previous names (act as type aliases).</param>
         /// <returns>The allowed type info that must still be configured.</returns>
-        public JsonTypeInfo AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
+        public JsonTypeInfo AllowTypeInfo( Type t, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
         {
-            return AllowTypeInfo( CreateTypeInfo( t, name, previousNames ) );
+            return AllowTypeInfo( CreateTypeInfo( t, name, startTokenType, previousNames ) );
         }
 
         /// <summary>
-        /// Registers the <see cref="JsonTypeInfo.Type"/>, the <see cref="JsonTypeInfo.Name"/> and all <see cref="JsonTypeInfo.PreviousNames"/>
+        /// Registers the <see cref="JsonTypeInfo.Type"/>, the <see cref="JsonTypeInfo.JsonName"/> and all <see cref="JsonTypeInfo.PreviousNames"/>
         /// onto the <see cref="JsonTypeInfo.NonNullHandler"/> and if the type is a value type, its Nullable&lt;Type&gt; is mapped to
         /// the <see cref="JsonTypeInfo.NullHandler"/>.
         /// <para>
@@ -134,11 +133,10 @@ namespace CK.Setup.Json
         {
             if( _finalizedCall.HasValue ) throw new InvalidOperationException( nameof( IsFinalized ) );
             // For Value type, we register the Nullable<T> type.
-            // Registering the nullable "name?" for everybody is useless: it will be injected in the _typeReaders map.
             if( i.Type.IsValueType )
             {
                 _map.Add( i.Type, i.NonNullHandler );
-                _map.Add( i.Name, i.NonNullHandler );
+                _map.Add( i.JsonName, i.NonNullHandler );
                 foreach( var p in i.PreviousNames )
                 {
                     _map.Add( p, i.NonNullHandler );
@@ -156,10 +154,14 @@ namespace CK.Setup.Json
             else
             {
                 _map.Add( i.Type, i.NullHandler );
-                _map.Add( i.Name, i.NullHandler );
+                _map.Add( i.JsonName, i.NullHandler );
                 foreach( var p in i.PreviousNames )
                 {
-                    _map.Add( p, i.NullHandler );
+                    if( !_map.TryAdd( p, i.NullHandler ) )
+                    {
+                        var exist = _map[p];
+                        _monitor.Warn( $"Previous name '{p}' for '{i}' with '{exist.Type}'. It is ignored." );
+                    }
                 }
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {
@@ -309,9 +311,15 @@ namespace CK.Setup.Json
                 }
                 else if( t.IsArray )
                 {
+                    // To read an array T[] we use an intermediate List<T>.
+                    Type tItem = t.GetElementType()!;
+                    Type tList = typeof( List<> ).MakeGenericType( tItem );
+                    if( GetHandler( tList ) == null ) return null;
+
+                    // The List<T> is now handled: generates the array.
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
-                    (fWrite, fRead, info) = CreateArrayFunctions( t );
+                    (fWrite, fRead, info) = CreateArrayFunctions( t, tItem );
                     if( info != null )
                     {
                         info.Configure(
@@ -354,13 +362,10 @@ namespace CK.Setup.Json
                     return null;
                 }
             }
-            if( handler != null )
+            // Honor the optional null/not null handler (override the default handler type).
+            if( nullableHandler != null )
             {
-                // Honor the optional null/not null handler (override the default handler type).
-                if( nullableHandler != null )
-                {
-                    handler = nullableHandler.Value ? handler.ToNullHandler() : handler.ToNonNullHandler();
-                }
+                handler = nullableHandler.Value ? handler.ToNullHandler() : handler.ToNonNullHandler();
             }
             return handler;
         }
@@ -368,414 +373,26 @@ namespace CK.Setup.Json
         /// <summary>
         /// Adds a type alias mapping to a handler (typically to a concrete type).
         /// </summary>
-        /// <param name="t">The type to map.</param>
-        /// <param name="handler">The handler to use.</param>
-        public void AddTypeHandlerAlias( Type t, IJsonCodeGenHandler handler )
+        /// <param name="type">The type to map.</param>
+        /// <param name="target">The mapped type.</param>
+        public void AllowTypeAlias( Type type, JsonTypeInfo target )
         {
-            _map.Add( t, handler.CreateAbstract( t ) );
+            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            if( !type.IsClass && !type.IsInterface ) throw new ArgumentException( "Must be a class or an interface.", nameof( type ) );
+            if( target == null ) throw new ArgumentNullException( nameof( target ) );
+            _map.Add( type, new JsonTypeInfo.HandlerForUnambiguousMapping( target.NullHandler, type ) );
         }
 
         /// <summary>
-        /// Allows an untyped type: it is handled as an 'object', the type name of the
-        /// concrete object will be the first item of a 2-cells array, the second being the object's value
-        /// (Type information is also written when <see cref="IJsonCodeGenHandler.IsTypeMapping"/> is true
-        /// or <see cref="JsonTypeInfo.IsFinal"/> is false).
+        /// Allows an interface with potentially multiple implementations: it is handled as an
+        /// 'object'. Type information will be written (<see cref="IJsonCodeGenHandler.IsTypeMapping"/> is true ).
         /// </summary>
-        /// <param name="t">The untyped, abstract, type to register.</param>
-        /// <param name="nullable">Whether this is the nullable or non-nullable type that must be registered.</param>
-        public void AddUntypedHandler( Type t, bool nullable = true )
+        /// <param name="type">The untyped, abstract, type to register.</param>
+        public void AllowInterfaceToUntyped( Type type )
         {
-            _map.Add( t, nullable ? JsonTypeInfo.Untyped.NullHandler.CreateAbstract( t ) : JsonTypeInfo.Untyped.NonNullHandler.CreateAbstract( t ) );
-        }
-
-        void InitializeMap()
-        {
-            Debug.Assert( _typeInfoRefTypeStartIdx == 0 );
-            // Direct types.
-            AllowTypeInfo( JsonTypeInfo.Untyped );
-            AllowTypeInfo( CreateTypeInfo( typeof( string ), "string", previousNames: null, JsonDirectType.String ) );
-            AllowTypeInfo( CreateTypeInfo( typeof( bool ), "bool", previousNames: null, JsonDirectType.Boolean ) );
-            AllowTypeInfo( CreateTypeInfo( typeof( int ), "int", previousNames: null, JsonDirectType.Number ) );
-
-            static void WriteString( ICodeWriter write, string variableName )
-            {
-                write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( " );" );
-            }
-
-            static void WriteNumber( ICodeWriter write, string variableName )
-            {
-                write.Append( "w.WriteNumberValue( " ).Append( variableName ).Append( " );" );
-            }
-
-            // Currently default format is ok but when BigInteger will be handled like any other
-            // long by the reader/writer then we'll need the "R" format for it (unless the https://github.com/dotnet/runtime/issues/54016
-            // is resolved).
-            // ==> We keep the function factory here for the moment.
-            static CodeWriter WriteECMAScripSafeNumber( string? toStringFormat = null )
-            {
-                return ( write, variableName ) =>
-                {
-                    write.Append( "if( options == null || options.Mode == PocoSerializerMode.Server ) w.WriteNumberValue( " ).Append( variableName ).Append( " );" ).NewLine()
-                         .Append( "else w.WriteStringValue( " )
-                         .Append( variableName ).Append( ".ToString( " );
-                    if( toStringFormat != null )
-                    {
-                        write.AppendSourceString( toStringFormat ).Append( ", " );
-                    }
-                    write.Append( "System.Globalization.NumberFormatInfo.InvariantInfo ) );" ).NewLine();
-                };
-            }
-
-            AllowTypeInfo( typeof( byte[] ), "byte[]" ).Configure(
-                ( ICodeWriter write, string variableName ) =>
-                {
-                    write.Append( "w.WriteBase64StringValue( " ).Append( variableName ).Append( " );" );
-                },
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetBytesFromBase64(); r.Read();" );
-                } );
-
-            AllowTypeInfo( typeof( Guid ), "Guid" ).Configure( WriteString,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetGuid(); r.Read();" );
-                } );
-
-            AllowTypeInfo( typeof( decimal ), "decimal" ).Configure( WriteECMAScripSafeNumber(),
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
-                    read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? Decimal.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetDecimal(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "BigInt" );
-
-            AllowTypeInfo( typeof( uint ), "uint" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetUInt32(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( double ), "double" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetDouble(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( float ), "float" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetSingle(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( long ), "long" ).Configure( WriteECMAScripSafeNumber(),
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
-                    read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? Int64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetInt64(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "BigInt" );
-
-            AllowTypeInfo( typeof( ulong ), "ulong" ).Configure( WriteECMAScripSafeNumber(),
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
-                    read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? UInt64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) :  r.GetUInt64(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "BigInt" );
-
-            AllowTypeInfo( typeof( byte ), "byte" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetByte(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( sbyte ), "sbyte" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetSByte(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( short ), "short" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetInt16(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( ushort ), "ushort" ).Configure( WriteNumber,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetUInt16(); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "Number" );
-
-            AllowTypeInfo( typeof( System.Numerics.BigInteger ), "BigInteger" ).Configure(
-                ( ICodeWriter write, string variableName ) =>
-                {
-                    // Use the BigInteger.ToString(String) method with the "R" format specifier to generate the string representation of the BigInteger value.
-                    // Otherwise, the string representation of the BigInteger preserves only the 50 most significant digits of the original value, and data may
-                    // be lost when you use the Parse method to restore the BigInteger value.
-                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".ToString( \"R\", System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
-                },
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = System.Numerics.BigInteger.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ); r.Read();" );
-                } )
-                .SetECMAScriptStandardName( "BigInt" );
-
-            AllowTypeInfo( typeof( DateTime ), "DateTime" ).Configure( WriteString,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetDateTime(); r.Read();" );
-                } );
-
-            AllowTypeInfo( typeof( DateTimeOffset ), "DateTimeOffset" ).Configure( WriteString,
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = r.GetDateTimeOffset(); r.Read();" );
-                } );
-
-            AllowTypeInfo( typeof( TimeSpan ), "TimeSpan" ).Configure(
-                ( ICodeWriter write, string variableName ) => WriteECMAScripSafeNumber()( write, variableName + ".Ticks" ),
-                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                {
-                    read.Append( variableName ).Append( " = TimeSpan.FromTicks( r.TokenType == System.Text.Json.JsonTokenType.String ? Int64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetInt64() ); r.Read();" );
-                } );
-            _standardReaders.Add( new ECMAScriptStandardNumberReader() );
-            _standardReaders.Add( new ECMAScriptStandardBigIntReader() );
-            _typeInfoRefTypeStartIdx = _typeInfos.Count;
-        }
-
-        IJsonCodeGenHandler ConfigureAndAddTypeInfoForListSetAndMap( JsonTypeInfo info, IFunctionScope fWrite, IFunctionScope fRead, Type tInterface )
-        {
-            Debug.Assert( !info.Type.IsInterface && tInterface.IsInterface );
-            info.Configure(
-                      ( ICodeWriter write, string variableName ) =>
-                      {
-                          write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, " ).Append( variableName ).Append( ", options );" );
-                      },
-                      ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                      {
-                          if( !assignOnly )
-                          {
-                              if( isNullable )
-                              {
-                                  read.Append( "if( " ).Append( variableName ).Append( " == null )" )
-                                      .OpenBlock()
-                                      .Append( variableName ).Append( " = new " ).AppendCSharpName( info.Type ).Append( "();" )
-                                      .CloseBlock();
-                              }
-                              else
-                              {
-                                  read.Append( variableName ).Append( ".Clear();" ).NewLine();
-                              }
-                          }
-                          else
-                          {
-                              read.Append( variableName ).Append( " = new " ).AppendCSharpName( info.Type ).Append( "();" ).NewLine();
-                          }
-                          read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( ", options );" );
-                      } );
-            AllowTypeInfo( info );
-            // The interface is directly mapped to the non null handler.
-            AddTypeHandlerAlias( tInterface, info.NonNullHandler );
-            return info.NullHandler;
-        }
-
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateMapFunctions( Type tMap, Type tKey, Type tValue )
-        {
-            var keyHandler = GetHandler( tKey );
-            if( keyHandler == null ) return default;
-            var valueHandler = GetHandler( tValue );
-            if( valueHandler == null ) return default;
-
-            string keyTypeName = keyHandler.Type.ToCSharpName();
-            string valueTypeName = valueHandler.Type.ToCSharpName();
-            var concreteTypeName = "Dictionary<" + keyTypeName + "," + valueTypeName + ">";
-
-            string funcSuffix = keyHandler.TypeInfo.NumberName + "_" + valueHandler.TypeInfo.NumberName;
-            // Trick: the reader/writer functions accepts the interface rather than the concrete type.
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteM_" + funcSuffix + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadM_" + funcSuffix + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
-            IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
-            IFunctionScope? fRead;
-            if( fWrite != null )
-            {
-                fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
-                Debug.Assert( fRead != null );
-            }
-            else
-            {
-                fWrite = _pocoDirectory.CreateFunction( fWriteDef );
-                fRead = _pocoDirectory.CreateFunction( fReadDef );
-
-                _finalReadWrite.Add( m =>
-                {
-                    fWrite.Append( "w.WriteStartArray();" ).NewLine()
-                          .Append( "foreach( var e in c )" )
-                          .OpenBlock()
-                          .Append( "w.WriteStartArray();" ).NewLine();
-
-                    keyHandler.GenerateWrite( fWrite, "e.Key" );
-                    valueHandler.GenerateWrite( fWrite, "e.Value" );
-
-                    fWrite.Append( "w.WriteEndArray();" )
-                          .CloseBlock()
-                          .Append( "w.WriteEndArray();" ).NewLine();
-
-                    fRead.Append( "r.Read();" ).NewLine()
-                         .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndArray)" )
-                         .OpenBlock()
-                         .Append( "r.Read();" ).NewLine();
-
-                    fRead.AppendCSharpName( tKey ).Append( " k;" ).NewLine();
-                    keyHandler.GenerateRead( fRead, "k", true );
-
-                    fRead.NewLine()
-                         .AppendCSharpName( tValue ).Append( " v;" ).NewLine();
-                    valueHandler.GenerateRead( fRead, "v", true );
-
-                    fRead.Append( "r.Read();" ).NewLine()
-                         .Append( "c.Add( k, v );" )
-                         .CloseBlock()
-                         .Append( "r.Read();" );
-                } );
-            }
-            return (fWrite, fRead, CreateTypeInfo( tMap, "M(" + keyHandler.Name + "," + valueHandler.Name + ")" ));
-        }
-
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateStringMapFunctions( Type tMap, Type tValue )
-        {
-            var valueHandler = GetHandler( tValue );
-            if( valueHandler == null ) return default;
-
-            string valueTypeName = valueHandler.Type.ToCSharpName();
-            var concreteTypeName = "Dictionary<string," + valueTypeName + ">";
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteO_" + valueHandler.TypeInfo.NumberName + "( System.Text.Json.Utf8JsonWriter w, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadO_" + valueHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, I" + concreteTypeName + " c, PocoJsonSerializerOptions options )" );
-            IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
-            IFunctionScope? fRead;
-            if( fWrite != null )
-            {
-                fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
-                Debug.Assert( fRead != null );
-            }
-            else
-            {
-                fWrite = _pocoDirectory.CreateFunction( fWriteDef );
-                fRead = _pocoDirectory.CreateFunction( fReadDef );
-
-                _finalReadWrite.Add( m =>
-                {
-                    fWrite.Append( "w.WriteStartObject();" ).NewLine()
-                          .Append( "foreach( var e in c )" )
-                          .OpenBlock()
-                          .Append( "w.WritePropertyName( e.Key );" );
-                    valueHandler.GenerateWrite( fWrite, "e.Value" );
-                    fWrite.CloseBlock()
-                     .Append( "w.WriteEndObject();" ).NewLine();
-
-                    fRead.Append( "r.Read();" ).NewLine()
-                        .AppendCSharpName( tValue ).Append( " v;" ).NewLine()
-                        .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndObject )" )
-                        .OpenBlock()
-                        .Append( "string k = r.GetString();" ).NewLine()
-                        .Append( "r.Read();" ).NewLine();
-                    valueHandler.GenerateRead( fRead, "v", false );
-                    fRead.Append( "c.Add( k, v );" )
-                         .CloseBlock()
-                         .Append( "r.Read();" );
-                } );
-            }
-            return (fWrite, fRead, CreateTypeInfo( tMap, "O<" + valueHandler.Name + ">" ));
-        }
-
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateListOrSetFunctions( Type tColl, bool isList )
-        {
-            Type tItem = tColl.GetGenericArguments()[0];
-
-            if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler, out string? itemTypeName ) ) return default;
-
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadLOrS_" + itemHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, ICollection<" + itemTypeName + "> c, PocoJsonSerializerOptions options )" );
-            IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
-            if( fRead == null )
-            {
-                fRead = _pocoDirectory.CreateFunction( fReadDef );
-                _finalReadWrite.Add( m =>
-                {
-                    fRead.Append( "r.Read();" ).NewLine()
-                         .AppendCSharpName( tItem ).Append( " v;" ).NewLine()
-                         .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )" )
-                         .OpenBlock();
-                    itemHandler.GenerateRead( fRead, "v", false );
-                    fRead.Append( "c.Add( v );" )
-                         .CloseBlock()
-                         .Append( "r.Read();" );
-                } );
-            }
-
-            return (fWrite, fRead, CreateTypeInfo( tColl, (isList ? "L(" : "S(") + itemHandler.Name + ")" ));
-        }
-
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateArrayFunctions( Type tArray )
-        {
-            Debug.Assert( tArray.IsArray );
-            Type tItem = tArray.GetElementType()!;
-
-            if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler, out string? itemTypeName ) ) return default;
-
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadArray_" + itemHandler.TypeInfo.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + itemTypeName + "[] a, PocoJsonSerializerOptions options )" );
-            IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
-            if( fRead == null )
-            {
-                fRead = _pocoDirectory.CreateFunction( fReadDef );
-                fRead.OpenBlock()
-                     .Append( "var c = new List<" + itemTypeName + ">();" ).NewLine()
-                     .Append( "ReadLOrS_" + itemHandler.TypeInfo.NumberName + "( ref r, c, options );" ).NewLine()
-                     .Append( "a = c.ToArray();" ).NewLine()
-                     .CloseBlock();
-            }
-            return (fWrite, fRead, CreateTypeInfo( tArray, itemHandler.Name + "[]" ));
-        }
-
-        bool CreateWriteEnumerable( Type tItem,
-                                    [NotNullWhen( true )] out IFunctionScope? fWrite,
-                                    [NotNullWhen( true )] out IJsonCodeGenHandler? itemHandler,
-                                    [NotNullWhen( true )] out string? itemTypeName )
-        {
-            fWrite = null;
-            itemTypeName = null;
-            itemHandler = GetHandler( tItem );
-            if( itemHandler != null )
-            {
-                itemTypeName = itemHandler.Type.ToCSharpName();
-                var fWriteDef = FunctionDefinition.Parse( "internal static void WriteE_" + itemHandler.TypeInfo.NumberName + "( System.Text.Json.Utf8JsonWriter w, IEnumerable<" + itemTypeName + "> c, PocoJsonSerializerOptions options )" );
-                fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
-                if( fWrite == null )
-                {
-                    fWrite = _pocoDirectory.CreateFunction( fWriteDef );
-
-                    var closeItemHandler = itemHandler;
-                    var closeFWrite = fWrite;
-                    _finalReadWrite.Add( m =>
-                    {
-                        closeFWrite.Append( "w.WriteStartArray();" ).NewLine()
-                                   .Append( "foreach( var e in c )" )
-                                   .OpenBlock();
-                        closeItemHandler.GenerateWrite( closeFWrite, "e" );
-                        closeFWrite.CloseBlock()
-                                   .Append( "w.WriteEndArray();" ).NewLine();
-                    } );
-                }
-                return true;
-            }
-            return false;
+            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            if( !type.IsInterface ) throw new ArgumentException( "Must be a an interface.", nameof( type ) );
+            _map.Add( type, new JsonTypeInfo.HandlerForObjectMapping( type ) );
         }
 
         static bool LiftNullableValueType( ref Type t )
@@ -789,280 +406,5 @@ namespace CK.Setup.Json
             return false;
         }
 
-        JsonTypeInfo? TryRegisterInfoForEnum( Type t )
-        {
-            if( !t.GetExternalNames( _monitor, out string name, out string[]? previousNames ) )
-            {
-                return null;
-            }
-            var uT = Enum.GetUnderlyingType( t );
-            return AllowTypeInfo( t, name, previousNames ).Configure(
-                        ( ICodeWriter write, string variableName )
-                            => write.Append( "w.WriteNumberValue( (" ).AppendCSharpName( uT ).Append( ')' ).Append( variableName ).Append( " );" ),
-                        ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
-                            =>
-                        {
-                            // No need to defer here: the underlying types are basic number types.
-                            read.OpenBlock()
-                                .Append( "var " );
-                            _map[uT].GenerateRead( read, "u", true );
-                            read.NewLine()
-                                .Append( variableName ).Append( " = (" ).AppendCSharpName( t ).Append( ")u;" )
-                                .CloseBlock();
-                        } );
-        }
-
-        JsonTypeInfo? TryRegisterInfoForValueTuple( Type t, Type[] types )
-        {
-            IJsonCodeGenHandler[] handlers = new IJsonCodeGenHandler[types.Length];
-            var b = new StringBuilder( "[" );
-            for( int i = 0; i < types.Length; i++ )
-            {
-                if( i > 0 ) b.Append( ',' );
-                var h = GetHandler( types[i] );
-                if( h == null ) return null;
-                handlers[i] = h;
-                b.Append( h.Name );
-            }
-            b.Append( ']' );
-            JsonTypeInfo info = AllowTypeInfo( t, b.ToString() );
-
-            var valueTupleName = t.ToCSharpName();
-            // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
-
-            IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
-            IFunctionScope? fRead;
-            if( fWrite != null )
-            {
-                fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
-                Debug.Assert( fRead != null );
-            }
-            else
-            {
-                fWrite = _pocoDirectory.CreateFunction( fWriteDef );
-                fRead = _pocoDirectory.CreateFunction( fReadDef );
-                _finalReadWrite.Add( m =>
-                {
-                    fWrite.Append( "w.WriteStartArray();" ).NewLine();
-                    int itemNumber = 0;
-                    foreach( var h in handlers )
-                    {
-                        h.GenerateWrite( fWrite, "v.Item" + (++itemNumber).ToString( CultureInfo.InvariantCulture ) );
-                    }
-                    fWrite.Append( "w.WriteEndArray();" ).NewLine();
-
-                    fRead.Append( "r.Read();" ).NewLine();
-
-                    itemNumber = 0;
-                    foreach( var h in handlers )
-                    {
-                        h.GenerateRead( fRead, "v.Item" + (++itemNumber).ToString( CultureInfo.InvariantCulture ), false );
-                    }
-                    fRead.Append( "r.Read();" ).NewLine();
-                } );
-            }
-
-            info.SetByRefWriter()
-                .Configure(
-                  ( ICodeWriter write, string variableName ) =>
-                  {
-                      write.Append( "PocoDirectory_CK." ).Append( fWrite.Definition.MethodName.Name ).Append( "( w, ref " ).Append( variableName ).Append( ", options );" );
-                  },
-                  ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                  {
-                      string vName = variableName;
-                      if( isNullable )
-                      {
-                          read.OpenBlock()
-                              .AppendCSharpName( info.Type ).Space().Append( "notNull;" ).NewLine();
-                          vName = "notNull";
-                      }
-                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( vName ).Append( ", options );" );
-                      if( isNullable )
-                      {
-                          read.Append( variableName ).Append( " = notNull;" )
-                              .CloseBlock();
-                      }
-                  } );
-
-            return info;
-        }
-
-        #region Finalization
-
-        /// <summary>
-        /// Finalizes the code generation.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <returns>True on success, false on error.</returns>
-        public bool FinalizeCodeGeneration( IActivityMonitor monitor )
-        {
-            if( _finalizedCall.HasValue ) return _finalizedCall.Value;
-
-            using( monitor.OpenInfo( $"Generating Json serialization with {_map.Count} mappings to {_typeInfos.Count} types." ) )
-            {
-                int missingCount = 0;
-                foreach( var t in _typeInfos )
-                {
-                    if( t.DirectType == JsonDirectType.None && (t.CodeReader == null || t.CodeWriter == null) )
-                    {
-                        ++missingCount;
-                        using( _monitor.OpenTrace( $"Missing CodeReader/Writer for '{t.Name}'. Raising TypeInfoConfigurationRequired." ) )
-                        {
-                            try
-                            {
-                                TypeInfoConfigurationRequired?.Invoke( this, new TypeInfoConfigurationRequiredEventArg( _monitor, this, t ) );
-                            }
-                            catch( Exception ex )
-                            {
-                                _monitor.Error( $"While raising TypeInfoConfigurationRequired for '{t.Name}'.", ex );
-                                _finalizedCall = false;
-                                return false;
-                            }
-                        }
-                    }
-                }
-                if( missingCount > 0 )
-                {
-                    // Let the TypeInfo be configured in any order (the event for Z may have configured A and Z together).
-                    var missing = _typeInfos.Where( i => i.CodeWriter == null || i.CodeReader == null ).ToList();
-                    if( missing.Count > 0 )
-                    {
-                        _monitor.Error( $"Missing Json CodeReader/Writer functions for types '{missing.Select( m => m.Name ).Concatenate( "', '" )}'." );
-                        _finalizedCall = false;
-                        return false;
-                    }
-                }
-                // Generates the code for "dynamic"/"untyped" object.
-
-                // Writing must handle the object instance to write. Null reference/value type can be handled immediately (by writing "null").
-                // When not null, we are dealing only with concrete types here: the object MUST be of an allowed concrete type, an abstraction
-                // that wouldn't be one of the allowed concrete type must NOT be handled!
-                // That's why we can use a direct pattern matching on the object's type for the write method (reference types are ordered from specializations
-                // to generalization).
-                GenerateDynamicWrite( monitor, _typeInfos );
-
-                // Reading must handle the [TypeName,...] array: it needs a lookup from the "type name" to the handler to use: this is the goal of
-                // the _typeReaders dictionary that we initialize here (no concurrency issue, no lock to generate: once built the dictionary will only
-                // be read).
-                GenerateDynamicRead();
-
-                string message = "While raising JsonTypeFinalized.";
-                try
-                {
-                    JsonTypeFinalized?.Invoke( this, new EventMonitoredArgs( monitor ) );
-                    message = "While executing deferred actions to GenerateRead/Write code.";
-                    foreach( var a in _finalReadWrite )
-                    {
-                        a( monitor );
-                    }
-                }
-                catch( Exception ex )
-                {
-                    _monitor.Error( message, ex );
-                    _finalizedCall = false;
-                    return false;
-                }
-                monitor.CloseGroup( "Success." );
-                _finalizedCall = true;
-                return true;
-            }
-        }
-
-        void GenerateDynamicRead()
-        {
-            _pocoDirectory.GeneratedByComment()
-                          .Append( @"
-            delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options );
-
-            static readonly Dictionary<string, ReaderFunction> _typeReaders = new Dictionary<string, ReaderFunction>();
-
-            internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )
-            {
-                switch( r.TokenType )
-                {
-                    case System.Text.Json.JsonTokenType.Null: r.Read(); return null;
-                    case System.Text.Json.JsonTokenType.Number: { var v = r.GetInt32(); r.Read(); return v; }
-                    case System.Text.Json.JsonTokenType.String: { var v = r.GetString(); r.Read(); return v; }
-                    case System.Text.Json.JsonTokenType.False: { r.Read(); return false; }
-                    case System.Text.Json.JsonTokenType.True: { r.Read(); return true; }
-                    default:
-                        {
-                            r.Read(); // [
-                            var n = r.GetString();
-                            r.Read();
-                            if( !_typeReaders.TryGetValue( n, out var reader ) )
-                            {
-                                throw new System.Text.Json.JsonException( $""Unregistered type name '{n}'."" );
-                            }
-                            var o = reader( ref r, options );
-                            r.Read(); // ]
-                            return o;
-                        }
-                }
-            }
-" );
-
-            // Configures the _typeReaders dictionary in the constructor.
-            var ctor = _pocoDirectory.FindOrCreateFunction( "public PocoDirectory_CK()" )
-                                     .GeneratedByComment();
-            foreach( var t in _typeInfos )
-            {
-                // Skips direct types that are handled...directly.
-                if( t.DirectType != JsonDirectType.None || t.DirectType == JsonDirectType.Untyped ) continue;
-                ctor.OpenBlock()
-                    .Append( "ReaderFunction d = delegate( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
-                    .AppendCSharpName( t.Type ).Append( " o;" ).NewLine();
-                t.GenerateRead( ctor, "o", assignOnly: true, isNullable: false );
-                ctor.NewLine().Append( "return o;" ).NewLine()
-                    .Append( "};" ).NewLine();
-                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.NonNullHandler.Name ).Append( ", d );" ).NewLine();
-                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.NullHandler.Name ).Append( ", d );" ).NewLine();
-
-                ctor.CloseBlock();
-            }
-
-            foreach( var t in _standardReaders )
-            {
-                var f = _pocoDirectory.Append( "static object ECMAScriptStandardRead_" ).Append( t.Name ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
-                                      .OpenBlock();
-                t.GenerateRead( f );
-                _pocoDirectory.CloseBlock();
-
-                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.Name ).Append( ", ECMAScriptStandardRead_" ).Append( t.Name ).Append( " );" ).NewLine();
-            }
-        }
-
-        void GenerateDynamicWrite( IActivityMonitor monitor, List<JsonTypeInfo> types )
-        {
-            _pocoDirectory
-                    .GeneratedByComment()
-                .Append( @"
-internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, PocoJsonSerializerOptions options )
-{
-    switch( o )
-    {
-        case null: w.WriteNullValue(); break;
-        case string v: w.WriteStringValue( v ); break;
-        case int v: w.WriteNumberValue( v ); break;
-        case bool v: w.WriteBooleanValue( v ); break;" ).NewLine()
-        .CreatePart( out var mappings ).Append( @"
-        default: throw new System.Text.Json.JsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" );
-    }
-}" );
-            foreach( var t in types )
-            {
-                // Skips direct types.
-                if( t.DirectType != JsonDirectType.None ) continue;
-                mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
-                Debug.Assert( !t.NonNullHandler.IsTypeMapping, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
-                t.GenerateWrite( mappings, "v", false, true );
-                mappings.NewLine().Append( "break;" ).NewLine();
-            }
-        }
-
-        #endregion
     }
 }

@@ -36,7 +36,7 @@ namespace CK.Setup
             // PocoDirectory_CK class.
             scope.GeneratedByComment().NewLine()
                  .FindOrCreateFunction( "internal PocoDirectory_CK()" )
-                 .Append( "Instance = this;" );
+                 .Append( "Instance = this;" ).NewLine();
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
                  .Append( "static readonly Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()

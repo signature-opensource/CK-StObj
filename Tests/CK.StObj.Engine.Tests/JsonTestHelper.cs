@@ -13,23 +13,6 @@ namespace CK.StObj.Engine.Tests
 {
     public static class JsonTestHelper
     {
-        /// <summary>
-        /// Serializes the Poco in UTF-8 Json.
-        /// </summary>
-        /// <param name="o">The poco.</param>
-        /// <param name="withType">True to emit types.</param>
-        /// <returns>The bytes.</returns>
-        public static ReadOnlyMemory<byte> Serialize( IPoco o, bool withType, PocoJsonSerializerOptions? options = null )
-        {
-            var m = new ArrayBufferWriter<byte>();
-            using( var w = new Utf8JsonWriter( m ) )
-            {
-                o.Write( w, withType, options: options );
-                w.Flush();
-            }
-            return m.WrittenMemory;
-        }
-
         public static T? Deserialize<T>( IServiceProvider services, ReadOnlySpan<byte> b, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
         {
             var r = new Utf8JsonReader( b );
@@ -76,7 +59,7 @@ namespace CK.StObj.Engine.Tests
 
                 var r1 = new Utf8JsonReader( bin1 );
 
-                var o2 = directory.ReadPocoValue( ref r1, options );
+                var o2 = directory.Read( ref r1, options );
 
                 m.Position = 0;
                 using( var w2 = new Utf8JsonWriter( m ) )
