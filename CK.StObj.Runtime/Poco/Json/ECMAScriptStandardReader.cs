@@ -24,35 +24,6 @@ namespace CK.Setup.Json
         /// <param name="read">The target code.</param>
         public abstract void GenerateRead( ICodeWriter read );
 
-        public static object ToSmallestType( double d )
-        {
-            // This is the fastest way to detect a fractional part.
-            // When a fractional part exists, it's always a double
-            // (converting to float here would lose precision).
-            if( (d % 1) == 0 )
-            {
-                // It is an integer.
-                if( d < 0 )
-                {
-                    // Negative integer.
-                    if( d < Int32.MinValue ) return d;
-                    if( d < Int16.MinValue ) return (int)d;
-                    if( d < SByte.MinValue ) return (short)d;
-                    return (sbyte)d;
-                }
-                // Positive integer.
-                if( d > UInt32.MaxValue ) return d;
-                if( d > Int32.MaxValue ) return (uint)d;
-                if( d > UInt16.MaxValue ) return (int)d;
-                if( d > Int16.MaxValue ) return (ushort)d;
-                if( d > Byte.MaxValue ) return (short)d;
-                if( d > SByte.MaxValue ) return (byte)d;
-                return (sbyte)d;
-            }
-            return d;
-        }
-
-
     }
 
     class ECMAScriptStandardNumberReader : ECMAScriptStandardReader
@@ -70,26 +41,6 @@ namespace CK.Setup.Json
                     ? double.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo )
                     : r.GetDouble();
     r.Read();
-    if( (d % 1) == 0 ) // This tests whether the double has a fractional part.
-    {
-        // It is an integer.
-        if( d < 0 )
-        {
-            // Negative integer.
-            if( d < Int32.MinValue ) return d;
-            if( d < Int16.MinValue ) return (int)d;
-            if( d < SByte.MinValue ) return (short)d;
-            return (sbyte)d;
-        }
-        // Positive integer.
-        if( d > UInt32.MaxValue ) return d;
-        if( d > Int32.MaxValue ) return (uint)d;
-        if( d > UInt16.MaxValue ) return (int)d;
-        if( d > Int16.MaxValue ) return (ushort)d;
-        if( d > Byte.MaxValue ) return (short)d;
-        if( d > SByte.MaxValue ) return (byte)d;
-        return (sbyte)d;
-    }
     return d;" );
         }
     }
