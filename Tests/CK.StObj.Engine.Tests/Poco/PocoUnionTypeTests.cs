@@ -315,6 +315,54 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
+        public interface ICompositeOfNullableOrNotNullableValueTypes : IPoco
+        {
+            [UnionType]
+            object ListOfNullableValueTypesOrNotNullable { get; set; }
+
+            class UnionTypes
+            {
+                public (List<int>, List<int?>) ListOfNullableValueTypesOrNotNullable { get; }
+            }
+        }
+
+        [Test]
+        public void generics_of_nullable_and_not_nullable_value_types_are_diffferent()
+        {
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( ICompositeOfNullableOrNotNullableValueTypes ) );
+                TestHelper.GetSuccessfulResult( c );
+
+                entries.Select( e => e.Text ).Should()
+                    .NotContain( t => t.Contains( "Removing the non nullable one.", StringComparison.Ordinal ) );
+            }
+        }
+
+        public interface ICompositeOfNullableOrNotNullableRefTypes : IPoco
+        {
+            [UnionType]
+            object ListOfNullableReferenceTypesOrNotNullable { get; set; }
+
+            class UnionTypes
+            {
+                public (List<string>, List<string?>) ListOfNullableReferenceTypesOrNotNullable { get; }
+            }
+        }
+
+        [Test]
+        public void generics_of_nullable_and_not_nullable_reference_types_are_the_same()
+        {
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( ICompositeOfNullableOrNotNullableRefTypes ) );
+                TestHelper.GetSuccessfulResult( c );
+
+                entries.Select( e => e.Text ).Should()
+                    .NotContain( t => t.Contains( "Removing the non nullable one.", StringComparison.Ordinal ) );
+            }
+        }
+
 
         public interface IPocoWithUnionTypeNoNullable : IPoco
         {

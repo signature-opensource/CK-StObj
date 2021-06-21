@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -301,31 +302,55 @@ namespace CK.Setup.Json
             // - Forbids ambiguous mapping for ECMAScriptStandard: all numerics are mapped to "Number" or "BigInt" (and arrays or lists are arrays).
             // - The ECMAScriptStandard projected name must be unique (and is associated to its actual handler).
             var handlers = new List<IJsonCodeGenHandler>();
-            var checkDuplicatedStandardName = new Dictionary<string, IJsonCodeGenHandler>();
+            var checkDuplicatedStandardName = new Dictionary<string, List<IJsonCodeGenHandler>>();
             foreach( var union in p.PropertyUnionTypes )
             {
                 var h = jsonCodeGen.GetHandler( union.Type, union.Kind.IsNullable() );
                 if( h == null ) return false;
                 handlers.Add( h );
-                if( h.TypeInfo.HasECMAScriptStandardJsonName )
+                if( isECMAScriptStandardCompliant && h.TypeInfo.HasECMAScriptStandardJsonName )
                 {
                     var n = h.TypeInfo.ECMAScriptStandardJsonName;
-                    if( checkDuplicatedStandardName.TryGetValue( n, out var exists ) )
+                    if( checkDuplicatedStandardName.TryGetValue( n.Name, out var exists ) )
                     {
-                        monitor.Warn( $"{p} UnionType '{h.TypeInfo.Type}' and '{exists.TypeInfo.Type}' are mapped to the same ECMAScript standard name: '{n}'. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
-                        isECMAScriptStandardCompliant = false;
+                        exists.Add( h );
                     }
                     else
                     {
-                        checkDuplicatedStandardName.Add( n, h );
+                        checkDuplicatedStandardName.Add( n.Name, new List<IJsonCodeGenHandler>() { h } );
+                    }
+                }
+            }
+            if( isECMAScriptStandardCompliant )
+            {
+                foreach( var group in checkDuplicatedStandardName.Values )
+                {
+                    if( group.Count > 1 )
+                    {
+                        int idxCanocical = group.IndexOf( h => h.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
+                        if( idxCanocical == -1 )
+                        {
+                            monitor.Warn( $"{p} UnionType '{group.Select( h => h.TypeInfo.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types mapped to the same ECMAScript standard name: '{group[0].TypeInfo.ECMAScriptStandardJsonName.Name}' and none of them is the 'Canonical' form. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
+                            isECMAScriptStandardCompliant = false;
+                        }
+                        else
+                        {
+                            var winner = group[idxCanocical];
+                            monitor.Trace( $"{p} UnionType '{group.Select( h => h.TypeInfo.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types will be read as {winner.Type.ToCSharpName()} in ECMAScript standard name." );
+                            group[0] = winner;
+                        }
+                    }
+                    else
+                    {
+                        monitor.Debug( $"{p} UnionType unambiguous mapping in ECMAScript standard name from '{group[0].TypeInfo.ECMAScriptStandardJsonName.Name}' to '{group[0].Type.ToCSharpName()}'." );
                     }
                 }
             }
             _finalReadWrite.Add( () =>
             {
                 var fieldName = "_v" + p.Index;
-                // For write, instead of generating a switch pattern on the actual type with a lot of duplicated write
-                // blocks (all the numerics that will eventually w.WriteNumber for instance), we use the write of the
+                // For write, instead of generating a switch pattern on the actual object's type with a lot of duplicated write
+                // blocks (all the numerics that will eventually call w.WriteNumber for instance), we use the write of the
                 // main handler that should be the untyped WriteObject (unless this is a stupid union type with a single type
                 // that is the same as the property's type).
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();

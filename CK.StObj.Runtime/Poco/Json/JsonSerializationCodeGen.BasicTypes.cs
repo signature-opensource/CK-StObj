@@ -75,7 +75,7 @@ namespace CK.Setup.Json
                 {
                     read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( byte[] ), "byte[]", StartTokenType.String ).Configure(
                 ( ICodeWriter write, string variableName ) =>
@@ -99,28 +99,28 @@ namespace CK.Setup.Json
                     // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
                     read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? Decimal.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetDecimal(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "BigInt" );
+                .SetECMAScriptStandardName( "BigInt", false );
 
             AllowTypeInfo( typeof( uint ), "uint", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetUInt32(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( double ), "double", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetDouble(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", true );
 
             AllowTypeInfo( typeof( float ), "float", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetSingle(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( long ), "long", StartTokenType.String ).Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -128,7 +128,7 @@ namespace CK.Setup.Json
                     // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
                     read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? Int64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetInt64(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "BigInt" );
+                .SetECMAScriptStandardName( "BigInt", true );
 
             AllowTypeInfo( typeof( ulong ), "ulong", StartTokenType.String ).Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -136,35 +136,35 @@ namespace CK.Setup.Json
                     // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
                     read.Append( variableName ).Append( " = r.TokenType == System.Text.Json.JsonTokenType.String ? UInt64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) :  r.GetUInt64(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "BigInt" );
+                .SetECMAScriptStandardName( "BigInt", false );
 
             AllowTypeInfo( typeof( byte ), "byte", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetByte(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( sbyte ), "sbyte", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetSByte(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( short ), "short", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetInt16(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( ushort ), "ushort", StartTokenType.Number ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetUInt16(); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "Number" );
+                .SetECMAScriptStandardName( "Number", false );
 
             AllowTypeInfo( typeof( System.Numerics.BigInteger ), "BigInteger", StartTokenType.String ).Configure(
                 ( ICodeWriter write, string variableName ) =>
@@ -178,7 +178,7 @@ namespace CK.Setup.Json
                 {
                     read.Append( variableName ).Append( " = System.Numerics.BigInteger.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ); r.Read();" );
                 } )
-                .SetECMAScriptStandardName( "BigInt" );
+                .SetECMAScriptStandardName( "BigInt", false );
 
             AllowTypeInfo( typeof( DateTime ), "DateTime", StartTokenType.String ).Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>

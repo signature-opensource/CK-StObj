@@ -110,7 +110,8 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tMap, "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")", StartTokenType.Array )
-                       .SetECMAScriptStandardName( "M(" + keyHandler.TypeInfo.ECMAScriptStandardJsonName + "," + valueHandler.TypeInfo.ECMAScriptStandardJsonName + ")" );
+                       .SetECMAScriptStandardName( name: "M(" + keyHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "," + valueHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")",
+                                                   isCanonical: keyHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical && valueHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
             return (fWrite, fRead, info);
         }
 
@@ -158,7 +159,7 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tMap, "O(" + valueHandler.JsonName + ")", StartTokenType.Object )
-                      .SetECMAScriptStandardName( "O(" + valueHandler.TypeInfo.ECMAScriptStandardJsonName + ")" );
+                      .SetECMAScriptStandardName( "O(" + valueHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")", valueHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
             return (fWrite, fRead, info);
         }
 
@@ -186,7 +187,8 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tColl, (isList ? "L(" : "S(") + itemHandler.JsonName + ")", StartTokenType.Array )
-                       .SetECMAScriptStandardName( isList ? itemHandler.TypeInfo.ECMAScriptStandardJsonName + "[]" : "S(" + itemHandler.TypeInfo.ECMAScriptStandardJsonName + ")" );
+                       .SetECMAScriptStandardName( name: isList ? itemHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "[]" : "S(" + itemHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")",
+                                                   isCanonical: isList && itemHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
 
             return (fWrite, fRead, info);
         }
@@ -212,7 +214,7 @@ namespace CK.Setup.Json
                      .CloseBlock();
             }
             var info = CreateTypeInfo( tArray, itemHandler.JsonName + "[]", StartTokenType.Array )
-                       .SetECMAScriptStandardName( itemHandler.TypeInfo.ECMAScriptStandardJsonName + "[]" );
+                       .SetECMAScriptStandardName( itemHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "[]", false );
             return (fWrite, fRead, info);
         }
 

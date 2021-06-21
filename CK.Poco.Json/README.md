@@ -130,7 +130,7 @@ then the array itself requires its type:
 The serialized type name is by default the full name of the type (namespace + type name). To support explicit (shorter, nicer) names
 and ease migrations/evolutions, the [`ExternalName` attribute](../CK.StObj.Model/ExternalNameAttribute.cs) can be used:
 ```csharp
-// In v3, a the Person class was Employee.
+// In v3, a the Person class was Employee (we are in v4).
 [ExternalName("Person", "Employee")]
 class Person
 {
@@ -167,16 +167,6 @@ Among the basic types, the long (Int64), ulong (UInt64) and Decimal representati
 specifies it. There are in fact 2 different serializations: the "pure Json" and the "ECMAScript safe".
 
 To stay on the safe side and to simplify the implementation, long, ulong, decimal and BigInteger are all written and read with string.
-
-### Implementation notes about "ECMAScript safe" mode number handling
-
-The [JsonNumberHandling](https://docs.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonnumberhandling) is NOT available on the Utf8JsonWriter API.
-It is handled by the "Serialization" layer. And the APIs to [write (WriteNumberValueAsString(ulong))](https://source.dot.net/#System.Text.Json/System/Text/Json/Writer/Utf8JsonWriter.WriteValues.UnsignedNumber.cs,112)
-or [read (GetUInt64WithQuotes)](https://source.dot.net/#System.Text.Json/System/Text/Json/Reader/Utf8JsonReader.TryGet.cs,383) quoted long or unsigned long (same for Decimal) are not publicly
-exposed on the Utf8Writer/Reader.
-
-> We currently handle long, ulong, decimal, BigInteger and TimeSpan (BigInteger and TimeSpan have no direct support) by writing/reading and parsing strings.
-> Waiting for https://github.com/dotnet/runtime/issues/54016 and https://github.com/dotnet/runtime/issues/1784 (for BigInteger) for a more efficient implementation.
 
 ## The "ECMAScript standard" mode 
 
@@ -272,8 +262,8 @@ The unified type of an `UnionType` can only be `object` if value types (like num
 an `object` type constrained by a `UnionType` deeply differs from an unconstrained one.
 
 The following definitions are ambiguous:
-- When there's more `Number` (regardless of their nullabilities) like a `(int?, byte)` or a `(byte, float, int)`.
-- When collections resolves to the same "ECMAScript Standard" mapping: `(double[],IList<int?>?)` are both `Number[]`.
+- When there's more than one `Number` (regardless of their nullabilities) like a `(int?, byte)` or a `(byte, float, int)` and `double` doesn't appear.
+- When collections resolves to the same "ECMAScript Standard" mapping: `(IPerson[],IList<IPerson>?)` are both `Number[]`.
 
 The following definitions are not ambiguous:
 - When big numbers coexist with numbers: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.

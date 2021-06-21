@@ -8,30 +8,6 @@ using System.Text.Json;
 
 namespace CK.Setup.Json
 {
-    public readonly struct ECMAScriptStandardJsonName
-    {
-        public bool IsCanonical { get; }
-
-        public string Name { get; }
-
-        public ECMAScriptStandardJsonName( string name, bool isCanonical )
-        {
-            IsCanonical = isCanonical;
-            Name = name;
-        }
-
-        public override bool Equals( object? obj ) => obj is ECMAScriptStandardJsonName o ? Equals( o ) : false;
-
-        public bool Equals( ECMAScriptStandardJsonName o ) => IsCanonical == o.IsCanonical && Name == o.Name;
-
-        public override int GetHashCode() => Name.GetHashCode( StringComparison.Ordinal );
-
-        public static bool operator ==( ECMAScriptStandardJsonName left, ECMAScriptStandardJsonName right ) => left.Equals( right );
-
-        public static bool operator !=( ECMAScriptStandardJsonName left, ECMAScriptStandardJsonName right ) => !(left == right);
-    }
-
-
     /// <summary>
     /// Centralized type representation that holds the null and non-null handlers and
     /// carries the <see cref="CodeReader"/> and <see cref="CodeWriter"/> delegates.
@@ -83,12 +59,12 @@ namespace CK.Setup.Json
         /// For non collection types, an <see cref="ECMAScriptStandardReader"/> should be registered for this name
         /// so that 'object' can be read.
         /// </summary>
-        public string ECMAScriptStandardJsonName { get; private set; }
+        public ECMAScriptStandardJsonName ECMAScriptStandardJsonName { get; private set; }
 
         /// <summary>
-        /// Gets whether this <see cref="JsonName"/> differs from this <see cref="ECMAScriptStandardJsonName"/>.
+        /// Gets whether this <see cref="JsonName"/> differs from this <see cref="Json.ECMAScriptStandardJsonName"/>.
         /// </summary>
-        public bool HasECMAScriptStandardJsonName => ECMAScriptStandardJsonName != JsonName;
+        public bool HasECMAScriptStandardJsonName => ECMAScriptStandardJsonName.Name != JsonName;
 
         /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
@@ -134,7 +110,8 @@ namespace CK.Setup.Json
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
             StartTokenType = startTokenType;
             // By default, the ECMAScriptStandardJsonName is the JsonName.
-            ECMAScriptStandardJsonName = JsonName = name;
+            JsonName = name;
+            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
             PreviousNames = previousNames ?? Array.Empty<string>();
             // By default IsFinal is true.
             IsFinal = true;
@@ -153,7 +130,8 @@ namespace CK.Setup.Json
         {
             // CodeReader and CodeWriter are unused and let to null.
             Type = typeof( object );
-            ECMAScriptStandardJsonName = JsonName = "object";
+            JsonName = "Object";
+            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "", true );
             PreviousNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
@@ -200,10 +178,25 @@ namespace CK.Setup.Json
         /// A <see cref="ECMAScriptStandardReader"/> should be registered for this name.
         /// </summary>
         /// <param name="name">The name to use.</param>
+        /// <param name="isCanonical">Whether this standard name is the canonical one.</param>
         /// <returns>This type info.</returns>
-        public JsonTypeInfo SetECMAScriptStandardName( string name )
+        public JsonTypeInfo SetECMAScriptStandardName( string name, bool isCanonical )
         {
-            ECMAScriptStandardJsonName = name;
+            // This is a security check. Only these types must be the "canonical" one.
+            // If other categories than Number and BigInt are defined, a similar unicity check should
+            // be done somewhere.
+            if( isCanonical )
+            {
+                if( name == "Number" && Type != typeof( double ) )
+                {
+                    throw new ArgumentException( "The canonical 'Number' is the double.", nameof( isCanonical ) );
+                }
+                if( name == "BigInt" && Type != typeof( long ) )
+                {
+                    throw new ArgumentException( "The canonical 'BigInt' is the long (Int64).", nameof( isCanonical ) );
+                }
+            }
+            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, isCanonical );
             return this;
         }
 
@@ -260,7 +253,7 @@ namespace CK.Setup.Json
                     write.Append( "w.WriteStartArray(); w.WriteStringValue( " );
                     if( HasECMAScriptStandardJsonName )
                     {
-                        write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( ECMAScriptStandardJsonName )
+                        write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( ECMAScriptStandardJsonName.Name )
                              .Append( " : " );
                     }
                     write.AppendSourceString( JsonName ).Append( " );" ).NewLine();

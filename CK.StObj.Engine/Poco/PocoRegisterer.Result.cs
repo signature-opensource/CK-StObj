@@ -57,9 +57,9 @@ namespace CK.Setup
                         clashPath.Reverse();
                         monitor.Error( $"Poco readonly property cycle detected: '{clashPath.Select( p => $"{p.DeclaringType!.FullName}.{p.Name}" ).Concatenate( "' -> '" )}." );
                     }
-                    return true;
+                    return false;
                 }
-                return false;
+                return true;
             }
 
             public bool BuildNameIndex( IActivityMonitor monitor )

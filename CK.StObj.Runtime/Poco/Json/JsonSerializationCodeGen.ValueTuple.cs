@@ -17,6 +17,7 @@ namespace CK.Setup.Json
         JsonTypeInfo? TryRegisterInfoForValueTuple( Type t, Type[] types )
         {
             IJsonCodeGenHandler[] handlers = new IJsonCodeGenHandler[types.Length];
+            bool isJSCanonical = true;
             var jsonName = new StringBuilder( "[" );
             var jsJsonName = new StringBuilder( "[" );
             for( int i = 0; i < types.Length; i++ )
@@ -30,11 +31,12 @@ namespace CK.Setup.Json
                 if( h == null ) return null;
                 handlers[i] = h;
                 jsonName.Append( h.JsonName );
-                jsJsonName.Append( h.TypeInfo.ECMAScriptStandardJsonName );
+                isJSCanonical &= h.TypeInfo.ECMAScriptStandardJsonName.IsCanonical;
+                jsJsonName.Append( h.TypeInfo.ECMAScriptStandardJsonName.Name );
             }
             jsonName.Append( ']' );
             jsJsonName.Append( ']' );
-            JsonTypeInfo info = AllowTypeInfo( t, jsonName.ToString(), StartTokenType.Array ).SetECMAScriptStandardName( jsJsonName.ToString() );
+            JsonTypeInfo info = AllowTypeInfo( t, jsonName.ToString(), StartTokenType.Array ).SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );
 
             var valueTupleName = t.ToCSharpName();
             // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/

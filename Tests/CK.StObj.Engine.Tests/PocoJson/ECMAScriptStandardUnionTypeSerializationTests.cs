@@ -32,7 +32,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (double, int) Thing { get; }
+                public (float, int) Thing { get; }
             }
         }
 
@@ -93,6 +93,64 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 entries.Should().Contain( e => e.Text.Contains( "De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException.", StringComparison.Ordinal ) );
             }
         }
+
+        [ExternalName( "UT" )]
+        public interface ICompliant1 : IPoco
+        {
+            [UnionType]
+            public object T1 { get; set; }
+
+            [UnionType]
+            public object? T2 { get; set; }
+
+            [UnionType]
+            public object T3 { get; set; }
+
+            class UnionTypes
+            {
+                public (double, int) T1 { get; }
+                public (int, double?) T2 { get; }
+                public (byte,sbyte,double,float) T3 { get; }
+            }
+        }
+
+        [Test]
+        public void number_types_with_a_double_among_them_are_compliant()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant1 ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = services.GetService<PocoDirectory>();
+
+            var u = services.GetRequiredService<IPocoFactory<ICompliant1>>().Create();
+            u.T1 = 1;
+            u.T2 = 2;
+            u.T3 = (byte)3;
+
+            var serialized = u.JsonSerialize( true, Standard );
+            Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"{""UT"":{""T1"":1,""T2"":2,""T3"":3}}" );
+
+            directory.JsonDeserialize( serialized.Span );
+        }
+
+
+        [ExternalName( "UT" )]
+        public interface ICompliant2 : IPoco
+        {
+            [UnionType]
+            public object T1 { get; set; }
+
+            [UnionType]
+            public object T2 { get; set; }
+
+            class UnionTypes
+            {
+                public (IList<double>, double[], ISet<double>) T1 { get; }
+
+                public (IDictionary<string,double>, IDictionary<string, byte>) T2 { get; }
+            }
+        }
+
+
 
     }
 }

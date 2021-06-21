@@ -138,12 +138,25 @@ namespace CK.Core
         /// The Poco must have been written with its type.
         /// </summary>
         /// <param name="this">This directory.</param>
-        /// <param name="s">The string to read.</param>
+        /// <param name="s">The string to deserialize.</param>
         /// <param name="options">The options.</param>
         /// <returns>The Poco.</returns>
         public static IPoco? JsonDeserialize( this PocoDirectory @this, string s, PocoJsonSerializerOptions? options = null )
         {
-            var r = new Utf8JsonReader( System.Text.Encoding.UTF8.GetBytes( s ).AsSpan() );
+            return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
+        }
+
+        /// <summary>
+        /// Reads a <see cref="IPoco"/> (that can be null) from a JSON string.
+        /// The Poco must have been written with its type.
+        /// </summary>
+        /// <param name="this">This directory.</param>
+        /// <param name="utf8Json">The utf8 encoded bytes to deserialize.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The Poco.</returns>
+        public static IPoco? JsonDeserialize( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonSerializerOptions? options = null )
+        {
+            var r = new Utf8JsonReader( utf8Json );
             return Read( @this, ref r, options );
         }
 
