@@ -65,7 +65,7 @@ namespace CK.Setup.Json
                 // that wouldn't be one of the allowed concrete type must NOT be handled!
                 // That's why we can use a direct pattern matching on the object's type for the write method (reference types are ordered from specializations
                 // to generalization).
-                GenerateDynamicWrite( monitor, _typeInfos );
+                GenerateDynamicWrite( _typeInfos );
 
                 // Reading must handle the [TypeName,...] array: it needs a lookup from the "type name" to the handler to use: this is the goal of
                 // the _typeReaders dictionary that we initialize here (no concurrency issue, no lock to generate: once built the dictionary will only
@@ -160,14 +160,18 @@ namespace CK.Setup.Json
             {
                 var f = _pocoDirectory.Append( "static object ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
                                       .OpenBlock();
-                t.GenerateRead( f );
+                t.GenerateReadFunctionBody( f );
                 _pocoDirectory.CloseBlock();
 
                 ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.JsonName ).Append( ", ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( " );" ).NewLine();
+                if( t.MapNullableName )
+                {
+                    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.JsonName + '?' ).Append( ", ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( " );" ).NewLine();
+                }
             }
         }
 
-        void GenerateDynamicWrite( IActivityMonitor monitor, List<JsonTypeInfo> types )
+        void GenerateDynamicWrite( List<JsonTypeInfo> types )
         {
             _pocoDirectory
                     .GeneratedByComment()
@@ -187,7 +191,7 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, P
                 if( t.IsUntypedType ) continue;
                 mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
                 Debug.Assert( !t.NonNullHandler.IsTypeMapping, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
-                t.GenerateWrite( mappings, "v", false, true );
+                t.NonNullHandler.GenerateWrite( mappings, "v", true );
                 mappings.NewLine().Append( "break;" ).NewLine();
             }
         }

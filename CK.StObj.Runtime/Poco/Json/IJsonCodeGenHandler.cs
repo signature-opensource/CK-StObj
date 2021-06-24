@@ -20,14 +20,36 @@ namespace CK.Setup.Json
         Type Type { get; }
 
         /// <summary>
+        /// Gets the <see cref="JsonTypeInfo.NumberName"/> with 'N' suffix if <see cref="IsNullable"/> is true.
+        /// </summary>
+        string NumberName => IsNullable ? TypeInfo.NumberName + "N" : TypeInfo.NumberName;
+
+        /// <summary>
         /// Gets the JSON (safe mode) name with '?' suffix if <see cref="IsNullable"/> is true.
+        /// <para>
+        /// This uses the ExternalNameAttribute, the type full name
+        /// or a generated name for arrays, generic List, Set and Dictionary.
+        /// </para>
         /// </summary>
         string JsonName { get; }
 
         /// <summary>
-        /// Gets the <see cref="JsonTypeInfo.NumberName"/> with 'N' suffix if <see cref="IsNullable"/> is true.
+        /// Gets the previous names if any (there is no previous names for ECMA standard mode since only basic types can have a standard name).
+        /// These names have a '?' suffix if <see cref="IsNullable"/> is true.
         /// </summary>
-        string NumberName => IsNullable ? TypeInfo.NumberName + "N" : TypeInfo.NumberName;
+        IEnumerable<string> PreviousJsonNames { get; }
+
+        /// <summary>
+        /// Gets the JSON name used when "ECMAScript standard" is used.
+        /// For non collection types, an <see cref="ECMAScriptStandardReader"/> should be registered for this name
+        /// so that 'object' can be read.
+        /// </summary>
+        ECMAScriptStandardJsonName ECMAScriptStandardJsonName { get; }
+
+        /// <summary>
+        /// Gets whether this <see cref="JsonName"/> differs from this <see cref="Json.ECMAScriptStandardJsonName"/>.
+        /// </summary>
+        public bool HasECMAScriptStandardJsonName => ECMAScriptStandardJsonName.Name != JsonName;
 
         /// <summary>
         /// Gets the <see cref="JsonTypeInfo"/>.
@@ -77,5 +99,62 @@ namespace CK.Setup.Json
         /// </summary>
         /// <returns>The non nullable handler for the type.</returns>
         IJsonCodeGenHandler ToNonNullHandler();
+
+    }
+
+    public static class JsonCodeHandlerExtensions
+    {
+        /// <summary>
+        /// Calls <see cref="JsonTypeInfo.CodeWriter"/> inside code that handles type discriminator and nullable.
+        /// </summary>
+        /// <param name="write">The code target.</param>
+        /// <param name="variableName">The variable name.</param>
+        /// <param name="variableCanBeNull">Whether null value of the <paramref name="variableName"/> must be handled.</param>
+        /// <param name="writeTypeName">True if type discriminator must be written.</param>
+        public static void DoGenerateWrite( this IJsonCodeGenHandler @this, ICodeWriter write, string variableName, bool variableCanBeNull, bool writeTypeName )
+        {
+            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
+            if( @this.TypeInfo.CodeWriter == null ) throw new InvalidOperationException( "CodeWriter has not been set." );
+            if( variableCanBeNull )
+            {
+                write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
+                        .Append( "else " )
+                        .OpenBlock();
+            }
+            writeTypeName &= !@this.TypeInfo.IsIntrinsic;
+            if( writeTypeName )
+            {
+                write.Append( "w.WriteStartArray(); w.WriteStringValue( " );
+                if( @this.HasECMAScriptStandardJsonName )
+                {
+                    write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( @this.ECMAScriptStandardJsonName.Name )
+                            .Append( " : " );
+                }
+                write.AppendSourceString( @this.JsonName ).Append( " );" ).NewLine();
+            }
+            bool hasBlock = false;
+            if( variableCanBeNull && @this.Type.IsValueType )
+            {
+                if( @this.TypeInfo.ByRefWriter )
+                {
+                    hasBlock = true;
+                    write.OpenBlock()
+                            .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
+                    variableName = "notNull";
+                }
+                else variableName += ".Value";
+            }
+            @this.TypeInfo.CodeWriter( write, variableName );
+            if( hasBlock )
+            {
+                write.CloseBlock();
+            }
+            if( writeTypeName )
+            {
+                write.Append( "w.WriteEndArray();" ).NewLine();
+            }
+            if( variableCanBeNull ) write.CloseBlock();
+        }
+
     }
 }

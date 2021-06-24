@@ -185,6 +185,7 @@ namespace CK.Setup.Json
             var (readHeader, read) = GenerateReadBody( pocoInfo, pocoClass );
 
             bool isECMAScriptStandardCompliant = true;
+            var jsonProperties = new PocoJsonPropertyInfo[pocoInfo.PropertyList.Count];
             foreach( var p in pocoInfo.PropertyList )
             {
                 var mainHandler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
@@ -193,9 +194,12 @@ namespace CK.Setup.Json
                     success = false;
                     continue;
                 }
+
+                PocoJsonPropertyInfo? pJ;
                 if( p.PropertyUnionTypes.Any() )
                 {
-                    if( !HandleUnionType( monitor, jsonCodeGen, write, read, ref isECMAScriptStandardCompliant, p, mainHandler ) )
+                    pJ = HandleUnionType( p, monitor, jsonCodeGen, write, read, ref isECMAScriptStandardCompliant, mainHandler );
+                    if( pJ == null )
                     {
                         success = false;
                         break;
@@ -203,6 +207,8 @@ namespace CK.Setup.Json
                 }
                 else
                 {
+                    var handlers = new[] { mainHandler };
+                    pJ = new PocoJsonPropertyInfo( p, handlers, mainHandler.HasECMAScriptStandardJsonName && isECMAScriptStandardCompliant ? handlers : null );
                     // Actual Read/Write generation cannot be done here (it must be postponed).
                     // This loop registers/allows the poco property types (the call to GetHandler triggers
                     // the type registration) but writing them requires to know whether those types are final or not .
@@ -223,94 +229,44 @@ namespace CK.Setup.Json
                             .CloseBlock();
                     } );
                 }
+                jsonProperties[p.Index] = pJ;
+            }
+            if( success )
+            {
                 if( !isECMAScriptStandardCompliant )
                 {
                     writeHeader.And( readHeader ).Append( "if( options != null && options.Mode == PocoJsonSerializerMode.ECMAScriptStandard ) throw new NotSupportedException( \"Poco '" )
-                                                 .Append( pocoInfo.Name )
-                                                 .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
+                                                    .Append( pocoInfo.Name )
+                                                    .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
                 }
-                #region Old
-                //var handler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
-                //if( handler == null )
-                //{
-                //    success = false;
-                //    continue;
-                //}
-                //Debug.Assert( handler.IsNullable == p.IsNullable );
-
-                //_finalReadWrite.Add( () =>
-                //{
-                //    var fieldName = "_v" + p.Index;
-
-                //    write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
-                //    handler.GenerateWrite( write, fieldName );
-
-                //    read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
-                //        .OpenBlock();
-                //    if( p.IsReadOnly )
-                //    {
-                //        handler.GenerateRead( read, fieldName, false );
-                //    }
-                //    else
-                //    {
-                //        read.AppendCSharpName( p.PropertyType ).Append( " raw;" ).NewLine();
-                //        handler.GenerateRead( read, "raw", true );
-
-                //        bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
-                //        bool isNullable = p.PropertyNullabilityInfo.Kind.IsNullable();
-                //        if( isTechnicallyNullable )
-                //        {
-                //            read.Append( "if( raw != null )" )
-                //                .OpenBlock();
-                //        }
-                //        if( p.PropertyUnionTypes.Any() )
-                //        {
-                //            read.Append( "Type tV = raw.GetType();" ).NewLine()
-                //                .Append( "if( !_c" ).Append( fieldName )
-                //                .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
-                //                .OpenBlock()
-                //                .Append( "throw new System.IO.InvalidDataException( $\"Unexpected Type '{tV}' for UnionType: " ).Append( p.ToString()! ).Append( "\");" )
-                //                .CloseBlock();
-                //        }
-                //        if( isTechnicallyNullable )
-                //        {
-                //            read.CloseBlock();
-                //            if( !isNullable )
-                //            {
-                //                read.Append( "else throw new System.IO.InvalidDataException( $\"Invalid null for " ).Append( p.ToString()! ).Append( "\");" ).NewLine();
-                //            }
-                //        }
-                //        read.Append( fieldName ).Append( " = raw;" );
-                //    }
-                //    read.Append( "break; " )
-                //        .CloseBlock();
-                //} ); 
-                #endregion
+                var info = new PocoJsonInfo( pocoInfo, isECMAScriptStandardCompliant, jsonProperties );
+                pocoInfo.AddAnnotation( pocoInfo );
             }
             return success;
         }
 
-        bool HandleUnionType( IActivityMonitor monitor,
-                              JsonSerializationCodeGen jsonCodeGen,
-                              ITypeScopePart write,
-                              ITypeScopePart read,
-                              ref bool isECMAScriptStandardCompliant,
-                              IPocoPropertyInfo p,
-                              IJsonCodeGenHandler mainHandler )
+        PocoJsonPropertyInfo? HandleUnionType( IPocoPropertyInfo p,
+                                               IActivityMonitor monitor,
+                                               JsonSerializationCodeGen jsonCodeGen,
+                                               ITypeScopePart write,
+                                               ITypeScopePart read,
+                                               ref bool isPocoECMAScriptStandardCompliant,
+                                               IJsonCodeGenHandler mainHandler )
         {
             // Analyses the UnionTypes and creates the handler for each of them.
             // - Forbids ambiguous mapping for ECMAScriptStandard: all numerics are mapped to "Number" or "BigInt" (and arrays or lists are arrays).
             // - The ECMAScriptStandard projected name must be unique (and is associated to its actual handler).
             var handlers = new List<IJsonCodeGenHandler>();
             var checkDuplicatedStandardName = new Dictionary<string, List<IJsonCodeGenHandler>>();
+            // Gets all the handlers and build groups of ECMAStandardJsnoName handlers (only if the Poco is still standard compliant).
             foreach( var union in p.PropertyUnionTypes )
             {
                 var h = jsonCodeGen.GetHandler( union.Type, union.Kind.IsNullable() );
-                if( h == null ) return false;
+                if( h == null ) return null;
                 handlers.Add( h );
-                if( isECMAScriptStandardCompliant && h.TypeInfo.HasECMAScriptStandardJsonName )
+                if( isPocoECMAScriptStandardCompliant && h.HasECMAScriptStandardJsonName )
                 {
-                    var n = h.TypeInfo.ECMAScriptStandardJsonName;
+                    var n = h.ECMAScriptStandardJsonName;
                     if( checkDuplicatedStandardName.TryGetValue( n.Name, out var exists ) )
                     {
                         exists.Add( h );
@@ -321,31 +277,37 @@ namespace CK.Setup.Json
                     }
                 }
             }
+            // Analyze the groups (only if the Poco is still standard compliant).
+            List<IJsonCodeGenHandler>? ecmaStandardReadhandlers = null;
+            bool isECMAScriptStandardCompliant = isPocoECMAScriptStandardCompliant;
             if( isECMAScriptStandardCompliant )
             {
                 foreach( var group in checkDuplicatedStandardName.Values )
                 {
                     if( group.Count > 1 )
                     {
-                        int idxCanocical = group.IndexOf( h => h.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
+                        int idxCanocical = group.IndexOf( h => h.ECMAScriptStandardJsonName.IsCanonical );
                         if( idxCanocical == -1 )
                         {
-                            monitor.Warn( $"{p} UnionType '{group.Select( h => h.TypeInfo.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types mapped to the same ECMAScript standard name: '{group[0].TypeInfo.ECMAScriptStandardJsonName.Name}' and none of them is the 'Canonical' form. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
+                            monitor.Warn( $"{p} UnionType '{group.Select( h => h.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types mapped to the same ECMAScript standard name: '{group[0].ECMAScriptStandardJsonName.Name}' and none of them is the 'Canonical' form. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
                             isECMAScriptStandardCompliant = false;
+                            break;
                         }
-                        else
-                        {
-                            var winner = group[idxCanocical];
-                            monitor.Trace( $"{p} UnionType '{group.Select( h => h.TypeInfo.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types will be read as {winner.Type.ToCSharpName()} in ECMAScript standard name." );
-                            group[0] = winner;
-                        }
+                        var winner = group[idxCanocical];
+                        monitor.Trace( $"{p} UnionType '{group.Select( h => h.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types will be read as {winner.Type.ToCSharpName()} in ECMAScript standard name." );
+                        if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<IJsonCodeGenHandler>();
+                        ecmaStandardReadhandlers.Add( winner );
                     }
                     else
                     {
-                        monitor.Debug( $"{p} UnionType unambiguous mapping in ECMAScript standard name from '{group[0].TypeInfo.ECMAScriptStandardJsonName.Name}' to '{group[0].Type.ToCSharpName()}'." );
+                        monitor.Debug( $"{p} UnionType unambiguous mapping in ECMAScript standard name from '{group[0].ECMAScriptStandardJsonName.Name}' to '{group[0].Type.ToCSharpName()}'." );
+                        if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<IJsonCodeGenHandler>();
+                        ecmaStandardReadhandlers.Add( group[0] );
                     }
                 }
+                isPocoECMAScriptStandardCompliant &= isECMAScriptStandardCompliant;
             }
+            var info = new PocoJsonPropertyInfo( p, handlers, isECMAScriptStandardCompliant ? ecmaStandardReadhandlers : null );
             _finalReadWrite.Add( () =>
             {
                 var fieldName = "_v" + p.Index;
@@ -385,7 +347,7 @@ namespace CK.Setup.Json
                 read.Append( "break; " )
                     .CloseBlock();
             } );
-            return true;
+            return info;
         }
 
         /// <summary>

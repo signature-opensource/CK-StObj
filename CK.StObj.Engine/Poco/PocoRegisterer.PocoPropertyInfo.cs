@@ -161,7 +161,7 @@ namespace CK.Setup
                 return true;
             }
 
-            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.Name}' on Poco interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.GetExternalNameOrFullName() ).Concatenate( "', '" )}'.";
+            public override string ToString() => $"Property '{PropertyName}' of type '{PropertyType.ToCSharpName()}' on Poco interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.GetExternalNameOrFullName() ).Concatenate( "', '" )}'.";
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

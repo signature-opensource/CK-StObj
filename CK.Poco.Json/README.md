@@ -14,10 +14,48 @@ An example is available in the tests [here](../Tests/CK.StObj.Engine.Tests/PocoJ
 
 ## Usage
 
-This package exposes two extension methods, one on every IPoco (write, serialize) and one on the PocoDirectory singleton (to read, deserialize):
+This package exposes two extension methods on every IPoco (Write and JsonSerialize) to serialize them: 
 ```csharp
-public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true ) {...}
-public static IPoco? ReadPocoValue( this PocoDirectory directory, ref Utf8JsonReader reader ) {...}
+public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true, PocoJsonSerializerOptions? options = null ) {...}
+public static ReadOnlyMemory<byte> JsonSerialize( this IPoco? @this, bool withType = true, PocoJsonSerializerOptions? options = null ) {}
+```
+
+To read a JSON payload, three extension methods on `IPocoFactory<T>` can be used when the Poco's type is expected:
+```csharp
+/// <summary>
+/// Reads a typed Poco from a Json reader (that can be null).
+/// <para>
+/// If the reader starts with a '[', it must be a 2-cells array with this Poco's type that
+/// comes first (otherwise an exception is thrown).
+/// If the reader starts with a '{', then it must be the Poco's value.
+/// </para>
+/// </summary>
+/// <typeparam name="T">The poco type.</typeparam>
+/// <param name="this">This poco factory.</param>
+/// <param name="reader">The reader.</param>
+/// <param name="options">The options.</param>
+/// <returns>The Poco (can be null).</returns>
+public static T? Read<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) where T : class, IPoco { }
+
+public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, ReadOnlySpan<byte> utf8Json, PocoJsonSerializerOptions? options = null ) where T : class, IPoco {}
+
+public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, string s, PocoJsonSerializerOptions? options = null ) where T : class, IPoco {}
+```
+
+And when the type is not known (most common use), three extension methods exist on the `PocoDirectory`:
+
+```csharp
+/// <summary>
+/// Reads a <see cref="IPoco"/> (that can be null) from the Json reader
+/// that must have been written with its type.
+/// </summary>
+/// <param name="this">This directory.</param>
+/// <param name="reader">The Json reader.</param>
+/// <param name="options">The options.</param>
+/// <returns>The Poco (can be null).</returns>
+public static IPoco? Read( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) {...}
+public static IPoco? JsonDeserialize( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonSerializerOptions? options = null ) {...}
+public static IPoco? JsonDeserialize( this PocoDirectory @this, string s, PocoJsonSerializerOptions? options = null ) {...}
 ```
 
 Note that when written the Poco can be null (the extension method handles it and emits a `null`).
@@ -45,7 +83,7 @@ Nullable value types and nullable reference types are automatically handled.
 
 Enum values are serialized with their numerical values.
 
-## Registered types only
+## Opt-in: allowed types only
 
 Only registered types can be de/serialized (often named "Known Types" in numerous serialization frameworks).
 Even enums must be registered to be serializable. Knowing the complete set of the serializable types can be complex<a href="#n1" id="r1"><sup>1</sup></a>.
@@ -206,8 +244,8 @@ of heterogeneous types, not the polymorphism of specialized classes or interface
 "Polymorphic heterogeneous types" is provided by either by an `object` or by a UnionType.
 
 #### Reading an `object`.
-Choices have to be made and this is fine: the developer put no constraint on the type (either because it doesn't directly use the property) or because
-it discovers its type dynamically. Our main concern here is to follow the _Least Surprise Principle_ and handle the incoming data.
+Choices have to be made and this is fine: the developer put no constraint on the type (either because it doesn't directly use the property or because
+it discovers its type dynamically). Our main concern here is to follow the _Least Surprise Principle_ and handle the incoming data.
 
 - For `T[]`, we choose to instantiate a `List<T>`. Having a dynamic list rather than a fixed-length array is often more convenient.
 - For `BigInt`, an alternative exists:
@@ -215,7 +253,7 @@ it discovers its type dynamically. Our main concern here is to follow the _Least
   - Always choose the C# `BigInteger`. No risk but this type is less common (and known) than `long`, `ulong` and `decimal`.
   - Choose among `long`, `ulong`, `decimal` and `BigInteger` based on the number's value, privileging the smallest type. We should have more `long` than `BigInteger`.
 
-> `BigInteger` is not common. We choose here the second option: a `BigInt` resolves to `long`, `ulong`, `decimal` or `BigInteger`. 
+> `BigInteger` is not common. We choose here the second option: a `BigInt` resolves to `long`, `ulong`, `decimal` or `BigInteger` based on its value. 
 
 - For `Number`, since there is more target types, even more options exist:
 
@@ -250,8 +288,9 @@ public static object ToSmallestType( double d )
     }
     return d;
 }
-```` 
-    -  Some types are less commonly used than others. Should we remove the `sbyte`? the `ushort`?
+````
+ 
+Some types are less commonly used than others. Should we remove the `sbyte`? the `ushort`? Uncomfortable choice here...
 
 > `Number` is ambiguous. We choose to avoid downcast and to keep id simple: a `Number` will always be a `double`. It will be up to the developer
 > to handle its `object` the way she wants (with the above code or a variation of it).
@@ -266,13 +305,13 @@ The following definitions are ambiguous:
 - When collections resolves to the same "ECMAScript Standard" mapping: `(IPerson[],IList<IPerson>?)` are both `Number[]`.
 
 The following definitions are not ambiguous:
-- When big numbers coexist with numbers: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
+- When a big numbers coexists with a number: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
 - When ECMAScript collections differ: `(IList<int>,HashSet<double>)` maps to `Number[]|S(Number)`.
 
-Ambiguities are detected and warnings are emitted. Such ambiguous `UnionType` the Poco will not be "ECMAScriptStandard" compliant
+Ambiguities are detected and warnings are emitted. With such ambiguous `UnionType` a Poco will not be "ECMAScriptStandard" compliant
 and a `NotSupportedException` will be thrown at runtime.
 
-> A Poco has [UnionType] property that is not "ECMAScriptStandard" compliant doesn't prevent the Poco to be de/serialized in default safe mode (nor
+> A Poco with a [UnionType] property that is not "ECMAScriptStandard" compliant doesn't prevent the Poco to be de/serialized in default safe mode (nor
 > in any other kind of serialization). Only trying to de/serialize it in "ECMAScriptStandard" mode will fail with a `NotSupportedException`.
 
 

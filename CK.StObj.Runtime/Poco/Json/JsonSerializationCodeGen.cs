@@ -35,14 +35,18 @@ namespace CK.Setup.Json
         /// Maps Type and Names (current and previous) to its handler.
         /// </summary>
         readonly Dictionary<object, IJsonCodeGenHandler> _map;
+        // The JsonTypeInfo list is ordered. UntypedObject, value types, sealed classes and Poco
+        // come first. Then come the "external" reference types ordered from "less IsAssignableFrom" (specialization)
+        // to "most IsAssignableFrom" (generalization) so that switch case entries are correctly ordered.
+        // This sort by insertion is done in the AllowTypeInfo method and this is also where
+        // JsonTypeInfo.Specializations are added.
         readonly List<JsonTypeInfo> _typeInfos;
-        int _typeInfoAutoNumber;
-        // The index in the _typeInfos list where reference types that must be sorted
-        // from "less IsAssignableFrom" (specialization) to "most IsAssignableFrom" (generalization)
-        // so that switch case entries are correctly ordered.
+        // This is the index in the _typeInfos list from which "external" reference types must be sorted.
         // Before this mark, there are the Value Types and the Untyped (object): InitializeMap
         // starts to count.
         int _typeInfoRefTypeStartIdx;
+
+        int _typeInfoAutoNumber;
 
         // The list of readers for "ECMAScript standard" mode. Initialized with "BigInt" and "Number".
         List<ECMAScriptStandardReader> _standardReaders;
@@ -108,7 +112,7 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Simple helper that calls <see cref="CreateTypeInfo"/> and <see cref="AllowTypeInfo(JsonTypeInfo)"/>.
-        /// The type is allowed but its <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> must still be called.
+        /// The Json type info is created and allowed but its <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> must still be called.
         /// </summary>
         /// <param name="t">The type to allow..</param>
         /// <param name="name">The serialized name.</param>
@@ -120,8 +124,8 @@ namespace CK.Setup.Json
         }
 
         /// <summary>
-        /// Registers the <see cref="JsonTypeInfo.Type"/>, the <see cref="JsonTypeInfo.JsonName"/> and all <see cref="JsonTypeInfo.PreviousNames"/>
-        /// onto the <see cref="JsonTypeInfo.NonNullHandler"/> and if the type is a value type, its Nullable&lt;Type&gt; is mapped to
+        /// Registers the <see cref="IJsonCodeGenHandler.Type"/>, the <see cref="IJsonCodeGenHandler.JsonName"/> and all <see cref="IJsonCodeGenHandler.PreviousJsonNames"/>
+        /// of the <see cref="JsonTypeInfo.NonNullHandler"/> and if the type is a value type, its Nullable&lt;Type&gt; is mapped to
         /// the <see cref="JsonTypeInfo.NullHandler"/>.
         /// <para>
         /// None of these keys must already exit otherwise a <see cref="ArgumentException"/> will be thrown.
@@ -135,13 +139,9 @@ namespace CK.Setup.Json
             // For Value type, we register the Nullable<T> type.
             if( i.Type.IsValueType )
             {
-                _map.Add( i.Type, i.NonNullHandler );
-                _map.Add( i.JsonName, i.NonNullHandler );
-                foreach( var p in i.PreviousNames )
-                {
-                    _map.Add( p, i.NonNullHandler );
-                }
-                _map.Add( i.NullHandler.Type, i.NullHandler );
+                Register( _map, _monitor, i.NonNullHandler );
+                Register( _map, _monitor, i.NullHandler );
+
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {
                     _typeInfos.Add( i );
@@ -153,23 +153,14 @@ namespace CK.Setup.Json
             }
             else
             {
-                _map.Add( i.Type, i.NullHandler );
-                _map.Add( i.JsonName, i.NullHandler );
-                foreach( var p in i.PreviousNames )
-                {
-                    if( !_map.TryAdd( p, i.NullHandler ) )
-                    {
-                        var exist = _map[p];
-                        _monitor.Warn( $"Previous name '{p}' for '{i}' with '{exist.Type}'. It is ignored." );
-                    }
-                }
+                Register( _map, _monitor, i.NullHandler );
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {
                     _typeInfos.Add( i );
                 }
                 else
                 {
-                    if( i.Type.IsSealed )
+                    if( i.Type.IsSealed || typeof( IPoco ).IsAssignableFrom( i.Type ) )
                     {
                         _typeInfos.Insert( _typeInfoRefTypeStartIdx++, i );
                     }
@@ -177,16 +168,31 @@ namespace CK.Setup.Json
                     {
                         // Finds the first type that can be assigned to the new one:
                         // the new one must appear before it.
-                        // And since we found a type that is ambiguous, we can conclude
-                        // that it's IsFinal flag is false.
+                        // At the same time, register the type into the specialization lists.
                         int idx;
                         for( idx = _typeInfoRefTypeStartIdx; idx < _typeInfos.Count; ++idx )
                         {
                             var atIdx = _typeInfos[idx];
                             if( atIdx.Type.IsAssignableFrom( i.Type ) )
                             {
-                                atIdx.IsFinal = false;
+                                atIdx.AddSpecialization( i );
+                                for( int idx2 = idx+1; idx2 < _typeInfos.Count; ++idx2 )
+                                {
+                                    atIdx = _typeInfos[idx2];
+                                    if( atIdx.Type.IsAssignableFrom( i.Type ) )
+                                    {
+                                        atIdx.AddSpecialization( i );
+                                    }
+                                    if( i.Type.IsAssignableFrom( atIdx.Type ) )
+                                    {
+                                        i.AddSpecialization( atIdx );
+                                    }
+                                }
                                 break;
+                            }
+                            else if( i.Type.IsAssignableFrom( atIdx.Type ) )
+                            {
+                                i.AddSpecialization( atIdx );
                             }
                         }
                         _typeInfos.Insert( idx, i );
@@ -194,6 +200,20 @@ namespace CK.Setup.Json
                 }
             }
             return i;
+
+            static void Register( Dictionary<object, IJsonCodeGenHandler> _map, IActivityMonitor monitor, IJsonCodeGenHandler h )
+            {
+                _map.Add( h.Type, h );
+                _map.Add( h.JsonName, h );
+                foreach( var p in h.PreviousJsonNames )
+                {
+                    if( !_map.TryAdd( p, h ) )
+                    {
+                        var exist = _map[p];
+                        monitor.Warn( $"Previous name '{p}' for '{h.TypeInfo}' is already mapped to '{exist.TypeInfo}'. It is ignored." );
+                    }
+                }
+            }
         }
 
         /// <summary>

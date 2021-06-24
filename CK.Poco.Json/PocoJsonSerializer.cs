@@ -96,7 +96,7 @@ namespace CK.Core
         /// <param name="withType">True to emit this Poco type.</param>
         /// <param name="options">Options to use.</param>
         /// <returns>The Utf8 bytes.</returns>
-        public static ReadOnlyMemory<byte> JsonSerialize( this IPoco? @this, bool withType, PocoJsonSerializerOptions? options = null )
+        public static ReadOnlyMemory<byte> JsonSerialize( this IPoco? @this, bool withType = true, PocoJsonSerializerOptions? options = null )
         {
             var m = new ArrayBufferWriter<byte>();
             using( var w = new Utf8JsonWriter( m ) )
@@ -107,6 +107,62 @@ namespace CK.Core
             return m.WrittenMemory;
         }
 
+        /// <summary>
+        /// Reads a typed Poco from a Json reader (that can be null).
+        /// <para>
+        /// If the reader starts with a '[', it must be a 2-cells array with this Poco's type that
+        /// comes first (otherwise an exception is thrown).
+        /// If the reader starts with a '{', then it must be the Poco's value.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The poco type.</typeparam>
+        /// <param name="this">This poco factory.</param>
+        /// <param name="reader">The reader.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The Poco (can be null).</returns>
+        public static T? Read<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
+        {
+            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
+            if( CheckNullStart( ref reader, "expecting Json object, Json array or null value." ) ) return null;
+            return ((IFactoryReader<T>)@this).Read( ref reader, options );
+        }
+
+        /// <summary>
+        /// Reads a typed Poco (that can be null) from Utf8 encoded bytes.
+        /// <para>
+        /// If the buffer starts with a '[', it must be a 2-cells array with this Poco's type that
+        /// comes first (otherwise an exception is thrown).
+        /// If the buffer starts with a '{', then it must be the Poco's value.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The poco type.</typeparam>
+        /// <param name="this">This poco factory.</param>
+        /// <param name="utf8Json">The utf8 encoded bytes to deserialize.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The Poco (can be null).</returns>
+        public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, ReadOnlySpan<byte> utf8Json, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
+        {
+            var r = new Utf8JsonReader( utf8Json );
+            return Read( @this, ref r, options );
+        }
+
+        /// <summary>
+        /// Reads a typed Poco (that can be null) from a string.
+        /// <para>
+        /// If the buffer starts with a '[', it must be a 2-cells array with this Poco's type that
+        /// comes first (otherwise an exception is thrown).
+        /// If the buffer starts with a '{', then it must be the Poco's value.
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">The poco type.</typeparam>
+        /// <param name="this">This poco factory.</param>
+        /// <param name="s">The string to deserialize.</param>
+        /// <param name="options">The options.</param>
+        /// <returns>The Poco (can be null).</returns>
+        public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, string s, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
+        {
+            return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
+        }
 
         /// <summary>
         /// Reads a <see cref="IPoco"/> (that can be null) from the Json reader
@@ -115,7 +171,7 @@ namespace CK.Core
         /// <param name="this">This directory.</param>
         /// <param name="reader">The Json reader.</param>
         /// <param name="options">The options.</param>
-        /// <returns>The Poco.</returns>
+        /// <returns>The Poco (can be null).</returns>
         public static IPoco? Read( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null )
         {
             if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
@@ -134,51 +190,34 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Reads a <see cref="IPoco"/> (that can be null) from a JSON string.
-        /// The Poco must have been written with its type.
-        /// </summary>
-        /// <param name="this">This directory.</param>
-        /// <param name="s">The string to deserialize.</param>
-        /// <param name="options">The options.</param>
-        /// <returns>The Poco.</returns>
-        public static IPoco? JsonDeserialize( this PocoDirectory @this, string s, PocoJsonSerializerOptions? options = null )
-        {
-            return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
-        }
-
-        /// <summary>
-        /// Reads a <see cref="IPoco"/> (that can be null) from a JSON string.
+        /// Reads a <see cref="IPoco"/> (that can be null) from Utf8 encoded bytes.
         /// The Poco must have been written with its type.
         /// </summary>
         /// <param name="this">This directory.</param>
         /// <param name="utf8Json">The utf8 encoded bytes to deserialize.</param>
         /// <param name="options">The options.</param>
-        /// <returns>The Poco.</returns>
+        /// <returns>The Poco (can be null).</returns>
         public static IPoco? JsonDeserialize( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonSerializerOptions? options = null )
         {
             var r = new Utf8JsonReader( utf8Json );
             return Read( @this, ref r, options );
         }
 
+
         /// <summary>
-        /// Reads a typed Poco from a Json reader.
-        /// <para>
-        /// If the reader is <see cref="JsonTokenType.StartArray"/>, it must be a 2-cells array
-        /// with this Poco's type that comes first (otherwise an exception is thrown).
-        /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
-        /// </para>
+        /// Reads a <see cref="IPoco"/> (that can be null) from a JSON string.
+        /// The Poco must have been written with its type.
         /// </summary>
-        /// <typeparam name="T">The poco type.</typeparam>
-        /// <param name="this">This poco factory.</param>
-        /// <param name="reader">The reader.</param>
+        /// <param name="this">This directory.</param>
+        /// <param name="s">The string to deserialize.</param>
         /// <param name="options">The options.</param>
-        /// <returns>The Poco.</returns>
-        public static T? Read<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
+        /// <returns>The Poco (can be null).</returns>
+        public static IPoco? JsonDeserialize( this PocoDirectory @this, string s, PocoJsonSerializerOptions? options = null )
         {
-            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
-            if( CheckNullStart( ref reader, "expecting Json object, Json array or null value." ) ) return null;
-            return ((IFactoryReader<T>)@this).Read( ref reader, options );
+            return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
         }
+
+
 
         static bool CheckNullStart( ref Utf8JsonReader reader, string error )
         {

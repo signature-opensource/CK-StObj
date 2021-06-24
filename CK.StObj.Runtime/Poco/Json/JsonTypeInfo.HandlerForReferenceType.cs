@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CK.Setup.Json
@@ -12,6 +13,9 @@ namespace CK.Setup.Json
             public bool IsNullable => true; // Always true.
             public Type Type => TypeInfo.Type;
             public string JsonName => TypeInfo.JsonName;
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames;
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
+
             public bool IsTypeMapping => false; // Always false.
 
             public HandlerForReferenceType( JsonTypeInfo info )
@@ -27,7 +31,7 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-                    TypeInfo.GenerateWrite( write, variableName, true, withType ?? false );
+                    this.DoGenerateWrite( write, variableName, true, withType ?? false );
                 }
             }
 

@@ -20,6 +20,7 @@ namespace CK.Setup.Json
         public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
 
         AnnotationSetImpl _annotations;
+        List<JsonTypeInfo>? _specializations;
 
         /// <summary>
         /// Gets the primary type.
@@ -48,34 +49,16 @@ namespace CK.Setup.Json
         public IJsonCodeGenHandler NonNullHandler { get; }
 
         /// <summary>
-        /// Gets the JSON type name. Uses the ExternalNameAttribute, the type full name
-        /// or a generated name for arrays, generic List, Set and Dictionary.
-        /// Only nullable handlers have a different name (that is this one suffixed by '?').
-        /// </summary>
-        public string JsonName { get; }
-
-        /// <summary>
-        /// Gets the JSON name used when "ECMAScript standard" is used.
-        /// For non collection types, an <see cref="ECMAScriptStandardReader"/> should be registered for this name
-        /// so that 'object' can be read.
-        /// </summary>
-        public ECMAScriptStandardJsonName ECMAScriptStandardJsonName { get; private set; }
-
-        /// <summary>
-        /// Gets whether this <see cref="JsonName"/> differs from this <see cref="Json.ECMAScriptStandardJsonName"/>.
-        /// </summary>
-        public bool HasECMAScriptStandardJsonName => ECMAScriptStandardJsonName.Name != JsonName;
-
-        /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
         /// This should be used for large struct (this is used for value tuples).
         /// </summary>
         public bool ByRefWriter { get; private set; }
 
-        /// <summary>
-        /// Gets the previous names (if any).
-        /// </summary>
-        public IReadOnlyList<string> PreviousNames { get; }
+        internal string JsonName { get; }
+
+        internal IReadOnlyList<string> PreviousJsonNames { get; }
+
+        internal ECMAScriptStandardJsonName ECMAScriptStandardJsonName { get; private set; }
 
         /// <summary>
         /// Gets the token type that starts the representation.
@@ -95,11 +78,18 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
-        /// This is initially true (except if the type is sealed) but as soon as a type that can be assigned
+        /// This is initially true but as soon as a type that can be assigned
         /// to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
         /// this becomes false.
         /// </summary>
-        public bool IsFinal { get; internal set; }
+        public bool IsFinal => _specializations == null;
+
+        /// <summary>
+        /// Gets the ordered list of flattened specializations (all specializations recursively) from most
+        /// general ones to most specialized (switch case on the type is correctly ordered).
+        /// This is empty if <see cref="IsFinal"/> is true.
+        /// </summary>
+        public IReadOnlyList<JsonTypeInfo> AllSpecializations => _specializations ?? (IReadOnlyList<JsonTypeInfo>)Array.Empty<JsonTypeInfo>();
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
         internal JsonTypeInfo( Type t, int number, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
@@ -112,9 +102,7 @@ namespace CK.Setup.Json
             // By default, the ECMAScriptStandardJsonName is the JsonName.
             JsonName = name;
             ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
-            PreviousNames = previousNames ?? Array.Empty<string>();
-            // By default IsFinal is true.
-            IsFinal = true;
+            PreviousJsonNames = previousNames ?? Array.Empty<string>();
             if( t.IsValueType )
             {
                 NonNullHandler = new HandlerForValueType( this );
@@ -132,11 +120,10 @@ namespace CK.Setup.Json
             Type = typeof( object );
             JsonName = "Object";
             ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "", true );
-            PreviousNames = Array.Empty<string>();
+            PreviousJsonNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
             StartTokenType = StartTokenType.Array;
-            IsFinal = false;
             NonNullHandler = new HandlerForObjectMapping( Type );
         }
 
@@ -226,61 +213,31 @@ namespace CK.Setup.Json
             if( isNullableVariable ) read.CloseBlock();
         }
 
-        /// <summary>
-        /// Calls <see cref="CodeWriter"/> inside code that handles type discriminator and nullable.
-        /// </summary>
-        /// <param name="write">The code target.</param>
-        /// <param name="variableName">The variable name.</param>
-        /// <param name="variableCanBeNull">Whether null value of the <paramref name="variableName"/> must be handled.</param>
-        /// <param name="writeTypeName">True if type discriminator must be written.</param>
-        public void GenerateWrite( ICodeWriter write, string variableName, bool variableCanBeNull, bool writeTypeName )
+        internal void AddSpecialization( JsonTypeInfo sub )
         {
-            if( CodeWriter == null ) throw new InvalidOperationException( "CodeWriter has not been set." );
-            if( variableCanBeNull )
-            {
-                write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
-                        .Append( "else " )
-                        .OpenBlock();
-            }
-            if( IsIntrinsic )
-            {
-                CodeWriter( write, variableName );
-            }
+            Debug.Assert( !Type.IsValueType && !Type.IsSealed && !Type.IsInterface
+                          && !sub.Type.IsInterface && !sub.Type.IsValueType && !typeof( IPoco ).IsAssignableFrom( sub.Type ) );
+            if( _specializations == null ) _specializations = new List<JsonTypeInfo>() { sub };
             else
             {
-                if( writeTypeName )
+                // Repeating the same sort by insertions here that has been done
+                // on the global list.
+                // This seems inefficient, but I failed to find a better way without
+                // yet another type tree model and the fact is that :
+                //  - Since the JsonTypes are purely opt-in, crawling the base types is not an option
+                //    (we don't know if they need to be registered: this would imply to manage a kind of waiting list).
+                //  - Only "external" non-poco classes are concerned, there should not be a lot of them.
+                // May be another solution would be to, in the Finalization step, to 
+                int i = 0;
+                for( ; i < _specializations.Count; ++i )
                 {
-                    write.Append( "w.WriteStartArray(); w.WriteStringValue( " );
-                    if( HasECMAScriptStandardJsonName )
+                    if( _specializations[i].Type.IsAssignableFrom( sub.Type ) )
                     {
-                        write.Append( "options?.Mode == PocoJsonSerializerMode.ECMAScriptStandard ? " ).AppendSourceString( ECMAScriptStandardJsonName.Name )
-                             .Append( " : " );
+                        break;
                     }
-                    write.AppendSourceString( JsonName ).Append( " );" ).NewLine();
                 }
-                bool hasBlock = false;
-                if( variableCanBeNull && Type.IsValueType )
-                {
-                    if( ByRefWriter )
-                    {
-                        hasBlock = true;
-                        write.OpenBlock()
-                                .Append( "var notNull = " ).Append( variableName ).Append( ".Value;" ).NewLine();
-                        variableName = "notNull";
-                    }
-                    else variableName += ".Value";
-                }
-                CodeWriter( write, variableName );
-                if( hasBlock )
-                {
-                    write.CloseBlock();
-                }
-                if( writeTypeName )
-                {
-                    write.Append( "w.WriteEndArray();" ).NewLine();
-                }
+                _specializations.Insert( i, sub );
             }
-            if( variableCanBeNull ) write.CloseBlock();
         }
 
         /// <inheritdoc />

@@ -1,6 +1,8 @@
 using CK.CodeGen;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace CK.Setup.Json
 {
@@ -12,6 +14,12 @@ namespace CK.Setup.Json
             public bool IsNullable => true;
             public Type Type { get; }
             public string JsonName => TypeInfo.JsonName + '?';
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames.Select( n => n + '?' );
+            // It must be dynamic since the ECMAScriptStandard name is set after the initialization.
+            // The nullable reference is canonical since there cannot be a nullable and a non nullable of the same type
+            // in an union type (the non nullable one has been removed).
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => new( TypeInfo.ECMAScriptStandardJsonName.Name + '?', TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
+
             public bool IsTypeMapping => false;
 
             readonly HandlerForValueType _nonNullHandler;
@@ -25,7 +33,7 @@ namespace CK.Setup.Json
             public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
                 Debug.Assert( TypeInfo.IsFinal );
-                TypeInfo.GenerateWrite( write, variableName, true, withType ?? false );
+                this.DoGenerateWrite( write, variableName, true, withType ?? false );
             }
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )

@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CK.Setup.Json
@@ -12,6 +13,8 @@ namespace CK.Setup.Json
             public bool IsNullable => _mapping.IsNullable;
             public Type Type { get; }
             public string JsonName => _mapping.JsonName;
+            public IEnumerable<string> PreviousJsonNames => _mapping.PreviousJsonNames;
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => _mapping.ECMAScriptStandardJsonName;
             public bool IsTypeMapping => true;
 
             readonly IJsonCodeGenHandler _mapping;

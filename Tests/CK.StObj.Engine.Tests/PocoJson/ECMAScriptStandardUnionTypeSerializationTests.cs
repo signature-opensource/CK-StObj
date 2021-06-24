@@ -20,7 +20,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
     [TestFixture]
     public partial class ECMAScriptStandardUnionTypeSerializationTests
     {
-        public static readonly PocoJsonSerializerOptions Standard = new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard };
+        public static readonly PocoJsonSerializerOptions StandardMode = new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard };
 
         public interface IOther : IPoco { public int Value { get; set; } }
 
@@ -86,9 +86,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
                 var u = ((IPocoFactory)services.GetRequiredService( typeof(IPocoFactory<>).MakeGenericType( t ) )).Create();
 
-                FluentActions.Invoking( () => u.JsonSerialize( true, Standard ) ).Should().Throw<NotSupportedException>();
-                FluentActions.Invoking( () => u.JsonSerialize( false, Standard ) ).Should().Throw<NotSupportedException>();
-                FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", Standard ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => u.JsonSerialize( true, StandardMode ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => u.JsonSerialize( false, StandardMode ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", StandardMode ) ).Should().Throw<NotSupportedException>();
 
                 entries.Should().Contain( e => e.Text.Contains( "De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException.", StringComparison.Ordinal ) );
             }
@@ -126,7 +126,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             u.T2 = 2;
             u.T3 = (byte)3;
 
-            var serialized = u.JsonSerialize( true, Standard );
+            var serialized = u.JsonSerialize( true, StandardMode );
             Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"{""UT"":{""T1"":1,""T2"":2,""T3"":3}}" );
 
             directory.JsonDeserialize( serialized.Span );

@@ -8,7 +8,7 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Describes Poco property.
+    /// Describes a Poco property.
     /// This handles potentially more than one <see cref="DeclaredProperties"/> that must be identical across the different interfaces.
     /// </summary>
     public interface IPocoPropertyInfo : IAnnotationSet
@@ -78,6 +78,14 @@ namespace CK.Setup
         /// assignable to any of the variants and nullability is coherent: as soon as one of the allowed type
         /// is nullable then this <see cref="PropertyNullabilityInfo"/> is nullable and when all of the allowed types
         /// are not nullable then this property type is not nullable.
+        /// <para>
+        /// The set of possible types is "cleaned up":
+        /// <list type="bullet">
+        ///     <item>Only one instance of duplicated types is kept.</item>
+        ///     <item>When both nullable and non nullable of the same type appear, the non nullable one is discarded.</item>
+        ///     <item>When a type and its specializations appear (IsAssginableFrom), only the most general one is kept.</item>
+        /// </list>
+        /// </para>
         /// </summary>
         IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }
 

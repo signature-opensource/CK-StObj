@@ -19,80 +19,14 @@ namespace CK.StObj.Engine.Tests.PocoJson
     [TestFixture]
     public partial class JsonTypeHierarchyTests
     {
-        [ExternalName("CP")]
-        public class Person
-        {
-            public Person( string name )
-            {
-                if( name.Contains( '|', StringComparison.Ordinal ) ) throw new ArgumentException( "Invalid | in name.", nameof( Name ) );
-                Name = name;
-            }
-
-            public string Name { get; }
-
-            public static Person Parse( string s ) => new Person( s );
-
-            public override string ToString() => Name;
-
-        }
-
-        [ExternalName( "CS:CP" )]
-        public class Student : Person
-        {
-            public Student( string name, int grade )
-                : base( name )
-            {
-                Grade = grade;
-            }
-
-            public int Grade { get; set; }
-
-            public new static Student Parse( string s )
-            {
-                var p = s.Split( "|" );
-                return new Student( p[0], int.Parse( p[1] ) );
-            }
-
-            public override string ToString() => $"{Name}|{Grade}";
-        }
-
-        [ExternalName( "CT:CP" )]
-        public class Teacher : Person
-        {
-            public Teacher( string name, string currentLevel )
-                : base( name )
-            {
-                CurrentLevel = currentLevel;
-            }
-
-            public string CurrentLevel { get; set; }
-
-            public new static Teacher Parse( string s )
-            {
-                var p = s.Split( "|" );
-                return new Teacher( p[0], p[1] );
-            }
-
-            public override string ToString() => $"{Name}|{CurrentLevel}";
-        }
-
-        [ExternalName( "TestWithPersonTeacherAndStudent" )]
-        public interface ITest : IPoco
-        {
-            Person? Person { get; set; }
-            Teacher? Teacher { get; set; }
-            Student? Student { get; set; }
-        }
-
-
         [Test]
         public void extending_json_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITest ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( IPocoNoIntern ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
 
-            var root = s.GetService<IPocoFactory<ITest>>().Create();
+            var root = s.GetService<IPocoFactory<IPocoNoIntern>>().Create();
             root.Person = new Person( "Jean" );
             root.Teacher = new Teacher( "Paul", "Aggreg" );
             root.Student = new Student( "Sartre", 3712 );
@@ -127,19 +61,25 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [Test]
         public void registered_specialization_triggers_overridable_behavior()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITestBaseClassOnly ), typeof( ITest ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITestBaseClassOnly ), typeof( IPocoAllOfThem ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
 
             var root = s.GetService<IPocoFactory<ITestBaseClassOnly>>().Create();
             root.Person =  new Student( "Sartre", 3712 );
 
-            // The Parson is not IsFinal: the actual Student is serialized.
+            // The Person is not IsFinal: the actual Student is serialized.
             // Here, the serialization relies on ToString() that is virtual (so everything works fine). 
             root.ToString().Should().Be( "{\"Person\":[\"CS:CP\",\"Sartre|3712\"]}" );
 
             // And the deserialization, based on the type name, calls Student.Parse.
-            JsonTestHelper.Roundtrip( directory, root );
+            var root2 = JsonTestHelper.Roundtrip( directory, root );
+
+            // Testing Intern.
+            root2.Person =  new Intern( "Spi", "Newbie", null );
+            var root3 = JsonTestHelper.Roundtrip( directory, root2 );
+            root3.Should().BeEquivalentTo( root2 );
+            root3.Should().NotBeEquivalentTo( root );
         }
 
 
@@ -151,7 +91,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public interface ITestWithCollectionsOfFinal : IPoco
         {
             List<Student> Students { get; }
-            List<Teacher?> Teachers { get; }
+            List<Intern?> Interns { get; }
         }
 
         [Test]
@@ -161,7 +101,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( JsonStringParseSupport ),
                                                      typeof( ITestWithCollections ),
                                                      typeof( ITestWithCollectionsOfFinal ),
-                                                     typeof( ITest ) ); ;
+                                                     typeof( IPocoNoIntern ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
 
@@ -170,24 +110,23 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 root.Persons.Add( new Student( "Sartre", 3712 ) );
                 root.Persons.Add( new Teacher( "Camus", "Sisyphe" ) );
                 root.Persons.Add( new Person( "Albert" ) );
+                root.Persons.Add( new Intern( "Spi", "Newbie", 3712 ) );
 
-                root.ToString().Should().Be( "{\"Persons\":[[\"CS:CP\",\"Sartre|3712\"],[\"CT:CP\",\"Camus|Sisyphe\"],[\"CP\",\"Albert\"]]}", "Items MUST HAVE a type." );
+                root.ToString().Should().Be( "{\"Persons\":[[\"CS:CP\",\"Sartre|3712\"],[\"CT:CP\",\"Camus|Sisyphe\"],[\"CP\",\"Albert\"],[\"CI:CT\",\"Spi|Newbie|3712\"]]}", "Items MUST HAVE a type." );
                 JsonTestHelper.Roundtrip( directory, root );
             }
             {
                 var root = s.GetService<IPocoFactory<ITestWithCollectionsOfFinal>>().Create();
                 root.Students.Add( new Student( "Sartre", 3712 ) );
-                root.Teachers.Add( new Teacher( "Camus", "Sisyphe" ) );
-                root.Teachers.Add( null );
-                root.Teachers.Add( new Teacher( "Houphouët", "Boigny" ) );
-                root.Teachers.Add( null );
+                root.Interns.Add( new Intern( "Spi", "Newbie", 3712 ) );
+                root.Interns.Add( null );
+                root.Interns.Add( new Intern( "Houphouët", "Boigny", null ) );
+                root.Interns.Add( null );
 
-                root.ToString().Should().Be( "{\"Students\":[\"Sartre|3712\"],\"Teachers\":[\"Camus|Sisyphe\",null,\"Houphou\\u00EBt|Boigny\",null]}", "Items are NOT typed since their type is final." );
+                root.ToString().Should().Be( "{\"Students\":[\"Sartre|3712\"],\"Interns\":[\"Spi|Newbie|3712\",null,\"Houphou\\u00EBt|Boigny|null\",null]}", "Items are NOT typed since their type is final." );
                 JsonTestHelper.Roundtrip( directory, root );
             }
         }
-
-
 
     }
 }

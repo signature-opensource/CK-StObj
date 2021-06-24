@@ -54,7 +54,30 @@ namespace CK.StObj.Engine.Tests.PocoJson
             o3.Hop.Should().BeNull();
         }
 
+        [ExternalName("WithHierarchies")]
+        public interface ITupleWithHierachies : IPoco
+        {
+            (int, Person, Teacher, Student) Hop { get; set; }
+        }
 
 
+        [Test]
+        public void tuple_with_external_types()
+        {
+            // We use IPocoAllOfThem to make sure that Intern is allowed.
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( IPocoAllOfThem ), typeof( ITupleWithHierachies ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
+            var o = s.GetRequiredService<IPocoFactory<ITupleWithHierachies>>().Create();
+            o.Hop = (3712, new Intern( "I", "i", null ), new Teacher( "T", "level" ), new Student( "S", 3 ));
+
+            string? serialized = null;
+            var o2 = JsonTestHelper.Roundtrip( directory, o, text: t => serialized = t );
+            o2.Should().BeEquivalentTo( o );
+
+            // The Student is NOT typed since it is final.
+            serialized.Should().Be( "[\"WithHierarchies\",{\"Hop\":[3712,[\"CI:CT\",\"I|i|null\"],[\"CT:CP\",\"T|level\"],\"S|3\"]}]" );
+        }
     }
 }

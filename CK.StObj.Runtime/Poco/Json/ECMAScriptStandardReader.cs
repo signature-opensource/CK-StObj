@@ -11,9 +11,10 @@ namespace CK.Setup.Json
     /// </summary>
     public abstract class ECMAScriptStandardReader
     {
-        protected ECMAScriptStandardReader( string jsonName )
+        protected ECMAScriptStandardReader( string jsonName, bool mapNullableName = true )
         {
             JsonName = jsonName;
+            MapNullableName = mapNullableName;
         }
 
         /// <summary>
@@ -22,11 +23,16 @@ namespace CK.Setup.Json
         public string JsonName { get; }
 
         /// <summary>
-        /// Generates the code based on a <see cref="System.Text.Json.Utf8JsonReader"/> variable named "r" and
-        /// PocoJsonSerializerOptions variable named "options".
+        /// Gets whether the "<see cref="JsonName"/>?" must be mapped to the reader.
+        /// </summary>
+        public bool MapNullableName { get; }
+
+        /// <summary>
+        /// Generates the code that must return the value based on a <see cref="System.Text.Json.Utf8JsonReader"/>
+        /// variable named "r" and PocoJsonSerializerOptions variable named "options".
         /// </summary>
         /// <param name="read">The target code.</param>
-        public abstract void GenerateRead( ICodeWriter read );
+        public abstract void GenerateReadFunctionBody( ICodeWriter read );
 
     }
 
@@ -36,7 +42,7 @@ namespace CK.Setup.Json
         {
         }
 
-        public override void GenerateRead( ICodeWriter read )
+        public override void GenerateReadFunctionBody( ICodeWriter read )
         {
             read.GeneratedByComment()
                 .Append( @"
@@ -55,11 +61,11 @@ namespace CK.Setup.Json
         {
         }
 
-        public override void GenerateRead( ICodeWriter read )
+        public override void GenerateReadFunctionBody( ICodeWriter read )
         {
             read.GeneratedByComment()
                 .Append( @"
-    if( r.TokenType != System.Text.Json.JsonTokenType.String ) throw new System.Text.Json.JsonException( $""BigInt input type must be string. Token is '{{r.TokenType}}'."" );
+    if( r.TokenType != System.Text.Json.JsonTokenType.String ) throw new System.Text.Json.JsonException( $""BigInt input type must be string. Token is '{r.TokenType}'."" );
     var s = r.GetString();
     r.Read();
     if( Int64.TryParse( s, System.Globalization.NumberStyles.Integer, System.Globalization.NumberFormatInfo.InvariantInfo, out var l ) )

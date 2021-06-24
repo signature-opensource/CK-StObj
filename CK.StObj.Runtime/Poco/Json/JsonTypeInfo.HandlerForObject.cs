@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace CK.Setup.Json
@@ -12,6 +13,9 @@ namespace CK.Setup.Json
             public bool IsNullable => true; // Always true.
             public Type Type { get; }
             public string JsonName => TypeInfo.JsonName;
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames;
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
+
             public bool IsTypeMapping => Type != typeof(object);
 
             public HandlerForObjectMapping( Type t )
