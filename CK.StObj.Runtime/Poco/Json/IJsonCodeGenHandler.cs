@@ -77,7 +77,10 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="write">The code writer.</param>
         /// <param name="variableName">The variable name.</param>
-        /// <param name="withType">True or false to override (<see cref="IsTypeMapping"/> || !<see cref="JsonTypeInfo.IsFinal"/>).</param>
+        /// <param name="withType">
+        /// True or false overrides <see cref="JsonTypeInfo.IsFinal"/>: it is the code write an object of this <see cref="Type"/>
+        /// that is written, regardless of any <see cref="JsonTypeInfo.AllSpecializations"/>.
+        /// </param>
         void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null );
 
         /// <summary>

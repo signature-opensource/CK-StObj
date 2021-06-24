@@ -2,25 +2,18 @@
 
 
 
-## Handling nullability
+## No Nullable Reference Type, only nullable Value Type
 
-### No Nullable Reference Type, only nullable Value Type
+Allowed types are handled by a dictionary of Type to [IJsonCodeGenHandler](IJsonCodeGenHandler.cs).
+The whole JSON de/serialization support is based on .net types, not on [NullableTypeTree](https://github.com/Invenietis/CK-CodeGen/blob/master/CK.CodeGen/NullableType/NullableTypeTree.cs):
+only nullable ValueType needs to be handled since the actual read and write C# code differ. Nullable reference type information (provided by the `NullableTypeTree`) are ignored:
+reference types, from the JSON point of view, are always nullable (references, once read, must be validated against Nullable Reference Types). 
 
-Allowed types are handled by a dictionary of Type to [JsonTypeInfo](JsonTypeInfo.cs). The whole JSON de/serialization support is based on Type, not
-on [NullableTypeTree](https://github.com/Invenietis/CK-CodeGen/blob/master/CK.CodeGen/NullableType/NullableTypeTree.cs): only nullable ValueType
-needs to be handled since the actual read and write C# code differ. Nullable reference type information (provided by the `NullableTypeTree`) are ignored:
-reference types, from the JSON point of view, are always nullable (read Poco must be validated against Nullable Reference Types). 
+A `List<IUserInfo?>` is the same as a `List<IUserInfo>` and the Client side will never see a `IUserInfo?` but always a  `IUserInfo`.
 
-A `List<IUserInfo?>` is the same as a `List<IUserInfo>` and the Client side will never see a `IUserInfo?` but always a  a `IUserInfo`. On the contrary,
-nullable value types are seen by the Client since reading a `List<int>` or a `List<int?>` cannot be handled by the same code.
+On the contrary, nullable value types are seen by the Client since reading a `List<int>` or a `List<int?>` cannot be handled by the same code.
 This distinction applies to the "ECMAScriptStandard" mode: a Client will receive `Number` and `Number?` and must send either a `BigInt` or a `BigInt?' type
 when ambiguities exist.
-
-## Nullability contravariance
-
-A `List<int?>` is compatible with a `List<int>`. More generally, any `T?` can be read as a `T`. However nullability cannot be erased: since a `List<int?>` can
-coexist with a `List<int>`, nullability must be accounted. Using the non-nullable type must be used as a fallback if no nullable alternative exist.
-
 
 ## When Type Information is required
 
@@ -29,8 +22,31 @@ Everything is done to pay the cost of this overload only when necessary: when an
 
 ## API for downstream libraries
 
-Other libraries that interact with JSON need to have access to the JSON types.
+Other libraries that interact with JSON need to have access to the JSON types, names and the choices that have been made.
+Relevant informations are available on the [JsonSerializationCodeGen](JsonSerializationCodeGen.cs) service that is exposed
+as a service to other CKSetup participants. This service enables new types to be registered with their
+[CodeReader and CodeWriter](CodeReaderWriterDelegates.cs) and finds or tries to create a [IJsonCodeGenHandler](IJsonCodeGenHandler.cs)
+for a type.
 
+Moreover, Json information is available on each [IPocoRootInfo](../IPocoRootInfo.cs) as an annotation.
+The [IPocoJsonInfo](IPocoJsonInfo.cs) and its [IPocoJsonPropertyInfo](IPocoJsonPropertyInfo.cs) properties can be
+easily retrieved:
+ 
+````csharp
+void DoSometing( IPocoRootInfo poco )
+{
+    var jsonInfo = poco.Annotation<IPocoJsonInfo>();
+    if( jsonInfo == null )
+    {
+        // An error occurred.
+        // The setup has not yet failed (otherwise we won't be here) but it will.
+    }
+    else
+    {
+        // Uses the Json information to generate TypeScript code for instance...
+    }
+}
+```` 
 
 
 ### About number handling

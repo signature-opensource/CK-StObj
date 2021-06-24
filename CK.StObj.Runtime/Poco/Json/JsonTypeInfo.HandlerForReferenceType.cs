@@ -25,7 +25,7 @@ namespace CK.Setup.Json
 
             public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
-                if( !TypeInfo.IsFinal )
+                if( withType == null && !TypeInfo.IsFinal )
                 {
                     write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ", options );" ).NewLine();
                 }

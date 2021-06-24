@@ -39,7 +39,7 @@ namespace CK.Setup.Json
         // come first. Then come the "external" reference types ordered from "less IsAssignableFrom" (specialization)
         // to "most IsAssignableFrom" (generalization) so that switch case entries are correctly ordered.
         // This sort by insertion is done in the AllowTypeInfo method and this is also where
-        // JsonTypeInfo.Specializations are added.
+        // the TypeSpecOrder is computed and JsonTypeInfo.Specializations are added.
         readonly List<JsonTypeInfo> _typeInfos;
         // This is the index in the _typeInfos list from which "external" reference types must be sorted.
         // Before this mark, there are the Value Types and the Untyped (object): InitializeMap
@@ -136,6 +136,7 @@ namespace CK.Setup.Json
         public JsonTypeInfo AllowTypeInfo( JsonTypeInfo i )
         {
             if( _finalizedCall.HasValue ) throw new InvalidOperationException( nameof( IsFinalized ) );
+            Debug.Assert( i.TypeSpecOrder == 0.0f );
             // For Value type, we register the Nullable<T> type.
             if( i.Type.IsValueType )
             {
@@ -156,34 +157,47 @@ namespace CK.Setup.Json
                 Register( _map, _monitor, i.NullHandler );
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {
+                    // Regular registration has not started yet (InitializeMap is running).
                     _typeInfos.Add( i );
                 }
                 else
                 {
                     if( i.Type.IsSealed || typeof( IPoco ).IsAssignableFrom( i.Type ) )
                     {
+                        // Poco and sealed types are like value types: no specialization can exist.
                         _typeInfos.Insert( _typeInfoRefTypeStartIdx++, i );
                     }
                     else
                     {
                         // Finds the first type that can be assigned to the new one:
                         // the new one must appear before it.
-                        // At the same time, register the type into the specialization lists.
+                        // At the same time, update the TypeSpecOrder and update the specialization lists.
                         int idx;
                         for( idx = _typeInfoRefTypeStartIdx; idx < _typeInfos.Count; ++idx )
                         {
                             var atIdx = _typeInfos[idx];
+                            Debug.Assert( atIdx.TypeSpecOrder > 0.0f, "Its TypeSpecOrder has been updated." );
                             if( atIdx.Type.IsAssignableFrom( i.Type ) )
                             {
+                                // We found the position in the list: we can
+                                // update the TypeSpecOrder property.
+                                i.TypeSpecOrder = (atIdx.TypeSpecOrder + _typeInfos[idx - 1].TypeSpecOrder) / 2;
                                 atIdx.AddSpecialization( i );
                                 for( int idx2 = idx+1; idx2 < _typeInfos.Count; ++idx2 )
                                 {
+                                    // Unfortunately we must continue the work on the rest of the
+                                    // list to be sure to capture all the specializations.
+                                    // This seems inefficient, but I failed to find a better way without
+                                    // yet another type tree model and the fact is that :
+                                    //  - Since the JsonTypes are purely opt-in, crawling the base types is not an option
+                                    //    (we don't know if they need to be registered: this would imply to manage a kind of waiting list).
+                                    //  - Only "external" non-poco classes are concerned, there should not be a lot of them.
                                     atIdx = _typeInfos[idx2];
                                     if( atIdx.Type.IsAssignableFrom( i.Type ) )
                                     {
                                         atIdx.AddSpecialization( i );
                                     }
-                                    if( i.Type.IsAssignableFrom( atIdx.Type ) )
+                                    else if( i.Type.IsAssignableFrom( atIdx.Type ) )
                                     {
                                         i.AddSpecialization( atIdx );
                                     }
@@ -194,6 +208,13 @@ namespace CK.Setup.Json
                             {
                                 i.AddSpecialization( atIdx );
                             }
+                        }
+                        // If the TypeSpecOrder has not been updated (we are at the end of the list),
+                        // set it to 1.0 after the last one.
+                        Debug.Assert( (i.TypeSpecOrder == 0) == (idx == _typeInfos.Count) );
+                        if( i.TypeSpecOrder == 0 )
+                        {
+                            i.TypeSpecOrder = _typeInfos[^1].TypeSpecOrder + 1.0f;
                         }
                         _typeInfos.Insert( idx, i );
                     }
@@ -424,6 +445,25 @@ namespace CK.Setup.Json
                 return true;
             }
             return false;
+        }
+
+        struct C : IComparable<JsonTypeInfo>
+        {
+            readonly JsonTypeInfo _t;
+            public C( JsonTypeInfo t ) => _t = t;
+            public int CompareTo( [AllowNull] JsonTypeInfo other ) => _t.TypeSpecOrder.CompareTo( other!.TypeSpecOrder );
+        }
+
+        internal static void InsertAtTypeSpecOrder( List<JsonTypeInfo> list, JsonTypeInfo i )
+        {
+            // Waiting for net5.
+            // https://source.dot.net/#System.Private.CoreLib/CollectionsMarshal.cs
+#if NET5
+            Update!
+#endif
+            int idx = list.ToArray().AsSpan().BinarySearch( new C( i ) );
+            Debug.Assert( idx < 0, "The item must not exist already in the list." );
+            list.Insert( ~idx, i );
         }
 
     }

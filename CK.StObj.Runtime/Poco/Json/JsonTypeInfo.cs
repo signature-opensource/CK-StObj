@@ -3,6 +3,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 
@@ -54,6 +55,23 @@ namespace CK.Setup.Json
         /// </summary>
         public bool ByRefWriter { get; private set; }
 
+        /// <summary>
+        /// Gets a value that corresponds to the sort order of all the registered <see cref="JsonTypeInfo"/>.
+        /// <para>
+        /// The JsonTypeInfo list is ordered. UntypedObject, value types, sealed classes and Poco
+        /// come first (and have a TypeSpecOrder = 0.0). Then come the "external" reference types ordered
+        /// from "less IsAssignableFrom" (specialization) to "most IsAssignableFrom" (generalization) so that
+        /// switch case entries on the <see cref="JsonTypeInfo.Type"/> are correctly ordered.
+        /// This sort by insertion is done in the <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/> method
+        /// and this is also where this TypeSpecOrder is computed and <see cref="JsonTypeInfo.Specializations"/> are added.
+        /// </para>
+        /// <para>
+        /// This is an optimization: the IsAssignableFrom lookup is done once and any list of types (like the <see cref="JsonTypeInfo.Specializations"/>)
+        /// can then be ordered by this value so that write switch can be correctly generated.
+        /// </para>
+        /// </summary>
+        public float TypeSpecOrder { get; internal set; }
+
         internal string JsonName { get; }
 
         internal IReadOnlyList<string> PreviousJsonNames { get; }
@@ -78,8 +96,8 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
-        /// This is initially true but as soon as a type that can be assigned
-        /// to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
+        /// This is initially true (and always true for value types and Poco) but as soon as a reference type that
+        /// can be assigned to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
         /// this becomes false.
         /// </summary>
         public bool IsFinal => _specializations == null;
@@ -217,26 +235,11 @@ namespace CK.Setup.Json
         {
             Debug.Assert( !Type.IsValueType && !Type.IsSealed && !Type.IsInterface
                           && !sub.Type.IsInterface && !sub.Type.IsValueType && !typeof( IPoco ).IsAssignableFrom( sub.Type ) );
+            Debug.Assert( sub.TypeSpecOrder > 0.0f, "The magic is that when this is called, the TypeSpecOrder of the specialization has necessarily been called." );
             if( _specializations == null ) _specializations = new List<JsonTypeInfo>() { sub };
             else
             {
-                // Repeating the same sort by insertions here that has been done
-                // on the global list.
-                // This seems inefficient, but I failed to find a better way without
-                // yet another type tree model and the fact is that :
-                //  - Since the JsonTypes are purely opt-in, crawling the base types is not an option
-                //    (we don't know if they need to be registered: this would imply to manage a kind of waiting list).
-                //  - Only "external" non-poco classes are concerned, there should not be a lot of them.
-                // May be another solution would be to, in the Finalization step, to 
-                int i = 0;
-                for( ; i < _specializations.Count; ++i )
-                {
-                    if( _specializations[i].Type.IsAssignableFrom( sub.Type ) )
-                    {
-                        break;
-                    }
-                }
-                _specializations.Insert( i, sub );
+                JsonSerializationCodeGen.InsertAtTypeSpecOrder( _specializations, sub );
             }
         }
 
