@@ -42,7 +42,15 @@ namespace CK.Setup.Json
                           {
                               read.Append( variableName ).Append( " = new " ).AppendCSharpName( info.Type ).Append( "();" ).NewLine();
                           }
-                          read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, " ).Append( variableName ).Append( ", options );" );
+                          // We cast the variable into its type to handle the case where the variable is an 'object' (or
+                          // any other base type).
+                          read.Append( "PocoDirectory_CK." )
+                              .Append( fRead.Definition.MethodName.Name )
+                              .Append( "( ref r, (" )
+                              .AppendCSharpName( info.Type )
+                              .Append( ")" )
+                              .Append( variableName )
+                              .Append( ", options );" );
                       } );
             AllowTypeInfo( info );
             // The interface maps to the collection type.

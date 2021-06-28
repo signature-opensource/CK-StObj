@@ -7,22 +7,24 @@ namespace CK.Setup.Json
 {
     public partial class JsonTypeInfo
     {
-        internal class HandlerForUnambiguousMapping : IJsonCodeGenHandler
+        internal class HandlerForNonNullableTypeMapping : IJsonCodeGenHandler
         {
             public JsonTypeInfo TypeInfo => _mapping.TypeInfo;
             public bool IsNullable => _mapping.IsNullable;
-            public Type Type { get; }
+            public Type Type => _nullable.Type;
             public string JsonName => _mapping.JsonName;
             public IEnumerable<string> PreviousJsonNames => _mapping.PreviousJsonNames;
             public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => _mapping.ECMAScriptStandardJsonName;
-            public bool IsTypeMapping => true;
+            public IJsonCodeGenHandler? TypeMapping => _mapping;
 
             readonly IJsonCodeGenHandler _mapping;
+            readonly HandlerForTypeMapping _nullable;
 
-            public HandlerForUnambiguousMapping( IJsonCodeGenHandler mapping, Type t )
+            public HandlerForNonNullableTypeMapping( HandlerForTypeMapping nullable )
             {
-                _mapping = mapping;
-                Type = t;
+                Debug.Assert( nullable.TypeMapping != null && nullable.IsNullable );
+                _nullable = nullable;
+                _mapping = _nullable.TypeMapping.ToNonNullHandler();
             }
 
             public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null ) => _mapping.GenerateWrite( write, variableName, withType );
@@ -31,7 +33,7 @@ namespace CK.Setup.Json
 
             public IJsonCodeGenHandler ToNullHandler() => this;
 
-            public IJsonCodeGenHandler ToNonNullHandler() => this;
+            public IJsonCodeGenHandler ToNonNullHandler() => _nullable;
         }
     }
 }

@@ -412,7 +412,9 @@ namespace CK.Setup.Json
         }
 
         /// <summary>
-        /// Adds a type alias mapping to a handler (typically to a concrete type).
+        /// Adds a type alias mapping to an already existing concrete reference type.
+        /// No <see cref="JsonTypeInfo"/> is created for them, just a mapping to a couple (nullable and not nullable)
+        /// of <see cref="IJsonCodeGenHandler"/> with a non null <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
         /// </summary>
         /// <param name="type">The type to map.</param>
         /// <param name="target">The mapped type.</param>
@@ -421,19 +423,19 @@ namespace CK.Setup.Json
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             if( !type.IsClass && !type.IsInterface ) throw new ArgumentException( "Must be a class or an interface.", nameof( type ) );
             if( target == null ) throw new ArgumentNullException( nameof( target ) );
-            _map.Add( type, new JsonTypeInfo.HandlerForUnambiguousMapping( target.NullHandler, type ) );
+            _map.Add( type, new JsonTypeInfo.HandlerForTypeMapping( target.NullHandler, type ) );
         }
 
         /// <summary>
         /// Allows an interface with potentially multiple implementations: it is handled as an
-        /// 'object'. Type information will be written (<see cref="IJsonCodeGenHandler.IsTypeMapping"/> is true ).
+        /// 'object'. Type information will be written.
         /// </summary>
         /// <param name="type">The untyped, abstract, type to register.</param>
         public void AllowInterfaceToUntyped( Type type )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             if( !type.IsInterface ) throw new ArgumentException( "Must be a an interface.", nameof( type ) );
-            _map.Add( type, new JsonTypeInfo.HandlerForObjectMapping( type ) );
+            _map.Add( type, new JsonTypeInfo.HandlerForReferenceType( JsonTypeInfo.ObjectType ) );
         }
 
         static bool LiftNullableValueType( ref Type t )
@@ -447,7 +449,7 @@ namespace CK.Setup.Json
             return false;
         }
 
-        struct C : IComparable<JsonTypeInfo>
+        readonly struct C : IComparable<JsonTypeInfo>
         {
             readonly JsonTypeInfo _t;
             public C( JsonTypeInfo t ) => _t = t;
@@ -464,6 +466,38 @@ namespace CK.Setup.Json
             int idx = list.ToArray().AsSpan().BinarySearch( new C( i ) );
             Debug.Assert( idx < 0, "The item must not exist already in the list." );
             list.Insert( ~idx, i );
+        }
+
+        /// <summary>
+        /// Generates the case pattern match on the types that must be written.
+        /// The handlers must be non empty must be sorted according to the <see cref="JsonTypeInfo.TypeSpecOrder"/> and
+        /// no handler with a <see cref="IJsonCodeGenHandler.TypeMapping"/> must appear otherwise an <see cref="ArgumentException"/>
+        /// is thrown.
+        /// </summary>
+        /// <param name="write">The target write part.</param>
+        /// <param name="handlers">A list of sorted handlers.</param>
+        public void GenerateWriteSwitchCases( ICodeWriter write, IEnumerable<IJsonCodeGenHandler> handlers )
+        {
+            if( write == null ) throw new ArgumentNullException( nameof(write) );
+            if( handlers == null ) throw new ArgumentNullException( nameof(handlers) );
+            float order = 0.0f;
+            foreach( var h in handlers )
+            {
+                if( h.TypeMapping != null )
+                {
+                    throw new ArgumentException( $"Handler for {h.Type.ToCSharpName()} is a mapping (to {h.TypeInfo.Type.ToCSharpName()}). Only actual handlers must be written.", nameof( handlers ) );
+                }
+                if( h.TypeInfo.TypeSpecOrder <= order && order != 0.0f )
+                {
+                    throw new ArgumentException( $"Handler for {h.Type.ToCSharpName()} is not correctly ordered. Handlers: {handlers.Select( h => $"{h.Type.ToCSharpName()} ({h.TypeInfo.TypeSpecOrder})" ).Concatenate()}", nameof( handlers ) );
+                }
+                order = h.TypeInfo.TypeSpecOrder;
+                // Always consider the non null hander: a null value has already been written.
+                var hN = h.ToNonNullHandler();
+                write.Append( "case " ).AppendCSharpName( hN.Type, useValueTupleParentheses: false ).Append( " v: " );
+                hN.GenerateWrite( write, "v", true );
+                write.NewLine().Append( "break;" ).NewLine();
+            }
         }
 
     }

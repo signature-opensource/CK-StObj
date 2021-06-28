@@ -20,7 +20,7 @@ namespace CK.Setup.Json
             // in an union type (the non nullable one has been removed).
             public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => new( TypeInfo.ECMAScriptStandardJsonName.Name + '?', TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
 
-            public bool IsTypeMapping => false;
+            public IJsonCodeGenHandler? TypeMapping => null;
 
             readonly HandlerForValueType _nonNullHandler;
 

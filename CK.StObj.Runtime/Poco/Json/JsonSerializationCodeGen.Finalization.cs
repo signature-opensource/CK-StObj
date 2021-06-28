@@ -125,7 +125,19 @@ namespace CK.Setup.Json
                         {
                             throw new System.Text.Json.JsonException( $""Unregistered type name '{n}'."" );
                         }
-                        o = reader( ref r, options );
+                        if( r.TokenType == System.Text.Json.JsonTokenType.Null )
+                        {
+                            if( n[^1] == '?' )
+                            {
+                                o = null;
+                                r.Read();
+                            }
+                            else throw new System.Text.Json.JsonException( $""Type '{n}' is not nullable."" );
+                        }
+                        else
+                        {
+                            o = reader( ref r, options );
+                        }
                         if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( ""Expected end of 2-cells array."" );
                         break;
                     }
@@ -140,7 +152,7 @@ namespace CK.Setup.Json
                                      .GeneratedByComment();
             foreach( var t in _typeInfos )
             {
-                if( t.IsUntypedType ) continue;
+                if( t == JsonTypeInfo.ObjectType ) continue;
                 ctor.OpenBlock()
                     .Append( "static object d( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
                     .AppendCSharpName( t.Type ).Append( " o;" ).NewLine();
@@ -187,11 +199,10 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, P
 }" );
             foreach( var t in types )
             {
-                // Skips direct types.
-                if( t.IsUntypedType ) continue;
+                if( t == JsonTypeInfo.ObjectType ) continue;
                 mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
-                Debug.Assert( !t.NonNullHandler.IsTypeMapping, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
-                t.NonNullHandler.GenerateWrite( mappings, "v", true );
+                Debug.Assert( t.NonNullHandler.TypeMapping == null, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
+                t.NonNullHandler.DoGenerateWrite( mappings, "v", false, true );
                 mappings.NewLine().Append( "break;" ).NewLine();
             }
         }

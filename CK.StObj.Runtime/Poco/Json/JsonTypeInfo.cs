@@ -18,7 +18,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Singleton for untyped "object".
         /// </summary>
-        public static readonly JsonTypeInfo Untyped = new JsonTypeInfo();
+        public static readonly JsonTypeInfo ObjectType = new JsonTypeInfo();
 
         AnnotationSetImpl _annotations;
         List<JsonTypeInfo>? _specializations;
@@ -84,11 +84,6 @@ namespace CK.Setup.Json
         public StartTokenType StartTokenType { get; }
 
         /// <summary>
-        /// Gets whether this is the untyped "object".
-        /// </summary>
-        public bool IsUntypedType => Type == typeof( object );
-
-        /// <summary>
         /// Intrinsic types don't need any type marker: Boolean (JSON True and False tokens), string (JSON String token)
         /// and double (JSON Number token).
         /// </summary>
@@ -127,7 +122,8 @@ namespace CK.Setup.Json
             }
             else
             {
-                NonNullHandler = new HandlerForReferenceType( this );
+                var n = new HandlerForReferenceType( this );
+                NonNullHandler = n.ToNonNullHandler();
             }
         }
 
@@ -137,12 +133,13 @@ namespace CK.Setup.Json
             // CodeReader and CodeWriter are unused and let to null.
             Type = typeof( object );
             JsonName = "Object";
-            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "", true );
+            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "Object", true );
             PreviousJsonNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
             StartTokenType = StartTokenType.Array;
-            NonNullHandler = new HandlerForObjectMapping( Type );
+            var n = new HandlerForReferenceType( this );
+            NonNullHandler = n.ToNonNullHandler();
         }
 
         /// <summary>
@@ -207,7 +204,8 @@ namespace CK.Setup.Json
 
 
         /// <summary>
-        /// Calls <see cref="CodeReader"/> inside code that handles reading null.
+        /// Calls <see cref="CodeReader"/> inside code that handles reading null if <paramref name="isNullableVariable"/> is true
+        /// (otherwise simply calls CodeReader).
         /// </summary>
         /// <param name="read">The code target.</param>
         /// <param name="variableName">The variable name.</param>
@@ -216,7 +214,6 @@ namespace CK.Setup.Json
         public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullableVariable )
         {
             if( CodeReader == null ) throw new InvalidOperationException( "CodeReader has not been set." );
-            // We currently ignore null input when the value is not nullable.
             if( isNullableVariable )
             {
                 read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )

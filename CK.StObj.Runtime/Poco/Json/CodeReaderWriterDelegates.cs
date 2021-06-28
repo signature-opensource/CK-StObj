@@ -24,7 +24,7 @@ namespace CK.Setup.Json
     /// </summary>
     /// <param name="read">The code writer to use.</param>
     /// <param name="variableName">The variable name.</param>
-    /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible.</param>
+    /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible. Used by collections and Poco fields.</param>
     /// <param name="isNullable">True if the variable can be set to null, false if it cannot be set to null.</param>
     public delegate void CodeReader( ICodeWriter read, string variableName, bool assignOnly, bool isNullable );
 

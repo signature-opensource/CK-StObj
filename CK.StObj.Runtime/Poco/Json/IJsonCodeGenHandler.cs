@@ -57,15 +57,10 @@ namespace CK.Setup.Json
         JsonTypeInfo TypeInfo { get; }
 
         /// <summary>
-        /// Gets whether this <see cref="Type"/> is not the same as the actual <see cref="TypeInfo.Type"/>
-        /// and that it is not unambiguously mapped to it: the mapped type name must be written in order
-        /// to resolve it.
-        /// <para>
-        /// Note that the type name is also written if <see cref="JsonTypeInfo.IsFinal"/> is false (since a base class
-        /// may reference a specialization).
-        /// </para>
+        /// Gets a handler that unambiguously handles this <see cref="Type"/>: this Type is not the same as the
+        /// actual <see cref="TypeInfo.Type"/>.
         /// </summary>
-        bool IsTypeMapping { get; }
+        IJsonCodeGenHandler? TypeMapping { get; }
 
         /// <summary>
         /// Gets whether this <see cref="Type"/> must be considered as a nullable one.
@@ -78,17 +73,23 @@ namespace CK.Setup.Json
         /// <param name="write">The code writer.</param>
         /// <param name="variableName">The variable name.</param>
         /// <param name="withType">
-        /// True or false overrides <see cref="JsonTypeInfo.IsFinal"/>: it is the code write an object of this <see cref="Type"/>
-        /// that is written, regardless of any <see cref="JsonTypeInfo.AllSpecializations"/>.
+        /// True or false ignores <see cref="JsonTypeInfo.IsFinal"/>. By default, when IsFinal is false (applies to
+        /// reference types only) a call to the generic Write( object ) is generated.
         /// </param>
         void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null );
 
         /// <summary>
         /// Generates the code required to read a value into a <paramref name="variableName"/>.
+        /// This calls <see cref="JsonTypeInfo.GenerateRead"/> (with <see cref="IsNullable"/>) or, if
+        /// <see cref="JsonTypeInfo.IsFinal"/> is false (applies to reference types only) a call
+        /// to the generic ReadObject method is generated.
         /// </summary>
         /// <param name="read">The code reader.</param>
         /// <param name="variableName">The variable name.</param>
-        /// <param name="assignOnly">True to force the assignment of the variable, not trying to reuse it (typically because it is known to be uninitialized).</param>
+        /// <param name="assignOnly">
+        /// True to force the assignment of the variable, not trying to reuse it (typically because it is known to be uninitialized).
+        /// This is used for collections (that can be cleared) and Poco (that may be already instantiated).
+        /// </param>
         void GenerateRead( ICodeWriter read, string variableName, bool assignOnly );
 
         /// <summary>
@@ -112,17 +113,33 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="write">The code target.</param>
         /// <param name="variableName">The variable name.</param>
-        /// <param name="variableCanBeNull">Whether null value of the <paramref name="variableName"/> must be handled.</param>
+        /// <param name="handleNull">
+        /// When true, handles the null value of the <paramref name="variableName"/>, either:
+        /// <list type="bullet">
+        /// <item>When <see cref="IJsonCodeGenHandler.IsNullable"/> is true: by writing null if the variable is null.</item>
+        /// <item>When <see cref="IJsonCodeGenHandler.IsNullable"/> is false: by throwing an InvalidOperationException if the variable is null.</item>
+        /// </list>.
+        /// When false, no check is emitted, the variable is NOT null by design (its potential nullability has already been handled).
+        /// </param>
         /// <param name="writeTypeName">True if type discriminator must be written.</param>
-        public static void DoGenerateWrite( this IJsonCodeGenHandler @this, ICodeWriter write, string variableName, bool variableCanBeNull, bool writeTypeName )
+        public static void DoGenerateWrite( this IJsonCodeGenHandler @this, ICodeWriter write, string variableName, bool handleNull, bool writeTypeName )
         {
             if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
             if( @this.TypeInfo.CodeWriter == null ) throw new InvalidOperationException( "CodeWriter has not been set." );
-            if( variableCanBeNull )
+            bool variableCanBeNull = false;
+            if( handleNull )
             {
-                write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
-                        .Append( "else " )
-                        .OpenBlock();
+                if( @this.IsNullable )
+                {
+                    write.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
+                            .Append( "else " )
+                            .OpenBlock();
+                    variableCanBeNull = true;
+                }
+                else
+                {
+                    write.Append( "if( " ).Append( variableName ).Append( " == null ) throw new InvalidOperationException(\"A null value appear where it should not. Writing JSON is impossible.\");" ).NewLine();
+                }
             }
             writeTypeName &= !@this.TypeInfo.IsIntrinsic;
             if( writeTypeName )

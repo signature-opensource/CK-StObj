@@ -18,7 +18,7 @@ namespace CK.Setup.Json
         {
             Debug.Assert( _typeInfoRefTypeStartIdx == 0 );
             // Direct types.
-            AllowTypeInfo( JsonTypeInfo.Untyped ).Configure(
+            AllowTypeInfo( JsonTypeInfo.ObjectType ).Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
                     write.Append( "PocoDirectory_CK.Write( " ).Append( variableName ).Append( ", options );" );

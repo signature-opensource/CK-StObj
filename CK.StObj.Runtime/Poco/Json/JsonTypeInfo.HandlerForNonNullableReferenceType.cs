@@ -2,33 +2,32 @@ using CK.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 
 namespace CK.Setup.Json
 {
     public partial class JsonTypeInfo
     {
-        internal class HandlerForReferenceType : IJsonCodeGenHandler
+        internal class HandlerForNonNullableReferenceType : IJsonCodeGenHandler
         {
-            public JsonTypeInfo TypeInfo { get; }
-            public bool IsNullable => true; // Always true.
+            public JsonTypeInfo TypeInfo => _nullHandler.TypeInfo;
+            public bool IsNullable => false; // Always false.
             public Type Type => TypeInfo.Type;
-            public string JsonName => TypeInfo.JsonName + '?';
-            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames.Select( n => n + '?' );
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => new( TypeInfo.ECMAScriptStandardJsonName.Name + '?', TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
+            public string JsonName => TypeInfo.JsonName;
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames;
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
 
             public IJsonCodeGenHandler? TypeMapping => null;
-            readonly HandlerForNonNullableReferenceType _nonNullable;
 
-            public HandlerForReferenceType( JsonTypeInfo info )
+            readonly HandlerForReferenceType _nullHandler;
+
+            public HandlerForNonNullableReferenceType( HandlerForReferenceType nullHandler )
             {
-                TypeInfo = info;
-                _nonNullable = new HandlerForNonNullableReferenceType( this );
+                _nullHandler = nullHandler;
             }
 
             public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
-                if( TypeInfo == ObjectType || (withType == null && !TypeInfo.IsFinal) )
+                if( TypeInfo == JsonTypeInfo.ObjectType || (withType == null && !TypeInfo.IsFinal) )
                 {
                     write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ", options );" ).NewLine();
                 }
@@ -40,7 +39,8 @@ namespace CK.Setup.Json
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
-                if( TypeInfo == JsonTypeInfo.ObjectType || !TypeInfo.IsFinal )
+                bool isObject = TypeInfo == JsonTypeInfo.ObjectType;
+                if( isObject || !TypeInfo.IsFinal )
                 {
                     read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
                 }
@@ -50,9 +50,9 @@ namespace CK.Setup.Json
                 }
             }
 
-            public IJsonCodeGenHandler ToNullHandler() => this;
+            public IJsonCodeGenHandler ToNullHandler() => _nullHandler;
 
-            public IJsonCodeGenHandler ToNonNullHandler() => _nonNullable;
+            public IJsonCodeGenHandler ToNonNullHandler() => this;
         }
     }
 }

@@ -266,7 +266,7 @@ namespace CK.Setup.Json
                 handlers.Add( h );
                 if( isPocoECMAScriptStandardCompliant && h.HasECMAScriptStandardJsonName )
                 {
-                    var n = h.ECMAScriptStandardJsonName;
+                    var n = h.ToNonNullHandler().ECMAScriptStandardJsonName;
                     if( checkDuplicatedStandardName.TryGetValue( n.Name, out var exists ) )
                     {
                         exists.Add( h );
@@ -310,39 +310,77 @@ namespace CK.Setup.Json
             var info = new PocoJsonPropertyInfo( p, handlers, isECMAScriptStandardCompliant ? ecmaStandardReadhandlers : null );
             _finalReadWrite.Add( () =>
             {
-                var fieldName = "_v" + p.Index;
-                // For write, instead of generating a switch pattern on the actual object's type with a lot of duplicated write
-                // blocks (all the numerics that will eventually call w.WriteNumber for instance), we use the write of the
-                // main handler that should be the untyped WriteObject (unless this is a stupid union type with a single type
-                // that is the same as the property's type).
-                write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
-                mainHandler.GenerateWrite( write, fieldName );
-                write.NewLine();
+                var fieldName = "_v" + info.PropertyInfo.Index;
+                write.Append( "w.WritePropertyName( " ).AppendSourceString( info.PropertyInfo.PropertyName ).Append( " );" ).NewLine();
+                if( info.IsJsonUnionType )
+                {
+                    // For write, instead of generating a switch pattern on the actual object's type with a lot of duplicated write
+                    // blocks (all the numerics that will eventually call w.WriteNumber for instance), we use the write of the
+                    // main handler that should be the untyped WriteObject (unless this is a stupid union type with a single type
+                    // that is the same as the property's type).
+                    mainHandler.GenerateWrite( write, fieldName );
+                }
+                else
+                {
+                    info.AllHandlers[0].GenerateWrite( write, fieldName );
+                }
 
                 read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
                     .OpenBlock();
-                if( p.IsNullable )
-                {
-                    // We currently ignore null input when the value is not nullable.
-                    read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null ) " )
-                        .OpenBlock()
-                        .Append( fieldName ).Append( " = null;" )
-                        .Append( "r.Read();" )
-                        .CloseBlock()
-                        .Append( "else" )
-                        .OpenBlock();
-                }
-                //read.Append( "switch( r.TokenType )" )
-                //    .OpenBlock();
-                //foreach( var h in handlers )
-                //{
 
-                //}
-                //read.CloseBlock();
-                mainHandler.GenerateRead( read, fieldName, false );
-                if( p.IsNullable )
+                if( info.IsJsonUnionType )
                 {
-                    read.CloseBlock();
+                    read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" );
+                    if( p.IsNullable )
+                    {
+                        read.OpenBlock()
+                            .Append( fieldName ).Append( " = null;" ).NewLine()
+                            .Append( "r.Read();" )
+                            .CloseBlock()
+                            .Append( "else" )
+                            .OpenBlock();
+                    }
+                    else
+                    {
+                        read.Append( " throw new System.Text.Json.JsonException(\"" ).Append( p.ToString()! ).Append( " cannot be null.\");" ).NewLine();
+                    }
+
+                    if( info.IsJsonUnionType )
+                    {
+                        read.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) throw new System.Text.Json.JsonException( \"Expecting Json Type array.\" );" ).NewLine()
+                            .Append( "r.Read();" ).NewLine()
+                            .Append( "string name = r.GetString();" ).NewLine()
+                            .Append( "r.Read();" ).NewLine()
+                            .Append( "switch( name )" )
+                            .OpenBlock();
+                        foreach( var h in info.AllHandlers )
+                        {
+                            read.Append( "case " ).AppendSourceString( h.JsonName ).Append( ":" ).NewLine();
+                            if( h.HasECMAScriptStandardJsonName && info.ECMAStandardHandlers.Contains( h ) )
+                            {
+                                read.Append( "case " ).AppendSourceString( h.ECMAScriptStandardJsonName.Name ).Append( ":" ).NewLine();
+                            }
+                            h.GenerateRead( read, fieldName, true );
+                            read.Append( "break;" ).NewLine();
+                        }
+                        read.Append( "default: throw new System.Text.Json.JsonException( $\"Unknown type name '{name}'.\" );" )
+                            .CloseBlock()
+                            .Append( "if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( \"Expecting end of Json Type array.\" );" ).NewLine()
+                            .Append( "r.Read();" );
+                   }
+                    else
+                    {
+                        info.AllHandlers[0].GenerateRead( read, fieldName, false );
+                    }
+                    if( p.IsNullable )
+                    {
+                        read.CloseBlock();
+                    }
+
+                }
+                else
+                {
+                    info.AllHandlers[0].GenerateRead( read, fieldName, false );
                 }
                 read.Append( "break; " )
                     .CloseBlock();

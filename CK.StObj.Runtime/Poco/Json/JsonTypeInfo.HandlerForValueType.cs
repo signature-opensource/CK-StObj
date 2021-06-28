@@ -15,7 +15,7 @@ namespace CK.Setup.Json
             public string JsonName => TypeInfo.JsonName;
             public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames;
             public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
-            public bool IsTypeMapping => false;
+            public IJsonCodeGenHandler? TypeMapping => null;
 
             readonly HandlerForNullableValueType _nullHandler;
 

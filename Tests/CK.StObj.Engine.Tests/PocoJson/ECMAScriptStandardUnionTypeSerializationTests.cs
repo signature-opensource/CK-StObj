@@ -127,14 +127,55 @@ namespace CK.StObj.Engine.Tests.PocoJson
             u.T3 = (byte)3;
 
             var serialized = u.JsonSerialize( true, StandardMode );
-            Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"{""UT"":{""T1"":1,""T2"":2,""T3"":3}}" );
+            Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"[""UT"",{""T1"":[""Number"",1],""T2"":[""Number"",2],""T3"":[""Number"",3]}]" );
 
-            directory.JsonDeserialize( serialized.Span );
+            var r = (ICompliant1?)directory.JsonDeserialize( serialized.Span, StandardMode );
+            // This consider T3 (double) = 3.0 to be equivalent to (byte)3!
+            // r.Should().BeEquivalentTo( u );
+            Debug.Assert( r != null );
+            r.T1.Should().BeOfType<double>().And.Be( u.T1 );
+            r.T2.Should().BeOfType<double>().And.Be( u.T2 );
+            r.T3.Should().BeOfType<double>().And.Be( u.T3 );
         }
-
 
         [ExternalName( "UT" )]
         public interface ICompliant2 : IPoco
+        {
+            [UnionType]
+            public object T1 { get; set; }
+
+            [UnionType]
+            public object? T2 { get; set; }
+
+            class UnionTypes
+            {
+                public (int, string) T1 { get; }
+                public (byte, long?) T2 { get; }
+            }
+        }
+
+        [Test]
+        public void when_a_number_is_not_ambiguous_it_is_correctly_typed()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant2 ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = services.GetService<PocoDirectory>();
+
+            var u = services.GetRequiredService<IPocoFactory<ICompliant2>>().Create();
+            u.T1 = 1;
+            u.T2 = (byte)2;
+
+            var serialized = u.JsonSerialize( true, StandardMode );
+            Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"[""UT"",{""T1"":[""Number"",1],""T2"":[""Number"",2]}]" );
+
+            var r = (ICompliant2?)directory.JsonDeserialize( serialized.Span, StandardMode );
+            Debug.Assert( r != null );
+            r.T1.Should().BeOfType<int>().And.Be( u.T1 );
+            r.T2.Should().BeOfType<byte>().And.Be( u.T2 );
+        }
+
+        [ExternalName( "UT" )]
+        public interface ICompliant3 : IPoco
         {
             [UnionType]
             public object T1 { get; set; }
