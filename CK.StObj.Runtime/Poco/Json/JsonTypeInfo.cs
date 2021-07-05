@@ -24,10 +24,9 @@ namespace CK.Setup.Json
         List<JsonTypeInfo>? _specializations;
 
         /// <summary>
-        /// Gets the primary type.
-        /// For value type, this is the not nullable type.
+        /// Gets the <see cref="NullableTypeTree"/> in its "normal null" form: nullable for reference types, non nullable for value types.
         /// </summary>
-        public Type Type { get; }
+        public NullableTypeTree Type { get; }
 
         /// <summary>
         /// The unique incremented integer <see cref="Number"/> as a string.
@@ -82,7 +81,7 @@ namespace CK.Setup.Json
         /// Intrinsic types don't need any type marker: Boolean (JSON True and False tokens), string (JSON String token)
         /// and double (JSON Number token).
         /// </summary>
-        public bool IsIntrinsic => Type == typeof( bool ) || Type == typeof( string ) || Type == typeof( double );
+        public bool IsIntrinsic => Type.Type == typeof( bool ) || Type.Type == typeof( string ) || Type.Type == typeof( double );
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
@@ -100,9 +99,9 @@ namespace CK.Setup.Json
         public IReadOnlyList<JsonTypeInfo> AllSpecializations => _specializations ?? (IReadOnlyList<JsonTypeInfo>)Array.Empty<JsonTypeInfo>();
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null )
+        internal JsonTypeInfo( NullableTypeTree t, int number, string name, IReadOnlyList<string>? previousNames = null )
         {
-            Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null), "Type is a reference type or a non nullable value type." );
+            Debug.Assert( number >= 0 && t.IsNormalNull );
             Type = t;
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
@@ -110,7 +109,7 @@ namespace CK.Setup.Json
             JsonName = name;
             ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
             PreviousJsonNames = previousNames ?? Array.Empty<string>();
-            if( t.IsValueType )
+            if( t.Type.IsValueType )
             {
                 NonNullHandler = new HandlerForValueType( this );
             }
@@ -125,7 +124,7 @@ namespace CK.Setup.Json
         JsonTypeInfo()
         {
             // CodeReader and CodeWriter are unused and let to null.
-            Type = typeof( object );
+            Type = typeof( object ).GetNullableTypeTree();
             JsonName = "Object";
             ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "Object", true );
             PreviousJsonNames = Array.Empty<string>();
@@ -182,11 +181,11 @@ namespace CK.Setup.Json
             // be done somewhere.
             if( isCanonical )
             {
-                if( name == "Number" && Type != typeof( double ) )
+                if( name == "Number" && Type.Type != typeof( double ) )
                 {
                     throw new ArgumentException( "The canonical 'Number' is the double.", nameof( isCanonical ) );
                 }
-                if( name == "BigInt" && Type != typeof( long ) )
+                if( name == "BigInt" && Type.Type != typeof( long ) )
                 {
                     throw new ArgumentException( "The canonical 'BigInt' is the long (Int64).", nameof( isCanonical ) );
                 }
@@ -223,8 +222,8 @@ namespace CK.Setup.Json
 
         internal void AddSpecialization( JsonTypeInfo sub )
         {
-            Debug.Assert( !Type.IsValueType && !Type.IsSealed && !Type.IsInterface
-                          && !sub.Type.IsInterface && !sub.Type.IsValueType && !typeof( IPoco ).IsAssignableFrom( sub.Type ) );
+            Debug.Assert( !Type.Type.IsValueType && !Type.Type.IsSealed && !Type.Type.IsInterface
+                          && !sub.Type.Type.IsInterface && !sub.Type.Type.IsValueType && !typeof( IPoco ).IsAssignableFrom( sub.Type.Type ) );
             Debug.Assert( sub.TypeSpecOrder > 0.0f, "The magic is that when this is called, the TypeSpecOrder of the specialization has necessarily been called." );
             if( _specializations == null ) _specializations = new List<JsonTypeInfo>() { sub };
             else

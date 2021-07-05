@@ -25,7 +25,7 @@ namespace CK.Core
         public static readonly string RootContextTypeFullName = "CK.StObj." + RootContextTypeName;
 
         /// <summary>
-        /// Holds the name of 'Construct' method: StObjConstruct.
+        /// Holds the name of the construct method: StObjConstruct.
         /// </summary>
         public static readonly string ConstructMethodName = "StObjConstruct";
 
@@ -43,7 +43,7 @@ namespace CK.Core
 
         /// <summary>
         /// Holds the name 'ConfigureServices'.
-        /// This must be a non virtual, typically private void method with parameters that must start with an input (in) <see cref="StObjContextRoot.ServiceRegister"/>.
+        /// This must be a non virtual, typically private void method with parameters that must start with an input <see cref="StObjContextRoot.ServiceRegister"/>.
         /// Following parameters can be a IActivityMonitor or any services previously registered in the ISimpleServiceContainer by
         /// any <see cref="RegisterStartupServicesMethodName"/>.
         /// </summary>

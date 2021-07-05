@@ -27,7 +27,7 @@ namespace CK.Setup.Json
     {
         readonly IActivityMonitor _monitor;
         readonly ITypeScope _pocoDirectory;
-        readonly Stack<Type> _reentrancy;
+        readonly Stack<NullableTypeTree> _reentrancy;
         // Used to defer calls to GenerateRead/Write.
         readonly List<Action<IActivityMonitor>> _finalReadWrite;
 
@@ -64,7 +64,7 @@ namespace CK.Setup.Json
             _pocoDirectory = pocoDirectory;
             _map = new Dictionary<object, IJsonCodeGenHandler>();
             _typeInfos = new List<JsonTypeInfo>();
-            _reentrancy = new Stack<Type>();
+            _reentrancy = new Stack<NullableTypeTree>();
             _finalReadWrite = new List<Action<IActivityMonitor>>();
             _standardReaders = new List<ECMAScriptStandardReader>();
             InitializeBasicTypes();
@@ -97,16 +97,18 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Factory for <see cref="JsonTypeInfo"/>: its <see cref="JsonTypeInfo.NumberName"/> is unique.
-        /// This should be called only once per type (that must not be <see cref="Nullable{T}"/>).
+        /// This should be called only once per type that must be <see cref="NullableTypeTree.IsNormalNull"/>.
+        /// To create a <see cref="NullableTypeTree"/> from a type, use the <see cref="NullabilityTypeExtensions.GetNullabilityKind(Type)"/>
+        /// extension method.
         /// </summary>
-        /// <param name="t">The type.</param>
+        /// <param name="normalType">The type.</param>
         /// <param name="name">The serialized type name.</param>
         /// <param name="previousNames">Optional previous names.</param>
         /// <returns>A new type info.</returns>
-        public JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
+        public JsonTypeInfo CreateTypeInfo( NullableTypeTree normalType, string name, IReadOnlyList<string>? previousNames = null )
         {
-            if( t == null || (t.IsValueType && Nullable.GetUnderlyingType( t ) != null) ) throw new ArgumentException( "Must not be a null nor a Nullable<T> value type.", nameof( t ) );
-            return new JsonTypeInfo( t, _typeInfoAutoNumber++, name, previousNames );
+            if( !normalType.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( normalType ) );
+            return new JsonTypeInfo( normalType, _typeInfoAutoNumber++, name, previousNames );
         }
 
         /// <summary>
@@ -297,22 +299,23 @@ namespace CK.Setup.Json
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
 
-                    Type tColl = t.Type;
-                    Type? tInterface = null;
-                    Type genType = tColl.GetGenericTypeDefinition();
-                    Type[] genArgs = tColl.GetGenericArguments();
+                    Type classCollType = t.Type;
+                    NullableTypeTree? tInterface = null;
+                    Type genType = classCollType.GetGenericTypeDefinition();
+                    Type[] genArgs = classCollType.GetGenericArguments();
                     bool isList = genType == typeof( IList<> ) || genType == typeof( List<> );
                     bool isSet = !isList && (genType == typeof( ISet<> ) || genType == typeof( HashSet<> ));
                     if( isList || isSet )
                     {
-                        if( tColl.IsInterface )
+                        if( classCollType.IsInterface )
                         {
-                            tInterface = t.Type;
-                            tColl = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( genArgs[0] );
+                            tInterface = t;
+                            classCollType = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( genArgs[0] );
+                            t = t.WithType( classCollType );
                         }
                         else
                         {
-                            tInterface = (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( genArgs[0] );
+                            tInterface = t.WithType( (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( genArgs[0] ) );
                         }
                         (fWrite, fRead, info) = CreateListOrSetFunctions( t, isList );
                     }
@@ -320,22 +323,22 @@ namespace CK.Setup.Json
                     {
                         Type tKey = genArgs[0];
                         Type tValue = genArgs[1];
-                        if( t.IsInterface )
+                        if( t.Type.IsInterface )
                         {
                             tInterface = t;
-                            t = typeof( Dictionary<,> ).MakeGenericType( tKey, tValue );
+                            t = t.WithType( typeof( Dictionary<,> ).MakeGenericType( tKey, tValue ) );
                         }
                         else
                         {
-                            tInterface = typeof( IDictionary<,> ).MakeGenericType( tKey, tValue );
+                            tInterface = t.WithType( typeof( IDictionary<,> ).MakeGenericType( tKey, tValue ) );
                         }
                         if( tKey == typeof( string ) )
                         {
-                            (fWrite, fRead, info) = CreateStringMapFunctions( t, tValue );
+                            (fWrite, fRead, info) = CreateStringMapFunctions( t, t.RawSubTypes[1] );
                         }
                         else
                         {
-                            (fWrite, fRead, info) = CreateMapFunctions( t, tKey, tValue );
+                            (fWrite, fRead, info) = CreateMapFunctions( t, t.RawSubTypes[0], t.RawSubTypes[1] );
                         }
 
                     }
@@ -345,11 +348,11 @@ namespace CK.Setup.Json
                         handler = ConfigureAndAddTypeInfoForListSetAndMap( info, fWrite, fRead, tInterface );
                     }
                 }
-                else if( t.IsArray )
+                else if( t.Type.IsArray )
                 {
                     // To read an array T[] we use an intermediate List<T>.
-                    Type tItem = t.GetElementType()!;
-                    Type tList = typeof( List<> ).MakeGenericType( tItem );
+                    Type tItem = t.Type.GetElementType()!;
+                    NullableTypeTree tList = t.WithType( typeof( List<> ).MakeGenericType( tItem ) );
                     if( GetHandler( tList ) == null ) return null;
 
                     // The List<T> is now handled: generates the array.
@@ -380,7 +383,7 @@ namespace CK.Setup.Json
                     return null;
                 }
                 _reentrancy.Push( t );
-                using( _monitor.OpenTrace( $"Raising JsonTypeInfoRequired for '{t.FullName}'." ) )
+                using( _monitor.OpenTrace( $"Raising JsonTypeInfoRequired for '{t}'." ) )
                 {
                     try
                     {

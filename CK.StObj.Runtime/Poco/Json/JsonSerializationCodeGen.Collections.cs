@@ -58,7 +58,7 @@ namespace CK.Setup.Json
             return info.NullHandler;
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateMapFunctions( Type tMap, Type tKey, Type tValue )
+        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateMapFunctions( NullableTypeTree tMap, NullableTypeTree tKey, NullableTypeTree tValue )
         {
             var keyHandler = GetHandler( tKey );
             if( keyHandler == null ) return default;
@@ -103,12 +103,12 @@ namespace CK.Setup.Json
                          .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndArray)" )
                          .OpenBlock()
                          .Append( "r.Read();" ).NewLine();
-
-                    fRead.AppendCSharpName( tKey ).Append( " k;" ).NewLine();
+                    
+                    fRead.Append( keyTypeName ).Append( " k;" ).NewLine();
                     keyHandler.GenerateRead( fRead, "k", true );
 
                     fRead.NewLine()
-                         .AppendCSharpName( tValue ).Append( " v;" ).NewLine();
+                         .Append( valueTypeName ).Append( " v;" ).NewLine();
                     valueHandler.GenerateRead( fRead, "v", true );
 
                     fRead.Append( "r.Read();" ).NewLine()
@@ -117,13 +117,13 @@ namespace CK.Setup.Json
                          .Append( "r.Read();" );
                 } );
             }
-            var info = CreateTypeInfo( tMap, "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")" )
+            var info = CreateTypeInfo( tMap.Type, "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")" )
                        .SetECMAScriptStandardName( name: "M(" + keyHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "," + valueHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")",
                                                    isCanonical: keyHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical && valueHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
             return (fWrite, fRead, info);
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateStringMapFunctions( Type tMap, Type tValue )
+        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateStringMapFunctions( NullableTypeTree tMap, NullableTypeTree tValue )
         {
             var valueHandler = GetHandler( tValue );
             if( valueHandler == null ) return default;
@@ -171,9 +171,9 @@ namespace CK.Setup.Json
             return (fWrite, fRead, info);
         }
 
-        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateListOrSetFunctions( Type tColl, bool isList )
+        (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateListOrSetFunctions( NullableTypeTree tColl, bool isList )
         {
-            Type tItem = tColl.GetGenericArguments()[0];
+            NullableTypeTree tItem = tColl.RawSubTypes[0];
 
             if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler ) ) return default;
 
@@ -226,7 +226,7 @@ namespace CK.Setup.Json
             return (fWrite, fRead, info);
         }
 
-        bool CreateWriteEnumerable( Type tItem, [NotNullWhen( true )] out IFunctionScope? fWrite, [NotNullWhen( true )] out IJsonCodeGenHandler? itemHandler )
+        bool CreateWriteEnumerable( NullableTypeTree tItem, [NotNullWhen( true )] out IFunctionScope? fWrite, [NotNullWhen( true )] out IJsonCodeGenHandler? itemHandler )
         {
             fWrite = null;
             itemHandler = GetHandler( tItem );

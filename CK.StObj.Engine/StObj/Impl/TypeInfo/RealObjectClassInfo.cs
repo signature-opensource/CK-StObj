@@ -323,7 +323,7 @@ namespace CK.Setup
             // RegisterStartupServices method checks: (non virtual) void RegisterStartupServices( IActivityMonitor, SimpleServiceContainer )
             RegisterStartupServices = ReadRegisterStartupServices( monitor, t );
 
-            // ConfigureServices method checks: (non virtual) void ConfigureServices( [in] StObjContextRoot.ServiceRegister, ... )
+            // ConfigureServices method checks: (non virtual) void ConfigureServices( StObjContextRoot.ServiceRegister, ... )
             ConfigureServicesParameters = ReadConfigureServices( monitor, t );
         }
 
@@ -429,7 +429,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Checks that ConfigureServices method if it exists is non virtual: void ConfigureServices( [in] StObjContextRoot.ServiceRegister, ... ).
+        /// Checks that ConfigureServices method if it exists is non virtual: void ConfigureServices( StObjContextRoot.ServiceRegister, ... ).
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="t">The type.</param>

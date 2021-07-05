@@ -155,7 +155,7 @@ namespace CK.StObj.Engine.Tests.Service
             /// Configure the services (does nothing here: this just tests the parameter
             /// injection of the startup services). 
             /// </summary>
-            /// <param name="register">This one is the only required parameter. It may be marked as 'in' parameter or not.</param>
+            /// <param name="register">This one is the only required parameter.</param>
             /// <param name="ambientObjects">
             /// IStObjObjectMap is available: configuring services can rely on any IRealObject since they are already initialized (this
             /// is even available in the RegisterStartupServices).
@@ -166,7 +166,7 @@ namespace CK.StObj.Engine.Tests.Service
             /// This is injected if it exists in the StartupServices: startup services can be optional.
             /// </param>
             void ConfigureServices(
-                in StObjContextRoot.ServiceRegister register,
+                StObjContextRoot.ServiceRegister register,
                 IStObjObjectMap ambientObjects,
                 SuperStartupService superService,
                 TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem ext,
