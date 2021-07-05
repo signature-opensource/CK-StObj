@@ -270,49 +270,45 @@ namespace CK.Setup.Json
         /// </para>
         /// </summary>
         /// <param name="t">The type to allow.</param>
-        /// <param name="nullableHandler">When specified, ignores the actual type's nullability and returns the corresponding handler.</param>
         /// <returns>The handler to use. Null on error.</returns>
-        public IJsonCodeGenHandler? GetHandler( Type t, bool? nullableHandler = null )
+        public IJsonCodeGenHandler? GetHandler( NullableTypeTree t )
         {
             if( !_map.TryGetValue( t, out var handler ) )
             {
                 JsonTypeInfo? info = null;
-                if( t.IsValueType )
+                if( (t.Kind & NullabilityTypeKind.IsValueType) != 0 )
                 {
-                    bool isNullable = LiftNullableValueType( ref t );
-                    if( t.IsEnum )
+                    bool isNullable = t.Kind.IsNullable();
+                    if( t.Type.IsEnum )
                     {
-                        info = TryRegisterInfoForEnum( t );
+                        info = TryRegisterInfoForEnum( t.Type );
                     }
-                    else if( t.IsGenericType )
+                    else if( t.Kind.IsTupleType() )
                     {
-                        var tGen = t.GetGenericTypeDefinition();
-                        if( tGen.Namespace == "System" && tGen.Name.StartsWith( "ValueTuple`", StringComparison.Ordinal ) )
-                        {
-                            info = TryRegisterInfoForValueTuple( t, t.GetGenericArguments() );
-                        }
+                        info = TryRegisterInfoForValueTuple( t, t.IsLongValueTuple ? t.SubTypes.ToList() : t.RawSubTypes );
                     }
                     if( info != null )
                     {
                         handler = isNullable ? info.NullHandler : info.NonNullHandler;
                     }
                 }
-                else if( t.IsGenericType )
+                else if( t.Type.IsGenericType )
                 {
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
 
+                    Type tColl = t.Type;
                     Type? tInterface = null;
-                    Type genType = t.GetGenericTypeDefinition();
-                    Type[] genArgs = t.GetGenericArguments();
+                    Type genType = tColl.GetGenericTypeDefinition();
+                    Type[] genArgs = tColl.GetGenericArguments();
                     bool isList = genType == typeof( IList<> ) || genType == typeof( List<> );
                     bool isSet = !isList && (genType == typeof( ISet<> ) || genType == typeof( HashSet<> ));
                     if( isList || isSet )
                     {
-                        if( t.IsInterface )
+                        if( tColl.IsInterface )
                         {
-                            tInterface = t;
-                            t = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( genArgs[0] );
+                            tInterface = t.Type;
+                            tColl = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( genArgs[0] );
                         }
                         else
                         {

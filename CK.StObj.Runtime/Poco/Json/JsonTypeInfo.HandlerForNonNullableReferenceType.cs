@@ -29,6 +29,10 @@ namespace CK.Setup.Json
             {
                 if( TypeInfo == JsonTypeInfo.ObjectType || (withType == null && !TypeInfo.IsFinal) )
                 {
+                    if( !IsNullable )
+                    {
+                        write.Append( "if( " ).Append( variableName ).Append( " == null ) throw new InvalidOperationException(\"A null value appear where it should not. Writing JSON is impossible.\");" ).NewLine();
+                    }
                     write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ", options );" ).NewLine();
                 }
                 else
