@@ -36,7 +36,7 @@ namespace CK.Setup.Json
             }
             jsonName.Append( ']' );
             jsJsonName.Append( ']' );
-            JsonTypeInfo info = AllowTypeInfo( t, jsonName.ToString(), StartTokenType.Array ).SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );
+            JsonTypeInfo info = AllowTypeInfo( t, jsonName.ToString() ).SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );
 
             var valueTupleName = t.ToCSharpName();
             // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/

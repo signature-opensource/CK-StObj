@@ -117,7 +117,7 @@ namespace CK.Setup.Json
                          .Append( "r.Read();" );
                 } );
             }
-            var info = CreateTypeInfo( tMap, "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")", StartTokenType.Array )
+            var info = CreateTypeInfo( tMap, "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")" )
                        .SetECMAScriptStandardName( name: "M(" + keyHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "," + valueHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")",
                                                    isCanonical: keyHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical && valueHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
             return (fWrite, fRead, info);
@@ -166,7 +166,7 @@ namespace CK.Setup.Json
                          .Append( "r.Read();" );
                 } );
             }
-            var info = CreateTypeInfo( tMap, "O(" + valueHandler.JsonName + ")", StartTokenType.Object )
+            var info = CreateTypeInfo( tMap, "O(" + valueHandler.JsonName + ")" )
                       .SetECMAScriptStandardName( "O(" + valueHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")", valueHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
             return (fWrite, fRead, info);
         }
@@ -194,7 +194,7 @@ namespace CK.Setup.Json
                          .Append( "r.Read();" );
                 } );
             }
-            var info = CreateTypeInfo( tColl, (isList ? "L(" : "S(") + itemHandler.JsonName + ")", StartTokenType.Array )
+            var info = CreateTypeInfo( tColl, (isList ? "L(" : "S(") + itemHandler.JsonName + ")" )
                        .SetECMAScriptStandardName( name: isList ? itemHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "[]" : "S(" + itemHandler.TypeInfo.ECMAScriptStandardJsonName.Name + ")",
                                                    isCanonical: isList && itemHandler.TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
 
@@ -221,7 +221,7 @@ namespace CK.Setup.Json
                      .Append( "a = c.ToArray();" ).NewLine()
                      .CloseBlock();
             }
-            var info = CreateTypeInfo( tArray, itemHandler.JsonName + "[]", StartTokenType.Array )
+            var info = CreateTypeInfo( tArray, itemHandler.JsonName + "[]" )
                        .SetECMAScriptStandardName( itemHandler.TypeInfo.ECMAScriptStandardJsonName.Name + "[]", false );
             return (fWrite, fRead, info);
         }

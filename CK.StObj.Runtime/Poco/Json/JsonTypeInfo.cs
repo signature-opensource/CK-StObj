@@ -79,15 +79,10 @@ namespace CK.Setup.Json
         internal ECMAScriptStandardJsonName ECMAScriptStandardJsonName { get; private set; }
 
         /// <summary>
-        /// Gets the token type that starts the representation.
-        /// </summary>
-        public StartTokenType StartTokenType { get; }
-
-        /// <summary>
         /// Intrinsic types don't need any type marker: Boolean (JSON True and False tokens), string (JSON String token)
         /// and double (JSON Number token).
         /// </summary>
-        public bool IsIntrinsic => StartTokenType == StartTokenType.Boolean || Type == typeof( string ) || Type == typeof( double );
+        public bool IsIntrinsic => Type == typeof( bool ) || Type == typeof( string ) || Type == typeof( double );
 
         /// <summary>
         /// Gets or sets whether this type is final: it is known to have no specialization.
@@ -105,13 +100,12 @@ namespace CK.Setup.Json
         public IReadOnlyList<JsonTypeInfo> AllSpecializations => _specializations ?? (IReadOnlyList<JsonTypeInfo>)Array.Empty<JsonTypeInfo>();
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( Type t, int number, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
+        internal JsonTypeInfo( Type t, int number, string name, IReadOnlyList<string>? previousNames = null )
         {
             Debug.Assert( number >= 0 && (!t.IsValueType || Nullable.GetUnderlyingType( t ) == null), "Type is a reference type or a non nullable value type." );
             Type = t;
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
-            StartTokenType = startTokenType;
             // By default, the ECMAScriptStandardJsonName is the JsonName.
             JsonName = name;
             ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
@@ -137,7 +131,6 @@ namespace CK.Setup.Json
             PreviousJsonNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
-            StartTokenType = StartTokenType.Array;
             var n = new HandlerForReferenceType( this );
             NonNullHandler = n.ToNonNullHandler();
         }

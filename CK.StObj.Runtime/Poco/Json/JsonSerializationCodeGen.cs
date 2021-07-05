@@ -101,13 +101,12 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="t">The type.</param>
         /// <param name="name">The serialized type name.</param>
-        /// <param name="startTokenType">The start token type.</param>
         /// <param name="previousNames">Optional previous names.</param>
         /// <returns>A new type info.</returns>
-        public JsonTypeInfo CreateTypeInfo( Type t, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
+        public JsonTypeInfo CreateTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
         {
             if( t == null || (t.IsValueType && Nullable.GetUnderlyingType( t ) != null) ) throw new ArgumentException( "Must not be a null nor a Nullable<T> value type.", nameof( t ) );
-            return new JsonTypeInfo( t, _typeInfoAutoNumber++, name, startTokenType, previousNames );
+            return new JsonTypeInfo( t, _typeInfoAutoNumber++, name, previousNames );
         }
 
         /// <summary>
@@ -118,9 +117,9 @@ namespace CK.Setup.Json
         /// <param name="name">The serialized name.</param>
         /// <param name="previousNames">Optional list of previous names (act as type aliases).</param>
         /// <returns>The allowed type info that must still be configured.</returns>
-        public JsonTypeInfo AllowTypeInfo( Type t, string name, StartTokenType startTokenType, IReadOnlyList<string>? previousNames = null )
+        public JsonTypeInfo AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
         {
-            return AllowTypeInfo( CreateTypeInfo( t, name, startTokenType, previousNames ) );
+            return AllowTypeInfo( CreateTypeInfo( t, name, previousNames ) );
         }
 
         /// <summary>

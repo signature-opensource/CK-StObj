@@ -63,7 +63,7 @@ namespace CK.Setup.Json
             // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
             foreach( var root in pocoSupport.Roots )
             {
-                var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, StartTokenType.Object, root.PreviousNames ).Configure(
+                var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
                                 ( ICodeWriter write, string variableName )
                                         => write.Append( variableName ).Append( ".Write( w, false, options );" ),
                                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>

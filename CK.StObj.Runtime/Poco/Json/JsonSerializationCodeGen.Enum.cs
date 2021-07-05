@@ -21,7 +21,7 @@ namespace CK.Setup.Json
                 return null;
             }
             var uT = Enum.GetUnderlyingType( t );
-            return AllowTypeInfo( t, name, StartTokenType.Number, previousNames ).Configure(
+            return AllowTypeInfo( t, name, previousNames ).Configure(
                         ( ICodeWriter write, string variableName )
                             => write.Append( "w.WriteNumberValue( (" ).AppendCSharpName( uT ).Append( ')' ).Append( variableName ).Append( " );" ),
                         ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
