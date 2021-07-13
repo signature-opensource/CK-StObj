@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 
@@ -15,7 +16,7 @@ namespace CK.Setup.Json
         /// <param name="monitor">The monitor that event handlers should use.</param>
         /// <param name="c">The Json code generator context.</param>
         /// <param name="requiredType">The type for which Json serialization code is required.</param>
-        public TypeInfoRequiredEventArg( IActivityMonitor monitor, JsonSerializationCodeGen c, Type requiredType )
+        public TypeInfoRequiredEventArg( IActivityMonitor monitor, JsonSerializationCodeGen c, NullableTypeTree requiredType )
             : base( monitor )
         {
             JsonCodeGen = c;
@@ -30,6 +31,6 @@ namespace CK.Setup.Json
         /// <summary>
         /// Gets the required type.
         /// </summary>
-        public Type RequiredType { get; }
+        public NullableTypeTree RequiredType { get; }
     }
 }

@@ -102,12 +102,13 @@ namespace CK.Setup.Json
         /// extension method.
         /// </summary>
         /// <param name="normalType">The type.</param>
-        /// <param name="name">The serialized type name.</param>
-        /// <param name="previousNames">Optional previous names.</param>
+        /// <param name="name">The non nullable serialized type name.</param>
+        /// <param name="previousNames">Optional non nullable previous names.</param>
         /// <returns>A new type info.</returns>
         public JsonTypeInfo CreateTypeInfo( NullableTypeTree normalType, string name, IReadOnlyList<string>? previousNames = null )
         {
             if( !normalType.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( normalType ) );
+            if( name == null || name.Length == 0 || name[^1] == '?' ) throw new ArgumentException( "Must be a non nullable serialized type name.", nameof( name ) );
             return new JsonTypeInfo( normalType, _typeInfoAutoNumber++, name, previousNames );
         }
 
@@ -121,7 +122,7 @@ namespace CK.Setup.Json
         /// <returns>The allowed type info that must still be configured.</returns>
         public JsonTypeInfo AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
         {
-            return AllowTypeInfo( CreateTypeInfo( t, name, previousNames ) );
+            return AllowTypeInfo( CreateTypeInfo( t.GetNullableTypeTree(), name, previousNames ) );
         }
 
         /// <summary>
@@ -138,12 +139,10 @@ namespace CK.Setup.Json
         {
             if( _finalizedCall.HasValue ) throw new InvalidOperationException( nameof( IsFinalized ) );
             Debug.Assert( i.TypeSpecOrder == 0.0f );
-            // For Value type, we register the Nullable<T> type.
-            if( i.Type.IsValueType )
+            Register( _map, _monitor, i.NonNullHandler );
+            Register( _map, _monitor, i.NullHandler );
+            if( i.Type.Type.IsValueType )
             {
-                Register( _map, _monitor, i.NonNullHandler );
-                Register( _map, _monitor, i.NullHandler );
-
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {
                     _typeInfos.Add( i );
@@ -155,7 +154,6 @@ namespace CK.Setup.Json
             }
             else
             {
-                Register( _map, _monitor, i.NullHandler );
                 if( _typeInfoRefTypeStartIdx == 0 )
                 {
                     // Regular registration has not started yet (InitializeMap is running).
@@ -163,7 +161,7 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-                    if( i.Type.IsSealed || typeof( IPoco ).IsAssignableFrom( i.Type ) )
+                    if( i.Type.Type.IsSealed || typeof( IPoco ).IsAssignableFrom( i.Type.Type ) )
                     {
                         // Poco and sealed types are like value types: no specialization can exist.
                         _typeInfos.Insert( _typeInfoRefTypeStartIdx++, i );
@@ -178,13 +176,13 @@ namespace CK.Setup.Json
                         {
                             var atIdx = _typeInfos[idx];
                             Debug.Assert( atIdx.TypeSpecOrder > 0.0f, "Its TypeSpecOrder has been updated." );
-                            if( atIdx.Type.IsAssignableFrom( i.Type ) )
+                            if( atIdx.Type.Type.IsAssignableFrom( i.Type.Type ) )
                             {
                                 // We found the position in the list: we can
                                 // update the TypeSpecOrder property.
                                 i.TypeSpecOrder = (atIdx.TypeSpecOrder + _typeInfos[idx - 1].TypeSpecOrder) / 2;
                                 atIdx.AddSpecialization( i );
-                                for( int idx2 = idx+1; idx2 < _typeInfos.Count; ++idx2 )
+                                for( int idx2 = idx + 1; idx2 < _typeInfos.Count; ++idx2 )
                                 {
                                     // Unfortunately we must continue the work on the rest of the
                                     // list to be sure to capture all the specializations.
@@ -194,18 +192,18 @@ namespace CK.Setup.Json
                                     //    (we don't know if they need to be registered: this would imply to manage a kind of waiting list).
                                     //  - Only "external" non-poco classes are concerned, there should not be a lot of them.
                                     atIdx = _typeInfos[idx2];
-                                    if( atIdx.Type.IsAssignableFrom( i.Type ) )
+                                    if( atIdx.Type.Type.IsAssignableFrom( i.Type.Type ) )
                                     {
                                         atIdx.AddSpecialization( i );
                                     }
-                                    else if( i.Type.IsAssignableFrom( atIdx.Type ) )
+                                    else if( i.Type.Type.IsAssignableFrom( atIdx.Type.Type ) )
                                     {
                                         i.AddSpecialization( atIdx );
                                     }
                                 }
                                 break;
                             }
-                            else if( i.Type.IsAssignableFrom( atIdx.Type ) )
+                            else if( i.Type.Type.IsAssignableFrom( atIdx.Type.Type ) )
                             {
                                 i.AddSpecialization( atIdx );
                             }
@@ -345,14 +343,14 @@ namespace CK.Setup.Json
                     if( info != null )
                     {
                         Debug.Assert( fRead != null && fWrite != null && tInterface != null );
-                        handler = ConfigureAndAddTypeInfoForListSetAndMap( info, fWrite, fRead, tInterface );
+                        handler = ConfigureAndAddTypeInfoForListSetAndMap( info, fWrite, fRead, tInterface.Value );
                     }
                 }
                 else if( t.Type.IsArray )
                 {
                     // To read an array T[] we use an intermediate List<T>.
-                    Type tItem = t.Type.GetElementType()!;
-                    NullableTypeTree tList = t.WithType( typeof( List<> ).MakeGenericType( tItem ) );
+                    NullableTypeTree tItem = t.RawSubTypes[0];
+                    NullableTypeTree tList = t.WithType( typeof( List<> ).MakeGenericType( tItem.Type ) );
                     if( GetHandler( tList ) == null ) return null;
 
                     // The List<T> is now handled: generates the array.
@@ -379,7 +377,7 @@ namespace CK.Setup.Json
                 int idx = _reentrancy.IndexOf( already => already == t );
                 if( idx >= 0 )
                 {
-                    _monitor.Error( $"Cycle detected in type registering for Json serialization: '{_reentrancy.Skip( idx ).Append( t ).Select( r => r.Name ).Concatenate( "' -> '" ) }'." );
+                    _monitor.Error( $"Cycle detected in type registering for Json serialization: '{_reentrancy.Skip( idx ).Append( t ).Select( r => r.ToString() ).Concatenate( "' -> '" ) }'." );
                     return null;
                 }
                 _reentrancy.Push( t );
@@ -401,51 +399,57 @@ namespace CK.Setup.Json
                     return null;
                 }
             }
-            // Honor the optional null/not null handler (override the default handler type).
-            if( nullableHandler != null )
+            if( handler.IsNullable != ((t.Kind & NullabilityTypeKind.IsNullable) != 0) )
             {
-                handler = nullableHandler.Value ? handler.ToNullHandler() : handler.ToNonNullHandler();
+                if( handler.IsNullable ) handler = handler.ToNonNullHandler();
+                else handler = handler.ToNullHandler();
             }
             return handler;
         }
 
         /// <summary>
-        /// Adds a type alias mapping to an already existing concrete reference type.
+        /// Adds an unambiguous reference type alias mapping to an already existing concrete reference type.
         /// No <see cref="JsonTypeInfo"/> is created for them, just a mapping to a couple (nullable and not nullable)
         /// of <see cref="IJsonCodeGenHandler"/> with a non null <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
+        /// <para>
+        /// The <paramref name="alias"/> must be assignable from <paramref name="target"/>' type otherwise an <see cref="ArgumentException"/> is thrown.
+        /// </para>
+        /// <para>
+        /// It is always the target type that is written and since it is assignable to the alias, it can be read back without downcasts.
+        /// </para>
         /// </summary>
-        /// <param name="type">The type to map.</param>
+        /// <param name="alias">The reference type to map that is assignable to the target's type.</param>
         /// <param name="target">The mapped type.</param>
-        public void AllowTypeAlias( Type type, JsonTypeInfo target )
+        public void AllowTypeAlias( NullableTypeTree alias, JsonTypeInfo target )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
-            if( !type.IsClass && !type.IsInterface ) throw new ArgumentException( "Must be a class or an interface.", nameof( type ) );
+            if( !alias.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( alias ) );
+            if( !(alias.Type.IsClass || alias.Type.IsSealed) && !alias.Type.IsInterface ) throw new ArgumentException( $"Must be a non sealed class or an interface. '{alias}' is not.", nameof( alias ) );
             if( target == null ) throw new ArgumentNullException( nameof( target ) );
-            _map.Add( type, new JsonTypeInfo.HandlerForTypeMapping( target.NullHandler, type ) );
+            if( !alias.Type.IsAssignableFrom( target.Type.Type ) ) throw new ArgumentException( $"Type alias '{alias}' must be assignable to '{target.GenCSharpName}'.", nameof( alias ) );
+            AllowMapping( alias, target.NullHandler );
+
         }
 
         /// <summary>
         /// Allows an interface with potentially multiple implementations: it is handled as an
-        /// 'object'. Type information will be written.
+        /// 'object': the <see cref="JsonTypeInfo.ObjectType"/> is used that writes (with type information) and reads
+        /// back an object: a downcast is generated to read this <paramref name="type"/>.
         /// </summary>
-        /// <param name="type">The untyped, abstract, type to register.</param>
+        /// <param name="type">The interface to allow.</param>
         public void AllowInterfaceToUntyped( Type type )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             if( !type.IsInterface ) throw new ArgumentException( "Must be a an interface.", nameof( type ) );
-            _map.Add( type, new JsonTypeInfo.HandlerForReferenceType( JsonTypeInfo.ObjectType ) );
+            AllowMapping( type.GetNullableTypeTree(), JsonTypeInfo.ObjectType.NullHandler );
         }
 
-        static bool LiftNullableValueType( ref Type t )
+        void AllowMapping( NullableTypeTree tree, IJsonCodeGenHandler h )
         {
-            Type? tN = Nullable.GetUnderlyingType( t );
-            if( tN != null )
-            {
-                t = tN;
-                return true;
-            }
-            return false;
+            var hNull = new JsonTypeInfo.HandlerForTypeMapping( h, tree );
+            _map.Add( tree, hNull );
+            _map.Add( tree.ToAbnormalNull(), hNull.ToNonNullHandler() );
         }
+
 
         readonly struct C : IComparable<JsonTypeInfo>
         {
@@ -468,7 +472,7 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Generates the case pattern match on the types that must be written.
-        /// The handlers must be non empty must be sorted according to the <see cref="JsonTypeInfo.TypeSpecOrder"/> and
+        /// The handlers must be non empty, must be sorted according to the <see cref="JsonTypeInfo.TypeSpecOrder"/> and
         /// no handler with a <see cref="IJsonCodeGenHandler.TypeMapping"/> must appear otherwise an <see cref="ArgumentException"/>
         /// is thrown.
         /// </summary>
@@ -476,23 +480,23 @@ namespace CK.Setup.Json
         /// <param name="handlers">A list of sorted handlers.</param>
         public void GenerateWriteSwitchCases( ICodeWriter write, IEnumerable<IJsonCodeGenHandler> handlers )
         {
-            if( write == null ) throw new ArgumentNullException( nameof(write) );
-            if( handlers == null ) throw new ArgumentNullException( nameof(handlers) );
+            if( write == null ) throw new ArgumentNullException( nameof( write ) );
+            if( handlers == null ) throw new ArgumentNullException( nameof( handlers ) );
             float order = 0.0f;
             foreach( var h in handlers )
             {
                 if( h.TypeMapping != null )
                 {
-                    throw new ArgumentException( $"Handler for {h.Type.ToCSharpName()} is a mapping (to {h.TypeInfo.Type.ToCSharpName()}). Only actual handlers must be written.", nameof( handlers ) );
+                    throw new ArgumentException( $"Handler for {h.GenCSharpName} is a mapping (to {h.TypeInfo.GenCSharpName}). Only actual handlers must be written.", nameof( handlers ) );
                 }
                 if( h.TypeInfo.TypeSpecOrder <= order && order != 0.0f )
                 {
-                    throw new ArgumentException( $"Handler for {h.Type.ToCSharpName()} is not correctly ordered. Handlers: {handlers.Select( h => $"{h.Type.ToCSharpName()} ({h.TypeInfo.TypeSpecOrder})" ).Concatenate()}", nameof( handlers ) );
+                    throw new ArgumentException( $"Handler for {h.GenCSharpName} is not correctly ordered. Handlers: {handlers.Select( h => $"{h.GenCSharpName} ({h.TypeInfo.TypeSpecOrder})" ).Concatenate()}", nameof( handlers ) );
                 }
                 order = h.TypeInfo.TypeSpecOrder;
                 // Always consider the non null hander: a null value has already been written.
                 var hN = h.ToNonNullHandler();
-                write.Append( "case " ).AppendCSharpName( hN.Type, useValueTupleParentheses: false ).Append( " v: " );
+                write.Append( "case " ).Append( hN.GenCSharpName ).Append( " v: " );
                 hN.GenerateWrite( write, "v", true );
                 write.NewLine().Append( "break;" ).NewLine();
             }

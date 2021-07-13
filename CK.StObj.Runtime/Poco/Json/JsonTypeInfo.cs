@@ -15,6 +15,9 @@ namespace CK.Setup.Json
     /// </summary>
     public partial class JsonTypeInfo : IAnnotationSet
     {
+        // Empty specialization list for the following ObjectType (so that its IsFinal is false) must come first
+        // because of static initialization!
+        static readonly List<JsonTypeInfo> EmptySpecializations = new List<JsonTypeInfo>();
         /// <summary>
         /// Singleton for untyped "object".
         /// </summary>
@@ -71,11 +74,11 @@ namespace CK.Setup.Json
         /// </summary>
         public float TypeSpecOrder { get; internal set; }
 
-        internal string JsonName { get; }
+        internal string NonNullableJsonName { get; }
 
-        internal IReadOnlyList<string> PreviousJsonNames { get; }
+        internal IReadOnlyList<string> NonNullablePreviousJsonNames { get; }
 
-        internal ECMAScriptStandardJsonName ECMAScriptStandardJsonName { get; private set; }
+        internal ECMAScriptStandardJsonName NonNullableECMAScriptStandardJsonName { get; private set; }
 
         /// <summary>
         /// Intrinsic types don't need any type marker: Boolean (JSON True and False tokens), string (JSON String token)
@@ -84,31 +87,42 @@ namespace CK.Setup.Json
         public bool IsIntrinsic => Type.Type == typeof( bool ) || Type.Type == typeof( string ) || Type.Type == typeof( double );
 
         /// <summary>
-        /// Gets or sets whether this type is final: it is known to have no specialization.
-        /// This is initially true (and always true for value types and Poco) but as soon as a reference type that
-        /// can be assigned to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
+        /// Gets whether this type is final: it is known to have no specialization.
+        /// This is initially true (and always true for value types and Poco) but as soon
+        /// as a reference type that can be assigned to this one is registered by <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>
         /// this becomes false.
+        /// <para>
+        /// This is always false for the <see cref="JsonTypeInfo.ObjectType"/>.
+        /// </para>
         /// </summary>
         public bool IsFinal => _specializations == null;
+
+        /// <summary>
+        /// Gets the non nullable CSharp name to use in generated code.
+        /// Nullable handlers use the Nullable type for value types but since the generated code is
+        /// not NRT aware, this is the CSharpName for nullable and not nullable reference types.
+        /// </summary>
+        public string GenCSharpName { get; }
 
         /// <summary>
         /// Gets the ordered list of flattened specializations (all specializations recursively) from most
         /// general ones to most specialized (switch case on the type is correctly ordered).
         /// This is empty if <see cref="IsFinal"/> is true.
         /// </summary>
-        public IReadOnlyList<JsonTypeInfo> AllSpecializations => _specializations ?? (IReadOnlyList<JsonTypeInfo>)Array.Empty<JsonTypeInfo>();
+        public IReadOnlyList<JsonTypeInfo> AllSpecializations => _specializations ?? EmptySpecializations;
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
         internal JsonTypeInfo( NullableTypeTree t, int number, string name, IReadOnlyList<string>? previousNames = null )
         {
             Debug.Assert( number >= 0 && t.IsNormalNull );
             Type = t;
+            GenCSharpName = t.Type.ToCSharpName( useValueTupleParentheses: false );
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
             // By default, the ECMAScriptStandardJsonName is the JsonName.
-            JsonName = name;
-            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
-            PreviousJsonNames = previousNames ?? Array.Empty<string>();
+            NonNullableJsonName = name;
+            NonNullableECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
+            NonNullablePreviousJsonNames = previousNames ?? Array.Empty<string>();
             if( t.Type.IsValueType )
             {
                 NonNullHandler = new HandlerForValueType( this );
@@ -123,13 +137,14 @@ namespace CK.Setup.Json
         // Untyped singleton object.
         JsonTypeInfo()
         {
-            // CodeReader and CodeWriter are unused and let to null.
             Type = typeof( object ).GetNullableTypeTree();
-            JsonName = "Object";
-            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "Object", true );
-            PreviousJsonNames = Array.Empty<string>();
+            GenCSharpName = "object";
+            NonNullableJsonName = "Object";
+            NonNullableECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "Object", true );
+            NonNullablePreviousJsonNames = Array.Empty<string>();
             Number = -1;
             NumberName = String.Empty;
+            _specializations = EmptySpecializations;
             var n = new HandlerForReferenceType( this );
             NonNullHandler = n.ToNonNullHandler();
         }
@@ -190,34 +205,8 @@ namespace CK.Setup.Json
                     throw new ArgumentException( "The canonical 'BigInt' is the long (Int64).", nameof( isCanonical ) );
                 }
             }
-            ECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, isCanonical );
+            NonNullableECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, isCanonical );
             return this;
-        }
-
-
-        /// <summary>
-        /// Calls <see cref="CodeReader"/> inside code that handles reading null if <paramref name="isNullableVariable"/> is true
-        /// (otherwise simply calls CodeReader).
-        /// </summary>
-        /// <param name="read">The code target.</param>
-        /// <param name="variableName">The variable name.</param>
-        /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible.</param>
-        /// <param name="isNullableVariable">True if the variable can be set to null, false if it cannot be set to null.</param>
-        public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly, bool isNullableVariable )
-        {
-            if( CodeReader == null ) throw new InvalidOperationException( "CodeReader has not been set." );
-            if( isNullableVariable )
-            {
-                read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" )
-                    .OpenBlock()
-                    .Append( variableName ).Append( " = null;" ).NewLine()
-                    .Append( "r.Read();" )
-                    .CloseBlock()
-                    .Append( "else" )
-                    .OpenBlock();
-            }
-            CodeReader( read, variableName, assignOnly, isNullableVariable );
-            if( isNullableVariable ) read.CloseBlock();
         }
 
         internal void AddSpecialization( JsonTypeInfo sub )
@@ -253,6 +242,6 @@ namespace CK.Setup.Json
         /// <inheritdoc />
         public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
 
-        public override string ToString() => Type.ToString();
+        public override string ToString() => GenCSharpName;
     }
 }

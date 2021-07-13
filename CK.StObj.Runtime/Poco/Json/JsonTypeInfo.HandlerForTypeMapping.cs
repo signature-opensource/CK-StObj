@@ -10,8 +10,10 @@ namespace CK.Setup.Json
         internal class HandlerForTypeMapping : IJsonCodeGenHandler
         {
             public JsonTypeInfo TypeInfo => _mapping.TypeInfo;
-            public bool IsNullable => _mapping.IsNullable;
-            public Type Type { get; }
+            public bool IsNullable => true;
+            public NullableTypeTree Type { get; }
+            public string GenCSharpName { get; }
+
             public string JsonName => _mapping.JsonName;
             public IEnumerable<string> PreviousJsonNames => _mapping.PreviousJsonNames;
             public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => _mapping.ECMAScriptStandardJsonName;
@@ -20,17 +22,31 @@ namespace CK.Setup.Json
             readonly IJsonCodeGenHandler _mapping;
             readonly HandlerForNonNullableTypeMapping _nonNullable;
 
-            public HandlerForTypeMapping( IJsonCodeGenHandler mapping, Type t )
+            public HandlerForTypeMapping( IJsonCodeGenHandler mapping, NullableTypeTree t )
             {
-                Debug.Assert( mapping is HandlerForReferenceType );
+                Debug.Assert( mapping is HandlerForReferenceType && mapping.IsNullable );
                 _mapping = mapping;
                 Type = t;
+                GenCSharpName = t.Type.ToCSharpName();
                 _nonNullable = new HandlerForNonNullableTypeMapping( this );
             }
 
-            public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null ) => _mapping.GenerateWrite( write, variableName, withType );
+            public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
+            {
+                _mapping.GenerateWrite( write, variableName, withType );
+            }
 
-            public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly ) => _mapping.GenerateRead( read, variableName, assignOnly );
+            public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
+            {
+                if( _mapping.TypeInfo == JsonTypeInfo.ObjectType )
+                {
+                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
+                }
+                else
+                {
+                    _mapping.GenerateRead( read, variableName, assignOnly );
+                }
+            }
 
             public IJsonCodeGenHandler ToNullHandler() => this;
 

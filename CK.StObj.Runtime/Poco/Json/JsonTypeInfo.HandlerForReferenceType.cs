@@ -12,12 +12,15 @@ namespace CK.Setup.Json
         {
             public JsonTypeInfo TypeInfo { get; }
             public bool IsNullable => true; // Always true.
-            public Type Type => TypeInfo.Type;
-            public string JsonName => TypeInfo.JsonName + '?';
-            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames.Select( n => n + '?' );
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => new( TypeInfo.ECMAScriptStandardJsonName.Name + '?', TypeInfo.ECMAScriptStandardJsonName.IsCanonical );
+            public NullableTypeTree Type => TypeInfo.Type;
+            public string GenCSharpName => TypeInfo.GenCSharpName;
+
+            public string JsonName => TypeInfo.NonNullableJsonName + '?';
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.NonNullablePreviousJsonNames.Select( n => n + '?' );
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => new( TypeInfo.NonNullableECMAScriptStandardJsonName.Name + '?', TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
 
             public IJsonCodeGenHandler? TypeMapping => null;
+
             readonly HandlerForNonNullableReferenceType _nonNullable;
 
             public HandlerForReferenceType( JsonTypeInfo info )
@@ -34,19 +37,19 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-                    this.DoGenerateWrite( write, variableName, true, withType ?? false );
+                    this.DoGenerateWrite( write, variableName, handleNull: true, withType ?? false );
                 }
             }
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
-                if( TypeInfo == JsonTypeInfo.ObjectType || !TypeInfo.IsFinal )
+                if( !TypeInfo.IsFinal )
                 {
-                    read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
+                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
                 }
                 else
                 {
-                    TypeInfo.GenerateRead( read, variableName, assignOnly, true );
+                    this.DoGenerateRead( read, variableName, assignOnly );
                 }
             }
 

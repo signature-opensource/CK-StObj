@@ -20,19 +20,22 @@ namespace CK.Setup.Json
             {
                 return null;
             }
-            var uT = Enum.GetUnderlyingType( t );
-            return AllowTypeInfo( t, name, previousNames ).Configure(
+            var uT = Enum.GetUnderlyingType( t ).GetNullableTypeTree();
+            var uTHandler = _map[uT];
+
+            var info = AllowTypeInfo( t, name, previousNames );
+            return info.Configure(
                         ( ICodeWriter write, string variableName )
-                            => write.Append( "w.WriteNumberValue( (" ).AppendCSharpName( uT ).Append( ')' ).Append( variableName ).Append( " );" ),
+                            => write.Append( "w.WriteNumberValue( (" ).Append( uTHandler.GenCSharpName ).Append( ')' ).Append( variableName ).Append( " );" ),
                         ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
                             =>
                         {
                             // No need to defer here: the underlying types are basic number types.
                             read.OpenBlock()
                                 .Append( "var " );
-                            _map[uT].GenerateRead( read, "u", true );
+                            uTHandler.GenerateRead( read, "u", true );
                             read.NewLine()
-                                .Append( variableName ).Append( " = (" ).AppendCSharpName( t ).Append( ")u;" )
+                                .Append( variableName ).Append( " = (" ).Append( info.GenCSharpName ).Append( ")u;" )
                                 .CloseBlock();
                         } );
         }

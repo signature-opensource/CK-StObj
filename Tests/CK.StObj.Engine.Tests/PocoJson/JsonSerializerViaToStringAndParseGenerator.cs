@@ -31,7 +31,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         void OnTypeInfoRequired( object? sender, TypeInfoRequiredEventArg e )
         {
-            Type toSupport = e.RequiredType;
+            Type toSupport = e.RequiredType.Type;
             // If the required type has not been already allowed by another
             // participant, we check if a static parse method exists that takes
             // a string and returns the type to support.

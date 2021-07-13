@@ -7,14 +7,16 @@ namespace CK.Setup.Json
 {
     public partial class JsonTypeInfo
     {
-        class HandlerForValueType : IJsonCodeGenHandler
+        internal class HandlerForValueType : IJsonCodeGenHandler
         {
             public JsonTypeInfo TypeInfo { get; }
             public bool IsNullable => false; // Always false.
-            public Type Type => TypeInfo.Type;
-            public string JsonName => TypeInfo.JsonName;
-            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames;
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
+            public NullableTypeTree Type => TypeInfo.Type;
+            public string GenCSharpName => TypeInfo.GenCSharpName;
+
+            public string JsonName => TypeInfo.NonNullableJsonName;
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.NonNullablePreviousJsonNames;
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.NonNullableECMAScriptStandardJsonName;
             public IJsonCodeGenHandler? TypeMapping => null;
 
             readonly HandlerForNullableValueType _nullHandler;
@@ -28,13 +30,13 @@ namespace CK.Setup.Json
             public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
                 Debug.Assert( TypeInfo.IsFinal );
-                this.DoGenerateWrite( write, variableName, false, withType ?? false );
+                this.DoGenerateWrite( write, variableName, handleNull: false, withType ?? false );
             }
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
                 Debug.Assert( TypeInfo.IsFinal );
-                TypeInfo.GenerateRead( read, variableName, assignOnly, false );
+                this.DoGenerateRead( read, variableName, assignOnly );
             }
 
             public IJsonCodeGenHandler ToNullHandler() => _nullHandler;

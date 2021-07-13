@@ -323,6 +323,34 @@ namespace CK.StObj.Engine.Tests.PocoJson
             a.Invoking( fail => JsonTestHelper.Roundtrip( directory, fail ) ).Should().Throw<InvalidOperationException>();
         }
 
+        public interface IPocoCrossASpec : IPocoCrossA
+        {
+            [DefaultValue( "A specialized message." )]
+            string MsgASpec { get; set; }
+        }
+
+
+        [Test]
+        public void cross_poco_serialization_with_specialization()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoCrossASpec ), typeof( IPocoCrossB ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
+            var fA = s.GetRequiredService<IPocoFactory<IPocoCrossA>>();
+            var a = fA.Create( a =>
+            {
+                a.B.MsgB = "From A.B.";
+            } );
+
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
+            Debug.Assert( a2 != null );
+            a2.B.MsgB.Should().Be( "From A.B." );
+
+            a.B.A = a;
+            a.Invoking( fail => JsonTestHelper.Roundtrip( directory, fail ) ).Should().Throw<InvalidOperationException>();
+        }
+
         public interface IPocoWithDictionary : IPoco
         {
             IDictionary<string, int> ClassicalJson { get; }

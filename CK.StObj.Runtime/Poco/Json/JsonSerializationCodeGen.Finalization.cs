@@ -32,7 +32,7 @@ namespace CK.Setup.Json
                     if( t.CodeReader == null || t.CodeWriter == null )
                     {
                         ++missingCount;
-                        using( _monitor.OpenTrace( $"Missing CodeReader/Writer for '{t.JsonName}'. Raising TypeInfoConfigurationRequired." ) )
+                        using( _monitor.OpenTrace( $"Missing CodeReader/Writer for '{t.NonNullableJsonName}'. Raising TypeInfoConfigurationRequired." ) )
                         {
                             try
                             {
@@ -40,7 +40,7 @@ namespace CK.Setup.Json
                             }
                             catch( Exception ex )
                             {
-                                _monitor.Error( $"While raising TypeInfoConfigurationRequired for '{t.JsonName}'.", ex );
+                                _monitor.Error( $"While raising TypeInfoConfigurationRequired for '{t.NonNullableJsonName}'.", ex );
                                 _finalizedCall = false;
                                 return false;
                             }
@@ -53,7 +53,7 @@ namespace CK.Setup.Json
                     var missing = _typeInfos.Where( i => i.CodeWriter == null || i.CodeReader == null ).ToList();
                     if( missing.Count > 0 )
                     {
-                        _monitor.Error( $"Missing Json CodeReader/Writer functions for types '{missing.Select( m => m.JsonName ).Concatenate( "', '" )}'." );
+                        _monitor.Error( $"Missing Json CodeReader/Writer functions for types '{missing.Select( m => m.NonNullableJsonName ).Concatenate( "', '" )}'." );
                         _finalizedCall = false;
                         return false;
                     }
@@ -153,19 +153,9 @@ namespace CK.Setup.Json
             foreach( var t in _typeInfos )
             {
                 if( t == JsonTypeInfo.ObjectType ) continue;
-                ctor.OpenBlock()
-                    .Append( "static object d( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
-                    .AppendCSharpName( t.Type ).Append( " o;" ).NewLine();
-                t.GenerateRead( ctor, "o", assignOnly: true, isNullableVariable: false );
-                ctor.NewLine().Append( "return o;" ).NewLine()
-                    .Append( "};" ).NewLine();
-                var tName = t.NonNullHandler.JsonName;
-                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( tName ).Append( ", d );" ).NewLine();
-                if( tName != t.NullHandler.JsonName )
-                {
-                    ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.NullHandler.JsonName ).Append( ", d );" ).NewLine();
-                }
-                ctor.CloseBlock();
+                Debug.Assert( t.NonNullHandler.JsonName != t.NullHandler.JsonName );
+                GenerateRead( ctor, t.NonNullHandler );
+                GenerateRead( ctor, t.NullHandler );
             }
 
             foreach( var t in _standardReaders )
@@ -181,12 +171,24 @@ namespace CK.Setup.Json
                     ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.JsonName + '?' ).Append( ", ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( " );" ).NewLine();
                 }
             }
+
+            static void GenerateRead( IFunctionScope ctor, IJsonCodeGenHandler h )
+            {
+                ctor.OpenBlock()
+                    .Append( "static object d( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
+                    .Append( h.GenCSharpName ).Append( " o;" ).NewLine();
+                h.DoGenerateRead( ctor, "o", assignOnly: true );
+                ctor.NewLine().Append( "return o;" ).NewLine()
+                    .Append( "};" ).NewLine();
+                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( h.JsonName ).Append( ", d );" ).NewLine()
+                    .CloseBlock();
+            }
         }
 
         void GenerateDynamicWrite( List<JsonTypeInfo> types )
         {
             _pocoDirectory
-                    .GeneratedByComment()
+                .GeneratedByComment()
                 .Append( @"
 internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, PocoJsonSerializerOptions options )
 {
@@ -200,9 +202,9 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, P
             foreach( var t in types )
             {
                 if( t == JsonTypeInfo.ObjectType ) continue;
-                mappings.Append( "case " ).AppendCSharpName( t.Type, useValueTupleParentheses: false ).Append( " v: " );
+                mappings.Append( "case " ).Append( t.GenCSharpName ).Append( " v: " );
                 Debug.Assert( t.NonNullHandler.TypeMapping == null, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
-                t.NonNullHandler.DoGenerateWrite( mappings, "v", false, true );
+                t.NonNullHandler.DoGenerateWrite( mappings, "v", handleNull: false, writeTypeName: true );
                 mappings.NewLine().Append( "break;" ).NewLine();
             }
         }

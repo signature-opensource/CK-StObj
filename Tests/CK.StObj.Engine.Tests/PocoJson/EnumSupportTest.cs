@@ -36,19 +36,19 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var directory = s.GetService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
-            var o = f.Create( o => { o.Working = Code.Pending; o.NullableWorking = Code.Working; o.Result = "CodeGen!"; } );
+            var o = f.Create( o => { o.Working = Code.Pending; o.NullableWorking = Code.Working; o.Result = Code.None; } );
             var o2 = JsonTestHelper.Roundtrip( directory, o );
 
             Debug.Assert( o2 != null );
             o2.Working.Should().Be( Code.Pending );
             o2.NullableWorking.Should().Be( Code.Working );
-            o2.Result.Should().Be( "CodeGen!" );
+            o2.Result.Should().Be( Code.None );
 
             o.NullableWorking = null;
             o2 = JsonTestHelper.Roundtrip( directory, o );
             o2.Working.Should().Be( Code.Pending );
             o2.NullableWorking.Should().BeNull();
-            o2.Result.Should().Be( "CodeGen!" );
+            o2.Result.Should().Be( Code.None );
 
         }
 

@@ -31,18 +31,17 @@ namespace CK.Setup.Json
                 if( h == null ) return null;
                 handlers[i] = h;
                 jsonName.Append( h.JsonName );
-                isJSCanonical &= h.TypeInfo.ECMAScriptStandardJsonName.IsCanonical;
-                jsJsonName.Append( h.TypeInfo.ECMAScriptStandardJsonName.Name );
+                isJSCanonical &= h.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical;
+                jsJsonName.Append( h.TypeInfo.NonNullableECMAScriptStandardJsonName.Name );
             }
             jsonName.Append( ']' );
             jsJsonName.Append( ']' );
             JsonTypeInfo info = AllowTypeInfo( t.Type, jsonName.ToString() ).SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );
 
-            var valueTupleName = t.ToCSharpName();
             // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/
             // We use a 'ref' instead (ValueTuple TypeInfo below use SetByRefWriter).
-            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + valueTupleName + " v, PocoJsonSerializerOptions options )" );
+            var fWriteDef = FunctionDefinition.Parse( "internal static void WriteVT_" + info.NumberName + "( System.Text.Json.Utf8JsonWriter w, ref " + info.GenCSharpName + " v, PocoJsonSerializerOptions options )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static void ReadVT_" + info.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + info.GenCSharpName + " v, PocoJsonSerializerOptions options )" );
 
             IFunctionScope? fWrite = _pocoDirectory.FindFunction( fWriteDef.Key, false );
             IFunctionScope? fRead;
@@ -88,7 +87,7 @@ namespace CK.Setup.Json
                       if( variableCanBeNull )
                       {
                           read.OpenBlock()
-                              .AppendCSharpName( info.Type ).Append( " notNull;" ).NewLine();
+                              .Append( info.GenCSharpName ).Append( " notNull;" ).NewLine();
                           vName = "notNull";
                       }
                       read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( vName ).Append( ", options );" );

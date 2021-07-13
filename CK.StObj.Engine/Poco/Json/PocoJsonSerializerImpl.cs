@@ -65,7 +65,7 @@ namespace CK.Setup.Json
             {
                 var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
                                 ( ICodeWriter write, string variableName )
-                                        => write.Append( variableName ).Append( ".Write( w, false, options );" ),
+                                        => write.Append( "((PocoJsonSerializer.IWriter)" ).Append( variableName ).Append( ").Write( w, false, options );" ),
                                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                                 {
                                     if( !assignOnly )
@@ -90,7 +90,7 @@ namespace CK.Setup.Json
                                 } );
                 foreach( var i in root.Interfaces )
                 {
-                    jsonCodeGen.AllowTypeAlias( i.PocoInterface, typeInfo );
+                    jsonCodeGen.AllowTypeAlias( i.PocoInterface.GetNullableTypeTree(), typeInfo );
                 }
             }
             // Maps the "other Poco interfaces" to "Untyped" object.
@@ -188,7 +188,7 @@ namespace CK.Setup.Json
             var jsonProperties = new PocoJsonPropertyInfo[pocoInfo.PropertyList.Count];
             foreach( var p in pocoInfo.PropertyList )
             {
-                var mainHandler = jsonCodeGen.GetHandler( p.PropertyType, p.IsNullable );
+                var mainHandler = jsonCodeGen.GetHandler( p.PropertyNullableTypeTree );
                 if( mainHandler == null )
                 {
                     success = false;
@@ -261,12 +261,12 @@ namespace CK.Setup.Json
             // Gets all the handlers and build groups of ECMAStandardJsnoName handlers (only if the Poco is still standard compliant).
             foreach( var union in p.PropertyUnionTypes )
             {
-                var h = jsonCodeGen.GetHandler( union.Type, union.Kind.IsNullable() );
+                var h = jsonCodeGen.GetHandler( union );
                 if( h == null ) return null;
                 handlers.Add( h );
                 if( isPocoECMAScriptStandardCompliant && h.HasECMAScriptStandardJsonName )
                 {
-                    var n = h.ToNonNullHandler().ECMAScriptStandardJsonName;
+                    var n = h.ECMAScriptStandardJsonName;
                     if( checkDuplicatedStandardName.TryGetValue( n.Name, out var exists ) )
                     {
                         exists.Add( h );
@@ -289,18 +289,18 @@ namespace CK.Setup.Json
                         int idxCanocical = group.IndexOf( h => h.ECMAScriptStandardJsonName.IsCanonical );
                         if( idxCanocical == -1 )
                         {
-                            monitor.Warn( $"{p} UnionType '{group.Select( h => h.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types mapped to the same ECMAScript standard name: '{group[0].ECMAScriptStandardJsonName.Name}' and none of them is the 'Canonical' form. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
+                            monitor.Warn( $"{p} UnionType '{group.Select( h => h.GenCSharpName ).Concatenate( "' ,'" )}' types mapped to the same ECMAScript standard name: '{group[0].ECMAScriptStandardJsonName.Name}' and none of them is the 'Canonical' form. De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException." );
                             isECMAScriptStandardCompliant = false;
                             break;
                         }
                         var winner = group[idxCanocical];
-                        monitor.Trace( $"{p} UnionType '{group.Select( h => h.Type.ToCSharpName() ).Concatenate( "' ,'" )}' types will be read as {winner.Type.ToCSharpName()} in ECMAScript standard name." );
+                        monitor.Trace( $"{p} UnionType '{group.Select( h => h.GenCSharpName ).Concatenate( "' ,'" )}' types will be read as {winner.GenCSharpName} in ECMAScript standard name." );
                         if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<IJsonCodeGenHandler>();
                         ecmaStandardReadhandlers.Add( winner );
                     }
                     else
                     {
-                        monitor.Debug( $"{p} UnionType unambiguous mapping in ECMAScript standard name from '{group[0].ECMAScriptStandardJsonName.Name}' to '{group[0].Type.ToCSharpName()}'." );
+                        monitor.Debug( $"{p} UnionType unambiguous mapping in ECMAScript standard name from '{group[0].ECMAScriptStandardJsonName.Name}' to '{group[0].GenCSharpName}'." );
                         if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<IJsonCodeGenHandler>();
                         ecmaStandardReadhandlers.Add( group[0] );
                     }

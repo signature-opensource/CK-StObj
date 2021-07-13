@@ -25,7 +25,7 @@ namespace CK.Setup.Json
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = r.GetBoolean(); r.Read();" );
+                    read.Append( variableName ).Append( " = PocoDirectory_CK.ReadObject( ref r, options );" );
                 } );
 
             static void WriteString( ICodeWriter write, string variableName )
@@ -55,13 +55,13 @@ namespace CK.Setup.Json
                 };
             }
 
-            AllowTypeInfo( CreateTypeInfo( typeof( string ), "string" ) ).Configure( WriteString,
+            AllowTypeInfo( typeof( string ), "string" ).Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetString(); r.Read();" );
                 }
                 );
-            AllowTypeInfo( CreateTypeInfo( typeof( bool ), "bool" ) ).Configure(
+            AllowTypeInfo( typeof( bool ), "bool" ).Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
                     write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" );
@@ -70,7 +70,7 @@ namespace CK.Setup.Json
                 {
                     read.Append( variableName ).Append( " = r.GetBoolean(); r.Read();" );
                 } );
-            AllowTypeInfo( CreateTypeInfo( typeof( int ), "int" ) ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( int ), "int" ).Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" );

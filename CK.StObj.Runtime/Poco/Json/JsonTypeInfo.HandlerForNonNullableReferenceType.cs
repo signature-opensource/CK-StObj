@@ -11,10 +11,11 @@ namespace CK.Setup.Json
         {
             public JsonTypeInfo TypeInfo => _nullHandler.TypeInfo;
             public bool IsNullable => false; // Always false.
-            public Type Type => TypeInfo.Type;
-            public string JsonName => TypeInfo.JsonName;
-            public IEnumerable<string> PreviousJsonNames => TypeInfo.PreviousJsonNames;
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.ECMAScriptStandardJsonName;
+            public NullableTypeTree Type => TypeInfo.Type.ToAbnormalNull();
+            public string GenCSharpName => TypeInfo.GenCSharpName;
+            public string JsonName => TypeInfo.NonNullableJsonName;
+            public IEnumerable<string> PreviousJsonNames => TypeInfo.NonNullablePreviousJsonNames;
+            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.NonNullableECMAScriptStandardJsonName;
 
             public IJsonCodeGenHandler? TypeMapping => null;
 
@@ -37,20 +38,20 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-                    this.DoGenerateWrite( write, variableName, true, withType ?? false );
+                    this.DoGenerateWrite( write, variableName, handleNull: true, withType ?? false );
                 }
             }
 
             public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
-                bool isObject = TypeInfo == JsonTypeInfo.ObjectType;
-                if( isObject || !TypeInfo.IsFinal )
+                if( !TypeInfo.IsFinal )
                 {
-                    read.Append( variableName ).Append( " = (" ).AppendCSharpName( Type ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
+                    read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null ) throw new System.Text.Json.JsonException(\"Unexpected null value.\");" ).NewLine();
+                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
                 }
                 else
                 {
-                    TypeInfo.GenerateRead( read, variableName, assignOnly, true );
+                    this.DoGenerateRead( read, variableName, assignOnly );
                 }
             }
 
