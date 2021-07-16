@@ -14,7 +14,7 @@ namespace CK.Setup.Json
 
     public partial class JsonSerializationCodeGen
     {
-        IJsonCodeGenHandler ConfigureAndAddTypeInfoForListSetAndMap( JsonTypeInfo info, IFunctionScope fWrite, IFunctionScope fRead, NullableTypeTree tInterface )
+        JsonCodeGenHandler ConfigureAndAddTypeInfoForListSetAndMap( JsonTypeInfo info, IFunctionScope fWrite, IFunctionScope fRead, NullableTypeTree tInterface )
         {
             Debug.Assert( !info.Type.Type.IsInterface && tInterface.Type.IsInterface );
             info.Configure(
@@ -118,9 +118,9 @@ namespace CK.Setup.Json
                 } );
             }
             var info = CreateTypeInfo( tMap.ToNormalNull(), "M(" + keyHandler.JsonName + "," + valueHandler.JsonName + ")" )
-                       .SetECMAScriptStandardName( name: "M(" + keyHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + "," + valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + ")",
+                       ?.SetECMAScriptStandardName( name: "M(" + keyHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + "," + valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + ")",
                                                    isCanonical: keyHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical && valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
-            return (fWrite, fRead, info);
+            return info == null ? default : (fWrite, fRead, info);
         }
 
         (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateStringMapFunctions( NullableTypeTree tMap, NullableTypeTree tValue )
@@ -160,22 +160,22 @@ namespace CK.Setup.Json
                         .OpenBlock()
                         .Append( "string k = r.GetString();" ).NewLine()
                         .Append( "r.Read();" ).NewLine();
-                    valueHandler.GenerateRead( fRead, "v", false );
+                    valueHandler.GenerateRead( fRead, "v", true );
                     fRead.Append( "c.Add( k, v );" )
                          .CloseBlock()
                          .Append( "r.Read();" );
                 } );
             }
             var info = CreateTypeInfo( tMap.ToNormalNull(), "O(" + valueHandler.JsonName + ")" )
-                      .SetECMAScriptStandardName( "O(" + valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + ")", valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
-            return (fWrite, fRead, info);
+                       ?.SetECMAScriptStandardName( "O(" + valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + ")", valueHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
+            return info == null ? default : (fWrite, fRead, info);
         }
 
         (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateListOrSetFunctions( NullableTypeTree tColl, bool isList )
         {
             NullableTypeTree tItem = tColl.RawSubTypes[0];
 
-            if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler ) ) return default;
+            if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out JsonCodeGenHandler? itemHandler ) ) return default;
 
             var fReadDef = FunctionDefinition.Parse( "internal static void ReadLOrS_" + itemHandler.NumberName + "( ref System.Text.Json.Utf8JsonReader r, ICollection<" + itemHandler.GenCSharpName + "> c, PocoJsonSerializerOptions options )" );
             IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
@@ -188,17 +188,17 @@ namespace CK.Setup.Json
                          .Append( itemHandler.GenCSharpName ).Append( " v;" ).NewLine()
                          .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )" )
                          .OpenBlock();
-                    itemHandler.GenerateRead( fRead, "v", false );
+                    itemHandler.GenerateRead( fRead, "v", true );
                     fRead.Append( "c.Add( v );" )
                          .CloseBlock()
                          .Append( "r.Read();" );
                 } );
             }
             var info = CreateTypeInfo( tColl.ToNormalNull(), (isList ? "L(" : "S(") + itemHandler.JsonName + ")" )
-                       .SetECMAScriptStandardName( name: isList ? itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + "[]" : "S(" + itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + ")",
-                                                   isCanonical: isList && itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
+                       ?.SetECMAScriptStandardName( name: isList ? itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + "[]" : "S(" + itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + ")",
+                                                    isCanonical: isList && itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
 
-            return (fWrite, fRead, info);
+            return info == null ? default : (fWrite, fRead, info);
         }
 
         (IFunctionScope fWrite, IFunctionScope fRead, JsonTypeInfo info) CreateArrayFunctions( NullableTypeTree tArray, NullableTypeTree tItem )
@@ -208,7 +208,7 @@ namespace CK.Setup.Json
             // We don't really need to call CreateWriteEnumerable here: List<TItem> has already done it but
             // this call gives us the fWrite and the itemHandler.
             // Note: Keeping the if here is useless but this ensures the non nullability of the out parameters.
-            if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out IJsonCodeGenHandler? itemHandler ) ) return default;
+            if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out JsonCodeGenHandler? itemHandler ) ) return default;
 
             var fReadDef = FunctionDefinition.Parse( "internal static void ReadArray_" + itemHandler.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + itemHandler.GenCSharpName + "[] a, PocoJsonSerializerOptions options )" );
             IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
@@ -222,11 +222,11 @@ namespace CK.Setup.Json
                      .CloseBlock();
             }
             var info = CreateTypeInfo( tArray.ToNormalNull(), itemHandler.JsonName + "[]" )
-                       .SetECMAScriptStandardName( itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + "[]", false );
-            return (fWrite, fRead, info);
+                       ?.SetECMAScriptStandardName( itemHandler.TypeInfo.NonNullableECMAScriptStandardJsonName.Name + "[]", false );
+            return info == null ? default : (fWrite, fRead, info);
         }
 
-        bool CreateWriteEnumerable( NullableTypeTree tItem, [NotNullWhen( true )] out IFunctionScope? fWrite, [NotNullWhen( true )] out IJsonCodeGenHandler? itemHandler )
+        bool CreateWriteEnumerable( NullableTypeTree tItem, [NotNullWhen( true )] out IFunctionScope? fWrite, [NotNullWhen( true )] out JsonCodeGenHandler? itemHandler )
         {
             fWrite = null;
             itemHandler = GetHandler( tItem );

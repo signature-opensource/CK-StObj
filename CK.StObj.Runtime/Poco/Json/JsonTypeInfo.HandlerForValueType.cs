@@ -7,17 +7,9 @@ namespace CK.Setup.Json
 {
     public partial class JsonTypeInfo
     {
-        internal class HandlerForValueType : IJsonCodeGenHandler
+        internal class HandlerForValueType : JsonCodeGenHandler
         {
-            public JsonTypeInfo TypeInfo { get; }
-            public bool IsNullable => false; // Always false.
-            public NullableTypeTree Type => TypeInfo.Type;
-            public string GenCSharpName => TypeInfo.GenCSharpName;
-
-            public string JsonName => TypeInfo.NonNullableJsonName;
-            public IEnumerable<string> PreviousJsonNames => TypeInfo.NonNullablePreviousJsonNames;
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => TypeInfo.NonNullableECMAScriptStandardJsonName;
-            public IJsonCodeGenHandler? TypeMapping => null;
+            public override JsonTypeInfo TypeInfo { get; }
 
             readonly HandlerForNullableValueType _nullHandler;
 
@@ -27,21 +19,21 @@ namespace CK.Setup.Json
                 _nullHandler = new HandlerForNullableValueType( this );
             }
 
-            public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
+            public override void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
                 Debug.Assert( TypeInfo.IsFinal );
-                this.DoGenerateWrite( write, variableName, handleNull: false, withType ?? false );
+                DoGenerateWrite( write, variableName, handleNull: false, withType ?? false );
             }
 
-            public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
+            public override void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
                 Debug.Assert( TypeInfo.IsFinal );
-                this.DoGenerateRead( read, variableName, assignOnly );
+                DoGenerateRead( read, variableName, assignOnly );
             }
 
-            public IJsonCodeGenHandler ToNullHandler() => _nullHandler;
+            public override JsonCodeGenHandler ToNullHandler() => _nullHandler;
 
-            public IJsonCodeGenHandler ToNonNullHandler() => this;
+            public override JsonCodeGenHandler ToNonNullHandler() => this;
         }
     }
 }

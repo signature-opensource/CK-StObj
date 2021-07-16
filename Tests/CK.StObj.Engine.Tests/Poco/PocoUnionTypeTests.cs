@@ -45,7 +45,9 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
                 public string Thing { get; }
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
             }
         }
 
@@ -208,7 +210,7 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Thing.Should().Be( 34 );
             p.Thing = "lklk";
             p.Thing.Should().Be( "lklk" );
-            p.Thing = null!;
+            p.Thing = null;
             p.Thing.Should().BeNull();
 
             p.Invoking( x => x.Thing = 25.88 ).Should().Throw<ArgumentException>();

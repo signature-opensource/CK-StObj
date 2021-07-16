@@ -64,7 +64,7 @@ namespace CK.Setup.Json
                 // When not null, we are dealing only with concrete types here: the object MUST be of an allowed concrete type, an abstraction
                 // that wouldn't be one of the allowed concrete type must NOT be handled!
                 // That's why we can use a direct pattern matching on the object's type for the write method (reference types are ordered from specializations
-                // to generalization).
+                // to generalization) and we use the GenericWriteHandler to remove NRT duplicates.
                 GenerateDynamicWrite( _typeInfos );
 
                 // Reading must handle the [TypeName,...] array: it needs a lookup from the "type name" to the handler to use: this is the goal of
@@ -105,12 +105,15 @@ namespace CK.Setup.Json
             static readonly object oFalse = false;
             static readonly object oTrue = true;
 
-            internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )
+            internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options, bool throwOnNull = false )
             {
                 object o;
                 switch( r.TokenType )
                 {
-                    case System.Text.Json.JsonTokenType.Null: o = null; break;
+                    case System.Text.Json.JsonTokenType.Null:
+                        if( throwOnNull ) throw new System.Text.Json.JsonException(""Unexpected null value"");
+                        o = null;
+                        break;
                     case System.Text.Json.JsonTokenType.Number: o = r.GetDouble(); break;
                     case System.Text.Json.JsonTokenType.String: o = r.GetString(); break;
                     case System.Text.Json.JsonTokenType.False: o = oFalse; break;
@@ -153,9 +156,18 @@ namespace CK.Setup.Json
             foreach( var t in _typeInfos )
             {
                 if( t == JsonTypeInfo.ObjectType ) continue;
-                Debug.Assert( t.NonNullHandler.JsonName != t.NullHandler.JsonName );
-                GenerateRead( ctor, t.NonNullHandler );
-                GenerateRead( ctor, t.NullHandler );
+                var h = t.NonNullHandler;
+                Debug.Assert( h.JsonName != t.NullHandler.JsonName );
+                Debug.Assert( t.GenCSharpName == h.GenCSharpName );
+                ctor.OpenBlock()
+                    .Append( "static object d( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
+                    .Append( h.GenCSharpName ).Append( " o;" ).NewLine();
+                h.DoGenerateRead( ctor, "o", assignOnly: true, handleNull: false );
+                ctor.NewLine().Append( "return o;" ).NewLine()
+                    .Append( "};" ).NewLine();
+                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( h.JsonName ).Append( ", d );" ).NewLine()
+                    .Append( "_typeReaders.Add( " ).AppendSourceString( t.NullHandler.JsonName ).Append( ", d );" ).NewLine()
+                    .CloseBlock();
             }
 
             foreach( var t in _standardReaders )
@@ -171,18 +183,6 @@ namespace CK.Setup.Json
                     ctor.Append( "_typeReaders.Add( " ).AppendSourceString( t.JsonName + '?' ).Append( ", ECMAScriptStandardRead_" ).Append( t.JsonName ).Append( " );" ).NewLine();
                 }
             }
-
-            static void GenerateRead( IFunctionScope ctor, IJsonCodeGenHandler h )
-            {
-                ctor.OpenBlock()
-                    .Append( "static object d( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
-                    .Append( h.GenCSharpName ).Append( " o;" ).NewLine();
-                h.DoGenerateRead( ctor, "o", assignOnly: true );
-                ctor.NewLine().Append( "return o;" ).NewLine()
-                    .Append( "};" ).NewLine();
-                ctor.Append( "_typeReaders.Add( " ).AppendSourceString( h.JsonName ).Append( ", d );" ).NewLine()
-                    .CloseBlock();
-            }
         }
 
         void GenerateDynamicWrite( List<JsonTypeInfo> types )
@@ -190,22 +190,30 @@ namespace CK.Setup.Json
             _pocoDirectory
                 .GeneratedByComment()
                 .Append( @"
-internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, PocoJsonSerializerOptions options )
+internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, PocoJsonSerializerOptions options, bool throwOnNull = false )
 {
     switch( o )
     {
-        case null: w.WriteNullValue(); break;" ).NewLine()
+        case null:
+            if( throwOnNull ) throw new InvalidOperationException( ""A null value appear where it should not. Writing JSON is impossible."" );
+            w.WriteNullValue();
+            break;" ).NewLine()
         .CreatePart( out var mappings ).Append( @"
         default: throw new System.Text.Json.JsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" );
     }
 }" );
+            var done = new HashSet<JsonCodeGenHandler>();
             foreach( var t in types )
             {
                 if( t == JsonTypeInfo.ObjectType ) continue;
-                mappings.Append( "case " ).Append( t.GenCSharpName ).Append( " v: " );
                 Debug.Assert( t.NonNullHandler.TypeMapping == null, "Only concrete Types are JsonTypeInfo, mapped types are just... mappings." );
-                t.NonNullHandler.DoGenerateWrite( mappings, "v", handleNull: false, writeTypeName: true );
-                mappings.NewLine().Append( "break;" ).NewLine();
+                Debug.Assert( t.NonNullHandler.GenCSharpName == t.GenericWriteHandler.GenCSharpName );
+                if( done.Add( t.GenericWriteHandler ) )
+                {
+                    mappings.Append( "case " ).Append( t.GenCSharpName ).Append( " v: " );
+                    t.NonNullHandler.DoGenerateWrite( mappings, "v", handleNull: false, writeTypeName: true );
+                    mappings.NewLine().Append( "break;" ).NewLine();
+                }
             }
         }
     }

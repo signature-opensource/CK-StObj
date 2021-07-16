@@ -42,16 +42,6 @@ namespace CK.Setup.Json
         public int Number { get; }
 
         /// <summary>
-        /// Nullable type handler.
-        /// </summary>
-        public IJsonCodeGenHandler NullHandler => NonNullHandler.ToNullHandler();
-
-        /// <summary>
-        /// Not nullable type handler.
-        /// </summary>
-        public IJsonCodeGenHandler NonNullHandler { get; }
-
-        /// <summary>
         /// Gets whether the writer uses a 'ref' parameter.
         /// This should be used for large struct (this is used for value tuples).
         /// </summary>
@@ -73,6 +63,27 @@ namespace CK.Setup.Json
         /// </para>
         /// </summary>
         public float TypeSpecOrder { get; internal set; }
+
+        /// <summary>
+        /// Nullable type handler.
+        /// </summary>
+        public JsonCodeGenHandler NullHandler => NonNullHandler.ToNullHandler();
+
+        /// <summary>
+        /// Not nullable type handler.
+        /// </summary>
+        public JsonCodeGenHandler NonNullHandler { get; }
+
+        /// <summary>
+        /// Gets the non null handler that is used in the generic write. It is this <see cref="NonNullHandler"/> except
+        /// for generic type with subordinated non nullable reference types. In such case, the handler is the one of the type
+        /// in the "oblivious nullable reference type context".
+        /// </summary>
+        /// <remarks>
+        /// We could handle here the "notnull" generic constraint on generic parameter to keep the non nullable reference type (such as the dictionary key).
+        /// Currently we ignore this. 
+        /// </remarks>
+        public JsonCodeGenHandler GenericWriteHandler { get; }
 
         internal string NonNullableJsonName { get; }
 
@@ -98,9 +109,9 @@ namespace CK.Setup.Json
         public bool IsFinal => _specializations == null;
 
         /// <summary>
-        /// Gets the non nullable CSharp name to use in generated code.
+        /// Gets the non nullable (oblivious) CSharp name to use in generated code.
         /// Nullable handlers use the Nullable type for value types but since the generated code is
-        /// not NRT aware, this is the CSharpName for nullable and not nullable reference types.
+        /// not NRT aware, this is the CSharpName for both nullable and not nullable reference types.
         /// </summary>
         public string GenCSharpName { get; }
 
@@ -112,10 +123,12 @@ namespace CK.Setup.Json
         public IReadOnlyList<JsonTypeInfo> AllSpecializations => _specializations ?? EmptySpecializations;
 
         // The factory method is JsonSerializationCodeGen.CreateTypeInfo.
-        internal JsonTypeInfo( NullableTypeTree t, int number, string name, IReadOnlyList<string>? previousNames = null )
+        internal JsonTypeInfo( NullableTypeTree t, int number, string name, IReadOnlyList<string>? previousNames, JsonCodeGenHandler? writeHandler )
         {
             Debug.Assert( number >= 0 && t.IsNormalNull );
             Type = t;
+            // We cannot use the oblivious type (that may have computed for the writeHandler) here because
+            // value tuple must use their generic form (not the parentheses) in switch case.
             GenCSharpName = t.Type.ToCSharpName( useValueTupleParentheses: false );
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
@@ -132,6 +145,7 @@ namespace CK.Setup.Json
                 var n = new HandlerForReferenceType( this );
                 NonNullHandler = n.ToNonNullHandler();
             }
+            GenericWriteHandler = writeHandler ?? NonNullHandler;
         }
 
         // Untyped singleton object.
@@ -147,7 +161,8 @@ namespace CK.Setup.Json
             _specializations = EmptySpecializations;
             var n = new HandlerForReferenceType( this );
             NonNullHandler = n.ToNonNullHandler();
-        }
+            GenericWriteHandler = NonNullHandler;
+      }
 
         /// <summary>
         /// Gets or sets the generator that writes the code to read a value into a variable.

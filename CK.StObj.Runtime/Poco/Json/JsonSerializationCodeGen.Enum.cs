@@ -24,20 +24,20 @@ namespace CK.Setup.Json
             var uTHandler = _map[uT];
 
             var info = AllowTypeInfo( t, name, previousNames );
-            return info.Configure(
-                        ( ICodeWriter write, string variableName )
-                            => write.Append( "w.WriteNumberValue( (" ).Append( uTHandler.GenCSharpName ).Append( ')' ).Append( variableName ).Append( " );" ),
-                        ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
-                            =>
-                        {
-                            // No need to defer here: the underlying types are basic number types.
-                            read.OpenBlock()
-                                .Append( "var " );
-                            uTHandler.GenerateRead( read, "u", true );
-                            read.NewLine()
-                                .Append( variableName ).Append( " = (" ).Append( info.GenCSharpName ).Append( ")u;" )
-                                .CloseBlock();
-                        } );
+            return info?.Configure(
+                         ( ICodeWriter write, string variableName )
+                             => write.Append( "w.WriteNumberValue( (" ).Append( uTHandler.GenCSharpName ).Append( ')' ).Append( variableName ).Append( " );" ),
+                         ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable )
+                             =>
+                         {
+                             // No need to defer here: the underlying types are basic number types.
+                             read.OpenBlock()
+                                 .Append( "var " );
+                             uTHandler.GenerateRead( read, "u", true );
+                             read.NewLine()
+                                 .Append( variableName ).Append( " = (" ).Append( info.GenCSharpName ).Append( ")u;" )
+                                 .CloseBlock();
+                         } );
         }
 
     }

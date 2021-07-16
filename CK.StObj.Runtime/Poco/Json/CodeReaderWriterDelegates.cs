@@ -10,7 +10,7 @@ namespace CK.Setup.Json
     /// variable named "w" and a PocoJsonSerializerOptions variable named "options".
     /// <para>
     /// This is configured on JsonTypeInfo by <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> and
-    /// used by handlers bound to the type when <see cref="IJsonCodeGenHandler.GenerateWrite"/> is called.
+    /// used by handlers bound to the type when <see cref="JsonCodeGenHandler.GenerateWrite"/> is called.
     /// </para>
     /// </summary>
     /// <param name="write">The code writer to uses.</param>
@@ -25,7 +25,7 @@ namespace CK.Setup.Json
     /// <param name="read">The code writer to use.</param>
     /// <param name="variableName">The variable name.</param>
     /// <param name="assignOnly">True is the variable must be only assigned: no in-place read is possible. Used by collections and Poco fields.</param>
-    /// <param name="isNullable">True if the variable can be set to null, false if it cannot be set to null.</param>
+    /// <param name="isNullable">True if the variable may initially be null, false if it is necessarily not null.</param>
     public delegate void CodeReader( ICodeWriter read, string variableName, bool assignOnly, bool isNullable );
 
 }

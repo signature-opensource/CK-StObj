@@ -55,13 +55,13 @@ namespace CK.Setup.Json
                 };
             }
 
-            AllowTypeInfo( typeof( string ), "string" ).Configure( WriteString,
+            AllowTypeInfo( typeof( string ), "string" )!.Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetString(); r.Read();" );
                 }
                 );
-            AllowTypeInfo( typeof( bool ), "bool" ).Configure(
+            AllowTypeInfo( typeof( bool ), "bool" )!.Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
                     write.Append( "w.WriteBooleanValue( " ).Append( variableName ).Append( " );" );
@@ -70,14 +70,14 @@ namespace CK.Setup.Json
                 {
                     read.Append( variableName ).Append( " = r.GetBoolean(); r.Read();" );
                 } );
-            AllowTypeInfo( typeof( int ), "int" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( int ), "int" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetInt32(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( byte[] ), "byte[]" ).Configure(
+            AllowTypeInfo( typeof( byte[] ), "byte[]" )!.Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
                     write.Append( "w.WriteBase64StringValue( " ).Append( variableName ).Append( " );" );
@@ -87,13 +87,13 @@ namespace CK.Setup.Json
                     read.Append( variableName ).Append( " = r.GetBytesFromBase64(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( Guid ), "Guid" ).Configure( WriteString,
+            AllowTypeInfo( typeof( Guid ), "Guid" )!.Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetGuid(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( decimal ), "decimal" ).Configure( WriteECMAScripSafeNumber(),
+            AllowTypeInfo( typeof( decimal ), "decimal" )!.Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
@@ -101,28 +101,28 @@ namespace CK.Setup.Json
                 } )
                 .SetECMAScriptStandardName( "BigInt", false );
 
-            AllowTypeInfo( typeof( uint ), "uint" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( uint ), "uint" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetUInt32(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( double ), "double" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( double ), "double" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetDouble(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", true );
 
-            AllowTypeInfo( typeof( float ), "float" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( float ), "float" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetSingle(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( long ), "long" ).Configure( WriteECMAScripSafeNumber(),
+            AllowTypeInfo( typeof( long ), "long" )!.Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
@@ -130,7 +130,7 @@ namespace CK.Setup.Json
                 } )
                 .SetECMAScriptStandardName( "BigInt", true );
 
-            AllowTypeInfo( typeof( ulong ), "ulong" ).Configure( WriteECMAScripSafeNumber(),
+            AllowTypeInfo( typeof( ulong ), "ulong" )!.Configure( WriteECMAScripSafeNumber(),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     // Instead of challenging the options, let's challenge the data itself and apply Postel's law (see https://en.wikipedia.org/wiki/Robustness_principle).
@@ -138,35 +138,35 @@ namespace CK.Setup.Json
                 } )
                 .SetECMAScriptStandardName( "BigInt", false );
 
-            AllowTypeInfo( typeof( byte ), "byte" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( byte ), "byte" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetByte(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( sbyte ), "sbyte" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( sbyte ), "sbyte" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetSByte(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( short ), "short" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( short ), "short" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetInt16(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( ushort ), "ushort" ).Configure( WriteNumber,
+            AllowTypeInfo( typeof( ushort ), "ushort" )!.Configure( WriteNumber,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetUInt16(); r.Read();" );
                 } )
                 .SetECMAScriptStandardName( "Number", false );
 
-            AllowTypeInfo( typeof( System.Numerics.BigInteger ), "BigInteger" ).Configure(
+            AllowTypeInfo( typeof( System.Numerics.BigInteger ), "BigInteger" )!.Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
                     // Use the BigInteger.ToString(String) method with the "R" format specifier to generate the string representation of the BigInteger value.
@@ -180,19 +180,19 @@ namespace CK.Setup.Json
                 } )
                 .SetECMAScriptStandardName( "BigInt", false );
 
-            AllowTypeInfo( typeof( DateTime ), "DateTime" ).Configure( WriteString,
+            AllowTypeInfo( typeof( DateTime ), "DateTime" )!.Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetDateTime(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( DateTimeOffset ), "DateTimeOffset" ).Configure( WriteString,
+            AllowTypeInfo( typeof( DateTimeOffset ), "DateTimeOffset" )!.Configure( WriteString,
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
                     read.Append( variableName ).Append( " = r.GetDateTimeOffset(); r.Read();" );
                 } );
 
-            AllowTypeInfo( typeof( TimeSpan ), "TimeSpan" ).Configure(
+            AllowTypeInfo( typeof( TimeSpan ), "TimeSpan" )!.Configure(
                 ( ICodeWriter write, string variableName ) => WriteECMAScripSafeNumber()( write, variableName + ".Ticks" ),
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {

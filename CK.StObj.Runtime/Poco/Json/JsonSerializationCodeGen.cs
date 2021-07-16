@@ -34,7 +34,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Maps Type and Names (current and previous) to its handler.
         /// </summary>
-        readonly Dictionary<object, IJsonCodeGenHandler> _map;
+        readonly Dictionary<object, JsonCodeGenHandler> _map;
         // The JsonTypeInfo list is ordered. UntypedObject, value types, sealed classes and Poco
         // come first. Then come the "external" reference types ordered from "less IsAssignableFrom" (specialization)
         // to "most IsAssignableFrom" (generalization) so that switch case entries are correctly ordered.
@@ -62,7 +62,7 @@ namespace CK.Setup.Json
         {
             _monitor = monitor;
             _pocoDirectory = pocoDirectory;
-            _map = new Dictionary<object, IJsonCodeGenHandler>();
+            _map = new Dictionary<object, JsonCodeGenHandler>();
             _typeInfos = new List<JsonTypeInfo>();
             _reentrancy = new Stack<NullableTypeTree>();
             _finalReadWrite = new List<Action<IActivityMonitor>>();
@@ -78,10 +78,10 @@ namespace CK.Setup.Json
         public bool IsAllowedType( Type t ) => _map.ContainsKey( t );
 
         /// <summary>
-        /// Gets the types or names mapping to the <see cref="IJsonCodeGenHandler"/> to use (keys are either the Type
+        /// Gets the types or names mapping to the <see cref="JsonCodeGenHandler"/> to use (keys are either the Type
         /// object or the serialized type name or appear in the <see cref="ExternalNameAttribute.PreviousNames"/>).
         /// </summary>
-        public IReadOnlyDictionary<object, IJsonCodeGenHandler> HandlerMap => _map;
+        public IReadOnlyDictionary<object, JsonCodeGenHandler> HandlerMap => _map;
 
         /// <summary>
         /// Gets the currently allowed types.
@@ -105,11 +105,27 @@ namespace CK.Setup.Json
         /// <param name="name">The non nullable serialized type name.</param>
         /// <param name="previousNames">Optional non nullable previous names.</param>
         /// <returns>A new type info.</returns>
-        public JsonTypeInfo CreateTypeInfo( NullableTypeTree normalType, string name, IReadOnlyList<string>? previousNames = null )
+        public JsonTypeInfo? CreateTypeInfo( NullableTypeTree normalType, string name, IReadOnlyList<string>? previousNames = null )
         {
             if( !normalType.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( normalType ) );
             if( name == null || name.Length == 0 || name[^1] == '?' ) throw new ArgumentException( "Must be a non nullable serialized type name.", nameof( name ) );
-            return new JsonTypeInfo( normalType, _typeInfoAutoNumber++, name, previousNames );
+
+            JsonCodeGenHandler? writeHandler = null;
+            if( normalType.RawSubTypes.Count > 0 )
+            {
+                var oblivious = normalType.Type.GetNullableTypeTree();
+                if( oblivious != normalType )
+                {
+                    if( oblivious.Kind.IsReferenceType() ) oblivious = oblivious.ToAbnormalNull();
+                    writeHandler = GetHandler( oblivious );
+                    if( writeHandler == null )
+                    {
+                        _monitor.Error( $"Unable to obtain the GenericWriteHandler for oblivious '{oblivious}' for type '{normalType}'." );
+                        return null;
+                    }
+                }
+            }
+            return new JsonTypeInfo( normalType, _typeInfoAutoNumber++, name, previousNames, writeHandler );
         }
 
         /// <summary>
@@ -119,14 +135,15 @@ namespace CK.Setup.Json
         /// <param name="t">The type to allow..</param>
         /// <param name="name">The serialized name.</param>
         /// <param name="previousNames">Optional list of previous names (act as type aliases).</param>
-        /// <returns>The allowed type info that must still be configured.</returns>
-        public JsonTypeInfo AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
+        /// <returns>The allowed type info that must still be configured or null if it cannot be created.</returns>
+        public JsonTypeInfo? AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
         {
-            return AllowTypeInfo( CreateTypeInfo( t.GetNullableTypeTree(), name, previousNames ) );
+            var info = CreateTypeInfo( t.GetNullableTypeTree(), name, previousNames );
+            return info == null ? null : AllowTypeInfo( info );
         }
 
         /// <summary>
-        /// Registers the <see cref="IJsonCodeGenHandler.Type"/>, the <see cref="IJsonCodeGenHandler.JsonName"/> and all <see cref="IJsonCodeGenHandler.PreviousJsonNames"/>
+        /// Registers the <see cref="JsonCodeGenHandler.Type"/>, the <see cref="JsonCodeGenHandler.JsonName"/> and all <see cref="JsonCodeGenHandler.PreviousJsonNames"/>
         /// of the <see cref="JsonTypeInfo.NonNullHandler"/> and if the type is a value type, its Nullable&lt;Type&gt; is mapped to
         /// the <see cref="JsonTypeInfo.NullHandler"/>.
         /// <para>
@@ -221,18 +238,18 @@ namespace CK.Setup.Json
             }
             return i;
 
-            static void Register( Dictionary<object, IJsonCodeGenHandler> _map, IActivityMonitor monitor, IJsonCodeGenHandler h )
+            static void Register( Dictionary<object, JsonCodeGenHandler> _map, IActivityMonitor monitor, JsonCodeGenHandler h )
             {
                 _map.Add( h.Type, h );
-                _map.Add( h.JsonName, h );
-                foreach( var p in h.PreviousJsonNames )
-                {
-                    if( !_map.TryAdd( p, h ) )
-                    {
-                        var exist = _map[p];
-                        monitor.Warn( $"Previous name '{p}' for '{h.TypeInfo}' is already mapped to '{exist.TypeInfo}'. It is ignored." );
-                    }
-                }
+                //_map.Add( h.JsonName, h );
+                //foreach( var p in h.PreviousJsonNames )
+                //{
+                //    if( !_map.TryAdd( p, h ) )
+                //    {
+                //        var exist = _map[p];
+                //        monitor.Warn( $"Previous name '{p}' for '{h.TypeInfo}' is already mapped to '{exist.TypeInfo}'. It is ignored." );
+                //    }
+                //}
             }
         }
 
@@ -271,7 +288,7 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="t">The type to allow.</param>
         /// <returns>The handler to use. Null on error.</returns>
-        public IJsonCodeGenHandler? GetHandler( NullableTypeTree t )
+        public JsonCodeGenHandler? GetHandler( NullableTypeTree t )
         {
             if( !_map.TryGetValue( t, out var handler ) )
             {
@@ -410,7 +427,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Adds an unambiguous reference type alias mapping to an already existing concrete reference type.
         /// No <see cref="JsonTypeInfo"/> is created for them, just a mapping to a couple (nullable and not nullable)
-        /// of <see cref="IJsonCodeGenHandler"/> with a non null <see cref="IJsonCodeGenHandler.IsTypeMapping"/>.
+        /// of <see cref="JsonCodeGenHandler"/> with a non null <see cref="JsonCodeGenHandler.IsTypeMapping"/>.
         /// <para>
         /// The <paramref name="alias"/> must be assignable from <paramref name="target"/>' type otherwise an <see cref="ArgumentException"/> is thrown.
         /// </para>
@@ -443,7 +460,7 @@ namespace CK.Setup.Json
             AllowMapping( type.GetNullableTypeTree(), JsonTypeInfo.ObjectType.NullHandler );
         }
 
-        void AllowMapping( NullableTypeTree tree, IJsonCodeGenHandler h )
+        void AllowMapping( NullableTypeTree tree, JsonCodeGenHandler h )
         {
             var hNull = new JsonTypeInfo.HandlerForTypeMapping( h, tree );
             _map.Add( tree, hNull );
@@ -473,12 +490,12 @@ namespace CK.Setup.Json
         /// <summary>
         /// Generates the case pattern match on the types that must be written.
         /// The handlers must be non empty, must be sorted according to the <see cref="JsonTypeInfo.TypeSpecOrder"/> and
-        /// no handler with a <see cref="IJsonCodeGenHandler.TypeMapping"/> must appear otherwise an <see cref="ArgumentException"/>
+        /// no handler with a <see cref="JsonCodeGenHandler.TypeMapping"/> must appear otherwise an <see cref="ArgumentException"/>
         /// is thrown.
         /// </summary>
         /// <param name="write">The target write part.</param>
         /// <param name="handlers">A list of sorted handlers.</param>
-        public void GenerateWriteSwitchCases( ICodeWriter write, IEnumerable<IJsonCodeGenHandler> handlers )
+        public void GenerateWriteSwitchCases( ICodeWriter write, IEnumerable<JsonCodeGenHandler> handlers )
         {
             if( write == null ) throw new ArgumentNullException( nameof( write ) );
             if( handlers == null ) throw new ArgumentNullException( nameof( handlers ) );

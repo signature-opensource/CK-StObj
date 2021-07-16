@@ -7,22 +7,22 @@ namespace CK.Setup.Json
 {
     public partial class JsonTypeInfo
     {
-        internal class HandlerForTypeMapping : IJsonCodeGenHandler
+        internal class HandlerForTypeMapping : JsonCodeGenHandler
         {
-            public JsonTypeInfo TypeInfo => _mapping.TypeInfo;
-            public bool IsNullable => true;
-            public NullableTypeTree Type { get; }
-            public string GenCSharpName { get; }
+            public override JsonTypeInfo TypeInfo => _mapping.TypeInfo;
+            public override bool IsNullable => true;
+            public override NullableTypeTree Type { get; }
+            public override string GenCSharpName { get; }
 
-            public string JsonName => _mapping.JsonName;
-            public IEnumerable<string> PreviousJsonNames => _mapping.PreviousJsonNames;
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => _mapping.ECMAScriptStandardJsonName;
-            public IJsonCodeGenHandler? TypeMapping => _mapping;
+            public override string JsonName => _mapping.JsonName;
+            public override IEnumerable<string> PreviousJsonNames => _mapping.PreviousJsonNames;
+            public override ECMAScriptStandardJsonName ECMAScriptStandardJsonName => _mapping.ECMAScriptStandardJsonName;
+            public override JsonCodeGenHandler? TypeMapping => _mapping;
 
-            readonly IJsonCodeGenHandler _mapping;
+            readonly JsonCodeGenHandler _mapping;
             readonly HandlerForNonNullableTypeMapping _nonNullable;
 
-            public HandlerForTypeMapping( IJsonCodeGenHandler mapping, NullableTypeTree t )
+            public HandlerForTypeMapping( JsonCodeGenHandler mapping, NullableTypeTree t )
             {
                 Debug.Assert( mapping is HandlerForReferenceType && mapping.IsNullable );
                 _mapping = mapping;
@@ -31,16 +31,16 @@ namespace CK.Setup.Json
                 _nonNullable = new HandlerForNonNullableTypeMapping( this );
             }
 
-            public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
+            public override void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
                 _mapping.GenerateWrite( write, variableName, withType );
             }
 
-            public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
+            public override void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
                 if( _mapping.TypeInfo == JsonTypeInfo.ObjectType )
                 {
-                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
+                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName ).Append( ")PocoDirectory_CK.ReadObject( ref r, options, false );" ).NewLine();
                 }
                 else
                 {
@@ -48,9 +48,9 @@ namespace CK.Setup.Json
                 }
             }
 
-            public IJsonCodeGenHandler ToNullHandler() => this;
+            public override JsonCodeGenHandler ToNullHandler() => this;
 
-            public IJsonCodeGenHandler ToNonNullHandler() => _nonNullable;
+            public override JsonCodeGenHandler ToNonNullHandler() => _nonNullable;
         }
     }
 }

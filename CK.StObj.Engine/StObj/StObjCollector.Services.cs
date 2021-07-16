@@ -121,7 +121,7 @@ namespace CK.Setup
                 return success;
             }
 
-            public bool Resolve( IActivityMonitor m, FinalRegisterer finalRegisterer )
+            public bool Resolve( IActivityMonitor m, FinalRegisterer _ )
             {
                 bool success = true;
                 Debug.Assert( Classes.Count > 0 && Interfaces.Count > 0 );
@@ -188,7 +188,7 @@ namespace CK.Setup
 
             public static IReadOnlyCollection<InterfaceFamily> Build(
                 IActivityMonitor m,
-                StObjObjectEngineMap engineMap,
+                StObjObjectEngineMap _,
                 IEnumerable<AutoServiceClassInfo> classes )
             {
                 var families = new Dictionary<AutoServiceInterfaceInfo, InterfaceFamily>();

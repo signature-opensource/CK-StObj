@@ -31,7 +31,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
             root.Teacher = new Teacher( "Paul", "Aggreg" );
             root.Student = new Student( "Sartre", 3712 );
 
-            var root2 = JsonTestHelper.Roundtrip( directory, root, text: t => TestHelper.Monitor.Info( $"ITest serialization: " + t ) );
+            var root2 = JsonTestHelper.Roundtrip( directory, root, text: t =>
+            {
+                TestHelper.Monitor.Info( $"ITest serialization: " + t );
+                t.Should().Be( @"[""NoIntern"",{""Person"":[""CP"",""Jean""],""Teacher"":""Paul|Aggreg"",""Student"":""Sartre|3712""}]" );
+            } );
             root2.Should().BeEquivalentTo( root );
         }
 

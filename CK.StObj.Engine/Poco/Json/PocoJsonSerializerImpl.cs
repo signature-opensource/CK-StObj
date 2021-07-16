@@ -60,10 +60,11 @@ namespace CK.Setup.Json
             jsonCodeGen.AllowInterfaceToUntyped( typeof( IPoco ) );
             jsonCodeGen.AllowInterfaceToUntyped( typeof( IClosedPoco ) );
 
+            bool success = true;
             // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
             foreach( var root in pocoSupport.Roots )
             {
-                var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames ).Configure(
+                var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames )?.Configure(
                                 ( ICodeWriter write, string variableName )
                                         => write.Append( "((PocoJsonSerializer.IWriter)" ).Append( variableName ).Append( ").Write( w, false, options );" ),
                                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
@@ -88,9 +89,16 @@ namespace CK.Setup.Json
                                             .Append( "( ref r, options );" );
                                     }
                                 } );
-                foreach( var i in root.Interfaces )
+                if( typeInfo != null )
                 {
-                    jsonCodeGen.AllowTypeAlias( i.PocoInterface.GetNullableTypeTree(), typeInfo );
+                    foreach( var i in root.Interfaces )
+                    {
+                        jsonCodeGen.AllowTypeAlias( i.PocoInterface.GetNullableTypeTree(), typeInfo );
+                    }
+                }
+                else
+                {
+                    success = false;
                 }
             }
             // Maps the "other Poco interfaces" to "Untyped" object.
@@ -99,7 +107,9 @@ namespace CK.Setup.Json
                 jsonCodeGen.AllowInterfaceToUntyped( other.Key );
             }
 
-            return new CSCodeGenerationResult( nameof( GeneratePocoSupport ) );
+            return success
+                    ? new CSCodeGenerationResult( nameof( GeneratePocoSupport ) )
+                    : CSCodeGenerationResult.Failed;
         }
 
         // Step 2: Generates the Read & Write methods.
@@ -251,13 +261,13 @@ namespace CK.Setup.Json
                                                ITypeScopePart write,
                                                ITypeScopePart read,
                                                ref bool isPocoECMAScriptStandardCompliant,
-                                               IJsonCodeGenHandler mainHandler )
+                                               JsonCodeGenHandler mainHandler )
         {
             // Analyses the UnionTypes and creates the handler for each of them.
             // - Forbids ambiguous mapping for ECMAScriptStandard: all numerics are mapped to "Number" or "BigInt" (and arrays or lists are arrays).
             // - The ECMAScriptStandard projected name must be unique (and is associated to its actual handler).
-            var handlers = new List<IJsonCodeGenHandler>();
-            var checkDuplicatedStandardName = new Dictionary<string, List<IJsonCodeGenHandler>>();
+            var handlers = new List<JsonCodeGenHandler>();
+            var checkDuplicatedStandardName = new Dictionary<string, List<JsonCodeGenHandler>>();
             // Gets all the handlers and build groups of ECMAStandardJsnoName handlers (only if the Poco is still standard compliant).
             foreach( var union in p.PropertyUnionTypes )
             {
@@ -273,12 +283,12 @@ namespace CK.Setup.Json
                     }
                     else
                     {
-                        checkDuplicatedStandardName.Add( n.Name, new List<IJsonCodeGenHandler>() { h } );
+                        checkDuplicatedStandardName.Add( n.Name, new List<JsonCodeGenHandler>() { h } );
                     }
                 }
             }
             // Analyze the groups (only if the Poco is still standard compliant).
-            List<IJsonCodeGenHandler>? ecmaStandardReadhandlers = null;
+            List<JsonCodeGenHandler>? ecmaStandardReadhandlers = null;
             bool isECMAScriptStandardCompliant = isPocoECMAScriptStandardCompliant;
             if( isECMAScriptStandardCompliant )
             {
@@ -295,13 +305,13 @@ namespace CK.Setup.Json
                         }
                         var winner = group[idxCanocical];
                         monitor.Trace( $"{p} UnionType '{group.Select( h => h.GenCSharpName ).Concatenate( "' ,'" )}' types will be read as {winner.GenCSharpName} in ECMAScript standard name." );
-                        if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<IJsonCodeGenHandler>();
+                        if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<JsonCodeGenHandler>();
                         ecmaStandardReadhandlers.Add( winner );
                     }
                     else
                     {
                         monitor.Debug( $"{p} UnionType unambiguous mapping in ECMAScript standard name from '{group[0].ECMAScriptStandardJsonName.Name}' to '{group[0].GenCSharpName}'." );
-                        if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<IJsonCodeGenHandler>();
+                        if( ecmaStandardReadhandlers == null ) ecmaStandardReadhandlers = new List<JsonCodeGenHandler>();
                         ecmaStandardReadhandlers.Add( group[0] );
                     }
                 }

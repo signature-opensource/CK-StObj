@@ -16,7 +16,7 @@ namespace CK.Setup.Json
     {
         JsonTypeInfo? TryRegisterInfoForValueTuple( NullableTypeTree t, IReadOnlyList<NullableTypeTree> types )
         {
-            IJsonCodeGenHandler[] handlers = new IJsonCodeGenHandler[types.Count];
+            JsonCodeGenHandler[] handlers = new JsonCodeGenHandler[types.Count];
             bool isJSCanonical = true;
             var jsonName = new StringBuilder( "[" );
             var jsJsonName = new StringBuilder( "[" );
@@ -36,7 +36,11 @@ namespace CK.Setup.Json
             }
             jsonName.Append( ']' );
             jsJsonName.Append( ']' );
-            JsonTypeInfo info = AllowTypeInfo( t.Type, jsonName.ToString() ).SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );
+
+            JsonTypeInfo? info = AllowTypeInfo( t.Type, jsonName.ToString() );
+            if( info == null ) return null;
+
+            info.SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );
 
             // Don't use 'in' modifier on non-readonly structs: See https://devblogs.microsoft.com/premier-developer/the-in-modifier-and-the-readonly-structs-in-c/
             // We use a 'ref' instead (ValueTuple TypeInfo below use SetByRefWriter).

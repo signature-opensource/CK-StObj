@@ -8,18 +8,11 @@ namespace CK.Setup.Json
 {
     public partial class JsonTypeInfo
     {
-        internal class HandlerForReferenceType : IJsonCodeGenHandler
+        internal class HandlerForReferenceType : JsonCodeGenHandler
         {
-            public JsonTypeInfo TypeInfo { get; }
-            public bool IsNullable => true; // Always true.
-            public NullableTypeTree Type => TypeInfo.Type;
-            public string GenCSharpName => TypeInfo.GenCSharpName;
-
-            public string JsonName => TypeInfo.NonNullableJsonName + '?';
-            public IEnumerable<string> PreviousJsonNames => TypeInfo.NonNullablePreviousJsonNames.Select( n => n + '?' );
-            public ECMAScriptStandardJsonName ECMAScriptStandardJsonName => new( TypeInfo.NonNullableECMAScriptStandardJsonName.Name + '?', TypeInfo.NonNullableECMAScriptStandardJsonName.IsCanonical );
-
-            public IJsonCodeGenHandler? TypeMapping => null;
+            public override JsonTypeInfo TypeInfo { get; }
+            public override bool IsNullable => true;
+            public override string GenCSharpName => TypeInfo.GenCSharpName;
 
             readonly HandlerForNonNullableReferenceType _nonNullable;
 
@@ -29,23 +22,24 @@ namespace CK.Setup.Json
                 _nonNullable = new HandlerForNonNullableReferenceType( this );
             }
 
-            public void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
+            public override void GenerateWrite( ICodeWriter write, string variableName, bool? withType = null )
             {
                 if( TypeInfo == ObjectType || (withType == null && !TypeInfo.IsFinal) )
                 {
-                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ", options );" ).NewLine();
+                    write.Append( "PocoDirectory_CK.WriteObject( w, " ).Append( variableName ).Append( ", options, false );" ).NewLine();
                 }
                 else
                 {
-                    this.DoGenerateWrite( write, variableName, handleNull: true, withType ?? false );
+                    DoGenerateWrite( write, variableName, handleNull: true, withType ?? false );
                 }
             }
 
-            public void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
+            public override void GenerateRead( ICodeWriter read, string variableName, bool assignOnly )
             {
                 if( !TypeInfo.IsFinal )
                 {
-                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName ).Append( ")PocoDirectory_CK.ReadObject( ref r, options );" ).NewLine();
+                    read.Append( variableName ).Append( " = (" ).Append( GenCSharpName )
+                                               .Append( ")PocoDirectory_CK.ReadObject( ref r, options, false );" ).NewLine();
                 }
                 else
                 {
@@ -53,9 +47,9 @@ namespace CK.Setup.Json
                 }
             }
 
-            public IJsonCodeGenHandler ToNullHandler() => this;
+            public override JsonCodeGenHandler ToNullHandler() => this;
 
-            public IJsonCodeGenHandler ToNonNullHandler() => _nonNullable;
+            public override JsonCodeGenHandler ToNonNullHandler() => _nonNullable;
         }
     }
 }

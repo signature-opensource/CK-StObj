@@ -11,16 +11,16 @@ namespace CK.Setup.Json
         /// Gets the handlers that must be used to write the value.
         /// These are also the handlers that must be used to read an incoming value in ECMASafe mode.
         /// </summary>
-        IReadOnlyList<IJsonCodeGenHandler> AllHandlers { get; }
+        IReadOnlyList<JsonCodeGenHandler> AllHandlers { get; }
 
         /// <summary>
         /// Gets the handlers that must be used to read an incoming value in ECMAStandard mode.
-        /// These handlers have a true <see cref="IJsonCodeGenHandler.HasECMAScriptStandardJsonName"/>
-        /// and their <see cref="IJsonCodeGenHandler.ECMAScriptStandardJsonName"/> is unique in this list.
+        /// These handlers have a true <see cref="JsonCodeGenHandler.HasECMAScriptStandardJsonName"/>
+        /// and their <see cref="JsonCodeGenHandler.ECMAScriptStandardJsonName"/> is unique in this list.
         /// This is empty if <see cref="IPocoJsonInfo.IsECMAStandardCompliant"/> is false or if
         /// no specific handlers are needed in ECMAStandard mode.
         /// </summary>
-        IReadOnlyList<IJsonCodeGenHandler> ECMAStandardHandlers { get; }
+        IReadOnlyList<JsonCodeGenHandler> ECMAStandardHandlers { get; }
 
         /// <summary>
         /// Gets whether this property has more than one handler.

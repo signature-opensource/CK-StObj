@@ -15,7 +15,7 @@ namespace CK.Setup
     /// <summary>
     /// Represents a service class/implementation.
     /// </summary>
-    public class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
+    public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
         HashSet<AutoServiceClassInfo>? _ctorParmetersClosure;
         // Memorizes the EnsureCtorBinding call state.
@@ -174,7 +174,7 @@ namespace CK.Setup
         public IReadOnlyCollection<Type> MultipleMappings => TypeInfo.MultipleMappingTypes;
 
         /// <summary>
-        /// Gets the unique types that that must be mapped to this <see cref="FinalType"/> and only to this one.
+        /// Gets the unique types that must be mapped to this <see cref="FinalType"/> and only to this one.
         /// </summary>
         public IReadOnlyCollection<Type> UniqueMappings => TypeInfo.UniqueMappingTypes;
 
@@ -342,7 +342,7 @@ namespace CK.Setup
             {
                 // Only if this class IsIncluded: assigns the set of interfaces.
                 // This way only interfaces that are actually used are registered in the collector.
-                // An unused Auto Service interface (ie. that has no implementation in the context)
+                // An unused Auto Service interface (i.e. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
                 Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces, IsRealObject ? (Action<Type,CKTypeKind,CKTypeCollector>?)null : TypeInfo.AddMultipleMapping ).ToArray();
@@ -425,7 +425,6 @@ namespace CK.Setup
                 return _ctorParmetersClosure;
             }
         }
-
 
         bool IStObjFinalClass.IsScoped => (FinalTypeKind!.Value & AutoServiceKind.IsScoped) != 0;
 

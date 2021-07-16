@@ -11,6 +11,10 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   
+  <ItemGroup>
+    <Compile Remove="%24StObjGen\G0-protected.cs" />
+  </ItemGroup>
+  
   
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -25,8 +29,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CK.Poco.Json\CK.Poco.Json.csproj" />
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="%24StObjGen\" />
   </ItemGroup>
 </Project>

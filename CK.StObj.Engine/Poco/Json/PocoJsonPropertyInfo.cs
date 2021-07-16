@@ -8,17 +8,17 @@ namespace CK.Setup.Json
 {
     sealed class PocoJsonPropertyInfo : IPocoJsonPropertyInfo
     {
-        internal PocoJsonPropertyInfo( IPocoPropertyInfo p, IReadOnlyList<IJsonCodeGenHandler> handlers, IReadOnlyList<IJsonCodeGenHandler>? ecmaStandardReadhandlers )
+        internal PocoJsonPropertyInfo( IPocoPropertyInfo p, IReadOnlyList<JsonCodeGenHandler> handlers, IReadOnlyList<JsonCodeGenHandler>? ecmaStandardReadhandlers )
         {
             PropertyInfo = p;
             AllHandlers = handlers;
-            ECMAStandardHandlers = ecmaStandardReadhandlers ?? (IReadOnlyList<IJsonCodeGenHandler>)Array.Empty<IJsonCodeGenHandler>();
+            ECMAStandardHandlers = ecmaStandardReadhandlers ?? (IReadOnlyList<JsonCodeGenHandler>)Array.Empty<JsonCodeGenHandler>();
         }
 
         internal void OnPocoInfoAvailable( PocoJsonInfo p )
         {
             PocoJsonInfo = p;
-            if( !p.IsECMAStandardCompliant ) ECMAStandardHandlers = Array.Empty<IJsonCodeGenHandler>();
+            if( !p.IsECMAStandardCompliant ) ECMAStandardHandlers = Array.Empty<JsonCodeGenHandler>();
         }
 
         public IPocoJsonInfo PocoJsonInfo { get; private set; }
@@ -27,9 +27,9 @@ namespace CK.Setup.Json
 
         public bool IsJsonUnionType => PropertyInfo.PropertyUnionTypes.Any();
 
-        public IReadOnlyList<IJsonCodeGenHandler> AllHandlers { get; }
+        public IReadOnlyList<JsonCodeGenHandler> AllHandlers { get; }
 
-        public IReadOnlyList<IJsonCodeGenHandler> ECMAStandardHandlers { get; private set; }
+        public IReadOnlyList<JsonCodeGenHandler> ECMAStandardHandlers { get; private set; }
 
     }
 
