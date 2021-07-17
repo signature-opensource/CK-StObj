@@ -290,7 +290,6 @@ namespace CK.Setup.Json
         /// <returns>The handler to use. Null on error.</returns>
         public JsonCodeGenHandler? GetHandler( NullableTypeTree t )
         {
-            t = ApplyKnownTypesNullabilities( t );
             if( !_map.TryGetValue( t, out var handler ) )
             {
                 JsonTypeInfo? info = null;
@@ -368,7 +367,7 @@ namespace CK.Setup.Json
                 {
                     // To read an array T[] we use an intermediate List<T>.
                     NullableTypeTree tItem = t.RawSubTypes[0];
-                    NullableTypeTree tList = t.WithType( typeof( List<> ).MakeGenericType( tItem.Type ) );
+                    NullableTypeTree tList = typeof( List<> ).MakeGenericType( tItem.Type ).GetNullableTypeTree();
                     if( GetHandler( tList ) == null ) return null;
 
                     // The List<T> is now handled: generates the array.

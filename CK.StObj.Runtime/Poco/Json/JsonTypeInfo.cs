@@ -77,12 +77,9 @@ namespace CK.Setup.Json
         /// <summary>
         /// Gets the non null handler that is used in the generic write. It is this <see cref="NonNullHandler"/> except
         /// for generic type with subordinated non nullable reference types. In such case, the handler is the one of the type
-        /// in the "oblivious nullable reference type context".
+        /// in the "oblivious nullable reference type context" (note that the <see cref="NullableTypeTree.ObliviousDefaultBuilder"/>
+        /// is applied; so that dictionary' key is non nullable).
         /// </summary>
-        /// <remarks>
-        /// We could handle here the "notnull" generic constraint on generic parameter to keep the non nullable reference type (such as the dictionary key).
-        /// Currently we ignore this. 
-        /// </remarks>
         public JsonCodeGenHandler GenericWriteHandler { get; }
 
         internal string NonNullableJsonName { get; }
