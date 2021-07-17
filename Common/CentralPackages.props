@@ -8,8 +8,8 @@
     <PackageReference Update="CK.Testing.CKSetup" Version="14.1.1--0007-develop" />
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="14.1.1--0005-develop" />
     <PackageReference Update="CSemVer" Version="9.1.0" />
-    <PackageReference Update="CK.CodeGen.Roslyn" Version="2.1.1--0019-develop" />
-    <PackageReference Update="CK.CodeGen" Version="2.1.1--0019-develop" />
+    <PackageReference Update="CK.CodeGen.Roslyn" Version="2.1.1--0020-develop" />
+    <PackageReference Update="CK.CodeGen" Version="2.1.1--0020-develop" />
     <PackageReference Update="CK.Reflection" Version="9.0.3--0004-develop" />
     <PackageReference Update="CK.Setup.Dependency" Version="11.1.1--0007-develop" />
     <PackageReference Update="CK.Core" Version="14.1.1--0005-develop" />
