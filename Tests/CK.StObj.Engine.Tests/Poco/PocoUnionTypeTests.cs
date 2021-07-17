@@ -216,6 +216,8 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Invoking( x => x.Thing = 25.88 ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
 
+            // AnotherThing must not be null.
+            p.AnotherThing = 3;
             var p2 = JsonTestHelper.Roundtrip( directory, p );
             p.Should().BeEquivalentTo( p2 );
         }

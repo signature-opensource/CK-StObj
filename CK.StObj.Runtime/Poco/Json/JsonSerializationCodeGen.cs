@@ -113,8 +113,7 @@ namespace CK.Setup.Json
             JsonCodeGenHandler? writeHandler = null;
             if( normalType.RawSubTypes.Count > 0 )
             {
-                normalType = ApplyKnownTypesNullabilities( normalType );
-                var oblivious = ApplyKnownTypesNullabilities( normalType.Type.GetNullableTypeTree() );
+                var oblivious = normalType.Type.GetNullableTypeTree();
                 if( oblivious != normalType )
                 {
                     if( oblivious.Kind.IsReferenceType() ) oblivious = oblivious.ToAbnormalNull();
@@ -127,35 +126,6 @@ namespace CK.Setup.Json
                 }
             }
             return new JsonTypeInfo( normalType, _typeInfoAutoNumber++, name, previousNames, writeHandler );
-        }
-
-        /// <summary>
-        /// Hideous fix because I failed to analyze "notnull" constraints: this ensures that the key of Dictionary
-        /// or IDictionary is not null.
-        /// </summary>
-        /// <param name="t">The tree to normalize.</param>
-        /// <returns>A transformed tree where dictionary key is not null.</returns>
-        public static NullableTypeTree ApplyKnownTypesNullabilities( NullableTypeTree t )
-        {
-            t = t.WithUpdatedSubTypes( Transform ).Result;
-            return Transform( t ) ?? t;
-
-            static NullableTypeTree? Transform( NullableTypeTree t )
-            {
-                if( t.RawSubTypes.Count == 2 )
-                {
-                    var tGen = t.Type.GetGenericTypeDefinition();
-                    if( tGen == typeof( IDictionary<,> ) || tGen == typeof( Dictionary<,> ) )
-                    {
-                        var tKey = t.RawSubTypes[0];
-                        if( tKey.Kind.IsNullable() && tKey.Kind.IsReferenceType() )
-                        {
-                            return t.WithSubTypeAt( 0, tKey.ToAbnormalNull() ).Result;
-                        }
-                    }
-                }
-                return null;
-            }
         }
 
         /// <summary>
