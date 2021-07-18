@@ -37,7 +37,7 @@ namespace CK.Setup.Json
             jsonName.Append( ']' );
             jsJsonName.Append( ']' );
 
-            JsonTypeInfo? info = AllowTypeInfo( t.Type, jsonName.ToString() );
+            JsonTypeInfo? info = AllowTypeInfo( t, jsonName.ToString() );
             if( info == null ) return null;
 
             info.SetECMAScriptStandardName( jsJsonName.ToString(), isJSCanonical );

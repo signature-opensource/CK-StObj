@@ -126,28 +126,29 @@ namespace CK.Setup
                         bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
                         bool isNullable = p.PropertyNullabilityInfo.Kind.IsNullable();
 
-                        if( isTechnicallyNullable )
+                        if( isTechnicallyNullable && !isNullable )
                         {
-                            tB.Append( "if( value != null )" )
-                              .OpenBlock();
+                            tB.Append( "if( value == null ) throw new ArgumentNullException();" ).NewLine();
                         }
+
                         if( isUnionType )
                         {
+                            if( isNullable )
+                            {
+                                tB.Append( "if( value != null )" )
+                                  .OpenBlock();
+                            }
                             tB.Append( "Type tV = value.GetType();" ).NewLine()
                                 .Append( "if( !_c" ).Append( fieldName )
                                 .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
                                 .OpenBlock()
-                                .Append( "throw new ArgumentException( $\"Unexpected Type '{tV}' in UnionType. Allowed types are: ")
+                                .Append( "throw new ArgumentException( $\"Unexpected Type '{tV}' in UnionType. Allowed types are: " )
                                 .Append( p.PropertyUnionTypes.Select( tU => tU.ToString() ).Concatenate() )
-                                .Append(".\");" )
+                                .Append( ".\");" )
                                 .CloseBlock();
-                        }
-                        if( isTechnicallyNullable )
-                        {
-                            tB.CloseBlock();
-                            if( !isNullable )
+                            if( isNullable )
                             {
-                                tB.Append( "else throw new ArgumentNullException();" ).NewLine();
+                                tB.CloseBlock();
                             }
                         }
                         tB.Append( fieldName ).Append( " = value;" )
@@ -159,6 +160,8 @@ namespace CK.Setup
                     {
                         tB.Append( "static readonly Type[] _c" ).Append( fieldName ).Append( "=" ).AppendArray( p.PropertyUnionTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
                     }
+
+
                 }
 
                 // PocoFactory class.

@@ -294,6 +294,21 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
+        [Test]
+        public void boxing_lifts_nullable_value_types_so_nullable_value_type_in_union_when_set_can_only_result_in_value_types()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes1 ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
+            var p = s.GetRequiredService<IPocoFactory<IPocoWithDuplicatesUnionTypes1>>().Create();
+
+            FluentActions.Invoking( () => p.Thing = 5 ).Should().NotThrow();
+            p.Thing.Should().NotBeOfType<int?>().And.Subject.Should().BeOfType<int>( "Unfortunately..." );
+
+            ((object)(byte?)5).Should().BeOfType<byte>( "Here is why." );
+        }
+
         public interface IPocoWithNullableAndNotNullableUnionTypes1 : IPoco
         {
             [UnionType]

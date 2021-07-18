@@ -20,7 +20,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
     [TestFixture]
     public partial class ECMAScriptStandardUnionTypeSerializationTests
     {
-        public static readonly PocoJsonSerializerOptions StandardMode = new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard };
+        public static readonly PocoJsonSerializerOptions ECMAScriptStandard = new PocoJsonSerializerOptions { Mode = PocoJsonSerializerMode.ECMAScriptStandard };
 
         public interface IOther : IPoco { public int Value { get; set; } }
 
@@ -86,9 +86,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
                 var u = ((IPocoFactory)services.GetRequiredService( typeof(IPocoFactory<>).MakeGenericType( t ) )).Create();
 
-                FluentActions.Invoking( () => u.JsonSerialize( true, StandardMode ) ).Should().Throw<NotSupportedException>();
-                FluentActions.Invoking( () => u.JsonSerialize( false, StandardMode ) ).Should().Throw<NotSupportedException>();
-                FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", StandardMode ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => u.JsonSerialize( true, ECMAScriptStandard ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => u.JsonSerialize( false, ECMAScriptStandard ) ).Should().Throw<NotSupportedException>();
+                FluentActions.Invoking( () => directory.JsonDeserialize( @"[""UT"",{""Thing"":3}]", ECMAScriptStandard ) ).Should().Throw<NotSupportedException>();
 
                 entries.Should().Contain( e => e.Text.Contains( "De/serializing this Poco in 'ECMAScriptstandard' will throw a NotSupportedException.", StringComparison.Ordinal ) );
             }
@@ -126,10 +126,10 @@ namespace CK.StObj.Engine.Tests.PocoJson
             u.T2 = 2;
             u.T3 = (byte)3;
 
-            var serialized = u.JsonSerialize( true, StandardMode );
+            var serialized = u.JsonSerialize( true, ECMAScriptStandard );
             Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"[""UT"",{""T1"":[""Number"",1],""T2"":[""Number"",2],""T3"":[""Number"",3]}]" );
 
-            var r = (ICompliant1?)directory.JsonDeserialize( serialized.Span, StandardMode );
+            var r = (ICompliant1?)directory.JsonDeserialize( serialized.Span, ECMAScriptStandard );
             // This consider T3 (double) = 3.0 to be equivalent to (byte)3!
             // r.Should().BeEquivalentTo( u );
             Debug.Assert( r != null );
@@ -165,10 +165,10 @@ namespace CK.StObj.Engine.Tests.PocoJson
             u.T1 = 1;
             u.T2 = (byte)2;
 
-            var serialized = u.JsonSerialize( true, StandardMode );
+            var serialized = u.JsonSerialize( true, ECMAScriptStandard );
             Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"[""UT"",{""T1"":[""Number"",1],""T2"":[""Number"",2]}]" );
 
-            var r = (ICompliant2?)directory.JsonDeserialize( serialized.Span, StandardMode );
+            var r = (ICompliant2?)directory.JsonDeserialize( serialized.Span, ECMAScriptStandard );
             Debug.Assert( r != null );
             r.T1.Should().BeOfType<int>().And.Be( u.T1 );
             r.T2.Should().BeOfType<byte>().And.Be( u.T2 );

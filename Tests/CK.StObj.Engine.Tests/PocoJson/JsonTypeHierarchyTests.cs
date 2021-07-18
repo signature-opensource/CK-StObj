@@ -86,6 +86,56 @@ namespace CK.StObj.Engine.Tests.PocoJson
             root3.Should().NotBeEquivalentTo( root );
         }
 
+        public interface IUnionPersonOrString : IPoco
+        {
+            [UnionType]
+            object PersonOrString { get; set; }
+
+            class UnionTypes
+            {
+                public (Person, string) PersonOrString { get; }
+            }
+        }
+
+        [Test]
+        public void specialization_in_union_type()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ),
+                                                     typeof( JsonStringParseSupport ),
+                                                     typeof( IUnionPersonOrString ),
+                                                     typeof( IPocoAllOfThem ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
+            var root = s.GetService<IPocoFactory<IUnionPersonOrString>>().Create();
+            root.PersonOrString = new Student( "Sartre", 3712 );
+            var root2 = JsonTestHelper.Roundtrip( directory, root, null, text => TestHelper.Monitor.Info( text ) );
+        }
+        public interface IUnionPersonOrPocoOrString : IPoco
+        {
+            [UnionType]
+            object PersonOrPocoOrString { get; set; }
+
+            class UnionTypes
+            {
+                public (Person, IPoco, string) PersonOrPocoOrString { get; }
+            }
+        }
+
+        [Test]
+        public void specialization_in_union_type_with_IPoco()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ),
+                                                     typeof( JsonStringParseSupport ),
+                                                     typeof( IUnionPersonOrPocoOrString ),
+                                                     typeof( IPocoAllOfThem ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
+            var root = s.GetService<IPocoFactory<IUnionPersonOrPocoOrString>>().Create();
+            root.PersonOrPocoOrString = new Student( "Sartre", 3712 );
+            var root2 = JsonTestHelper.Roundtrip( directory, root, null, text => TestHelper.Monitor.Info( text ) );
+        }
 
         public interface ITestWithCollections : IPoco
         {

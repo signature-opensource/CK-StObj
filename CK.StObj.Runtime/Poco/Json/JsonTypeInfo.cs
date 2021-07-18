@@ -78,7 +78,7 @@ namespace CK.Setup.Json
         /// Gets the non null handler that is used in the generic write. It is this <see cref="NonNullHandler"/> except
         /// for generic type with subordinated non nullable reference types. In such case, the handler is the one of the type
         /// in the "oblivious nullable reference type context" (note that the <see cref="NullableTypeTree.ObliviousDefaultBuilder"/>
-        /// is applied; so that dictionary' key is non nullable).
+        /// is applied; so that dictionaries' key is non nullable).
         /// </summary>
         public JsonCodeGenHandler GenericWriteHandler { get; }
 
@@ -225,10 +225,11 @@ namespace CK.Setup.Json
         {
             Debug.Assert( !Type.Type.IsValueType && !Type.Type.IsSealed && !Type.Type.IsInterface
                           && !sub.Type.Type.IsInterface && !sub.Type.Type.IsValueType && !typeof( IPoco ).IsAssignableFrom( sub.Type.Type ) );
-            Debug.Assert( sub.TypeSpecOrder > 0.0f, "The magic is that when this is called, the TypeSpecOrder of the specialization has necessarily been called." );
+            Debug.Assert( sub.TypeSpecOrder > 0.0f, "The magic is that when this is called, the TypeSpecOrder of the specialization has necessarily been computed." );
             if( _specializations == null ) _specializations = new List<JsonTypeInfo>() { sub };
             else
             {
+                Debug.Assert( _specializations.TrueForAll( s => s.TypeSpecOrder != sub.TypeSpecOrder ), "No existing specialization with the same TypeSpecOrder." );
                 JsonSerializationCodeGen.InsertAtTypeSpecOrder( _specializations, sub );
             }
         }

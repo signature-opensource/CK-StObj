@@ -160,6 +160,7 @@ namespace CK.Setup.Json
                 Debug.Assert( h.JsonName != t.NullHandler.JsonName );
                 Debug.Assert( t.GenCSharpName == h.GenCSharpName );
                 ctor.OpenBlock()
+                    .Append( "// Type: " ).Append( t.Type.ToString() ).NewLine()
                     .Append( "static object d( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) {" )
                     .Append( h.GenCSharpName ).Append( " o;" ).NewLine();
                 h.DoGenerateRead( ctor, "o", assignOnly: true, handleNull: false );

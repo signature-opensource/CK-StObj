@@ -129,6 +129,17 @@ namespace CK.Setup.Json
         }
 
         /// <summary>
+        /// Simple helper that calls <see cref="NullabilityTypeExtensions.GetNullableTypeTree(Type, INullableTypeTreeBuilder?)"/>,
+        /// <see cref="CreateTypeInfo"/> and <see cref="AllowTypeInfo(JsonTypeInfo)"/>.
+        /// The Json type info is created and allowed but its <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> must still be called.
+        /// </summary>
+        /// <param name="t">The type to allow..</param>
+        /// <param name="name">The serialized name.</param>
+        /// <param name="previousNames">Optional list of previous names (act as type aliases).</param>
+        /// <returns>The allowed type info that must still be configured or null if it cannot be created.</returns>
+        public JsonTypeInfo? AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null ) => AllowTypeInfo( t.GetNullableTypeTree(), name, previousNames );
+
+        /// <summary>
         /// Simple helper that calls <see cref="CreateTypeInfo"/> and <see cref="AllowTypeInfo(JsonTypeInfo)"/>.
         /// The Json type info is created and allowed but its <see cref="JsonTypeInfo.Configure(CodeWriter, CodeReader)"/> must still be called.
         /// </summary>
@@ -136,9 +147,9 @@ namespace CK.Setup.Json
         /// <param name="name">The serialized name.</param>
         /// <param name="previousNames">Optional list of previous names (act as type aliases).</param>
         /// <returns>The allowed type info that must still be configured or null if it cannot be created.</returns>
-        public JsonTypeInfo? AllowTypeInfo( Type t, string name, IReadOnlyList<string>? previousNames = null )
+        public JsonTypeInfo? AllowTypeInfo( NullableTypeTree t, string name, IReadOnlyList<string>? previousNames = null )
         {
-            var info = CreateTypeInfo( t.GetNullableTypeTree(), name, previousNames );
+            var info = CreateTypeInfo( t, name, previousNames );
             return info == null ? null : AllowTypeInfo( info );
         }
 
@@ -295,7 +306,6 @@ namespace CK.Setup.Json
                 JsonTypeInfo? info = null;
                 if( (t.Kind & NullabilityTypeKind.IsValueType) != 0 )
                 {
-                    bool isNullable = t.Kind.IsNullable();
                     if( t.Type.IsEnum )
                     {
                         info = TryRegisterInfoForEnum( t.Type );
@@ -303,10 +313,6 @@ namespace CK.Setup.Json
                     else if( t.Kind.IsTupleType() )
                     {
                         info = TryRegisterInfoForValueTuple( t, t.IsLongValueTuple ? t.SubTypes.ToList() : t.RawSubTypes );
-                    }
-                    if( info != null )
-                    {
-                        handler = isNullable ? info.NullHandler : info.NonNullHandler;
                     }
                 }
                 else if( t.Type.IsGenericType )
@@ -367,9 +373,13 @@ namespace CK.Setup.Json
                 {
                     // To read an array T[] we use an intermediate List<T>.
                     NullableTypeTree tItem = t.RawSubTypes[0];
-                    NullableTypeTree tList = typeof( List<> ).MakeGenericType( tItem.Type ).GetNullableTypeTree();
+                    Debug.Assert( t.Type.GetElementType() == (tItem.Kind.IsNullableValueType()
+                                                                ? typeof( Nullable<> ).MakeGenericType( tItem.Type )
+                                                                : tItem.Type) );
+                    var actualTypeList = typeof( List<> ).MakeGenericType( t.Type.GetElementType()! );
+                    NullableTypeTree tList = t.WithType( actualTypeList );
                     if( GetHandler( tList ) == null ) return null;
-
+                    NNNNNN;
                     // The List<T> is now handled: generates the array.
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;
@@ -475,7 +485,12 @@ namespace CK.Setup.Json
             public int CompareTo( [AllowNull] JsonTypeInfo other ) => _t.TypeSpecOrder.CompareTo( other!.TypeSpecOrder );
         }
 
-        internal static void InsertAtTypeSpecOrder( List<JsonTypeInfo> list, JsonTypeInfo i )
+        /// <summary>
+        /// Inserts a <see cref="JsonTypeInfo"/> in a list based on its <see cref="JsonTypeInfo.TypeSpecOrder"/>.
+        /// </summary>
+        /// <param name="list">The target list.</param>
+        /// <param name="i">The info to insert.</param>
+        public static void InsertAtTypeSpecOrder( List<JsonTypeInfo> list, JsonTypeInfo i )
         {
             // Waiting for net5.
             // https://source.dot.net/#System.Private.CoreLib/CollectionsMarshal.cs
@@ -483,8 +498,7 @@ namespace CK.Setup.Json
             Update!
 #endif
             int idx = list.ToArray().AsSpan().BinarySearch( new C( i ) );
-            Debug.Assert( idx < 0, "The item must not exist already in the list." );
-            list.Insert( ~idx, i );
+            list.Insert( idx < 0 ? ~idx : idx, i );
         }
 
         /// <summary>
