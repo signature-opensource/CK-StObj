@@ -308,7 +308,7 @@ namespace CK.Setup.Json
                 {
                     if( t.Type.IsEnum )
                     {
-                        info = TryRegisterInfoForEnum( t.Type );
+                        info = TryRegisterInfoForEnum( t );
                     }
                     else if( t.Kind.IsTupleType() )
                     {
@@ -332,11 +332,11 @@ namespace CK.Setup.Json
                         {
                             tInterface = t;
                             classCollType = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( genArgs[0] );
-                            t = t.WithType( classCollType );
+                            t = t.With( classCollType );
                         }
                         else
                         {
-                            tInterface = t.WithType( (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( genArgs[0] ) );
+                            tInterface = t.With( (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( genArgs[0] ) );
                         }
                         (fWrite, fRead, info) = CreateListOrSetFunctions( t, isList );
                     }
@@ -347,11 +347,11 @@ namespace CK.Setup.Json
                         if( t.Type.IsInterface )
                         {
                             tInterface = t;
-                            t = t.WithType( typeof( Dictionary<,> ).MakeGenericType( tKey, tValue ) );
+                            t = t.With( typeof( Dictionary<,> ).MakeGenericType( tKey, tValue ) );
                         }
                         else
                         {
-                            tInterface = t.WithType( typeof( IDictionary<,> ).MakeGenericType( tKey, tValue ) );
+                            tInterface = t.With( typeof( IDictionary<,> ).MakeGenericType( tKey, tValue ) );
                         }
                         if( tKey == typeof( string ) )
                         {
@@ -377,9 +377,9 @@ namespace CK.Setup.Json
                                                                 ? typeof( Nullable<> ).MakeGenericType( tItem.Type )
                                                                 : tItem.Type) );
                     var actualTypeList = typeof( List<> ).MakeGenericType( t.Type.GetElementType()! );
-                    NullableTypeTree tList = t.WithType( actualTypeList );
+                    NullableTypeTree tList = t.With( actualTypeList, t.Kind | NullabilityTypeKind.IsGenericType );
                     if( GetHandler( tList ) == null ) return null;
-                    NNNNNN;
+
                     // The List<T> is now handled: generates the array.
                     IFunctionScope? fWrite = null;
                     IFunctionScope? fRead = null;

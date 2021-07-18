@@ -14,16 +14,16 @@ namespace CK.Setup.Json
 
     public partial class JsonSerializationCodeGen
     {
-        JsonTypeInfo? TryRegisterInfoForEnum( Type t )
+        JsonTypeInfo? TryRegisterInfoForEnum( NullableTypeTree t )
         {
-            if( !t.GetExternalNames( _monitor, out string name, out string[]? previousNames ) )
+            if( !t.Type.GetExternalNames( _monitor, out string name, out string[]? previousNames ) )
             {
                 return null;
             }
-            var uT = Enum.GetUnderlyingType( t ).GetNullableTypeTree();
+            var uT = Enum.GetUnderlyingType( t.Type ).GetNullableTypeTree();
             var uTHandler = _map[uT];
 
-            var info = AllowTypeInfo( t, name, previousNames );
+            var info = AllowTypeInfo( t.ToNormalNull(), name, previousNames );
             return info?.Configure(
                          ( ICodeWriter write, string variableName )
                              => write.Append( "w.WriteNumberValue( (" ).Append( uTHandler.GenCSharpName ).Append( ')' ).Append( variableName ).Append( " );" ),

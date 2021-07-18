@@ -24,12 +24,14 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public interface IAllIntegers : IPoco
         {
             [UnionType]
+            [DefaultValue("Hop!")]
             object DoubleOrString { get; set; }
 
             [UnionType( CanBeExtended = true )]
             object? NullablesOrNot { get; set; }
 
             [UnionType]
+            [DefaultValue((byte)87)]
             object AllIntegers { get; set; }
 
             class UnionTypes
@@ -55,8 +57,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             Debug.Assert( serialized != null );
             TestHelper.Monitor.Info( $"IUnionTypes serialization: " + serialized );
             u2.Should().BeEquivalentTo( u );
-            // Unitialized non nullable reference property is actually null.
-            serialized.Should().Be( @"[""NotStandardCompliant"",{""DoubleOrString"":null,""NullablesOrNot"":null,""AllIntegers"":null}]" );
+            // Default values are applied..
+            serialized.Should().Be( @"[""NotStandardCompliant"",{""DoubleOrString"":""Hop!"",""NullablesOrNot"":null,""AllIntegers"":[""byte"",87]}]" );
 
             u.DoubleOrString = 3712.0;
             u.NullablesOrNot = 3712;
