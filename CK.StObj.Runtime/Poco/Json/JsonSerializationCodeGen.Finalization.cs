@@ -148,6 +148,25 @@ namespace CK.Setup.Json
                 r.Read(); 
                 return o;
             }
+
+            internal static object ReadNonNullNamedObject( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options, string name )
+            {
+                if( !_typeReaders.TryGetValue( name, out var reader ) )
+                {
+                    throw new System.Text.Json.JsonException( $""Unregistered type name '{name}'."" );
+                }
+                object o;
+                if( r.TokenType == System.Text.Json.JsonTokenType.Null )
+                {
+                    throw new System.Text.Json.JsonException( ""Unexpected null value."" );
+                }
+                else
+                {
+                    o = reader( ref r, options );
+                }
+                if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( ""Expected end of 2 - cells array."" );
+                return o;
+            }
 " );
 
             // Configures the _typeReaders dictionary in the constructor.
@@ -212,7 +231,7 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, P
                 if( done.Add( t.GenericWriteHandler ) )
                 {
                     mappings.Append( "case " ).Append( t.GenCSharpName ).Append( " v: " );
-                    t.NonNullHandler.DoGenerateWrite( mappings, "v", handleNull: false, writeTypeName: true );
+                    t.GenericWriteHandler.DoGenerateWrite( mappings, "v", handleNull: false, writeTypeName: true );
                     mappings.NewLine().Append( "break;" ).NewLine();
                 }
             }

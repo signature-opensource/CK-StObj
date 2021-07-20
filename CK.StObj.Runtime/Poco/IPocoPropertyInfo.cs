@@ -85,6 +85,7 @@ namespace CK.Setup
         ///     <item>When both nullable and non nullable of the same type appear, the non nullable one is discarded.</item>
         ///     <item>When a type and its specializations appear (IsAssginableFrom), only the most general one is kept.</item>
         /// </list>
+        /// These optimization rules guaranty that there is no duplicated actual <see cref="NullableTypeTree.Type"/> in any Union .
         /// </para>
         /// </summary>
         IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }

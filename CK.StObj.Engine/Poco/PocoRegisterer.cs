@@ -518,15 +518,17 @@ namespace CK.Setup
                 }
                 if( typeDeviants != null ) return false;
 
-                var types = nullableTypeTrees.SubTypes.ToList();
+                // Nullability has been handled: the property type is nullable if and only if at least one of the unioned types is nullable:
+                // actual types are necessarily non-nullable!
+                var types = nullableTypeTrees.SubTypes.Select( t => t.Kind.IsReferenceType() ? t.ToAbnormalNull() : t.ToNormalNull() ).ToList();
                 if( types.Any( t => t.Type == typeof( object ) ) ) 
                 {
                     monitor.Error( $"{implP}': UnionTypes cannot define the type 'object' since this would erase all possible types." );
                     return false;
                 }
-                if( !implP.AddUnionPropertyTypes( monitor, nullableTypeTrees.SubTypes.ToList(), uAttr.CanBeExtended ) )
+                if( !implP.AddUnionPropertyTypes( monitor, types, uAttr.CanBeExtended ) )
                 {
-                    monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned types must be the same." );
+                    monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned type definitions across IPoco family must be the same." );
                     return false;
                 }
             }

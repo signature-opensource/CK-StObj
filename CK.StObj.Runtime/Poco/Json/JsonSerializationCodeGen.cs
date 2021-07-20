@@ -487,18 +487,60 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Inserts a <see cref="JsonTypeInfo"/> in a list based on its <see cref="JsonTypeInfo.TypeSpecOrder"/>.
+        /// This must be called with a <paramref name="startIndex"/> that skips any TypeSpecOrder = 0.0f.
         /// </summary>
         /// <param name="list">The target list.</param>
         /// <param name="i">The info to insert.</param>
-        public static void InsertAtTypeSpecOrder( List<JsonTypeInfo> list, JsonTypeInfo i )
+        /// <param name="startIndex">The starting index to consider in the list.</param>
+        /// <returns>True on success, false on duplicate.</returns>
+        public static bool InsertAtTypeSpecOrderUnsafe( List<JsonTypeInfo> list, JsonTypeInfo i, int startIndex )
         {
             // Waiting for net5.
             // https://source.dot.net/#System.Private.CoreLib/CollectionsMarshal.cs
 #if NET5
             Update!
 #endif
-            int idx = list.ToArray().AsSpan().BinarySearch( new C( i ) );
-            list.Insert( idx < 0 ? ~idx : idx, i );
+            int idx = list.ToArray().AsSpan().Slice( startIndex ).BinarySearch( new C( i ) );
+            if( idx >= 0 )
+            {
+                if( i != list[idx] ) throw new CKException( $"Invalid JsonTypeInfo: found 2 different info with the same TypeSpecOrder: '{i.Type}' and '{list[idx]}' (TypeSpecOder = {i.TypeSpecOrder})." );
+                return false;
+            }
+            list.Insert( ~idx, i );
+            return true;
+        }
+
+        /// <summary>
+        /// Inserts a <see cref="JsonTypeInfo"/> in a list based on its <see cref="JsonTypeInfo.TypeSpecOrder"/>.
+        /// No duplicate detection is done here since that would require to analyze a range of items (for TypeSpecOrder = 0.0f).
+        /// </summary>
+        /// <param name="list">The target list.</param>
+        /// <param name="i">The info to insert.</param>
+        /// <returns>True on success, false on duplicate.</returns>
+        public static bool InsertAtTypeSpecOrder( List<JsonTypeInfo> list, JsonTypeInfo info )
+        {
+            if( list.Count == 0 )
+            {
+                list.Add( info );
+                return true;
+            }
+            int i = 0;
+            for( ; i < list.Count; ++i )
+            {
+                var item = list[i];
+                if( item.TypeSpecOrder == 0.0f )
+                {
+                    if( item == info ) return false;
+                    continue;
+                }
+                if( info.TypeSpecOrder == 0.0f )
+                {
+                    list.Insert( i, info );
+                    return true;
+                }
+                break;
+            }
+            return InsertAtTypeSpecOrderUnsafe( list, info, i );
         }
 
         /// <summary>

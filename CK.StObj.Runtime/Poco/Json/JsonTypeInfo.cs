@@ -230,7 +230,7 @@ namespace CK.Setup.Json
             else
             {
                 Debug.Assert( _specializations.TrueForAll( s => s.TypeSpecOrder != sub.TypeSpecOrder ), "No existing specialization with the same TypeSpecOrder." );
-                JsonSerializationCodeGen.InsertAtTypeSpecOrder( _specializations, sub );
+                JsonSerializationCodeGen.InsertAtTypeSpecOrderUnsafe( _specializations, sub, 0 );
             }
         }
 

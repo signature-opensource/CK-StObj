@@ -463,7 +463,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (IList<int>, int?, IDictionary<int, string?>) V { get; }
+                public (IList<int>, int?, IDictionary<int, string>) V { get; }
             }
         }
 
@@ -491,6 +491,20 @@ namespace CK.StObj.Engine.Tests.PocoJson
             JsonTestHelper.Roundtrip( directory, a );
 
             a.Invoking( x => x.V = "lj" ).Should().Throw<ArgumentException>( "String is not allowed." );
+        }
+
+        [Test]
+        public void writing_UnionTypes_throws_on_nullability_violation()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithUnionType ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = services.GetService<PocoDirectory>();
+            var f = services.GetRequiredService<IPocoFactory<IWithUnionType>>();
+            var a = f.Create( a =>
+            {
+                a.V = new Dictionary<int, string>() { { 1, "One" }, { 3712, null! } };
+            } );
+            a.Invoking( _ => _.JsonSerialize() ).Should().Throw<InvalidOperationException>().WithMessage( "A null value appear where it should not.*" );
         }
 
 

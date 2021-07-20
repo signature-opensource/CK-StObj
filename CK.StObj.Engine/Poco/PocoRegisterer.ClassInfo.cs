@@ -1,8 +1,9 @@
-﻿using CK.CodeGen;
+using CK.CodeGen;
 using CK.Core;
 using CK.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
@@ -101,6 +102,8 @@ namespace CK.Setup
                     if( p.PropertyUnionTypes.Any() )
                     {
                         if( !p.OptimizeUnionTypes( monitor ) ) return false;
+                        Debug.Assert( p.PropertyUnionTypes.Select( nt => nt.Type ).GroupBy( Util.FuncIdentity ).Count( g => g.Count() > 1 ) == 0,
+                                      "There must be NO actual type duplicates considering the Union optimization rules." );
                     }
                 }
                 return true;

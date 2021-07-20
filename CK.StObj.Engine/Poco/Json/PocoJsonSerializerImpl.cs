@@ -263,10 +263,6 @@ namespace CK.Setup.Json
                                                ref bool isPocoECMAScriptStandardCompliant,
                                                JsonCodeGenHandler mainHandler )
         {
-            //// First step collects the write handlers in a list of their JsonTypeInfo so that
-            //// their order is the TypeSpecOrder.
-            //var dedupWrite = new HashSet<JsonCodeGenHandler>();
-            //var writeTypes = new List<JsonTypeInfo>();
             // Analyses the UnionTypes and creates the handler for each of them.
             // - Forbids ambiguous mapping for ECMAScriptStandard: all numerics are mapped to "Number" or "BigInt" (and arrays or lists are arrays).
             // - The ECMAScriptStandard projected name must be unique (and is associated to its actual handler).
@@ -278,11 +274,6 @@ namespace CK.Setup.Json
                 var h = jsonCodeGen.GetHandler( union );
                 if( h == null ) return null;
                 allHandlers.Add( h );
-                //var writer = h.TypeInfo.GenericWriteHandler;
-                //if( dedupWrite.Add( writer ) )
-                //{
-                //    JsonSerializationCodeGen.InsertAtTypeSpecOrder( writeTypes, writer.TypeInfo );
-                //}
                 if( isPocoECMAScriptStandardCompliant && h.HasECMAScriptStandardJsonName )
                 {
                     var n = h.ECMAScriptStandardJsonName;
@@ -296,6 +287,8 @@ namespace CK.Setup.Json
                     }
                 }
             }
+            allHandlers.Sort( ( h1, h2 ) => h1.TypeInfo.TypeSpecOrder.CompareTo( h2.TypeInfo.TypeSpecOrder ) );
+
             // Analyze the groups (only if the Poco is still standard compliant).
             List<JsonCodeGenHandler>? ecmaStandardReadhandlers = null;
             bool isECMAScriptStandardCompliant = isPocoECMAScriptStandardCompliant;
@@ -326,6 +319,26 @@ namespace CK.Setup.Json
                 }
                 isPocoECMAScriptStandardCompliant &= isECMAScriptStandardCompliant;
             }
+            // Invariant: handlers are by design associated to different "oblivious NRT" types: switch case can be done on them.
+            // That means that the actual's object type is enough to identify the exact handler (in THE CONTEXT of this property type!).
+            // And the property setter controls the assignation: the set of types is controlled.
+            //
+            // It is tempting to simply call the generic write function but this one uses the GenericWriteHandler that is the "oblivious NRT" type:
+            // even if this union exposes a ISet<string>? (nullable of non-nullable), it will be a ISet<string?> (non-nullable - since the GenericWriteHandler
+            // is by design a NonNullHandler - of nullable - that is the oblivious nullability for reference type) that will be serialized.
+            // 
+            // Actually the type name doesn't really matter, it's just a convention that a client must follow to receive or send data: here, we could
+            // perfectly use the index of the type in the union types, that would be an identifier "local to this property" but this would do the job.
+            //
+            // What really matters is to identify the function that will read the data with the right null handling so that no nulls can be
+            // injected where it should not AND to use the right function to write the data, the one that will not let unexpected nulls emitted.
+            // Regarding this, using the GenericWriteHandler is definitely not right.
+            //
+            // That's why we generate a dedicated switch-case for writing here. If one of the handler is bound to the ObjectType (currently
+            // that's true when jsonTypeInfo.IsFinal is false), we call the generic write object in the default: case.
+            //
+            Debug.Assert( allHandlers.Select( h => h.TypeInfo.GenCSharpName ).GroupBy( Util.FuncIdentity ).Count( g => g.Count() > 1 ) == 0 );
+
             var info = new PocoJsonPropertyInfo( p, allHandlers, isECMAScriptStandardCompliant ? ecmaStandardReadhandlers : null );
             _finalReadWrite.Add( () =>
             {
@@ -333,11 +346,42 @@ namespace CK.Setup.Json
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( info.PropertyInfo.PropertyName ).Append( " );" ).NewLine();
                 if( info.IsJsonUnionType )
                 {
-                    // For write, instead of generating a switch pattern on the actual object's type with a lot of duplicated write
-                    // blocks (all the numerics that will eventually call w.WriteNumber for instance), we use the write of the
-                    // main handler that should be the untyped WriteObject (unless this is a stupid union type with a single type
-                    // that is the same as the property's type).
-                    mainHandler.GenerateWrite( write, fieldName );
+                    write.GeneratedByComment()
+                         .Append( @"switch( " ).Append( fieldName ).Append( " )" )
+                         .OpenBlock()
+                         .Append( "case null: " );
+                    if( info.PropertyInfo.IsNullable )
+                    {
+                        write.Append( "w.WriteNullValue();" ).NewLine()
+                             .Append( "break;" );
+                    }
+                    else
+                    {
+                        write.Append( @"throw new InvalidOperationException( ""A null value appear where it should not. Writing JSON is impossible."" );" );
+                    }
+                    write.NewLine();
+                    bool hasDefaultObject = false;
+                    foreach( var h in info.AllHandlers )
+                    {
+                        if( h.TypeInfo.IsFinal )
+                        {
+                            write.Append( "case " ).Append( h.ToNonNullHandler().GenCSharpName ).Append( " v: " ).NewLine();
+                            h.ToNonNullHandler().DoGenerateWrite( write, "v", handleNull: false, writeTypeName: true );
+                            write.NewLine().Append( "break;" ).NewLine();
+                        }
+                        else hasDefaultObject = true;
+                    }
+                    write.Append( @"default:" ).NewLine();
+                    if( hasDefaultObject )
+                    {
+                        mainHandler.ToNonNullHandler().GenerateWrite( write, fieldName );
+                        write.NewLine().Append( "break;" );
+                    }
+                    else
+                    {
+                        write.Append( @"throw new InvalidOperationException( $""Unexpected type {" ).Append( fieldName ).Append( @".GetType()} in union " ).Append( info.PropertyInfo.ToString()! ).Append( @"."" );" );
+                    }
+                    write.CloseBlock();
                 }
                 else
                 {
@@ -349,55 +393,68 @@ namespace CK.Setup.Json
 
                 if( info.IsJsonUnionType )
                 {
-                    mainHandler.GenerateRead( read, p.PropertyName, true );
+                    read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" );
+                    if( p.IsNullable )
+                    {
+                        read.OpenBlock()
+                            .Append( fieldName ).Append( " = null;" ).NewLine()
+                            .Append( "r.Read();" )
+                            .CloseBlock()
+                            .Append( "else" )
+                            .OpenBlock();
+                    }
+                    else
+                    {
+                        read.Append( " throw new System.Text.Json.JsonException(\"" ).Append( p.ToString()! ).Append( " cannot be null.\");" ).NewLine();
+                    }
 
+                    if( info.IsJsonUnionType )
+                    {
+                        read.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) throw new System.Text.Json.JsonException( \"Expecting Json Type array.\" );" ).NewLine()
+                            .Append( "r.Read();" ).NewLine()
+                            .Append( "string name = r.GetString();" ).NewLine()
+                            .Append( "r.Read();" ).NewLine()
+                            .Append( "switch( name )" )
+                            .OpenBlock();
+                        bool hasDefaultObject = false;
+                        foreach( var h in info.AllHandlers )
+                        {
+                            if( h.TypeInfo.IsFinal )
+                            {
+                                read.Append( "case " ).AppendSourceString( h.JsonName ).Append( ":" ).NewLine();
+                                if( info.PocoJsonInfo.IsECMAStandardCompliant
+                                    && h.HasECMAScriptStandardJsonName
+                                    && info.ECMAStandardHandlers.Contains( h ) )
+                                {
+                                    read.Append( "case " ).AppendSourceString( h.ECMAScriptStandardJsonName.Name ).Append( ":" ).NewLine();
+                                }
+                                h.GenerateRead( read, fieldName, false );
+                                read.Append( "break;" ).NewLine();
+                            }
+                            else hasDefaultObject = true;
+                        }
+                        read.Append( "default:" ).NewLine();
+                        if( hasDefaultObject )
+                        {
+                            mainHandler.ToNonNullHandler().GenerateRead( read,)
+                        }
+                        else
+                        {
+                            read.Append( " throw new System.Text.Json.JsonException( $\"Unknown type name '{name}'.\" );" );
+                        }
+                        read.CloseBlock()
+                            .Append( "if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( \"Expecting end of Json Type array.\" );" ).NewLine()
+                            .Append( "r.Read();" );
+                    }
+                    else
+                    {
+                        info.AllHandlers[0].GenerateRead( read, fieldName, false );
+                    }
 
-                    //read.Append( "if( r.TokenType == System.Text.Json.JsonTokenType.Null )" );
-                    //if( p.IsNullable )
-                    //{
-                    //    read.OpenBlock()
-                    //        .Append( fieldName ).Append( " = null;" ).NewLine()
-                    //        .Append( "r.Read();" )
-                    //        .CloseBlock()
-                    //        .Append( "else" )
-                    //        .OpenBlock();
-                    //}
-                    //else
-                    //{
-                    //    read.Append( " throw new System.Text.Json.JsonException(\"" ).Append( p.ToString()! ).Append( " cannot be null.\");" ).NewLine();
-                    //}
-
-                    //if( info.IsJsonUnionType )
-                    //{
-                    //    read.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) throw new System.Text.Json.JsonException( \"Expecting Json Type array.\" );" ).NewLine()
-                    //        .Append( "r.Read();" ).NewLine()
-                    //        .Append( "string name = r.GetString();" ).NewLine()
-                    //        .Append( "r.Read();" ).NewLine()
-                    //        .Append( "switch( name )" )
-                    //        .OpenBlock();
-                    //    foreach( var h in info.AllHandlers )
-                    //    {
-                    //        read.Append( "case " ).AppendSourceString( h.JsonName ).Append( ":" ).NewLine();
-                    //        if( h.HasECMAScriptStandardJsonName && info.ECMAStandardHandlers.Contains( h ) )
-                    //        {
-                    //            read.Append( "case " ).AppendSourceString( h.ECMAScriptStandardJsonName.Name ).Append( ":" ).NewLine();
-                    //        }
-                    //        h.GenerateRead( read, fieldName, true );
-                    //        read.Append( "break;" ).NewLine();
-                    //    }
-                    //    read.Append( "default: throw new System.Text.Json.JsonException( $\"Unknown type name '{name}'.\" );" )
-                    //        .CloseBlock()
-                    //        .Append( "if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( \"Expecting end of Json Type array.\" );" ).NewLine()
-                    //        .Append( "r.Read();" );
-                    //}
-                    //else
-                    //{
-                    //    info.AllHandlers[0].GenerateRead( read, fieldName, false );
-                    //}
-                    //if( p.IsNullable )
-                    //{
-                    //    read.CloseBlock();
-                    //}
+                    if( p.IsNullable )
+                    {
+                        read.CloseBlock();
+                    }
 
                 }
                 else
