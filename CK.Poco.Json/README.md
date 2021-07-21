@@ -5,7 +5,7 @@ they bootstrap the serialization and deserialization process.
 
 The key aspects of this serialization are:
 - Serialization starts with Poco: data must be subordinated to a Poco, it must ultimately be referenced by a Poco property: see [Registered types only](#registered-types-only) below.
-- We do NOT handle graphs: the serialized object must not reference itself: cycles are error.
+- We do NOT handle graphs: the serialized object must not reference itself: cycles trigger errors.
 - The serialization code is generated, this does not use reflection. The way this work is more complex that the basics System.Text.Json. More complex but also deeply "type safe" and
 potentially more efficient.
 - Adding code generation to support specific types or types family is possible. Recall that it is not a converter (see [here](https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to)
@@ -42,7 +42,7 @@ public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, ReadOnlySpan<by
 public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, string s, PocoJsonSerializerOptions? options = null ) where T : class, IPoco {}
 ```
 
-And when the type is not known (most common use), three extension methods exist on the `PocoDirectory`:
+And when the type is not known (most common usage), three extension methods exist on the `PocoDirectory`:
 
 ```csharp
 /// <summary>
@@ -73,10 +73,10 @@ byte[] (encoded in [base64](https://source.dot.net/#System.Text.Json/System/Text
 
 The following complex types are handled:
 
-- A `T[]` (array), `IList<T>`, `List<T>`, `ISet<T>`, `Set<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
-- A `IDictionary<,>` or `Dictionary<,>` is serialized as 
+- A `T[]` (array), `IList<T>`, `ISet<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
+- A `IDictionary<,>` is serialized as 
   - a Json object when the type of the key is string 
-  - and as an array of 2-cells arrays when the key is an object. 
+  - an array of 2-cells arrays when the key is an object. 
 - Value tuples are serialized as arrays.
 
 Nullable value types and nullable reference types are automatically handled.
@@ -86,12 +86,11 @@ Enum values are serialized with their numerical values.
 ## Opt-in: allowed types only
 
 Only registered types can be de/serialized (often named "Known Types" in numerous serialization frameworks).
-Even enums must be registered to be serializable. Knowing the complete set of the serializable types can be complex<a href="#n1" id="r1"><sup>1</sup></a>.
-
-This is where the Poco help: as soon as a Poco must be serializable, the transitive
+Even enums must be registered to be serializable. Knowing the complete set of the serializable types can be complex<a href="#n1" id="r1"><sup>1</sup></a>
+and this is where the Poco help: as soon as a Poco must be serializable, the transitive
 closure of the referenced types (the Poco's properties' types) are automatically registered.
 
-> Only types that are really needed are registered (and the de/serialization code is generated). Code to handle what may seem basic types like `int?` 
+> Only types that are really needed are registered (and the de/serialization code is generated). Code to handle what may seem basic types like `int?[]` 
 > or `string[]` will be generated only if they are actually used by at least one serializable Poco.
 
 A Poco property can be an untyped `object` (may be defined by a [UnionType](../CK.StObj.Model/Poco/UnionTypeAttribute.cs)), a value tuple, list, array, etc.
@@ -130,7 +129,7 @@ We are using a different approach that offers the following advantages:
 
 Thanks to this, the code is simple and can be split in 3 layers:
 - Nullable layer: the `null` occurrence is handled.
-- Polymorphic layer: a 2-cells array is expected, the first cell containing the type name, the second one the unambiguous object's representation.
+- Polymorphic layer: a 2-cells array appears, the first cell containing the type name, the second one the unambiguous object's representation.
 - Unambiguous layer (the exact type is known): the serialize/deserialize code handles purely the object's data.
 
 Last (but not least) advantage of this approach: when deserializing, **the type always appear BEFORE the object's data**. This enable deserializer to
@@ -189,10 +188,12 @@ For automatically handled types:
 
 From an ECMAScript client, `T[]` and `L(T)` are essentially the same: in "ECMAScript standard" mode, only `T[]` is exposed (see below).
 
-Since `S(T)` specifies that the array doesn't contain duplicates and that can be handled with a [ECMAScript Set object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set),
-the types are different.
+Since `S(T)` specifies that the array doesn't contain duplicates and that it can be handled with a [ECMAScript Set object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set),
+the `S(T)` type is always used instead of `T[]`.
 
 ## Roundtrip-able serializations: "pure Json" and "ECMAScript safe"
+
+> Note: ECMAScript is the official name of JavaScript.
 
 JSON format defines no limitation on numeric values. 64 bits integer and [BigInteger](https://docs.microsoft.com/en-us/dotnet/api/system.numerics.biginteger)
 can be write and read without loss in JSON.
@@ -217,7 +218,7 @@ expects. On the client side, a numeric can be:
 If we want to preserve typings between C# and ECMASCript client, the client must support a dedicated type for byte, sbyte, short, ushort, float (single), etc.
 (these boxed numbers' main responsibility being to restrict the value to their domain definition). This can be considered overkill (and will deeply hurt
 front end developers!). Actually C# types are not expected on the client side. Most often, front end developers want a simple `number` whatever the C#/Server counterpart
-is (byte, sbyte, etc.).
+is (byte, int, float, double, etc.).
 
 This implies a kind of [type erasure](https://en.wikipedia.org/wiki/Type_erasure) that maps float, single, small integers up to the Int32 to `Number` and big
 integers to `BigInt` (not the same as the the C# `BigInteger`). In this mode, client code manipulates a `power` property as `number` and if this property is
@@ -306,7 +307,7 @@ The following definitions are ambiguous:
 
 The following definitions are not ambiguous:
 - When a big numbers coexists with a number: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
-- When ECMAScript collections differ: `(IList<int>,HashSet<double>)` maps to `Number[]|S(Number)`.
+- When ECMAScript collections differ: `(IList<int>,ISet<double>)` maps to `Number[]|S(Number)`.
 
 Ambiguities are detected and warnings are emitted. With such ambiguous `UnionType` a Poco will not be "ECMAScriptStandard" compliant
 and a `NotSupportedException` will be thrown at runtime.

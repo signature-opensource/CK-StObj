@@ -166,9 +166,14 @@ namespace CK.Setup.Json
         public JsonTypeInfo AllowTypeInfo( JsonTypeInfo i )
         {
             if( _finalizedCall.HasValue ) throw new InvalidOperationException( nameof( IsFinalized ) );
-            Debug.Assert( i.TypeSpecOrder == 0.0f );
-            Register( _map, _monitor, i.NonNullHandler );
-            Register( _map, _monitor, i.NullHandler );
+            // Since JsonTypeInfo.ObjectType is static, multiples runs (unit tests) register it multiple times. 
+            if( i.TypeSpecOrder >= 0.0f && i != JsonTypeInfo.ObjectType )
+            {
+                throw new InvalidOperationException( $"JsonTypeInfo '{i.GenCSharpName}' is already registered." );
+            }
+            i.TypeSpecOrder = 0.0f;
+            _map.Add( i.NonNullHandler.Type, i.NonNullHandler );
+            _map.Add( i.NullHandler.Type, i.NullHandler );
             if( i.Type.Type.IsValueType )
             {
                 if( _typeInfoRefTypeStartIdx == 0 )
@@ -204,7 +209,7 @@ namespace CK.Setup.Json
                         {
                             var atIdx = _typeInfos[idx];
                             Debug.Assert( atIdx.TypeSpecOrder > 0.0f, "Its TypeSpecOrder has been updated." );
-                            if( atIdx.Type.Type.IsAssignableFrom( i.Type.Type ) )
+                            if( atIdx.MostAbstractType.IsAssignableFrom( i.MostAbstractType ) )
                             {
                                 // We found the position in the list: we can
                                 // update the TypeSpecOrder property.
@@ -220,25 +225,25 @@ namespace CK.Setup.Json
                                     //    (we don't know if they need to be registered: this would imply to manage a kind of waiting list).
                                     //  - Only "external" non-poco classes are concerned, there should not be a lot of them.
                                     atIdx = _typeInfos[idx2];
-                                    if( atIdx.Type.Type.IsAssignableFrom( i.Type.Type ) )
+                                    if( atIdx.MostAbstractType.IsAssignableFrom( i.MostAbstractType ) )
                                     {
                                         atIdx.AddSpecialization( i );
                                     }
-                                    else if( i.Type.Type.IsAssignableFrom( atIdx.Type.Type ) )
+                                    else if( i.MostAbstractType.IsAssignableFrom( atIdx.MostAbstractType ) )
                                     {
                                         i.AddSpecialization( atIdx );
                                     }
                                 }
                                 break;
                             }
-                            else if( i.Type.Type.IsAssignableFrom( atIdx.Type.Type ) )
+                            else if( i.MostAbstractType.IsAssignableFrom( atIdx.MostAbstractType ) )
                             {
                                 i.AddSpecialization( atIdx );
                             }
                         }
                         // If the TypeSpecOrder has not been updated (we are at the end of the list),
-                        // set it to 1.0 after the last one.
-                        Debug.Assert( (i.TypeSpecOrder == 0) == (idx == _typeInfos.Count) );
+                        // set it to +1.0 after the last one.
+                        Debug.Assert( (i.TypeSpecOrder == 0.0f) == (idx == _typeInfos.Count) );
                         if( i.TypeSpecOrder == 0 )
                         {
                             i.TypeSpecOrder = _typeInfos[^1].TypeSpecOrder + 1.0f;
@@ -249,19 +254,6 @@ namespace CK.Setup.Json
             }
             return i;
 
-            static void Register( Dictionary<object, JsonCodeGenHandler> _map, IActivityMonitor monitor, JsonCodeGenHandler h )
-            {
-                _map.Add( h.Type, h );
-                //_map.Add( h.JsonName, h );
-                //foreach( var p in h.PreviousJsonNames )
-                //{
-                //    if( !_map.TryAdd( p, h ) )
-                //    {
-                //        var exist = _map[p];
-                //        monitor.Warn( $"Previous name '{p}' for '{h.TypeInfo}' is already mapped to '{exist.TypeInfo}'. It is ignored." );
-                //    }
-                //}
-            }
         }
 
         /// <summary>
@@ -393,7 +385,7 @@ namespace CK.Setup.Json
                                   },
                                   ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                                   {
-                                      read.Append( "PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, out " ).Append( variableName ).Append( ", options );" );
+                                      read.Append( variableName ).Append( " = PocoDirectory_CK." ).Append( fRead.Definition.MethodName.Name ).Append( "( ref r, options );" );
                                   } );
                         handler = AllowTypeInfo( info ).NullHandler;
                     }
@@ -445,16 +437,32 @@ namespace CK.Setup.Json
         /// It is always the target type that is written and since it is assignable to the alias, it can be read back without downcasts.
         /// </para>
         /// </summary>
-        /// <param name="alias">The reference type to map that is assignable to the target's type.</param>
+        /// <param name="alias">The reference type to map that is assignable to the target's type. Must be <see cref="NullableTypeTree.IsNormalNull"/>: and since
+        /// this it is a reference type, it must be nullable.</param>
         /// <param name="target">The mapped type.</param>
-        public void AllowTypeAlias( NullableTypeTree alias, JsonTypeInfo target )
+        /// <param name="isMostAbstract">
+        /// Optionally sets the <see cref="JsonTypeInfo.MostAbstractMapping"/>.
+        /// This must be set once and only once and target's <see cref="JsonTypeInfo.IsRegistered"/> must be false.
+        /// </param>
+        public void AllowTypeAlias( NullableTypeTree alias, JsonTypeInfo target, bool isMostAbstract = false )
         {
             if( !alias.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( alias ) );
             if( !(alias.Type.IsClass || alias.Type.IsSealed) && !alias.Type.IsInterface ) throw new ArgumentException( $"Must be a non sealed class or an interface. '{alias}' is not.", nameof( alias ) );
             if( target == null ) throw new ArgumentNullException( nameof( target ) );
             if( !alias.Type.IsAssignableFrom( target.Type.Type ) ) throw new ArgumentException( $"Type alias '{alias}' must be assignable to '{target.GenCSharpName}'.", nameof( alias ) );
-            AllowMapping( alias, target.NullHandler );
-
+            var hNull = AllowMapping( alias, target.NullHandler );
+            if( isMostAbstract )
+            {
+                if( target.IsRegistered )
+                {
+                    throw new InvalidOperationException( $"AllowTypeAlias for alias {alias} must be called before the target '{target.GenCSharpName}' is registered (via AllowTypeInfo)." );
+                }
+                if( target.MostAbstractMapping != null )
+                {
+                    throw new InvalidOperationException( $"Type alias '{alias}' cannot be defined as the MostAbstractType on '{target.GenCSharpName}' since it is already defined as '{target.MostAbstractMapping.GenCSharpName}'." );
+                }
+                target.MostAbstractMapping = hNull;
+            }
         }
 
         /// <summary>
@@ -470,11 +478,12 @@ namespace CK.Setup.Json
             AllowMapping( type.GetNullableTypeTree(), JsonTypeInfo.ObjectType.NullHandler );
         }
 
-        void AllowMapping( NullableTypeTree tree, JsonCodeGenHandler h )
+        JsonTypeInfo.HandlerForTypeMapping AllowMapping( NullableTypeTree tree, JsonCodeGenHandler h )
         {
             var hNull = new JsonTypeInfo.HandlerForTypeMapping( h, tree );
             _map.Add( tree, hNull );
             _map.Add( tree.ToAbnormalNull(), hNull.ToNonNullHandler() );
+            return hNull;
         }
 
 

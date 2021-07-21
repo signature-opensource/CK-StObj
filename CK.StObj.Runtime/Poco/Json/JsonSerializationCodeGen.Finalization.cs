@@ -102,8 +102,8 @@ namespace CK.Setup.Json
 
             static readonly Dictionary<string, ReaderFunction> _typeReaders = new Dictionary<string, ReaderFunction>();
 
-            static readonly object oFalse = false;
-            static readonly object oTrue = true;
+            static internal readonly object oFalse = false;
+            static internal readonly object oTrue = true;
 
             internal static object ReadObject( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options, bool throwOnNull = false )
             {
@@ -164,7 +164,6 @@ namespace CK.Setup.Json
                 {
                     o = reader( ref r, options );
                 }
-                if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( ""Expected end of 2 - cells array."" );
                 return o;
             }
 " );
@@ -230,7 +229,7 @@ internal static void WriteObject( System.Text.Json.Utf8JsonWriter w, object o, P
                 Debug.Assert( t.NonNullHandler.GenCSharpName == t.GenericWriteHandler.GenCSharpName );
                 if( done.Add( t.GenericWriteHandler ) )
                 {
-                    mappings.Append( "case " ).Append( t.GenCSharpName ).Append( " v: " );
+                    mappings.Append( "case " ).Append( t.MostAbstractMapping?.GenCSharpName ?? t.GenCSharpName ).Append( " v: " );
                     t.GenericWriteHandler.DoGenerateWrite( mappings, "v", handleNull: false, writeTypeName: true );
                     mappings.NewLine().Append( "break;" ).NewLine();
                 }

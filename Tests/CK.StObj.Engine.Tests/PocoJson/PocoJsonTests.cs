@@ -171,7 +171,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface ITestSetNumbers : ITest
         {
-            HashSet<decimal> Numbers { get; }
+            ISet<decimal> Numbers { get; }
         }
 
         [TestCase( PocoJsonSerializerMode.ECMAScriptSafe )]
@@ -204,11 +204,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IWithList : IPoco
         {
-            List<int> Numbers { get; }
+            IList<int> Numbers { get; }
         }
 
         [Test]
-        public void Set_and_List_can_read_each_other()
+        public void ISet_and_IList_can_read_each_other()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithSet ), typeof( IWithList ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -239,7 +239,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void Set_and_Array_can_read_each_other()
+        public void ISet_and_Array_can_read_each_other()
         {
             // Implementation uses this fact: an array is a IList.
             typeof( int[] ).Should().BeAssignableTo<IList<int>>();
@@ -476,7 +476,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var f = services.GetRequiredService<IPocoFactory<IWithUnionType>>();
             var a = f.Create( a =>
             {
-                a.V = new Dictionary<int, string?>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" }, { 3712, null } };
+                a.V = new Dictionary<int, string?>() { { 1, "One" }, { 2, "Two" }, { 3, "Three" } };
             } );
             JsonTestHelper.Roundtrip( directory, a, text: t => TestHelper.Monitor.Info( t ) );
 
@@ -494,7 +494,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void writing_UnionTypes_throws_on_nullability_violation()
+        public void writing_UnionTypes_throws_on_nullability_violation_in_generics()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithUnionType ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;

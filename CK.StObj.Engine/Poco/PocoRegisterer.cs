@@ -415,6 +415,16 @@ namespace CK.Setup
                     monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' type is nullable and readonly (it has no setter). This is forbidden since value will always be null." );
                     return false;
                 }
+                Type? genType = null;
+                if( p.PropertyType.IsGenericType )
+                {
+                    genType = p.PropertyType.GetGenericTypeDefinition();
+                    if( genType == typeof( List<> )|| genType == typeof( Dictionary<,> ) || genType == typeof( HashSet<> ) )
+                    {
+                        monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' is of concrete type List, Dictionary or HashSet. Use their respective interfaces instead: IList<T>, IDictionary<TKey,TValue> or ISet<T>." );
+                        return false;
+                    }
+                }
                 if( isReadOnly )
                 {
                     bool isAllowedType = false;
@@ -431,14 +441,13 @@ namespace CK.Setup
                     }
                     else if( p.PropertyType.IsGenericType )
                     {
-                        Type genType = p.PropertyType.GetGenericTypeDefinition();
-                        isAllowedType = genType == typeof( IList<> ) || genType == typeof( List<> )
-                                        || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
-                                        || genType == typeof( ISet<> ) || genType == typeof( HashSet<> );
+                        isAllowedType = genType == typeof( IList<> ) 
+                                        || genType == typeof( IDictionary<,> ) 
+                                        || genType == typeof( ISet<> );
                     }
                     if( !isAllowedType )
                     {
-                        monitor.Error( $"Invalid Poco readonly property '{interfaceType.FullName}.{p.Name}': read only property type can only be another IPoco or a IList<>, List<>, IDictionary<,>, Dictionary<,>, ISet<> or HashSet<>. (Property's type is '{p.PropertyType.Name}'.)" );
+                        monitor.Error( $"Invalid Poco readonly property '{interfaceType.FullName}.{p.Name}': read only property type can only be another IPoco or a IList<>, IDictionary<,>, ISet<>. (Property's type is '{p.PropertyType.ToCSharpName()}'.)" );
                         return false;
                     }
                 }
@@ -452,12 +461,13 @@ namespace CK.Setup
             {
                 if( implP.IsReadOnly )
                 {
-                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or a IList<>, List<>, IDictionary<,>, Dictionary<,>, ISet<> or HashSet<>." );
+                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or IList<>, IDictionary<,> or ISet<>." );
                     return false;
                 }
                 bool isPropertyNullable = implP.PropertyNullabilityInfo.Kind.IsNullable();
                 List<string>? typeDeviants = null;
                 List<string>? nullDeviants = null;
+                List<string>? concreteCollections = null;
 
                 if( unionTypesDef == null )
                 {
@@ -489,6 +499,25 @@ namespace CK.Setup
                         if( typeDeviants == null ) typeDeviants = new List<string>();
                         typeDeviants.Add( sub.ToString() );
                     }
+                    else if( sub.Type.IsGenericType )
+                    {
+                        var tGen = sub.Type.GetGenericTypeDefinition();
+                        if( tGen == typeof( List<> ) )
+                        {
+                            if( concreteCollections == null ) concreteCollections = new List<string>();
+                            concreteCollections.Add( $"{sub} should be a IList<{sub.RawSubTypes[0]}>" );
+                        }
+                        else if( tGen == typeof( Dictionary<,> ) )
+                        {
+                            if( concreteCollections == null ) concreteCollections = new List<string>();
+                            concreteCollections.Add( $"{sub} should be a IDictionary<{sub.RawSubTypes[0]},{sub.RawSubTypes[1]}>" );
+                        }
+                        else if( tGen == typeof( HashSet<> ) )
+                        {
+                            if( concreteCollections == null ) concreteCollections = new List<string>();
+                            concreteCollections.Add( $"{sub} should be a ISet<{sub.RawSubTypes[0]}>" );
+                        }
+                    }
                     // If the property is nullable, the variants can be nullable or not.
                     // If the property is not nullable then the variants MUST NOT be nullable.
                     if( sub.Kind.IsNullable() )
@@ -505,6 +534,10 @@ namespace CK.Setup
                 {
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
                 }
+                if( concreteCollections != null )
+                {
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must use their interfaces: {concreteCollections.Concatenate()}." );
+                }
                 if( nullDeviants != null )
                 {
                     Debug.Assert( !isPropertyNullable );
@@ -516,11 +549,11 @@ namespace CK.Setup
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. None of the union types are nullable but '{p.PropertyType.Name}? {p.Name} {{ get; }}' is nullable." );
                     return false;
                 }
-                if( typeDeviants != null ) return false;
+                if( typeDeviants != null || concreteCollections != null ) return false;
 
                 // Nullability has been handled: the property type is nullable if and only if at least one of the unioned types is nullable:
                 // actual types are necessarily non-nullable!
-                var types = nullableTypeTrees.SubTypes.Select( t => t.Kind.IsReferenceType() ? t.ToAbnormalNull() : t.ToNormalNull() ).ToList();
+                var types = nullableTypeTrees.SubTypes.Select( t => t.ToNonNullable() ).ToList();
                 if( types.Any( t => t.Type == typeof( object ) ) ) 
                 {
                     monitor.Error( $"{implP}': UnionTypes cannot define the type 'object' since this would erase all possible types." );

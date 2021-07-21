@@ -110,7 +110,7 @@ namespace CK.Setup
 
             public bool OptimizeUnionTypes( IActivityMonitor monitor )
             {
-                Debug.Assert( _unionTypes != null && _unionTypes.Any() );
+                Debug.Assert( _unionTypes != null && _unionTypes.Any() && _unionTypes.All( t => !t.Kind.IsNullable() ) );
                 for( int i = 0; i < _unionTypes.Count; ++i )
                 {
                     var tN = _unionTypes[i];
@@ -121,25 +121,8 @@ namespace CK.Setup
                         var tJ = tJN.Type;
                         if( tJ == t )
                         {
-                            bool tNIsNullable = tN.Kind.IsNullable();
-                            if( tJN.Kind.IsNullable() == tNIsNullable )
-                            {
-                                monitor.Warn( $"{ToString()} UnionType '{t.ToCSharpName()}' duplicate found. Removing one of them." );
-                                _unionTypes.RemoveAt( j-- );
-                            }
-                            else
-                            {
-                                monitor.Warn( $"{ToString()} UnionType '{t.ToCSharpName()}' appear as nullable and non nullable. Removing the non nullable one." );
-                                if( tNIsNullable )
-                                {
-                                    _unionTypes.RemoveAt( j-- );
-                                }
-                                else
-                                {
-                                    _unionTypes.RemoveAt( i-- );
-                                    break;
-                                }
-                            }
+                            monitor.Warn( $"{ToString()} UnionType '{t.ToCSharpName()}' duplicated. Removing one." );
+                            _unionTypes.RemoveAt( j-- );
                         }
                         else if( tJ.IsAssignableFrom( t ) )
                         {

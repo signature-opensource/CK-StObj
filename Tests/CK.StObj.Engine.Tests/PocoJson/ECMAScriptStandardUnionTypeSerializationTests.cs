@@ -37,18 +37,6 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [ExternalName("UT")]
-        public interface INotCompliant2 : IPoco
-        {
-            [UnionType]
-            public object Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (List<int>, int[]) Thing { get; }
-            }
-        }
-
-        [ExternalName("UT")]
         public interface INotCompliant3 : IPoco
         {
             [UnionType]
@@ -56,7 +44,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (List<int>, int?[]) Thing { get; }
+                public (IList<int>, int?[]) Thing { get; }
             }
         }
 
@@ -68,12 +56,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (List<(int,string)>, (int,string)?[]) Thing { get; }
+                public (IList<(int,string)>, (int,string)?[]) Thing { get; }
             }
         }
 
         [TestCase( typeof( INotCompliant1 ) )]
-        [TestCase( typeof( INotCompliant2 ) )]
         [TestCase( typeof( INotCompliant3 ) )]
         [TestCase( typeof( INotCompliant4 ) )]
         public void Non_compliant_Poco_are_detected( Type t )
@@ -174,6 +161,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             r.T2.Should().BeOfType<byte>().And.Be( u.T2 );
         }
 
+
         [ExternalName( "UT" )]
         public interface ICompliant3 : IPoco
         {
@@ -185,12 +173,45 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (IList<double>, double[], ISet<double>) T1 { get; }
+                public (IList<double>, ISet<double>) T1 { get; }
 
                 public (IDictionary<string,double>, IDictionary<string, byte>) T2 { get; }
             }
         }
 
+
+        [Test]
+        public void types_can_mute_across_serialization()
+        {
+            // across 
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant3 ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = services.GetService<PocoDirectory>();
+
+            var u = services.GetRequiredService<IPocoFactory<ICompliant3>>().Create();
+            u.T1 = new[] { 2.5d, 85.8d };
+            u.T2 = new Dictionary<string, byte> { { "A", 1 }, { "B", 2 } };
+
+            var serialized = u.JsonSerialize( true, ECMAScriptStandard );
+            Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"[""UT"",{""T1"":[""Number[]"",[2.5,85.8]],""T2"":[""O(Number)"",{""A"":1,""B"":2}]}]" );
+
+            var r = (ICompliant3?)directory.JsonDeserialize( serialized.Span, ECMAScriptStandard );
+            Debug.Assert( r != null );
+            r.T1.Should().BeOfType<List<double>>().And.BeEquivalentTo( u.T1 );
+            r.T2.Should().BeOfType<Dictionary<string, double>>().And.BeEquivalentTo( u.T2 );
+
+            u.T1 = new HashSet<double>() { 2.5d, 85.8d };
+
+            serialized = u.JsonSerialize( true, ECMAScriptStandard );
+            Encoding.UTF8.GetString( serialized.Span ).Should().Be( @"[""UT"",{""T1"":[""S(Number)"",[2.5,85.8]],""T2"":[""O(Number)"",{""A"":1,""B"":2}]}]" );
+
+            r = (ICompliant3?)directory.JsonDeserialize( serialized.Span, ECMAScriptStandard );
+            Debug.Assert( r != null );
+            r.T1.Should().BeOfType<HashSet<double>>().And.BeEquivalentTo( u.T1 );
+            r.T2.Should().BeOfType<Dictionary<string, double>>().And.BeEquivalentTo( u.T2 );
+
+
+        }
 
 
     }

@@ -43,7 +43,7 @@ namespace CK.Setup.Json
                               read.Append( variableName ).Append( " = new " ).Append( info.GenCSharpName ).Append( "();" ).NewLine();
                           }
                           // We cast the variable into its type to handle the case where the variable is an 'object' (or
-                          // any other base type).
+                          // any other base type) since these are regular collections (arrays are not handled here).
                           read.Append( "PocoDirectory_CK." )
                               .Append( fRead.Definition.MethodName.Name )
                               .Append( "( ref r, (" )
@@ -52,9 +52,9 @@ namespace CK.Setup.Json
                               .Append( variableName )
                               .Append( ", options );" );
                       } );
+            // The interface maps to the collection type and is its MostAbstractMapping.
+            AllowTypeAlias( tInterface.ToNormalNull(), info, isMostAbstract: true );
             AllowTypeInfo( info );
-            // The interface maps to the collection type.
-            AllowTypeAlias( tInterface.ToNormalNull(), info );
             return info.NullHandler;
         }
 
@@ -103,7 +103,7 @@ namespace CK.Setup.Json
                          .Append( "while( r.TokenType != System.Text.Json.JsonTokenType.EndArray)" )
                          .OpenBlock()
                          .Append( "r.Read();" ).NewLine();
-                    
+
                     fRead.Append( keyTypeName ).Append( " k;" ).NewLine();
                     keyHandler.GenerateRead( fRead, "k", true );
 
@@ -210,7 +210,7 @@ namespace CK.Setup.Json
             // Note: Keeping the if here is useless but this ensures the non nullability of the out parameters.
             if( !CreateWriteEnumerable( tItem, out IFunctionScope? fWrite, out JsonCodeGenHandler? itemHandler ) ) return default;
 
-            var fReadDef = FunctionDefinition.Parse( "internal static void ReadArray_" + itemHandler.NumberName + "( ref System.Text.Json.Utf8JsonReader r, out " + itemHandler.GenCSharpName + "[] a, PocoJsonSerializerOptions options )" );
+            var fReadDef = FunctionDefinition.Parse( "internal static " + itemHandler.GenCSharpName + "[] ReadArray_" + itemHandler.NumberName + "( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" );
             IFunctionScope? fRead = _pocoDirectory.FindFunction( fReadDef.Key, false );
             if( fRead == null )
             {
@@ -218,7 +218,7 @@ namespace CK.Setup.Json
                 fRead.OpenBlock()
                      .Append( "var c = new List<" + itemHandler.GenCSharpName + ">();" ).NewLine()
                      .Append( "ReadLOrS_" + itemHandler.NumberName + "( ref r, c, options );" ).NewLine()
-                     .Append( "a = c.ToArray();" ).NewLine()
+                     .Append( "return c.ToArray();" ).NewLine()
                      .CloseBlock();
             }
             var info = CreateTypeInfo( tArray.ToNormalNull(), itemHandler.JsonName + "[]" )

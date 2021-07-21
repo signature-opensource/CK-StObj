@@ -192,8 +192,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int?, string?, List<string>) Thing { get; }
-                public (int, string, List<string?>) AnotherThing { get; }
+                public (int?, string?, IList<string>) Thing { get; }
+                public (int, string, IList<string?>) AnotherThing { get; }
             }
         }
 
@@ -233,7 +233,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int?, IEnumerable<string>, List<string>, string) Thing { get; }
+                public (int?, IEnumerable<string>, IList<string>, string) Thing { get; }
             }
         }
 
@@ -270,7 +270,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetSuccessfulResult( c );
 
                 entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "'System.Collections.Generic.IEnumerable<string>' is assignable from (is more general than) 'System.Collections.Generic.List<string>'. Removing the second one.", StringComparison.Ordinal ) );
+                    .Contain( t => t.Contains( "'System.Collections.Generic.IEnumerable<string>' is assignable from (is more general than) 'System.Collections.Generic.IList<string>'. Removing the second one.", StringComparison.Ordinal ) );
             }
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -287,11 +287,58 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetSuccessfulResult( c );
 
                 entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "Property 'YetAnotherThing' of type 'object' on Poco interfaces: 'I3'. UnionType 'string' duplicate found. Removing one of them.", StringComparison.Ordinal ) );
+                    .Contain( t => t.Contains( "Property 'YetAnotherThing' of type 'object' on Poco interfaces: 'I3'. UnionType 'string' duplicated. Removing one.", StringComparison.Ordinal ) );
 
                 entries.Select( e => e.Text ).Should()
                     .Contain( t => t.Contains( "'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Person' is assignable from (is more general than) 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.Student'. Removing the second one.", StringComparison.Ordinal ) );
             }
+        }
+
+        [ExternalName( "I4" )]
+        public interface IPocoWithConcreteListInUnion : IPoco
+        {
+            [UnionType]
+            object ConcreteList { get; set; }
+
+            class UnionTypes
+            {
+                public (int, List<string>) ConcreteList { get; }
+            }
+        }
+
+        [ExternalName( "I4" )]
+        public interface IPocoWithConcreteDictionaryInUnion : IPoco
+        {
+            [UnionType]
+            object ConcreteDictionary { get; set; }
+
+            class UnionTypes
+            {
+                public (int, Dictionary<string,int>) ConcreteDictionary { get; }
+            }
+        }
+
+        [ExternalName( "I5" )]
+        public interface IPocoWithHashSetInUnion : IPoco
+        {
+            [UnionType]
+            object ConcreteSet { get; set; }
+
+            class UnionTypes
+            {
+                public (int, HashSet<string>) ConcreteSet { get; }
+            }
+        }
+
+        [Test]
+        public void Union_property_types_must_be_ISet_IDictionary_and_IList_not_corresponding_concrete_types()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithConcreteListInUnion ) );
+            TestHelper.GetFailedResult( c );
+            c = TestHelper.CreateStObjCollector( typeof( IPocoWithConcreteDictionaryInUnion ) );
+            TestHelper.GetFailedResult( c );
+            c = TestHelper.CreateStObjCollector( typeof( IPocoWithHashSetInUnion ) );
+            TestHelper.GetFailedResult( c );
         }
 
         [Test]
@@ -321,7 +368,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void When_nullables_and_not_nullables_appear_non_nullables_are_removed()
+        public void Nullables_are_removed_union_contain_only_non_nullable_types()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -329,8 +376,8 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetSuccessfulResult( c );
 
                 entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "UnionType 'string' appear as nullable and non nullable. Removing the non nullable one.", StringComparison.Ordinal ) )
-                    .And.Contain( t => t.Contains( "UnionType 'int' appear as nullable and non nullable. Removing the non nullable one.", StringComparison.Ordinal ));
+                    .Contain( t => t.Contains( "UnionType 'string' duplicated. Removing one.", StringComparison.Ordinal ) )
+                    .And.Contain( t => t.Contains( "UnionType 'int' duplicated. Removing one.", StringComparison.Ordinal ));
             }
         }
 
@@ -341,7 +388,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (List<int>, List<int?>) ListOfNullableValueTypesOrNotNullable { get; }
+                public (IList<int>, IList<int?>) ListOfNullableValueTypesOrNotNullable { get; }
             }
         }
 
@@ -365,7 +412,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (List<string>, List<string?>) ListOfNullableReferenceTypesOrNotNullable { get; }
+                public (IList<string>, IList<string?>) ListOfNullableReferenceTypesOrNotNullable { get; }
             }
         }
 

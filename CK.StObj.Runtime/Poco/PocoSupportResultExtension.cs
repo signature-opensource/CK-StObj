@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Exetnds <see cref="IPocoSupportResult"/> with helpers.
+    /// Extends <see cref="IPocoSupportResult"/> with helpers.
     /// </summary>
     public static class PocoSupportResultExtension
     {
@@ -36,12 +36,12 @@ namespace CK.Setup
             if( autoType.IsGenericType )
             {
                 Type genType = autoType.GetGenericTypeDefinition();
-                if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
+                if( genType == typeof( IList<> ) )
                 {
                     writer.Append( "new List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
-                if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
+                if( genType == typeof( IDictionary<,> ) )
                 {
                     writer.Append( "new Dictionary<" )
                                         .AppendCSharpName( autoType.GetGenericArguments()[0] )
@@ -51,13 +51,13 @@ namespace CK.Setup
                                         .NewLine();
                     return;
                 }
-                if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
+                if( genType == typeof( ISet<> ) )
                 {
                     writer.Append( "new HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
             }
-            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), ISet<>;, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
+            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), ISet<>, IList<>, IDictionary<,>.", nameof( autoType ) );
         }
     }
 }

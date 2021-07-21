@@ -16,36 +16,24 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             public IList<string> Strings { get; }
 
-            public List<string> StringList { get; }
-
             public IDictionary<string, ISimpleCollections> Configurations { get; }
 
-            public Dictionary<string, ISimpleCollections> ConfigurationDictionary { get; }
-
             public ISet<int> DistinctValues { get; }
-
-            public ISet<int> DistinctValueSet { get; }
         }
 
         [Test]
-        public void List_Dictionary_and_Set_properties_with_getter_only_are_automatically_initialized_with_an_empty_instance()
+        public void IList_IDictionary_and_ISet_properties_with_getter_only_are_automatically_initialized_with_an_empty_instance()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ISimpleCollections ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var p = s.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
             p.Strings.Should().NotBeNull().And.BeEmpty();
-            p.StringList.Should().NotBeNull().And.BeEmpty();
             p.Configurations.Should().NotBeNull().And.BeEmpty();
-            p.ConfigurationDictionary.Should().NotBeNull().And.BeEmpty();
             p.DistinctValues.Should().NotBeNull().And.BeEmpty();
-            p.DistinctValueSet.Should().NotBeNull().And.BeEmpty();
 
             p.GetType().GetProperty( nameof( p.Strings ) ).Should().NotBeWritable();
-            p.GetType().GetProperty( nameof( p.StringList ) ).Should().NotBeWritable();
             p.GetType().GetProperty( nameof( p.Configurations ) ).Should().NotBeWritable();
-            p.GetType().GetProperty( nameof( p.ConfigurationDictionary ) ).Should().NotBeWritable();
             p.GetType().GetProperty( nameof( p.DistinctValues ) ).Should().NotBeWritable();
-            p.GetType().GetProperty( nameof( p.DistinctValueSet ) ).Should().NotBeWritable();
         }
 
         public interface IWithListString : IPoco

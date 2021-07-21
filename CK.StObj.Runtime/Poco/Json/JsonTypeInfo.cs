@@ -48,6 +48,17 @@ namespace CK.Setup.Json
         public bool ByRefWriter { get; private set; }
 
         /// <summary>
+        /// Gets the most abstract mapping nullable handler associated to this type (that is necessarily a reference type).
+        /// It can be defined once (and only once) by <see cref="JsonSerializationCodeGen.AllowTypeAlias(NullableTypeTree, JsonTypeInfo, bool)"/>.
+        /// </summary>
+        public JsonCodeGenHandler? MostAbstractMapping { get; internal set; }
+
+        /// <summary>
+        /// Gets the most abstract Type: either the <see cref="MostAbstractMapping"/>'s one or this one.
+        /// </summary>
+        public Type MostAbstractType => MostAbstractMapping?.Type.Type ?? Type.Type;
+
+        /// <summary>
         /// Gets a value that corresponds to the sort order of all the registered <see cref="JsonTypeInfo"/>.
         /// <para>
         /// The JsonTypeInfo list is ordered. UntypedObject, value types, sealed classes and Poco
@@ -61,8 +72,17 @@ namespace CK.Setup.Json
         /// This is an optimization: the IsAssignableFrom lookup is done once and any list of types (like the <see cref="JsonTypeInfo.Specializations"/>)
         /// can then be ordered by this value so that write switch can be correctly generated.
         /// </para>
+        /// <para>
+        /// This is also used as a flag to detect multiple calls to <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/>: it's
+        /// initial value is invalid (-1.0) and AllowTypeInfo sets it to a zero or positive value. See <see cref="IsRegistered"/>.
+        /// </para>
         /// </summary>
         public float TypeSpecOrder { get; internal set; }
+
+        /// <summary>
+        /// Gets whether <see cref="JsonSerializationCodeGen.AllowTypeInfo(JsonTypeInfo)"/> has been called on this type information.
+        /// </summary>
+        public bool IsRegistered => TypeSpecOrder >= 0.0f;
 
         /// <summary>
         /// Nullable type handler.
@@ -129,6 +149,7 @@ namespace CK.Setup.Json
             GenCSharpName = t.Type.ToCSharpName( useValueTupleParentheses: false );
             Number = number;
             NumberName = number.ToString( System.Globalization.NumberFormatInfo.InvariantInfo );
+            TypeSpecOrder = -1.0f;
             // By default, the ECMAScriptStandardJsonName is the JsonName.
             NonNullableJsonName = name;
             NonNullableECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( name, false );
@@ -154,6 +175,7 @@ namespace CK.Setup.Json
             NonNullableECMAScriptStandardJsonName = new ECMAScriptStandardJsonName( "Object", true );
             NonNullablePreviousJsonNames = Array.Empty<string>();
             Number = -1;
+            TypeSpecOrder = -1.0f;
             NumberName = String.Empty;
             _specializations = EmptySpecializations;
             var n = new HandlerForReferenceType( this );

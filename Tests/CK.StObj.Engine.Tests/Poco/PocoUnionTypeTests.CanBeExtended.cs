@@ -91,7 +91,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (string[]?, string?, List<string>?, ISet<string>?) AnotherThing { get; }
+                public (string[]?, string?, IList<string>?, ISet<string>?) AnotherThing { get; }
             }
         }
 
@@ -125,7 +125,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             new class UnionTypes
             {
-                public (string, List<string>) Thing { get; }
+                public (string, IList<string>) Thing { get; }
 
                 public (int, double?) AnotherThing { get; }
             }
@@ -138,7 +138,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             new class UnionTypes
             {
-                public (string?,List<string?>?) AnotherThing { get; }
+                public (string?,IList<string?>?) AnotherThing { get; }
             }
         }
 

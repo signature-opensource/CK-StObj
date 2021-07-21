@@ -10,11 +10,12 @@ namespace CK.Setup.Json
         /// <summary>
         /// Gets the handlers that must be used to write the value.
         /// These are also the handlers that must be used to read an incoming value in ECMASafe mode.
+        /// Since all union types are non-nullable by design, all <see cref="JsonCodeGenHandler.IsNullable"/> are false.
         /// </summary>
         IReadOnlyList<JsonCodeGenHandler> AllHandlers { get; }
 
         /// <summary>
-        /// Gets the handlers that must be used to read an incoming value in ECMAStandard mode.
+        /// Gets the non-nullable handlers that must be used to read an incoming value in ECMAStandard mode.
         /// These handlers have a true <see cref="JsonCodeGenHandler.HasECMAScriptStandardJsonName"/>
         /// and their <see cref="JsonCodeGenHandler.ECMAScriptStandardJsonName"/> is unique in this list.
         /// This is empty if <see cref="IPocoJsonInfo.IsECMAStandardCompliant"/> is false or if
