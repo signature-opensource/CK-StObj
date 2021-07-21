@@ -14,7 +14,7 @@ namespace CK.Setup
     public interface IPocoPropertyInfo : IAnnotationSet
     {
         /// <summary>
-        /// Gets whether this property is a <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;
+        /// Gets whether this property is a <see cref="IPoco"/> or a ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt;
         /// AND that all the <see cref="DeclaredProperties"/> are read only AND that this property is NOT nullable AND <see cref="PropertyUnionTypes"/> is empty.
         /// <para>
         /// Note that DeclaredProperties must all be read/write (with a getter and a setter) or all be read only otherwise an error is raised.
@@ -25,8 +25,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
         /// Note that if the default value is defined by more than one interface, it must be the same (this is checked) and that if this
-        /// is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;,
-        /// IDictionary&lt;,&gt; or Dictionary&lt;,&gt; cannot have default values).
+        /// is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types <see cref="IPoco"/> or ISet&lt;&gt;, IList&lt;&gt; or
+        /// IDictionary&lt;,&gt; cannot have default values).
         /// </summary>
         bool HasDefaultValue { get; }
 
