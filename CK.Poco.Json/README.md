@@ -179,7 +179,7 @@ Basic types use their alias or type name: "bool", "string, "int", "long", "ulong
 "DateTimeOffset", "TimeSpan", "byte[]", "Guid" and "BigInteger".
 
 For automatically handled types:
-- **Arrays** use `T[]`: `bool[]`, `Guid[]`. The representation is a JSON array.
+- **Arrays** use `T[]`: `boolean[]`, `Guid[]`. The representation is a JSON array.
 - **Lists** use `L(T)`: `L(uint)`. The representation is a JSON array. In **"ECMAScript safe" mode only**
 - **Sets** use `S(T)`: `S(decimal)`. The representation is a JSON array.
 - **Dictionaries with a string key** `O(TValue)`: `O(byte)`. The representation is a JSON object: a `Dictionary<string,TValue>` is exposed as a "dynamic objects". 
@@ -189,7 +189,7 @@ For automatically handled types:
 From an ECMAScript client, `T[]` and `L(T)` are essentially the same: in "ECMAScript standard" mode, only `T[]` is exposed (see below).
 
 Since `S(T)` specifies that the array doesn't contain duplicates and that it can be handled with a [ECMAScript Set object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set),
-the `S(T)` type is always used instead of `T[]`.
+a set is always `S(T)`.
 
 ## Roundtrip-able serializations: "pure Json" and "ECMAScript safe"
 
@@ -238,9 +238,9 @@ We then consider 2 different "modes" to serialize things:
 Mapping multiple C# types to only `Number` and `BigInt` must be "complete". No C# type like `sbyte` must be exposed to the Client. It means that
 collection handling is impacted: a `Dictionary<float,sbyte>` becomes a `M(Number,Number)`, a `Dictionary<string,decimal>` becomes a `O(BigInt)`.
 
-_Note:_ the type erasure of `T[]` and `List<T>` (both are mapped to `T[]`) has been introduced before.
+_Note:_ the type erasure of `T[]` and `IList<T>` (both are mapped to `T[]`) has been introduced before.
 
-This obviously generates ambiguities when reading the JSON sent by a CLient. But the good news is that this is a concern only for polymorphism
+This obviously generates ambiguities when reading the JSON sent by a Client. But the good news is that this is a concern only for polymorphism
 of heterogeneous types, not the polymorphism of specialized classes or interfaces.
 "Polymorphic heterogeneous types" is provided by either by an `object` or by a UnionType.
 
@@ -252,7 +252,8 @@ it discovers its type dynamically). Our main concern here is to follow the _Leas
 - For `BigInt`, an alternative exists:
 
   - Always choose the C# `BigInteger`. No risk but this type is less common (and known) than `long`, `ulong` and `decimal`.
-  - Choose among `long`, `ulong`, `decimal` and `BigInteger` based on the number's value, privileging the smallest type. We should have more `long` than `BigInteger`.
+  - Choose among `long`, `ulong`, `decimal` and `BigInteger` based on the number's value, privileging the smallest type.
+ We should have more `long` than `BigInteger`.
 
 > `BigInteger` is not common. We choose here the second option: a `BigInt` resolves to `long`, `ulong`, `decimal` or `BigInteger` based on its value. 
 
@@ -293,7 +294,7 @@ public static object ToSmallestType( double d )
  
 Some types are less commonly used than others. Should we remove the `sbyte`? the `ushort`? Uncomfortable choice here...
 
-> `Number` is ambiguous. We choose to avoid downcast and to keep id simple: a `Number` will always be a `double`. It will be up to the developer
+> `Number` is definitely ambiguous. We choose to avoid downcast and to keep it simple: a `Number` will always be a `double`. It will be up to the developer
 > to handle its `object` the way she wants (with the above code or a variation of it).
 
 #### Reading an `UnionType`.
@@ -316,10 +317,10 @@ and a `NotSupportedException` will be thrown at runtime.
 > in any other kind of serialization). Only trying to de/serialize it in "ECMAScriptStandard" mode will fail with a `NotSupportedException`.
 
 
-__Note__: The current implementation is very strict about ambiguities. If **needed**, detection could be smarter: if we group the union types
-by their standard representation and if, in each group there exists the "standard mapping", then we could handle it (for example `(IList<int>,double[],int,double)`
-can be safely deserialized into `double[]` or `double`).
-
+__Note__: The current implementation tries to find an unambiguous mapping by grouping the union types
+by their standard representation and if, in each group the "standard mapping" appears only once, then
+we handle it: for example `(IList<int>,IList<double>,int,double)` can be safely deserialized into `IList<double>`
+or `double`.
 
 ```csharp
         [ExternalName( "BasicTypes" )]

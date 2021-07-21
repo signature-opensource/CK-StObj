@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void Union_definition_must_be_public_properties_in_UnionTypes()
+        public void Union_definition_must_be_public_properties_in_nested_class_UnionTypes()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissUnionTypes ) );
             TestHelper.GetFailedResult( c );
@@ -192,13 +192,13 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int?, string?, IList<string>) Thing { get; }
+                public (int, string, IList<string>)? Thing { get; }
                 public (int, string, IList<string?>) AnotherThing { get; }
             }
         }
 
         [Test]
-        public void Union_property_implementation_guards_the_setter_and_null_is_allowed_if_one_of_the_variant_is_nullable()
+        public void Union_property_implementation_guards_the_setter_when_not_nullable()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
@@ -233,7 +233,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int?, IEnumerable<string>, IList<string>, string) Thing { get; }
+                public (int, IEnumerable<string>, IList<string>, string)? Thing { get; }
             }
         }
 
@@ -257,7 +257,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int, Student, string, Person, string, string, string ) YetAnotherThing { get; }
+                public (int, Student, string, Person, string, string, string) YetAnotherThing { get; }
             }
         }
 
@@ -356,31 +356,6 @@ namespace CK.StObj.Engine.Tests.Poco
             ((object)(byte?)5).Should().BeOfType<byte>( "Here is why." );
         }
 
-        public interface IPocoWithNullableAndNotNullableUnionTypes1 : IPoco
-        {
-            [UnionType]
-            object? Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (string?, string, int, int?) Thing { get; }
-            }
-        }
-
-        [Test]
-        public void Nullables_are_removed_union_contain_only_non_nullable_types()
-        {
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
-            {
-                var c = TestHelper.CreateStObjCollector( typeof( IPocoWithNullableAndNotNullableUnionTypes1 ) );
-                TestHelper.GetSuccessfulResult( c );
-
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "UnionType 'string' duplicated. Removing one.", StringComparison.Ordinal ) )
-                    .And.Contain( t => t.Contains( "UnionType 'int' duplicated. Removing one.", StringComparison.Ordinal ));
-            }
-        }
-
         public interface ICompositeOfNullableOrNotNullableValueTypes : IPoco
         {
             [UnionType]
@@ -393,7 +368,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void generics_of_nullable_and_not_nullable_value_types_are_diffferent()
+        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_value_types_are_diffferent()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -417,7 +392,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void generics_of_nullable_and_not_nullable_reference_types_are_the_same()
+        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_reference_types_are_considered_diffferent()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {

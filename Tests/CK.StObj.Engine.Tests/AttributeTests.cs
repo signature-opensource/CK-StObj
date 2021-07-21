@@ -341,7 +341,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void Attributes_can_NOT_YET_be_on_IRealObject_interface_members()
         {
-            Assume.That( false, "This has to be implemented if needed, but this may not be really useful: a IRealObject is unambiguosly mapped to its single implementation." );
+            Assume.That( false, "This has to be implemented if needed, but this may not be really useful: a IRealObject is unambiguously mapped to its single implementation." );
             // => This could be done in CKTypeCollector.RegisterObjectClassInfo().
 
             OneCtorAttributeImpl.Constructed = false;

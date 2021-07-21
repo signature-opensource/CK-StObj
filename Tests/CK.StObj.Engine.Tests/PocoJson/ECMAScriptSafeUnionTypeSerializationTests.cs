@@ -37,7 +37,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             class UnionTypes
             {
                 public (double, string) DoubleOrString { get; }
-                public (int?, int) NullablesOrNot { get; }
+                public (int, byte)? NullablesOrNot { get; }
                 public (sbyte, byte, short, ushort, int, uint, long, ulong, decimal, BigInteger) AllIntegers { get; }
             }
         }

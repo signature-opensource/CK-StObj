@@ -466,7 +466,7 @@ namespace CK.Setup
                 }
                 bool isPropertyNullable = implP.PropertyNullabilityInfo.Kind.IsNullable();
                 List<string>? typeDeviants = null;
-                List<string>? nullDeviants = null;
+                List<string>? nullableDef = null;
                 List<string>? concreteCollections = null;
 
                 if( unionTypesDef == null )
@@ -485,14 +485,18 @@ namespace CK.Setup
                     monitor.Error( $"The nested class UnionTypes requires a public value tuple '{p.Name}' property." );
                     return false;
                 }
-                if( !typeof( ITuple ).IsAssignableFrom( f.PropertyType ) )
+                var tree = f.GetNullableTypeTree();
+                if( (tree.Kind & NullabilityTypeKind.IsTupleType) == 0 )
                 {
-                    monitor.Error( $"The '{p.Name}' property of the nested class UnionTypes must be a value tuple (current type is {f.PropertyType.Name})." );
+                    monitor.Error( $"The '{p.Name}' property of the nested class UnionTypes must be a value tuple (current type is {tree})." );
                     return false;
                 }
-                var nullableTypeTrees = f.GetNullableTypeTree();
-                bool atLeastOneVariantIsNullable = false;
-                foreach( var sub in nullableTypeTrees.SubTypes )
+                if( tree.Kind.IsNullable() != isPropertyNullable )
+                {
+                    monitor.Error( $"The '{p.Name}' property of the nested class UnionTypes must{(isPropertyNullable ? "" : "NOT")} BE nullable since the property itself is nullable." );
+                    return false;
+                }
+                foreach( var sub in tree.SubTypes )
                 {
                     if( !p.PropertyType.IsAssignableFrom( sub.Type ) )
                     {
@@ -518,16 +522,10 @@ namespace CK.Setup
                             concreteCollections.Add( $"{sub} should be a ISet<{sub.RawSubTypes[0]}>" );
                         }
                     }
-                    // If the property is nullable, the variants can be nullable or not.
-                    // If the property is not nullable then the variants MUST NOT be nullable.
                     if( sub.Kind.IsNullable() )
                     {
-                        if( !isPropertyNullable )
-                        {
-                            if( nullDeviants == null ) nullDeviants = new List<string>();
-                            nullDeviants.Add( sub.ToString() );
-                        }
-                        atLeastOneVariantIsNullable = true;
+                        if( nullableDef == null ) nullableDef = new List<string>();
+                        nullableDef.Add( sub.ToString() );
                     }
                 }
                 if( typeDeviants != null )
@@ -538,22 +536,15 @@ namespace CK.Setup
                 {
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must use their interfaces: {concreteCollections.Concatenate()}." );
                 }
-                if( nullDeviants != null )
+                if( nullableDef != null )
                 {
-                    Debug.Assert( !isPropertyNullable );
-                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(nullDeviants.Count > 1 ? "s" : "")} '{nullDeviants.Concatenate( "' ,'" )}' must NOT be nullable since '{p.PropertyType.Name} {p.Name} {{ get; }}' is not nullable." );
-                    return false;
-                }
-                if( isPropertyNullable && !atLeastOneVariantIsNullable )
-                {
-                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. None of the union types are nullable but '{p.PropertyType.Name}? {p.Name} {{ get; }}' is nullable." );
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type definitions must not be nullable: please change '{nullableDef.Concatenate( "' ,'" )}' to be not nullable." );
                     return false;
                 }
                 if( typeDeviants != null || concreteCollections != null ) return false;
 
-                // Nullability has been handled: the property type is nullable if and only if at least one of the unioned types is nullable:
-                // actual types are necessarily non-nullable!
-                var types = nullableTypeTrees.SubTypes.Select( t => t.ToNonNullable() ).ToList();
+                // Type definitions are non-nullable.
+                var types = tree.SubTypes.ToList();
                 if( types.Any( t => t.Type == typeof( object ) ) ) 
                 {
                     monitor.Error( $"{implP}': UnionTypes cannot define the type 'object' since this would erase all possible types." );

@@ -96,7 +96,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             class UnionTypes
             {
                 public (double, int) T1 { get; }
-                public (int, double?) T2 { get; }
+                public (int, double)? T2 { get; }
                 public (byte,sbyte,double,float) T3 { get; }
             }
         }
@@ -137,7 +137,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             class UnionTypes
             {
                 public (int, string) T1 { get; }
-                public (byte, long?) T2 { get; }
+                public (byte, long)? T2 { get; }
             }
         }
 
