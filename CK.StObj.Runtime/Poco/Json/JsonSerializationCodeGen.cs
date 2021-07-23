@@ -14,10 +14,13 @@ namespace CK.Setup.Json
 
     /// <summary>
     /// Provides services related to Json serialization support.
+    /// All IPoco and the transitive closure of their properties are automatically
+    /// handled (by the Engine's PocoJsonSerializerImpl).
     /// <para>
     /// This service supports automatic code generation for enums or collections types (as long as they are
-    /// allowed thanks to <see cref="GetHandler(Type, bool?)"/>).
-    /// Other type must be registered with their <see cref="CodeWriter"/> and <see cref="CodeReader"/> generators.
+    /// allowed thanks to <see cref="AllowType(NullableTypeTree)"/>).
+    /// Other types must be registered with their <see cref="CodeWriter"/> and <see cref="CodeReader"/> generators
+    /// by providing and configuring a <see cref="JsonTypeInfo"/>.
     /// </para>
     /// This service is instantiated and registered by the Engine's PocoJsonSerializerImpl that is
     /// activated by the CK.Poco.Json package (thanks to the PocoJsonSerializer static class).
@@ -109,6 +112,7 @@ namespace CK.Setup.Json
         {
             if( !normalType.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( normalType ) );
             if( name == null || name.Length == 0 || name[^1] == '?' ) throw new ArgumentException( "Must be a non nullable serialized type name.", nameof( name ) );
+            if( normalType.Type == typeof(void) ) throw new ArgumentException( "The typeof(void) type is invalid.", nameof( name ) );
 
             JsonCodeGenHandler? writeHandler = null;
             if( normalType.RawSubTypes.Count > 0 )
@@ -281,12 +285,26 @@ namespace CK.Setup.Json
         public event EventHandler<EventMonitoredArgs>? JsonTypeFinalized;
 
         /// <summary>
+        /// Simple helper that calls <see cref="GetHandler(NullableTypeTree)"/>: either the type is
+        /// already mapped or, for enums, lists, dictionary and sets, the handlers are generated. 
+        /// </summary>
+        /// <para>
+        /// The <c>typeof(void)</c> is invalid (an <see cref="ArgumentException"/> is thrown).
+        /// </para>
+        /// <param name="t">The <see cref="NullableTypeTree"/> to support.</param>
+        /// <returns>True on success, false on error.</returns>
+        public bool AllowType( NullableTypeTree t ) => GetHandler( t ) != null;
+
+        /// <summary>
         /// Gets a handler for a type: this is typically called from code that are creating a <see cref="CodeReader"/>/<see cref="CodeWriter"/>
         /// and needs to read/write <paramref name="t"/> instances.
         /// <para>
         /// Supported automatic types are <see cref="Enum"/>, arrays of any other allowed type, <see cref="List{T}"/>, <see cref="IList{T}"/>, <see cref="ISet{T}"/>,
         /// <see cref="HashSet{T}"/>, <see cref="Dictionary{TKey, TValue}"/> and <see cref="IDictionary{TKey, TValue}"/> where the generic parameter types must themselves
         /// be eventually allowed (see <see cref="IsAllowedType(Type)"/>).
+        /// </para>
+        /// <para>
+        /// The <c>typeof(void)</c> is invalid (an <see cref="ArgumentException"/> is thrown).
         /// </para>
         /// </summary>
         /// <param name="t">The type to allow.</param>
@@ -295,6 +313,10 @@ namespace CK.Setup.Json
         {
             if( !_map.TryGetValue( t, out var handler ) )
             {
+                if( t.Type == typeof(void) )
+                {
+                    throw new ArgumentException( "Type typeof(void) is invalid.", nameof( t ) );
+                }
                 JsonTypeInfo? info = null;
                 if( (t.Kind & NullabilityTypeKind.IsValueType) != 0 )
                 {
