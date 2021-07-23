@@ -98,7 +98,6 @@ namespace CK.Setup.Json
             var info = new PocoJsonPropertyInfo( p, allHandlers, isECMAScriptStandardCompliant ? ecmaStandardReadhandlers : null );
             _finalReadWrite.Add( () =>
             {
-                int p;
                 var fieldName = "_v" + info.PropertyInfo.Index;
                 write.Append( "w.WritePropertyName( " ).AppendSourceString( info.PropertyInfo.PropertyName ).Append( " );" ).NewLine();
                 if( info.IsJsonUnionType )

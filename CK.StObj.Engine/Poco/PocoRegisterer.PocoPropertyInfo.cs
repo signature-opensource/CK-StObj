@@ -34,15 +34,13 @@ namespace CK.Setup
 
             public bool IsNullable => PropertyNullabilityInfo.Kind.IsNullable();
 
-            public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree.Kind == NullabilityTypeKind.Unknown
+            public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree.Kind == NullabilityTypeKind.None
                                                                     ? (_nullableTypeTree = PropertyType.GetNullableTypeTree( PropertyNullabilityInfo ))
                                                                     : _nullableTypeTree;
 
             public Type PropertyType => DeclaredProperties[0].PropertyType;
 
-            public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes != null
-                                                                            ? _unionTypes
-                                                                            : Enumerable.Empty<NullableTypeTree>();
+            public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes ?? Enumerable.Empty<NullableTypeTree>();
 
             public string PropertyName => DeclaredProperties[0].Name;
 
