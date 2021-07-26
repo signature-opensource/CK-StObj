@@ -41,6 +41,7 @@ namespace CK.Setup.Json
             var pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
             var jsonCodeGen = new JsonSerializationCodeGen( monitor, pocoDirectory );
             // Exposes this as a service to others.
+            monitor.Info( "Exposing JsonSerializationCodeGen in CurrentRun services." );
             c.CurrentRun.ServiceContainer.Add( jsonCodeGen );
             return new CSCodeGenerationResult( nameof( AllowAllPocoTypes ) );
         }
@@ -56,66 +57,70 @@ namespace CK.Setup.Json
                 return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
             }
 
-            // IPoco and IClosedPoco are not in the "OtherInterfaces".
-            jsonCodeGen.AllowInterfaceToUntyped( typeof( IPoco ) );
-            jsonCodeGen.AllowInterfaceToUntyped( typeof( IClosedPoco ) );
-
-            bool success = true;
-            // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
-            foreach( var root in pocoSupport.Roots )
+            using( monitor.OpenInfo( $"Allowing Poco Json serialization C# code generation for {pocoSupport.Roots.Count} Pocos." ) )
             {
-                var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames )?.Configure(
-                                ( ICodeWriter write, string variableName )
-                                        => write.Append( "((PocoJsonSerializer.IWriter)" ).Append( variableName ).Append( ").Write( w, false, options );" ),
-                                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
-                                {
-                                    if( !assignOnly )
-                                    {
-                                        if( isNullable )
-                                        {
-                                            read.Append( "if( " ).Append( variableName ).Append( " != null ) " ).NewLine();
-                                        }
-                                        read.Append( "((" ).AppendCSharpName( root.PocoClass ).Append( ')' ).Append( variableName ).Append( ')' ).Append( ".Read( ref r, options );" );
-                                        if( isNullable )
-                                        {
-                                            read.NewLine().Append( "else" ).NewLine();
-                                            assignOnly = true;
-                                        }
-                                    }
-                                    if( assignOnly )
-                                    {
-                                        read.Append( variableName )
-                                            .Append( " = new " ).AppendCSharpName( root.PocoClass )
-                                            .Append( "( ref r, options );" );
-                                    }
-                                } );
-                if( typeInfo != null )
+                // IPoco and IClosedPoco are not in the "OtherInterfaces".
+                jsonCodeGen.AllowInterfaceToUntyped( typeof( IPoco ) );
+                jsonCodeGen.AllowInterfaceToUntyped( typeof( IClosedPoco ) );
+                // Maps the "other Poco interfaces" to "Untyped" object.
+                foreach( var other in pocoSupport.OtherInterfaces )
                 {
-                    foreach( var i in root.Interfaces )
+                    jsonCodeGen.AllowInterfaceToUntyped( other.Key );
+                }
+
+                bool success = true;
+                // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
+                foreach( var root in pocoSupport.Roots )
+                {
+                    var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames )?.Configure(
+                                    ( ICodeWriter write, string variableName )
+                                            => write.Append( "((PocoJsonSerializer.IWriter)" ).Append( variableName ).Append( ").Write( w, false, options );" ),
+                                    ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                                    {
+                                        if( !assignOnly )
+                                        {
+                                            if( isNullable )
+                                            {
+                                                read.Append( "if( " ).Append( variableName ).Append( " != null ) " ).NewLine();
+                                            }
+                                            read.Append( "((" ).AppendCSharpName( root.PocoClass ).Append( ')' ).Append( variableName ).Append( ')' ).Append( ".Read( ref r, options );" );
+                                            if( isNullable )
+                                            {
+                                                read.NewLine().Append( "else" ).NewLine();
+                                                assignOnly = true;
+                                            }
+                                        }
+                                        if( assignOnly )
+                                        {
+                                            read.Append( variableName )
+                                                .Append( " = new " ).AppendCSharpName( root.PocoClass )
+                                                .Append( "( ref r, options );" );
+                                        }
+                                    } );
+                    if( typeInfo != null )
                     {
-                        jsonCodeGen.AllowTypeAlias( i.PocoInterface.GetNullableTypeTree(), typeInfo );
+                        foreach( var i in root.Interfaces )
+                        {
+                            jsonCodeGen.AllowTypeAlias( i.PocoInterface.GetNullableTypeTree(), typeInfo );
+                        }
+                    }
+                    else
+                    {
+                        success = false;
                     }
                 }
-                else
-                {
-                    success = false;
-                }
+                return success
+                        ? new CSCodeGenerationResult( nameof( GeneratePocoSupport ) )
+                        : CSCodeGenerationResult.Failed;
             }
-            // Maps the "other Poco interfaces" to "Untyped" object.
-            foreach( var other in pocoSupport.OtherInterfaces )
-            {
-                jsonCodeGen.AllowInterfaceToUntyped( other.Key );
-            }
-
-            return success
-                    ? new CSCodeGenerationResult( nameof( GeneratePocoSupport ) )
-                    : CSCodeGenerationResult.Failed;
         }
 
         // Step 2: Generates the Read & Write methods.
         //         This is where the Poco's properties types are transitively allowed.
         CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
         {
+            using var g = monitor.OpenInfo( $"Generating C# Json serialization code." );
+
             bool success = true;
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
@@ -254,8 +259,9 @@ namespace CK.Setup.Json
             }
             return success;
         }
+
         /// <summary>
-        /// Generates the "public void Read( ref System.Text.Json.Utf8JsonReader r )" method
+        /// Generates the "public void Read( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" method
         /// that handles a potential array definition with a check of the type and the loop
         /// over the properties: the returned part must be filled with the case statements on
         /// the property names.
@@ -321,6 +327,7 @@ if( isDef )
         //         the global Read & Write of "untyped" objects method. 
         void FinalizeJsonSupport( IActivityMonitor monitor, JsonSerializationCodeGen jsonCodeGen )
         {
+            using var g = monitor.OpenInfo( $"Finalizing Json serialization C# code." );
             if( jsonCodeGen.FinalizeCodeGeneration( monitor ) )
             {
                 foreach( var a in _finalReadWrite ) a();

@@ -72,21 +72,24 @@ namespace CK.Setup.Json
                 // be read).
                 GenerateDynamicRead();
 
-                string message = "While raising JsonTypeFinalized.";
-                try
+                using( monitor.OpenTrace( "Raising JsonTypeFinalized event." ) )
                 {
-                    JsonTypeFinalized?.Invoke( this, new EventMonitoredArgs( monitor ) );
-                    message = "While executing deferred actions to GenerateRead/Write code.";
-                    foreach( var a in _finalReadWrite )
+                    string message = "While raising JsonTypeFinalized.";
+                    try
                     {
-                        a( monitor );
+                        JsonTypeFinalized?.Invoke( this, new EventMonitoredArgs( monitor ) );
+                        message = "While executing deferred actions to GenerateRead/Write code.";
+                        foreach( var a in _finalReadWrite )
+                        {
+                            a( monitor );
+                        }
                     }
-                }
-                catch( Exception ex )
-                {
-                    _monitor.Error( message, ex );
-                    _finalizedCall = false;
-                    return false;
+                    catch( Exception ex )
+                    {
+                        _monitor.Error( message, ex );
+                        _finalizedCall = false;
+                        return false;
+                    }
                 }
                 monitor.CloseGroup( "Success." );
                 _finalizedCall = true;
