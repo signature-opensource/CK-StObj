@@ -4,6 +4,7 @@ namespace CK.Setup.Json
 {
     /// <summary>
     /// Captures the Json handler (or handlers for a union type) used to read and write this <see cref="PropertyInfo"/>.
+    /// This is available in <see cref="IPocoJsonInfo.JsonProperties"/>.
     /// </summary>
     public interface IPocoJsonPropertyInfo
     {

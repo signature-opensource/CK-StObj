@@ -5,13 +5,12 @@ namespace CK.Setup.Json
 {
     /// <summary>
     /// Captures Json information for a <see cref="IPocoRootInfo"/>.
-    /// This is available if the CK.Poco.Json package is installed and
-    /// the generation succeeds on the <see cref="IPocoRootInfo"/> by
-    /// using <see cref="IAnnotationSet.Annotation{IPocoJsonInfo}"/>.
+    /// If available (if the CK.Poco.Json package is installed and the generation succeeds)
+    /// this can be obtained on the <see cref="IPocoRootInfo"/> by using the <see cref="IAnnotationSet.Annotation{T}"/> API
+    /// or the more convenient <see cref="PocoPropertyExtensions.GetJsonInfo"/> extension method.
     /// </summary>
     public interface IPocoJsonInfo
     {
-        
         /// <summary>
         /// Gets whether this Poco is ECMAStandard compliant.
         /// </summary>
@@ -23,8 +22,8 @@ namespace CK.Setup.Json
         IPocoRootInfo PocoInfo { get; }
 
         /// <summary>
-        /// Gets the <see cref="PocoJsonPropertyInfo"/>.
+        /// Gets the <see cref="IPocoJsonPropertyInfo"/> for each properties (in the same order).
         /// </summary>
-        IReadOnlyList<IPocoJsonPropertyInfo> Properties { get; }
+        IReadOnlyList<IPocoJsonPropertyInfo> JsonProperties { get; }
     }
 }

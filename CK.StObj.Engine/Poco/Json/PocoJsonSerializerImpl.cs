@@ -244,6 +244,7 @@ namespace CK.Setup.Json
                             .CloseBlock();
                     } );
                 }
+                p.AddAnnotation( pJ );
                 jsonProperties[p.Index] = pJ;
             }
             if( success )
@@ -255,7 +256,7 @@ namespace CK.Setup.Json
                                                     .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
                 }
                 var info = new PocoJsonInfo( pocoInfo, isECMAScriptStandardCompliant, jsonProperties );
-                pocoInfo.AddAnnotation( pocoInfo );
+                pocoInfo.AddAnnotation( info );
             }
             return success;
         }

@@ -22,6 +22,7 @@ namespace CK.Setup.Json
             // Analyses the UnionTypes and creates the handler for each of them.
             // - Forbids ambiguous mapping for ECMAScriptStandard: all numerics are mapped to "Number" or "BigInt" (and arrays or lists are arrays).
             // - The ECMAScriptStandard projected name must be unique (and is associated to its actual handler).
+            // - 
             var allHandlers = new List<JsonCodeGenHandler>();
             var checkDuplicatedStandardName = new Dictionary<string, List<JsonCodeGenHandler>>();
             // Gets all the handlers and build groups of ECMAStandardJsnoName handlers (only if the Poco is still standard compliant).

@@ -10,14 +10,14 @@ namespace CK.Setup.Json
             PocoInfo = i;
             IsECMAStandardCompliant = isECMAStandardCompliant;
             foreach( var p in properties ) p.OnPocoInfoAvailable( this );
-            Properties = properties;
+            JsonProperties = properties;
         }
 
         public IPocoRootInfo PocoInfo { get; }
 
         public bool IsECMAStandardCompliant { get; }
 
-        public IReadOnlyList<IPocoJsonPropertyInfo> Properties { get; }
+        public IReadOnlyList<IPocoJsonPropertyInfo> JsonProperties { get; }
     }
 
 }

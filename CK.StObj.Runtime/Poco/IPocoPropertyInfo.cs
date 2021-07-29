@@ -58,7 +58,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the <see cref="NullabilityTypeInfo"/> of this property.
-        /// This unifies the <see cref="PropertyUnionTypes"/>'s nullabilities.
+        /// This drives the nullability of the <see cref="PropertyUnionTypes"/> (if any) that are not nullable.
         /// </summary>
         NullabilityTypeInfo PropertyNullabilityInfo { get; }
 
@@ -73,19 +73,16 @@ namespace CK.Setup
         NullableTypeTree PropertyNullableTypeTree { get; }
 
         /// <summary>
-        /// Gets the set of types that defines the union type with their nullability kind.
+        /// Gets the set of types that defines the union type in their non-nullable form.
         /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
-        /// assignable to any of the variants and nullability is coherent: as soon as one of the allowed type
-        /// is nullable then this <see cref="PropertyNullabilityInfo"/> is nullable and when all of the allowed types
-        /// are not nullable then this property type is not nullable.
+        /// assignable to any of the variants. Nullability applies to the whole property: the <see cref="PropertyNullableTypeTree"/> defines it.
         /// <para>
         /// The set of possible types is "cleaned up":
         /// <list type="bullet">
         ///     <item>Only one instance of duplicated types is kept.</item>
-        ///     <item>When both nullable and non nullable of the same type appear, the non nullable one is discarded.</item>
         ///     <item>When a type and its specializations appear (IsAssginableFrom), only the most general one is kept.</item>
         /// </list>
-        /// These optimization rules guaranty that there is no duplicated actual <see cref="NullableTypeTree.Type"/> in any Union .
+        /// These rules guaranty that there is no duplicated actual <see cref="NullableTypeTree.Type"/> in any Union .
         /// </para>
         /// </summary>
         IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }

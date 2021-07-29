@@ -207,11 +207,20 @@ specifies it. There are in fact 2 different serializations: the "pure Json" and 
 
 To stay on the safe side and to simplify the implementation, long, ulong, decimal and BigInteger are all written and read with string.
 
+The .net DateTime and DateTimeOffset use the ['O' standard fromat](https://docs.microsoft.com/en-us/dotnet/standard/base-types/standard-date-and-time-format-strings#Roundtrip)
+that follows the ISO 8601. Luckily enough, this standard is read by any decent client library (our choice is [Luxon](https://github.com/moment/luxon/)).
+
+The .net [TimeSpan](https://docs.microsoft.com/en-us/dotnet/api/system.timespan) is expressed in 100 nanoseconds, or one ten-millionth of a
+second (10-7s) and is stored in a long.
+Unfortunately, the ISO standard cannot handle this precision (see https://en.wikipedia.org/wiki/ISO_8601#Durations), nor does the ECMAScript that is
+using milliseconds (10^-3). The Ut8JsonReader/Writer don't provide any support for TimeSpan (Duration in Luxon terms): we choose to express it
+as a long (using a string) so that no data is lost: it is up to the client library to handle it by truncating it if needed.
+
 ## The "ECMAScript standard" mode 
 
 To be "ECMAScript safe", it is enough to de/serialize big integers as strings. But we can go a little bit farther by thinking to the types that an ECMAScript client
 expects. On the client side, a numeric can be:
-- a [number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
+- a [Number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number)
 - or a [BigInt](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt)
 - or a dedicated "type" (typically an ES6 class) that encapsulates the actual value (a "boxed number").
 
