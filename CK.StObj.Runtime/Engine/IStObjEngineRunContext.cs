@@ -33,12 +33,19 @@ namespace CK.Setup
         IGeneratedBinPath UnifiedBinPath { get; }
 
         /// <summary>
+        /// Gets whether the <see cref="UnifiedBinPath"/> is purely a unified ones:
+        /// it is not an actual BinPath and has been initialized only with IPoco and IRealObjet (no services)
+        /// and no code generation is required since it will never "run".
+        /// </summary>
+        bool IsUnifiedPure { get; }
+
+        /// <summary>
         /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="UnifiedBinPath"/>.
         /// </summary>
         IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 
         /// <summary>
-        /// Pushes a defered action.
+        /// Pushes a deferred action.
         /// It will be executed after the Run call on all aspects.
         /// An action can be pushed at any moment and a pushed action can push another action.
         /// </summary>

@@ -81,7 +81,7 @@ namespace CK.Setup
 
                     // Retrieves CK._g workspace.
                     var ws = _tempAssembly.Code;
-                    // Gets the global name space and starst with the informational version (if any),
+                    // Gets the global name space and starts with the informational version (if any),
                     // and, once for all, basic namespaces that we always want available.
                     var global = ws.Global;
 

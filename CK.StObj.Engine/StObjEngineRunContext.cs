@@ -83,7 +83,11 @@ namespace CK.Setup
         }
 
 
-        public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext, IGrouping<BinPathConfiguration, BinPathConfiguration> primaryCompatibleBinPaths, StObjCollectorResult primaryResult )
+        public StObjEngineRunContext( IActivityMonitor monitor,
+                                      StObjEngineConfigureContext startContext,
+                                      IGrouping<BinPathConfiguration, BinPathConfiguration> primaryCompatibleBinPaths,
+                                      StObjCollectorResult primaryResult,
+                                      bool isUnifiedPure )
         {
             Debug.Assert( primaryResult.EngineMap != null );
             _monitor = monitor;
@@ -93,6 +97,7 @@ namespace CK.Setup
             _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
             _unifiedRunCache = new Dictionary<string, object>();
             _codeGenerationGlobalMemory = new Dictionary<object, object?>();
+            IsUnifiedPure = isUnifiedPure;
             AddResult( primaryCompatibleBinPaths, primaryResult );
         }
 
@@ -102,6 +107,8 @@ namespace CK.Setup
         }
 
         public IGeneratedBinPath UnifiedBinPath => _binPaths[0];
+
+        public bool IsUnifiedPure { get; }
 
         ICodeGenerationContext IStObjEnginePostCodeRunContext.UnifiedBinPath => _binPaths[0];
 

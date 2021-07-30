@@ -49,7 +49,7 @@ namespace CK.Setup
         public RealObjectCollectorResult RealObjects { get; }
 
         /// <summary>
-        /// Gets the reults for <see cref="IScopedAutoService"/> objects.
+        /// Gets the results for <see cref="IAutoService"/> objects.
         /// </summary>
         public AutoServiceCollectorResult AutoServices { get; }
 
