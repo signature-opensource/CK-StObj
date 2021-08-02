@@ -505,16 +505,6 @@ namespace CK.Setup
                     monitor.Warn( $"Type has no FullName: '{t.Name}'. It is excluded." );
                     return false;
                 }
-                // We only care about IPoco and IRealObject. Nothing more.
-                if( _isUnifiedPure )
-                {
-                    if( !typeof( IPoco ).IsAssignableFrom( t )
-                        || !typeof( IRealObject ).IsAssignableFrom( t ) )
-                    {
-                        return false;
-                    }
-                }
-
                 Debug.Assert( t.AssemblyQualifiedName != null, "Since FullName is defined." );
                 if( _excludedTypes.Contains( t.Name ) )
                 {
@@ -536,6 +526,15 @@ namespace CK.Setup
                 {
                     monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its weak type name ({weaken})." );
                     return false;
+                }
+                // We only care about IPoco and IRealObject. Nothing more.
+                if( _isUnifiedPure )
+                {
+                    if( !typeof( IPoco ).IsAssignableFrom( t )
+                        && !typeof( IRealObject ).IsAssignableFrom( t ) )
+                    {
+                        return false;
+                    }
                 }
                 return _firstLayer?.TypeFilter( monitor, t ) ?? true;
             }
