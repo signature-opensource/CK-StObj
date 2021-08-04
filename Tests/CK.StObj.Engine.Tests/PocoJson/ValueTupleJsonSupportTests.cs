@@ -79,5 +79,33 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // The Student is NOT typed since it is final.
             serialized.Should().Be( "[\"WithHierarchies\",{\"Hop\":[3712,[\"CI:CT\",\"I|i|null\"],[\"CT:CP\",\"T|level\"],\"S|3\"]}]" );
         }
+
+        [ExternalName( "ComplexTuple" )]
+        public interface IComplexTuple : IPoco
+        {
+            (int, string?, string?, object?, List<string?>?, object?) Hop { get; set; }
+        }
+
+        [Test]
+        public void complex_tuple()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IComplexTuple ) );
+            var s = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = s.GetService<PocoDirectory>();
+
+            var o = s.GetRequiredService<IPocoFactory<IComplexTuple>>().Create();
+            string? serialized = null;
+            var o2 = JsonTestHelper.Roundtrip( directory, o, text: t => serialized = t );
+            o2.Should().BeEquivalentTo( o );
+
+            serialized.Should().Be( "[\"ComplexTuple\",{\"Hop\":[0,null,null,null,null,null]}]" );
+
+            o.Hop = (5, "Albert", null, null, new List<string?>() { "X", null, "Y" }, 37.12);
+            o2 = JsonTestHelper.Roundtrip( directory, o, text: t => serialized = t );
+            o2.Should().BeEquivalentTo( o );
+            serialized.Should().Be( "[\"ComplexTuple\",{\"Hop\":[5,\"Albert\",null,null,[\"X\",null,\"Y\"],37.12]}]" );
+
+        }
+
     }
 }

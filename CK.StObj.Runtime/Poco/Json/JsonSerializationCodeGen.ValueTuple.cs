@@ -73,7 +73,7 @@ namespace CK.Setup.Json
                     itemNumber = 0;
                     foreach( var h in handlers )
                     {
-                        h.GenerateRead( fRead, "v.Item" + (++itemNumber).ToString( CultureInfo.InvariantCulture ), false );
+                        h.GenerateRead( fRead, "v.Item" + (++itemNumber).ToString( CultureInfo.InvariantCulture ), true );
                     }
                     fRead.Append( "r.Read();" ).NewLine();
                 } );
