@@ -436,8 +436,10 @@ namespace CK.Setup.Json
                 _reentrancy.Pop();
                 if( !_map.TryGetValue( t, out handler ) || handler == null )
                 {
-                    _monitor.Error( $"Unable to handle Json serialization for type '{t}'." );
-                    return null;
+                    _monitor.Warn( $"Unable to handle Json serialization for type '{t}': relying on System.Text.Json.JsonSerializer.Serialize/Deserialize methods." );
+                    var info = CreateTypeInfoWithJsonSerializer( t );
+                    if( info == null ) return null;
+                    handler = AllowTypeInfo( info ).NullHandler;
                 }
             }
             if( handler.IsNullable != ((t.Kind & NullabilityTypeKind.IsNullable) != 0) )
@@ -446,6 +448,26 @@ namespace CK.Setup.Json
                 else handler = handler.ToNullHandler();
             }
             return handler;
+        }
+
+        JsonTypeInfo? CreateTypeInfoWithJsonSerializer( NullableTypeTree t )
+        {
+            var info = CreateTypeInfo( t.ToNormalNull(), t.ToNonNullable().ToString( true ) );
+            if( info == null ) return null;
+            info.Configure( ( ICodeWriter write, string variableName ) =>
+            {
+                write.Append( "System.Text.Json.JsonSerializer.Serialize<" )
+                     .AppendCSharpName( t.Type, false )
+                     .Append( ">( w, " ).Append( variableName ).Append( ", (options ?? PocoJsonSerializerOptions.Default).ForJsonSerializer );" );
+            },
+            ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+            {
+                read.Append( variableName ).Append( " = System.Text.Json.JsonSerializer.Deserialize<" )
+                     .AppendCSharpName( t.Type, false )
+                     .Append( ">( ref r, (options ?? PocoJsonSerializerOptions.Default).ForJsonSerializer );" ).NewLine()
+                     .Append( "r.Read();" );
+            } );
+            return info;
         }
 
         /// <summary>

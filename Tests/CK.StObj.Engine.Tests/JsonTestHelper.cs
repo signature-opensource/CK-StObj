@@ -40,19 +40,20 @@ namespace CK.StObj.Engine.Tests
             string bin1Text;
             using( var m = new MemoryStream() )
             {
+                Utf8JsonWriter w = new Utf8JsonWriter( m );
                 try
                 {
-                    using( var w = new Utf8JsonWriter( m ) )
-                    {
-                        o.Write( w, true, options );
-                        w.Flush();
-                    }
+                    o.Write( w, true, options );
+                    w.Flush();
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
                     text?.Invoke( bin1Text );
                 }
                 catch( Exception )
                 {
+                    w.Flush();
+                    bin1 = m.ToArray();
+                    bin1Text = Encoding.UTF8.GetString( bin1 );
                     // On error, bin1 and bin1Text can be inspected here.
                     throw;
                 }
