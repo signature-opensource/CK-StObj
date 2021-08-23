@@ -196,5 +196,6 @@ namespace CK.Setup
             }
             return CSCodeGenerationResult.Success;
         }
+
     }
 }

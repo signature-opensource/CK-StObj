@@ -8,24 +8,18 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Describes a Poco property.
-    /// This handles potentially more than one <see cref="DeclaredProperties"/> that must be identical across the different interfaces.
+    /// Describes a Poco-like property.
     /// </summary>
-    public interface IPocoPropertyInfo : IAnnotationSet
+    public interface IPocoLikePropertyInfo : IAnnotationSet
     {
         /// <summary>
-        /// Gets whether this property is a <see cref="IPoco"/>, Poco-like objects, ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt;
-        /// AND that all the <see cref="DeclaredProperties"/> are read only AND that this property is NOT nullable AND <see cref="PropertyUnionTypes"/> is empty.
-        /// <para>
-        /// Note that DeclaredProperties must all be read/write (with a getter and a setter) or all be read only otherwise an error is raised.
-        /// </para>
+        /// Gets whether this property is a readonly <see cref="IPoco"/>, a Poco-like class or a ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt;
         /// </summary>
         bool IsReadOnly { get; }
 
         /// <summary>
         /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
-        /// Note that if the default value is defined by more than one interface, it must be the same (this is checked) and that if this
-        /// is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types are <see cref="IPoco"/>, Poco-like objects,
+        /// If this is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types are <see cref="IPoco"/>, Poco-like objects,
         /// ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt; and cannot have default values).
         /// </summary>
         bool HasDefaultValue { get; }
@@ -42,7 +36,7 @@ namespace CK.Setup
         string? DefaultValueSource { get; }
 
         /// <summary>
-        /// Gets the index of this property in the <see cref="IPocoRootInfo.PropertyList"/>.
+        /// Gets the index of this property in the <see cref="IPocoLikeInfo.PropertyList"/>.
         /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
         /// by index (MessagePack) rather than by name (Json).
         /// <para>

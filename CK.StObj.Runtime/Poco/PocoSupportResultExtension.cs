@@ -12,16 +12,15 @@ namespace CK.Setup
     public static class PocoSupportResultExtension
     {
         /// <summary>
-        /// Generates <paramref name="variableName"/> = "new ..." assignation to the writer for an automatically
-        /// instantiated type.
-        /// This throws a ArgumentException if the <paramref name="autoType"/> is not a valid one:
-        /// see <see cref="IPocoPropertyInfo.AutoInstantiated"/>.
+        /// Generates <paramref name="variableName"/> = "new ..." assignation to the writer (typically in a constructor) for
+        /// an automatically instantiated readonly property.
+        /// This throws a ArgumentException if the <paramref name="autoType"/> is not a valid one (IPoco, Poco-like,
+        /// IList, ISet or IDictionary).
         /// <para>
-        /// This method is exposed to enable serializers implementations to handle possible null values
-        /// of AutoInstantiated properties.
+        /// This method is exposed (by the C.StObj.Runtime) typically for serializers implementations.
         /// </para>
         /// </summary>
-        /// <param name="this">This result.</param>
+        /// <param name="this">Poco support result.</param>
         /// <param name="writer">The code writer.</param>
         /// <param name="variableName">The assigned variable name.</param>
         /// <param name="autoType">The type.</param>
@@ -31,6 +30,11 @@ namespace CK.Setup
             if( @this.AllInterfaces.TryGetValue( autoType, out IPocoInterfaceInfo? info ) )
             {
                 writer.Append( "new " ).Append( info.Root.PocoClass.FullName! ).Append( "();" ).NewLine();
+                return;
+            }
+            if( @this.PocoLike.ByType.ContainsKey( autoType ) )
+            {
+                writer.Append( "new " ).AppendCSharpName( autoType ).Append( "();" ).NewLine();
                 return;
             }
             if( autoType.IsGenericType )
@@ -57,7 +61,8 @@ namespace CK.Setup
                     return;
                 }
             }
-            throw new ArgumentException( $"Invalid type '{autoType.FullName}': AutoInstantiated properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), ISet<>, IList<>, IDictionary<,>.", nameof( autoType ) );
+            throw new ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco-like objects, ISet<>, IList<> or IDictionary<,>.", nameof( autoType ) );
         }
+
     }
 }

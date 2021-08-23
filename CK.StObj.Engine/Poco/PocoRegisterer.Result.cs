@@ -22,14 +22,16 @@ namespace CK.Setup
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
             public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
+            public readonly PocoLikeResult PocoLike;
 
             public Result()
             {
                 Roots = new List<ClassInfo>();
                 AllInterfaces = new Dictionary<Type, InterfaceInfo>();
-                _exportedAllInterfaces = AllInterfaces.AsCovariantReadOnly<Type, InterfaceInfo, IPocoInterfaceInfo>();
+                _exportedAllInterfaces = AllInterfaces.AsIReadOnlyDictionary<Type, InterfaceInfo, IPocoInterfaceInfo>();
                 OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
                 NamedRoots = new Dictionary<string, IPocoRootInfo>();
+                PocoLike = new PocoLikeResult();
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
@@ -41,6 +43,8 @@ namespace CK.Setup
             IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedAllInterfaces;
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
+
+            IPocoLikeSupportResult IPocoSupportResult.PocoLike => PocoLike;
 
             public bool CheckPropertiesVarianceAndInstantiationCycleError( IActivityMonitor monitor )
             {

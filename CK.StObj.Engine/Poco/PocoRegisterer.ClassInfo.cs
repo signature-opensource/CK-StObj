@@ -59,7 +59,7 @@ namespace CK.Setup
                 Interfaces = new List<InterfaceInfo>();
                 OtherInterfaces = others;
                 Properties = properties;
-                _exposedProperties = Properties.AsCovariantReadOnly<string, PocoPropertyInfo, IPocoPropertyInfo>();
+                _exposedProperties = Properties.AsIReadOnlyDictionary<string, PocoPropertyInfo, IPocoPropertyInfo>();
                 PropertyList = propertyList;
                 ExternallyImplementedPropertyList = externallyImplementedPropertyList ?? Array.Empty<PropertyInfo>();
             }

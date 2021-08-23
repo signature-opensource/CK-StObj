@@ -30,7 +30,7 @@ namespace CK.Setup
         string Name { get; }
 
         /// <summary>
-        /// Gets the command previous names if any.
+        /// Gets the Poco previous names if any.
         /// </summary>
         IReadOnlyList<string> PreviousNames { get; }
 
