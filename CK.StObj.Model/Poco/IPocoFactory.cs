@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace CK.Core
 {
     /// <summary>
-    /// Poco factory interface: untyped base for <see cref="IPocoFactory{T}"/> real objects.
+    /// Poco factory interface: untyped base for <see cref="IPocoFactory{T}"/> objects.
     /// </summary>
     public interface IPocoFactory
     {
@@ -32,7 +32,7 @@ namespace CK.Core
         string Name { get; }
 
         /// <summary>
-        /// Gets the command previous names if any.
+        /// Gets the previous names of this Poco if any.
         /// </summary>
         IReadOnlyList<string> PreviousNames { get; }
     }

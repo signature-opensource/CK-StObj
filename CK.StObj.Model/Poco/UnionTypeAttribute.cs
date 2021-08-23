@@ -22,8 +22,8 @@ namespace CK.Core
     /// 
     ///         class UnionTypes
     ///         {
-    ///             public (int?, string, string?, List&lt;string&gt;) Thing { get; }
-    ///             public (int, string, List&lt;string?&gt;) AnotherThing { get; }
+    ///             public (int, string, List&lt;string&gt;) Thing { get; }
+    ///             public (ushort, List&lt;string?&gt;) AnotherThing { get; }
     ///         }
     ///     }
     /// </code>
