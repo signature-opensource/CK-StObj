@@ -1,10 +1,4 @@
-<Project>
-
-  <!-- See https://docs.microsoft.com/en-us/dotnet/standard/base-types/string-comparison-net-5-plus -->
-  <PropertyGroup>
-    <!--<AnalysisMode>AllEnabledByDefault</AnalysisMode>
-    <WarningsAsErrors>$(WarningsAsErrors);CA1307;CA1309;CA1310</WarningsAsErrors>-->
-  </PropertyGroup>
+﻿<Project>
 
   <!--<BasicDefinitions>: provides simple and useful definitions.-->
   <PropertyGroup>
