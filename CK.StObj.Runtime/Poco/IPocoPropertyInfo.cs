@@ -14,8 +14,8 @@ namespace CK.Setup
     public interface IPocoPropertyInfo : IAnnotationSet
     {
         /// <summary>
-        /// Gets whether this property is a <see cref="IPoco"/>, Poco-like objects, ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt;
-        /// AND that all the <see cref="DeclaredProperties"/> are read only AND that this property is NOT nullable AND <see cref="PropertyUnionTypes"/> is empty.
+        /// Gets whether this property is a <see cref="IPoco"/>, Poco-like objects, ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;,
+        /// IDictionary&lt;,&gt; or Dictionary&lt;,&gt; AND that all the <see cref="DeclaredProperties"/> are read only AND that this property is NOT nullable AND <see cref="PropertyUnionTypes"/> is empty.
         /// <para>
         /// Note that DeclaredProperties must all be read/write (with a getter and a setter) or all be read only otherwise an error is raised.
         /// </para>

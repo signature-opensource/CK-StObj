@@ -432,12 +432,6 @@ namespace CK.Setup
                     }
                     else if( genType != null )
                     {
-                        // Rejects concrete collections for : interfaces should always be used instead.
-                        //if( genType == typeof( List<> ) || genType == typeof( Dictionary<,> ) || genType == typeof( HashSet<> ) )
-                        //{
-                        //    monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' is of concrete type List, Dictionary or HashSet. Use their respective interfaces instead: IList<T>, IDictionary<TKey,TValue> or ISet<T>." );
-                        //    return false;
-                        //}
                         isAllowedType = genType == typeof( IList<> ) || genType == typeof( List<> ) 
                                         || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
                                         || genType == typeof( ISet<> ) || genType == typeof( HashSet<> );
