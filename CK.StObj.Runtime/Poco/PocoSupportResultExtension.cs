@@ -40,12 +40,12 @@ namespace CK.Setup
             if( autoType.IsGenericType )
             {
                 Type genType = autoType.GetGenericTypeDefinition();
-                if( genType == typeof( IList<> ) )
+                if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
                 {
                     writer.Append( "new List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
-                if( genType == typeof( IDictionary<,> ) )
+                if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
                 {
                     writer.Append( "new Dictionary<" )
                                         .AppendCSharpName( autoType.GetGenericArguments()[0] )
@@ -55,13 +55,13 @@ namespace CK.Setup
                                         .NewLine();
                     return;
                 }
-                if( genType == typeof( ISet<> ) )
+                if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                 {
                     writer.Append( "new HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
                     return;
                 }
             }
-            throw new ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco-like objects, ISet<>, IList<> or IDictionary<,>.", nameof( autoType ) );
+            throw new ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco-like objects, ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
         }
 
     }

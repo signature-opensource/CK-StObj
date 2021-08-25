@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class InterfaceInfo : IPocoInterfaceInfo
         {

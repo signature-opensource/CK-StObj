@@ -13,7 +13,7 @@ using System.Reflection.Emit;
 
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class Result : IPocoSupportResult
         {

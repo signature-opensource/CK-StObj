@@ -19,7 +19,7 @@ namespace CK.Setup
         readonly IActivityMonitor _monitor;
         readonly IDynamicAssembly _tempAssembly;
         readonly IServiceProvider _serviceProvider;
-        readonly PocoRegisterer _pocoRegisterer;
+        readonly PocoRegistrar _pocoRegistrar;
         readonly HashSet<Assembly> _assemblies;
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
         readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
@@ -58,7 +58,7 @@ namespace CK.Setup
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
             KindDetector = new CKTypeKindDetector();
-            _pocoRegisterer = new PocoRegisterer( ( m, t ) => (KindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
@@ -103,7 +103,7 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoRegisterer.Register( _monitor, type ) )
+                    if( _pocoRegistrar.Register( _monitor, type ) )
                     {
                         RegisterAssembly( type );
                     }
@@ -241,7 +241,7 @@ namespace CK.Setup
                 IPocoSupportResult? pocoSupport;
                 using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
-                    pocoSupport = _pocoRegisterer.Finalize( _tempAssembly, _monitor );
+                    pocoSupport = _pocoRegistrar.Finalize( _tempAssembly, _monitor );
                     if( pocoSupport != null )
                     {
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );

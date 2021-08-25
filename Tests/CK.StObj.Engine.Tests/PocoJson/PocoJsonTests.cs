@@ -353,9 +353,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IPocoWithDictionary : IPoco
         {
-            IDictionary<string, int> ClassicalJson { get; }
+            Dictionary<string, int> ClassicalJson { get; }
 
-            IDictionary<int, string> Map { get; }
+            Dictionary<int, string> Map { get; }
         }
 
         [Test]
@@ -505,6 +505,31 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 a.V = new Dictionary<int, string>() { { 1, "One" }, { 3712, null! } };
             } );
             a.Invoking( _ => _.JsonSerialize() ).Should().Throw<InvalidOperationException>().WithMessage( "A null value appear where it should not.*" );
+        }
+
+        [ExternalName( "WithMutableCollections" )]
+        public interface IWithMutableCollections : IPoco
+        {
+            List<int> List { get; set; }
+            HashSet<string> Set { get; set; }
+            Dictionary<int,IPoco?> Dictionary { get; set; }
+        }
+
+        [Test]
+        public void support_for_mutable_collection_properties()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithMutableCollections ), typeof( IWithUnionType ) );
+            var services = TestHelper.GetAutomaticServices( c ).Services;
+            var directory = services.GetService<PocoDirectory>();
+            var f = services.GetRequiredService<IPocoFactory<IWithMutableCollections>>();
+            var a = f.Create( a =>
+            {
+                a.List = new List<int>() { 1, 3712, 0 };
+                a.Set = new HashSet<string> { "One", "Two" };
+                a.Dictionary = new Dictionary<int, IPoco?>() { { 1, services.GetRequiredService<IPocoFactory<IWithUnionType>>().Create() }, { 3712, null! } };
+            } );
+            var a2 = JsonTestHelper.Roundtrip( directory, a );
+            a2.Should().BeEquivalentTo( a );
         }
 
 

@@ -239,7 +239,7 @@ namespace CK.Setup.Json
 
                         read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
                             .OpenBlock();
-                        mainHandler.GenerateRead( read, fieldName, false );
+                        mainHandler.GenerateRead( read, fieldName, assignOnly: !p.IsReadOnly );
                         read.Append( "break; " )
                             .CloseBlock();
                     } );

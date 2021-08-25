@@ -13,14 +13,15 @@ namespace CK.Setup
     public interface IPocoLikePropertyInfo : IAnnotationSet
     {
         /// <summary>
-        /// Gets whether this property is a readonly <see cref="IPoco"/>, a Poco-like class or a ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt;
+        /// Gets whether this property is a readonly <see cref="IPoco"/>, a Poco-like object, ISet&lt;&gt;,
+        /// Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;.
         /// </summary>
         bool IsReadOnly { get; }
 
         /// <summary>
         /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
         /// If this is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types are <see cref="IPoco"/>, Poco-like objects,
-        /// ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt; and cannot have default values).
+        /// ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt; and cannot have default values).
         /// </summary>
         bool HasDefaultValue { get; }
 

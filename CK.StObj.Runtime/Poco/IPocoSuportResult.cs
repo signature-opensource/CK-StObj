@@ -85,7 +85,7 @@ namespace CK.Setup
         bool IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability );
 
         /// <summary>
-        /// Gets the Poco-like classes informations.
+        /// Gets the Poco-like objects informations.
         /// </summary>
         IPocoLikeSupportResult PocoLike { get; }
 

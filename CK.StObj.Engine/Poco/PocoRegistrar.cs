@@ -19,9 +19,9 @@ using System.Runtime.CompilerServices;
 namespace CK.Setup
 {
     /// <summary>
-    /// Registerer for <see cref="IPoco"/> interfaces.
+    /// Registrar for <see cref="IPoco"/> interfaces.
     /// </summary>
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class PocoType
         {
@@ -53,7 +53,7 @@ namespace CK.Setup
         readonly Func<IActivityMonitor, Type, bool> _actualPocoPredicate;
 
         /// <summary>
-        /// Initializes a new <see cref="PocoRegisterer"/>.
+        /// Initializes a new <see cref="PocoRegistrar"/>.
         /// </summary>
         /// <param name="actualPocoPredicate">
         /// This must be true for actual IPoco interfaces: when false, "base interface" are not directly registered.
@@ -61,7 +61,7 @@ namespace CK.Setup
         /// </param>
         /// <param name="namespace">Namespace into which dynamic types will be created.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        public PocoRegisterer( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
+        public PocoRegistrar( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _actualPocoPredicate = actualPocoPredicate ?? throw new ArgumentNullException( nameof( actualPocoPredicate ) );
             _namespace = @namespace ?? "CK.GPoco";
@@ -415,16 +415,7 @@ namespace CK.Setup
                     monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' type is nullable and readonly (it has no setter). This is forbidden since value will always be null." );
                     return false;
                 }
-                Type? genType = null;
-                if( p.PropertyType.IsGenericType )
-                {
-                    genType = p.PropertyType.GetGenericTypeDefinition();
-                    if( genType == typeof( List<> )|| genType == typeof( Dictionary<,> ) || genType == typeof( HashSet<> ) )
-                    {
-                        monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' is of concrete type List, Dictionary or HashSet. Use their respective interfaces instead: IList<T>, IDictionary<TKey,TValue> or ISet<T>." );
-                        return false;
-                    }
-                }
+                Type? genType = p.PropertyType.IsGenericType ? p.PropertyType.GetGenericTypeDefinition() : null;
                 if( isReadOnly )
                 {
                     bool isAllowedType = false;
@@ -439,12 +430,23 @@ namespace CK.Setup
                         // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
                         // instantiation cycles is deferred when the global result is built.
                     }
-                    else if( p.PropertyType.IsGenericType )
+                    else if( genType != null )
                     {
-                        isAllowedType = genType == typeof( IList<> ) 
-                                        || genType == typeof( IDictionary<,> ) 
-                                        || genType == typeof( ISet<> );
+                        // Rejects concrete collections for : interfaces should always be used instead.
+                        //if( genType == typeof( List<> ) || genType == typeof( Dictionary<,> ) || genType == typeof( HashSet<> ) )
+                        //{
+                        //    monitor.Error( $"Poco property '{interfaceType.FullName}.{p.Name}' is of concrete type List, Dictionary or HashSet. Use their respective interfaces instead: IList<T>, IDictionary<TKey,TValue> or ISet<T>." );
+                        //    return false;
+                        //}
+                        isAllowedType = genType == typeof( IList<> ) || genType == typeof( List<> ) 
+                                        || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
+                                        || genType == typeof( ISet<> ) || genType == typeof( HashSet<> );
                     }
+                    //// Not a IPoco nor one of the allowed collection types: 
+                    //if( !isAllowedType )
+                    //{
+                    //    isAllowedType = TryRegisterPocoLike
+                    //}
                     if( !isAllowedType )
                     {
                         monitor.Error( $"Invalid Poco readonly property '{interfaceType.FullName}.{p.Name}': read only property type can only be another IPoco or a IList<>, IDictionary<,>, ISet<>. (Property's type is '{p.PropertyType.ToCSharpName()}'.)" );

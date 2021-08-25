@@ -26,7 +26,7 @@ namespace CK.Setup
         /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
         /// Note that if the default value is defined by more than one interface, it must be the same (this is checked) and that if this
         /// is true then <see cref="IsReadOnly"/> is necessarily false (allowed readonly types are <see cref="IPoco"/>, Poco-like objects,
-        /// ISet&lt;&gt;, IList&lt;&gt; or IDictionary&lt;,&gt; and cannot have default values).
+        /// ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt; and cannot have default values).
         /// </summary>
         bool HasDefaultValue { get; }
 

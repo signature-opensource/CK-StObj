@@ -266,7 +266,7 @@ namespace CK.StObj.Engine.Tests.Service
 
                 var result = TestHelper.GetAutomaticServices( collector, services =>
                 {
-                    // Here we use ServiceRegisterer that takes care of the registration with logs.
+                    // Here we use ServiceRegistrar that takes care of the registration with logs.
                     services.Register( typeof( IOfficialHostedService ), typeof( HNot ), isScoped: false, allowMultipleRegistration: true );
                     //
                     // We could also have used the standard ServiceCollection registration of the mapping:

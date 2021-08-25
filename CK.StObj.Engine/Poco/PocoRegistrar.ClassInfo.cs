@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class ClassInfo : IPocoRootInfo
         {
@@ -109,6 +109,8 @@ namespace CK.Setup
                 return true;
             }
 
+            // Since Poco-like are not allowed to be readonly properties, we don't handle them here.
+            // We focus only on IPoco.
             internal bool HasCycle( IActivityMonitor monitor, Dictionary<Type, InterfaceInfo> allInterfaces, ref List<PropertyInfo>? clashPath )
             {
                 if( _instantiationCycleFlag ) return true;

@@ -443,9 +443,9 @@ namespace CK.StObj.Engine.Tests.Service
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.GetAutomaticServices( collector, startupServices: startupServices );
-                var sp = r.ServiceRegisterer.Services.BuildServiceProvider();
+                var sp = r.ServiceRegistrar.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
-                r.ServiceRegisterer.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
+                r.ServiceRegistrar.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
             }
             logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
             logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
@@ -468,7 +468,7 @@ namespace CK.StObj.Engine.Tests.Service
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.GetAutomaticServices( collector, startupServices: startupServices );
-                var sp = r.ServiceRegisterer.Services.BuildServiceProvider();
+                var sp = r.ServiceRegistrar.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
             }
             logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );

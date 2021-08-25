@@ -6,7 +6,7 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines information for a Poco-like class.
+    /// Defines information for a Poco-like object.
     /// A Poco-like class is aimed to be exchanged, serialized and deserialized just like IPoco.
     /// <list type="bullet">
     ///  <item>It must be a public concrete class.

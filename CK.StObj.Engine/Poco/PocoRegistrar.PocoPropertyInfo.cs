@@ -11,7 +11,7 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class PocoPropertyInfo : IPocoPropertyInfo
         {
