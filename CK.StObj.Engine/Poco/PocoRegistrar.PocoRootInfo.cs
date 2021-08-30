@@ -13,7 +13,7 @@ namespace CK.Setup
 {
     partial class PocoRegistrar
     {
-        class ClassInfo : IPocoRootInfo
+        sealed class PocoRootInfo : IPocoRootInfo
         {
             AnnotationSetImpl _annotations;
 
@@ -26,7 +26,7 @@ namespace CK.Setup
             public readonly List<InterfaceInfo> Interfaces;
             public HashSet<Type> OtherInterfaces;
 
-            public Dictionary<string, PocoPropertyInfo> Properties;
+            public readonly Dictionary<string, PocoPropertyInfo> Properties;
             IReadOnlyDictionary<string, IPocoPropertyInfo> _exposedProperties;
             public IReadOnlyList<PocoPropertyInfo> PropertyList { get; }
 
@@ -43,14 +43,14 @@ namespace CK.Setup
             bool _instantiationCycleFlag;
 
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
-            public ClassInfo( Type pocoClass,
-                              Type pocoFactoryClass,
-                              bool mustBeClosed,
-                              Type? closureInterface,
-                              HashSet<Type> others,
-                              Dictionary<string, PocoPropertyInfo> properties,
-                              IReadOnlyList<PocoPropertyInfo> propertyList,
-                              IReadOnlyList<PropertyInfo>? externallyImplementedPropertyList )
+            public PocoRootInfo( Type pocoClass,
+                                 Type pocoFactoryClass,
+                                 bool mustBeClosed,
+                                 Type? closureInterface,
+                                 HashSet<Type> others,
+                                 Dictionary<string, PocoPropertyInfo> properties,
+                                 IReadOnlyList<PocoPropertyInfo> propertyList,
+                                 IReadOnlyList<PropertyInfo>? externallyImplementedPropertyList )
             {
                 PocoClass = pocoClass;
                 PocoFactoryClass = pocoFactoryClass;
@@ -88,12 +88,12 @@ namespace CK.Setup
                                                        && i1.Root == i2.Root);
                         if( !isSameOrPocoFamily )
                         {
-                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' but their type differ ('{refType}' vs. '{other.GetNullableTypeTree()}')." );
+                            monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType.ToCSharpName()}' and '{other.DeclaringType!.ToCSharpName()}' both declare property '{p.PropertyName}' but their type differ ('{refType}' vs. '{other.GetNullableTypeTree()}')." );
                             return false;
                         }
                         // Types are equal but NRT must be checked.
                         var otherN = other.GetNullabilityInfo();
-                        if( !otherN.Equals( p.PropertyNullabilityInfo ) )
+                        if( !otherN.Equals( p.NullabilityTypeInfo ) )
                         {
                             monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type but their nullability differ ('{refType}' vs. '{other.PropertyType.GetNullableTypeTree( otherN )}')." );
                             return false;
@@ -121,7 +121,7 @@ namespace CK.Setup
                 var createdPocos = PropertyList.Where( p => p.IsReadOnly && typeof( IPoco ).IsAssignableFrom( p.PropertyType ) );
                 if( createdPocos.Any() )
                 {
-                    HashSet<ClassInfo>? classes = null;
+                    HashSet<PocoRootInfo>? classes = null;
                     foreach( var p in createdPocos )
                     {
                         if( !allInterfaces.TryGetValue( p.PropertyType, out InterfaceInfo? target ) )
@@ -136,7 +136,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            if( classes == null ) classes = new HashSet<ClassInfo>();
+                            if( classes == null ) classes = new HashSet<PocoRootInfo>();
                             if( classes.Add( target.Root ) )
                             {
                                 if( target.Root.HasCycle( monitor, allInterfaces, ref clashPath ) )

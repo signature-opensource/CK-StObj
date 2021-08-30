@@ -11,6 +11,42 @@ namespace CK.Setup
     /// </summary>
     public static class PocoSupportResultExtension
     {
+        static readonly Type[] _basicPropertyTypes = new Type[]
+        {
+            typeof( int ),
+            typeof( long ),
+            typeof( short ),
+            typeof( byte ),
+            typeof( string ),
+            typeof( bool ),
+            typeof( double ),
+            typeof( float ),
+            typeof( object ),
+            typeof( DateTime ),
+            typeof( DateTimeOffset ),
+            typeof( TimeSpan ),
+            typeof( Guid ),
+            typeof( decimal ),
+            typeof( System.Numerics.BigInteger ),
+            typeof( uint ),
+            typeof( ulong ),
+            typeof( ushort ),
+            typeof( sbyte ),
+        };
+
+        /// <summary>
+        /// Gets whether the given type is a basic type that doesn't require a <see cref="IPocoLikeInfo"/>.
+        /// It is one of these types:
+        /// <code>
+        ///     int, long, short, byte, string, bool, double, float, object, DateTime, DateTimeOffset, TimeSpan,
+        ///     Guid, decimal, System.Numerics.BigInteger, uint, ulong, ushort, sbyte. 
+        /// </code>
+        /// </summary>
+        /// <param name="this"></param>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        public static bool IsBasicPropertyType( Type t ) => Array.IndexOf( _basicPropertyTypes, t ) >= 0;
+
         /// <summary>
         /// Generates <paramref name="variableName"/> = "new ..." assignation to the writer (typically in a constructor) for
         /// an automatically instantiated readonly property.
@@ -32,7 +68,7 @@ namespace CK.Setup
                 writer.Append( "new " ).Append( info.Root.PocoClass.FullName! ).Append( "();" ).NewLine();
                 return;
             }
-            if( @this.PocoLike.ByType.ContainsKey( autoType ) )
+            if( @this.PocoLike.ByType.TryGetValue( autoType, out var pocoLike ) && pocoLike.IsDefaultNewable )
             {
                 writer.Append( "new " ).AppendCSharpName( autoType ).Append( "();" ).NewLine();
                 return;
@@ -61,7 +97,7 @@ namespace CK.Setup
                     return;
                 }
             }
-            throw new ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco-like objects, ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
+            throw new ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco-like objects that can be instantiated without parameters, ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,>.", nameof( autoType ) );
         }
 
     }

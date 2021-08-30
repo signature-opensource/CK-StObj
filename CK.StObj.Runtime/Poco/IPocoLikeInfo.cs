@@ -6,9 +6,14 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines information for a Poco-like object: a struct or a class that appears as a property
+    /// Defines information for a Poco-like object: a struct, an interface or a class that appears as a property's direct type
+    /// (or as a typed parameter of standard collections - see <see cref="IPocoPropertyInfo.IsStandardCollectionType"/> of 
     /// of a IPoco or another Poco-like object (recursively) is a Poco-like object.
     /// A Poco-like object is aimed to be exchanged, serialized and deserialized just like IPoco.
+    /// <para>
+    /// Poco-like informations are not created for basic property types (see <see cref="PocoSupportResultExtension.IsBasicPropertyType(Type)"/>)
+    /// nor standard collection types or IPoco.
+    /// </para>
     /// <para>
     /// If and how these objects are serializable/exportable/marshallable is not our concern here: this
     /// is up to the serializer/exporter/marshaller technology. This IPocoLikeInfo and its <see cref="Properties"/>
@@ -16,9 +21,10 @@ namespace CK.Setup
     /// captures once for all the transitive closure of the IPoco.
     /// </para>
     /// <para>
-    /// Considering collections, a Poco-like object should expose public read only non null ISet&lt;&gt;, Set&lt;&gt;,
+    /// Only "standard collections" should be used: a Poco-like object should expose public read only non null ISet&lt;&gt;, Set&lt;&gt;,
     /// IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt; (that must be initialized in the constructor) or
-    /// mutable properties of these types that should be handled by all serializer/exporter/marshaller.
+    /// mutable properties of these types (or simple arrays).
+    /// These standard collection type SHOULD be handled by all serializer/exporter/marshaller
     /// </para>
     /// </summary>
     public interface IPocoLikeInfo : IAnnotationSet
@@ -34,6 +40,15 @@ namespace CK.Setup
         /// to the <see cref="Type.FullName"/> of the <see cref="PocoType"/>.
         /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// Gets whether this Poco-like object can be instantiated without any parameters.
+        /// When true, this property can be read only (and must be instantiated in the object's constructor).
+        /// <para>
+        /// Class must not be abstract, struct cannot be readonly. Of course, interfaces are not concerned.
+        /// </para>
+        /// </summary>
+        bool IsDefaultNewable { get; }
 
         /// <summary>
         /// Gets the command previous names if any.

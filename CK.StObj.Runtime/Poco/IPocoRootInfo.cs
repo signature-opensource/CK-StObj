@@ -75,7 +75,8 @@ namespace CK.Setup
         IReadOnlyList<IPocoPropertyInfo> PropertyList { get; }
 
         /// <summary>
-        /// Gets the properties that are implemented by external code provider.
+        /// Gets the properties that are implemented by external code provider and are NOT considered as
+        /// Poco properties.
         /// These properties are typically marked with <see cref="AutoImplementationClaimAttribute"/>.
         /// </summary>
         IReadOnlyList<PropertyInfo> ExternallyImplementedPropertyList { get; }
