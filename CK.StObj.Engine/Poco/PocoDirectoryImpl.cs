@@ -123,8 +123,8 @@ namespace CK.Setup
                         tB.Append( "set" )
                           .OpenBlock();
 
-                        bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
-                        bool isNullable = p.PropertyNullabilityInfo.Kind.IsNullable();
+                        bool isTechnicallyNullable = p.PropertyNullableTypeTree.Kind.IsTechnicallyNullable();
+                        bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
 
                         if( isTechnicallyNullable && !isNullable )
                         {
@@ -196,5 +196,6 @@ namespace CK.Setup
             }
             return CSCodeGenerationResult.Success;
         }
+
     }
 }

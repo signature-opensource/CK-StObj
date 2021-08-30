@@ -121,7 +121,7 @@ namespace CK.Setup
                 return success;
             }
 
-            public bool Resolve( IActivityMonitor m, FinalRegisterer _ )
+            public bool Resolve( IActivityMonitor m, FinalRegistrar _ )
             {
                 bool success = true;
                 Debug.Assert( Classes.Count > 0 && Interfaces.Count > 0 );
@@ -166,7 +166,7 @@ namespace CK.Setup
                             }
                             else
                             {
-                                // Here comes the "dispatcher" handling and finalRegisterer must
+                                // Here comes the "dispatcher" handling and finalRegistrar must
                                 // register all BuildClassInfo required by special handling of
                                 // handled parameters (IReadOnlyCollection<IService>...).
                                 var r = heads[0].Class;
@@ -381,14 +381,14 @@ namespace CK.Setup
             public override string ToString() => ToString( new StringBuilder() ).ToString();
         }
 
-        class FinalRegisterer
+        class FinalRegistrar
         {
             readonly IActivityMonitor _monitor;
             readonly StObjObjectEngineMap _engineMap;
             readonly IAutoServiceKindComputeFacade _kindComputeFacade;
             readonly Dictionary<AutoServiceClassInfo, BuildClassInfo> _infos;
 
-            public FinalRegisterer(
+            public FinalRegistrar(
                 IActivityMonitor monitor,
                 StObjObjectEngineMap engineMap,
                 IAutoServiceKindComputeFacade kindComputeFacade )
@@ -505,7 +505,7 @@ namespace CK.Setup
                     }
                     else _monitor.Trace( $"{families.Count} Service families found." );
                     bool success = true;
-                    var manuals = new FinalRegisterer( _monitor, engineMap, typeResult.KindComputeFacade );
+                    var manuals = new FinalRegistrar( _monitor, engineMap, typeResult.KindComputeFacade );
                     foreach( var f in families )
                     {
                         success &= f.Resolve( _monitor, manuals );

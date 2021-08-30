@@ -84,5 +84,10 @@ namespace CK.Setup
         /// <returns>True if target is assignable from source.</returns>
         bool IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability );
 
+        /// <summary>
+        /// Gets the Poco-like objects informations.
+        /// </summary>
+        IPocoLikeSupportResult PocoLike { get; }
+
     }
 }

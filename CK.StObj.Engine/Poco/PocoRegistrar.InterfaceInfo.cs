@@ -6,11 +6,11 @@ using System.Collections.Generic;
 
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class InterfaceInfo : IPocoInterfaceInfo
         {
-            public readonly ClassInfo Root;
+            public readonly PocoRootInfo Root;
             public Type PocoInterface { get; }
             public Type PocoFactoryInterface { get; }
 
@@ -18,7 +18,7 @@ namespace CK.Setup
 
             IPocoRootInfo IPocoInterfaceInfo.Root => Root;
 
-            public InterfaceInfo( ClassInfo root, Type pocoInterface, Type pocoFactoryInterface )
+            public InterfaceInfo( PocoRootInfo root, Type pocoInterface, Type pocoFactoryInterface )
             {
                 Root = root;
                 PocoInterface = pocoInterface;

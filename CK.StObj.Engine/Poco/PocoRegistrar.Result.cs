@@ -13,23 +13,25 @@ using System.Reflection.Emit;
 
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
-        class Result : IPocoSupportResult
+        sealed class Result : IPocoSupportResult
         {
             readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedAllInterfaces;
-            public readonly List<ClassInfo> Roots;
+            public readonly List<PocoRootInfo> Roots;
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
             public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
+            public readonly PocoLikeResult PocoLike;
 
             public Result()
             {
-                Roots = new List<ClassInfo>();
+                Roots = new List<PocoRootInfo>();
                 AllInterfaces = new Dictionary<Type, InterfaceInfo>();
-                _exportedAllInterfaces = AllInterfaces.AsCovariantReadOnly<Type, InterfaceInfo, IPocoInterfaceInfo>();
+                _exportedAllInterfaces = AllInterfaces.AsIReadOnlyDictionary<Type, InterfaceInfo, IPocoInterfaceInfo>();
                 OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
                 NamedRoots = new Dictionary<string, IPocoRootInfo>();
+                PocoLike = new PocoLikeResult();
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
@@ -41,6 +43,8 @@ namespace CK.Setup
             IReadOnlyDictionary<Type, IPocoInterfaceInfo> IPocoSupportResult.AllInterfaces => _exportedAllInterfaces;
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
+
+            IPocoLikeSupportResult IPocoSupportResult.PocoLike => PocoLike;
 
             public bool CheckPropertiesVarianceAndInstantiationCycleError( IActivityMonitor monitor )
             {
@@ -94,7 +98,7 @@ namespace CK.Setup
                     }
                     return true;
                 }
-                return IsAssignableFrom( target, from.PropertyType, from.PropertyNullabilityInfo.Kind );
+                return IsAssignableFrom( target, from.PropertyType, from.PropertyNullableTypeTree.Kind );
             }
 
             public bool IsAssignableFrom( IPocoPropertyInfo target, Type from, NullabilityTypeKind fromNullability )
@@ -109,7 +113,7 @@ namespace CK.Setup
                     }
                     return false;
                 }
-                return IsAssignableFrom( target.PropertyType, target.PropertyNullabilityInfo.Kind, from, fromNullability );
+                return IsAssignableFrom( target.PropertyType, target.PropertyNullableTypeTree.Kind, from, fromNullability );
             }
 
             public bool IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability )

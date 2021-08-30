@@ -7,20 +7,29 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
-#nullable enable
-
 namespace CK.Setup
 {
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
-        class PocoPropertyInfo : IPocoPropertyInfo
+        sealed class PocoPropertyInfo : IPocoPropertyInfo
         {
-            NullableTypeTree _nullableTypeTree;
             AnnotationSetImpl _annotations;
             List<NullableTypeTree>? _unionTypes;
             bool _unionTypesCanBeExtended;
 
-            public bool IsReadOnly { get; set; }
+            public NullableTypeTree PropertyNullableTypeTree { get; }
+
+            public Type PropertyType => DeclaredProperties[0].PropertyType;
+
+            public string PropertyName => DeclaredProperties[0].Name;
+
+            public bool IsReadOnly { get; }
+
+            public bool IsStandardCollectionType { get; }
+
+            public bool IsUnionType => _unionTypes != null;
+
+            public bool IsBasicPropertyType { get; set; }
 
             public bool HasDefaultValue { get; set; }
 
@@ -28,30 +37,42 @@ namespace CK.Setup
 
             public string? DefaultValueSource { get; set; }
 
+            /// <summary>
+            /// Setting of this property (just like PocoType) is done when the global result is built.
+            /// </summary>
+            public PocoLikeInfo? PocoLikeType { get; set; }
+
+            IPocoLikeInfo? IPocoBasePropertyInfo.PocoLikeType => PocoLikeType;
+
+            /// <summary>
+            /// Setting of this property (just like PocoType) is done when the global result is built.
+            /// </summary>
+            public PocoRootInfo? PocoType { get; set; }
+
+            IPocoRootInfo? IPocoBasePropertyInfo.PocoType => PocoType;
+
+            // Setter is used whenever a previous property actually has a AutoImplementationClaimAttribute
+            // to offset the remaining indexes.
             public int Index { get; set; }
 
-            public NullabilityTypeInfo PropertyNullabilityInfo { get; set; }
-
-            public bool IsNullable => PropertyNullabilityInfo.Kind.IsNullable();
-
-            public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree.Kind == NullabilityTypeKind.None
-                                                                    ? (_nullableTypeTree = PropertyType.GetNullableTypeTree( PropertyNullabilityInfo ))
-                                                                    : _nullableTypeTree;
-
-            public Type PropertyType => DeclaredProperties[0].PropertyType;
-
             public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes ?? Enumerable.Empty<NullableTypeTree>();
-
-            public string PropertyName => DeclaredProperties[0].Name;
 
             public List<PropertyInfo> DeclaredProperties { get; }
 
             IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
 
-            public PocoPropertyInfo( PropertyInfo first, int index )
+            // Stored to be compared to other property declarations nullabilities
+            // without relying on useless recomputations (either of nullability info or nullable tree).
+            internal readonly NullabilityTypeInfo NullabilityTypeInfo;
+
+            public PocoPropertyInfo( PropertyInfo first, int initialIndex, bool isReadOnly, NullabilityTypeInfo nullabilityTypeInfo, NullableTypeTree nullTree, bool isStandardCollection )
             {
                 DeclaredProperties = new List<PropertyInfo>() { first };
-                Index = index;
+                Index = initialIndex;
+                IsReadOnly = isReadOnly;
+                NullabilityTypeInfo = nullabilityTypeInfo;
+                PropertyNullableTypeTree = nullTree;
+                IsStandardCollectionType = isStandardCollection;
             }
 
             /// <summary>
