@@ -31,11 +31,12 @@ namespace CK.Setup
             Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );
 
             IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
+            Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof(IPocoSupportResult) ), "The PocoSupportResult is also available at the GeneratedBinPath." );
 
             // PocoDirectory_CK class.
-            scope.GeneratedByComment()
+            scope.GeneratedByComment().NewLine()
                  .FindOrCreateFunction( "internal PocoDirectory_CK()" )
-                 .Append( "Instance = this;" );
+                 .Append( "Instance = this;" ).NewLine();
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
                  .Append( "static readonly Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()
@@ -60,6 +61,23 @@ namespace CK.Setup
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
                 // can refer to the _factory to access the factory extended code without cast.
+                //
+                // This static internal field is an awful shortcut but it makes things simpler and more efficient
+                // than looking up the factory in the DI (and downcasting it) each time we need it.
+                // This simplification has been done for Cris Command implementation: a ICommand exposes
+                // its ICommandModel: we used to inject the ICommandModel (that is the extended PocoFactory) in the ICommand
+                // PocoClass ctor from the factory methods. It worked but it was complex... and, eventually, there
+                // can (today) but most importantly there SHOULD, be only one StObjMap/Concrete generated code in an
+                // assembly. Maybe one day, the StObj instances themselves can be made static (since they are some kind of
+                // "absolute singletons").
+                //
+                // Note to myself: this "static shortcut" is valid because we are on a "final generation", not on a
+                // local, per-module, intermediate, code generation like .Net 5 Code Generators.
+                // How this kind of shortcuts could be implemented with .Net 5 Code Generators? It seems that it could but
+                // there will be as many "intermediate statics" as there are "levels of assemblies"? Or, there will be only
+                // one static (the first one) and the instance will be replaced by the subsequent assemblies? In all cases,
+                // diamond problem will have to be ultimately resolved at the final leaf... Just like we do!
+                // 
                 tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
                   .NewLine();
                 tB.Append( "IPocoFactory IPocoClass.Factory => _factory;" ).NewLine();
@@ -76,9 +94,7 @@ namespace CK.Setup
                 foreach( var p in root.PropertyList )
                 {
                     Type propType = p.PropertyType;
-                    // We always implement a setter except if we are auto instantiating the value and NONE of the properties are writable.
                     bool isUnionType = p.PropertyUnionTypes.Any();
-                    bool generateSetter = !p.AutoInstantiated || p.HasDeclaredSetter || isUnionType;
 
                     var typeName = propType.ToCSharpName();
                     string fieldName = "_v" + p.Index;
@@ -91,9 +107,9 @@ namespace CK.Setup
                     tB.NewLine();
 
                     tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
-                    Debug.Assert( !p.AutoInstantiated || p.DefaultValueSource == null, "AutoInstantiated with [DefaultValue] has already raised an error." );
+                    Debug.Assert( !p.IsReadOnly || p.DefaultValueSource == null, "Readonly with [DefaultValue] has already raised an error." );
                    
-                    if( p.AutoInstantiated )
+                    if( p.IsReadOnly )
                     {
                         // Generates in constructor.
                         r.GenerateAutoInstantiatedNewAssignation( ctorB, fieldName, p.PropertyType );
@@ -102,37 +118,40 @@ namespace CK.Setup
                     tB.OpenBlock()
                       .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine();
 
-                    if( generateSetter )
+                    if( !p.IsReadOnly )
                     {
                         tB.Append( "set" )
                           .OpenBlock();
 
-                        bool isTechnicallyNullable = p.PropertyNullabilityInfo.Kind.IsTechnicallyNullable();
-                        bool isEventuallyNullable = p.IsEventuallyNullable;
+                        bool isTechnicallyNullable = p.PropertyNullableTypeTree.Kind.IsTechnicallyNullable();
+                        bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
 
-                        if( isTechnicallyNullable )
+                        if( isTechnicallyNullable && !isNullable )
                         {
-                            tB.Append( "if( value != null )" )
-                              .OpenBlock();
+                            tB.Append( "if( value == null ) throw new ArgumentNullException();" ).NewLine();
                         }
+
                         if( isUnionType )
                         {
+                            if( isNullable )
+                            {
+                                tB.Append( "if( value != null )" )
+                                  .OpenBlock();
+                            }
                             tB.Append( "Type tV = value.GetType();" ).NewLine()
                                 .Append( "if( !_c" ).Append( fieldName )
                                 .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
                                 .OpenBlock()
-                                .Append( "throw new ArgumentException( \"Unexpected Type '{tV}' in UnionType\");" )
+                                .Append( "throw new ArgumentException( $\"Unexpected Type '{tV}' in UnionType. Allowed types are: " )
+                                .Append( p.PropertyUnionTypes.Select( tU => tU.ToString() ).Concatenate() )
+                                .Append( ".\");" )
                                 .CloseBlock();
-                        }
-                        if( isTechnicallyNullable )
-                        {
-                            tB.CloseBlock();
-                            if( !isEventuallyNullable )
+                            if( isNullable )
                             {
-                                tB.Append( "else throw new ArgumentNullException();" ).NewLine();
+                                tB.CloseBlock();
                             }
                         }
-                        tB.Append( fieldName ).Append( " = value;" ).NewLine()
+                        tB.Append( fieldName ).Append( " = value;" )
                           .CloseBlock();
                     }
                     tB.CloseBlock();
@@ -141,6 +160,8 @@ namespace CK.Setup
                     {
                         tB.Append( "static readonly Type[] _c" ).Append( fieldName ).Append( "=" ).AppendArray( p.PropertyUnionTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
                     }
+
+
                 }
 
                 // PocoFactory class.
@@ -175,5 +196,6 @@ namespace CK.Setup
             }
             return CSCodeGenerationResult.Success;
         }
+
     }
 }

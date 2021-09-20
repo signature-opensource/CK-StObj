@@ -11,7 +11,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Internal mutable implementation of <see cref="IStObjObjectEngineMap"/> that handles <see cref="MutableItem"/>.
-    /// The internal participants have write access to it. I'm not proud of this (there are definitly cleaner
+    /// The internal participants have write access to it. I'm not proud of this (there are definitely cleaner
     /// ways to organize this) but it works...
     /// The map is instantiated by CKTypeCollector.GetRealObjectResult and then
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
@@ -34,7 +34,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="names">The final map names.</param>
         /// <param name="allSpecializations">
-        /// Predimensioned array that will be filled with actual
+        /// Pre-dimensioned array that will be filled with actual
         /// mutable items by <see cref="StObjCollector.GetResult()"/>.
         /// </param>
         /// <param name="typeKindDetector">The type kind detector.</param>
@@ -53,15 +53,15 @@ namespace CK.Setup
 
             _serviceSimpleMap = new Dictionary<Type, IStObjServiceFinalSimpleMapping>();
             _serviceSimpleList = new List<IStObjServiceFinalSimpleMapping>();
-            _exposedServiceMap = _serviceSimpleMap.AsCovariantReadOnly<Type, IStObjServiceFinalSimpleMapping, IStObjServiceClassDescriptor>();
+            _exposedServiceMap = _serviceSimpleMap.AsIReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping, IStObjServiceClassDescriptor>();
 
             _serviceManualMap = new Dictionary<Type, IStObjServiceFinalManualMapping>();
             _serviceManualList = new List<IStObjServiceFinalManualMapping>();
-            _exposedManualServiceMap =  _serviceManualMap.AsCovariantReadOnly<Type, IStObjServiceFinalManualMapping, IStObjServiceClassFactory>();
+            _exposedManualServiceMap =  _serviceManualMap.AsIReadOnlyDictionary<Type, IStObjServiceFinalManualMapping, IStObjServiceClassFactory>();
 
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
             _serviceRealObjects = new List<MutableItem>();
-            _serviceToObjectMapExposed = _serviceToObjectMap.AsCovariantReadOnly<Type,MutableItem,IStObjFinalImplementation>();
+            _serviceToObjectMapExposed = _serviceToObjectMap.AsIReadOnlyDictionary<Type,MutableItem,IStObjFinalImplementation>();
 
             _typeKindDetector = typeKindDetector;
         }

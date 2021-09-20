@@ -99,7 +99,8 @@ namespace CK.Setup
                 object? finalAttributeToUse = a;
                 if( a is ContextBoundDelegationAttribute delegated )
                 {
-                    Type dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
+                    Type? dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
+                    Debug.Assert( dT != null );
                     // When ContextBoundDelegationAttribute is not specialized, it is useless: the attribute
                     // parameter must not be specified.
                     using( var sLocal = new SimpleServiceContainer( services ) )

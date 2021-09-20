@@ -29,7 +29,7 @@ namespace CK.Setup
             var n = type.FullName;
             if( String.IsNullOrEmpty( n ) ) throw new ArgumentException( $"Type '{type}' doesn't have a FullName." );
             n = n.Replace( '+', '_' );
-            return n.EndsWith( "_CK" ) ? n : n + "_CK";
+            return n.EndsWith( "_CK", StringComparison.Ordinal ) ? n : n + "_CK";
         }
 
         /// <summary>
@@ -66,7 +66,7 @@ namespace CK.Setup
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             Type? baseType;
             string name = type.Name;
-            if( name.EndsWith( "_CK" ) )
+            if( name.EndsWith( "_CK", StringComparison.Ordinal ) )
             {
                 baseType = type.BaseType;
             }

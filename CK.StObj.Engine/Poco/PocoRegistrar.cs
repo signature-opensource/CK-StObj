@@ -12,15 +12,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 #nullable enable
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Registerer for <see cref="IPoco"/> interfaces.
+    /// Registrar for <see cref="IPoco"/> interfaces.
     /// </summary>
-    partial class PocoRegisterer
+    partial class PocoRegistrar
     {
         class PocoType
         {
@@ -52,7 +53,7 @@ namespace CK.Setup
         readonly Func<IActivityMonitor, Type, bool> _actualPocoPredicate;
 
         /// <summary>
-        /// Initializes a new <see cref="PocoRegisterer"/>.
+        /// Initializes a new <see cref="PocoRegistrar"/>.
         /// </summary>
         /// <param name="actualPocoPredicate">
         /// This must be true for actual IPoco interfaces: when false, "base interface" are not directly registered.
@@ -60,7 +61,7 @@ namespace CK.Setup
         /// </param>
         /// <param name="namespace">Namespace into which dynamic types will be created.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        public PocoRegisterer( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
+        public PocoRegistrar( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _actualPocoPredicate = actualPocoPredicate ?? throw new ArgumentNullException( nameof( actualPocoPredicate ) );
             _namespace = @namespace ?? "CK.GPoco";
@@ -171,18 +172,18 @@ namespace CK.Setup
                     IReadOnlyList<IPocoRootInfo>? value;
                     if( r.OtherInterfaces.TryGetValue( e, out value ) )
                     {
-                        ((List<ClassInfo>)value).Add( cInfo );
+                        ((List<PocoRootInfo>)value).Add( cInfo );
                     }
                     else
                     {
-                        r.OtherInterfaces.Add( e, new List<ClassInfo>() { cInfo } );
+                        r.OtherInterfaces.Add( e, new List<PocoRootInfo>() { cInfo } );
                     }
                 }
 
                 hasNameError |= !cInfo.InitializeNames( monitor );
             }
             return hasNameError
-                   || r.CheckPropertiesVarianceAndInstantiationCycle( monitor )
+                   || !r.CheckPropertiesVarianceAndInstantiationCycleError( monitor )
                    || !r.BuildNameIndex( monitor )
                    ? null
                    : r;
@@ -190,7 +191,7 @@ namespace CK.Setup
 
         static readonly MethodInfo _typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
 
-        ClassInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
             string pocoTypeName = assembly.GetAutoImplementedTypeName( interfaces[0] );
@@ -273,7 +274,7 @@ namespace CK.Setup
                 Type iCreate = typeof( IPocoFactory<> ).MakeGenericType( i );
                 tBF.AddInterfaceImplementation( iCreate );
                 {
-                    MethodBuilder m = tBF.DefineMethod( "C" + expanded.Count.ToString(), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, Type.EmptyTypes );
+                    MethodBuilder m = tBF.DefineMethod( "C" + expanded.Count.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ), MethodAttributes.Private | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, i, Type.EmptyTypes );
                     ILGenerator g = m.GetILGenerator();
                     g.Emit( OpCodes.Ldnull );
                     g.Emit( OpCodes.Ret );
@@ -306,18 +307,23 @@ namespace CK.Setup
             // For each expanded interfaces (all of them: the Interfaces and the OtherInterfaces):
             // - Implements the interface on the PocoClass (tB).
             // - Registers the properties and creates the PocoPropertyInfo.
+            bool hasPropertyError = false;
             foreach( var i in expanded )
             {
                 tB.AddInterfaceImplementation( i );
+
+                // Analyzing interface properties.
+                // For union types, the UnionTypes nested struct fields are cached once.
+                PropertyInfo[]? unionTypesDef = null; 
+
                 foreach( var p in i.GetProperties() )
                 {
-                    PocoPropertyInfo? implP = null;
                     // As soon as a property claims to be implemented, we remove it from the properties.
                     if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
                     {
                         if( externallyImplementedPropertyList == null ) externallyImplementedPropertyList = new List<PropertyInfo>();
                         externallyImplementedPropertyList.Add( p );
-                        if( properties.TryGetValue( p.Name, out implP ) )
+                        if( properties.TryGetValue( p.Name, out var implP ) )
                         {
                             propertyList.RemoveAt( implP.Index );
                             for( int idx = implP.Index; idx < propertyList.Count; ++idx )
@@ -328,69 +334,11 @@ namespace CK.Setup
                     }
                     else
                     {
-                        if( properties.TryGetValue( p.Name, out implP ) )
-                        {
-                            implP.DeclaredProperties.Add( p );
-                            implP.HasDeclaredSetter |= p.CanWrite;
-                        }
-                        else
-                        {
-                            implP = new PocoPropertyInfo( p, propertyList.Count );
-                            properties.Add( p.Name, implP );
-                            propertyList.Add( implP );
-                            implP.PropertyNullabilityInfo = p.GetNullabilityInfo();
-                        }
-                        // As soon as one interface doesn't declare a setter and the type is an instantiable one,
-                        // we flag this property's AutoInstantiated property.
-                        if( p.CanWrite )
-                        {
-                            implP.HasDeclaredSetter = true;
-                        }
-                        else
-                        {
-                            if( expanded.Contains( p.PropertyType ) )
-                            {
-                                monitor.Error( $"Poco Cyclic dependency error: automatically instantiated property '{i.FullName}.{p.Name}' references its own Poco type." );
-                                return null;
-                            }
-                            if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) )
-                            {
-                                // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
-                                // instantiation cycles is deferred when the global result is built.
-                                implP.AutoInstantiated = true;
-                            }
-                            else if( p.PropertyType.IsGenericType )
-                            {
-                                Type genType = p.PropertyType.GetGenericTypeDefinition();
-                                if( genType == typeof( IList<> ) || genType == typeof( List<> )
-                                        || genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> )
-                                        || genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
-                                {
-                                    implP.AutoInstantiated = true;
-                                }
-                            }
-                        }
-                        var unionTypes = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
-                        if( unionTypes != null )
-                        {
-                            if( unionTypes.Types.Count == 0 )
-                            {
-                                monitor.Warn( $"[UnionType] attributes on '{i.FullName}.{p.Name}' is empty. It is ignored." );
-                            }
-                            else
-                            {
-                                var deviants = unionTypes.Types.Where( u => !p.PropertyType.IsAssignableFrom( u ) );
-                                if( deviants.Any() )
-                                {
-                                    monitor.Error( $"Invalid [UnionType] attribute on '{i.FullName}.{p.Name}'. Union types '{deviants.Select( d => d.Name ).Concatenate("' ,'")}' are incompatible with to the property type '{p.PropertyType.Name}'." );
-                                    return null;
-                                }
-                                implP.AddUnionPropertyTypes( unionTypes.Types );
-                            }
-                        }
+                        hasPropertyError &= HandlePocoProperty( monitor, expanded, properties, propertyList, ref unionTypesDef, i, p );
                     }
                 }
             }
+            if( hasPropertyError ) return null;
 
             // Implements the stubs for each externally implemented property.
             if( externallyImplementedPropertyList != null )
@@ -407,23 +355,14 @@ namespace CK.Setup
             {
                 if( !InitializeDefaultValue( p, monitor ) ) return null;
 
-                if( p.AutoInstantiated )
+                if( p.IsReadOnly && p.DefaultValueSource != null )
                 {
-                    if( p.DefaultValueSource != null )
-                    {
-                        monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attriblute: [DefaultValue( {p.DefaultValueSource} )]." );
-                        return null;
-                    }
-                }
-                else if( !p.HasDeclaredSetter )
-                {
-                    Debug.Assert( p.DeclaredProperties.All( x => !x.CanWrite ) );
-                    var pNoWrite = p.DeclaredProperties.First();
-                    monitor.Warn( $"Property '{pNoWrite.DeclaringType!.FullName}.{p.PropertyName}' has no setter. Since its type ({p.PropertyType.Name}) is not a IPoco or a ISet<>, Set<>, IList<>, List<>, IDictionary<,> or Dictionary<,> a setter will be implemented and the value will have its default value." );
+                    monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attribute: [DefaultValue( {p.DefaultValueSource} )]." );
+                    return null;
                 }
                 foreach( var propInfo in p.DeclaredProperties )
                 {
-                    EmitHelper.ImplementStubProperty( tB, propInfo, isVirtual: false, alwaysImplementSetter: !p.AutoInstantiated );
+                    EmitHelper.ImplementStubProperty( tB, propInfo, isVirtual: false );
                 }
             }
 
@@ -433,10 +372,198 @@ namespace CK.Setup
             var tPocoFactory = tBF.CreateType();
             Debug.Assert( tPocoFactory != null );
 
-            return new ClassInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList, externallyImplementedPropertyList );
+            return new PocoRootInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList, externallyImplementedPropertyList );
         }
 
-        bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )
+        static bool HandlePocoProperty( IActivityMonitor monitor,
+                                        HashSet<Type> expanded,
+                                        Dictionary<string, PocoPropertyInfo> properties,
+                                        List<PocoPropertyInfo> propertyList,
+                                        ref PropertyInfo[]? unionTypesDef,
+                                        Type interfaceType,
+                                        PropertyInfo p )
+        {
+            // We cannot check the equality of property type here because we need to consider IPoco families: we
+            // have to wait that all of them have been registered.
+            // Same as the Poco-like: we can only consider them once IPoco analysis is done.
+            // ClassInfo.CheckPropertiesVarianceAndUnionTypes checks the type and the nullability.
+            bool success = true;
+            var isReadOnly = !p.CanWrite;
+            if( properties.TryGetValue( p.Name, out var implP ) )
+            {
+                // Already defined on a previously analyzed interface.
+                implP.DeclaredProperties.Add( p );
+                if( implP.IsReadOnly != isReadOnly )
+                {
+                    Type iW = implP.DeclaredProperties[0].DeclaringType!;
+                    Type iR = interfaceType;
+                    if( isReadOnly ) (iR, iW) = (iW, iR);
+                    monitor.Error( $"Interface '{iR.ToCSharpName()}' and '{iW.ToCSharpName()}' both declare property '{p.Name}' but the first is readonly and the latter is read/write. The same property must be readonly or read/write for all the interfaces that define it." );
+                    success = false;
+                }
+            }
+            else
+            {
+                // New property.
+
+                // We must always create it, even if an error is detected to let the dynamic generation
+                // of the runtime Poco class (with fake getters/setters) succeed.
+                if( !p.CanRead )
+                {
+                    monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' cannot be read." );
+                    success = false;
+                }
+                var nullabilityInfo = p.GetNullabilityInfo();
+                var nullTree = p.PropertyType.GetNullableTypeTree( nullabilityInfo, NullableTypeTree.ObliviousDefaultBuilder );
+                bool isBasicProperty = PocoSupportResultExtension.IsBasicPropertyType( nullTree.Type );
+                Type? genRefType = nullTree.Kind.IsReferenceType() && nullTree.Type.IsGenericType ? nullTree.Type.GetGenericTypeDefinition() : null;
+                bool isReadonlyCompliantCollection = genRefType != null && (genRefType == typeof( IList<> ) || genRefType == typeof( List<> )
+                                                                          || genRefType == typeof( IDictionary<,> ) || genRefType == typeof( Dictionary<,> )
+                                                                          || genRefType == typeof( ISet<> ) || genRefType == typeof( HashSet<> ));
+                bool isStandardCollection = isReadonlyCompliantCollection || p.PropertyType.IsArray;
+                if( isReadOnly && success )
+                {
+                    // Basic checks that don't require all IPoco to be discovered (kind of fail fast).
+                    if( nullTree.Kind.IsNullable() )
+                    {
+                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is nullable and readonly (it has no setter). This is forbidden since value will always be null." );
+                        success = false;
+                    }
+                    else if( isBasicProperty )
+                    {
+                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is a readonly basic type (it has no setter). This is forbidden since totally useless." );
+                        success = false;
+                    }
+                    else if( isStandardCollection && !isReadonlyCompliantCollection )
+                    {
+                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is a readonly array (it has no setter). This is forbidden since we could only generate an empty array." );
+                        success = false;
+                    }
+                    else if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) && expanded.Contains( p.PropertyType ) )
+                    {
+                        monitor.Error( $"Poco Cyclic dependency error: readonly property '{interfaceType.FullName}.{p.Name}' references its own Poco type." );
+                        success = false;
+                        // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
+                        // instantiation cycles is deferred when the global result is built.
+                    }
+                }
+                implP = new PocoPropertyInfo( p, propertyList.Count, isReadOnly, nullabilityInfo, nullTree, isStandardCollection );
+                properties.Add( p.Name, implP );
+                propertyList.Add( implP );
+                implP.IsBasicPropertyType = isBasicProperty;
+            }
+            return success && HandleUnionTypesIfAny( monitor, ref unionTypesDef, interfaceType, p, implP );
+        }
+
+        static bool HandleUnionTypesIfAny( IActivityMonitor monitor, ref PropertyInfo[]? unionTypesDef, Type interfaceType, PropertyInfo p, PocoPropertyInfo implP )
+        {
+            var uAttr = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
+            if( uAttr != null )
+            {
+                // A union type, it cannot be readonly. 
+                if( implP.IsReadOnly )
+                {
+                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or IList<>, IDictionary<,> or ISet<>." );
+                    return false;
+                }
+                // A union type is not a basic property (fix the fact that typeof(object) is a basic property).
+                implP.IsBasicPropertyType = false;
+                bool isPropertyNullable = implP.PropertyNullableTypeTree.Kind.IsNullable();
+                List<string>? typeDeviants = null;
+                List<string>? nullableDef = null;
+                List<string>? concreteCollections = null;
+
+                if( unionTypesDef == null )
+                {
+                    Type? u = interfaceType.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
+                    if( u == null )
+                    {
+                        monitor.Error( $"[UnionType] attribute on '{interfaceType.FullName}.{p.Name}' requires a nested 'class UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
+                        return false;
+                    }
+                    unionTypesDef = u.GetProperties();
+                }
+                var f = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
+                if( f == null )
+                {
+                    monitor.Error( $"The nested class UnionTypes requires a public value tuple '{p.Name}' property." );
+                    return false;
+                }
+                var tree = f.GetNullableTypeTree();
+                if( (tree.Kind & NullabilityTypeKind.IsTupleType) == 0 )
+                {
+                    monitor.Error( $"The '{p.Name}' property of the nested class UnionTypes must be a value tuple (current type is {tree})." );
+                    return false;
+                }
+                if( tree.Kind.IsNullable() != isPropertyNullable )
+                {
+                    monitor.Error( $"The '{p.Name}' property of the nested class UnionTypes must{(isPropertyNullable ? "" : "NOT")} BE nullable since the property itself is nullable." );
+                    return false;
+                }
+                foreach( var sub in tree.SubTypes )
+                {
+                    if( !p.PropertyType.IsAssignableFrom( sub.Type ) )
+                    {
+                        if( typeDeviants == null ) typeDeviants = new List<string>();
+                        typeDeviants.Add( sub.ToString() );
+                    }
+                    else if( sub.Type.IsGenericType )
+                    {
+                        var tGen = sub.Type.GetGenericTypeDefinition();
+                        if( tGen == typeof( List<> ) )
+                        {
+                            if( concreteCollections == null ) concreteCollections = new List<string>();
+                            concreteCollections.Add( $"{sub} should be a IList<{sub.RawSubTypes[0]}>" );
+                        }
+                        else if( tGen == typeof( Dictionary<,> ) )
+                        {
+                            if( concreteCollections == null ) concreteCollections = new List<string>();
+                            concreteCollections.Add( $"{sub} should be a IDictionary<{sub.RawSubTypes[0]},{sub.RawSubTypes[1]}>" );
+                        }
+                        else if( tGen == typeof( HashSet<> ) )
+                        {
+                            if( concreteCollections == null ) concreteCollections = new List<string>();
+                            concreteCollections.Add( $"{sub} should be a ISet<{sub.RawSubTypes[0]}>" );
+                        }
+                    }
+                    if( sub.Kind.IsNullable() )
+                    {
+                        if( nullableDef == null ) nullableDef = new List<string>();
+                        nullableDef.Add( sub.ToString() );
+                    }
+                }
+                if( typeDeviants != null )
+                {
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
+                }
+                if( concreteCollections != null )
+                {
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must use their interfaces: {concreteCollections.Concatenate()}." );
+                }
+                if( nullableDef != null )
+                {
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type definitions must not be nullable: please change '{nullableDef.Concatenate( "' ,'" )}' to be not nullable." );
+                    return false;
+                }
+                if( typeDeviants != null || concreteCollections != null ) return false;
+
+                // Type definitions are non-nullable.
+                var types = tree.SubTypes.ToList();
+                if( types.Any( t => t.Type == typeof( object ) ) )
+                {
+                    monitor.Error( $"{implP}': UnionTypes cannot define the type 'object' since this would erase all possible types." );
+                    return false;
+                }
+                if( !implP.AddUnionPropertyTypes( monitor, types, uAttr.CanBeExtended ) )
+                {
+                    monitor.Error( $"{implP}': [UnionType( CanBeExtended = true )] should be used on all interfaces or all unioned type definitions across IPoco family must be the same." );
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        static bool InitializeDefaultValue( PocoPropertyInfo p, IActivityMonitor monitor )
         {
             bool success = true;
             var aDefs = p.DeclaredProperties.Select( x => (Prop: x, x.GetCustomAttribute<DefaultValueAttribute>()) )
@@ -446,6 +573,8 @@ namespace CK.Setup
             var first = aDefs.FirstOrDefault();
             if( first.Prop != null )
             {
+                p.HasDefaultValue = true;
+                p.DefaultValue = first.Value;
                 var w = new StringCodeWriter();
                 string defaultSource = p.DefaultValueSource = w.Append( first.Value ).ToString();
                 foreach( var other in aDefs.Skip( 1 ) )

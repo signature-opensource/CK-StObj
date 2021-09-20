@@ -1,10 +1,3 @@
-#region Proprietary License
-/*----------------------------------------------------------------------------
-* This file (CK.StObj.Engine\StObj\StObjCollectorResult.cs) is part of CK-Database. 
-* Copyright © 2007-2014, Invenietis <http://www.invenietis.com>. All rights reserved. 
-*-----------------------------------------------------------------------------*/
-#endregion
-
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -29,7 +22,7 @@ namespace CK.Setup
             DynamicAssembly tempAssembly,
             BuildValueCollector? valueCollector )
         {
-            Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (ie. valueCollector != null ==> !typeResult.HasFatalError)" );
+            Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (i.e. valueCollector != null ==> !typeResult.HasFatalError)" );
             CKTypeResult = typeResult;
             _tempAssembly = tempAssembly;
             _valueCollector = valueCollector;
@@ -40,7 +33,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// True if a fatal error occured. Result should be discarded.
+        /// True if a fatal error occurred. Result should be discarded.
         /// </summary>
         public bool HasFatalError => _valueCollector == null;
 

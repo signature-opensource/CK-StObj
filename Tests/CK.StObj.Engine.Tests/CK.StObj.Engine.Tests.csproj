@@ -11,6 +11,10 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   
+  <ItemGroup>
+    <Compile Remove="%24StObjGen\G0-protected.cs" />
+  </ItemGroup>
+  
   
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

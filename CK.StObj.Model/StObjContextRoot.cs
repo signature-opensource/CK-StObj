@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -24,7 +25,7 @@ namespace CK.Core
         public static readonly string RootContextTypeFullName = "CK.StObj." + RootContextTypeName;
 
         /// <summary>
-        /// Holds the name of 'Construct' method: StObjConstruct.
+        /// Holds the name of the construct method: StObjConstruct.
         /// </summary>
         public static readonly string ConstructMethodName = "StObjConstruct";
 
@@ -42,7 +43,7 @@ namespace CK.Core
 
         /// <summary>
         /// Holds the name 'ConfigureServices'.
-        /// This must be a non virtual, typically private void method with parameters that must start with an input (in) <see cref="StObjContextRoot.ServiceRegister"/>.
+        /// This must be a non virtual, typically private void method with parameters that must start with an input <see cref="StObjContextRoot.ServiceRegister"/>.
         /// Following parameters can be a IActivityMonitor or any services previously registered in the ISimpleServiceContainer by
         /// any <see cref="RegisterStartupServicesMethodName"/>.
         /// </summary>
@@ -148,7 +149,7 @@ namespace CK.Core
             }
         }
 
-        static List<StObjMapInfo> LockedGetAvailableMapInfos( ref IActivityMonitor? monitor )
+        static List<StObjMapInfo> LockedGetAvailableMapInfos( [NotNullIfNotNull("monitor")] ref IActivityMonitor? monitor )
         {
             var all = AppDomain.CurrentDomain.GetAssemblies();
             if( all.Length != _allAssemblyCount )
@@ -183,7 +184,7 @@ namespace CK.Core
             }
         }
 
-        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, ref IActivityMonitor? monitor )
+        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
         {
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             monitor = LockedEnsureMonitor( monitor );
@@ -254,7 +255,7 @@ namespace CK.Core
             if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
 
             string assemblyNameWithExtension; 
-            if( assemblyName.EndsWith( ".dll" ) || assemblyName.EndsWith( ".exe" ) )
+            if( assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) || assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
             {
                 assemblyNameWithExtension = assemblyName;
                 assemblyName = assemblyName.Substring( 0, assemblyName.Length - 4 );
@@ -297,6 +298,7 @@ namespace CK.Core
                     }
                     catch( Exception ex )
                     {
+                        Debug.Assert( monitor != null, "Not detected by nullable analysis..." );
                         monitor.Error( ex );
                         return null;
                     }

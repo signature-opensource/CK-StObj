@@ -27,7 +27,10 @@ namespace CK.Setup
         /// Gets a local service container, scoped to this path. This local container is backed by
         /// the <see cref="ICSCodeGenerationContext.GlobalServiceContainer"/> (see <see cref="SimpleServiceContainer.BaseProvider"/>).
         /// <see cref="ICodeGenerator.Implement"/> and <see cref="IAutoImplementor{T}.Implement"/> typically registers services
-        /// inside this container so that deferred implementators (<see cref="CSCodeGenerationResult.ImplementorType"/>) can depend on them.
+        /// inside this container so that deferred implementors (<see cref="CSCodeGenerationResult.ImplementorType"/>) can depend on them.
+        /// <para>
+        /// It contains the <see cref="IPocoSupportResult"/> for this path.
+        /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }
 

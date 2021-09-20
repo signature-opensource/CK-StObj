@@ -12,7 +12,7 @@ namespace CK.Core
     /// This marker doesn't indicate the scoped vs. singleton lifetime. The actual
     /// lifetime depends on the final implementation that may be marked with the more
     /// specific <see cref="ISingletonAutoService"/> or <see cref="IScopedAutoService"/>
-    /// (but not both) or by analysing its constructor parameters: if and only if all parameters
+    /// (but not both) or by analyzing its constructor parameters: if and only if all parameters
     /// are known to be singletons, the service will be singleton otherwise it will be
     /// considered as a Scoped one.
     /// </para>

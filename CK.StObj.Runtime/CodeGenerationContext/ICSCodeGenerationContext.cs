@@ -26,10 +26,21 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether the generated source code must be parsed and or compiled.
-        /// <see cref="SaveSource"/> can be false and this can be <see cref="CompileOption.None"/>
-        /// when <see cref="IsUnifiedRun"/> is true and the unified bin path doesn't correspond to any of the
-        /// existing <see cref="BinPathConfiguration"/>.
         /// </summary>
         CompileOption CompileOption { get; }
+
+        /// <summary>
+        /// Gets whether really generating source code is useless since <see cref="SaveSource"/> is false
+        /// and <see cref="CompileOption"/> is <see cref="CompileOption.None"/>.
+        /// <para>
+        /// This does not mean that the whole code generation process should be skipped: when generating code,
+        /// side effects (from a bin path) are possible that may be useful to others.
+        /// </para>
+        /// <para>
+        /// This applies to the <see cref="ICodeGenerationContext.IsUnifiedRun"/> if the unified bin path doesn't correspond to any of the
+        /// existing <see cref="BinPathConfiguration"/> (<see cref="IStObjEngineRunContext.IsUnifiedPure"/>).
+        /// </para>
+        /// </summary>
+        bool ActualSourceCodeIsUseless => SaveSource == false && CompileOption == CompileOption.None;
     }
 }

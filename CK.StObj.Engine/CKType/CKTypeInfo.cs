@@ -93,7 +93,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the service classe information for this type if there is one.
+        /// Gets the service class information for this type if there is one.
         /// If this <see cref="CKTypeInfo"/> is an independent one, then this is necessarily not null.
         /// If this is a <see cref="RealObjectClassInfo"/> this can be null if the Real object doesn't
         /// support any IAutoService interfaces.

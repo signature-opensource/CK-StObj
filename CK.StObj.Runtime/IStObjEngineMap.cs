@@ -11,7 +11,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the <see cref="IStObjFinalClass"/> from any type that can be uniquely
-        /// associated to a final implemetation.
+        /// associated to a final implementation.
         /// </summary>
         /// <param name="t">The type.</param>
         /// <returns>The final implementation or null if no such final implementation exists for the type.</returns>

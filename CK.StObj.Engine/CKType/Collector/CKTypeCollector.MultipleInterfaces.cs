@@ -177,10 +177,12 @@ namespace CK.Setup
                         else
                         {
                             if( allMarshallableTypes == null ) allMarshallableTypes = new HashSet<Type>();
+                            Debug.Assert( impl.MarshallableTypes != null, "EnsureCtorBinding has been called." );
                             allMarshallableTypes.AddRange( impl.MarshallableTypes );
                             if( (k & AutoServiceKind.IsFrontService) != 0 )
                             {
                                 if( frontMarshallableTypes == null ) frontMarshallableTypes = new HashSet<Type>();
+                                Debug.Assert( impl.MarshallableInProcessTypes != null, "EnsureCtorBinding has been called." );
                                 frontMarshallableTypes.AddRange( impl.MarshallableInProcessTypes );
                             }
                         }

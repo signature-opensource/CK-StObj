@@ -62,7 +62,7 @@ namespace CK.Setup
             int idxCSFile = 0;
             foreach( var f in r.GeneratedFileNames )
             {
-                if( f.EndsWith( ".cs" ) )
+                if( f.EndsWith( ".cs", StringComparison.OrdinalIgnoreCase ) )
                 {
                     bool isPrimaryFile = idxCSFile == 0;
                     var fPath = _originPath.AppendPart( f );
@@ -95,9 +95,9 @@ namespace CK.Setup
                     }
                     DoMoveOrCopy( _monitor, fPath, t, copy: false );
                 }
-                else if( f.EndsWith( ".dll" )
-                         || f.EndsWith( ".exe" )
-                         || f.EndsWith( StObjEngineConfiguration.ExistsSignatureFileExtension ) ) continue;
+                else if( f.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase )
+                         || f.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase )
+                         || f.EndsWith( StObjEngineConfiguration.ExistsSignatureFileExtension, StringComparison.OrdinalIgnoreCase ) ) continue;
                 else
                 {
                     // Other generated files?

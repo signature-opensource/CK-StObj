@@ -36,7 +36,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Sets an object during the first run: this must be called only when <see cref="IsUnifiedRun"/> is true.
-        /// This should be used to store objects from the "reality", object that unify all required aspects accross
+        /// This should be used to store objects from the "reality", object that unify all required aspects across
         /// the <see cref="AllBinPaths"/>.
         /// </summary>
         /// <param name="key">Key of the object to cache.</param>
@@ -61,7 +61,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
         /// <see cref="IStObjEngineAspect"/> classes typically registers services
-        /// inside this container so that code genrator can use them.
+        /// inside this container so that code generator can use them.
         /// <para>
         /// When a code generator supports a trampoline or any other means to defer a subsequent execution,
         /// a code generation step can also registers any number of services that will be available to subsequent

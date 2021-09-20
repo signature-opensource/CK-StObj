@@ -108,12 +108,12 @@ namespace CK.Setup
             {
                 throw new XmlException( @"Element SkipCompilation must be replaced with CompileOption that can be be ""None"", ""Parse"" or ""Compile"". It defaults to ""None""." );
             }
-            CompileOption = e.Element( StObjEngineConfiguration.xCompileOption )?.Value.ToLowerInvariant() switch
+            CompileOption = e.Element( StObjEngineConfiguration.xCompileOption )?.Value.ToUpperInvariant() switch
             {
                 null => CompileOption.None,
-                "none" => CompileOption.None,
-                "parse" => CompileOption.Parse,
-                "compile" => CompileOption.Compile,
+                "NONE" => CompileOption.None,
+                "PARSE" => CompileOption.Parse,
+                "COMPILE" => CompileOption.Compile,
                 _ => throw new XmlException( @"Expected CompileOption to be ""None"", ""Parse"" or ""Compile""." )
             };
 
@@ -255,18 +255,18 @@ namespace CK.Setup
             XElement? e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == aspectName );
             if( e != null ) return e;
             string? noConf = null;
-            if( aspectName.EndsWith( "Configurations" ) ) noConf = aspectName.Substring( 0, aspectName.Length - 14 );
-            else if( aspectName.EndsWith( "Configuration" ) ) noConf = aspectName.Substring( 0, aspectName.Length - 13 );
-            else if( aspectName.EndsWith( "Config" ) ) noConf = aspectName.Substring( 0, aspectName.Length - 6 );
+            if( aspectName.EndsWith( "Configurations", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 14 );
+            else if( aspectName.EndsWith( "Configuration", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 13 );
+            else if( aspectName.EndsWith( "Config", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 6 );
             if( noConf != null )
             {
                 e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == noConf );
                 if( e != null ) return e;
             }
-            aspectName = aspectName.Replace( "Aspect", "" );
+            aspectName = aspectName.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
             e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == aspectName );
             if( e != null ) return e;
-            if( noConf != null ) noConf = noConf.Replace( "Aspect", "" );
+            if( noConf != null ) noConf = noConf.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
             e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == noConf );
             return e;
         }

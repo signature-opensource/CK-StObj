@@ -35,19 +35,19 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Type or the Method that will execute the second generation pass.
         /// </summary>
-        public readonly MemberInfo Implementor;
+        public MemberInfo Implementor { get; }
 
         /// <summary>
         /// Gets the source code type scope to use.
         /// This is null when <see cref="IsCodeGenerator"/> is true: a global code generator has no specific target.
         /// </summary>
-        public readonly ITypeScope? TypeScope;
+        public ITypeScope? TypeScope { get; }
 
         /// <summary>
         /// Gets the method, property or type that must be implemented.
         /// This is null when <see cref="IsCodeGenerator"/> is true: a global code generator has no specific target.
         /// </summary>
-        public readonly MemberInfo? Target;
+        public MemberInfo? Target { get; }
 
         /// <summary>
         /// Gets the target name.
@@ -72,7 +72,7 @@ namespace CK.Setup
         ///     <item>If <see cref="Implementor"/> is a Type: instantiating it and executing its <see cref="IAutoImplementor{T}.Implement"/> method.</item>
         ///     <item>If <see cref="Implementor"/> is a MethodInfo: calling it.</item>
         /// </list>
-        /// Subsequent runs can use methods as long as a <see cref="CSCodeGenerationResult(string)"/> is returned by implemetors.
+        /// Subsequent runs can use methods as long as a <see cref="CSCodeGenerationResult(string)"/> is returned by implementors.
         /// On error, a fatal or error message has necessarily been logged.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>

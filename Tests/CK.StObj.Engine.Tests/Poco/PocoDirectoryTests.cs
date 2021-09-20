@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName1 ) );
                 using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                                 .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on " ) ) ) ) )
+                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) ) ) )
                 {
                     TestHelper.GetFailedResult( c );
                 }
@@ -54,7 +54,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName2 ) );
                 using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                                 .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on " ) ) ) ) )
+                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) ) ) )
                 {
                     TestHelper.GetFailedResult( c );
                 }
@@ -75,7 +75,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
             using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
-                                                                     && x.Text.StartsWith( $"Poco '{typeof( ICmdNoName ).FullName}' use its full name " ) ) ) ) )
+                                                                     && x.Text.StartsWith( $"Poco '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) ) ) )
             {
                 TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeTrue();
             }
@@ -92,7 +92,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( ICmdSecondary ) );
             using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                     && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).FullName}'." ) ) ) ) )
+                                                                     && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).FullName}'.", StringComparison.Ordinal ) ) ) ) )
             {
                 TestHelper.GetFailedResult( c );
             }
@@ -114,7 +114,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( ICmd1 ), typeof( ICmd1Bis ) );
             using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                     && x.Text.StartsWith( "The Poco name 'Cmd1' clashes: both '" ) ) ) ) )
+                                                                     && x.Text.StartsWith( "The Poco name 'Cmd1' clashes: both '", StringComparison.Ordinal ) ) ) ) )
             {
                 TestHelper.GetFailedResult( c );
             }

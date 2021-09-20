@@ -26,7 +26,7 @@ namespace CK.Setup
         /// or a CK.Core.LogLevel.Fatal occurred. Null if no error nor fatal occurred.
         /// Use the extension method <see cref="ActivityMonitorExtension.ToStringPath"/> to easily format this path.
         /// </summary>
-        IReadOnlyList<ActivityMonitorPathCatcher.PathElement> LastErrorPath { get; }
+        IReadOnlyList<ActivityMonitorPathCatcher.PathElement>? LastErrorPath { get; }
 
         /// <summary>
         /// Gets the last <see cref="DynamicPath"/> with a <see cref="Core.LogLevel.Fatal"/>, <see cref="Core.LogLevel.Error"/>
@@ -34,6 +34,6 @@ namespace CK.Setup
         /// Null if no error, fatal nor warn occurred. 
         /// Use the extension method <see cref="ActivityMonitorExtension.ToStringPath"/> to easily format this path.
         /// </summary>
-        IReadOnlyList<ActivityMonitorPathCatcher.PathElement> LastWarnOrErrorPath { get; }
+        IReadOnlyList<ActivityMonitorPathCatcher.PathElement>? LastWarnOrErrorPath { get; }
     }
 }

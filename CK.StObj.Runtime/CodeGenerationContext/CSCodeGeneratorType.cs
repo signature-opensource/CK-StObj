@@ -36,7 +36,7 @@ namespace CK.Setup
 
         /// <summary>
         /// See <see cref="ICodeGenerator.Implement"/>.
-        /// This default implementation returns true: the abstract <see cref="Implement(IActivityMonitor, Type, ICSCodeGenerationContext, ITypeScope)"/> "type
+        /// This default implementation returns <see cref="CSCodeGenerationResult.Success"/>: the abstract <see cref="Implement(IActivityMonitor, Type, ICSCodeGenerationContext, ITypeScope)"/> "type
         /// based" method must do the job.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -48,7 +48,7 @@ namespace CK.Setup
 
         /// <summary>
         /// See <see cref="ICodeGenerator.Implement"/>.
-        /// This default implementation returns true: the abstract <see cref="Implement(IActivityMonitor, Type, ICSCodeGenerationContext, ITypeScope)"/> "type
+        /// This default implementation returns <see cref="CSCodeGenerationResult.Success"/>: the abstract <see cref="Implement(IActivityMonitor, Type, ICSCodeGenerationContext, ITypeScope)"/> "type
         /// based" method must do the job.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>

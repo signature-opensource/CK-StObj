@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// such methods and by registering the <see cref="IStObjServiceMap.SimpleMappings"/> and <see cref="IStObjServiceMap.ManualMappings"/> mappings.
         /// Any attempt to register an already registered service will be ignored and a warning will be emitted.
         /// <para>
-        /// If the registration fails for any reason (file not found, type conflicts, etc.), an <see cref="InvalidOperationException"/> is thrown.
+        /// If the registration fails for any reason (file not found, type conflicts, etc.), a <see cref="CKException"/> is thrown.
         /// </para>
         /// </summary>
         /// <param name="services">This service collection to configure.</param>
@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, IStObjMap map, SimpleServiceContainer? startupServices = null )
         {
             var reg = new StObjContextRoot.ServiceRegister( monitor, services, startupServices );
-            if( !reg.AddStObjMap( map ) ) throw new Exception( "AddStObjMap failed. The logs contains detailed information." );
+            if( !reg.AddStObjMap( map ) ) throw new CKException( "AddStObjMap failed. The logs contains detailed information." );
             return services;
         }
 

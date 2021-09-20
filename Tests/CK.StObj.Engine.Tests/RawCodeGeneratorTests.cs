@@ -35,7 +35,7 @@ namespace CK.StObj.Engine.Tests
         }
 
         [Test]
-        public void ICodeGenerator_on_regular_class()
+        public void ICSCodeGenerator_on_regular_class()
         {
             CGen.Called = false;
             var c = TestHelper.CreateStObjCollector( typeof( Holder ) );

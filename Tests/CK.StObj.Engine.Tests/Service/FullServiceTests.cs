@@ -155,7 +155,7 @@ namespace CK.StObj.Engine.Tests.Service
             /// Configure the services (does nothing here: this just tests the parameter
             /// injection of the startup services). 
             /// </summary>
-            /// <param name="register">This one is the only required parameter. It may be marked as 'in' parameter or not.</param>
+            /// <param name="register">This one is the only required parameter.</param>
             /// <param name="ambientObjects">
             /// IStObjObjectMap is available: configuring services can rely on any IRealObject since they are already initialized (this
             /// is even available in the RegisterStartupServices).
@@ -166,7 +166,7 @@ namespace CK.StObj.Engine.Tests.Service
             /// This is injected if it exists in the StartupServices: startup services can be optional.
             /// </param>
             void ConfigureServices(
-                in StObjContextRoot.ServiceRegister register,
+                StObjContextRoot.ServiceRegister register,
                 IStObjObjectMap ambientObjects,
                 SuperStartupService superService,
                 TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem ext,
@@ -443,9 +443,9 @@ namespace CK.StObj.Engine.Tests.Service
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.GetAutomaticServices( collector, startupServices: startupServices );
-                var sp = r.ServiceRegisterer.Services.BuildServiceProvider();
+                var sp = r.ServiceRegistrar.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
-                r.ServiceRegisterer.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
+                r.ServiceRegistrar.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
             }
             logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
             logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
@@ -468,7 +468,7 @@ namespace CK.StObj.Engine.Tests.Service
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.GetAutomaticServices( collector, startupServices: startupServices );
-                var sp = r.ServiceRegisterer.Services.BuildServiceProvider();
+                var sp = r.ServiceRegistrar.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
             }
             logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
@@ -531,7 +531,7 @@ namespace CK.StObj.Engine.Tests.Service
                     services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
                 }
                 logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container" ) );
+                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -550,7 +550,7 @@ namespace CK.StObj.Engine.Tests.Service
 
                 }
                 logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container" ) );
+                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.OrdinalIgnoreCase ) );
             }
 
         }

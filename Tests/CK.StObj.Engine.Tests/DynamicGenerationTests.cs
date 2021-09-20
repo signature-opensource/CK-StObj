@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests
     [Category( "DynamicGeneration" )]
     public class DynamicGenerationTests
     {
-        public class CConstructCalledAndStObjProperties
+        public static class CConstructCalledAndStObjProperties
         {
             public class A : IRealObject
             {
@@ -69,9 +69,10 @@ namespace CK.StObj.Engine.Tests
                 }
             }
 
-            public void DoTest()
+            public static void DoTest()
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new StObjPropertyConfigurator() );
+                using var container = new SimpleServiceContainer();
+                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator: new StObjPropertyConfigurator() );
                 collector.RegisterType( typeof( B ) );
                 collector.RegisterType( typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
@@ -112,7 +113,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void ConstructCalledAndStObjProperties()
         {
-            new CConstructCalledAndStObjProperties().DoTest();
+            CConstructCalledAndStObjProperties.DoTest();
         }
 
         public class PostBuildSet
@@ -282,7 +283,7 @@ namespace CK.StObj.Engine.Tests
                 // Here we tell the engine: "I'm handling this property implementation" only if the property name starts with a 'H'.
                 // This is rather stupid but this shows an easy way to enforce naming rules.
                 // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
-                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
+                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H", StringComparison.Ordinal ) ? this : null;
 
                 // We choose to implement all the properties as a whole in Implement method below: by returning CSCodeGenerationResult.Success
                 // we tell the engine: "Okay, I handled it, please continue your business."
@@ -411,7 +412,7 @@ namespace CK.StObj.Engine.Tests
             new ContextBoundDelegationAttributeDI().DoTest();
         }
 
-        public class SecondPassCodeGenerationDI
+        public static class SecondPassCodeGenerationDI
         {
             public interface ISourceCodeHelper1
             {
@@ -504,7 +505,7 @@ namespace CK.StObj.Engine.Tests
             {
             }
 
-            public void DoTest()
+            public static void DoTest()
             {
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -513,7 +514,7 @@ namespace CK.StObj.Engine.Tests
                     TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
                 }
                 logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
-                logs.Should().NotContain( e => e.Text.Contains( "Because nobody added me" ) );
+                logs.Should().NotContain( e => e.Text.Contains( "Because nobody added me", StringComparison.Ordinal ) );
             }
 
         }
@@ -521,7 +522,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void SecondPass_code_generation_can_use_dependency_injection()
         {
-            new SecondPassCodeGenerationDI().DoTest();
+            SecondPassCodeGenerationDI.DoTest();
         }
 
         public class MultiPassCodeGenerationParameterInjectionDI

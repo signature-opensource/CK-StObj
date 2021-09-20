@@ -81,7 +81,7 @@ namespace CK.Setup
 
                     // Retrieves CK._g workspace.
                     var ws = _tempAssembly.Code;
-                    // Gets the global name space and starst with the informational version (if any),
+                    // Gets the global name space and starts with the informational version (if any),
                     // and, once for all, basic namespaces that we always want available.
                     var global = ws.Global;
 
@@ -114,13 +114,15 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
-                    // We don't generate nullable enabled code.
-                    global.Append( "#nullable disable" ).NewLine();
+                    // We don't generate nullable enabled code nor comments.
+                    global.Append( "#nullable disable" ).NewLine()
+                          .Append( "#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member" ).NewLine();
 
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
                     nsStObj.GeneratedByComment().NewLine()
-                        .Append( @"internal class SignatureAttribute : Attribute" )
+                        .Append( "[AttributeUsage(AttributeTargets.Assembly)]" ).NewLine()
+                        .Append( @"internal sealed class SignatureAttribute : Attribute" )
                         .OpenBlock()
                         .Append( "public SignatureAttribute( string s ) {}" ).NewLine()
                         .Append( "public readonly static (SHA1Value Signature, IReadOnlyList<string> Names) V = ( SHA1Value.Parse( (string)typeof( SignatureAttribute ).Assembly.GetCustomAttributesData().First( a => a.AttributeType == typeof( SignatureAttribute ) ).ConstructorArguments[0].Value )" ).NewLine()

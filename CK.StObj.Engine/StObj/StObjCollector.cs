@@ -35,7 +35,7 @@ namespace CK.Setup
         /// Used to explicitly resolve or alter StObjConstruct parameters and object ambient properties.
         /// See <see cref="IStObjValueResolver"/>.
         /// </param>
-        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is is the default name.</param>
+        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
         public StObjCollector(
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,
@@ -51,7 +51,7 @@ namespace CK.Setup
             _tempAssembly = new DynamicAssembly();
             Func<IActivityMonitor,Type,bool>? tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
-            _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter );
+            _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter, names );
             _configurator = configurator;
             _valueResolver = valueResolver;
             if( traceDepencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
@@ -60,7 +60,8 @@ namespace CK.Setup
             // The IActivityMobitor is by design a scoped service. It is not Optional (since it necessarily exists).
             SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
 
-            // Registration must be done from the most specific types to the basic ones: here we must start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
+            // Registration must be done from the most specific types to the basic ones: here we must
+            // start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot`1, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
             // IOptionsMonitor is independent.
@@ -72,16 +73,18 @@ namespace CK.Setup
             // Other well known services life time can be defined...
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
-            SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
             // The IHostEnvironment is a singleton (tied to the process, not marshallable).
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostEnvironment, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
             // The IServiceProvider itself is a Singleton.   
-            SetAutoServiceKind( typeof(IServiceProvider), AutoServiceKind.IsSingleton );
+            SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
 
             // Other known singletons.
             SetAutoServiceKind( "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.Extensions.Configuration.IConfigurationRoot, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
+            // IConfigurationRoot is not added to the DI by default, only the IConfiguration (that happens to be the root) is registered.
+            // See https://github.com/aspnet/templating/issues/193#issuecomment-351137277.
+            SetAutoServiceKind( "Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
         }
 
         /// <summary>
@@ -224,7 +227,7 @@ namespace CK.Setup
         public void RegisterTypes( IReadOnlyCollection<string> typeNames )
         {
             if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-            DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
+            DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ), typeNames.Count );
         }
 
         void DoRegisterTypes( IEnumerable<Type> types, int count )
@@ -267,7 +270,7 @@ namespace CK.Setup
         public Action<IEnumerable<IDependentItem>>? DependencySorterHookInput { get; set; }
 
         /// <summary>
-        /// Gets or sets a function that will be called when items have been successfuly sorted.
+        /// Gets or sets a function that will be called when items have been successfully sorted.
         /// </summary>
         public Action<IEnumerable<ISortedItem>>? DependencySorterHookOutput { get; set; }
 
@@ -293,7 +296,7 @@ namespace CK.Setup
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should
                     // not exist and be replaced with intermediate - functional-like - value results).
-                    // But this would be a massive refactoring and this internal mutable state is, to be honnest,
+                    // But this would be a massive refactoring and this internal mutable state is, to be honest,
                     // quite convenient!
                     typeResult.SetFinalOrderedResults( orderedItems );
                     if( !RegisterServices( typeResult ) )
@@ -325,7 +328,7 @@ namespace CK.Setup
                         typeResult.LogErrorAndWarnings( _monitor );
                     }
                     if( error || typeResult.HasFatalError ) return (typeResult, null, null);
-                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeeded." );
+                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
                     using( _monitor.OpenInfo( "Creating final objects and configuring items." ) )
                     {
                         int nbItems = ConfigureMutableItems( typeResult.RealObjects );
@@ -344,7 +347,7 @@ namespace CK.Setup
                     {
                         // Transfers construct parameters type as requirements for the object, binds dependent
                         // types to their respective MutableItem, resolve generalization and container
-                        // inheritance, and intializes StObjProperties.
+                        // inheritance, and initializes StObjProperties.
                         foreach( MutableItem item in engineMap.FinalImplementations )
                         {
                             noCycleDetected &= item.PrepareDependentItem( _monitor, valueCollector );
@@ -388,7 +391,7 @@ namespace CK.Setup
                 }
 
                 Debug.Assert( sortResult != null );
-                // We now can setup the final ordered list of MutableItems (ie. of IStObjResult).
+                // We now can setup the final ordered list of MutableItems (i.e. of IStObjResult).
                 List<MutableItem> ordered = new List<MutableItem>();
                 using( _monitor.OpenInfo( "Finalizing graph." ) )
                 {

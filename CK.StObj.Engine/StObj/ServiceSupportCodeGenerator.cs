@@ -10,7 +10,7 @@ namespace CK.Setup
 {
     class ServiceSupportCodeGenerator
     {
-        static readonly string _sourceServiceSupport = @"
+        const string _sourceServiceSupport = @"
         sealed class StObjServiceParameterInfo : IStObjServiceParameterInfo
         {
             public StObjServiceParameterInfo( Type t, int p, string n, IReadOnlyList<Type> v, bool isEnum )
@@ -147,8 +147,21 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             }
             // 
 
+            static void AppendArrayDecl( IFunctionScope f, string typeName, int count )
+            {
+                if( count > 0 )
+                {
+                    f.Append( "new " ).Append( typeName ).Append( "[" ).Append( count ).Append( "];" ).NewLine();
+                }
+                else
+                {
+                    f.Append( "Array.Empty<" ).Append( typeName ).Append( ">();" ).NewLine();
+                }
+            }
+
             // Service mappings (Simple).
-            _rootCtor.Append( $"_simpleServiceList = new IStObjServiceClassDescriptor[").Append( liftedMap.SimpleMappingList.Count ).Append( "];" ).NewLine();
+            _rootCtor.Append( $"_simpleServiceList = " );
+            AppendArrayDecl( _rootCtor, nameof( IStObjServiceClassDescriptor ), liftedMap.SimpleMappingList.Count );
             foreach( var d in liftedMap.SimpleMappingList )
             {
                 Debug.Assert( d.SimpleMappingIndex >= 0 );
@@ -177,7 +190,9 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                             .NewLine();
             }
             // Service mappings (Not so Simple :)).
-            _rootCtor.Append( $"_manualServiceList = new IStObjServiceClassFactory[" ).Append( liftedMap.ManualMappingList.Count ).Append( "];" ).NewLine();
+            _rootCtor.Append( $"_manualServiceList = " );
+            AppendArrayDecl( _rootCtor, nameof( IStObjServiceClassFactory ), liftedMap.ManualMappingList.Count );
+
             foreach( var serviceFactory in liftedMap.ManualMappingList )
             {
                 CreateServiceClassFactory( serviceFactory );

@@ -15,11 +15,8 @@ namespace CK.Setup
     /// <summary>
     /// Represents a service class/implementation.
     /// </summary>
-    public class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
+    public sealed class AutoServiceClassInfo : IStObjServiceFinalSimpleMapping
     {
-        const CKTypeKind CKTypeKindAutoSingleton = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton;
-        const CKTypeKind CKTypeKindAutoScoped = CKTypeKind.IsAutoService | CKTypeKind.IsScoped;
-
         HashSet<AutoServiceClassInfo>? _ctorParmetersClosure;
         // Memorizes the EnsureCtorBinding call state.
         bool? _ctorBinding;
@@ -35,17 +32,17 @@ namespace CK.Setup
             /// The parameter info.
             /// This is never null.
             /// </summary>
-            public readonly ParameterInfo ParameterInfo;
+            public ParameterInfo ParameterInfo { get; }
 
             /// <summary>
             /// Not null if this parameter is a service class (ie. a IAutoService implementation).
             /// </summary>
-            public readonly AutoServiceClassInfo? ServiceClass;
+            public AutoServiceClassInfo? ServiceClass { get; }
 
             /// <summary>
             /// Not null if this parameter is a service interface (a <see cref="IAutoService"/>).
             /// </summary>
-            public readonly AutoServiceInterfaceInfo? ServiceInterface;
+            public AutoServiceInterfaceInfo? ServiceInterface { get; }
 
             /// <summary>
             /// Gets whether this parameter is an <see cref="IAutoService"/>.
@@ -127,7 +124,7 @@ namespace CK.Setup
             bool isExcluded,
             RealObjectClassInfo? objectInfo )
         {
-            Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the the asociated Service, we must be the only one." );
+            Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
             if( objectInfo != null )
             {
                 TypeInfo = objectInfo;
@@ -177,7 +174,7 @@ namespace CK.Setup
         public IReadOnlyCollection<Type> MultipleMappings => TypeInfo.MultipleMappingTypes;
 
         /// <summary>
-        /// Gets the unique types that that must be mapped to this <see cref="FinalType"/> and only to this one.
+        /// Gets the unique types that must be mapped to this <see cref="FinalType"/> and only to this one.
         /// </summary>
         public IReadOnlyCollection<Type> UniqueMappings => TypeInfo.UniqueMappingTypes;
 
@@ -219,7 +216,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the supported service interfaces.
-        /// This is not null only if <see cref="IsIncluded"/> is true (ie. this class is not excluded
+        /// This is not null only if <see cref="IsIncluded"/> is true (i.e. this class is not excluded
         /// and is on a concrete path) and may be empty if there is no service interface (the
         /// implementation itself is marked with any <see cref="IScopedAutoService"/> marker).
         /// </summary>
@@ -228,7 +225,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the container type to which this service is associated.
         /// This can be null (service is considered to reside in the final package) or
-        /// if an error occured.
+        /// if an error occurred.
         /// For Service Chaining Resolution to be available (either to depend on or be used by others),
         /// services must be associated to one container.
         /// </summary>
@@ -309,7 +306,6 @@ namespace CK.Setup
         internal bool InitializePath(
                         IActivityMonitor monitor,
                         CKTypeCollector collector,
-                        AutoServiceClassInfo? generalization,
                         IDynamicAssembly tempAssembly,
                         List<AutoServiceClassInfo> lastConcretes,
                         ref List<Type>? abstractTails )
@@ -325,7 +321,7 @@ namespace CK.Setup
             foreach( AutoServiceClassInfo c in Specializations )
             {
                 Debug.Assert( !c.TypeInfo.IsExcluded );
-                isConcretePath |= c.InitializePath( monitor, collector, this, tempAssembly, lastConcretes, ref abstractTails );
+                isConcretePath |= c.InitializePath( monitor, collector, tempAssembly, lastConcretes, ref abstractTails );
             }
             if( !isConcretePath )
             {
@@ -346,7 +342,7 @@ namespace CK.Setup
             {
                 // Only if this class IsIncluded: assigns the set of interfaces.
                 // This way only interfaces that are actually used are registered in the collector.
-                // An unused Auto Service interface (ie. that has no implementation in the context)
+                // An unused Auto Service interface (i.e. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
                 Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces, IsRealObject ? (Action<Type,CKTypeKind,CKTypeCollector>?)null : TypeInfo.AddMultipleMapping ).ToArray();
@@ -429,7 +425,6 @@ namespace CK.Setup
                 return _ctorParmetersClosure;
             }
         }
-
 
         bool IStObjFinalClass.IsScoped => (FinalTypeKind!.Value & AutoServiceKind.IsScoped) != 0;
 
@@ -561,6 +556,7 @@ namespace CK.Setup
                                     if( allMarshallableTypes == null ) allMarshallableTypes = new HashSet<Type>();
                                     if( pC != null )
                                     {
+                                        Debug.Assert( pC.MarshallableTypes != null, "EnsureCtorBinding has been called." );
                                         allMarshallableTypes.AddRange( pC.MarshallableTypes );
                                     }
                                     else
@@ -572,6 +568,7 @@ namespace CK.Setup
                                         if( frontMarshallableTypes == null ) frontMarshallableTypes = new HashSet<Type>();
                                         if( pC != null )
                                         {
+                                            Debug.Assert( pC.MarshallableInProcessTypes != null, "EnsureCtorBinding has been called." );
                                             frontMarshallableTypes.AddRange( pC.MarshallableInProcessTypes );
                                         }
                                         else

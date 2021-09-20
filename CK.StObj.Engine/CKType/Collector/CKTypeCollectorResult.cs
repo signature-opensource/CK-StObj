@@ -49,7 +49,7 @@ namespace CK.Setup
         public RealObjectCollectorResult RealObjects { get; }
 
         /// <summary>
-        /// Gets the reults for <see cref="IScopedAutoService"/> objects.
+        /// Gets the results for <see cref="IAutoService"/> objects.
         /// </summary>
         public AutoServiceCollectorResult AutoServices { get; }
 
@@ -68,7 +68,7 @@ namespace CK.Setup
         /// </summary>
         /// <returns>
         /// False to continue the process (only warnings - or error considered as 
-        /// warning - occured), true to stop remaining processes.
+        /// warning - occurred), true to stop remaining processes.
         /// </returns>
         public bool HasFatalError => PocoSupport == null || RealObjects.HasFatalError || AutoServices.HasFatalError;
 

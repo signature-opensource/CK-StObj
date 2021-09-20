@@ -9,7 +9,7 @@ namespace CK.Setup
     /// Defines information for a unified Poco type: this is associated to the
     /// final <see cref="IPocoFactory"/> interface.
     /// </summary>
-    public interface IPocoRootInfo
+    public interface IPocoRootInfo : IAnnotationSet
     {
         /// <summary>
         /// Gets the final, unified, type that implements all <see cref="Interfaces"/>.
@@ -30,7 +30,7 @@ namespace CK.Setup
         string Name { get; }
 
         /// <summary>
-        /// Gets the command previous names if any.
+        /// Gets the Poco previous names if any.
         /// </summary>
         IReadOnlyList<string> PreviousNames { get; }
 
@@ -75,7 +75,8 @@ namespace CK.Setup
         IReadOnlyList<IPocoPropertyInfo> PropertyList { get; }
 
         /// <summary>
-        /// Gets the properties that are implemented by external code provider.
+        /// Gets the properties that are implemented by external code provider and are NOT considered as
+        /// Poco properties.
         /// These properties are typically marked with <see cref="AutoImplementationClaimAttribute"/>.
         /// </summary>
         IReadOnlyList<PropertyInfo> ExternallyImplementedPropertyList { get; }

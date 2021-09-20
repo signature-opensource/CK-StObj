@@ -18,7 +18,7 @@ namespace CK.Core
         /// </param>
         public VFeature( string name, SVersion version )
         {
-            if(String.IsNullOrWhiteSpace( name ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( name ) );
+            if( String.IsNullOrWhiteSpace( name ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( name ) );
             Name = name;
             if( version == null || !version.IsValid ) throw new ArgumentException( "Must be a valid SVersion.", nameof( version ) );
             Version = version.AsCSVersion?.ToNormalizedForm() ?? version;
@@ -76,7 +76,7 @@ namespace CK.Core
         /// Returns a hash based on <see cref="Name"/> and <see cref="Version"/>.
         /// </summary>
         /// <returns>The has code.</returns>
-        public override int GetHashCode() => IsValid ? Version.GetHashCode() ^ Name.GetHashCode() : 0;
+        public override int GetHashCode() => IsValid ? Version.GetHashCode() ^ Name.GetHashCode( StringComparison.Ordinal ) : 0;
 
         /// <summary>
         /// Overridden to return <see cref="Name"/>/<see cref="Version"/> or the empty string
@@ -94,9 +94,9 @@ namespace CK.Core
         /// <returns>The resulting instance that may be invalid.</returns>
         public static VFeature TryParse( string instanceName )
         {
-            int idx = instanceName.LastIndexOf( '/' );
+            int idx = instanceName?.LastIndexOf( '/' ) ?? 0;
             if( idx > 0
-                && idx < instanceName.Length - 3
+                && idx < instanceName!.Length - 3
                 && SVersion.TryParse( instanceName.Substring( idx + 1 ), out var version ) )
             {
                 var n = instanceName.Substring( 0, idx );
@@ -117,20 +117,21 @@ namespace CK.Core
             return feature.IsValid;
         }
 
-        /// <summary>
-        /// Implements == operator.
-        /// </summary>
-        /// <param name="x">First artifact instance.</param>
-        /// <param name="y">Second artifact instance.</param>
-        /// <returns>True if they are equal.</returns>
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
         public static bool operator ==( in VFeature x, in VFeature y ) => x.Equals( y );
 
-        /// <summary>
-        /// Implements != operator.
-        /// </summary>
-        /// <param name="x">First artifact instance.</param>
-        /// <param name="y">Second artifact instance.</param>
-        /// <returns>True if they are not equal.</returns>
         public static bool operator !=( in VFeature x, in VFeature y ) => !x.Equals( y );
+
+        public static bool operator <( VFeature left, VFeature right ) => left.CompareTo( right ) < 0;
+
+        public static bool operator <=( VFeature left, VFeature right ) => left.CompareTo( right ) <= 0;
+
+        public static bool operator >( VFeature left, VFeature right ) => left.CompareTo( right ) > 0;
+
+        public static bool operator >=( VFeature left, VFeature right ) => left.CompareTo( right ) >= 0;
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+
     }
 }
