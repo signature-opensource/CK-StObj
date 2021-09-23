@@ -319,8 +319,12 @@ namespace CK.Setup
                         if( k != CKTypeKind.None )
                         {
                             // Checking errors here that cannot be checked by the central GetCombinationError method.
-                            //
-                            if( !t.Assembly.IsDynamic && !(t.IsPublic || t.IsNestedPublic) )
+
+                            // A type MUST be public only if it is an IAutoService.
+                            // External services definitions are not concerned by public/private access!
+                            if( !t.Assembly.IsDynamic
+                                && (k & CKTypeKind.IsAutoService) != 0
+                                && !(t.IsPublic || t.IsNestedPublic) )
                             {
                                 m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
                             }

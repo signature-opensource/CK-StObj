@@ -135,14 +135,19 @@ namespace CK.Setup
         {
             if( String.IsNullOrWhiteSpace( typeName ) ) throw new ArgumentNullException( nameof( typeName ) );
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
-            if( t != null && kind != AutoServiceKind.None ) return SetAutoServiceKind( t, kind );
+            if( t != null )
+            {
+                return kind != AutoServiceKind.None
+                        ? SetAutoServiceKind( t, kind )
+                        : true;
+            }
             if( isOptional )
             {
-                _monitor.Warn( $"Type name '{typeName}' not found. It is ignored." );
+                _monitor.Warn( $"Type name '{typeName}' not found. It is ignored (SetAutoServiceKind: {kind})." );
                 return true;
             }
             ++_registerFatalOrErrorCount;
-            _monitor.Error( $"Unable to resolve expected type named '{typeName}'." );
+            _monitor.Error( $"Unable to resolve expected type named '{typeName}' (SetAutoServiceKind: {kind})." );
             return false;
         }
 
