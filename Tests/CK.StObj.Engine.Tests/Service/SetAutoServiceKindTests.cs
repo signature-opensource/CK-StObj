@@ -1,5 +1,6 @@
 using CK.Core;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -55,6 +56,34 @@ namespace CK.StObj.Engine.Tests.Service
             TestHelper.GetSuccessfulResult( collector );
         }
 
+
+public interface IConfiguration { }
+
+public interface IConfigurationSection : IConfiguration { }
+
+public class ThisIsTheConfig : IConfiguration { }
+
+public class ThisShouldCoexist1 : IConfigurationSection { }
+class ThisShouldCoexist2 : IConfigurationSection { }
+
+[Test]
+public void base_singleton_interface_definition_can_coexist_with_specializations()
+{
+    var collector = TestHelper.CreateStObjCollector();
+    collector.SetAutoServiceKind( "CK.StObj.Engine.Tests.Service.SetAutoServiceKindTests+IConfiguration, CK.StObj.Engine.Tests", AutoServiceKind.IsSingleton, false );
+
+    collector.RegisterTypes( new[] { typeof( ThisIsTheConfig ), typeof( ThisShouldCoexist1 ), typeof( ThisShouldCoexist2 ) } );
+
+    // TestHelper.GetFailedAutomaticServicesConfiguration( collector );
+    var services = TestHelper.GetAutomaticServices( collector, register =>
+    {
+        // This is done by .net configuration extension.
+        register.Services.AddSingleton<IConfiguration>( new ThisIsTheConfig() );
+    } ).Services;
+
+    services.GetService<IConfiguration>( throwOnNull: true ).Should().BeOfType<ThisIsTheConfig>();
+    services.GetService<IConfigurationSection>( throwOnNull: false ).Should().BeNull();
+}
 
     }
 }
