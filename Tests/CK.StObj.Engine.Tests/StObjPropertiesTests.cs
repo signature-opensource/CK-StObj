@@ -4,7 +4,6 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
@@ -14,10 +13,8 @@ namespace CK.StObj.Engine.Tests
     {
         public class StObjPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
-            [InitRequired]
             public string PropertyName { get; set; }
 
-            [InitRequired]
             public object PropertyValue { get; set; }
 
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )

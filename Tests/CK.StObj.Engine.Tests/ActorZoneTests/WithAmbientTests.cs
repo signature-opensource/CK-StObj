@@ -5,7 +5,6 @@ using System.Linq;
 using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.ActorZoneTests
@@ -28,10 +27,8 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         public class AmbientPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
-            [InitRequired]
             public string PropertyName { get; set; }
 
-            [InitRequired]
             public object PropertyValue { get; set; }
 
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
@@ -48,7 +45,6 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
                 ConnectionString = connectionString;
             }
 
-            [InitRequired]
             public string ConnectionString { get; private set; }
         }
 
@@ -70,11 +66,9 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public class BasicPackage : BaseDatabaseObject
         {
             [InjectObject]
-            [InitRequired]
             public BasicUser UserHome { get; protected set; }
             
             [InjectObject]
-            [InitRequired]
             public BasicGroup GroupHome { get; protected set; }
         }
 

@@ -5,7 +5,6 @@ using CK.Testing.StObjEngine;
 using FluentAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -45,7 +44,6 @@ namespace CK.StObj.Engine.Tests
                     TheB = b;
                 }
 
-                [InitRequired]
                 public B TheB { get; private set; }
             }
 
@@ -56,7 +54,6 @@ namespace CK.StObj.Engine.Tests
                     TheA = a;
                 }
 
-                [InitRequired]
                 public A TheA { get; private set; }
             }
 
@@ -143,7 +140,6 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 [InjectObject]
-                [InitRequired]
                 public BSpec TheB { get; private set; }
             }
 
@@ -173,11 +169,9 @@ namespace CK.StObj.Engine.Tests
             public class B : IRealObject
             {
                 [InjectObject]
-                [InitRequired]
                 public A TheA { get; private set; }
 
                 [InjectObject]
-                [InitRequired]
                 public A TheInjectedA { get; private set; }
             }
 

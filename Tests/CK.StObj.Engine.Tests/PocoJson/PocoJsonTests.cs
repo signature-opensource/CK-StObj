@@ -178,6 +178,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [TestCase( PocoJsonSerializerMode.ECMAScriptStandard )]
         public void Set_serialization( PocoJsonSerializerMode mode )
         {
+            using var logGroup = TestHelper.Monitor.OpenInfo( $"{nameof(Set_serialization)}-{mode}" );
+
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITestSetNumbers ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
