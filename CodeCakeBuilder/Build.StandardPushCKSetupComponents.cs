@@ -19,7 +19,9 @@ namespace CodeCake
 
 new CKSetupComponent( "CK.StObj.Model", "netstandard2.1" ),
 new CKSetupComponent( "CK.StObj.Runtime", "netcoreapp3.1" ),
-new CKSetupComponent( "CK.StObj.Engine", "netcoreapp3.1" )
+new CKSetupComponent( "CK.StObj.Engine", "netcoreapp3.1" ),
+new CKSetupComponent( "CK.StObj.Hosting", "netcoreapp3.1" ),
+new CKSetupComponent( "CK.StObj.Hosting.Engine", "netcoreapp3.1" )
 };
         }
 

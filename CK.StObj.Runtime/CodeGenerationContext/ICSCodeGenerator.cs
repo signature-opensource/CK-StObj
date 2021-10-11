@@ -9,6 +9,9 @@ namespace CK.Setup
     /// It is independent of any type and can use the <see cref="CSCodeGenerationResult"/> to redirect
     /// with a method that expects one or more specific service (like <see cref="Json.JsonSerializationCodeGen"/>
     /// for instance).
+    /// <para>
+    /// See <see cref="CSCodeGeneratorType"/> to implement a code generator for a Type. 
+    /// </para>
     /// </summary>
     /// <remarks>
     /// This is not defined in the CK.StObj.Model since this is typically implemented by attributes, but
