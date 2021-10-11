@@ -7,7 +7,6 @@ using System.Linq;
 using FluentAssertions;
 using System.Diagnostics;
 using System.Reflection;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using CK.StObj.Engine.Tests.Poco.Sample;
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +27,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 Factory = f;
             }
 
-            [InitRequired]
             public IPocoFactory<IBasicPoco> Factory { get; private set; }
 
         }

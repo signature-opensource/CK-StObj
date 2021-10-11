@@ -515,6 +515,11 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
 
             GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
+
+            // Generated code, by casting IStObjMap (available in DI) into GeneratedRootContext can access to this by index.
+            internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
+            internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
+
             " );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );

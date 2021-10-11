@@ -10,7 +10,6 @@ using static CK.Testing.StObjEngineTestHelper;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.ComponentModel;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using System.Diagnostics;
 using System.Collections.Generic;
 
@@ -49,7 +48,6 @@ namespace CK.StObj.Engine.Tests
         public class AmbientInject : IRealObject
         {
             [InjectObject]
-            [InitRequired]
             public Auto Service { get; private set; }
         }
 
@@ -253,7 +251,6 @@ namespace CK.StObj.Engine.Tests
 
             void ConfigureServices( in StObjContextRoot.ServiceRegister register ) => ++ConfigureServicesCallCount;
 
-            [InitRequired]
             public Dep0 Dep0 { get; private set; }
         }
 
@@ -272,7 +269,6 @@ namespace CK.StObj.Engine.Tests
 
             void ConfigureServices( in StObjContextRoot.ServiceRegister register ) => ++ConfigureServicesCallCount;
 
-            [InitRequired]
             public Dep1 Dep1 { get; private set; }
         }
 
@@ -289,7 +285,6 @@ namespace CK.StObj.Engine.Tests
 
             void ConfigureServices( in StObjContextRoot.ServiceRegister register ) => ++ConfigureServicesCallCount;
 
-            [InitRequired]
             public Dep2 Dep2 { get; private set; }
         }
 

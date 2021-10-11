@@ -27,7 +27,7 @@ namespace CK.Core
 
         /// <summary>
         /// Gets the interfaces that are marked with <see cref="IsMultipleAttribute"/> and must be mapped to this <see cref="FinalType"/>
-        /// regadless of their other mappings.
+        /// regardless of their other mappings.
         /// </summary>
         IReadOnlyCollection<Type> MultipleMappings { get; }
 

@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -102,7 +101,6 @@ namespace CK.StObj.Engine.Tests
         public class InvalidRealObjectProperty : IRealObject
         {
             [InjectObject]
-            [InitRequired]
             public ScopedService NotAnRealObjectPropertyType { get; protected set; }
         }
 
@@ -133,7 +131,6 @@ namespace CK.StObj.Engine.Tests
         public class CB : IRealObject
         {
             [InjectObject]
-            [InitRequired]
             public CA A { get; set; }
         }
 
@@ -191,7 +188,6 @@ namespace CK.StObj.Engine.Tests
         public class CPrivateSetter : IRealObject
         {
             [InjectObject]
-            [InitRequired]
             public CA2 A { get; private set; }
         }
 
