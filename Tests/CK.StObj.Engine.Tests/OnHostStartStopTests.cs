@@ -2,7 +2,6 @@ using CK.Core;
 using CK.Text;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -12,10 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
-namespace CK.StObj.Hosting.Engine.Tests
+namespace CK.StObj.Engine.Tests.Service
 {
     [TestFixture]
-    public class HostedServiceLifetimeTriggerTests
+    public class OnHostStartStopTests
     {
         public interface ISqlCallContext : IScopedAutoService
         {
@@ -106,9 +105,7 @@ namespace CK.StObj.Hosting.Engine.Tests
         [Test]
         public async Task HostedServiceLifetimeTrigger_at_work()
         {
-            var allTypes= typeof( HostedServiceLifetimeTriggerTests ).GetNestedTypes()
-                                                                         .Append( typeof( HostedServiceLifetimeTrigger ) )
-                                                                         .ToArray();
+            var allTypes= typeof( OnHostStartStopTests ).GetNestedTypes();
             var collector = TestHelper.CreateStObjCollector( allTypes );
             var services = TestHelper.GetAutomaticServices( collector, services =>
             {
@@ -117,10 +114,12 @@ namespace CK.StObj.Hosting.Engine.Tests
             Debug.Assert( services != null );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
             {
-                var initializer = services.GetRequiredService<IEnumerable<IHostedService>>().OfType<HostedServiceLifetimeTrigger>().Single();
-                await initializer.StartAsync( default );
-                await initializer.StopAsync( default );
-
+                var initializers = services.GetRequiredService<IEnumerable<Microsoft.Extensions.Hosting.IHostedService>>();
+                foreach( var i in initializers )
+                {
+                    await i.StartAsync( default );
+                    await i.StopAsync( default );
+                }
                 entries.Select( e => e.Text ).Concatenate( "|" )
                     .Should().Be( "Calling: 1 'OnHostStart' method and 2 'OnHostStartAsync' methods.|O1 is starting.|O1Spec is starting.|O2Spec is starting."
                                   + "|Calling: 1 'OnHostStopAsync' method and 1 'OnHostStop' method.|O2Spec is stopping.|Mail Service Shutdown.|O1 is stopping." );

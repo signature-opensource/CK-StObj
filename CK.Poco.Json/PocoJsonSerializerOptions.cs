@@ -27,6 +27,7 @@ namespace CK.Core
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
         }
+
         /// <summary>
         /// Gets or sets the serialization mode.
         /// Defaults to <see cref="PocoJsonSerializerMode.ECMAScriptSafe"/>.

@@ -26,6 +26,10 @@
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <!-- This is required for HostedServiceLifetimeTriggerTests: OnHostStart/Stop[Async] support. -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Logs\" />
   </ItemGroup>
 </Project>

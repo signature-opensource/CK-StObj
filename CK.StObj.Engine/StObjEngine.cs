@@ -78,7 +78,7 @@ namespace CK.Setup
             if( config == null ) throw new ArgumentNullException( nameof( config ) );
             _monitor = monitor;
             _config = new StObjEngineConfiguration( config );
-            // We are coming from CKSetup: the configuation element has a Engine attribute.
+            // We are coming from CKSetup: the configuration element has a Engine attribute.
             if( config.Attribute( "Engine" ) != null ) _ckSetupConfig = config;
         }
 

@@ -28,7 +28,7 @@ namespace CK.Core
     /// by the <c>StObjConstruct</c> method private method that isolates dependencies between a base class and its specializations.
     /// </para>
     /// <para>
-    /// Real objects support the optional, non virtual (preferably private) following methods:
+    /// Real objects support the optional, non virtual and private following methods:
     /// <list type="number">
     ///     <item>
     ///     <term><c>void StObjConstruct(...)</c></term>
@@ -48,6 +48,21 @@ namespace CK.Core
     ///     <term><c>void ConfigureServices( StObjContextRoot.ServiceRegister, ... )</c></term>
     ///     <description>enables real objects to configure the DI (registering new services, configuring things, etc.) based on any number of parameters that
     ///     can be any other real objects and/or startup services previously registered.</description>
+    ///     </item>
+    ///     <item>
+    ///     <term><c>void/Task/ValueTask OnHostStart/Stop[Async]( ... )</c></term>
+    ///     <description>
+    ///     enables real objects to act like hosted services: <c>OnHostStart[Async]</c> and <c>OnHostStop[Async]</c> are called by an automatically
+    ///     generated Microsoft.Extensions.Hosting.IHostedService on startup (resp. on host stop).
+    ///     <para>
+    ///     The parameters can be any scope or singleton service that may be available: a temporary scope is created to call all the Start (resp. Stop)
+    ///     methods and these methods' execution share this temporary scope.
+    ///     </para>
+    ///     <para>
+    ///     Using these methods requires the https://www.nuget.org/packages/Microsoft.Extensions.Hosting.Abstractions/ package to be available in
+    ///     the final application (otherwise a compilation error of the generated code will be raised).
+    ///     </para>
+    ///     </description>
     ///     </item>
     /// </list>
     /// </para>

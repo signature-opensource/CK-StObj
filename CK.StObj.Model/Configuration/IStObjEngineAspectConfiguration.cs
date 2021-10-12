@@ -5,7 +5,7 @@ namespace CK.Setup
     /// <summary>
     /// All configuration of a Engine Aspect must implement this interface.
     /// Aspect configuration must have a deserialization constructor that takes a XElement.
-    /// It is higly recommended to support a <see cref="StObjEngineConfiguration.xVersion"/> attribute
+    /// It is highly recommended to support a <see cref="StObjEngineConfiguration.xVersion"/> attribute
     /// to ease and secure any configuration evolution. 
     /// </summary>
     public interface IStObjEngineAspectConfiguration

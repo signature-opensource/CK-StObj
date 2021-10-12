@@ -186,12 +186,11 @@ namespace CK.Setup
         /// See <see cref="StObjContextRoot.GetAvailableMapInfos(IActivityMonitor?)"/>.
         /// </param>
         /// <returns>A Code generation result.</returns>
-        public CodeGenerateResult GenerateSourceCodeSecondPass(
-            IActivityMonitor monitor,
-            string finalFilePath,
-            ICSCodeGenerationContext codeGenContext,
-            List<MultiPassCodeGeneration> secondPass,
-            Func<IActivityMonitor,SHA1Value,bool> availableStObjMap )
+        public CodeGenerateResult GenerateSourceCodeSecondPass( IActivityMonitor monitor,
+                                                                string finalFilePath,
+                                                                ICSCodeGenerationContext codeGenContext,
+                                                                List<MultiPassCodeGeneration> secondPass,
+                                                                Func<IActivityMonitor, SHA1Value, bool> availableStObjMap )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
@@ -522,9 +521,13 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
             " );
 
+            // Ignores boolean error return here.
+            HostedServiceLifetimeTriggerImpl.DiscoverMethods( monitor, EngineMap, out var hostedServiceLifetimeTriggerImpl );
+            hostedServiceLifetimeTriggerImpl?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
+
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
-            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
+            serviceGen.CreateConfigureServiceMethod( orderedStObjs, hostedServiceLifetimeTriggerImpl != null );
 
             GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }
