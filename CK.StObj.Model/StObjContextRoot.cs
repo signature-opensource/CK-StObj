@@ -49,6 +49,31 @@ namespace CK.Core
         /// </summary>
         public static readonly string ConfigureServicesMethodName = "ConfigureServices";
 
+        /// <summary>
+        /// Holds the name 'OnHostStartAsync'.
+        /// This must be a non virtual and private Task or ValueTask returning method with parameters that can be any singleton or scoped services 
+        /// (a dedicated scope is created for the call, scoped services won't pollute the application services).
+        /// </summary>
+        public static readonly string StartMethodNameAsync = "OnHostStartAsync";
+
+        /// <summary>
+        /// Holds the name 'OnHostStart'.
+        /// This must be a non virtual, typically private void method with parameters that can be any singleton or scoped services 
+        /// (a dedicated scope is created for the call, scoped services won't pollute the application services).
+        /// </summary>
+        public static readonly string StartMethodName = "OnHostStart";
+
+        /// <summary>
+        /// Holds the name 'OnHostStopAsync'. Same as the <see cref="StartMethodNameAsync"/>.
+        /// </summary>
+        public static readonly string StopMethodNameAsync = "OnHostStopAsync";
+
+        /// <summary>
+        /// Holds the name 'OnHostStop'. Same as the <see cref="StopMethodNameAsync"/>.
+        /// </summary>
+        public static readonly string StopMethodName = "OnHostStop";
+
+
         // We index the StObjMapInfo by the Assembly and by the Signature: assemblies are stable keys but
         // a new info with the same signature replaces the existing one.
         static readonly Dictionary<object, StObjMapInfo?> _alreadyHandled = new Dictionary<object, StObjMapInfo?>();
