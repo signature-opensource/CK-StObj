@@ -237,6 +237,11 @@ namespace CK.Setup.Json
                         mainHandler.GenerateWrite( write, fieldName );
                         write.NewLine();
 
+                        var camel = System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( p.PropertyName );
+                        if( camel != p.PropertyName )
+                        {
+                            read.Append( "case " ).AppendSourceString( camel ).Append( ": " );
+                        }
                         read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
                             .OpenBlock();
                         mainHandler.GenerateRead( read, fieldName, assignOnly: !p.IsReadOnly );
