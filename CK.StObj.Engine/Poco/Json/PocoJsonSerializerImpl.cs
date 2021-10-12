@@ -180,6 +180,7 @@ namespace CK.Setup.Json
                      .OpenBlock()
                      .GeneratedByComment().NewLine()
                      .CreatePart( out var writeHeader )
+                     .Append( "bool usePascalCase = options != null && options.ForJsonSerializer.PropertyNamingPolicy != System.Text.Json.JsonNamingPolicy.CamelCase;" ).NewLine()
                      .Append( "if( withType ) { w.WriteStartArray(); w.WriteStringValue( " ).AppendSourceString( pocoInfo.Name ).Append( "); }" ).NewLine()
                      .Append( "w.WriteStartObject();" )
                      .CreatePart( out var write )
@@ -233,7 +234,11 @@ namespace CK.Setup.Json
                     {
                         var fieldName = "_v" + p.Index;
 
-                        write.Append( "w.WritePropertyName( " ).AppendSourceString( p.PropertyName ).Append( " );" ).NewLine();
+                        write.Append( "w.WritePropertyName( usePascalCase ? " )
+                             .AppendSourceString( p.PropertyName )
+                             .Append( " : " )
+                             .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( p.PropertyName ) )
+                             .Append( " );" ).NewLine();
                         mainHandler.GenerateWrite( write, fieldName );
                         write.NewLine();
 

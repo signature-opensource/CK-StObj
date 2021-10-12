@@ -77,7 +77,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             o2.Should().BeEquivalentTo( o );
 
             // The Student is NOT typed since it is final.
-            serialized.Should().Be( "[\"WithHierarchies\",{\"Hop\":[3712,[\"CI:CT\",\"I|i|null\"],[\"CT:CP\",\"T|level\"],\"S|3\"]}]" );
+            serialized.Should().Be( "[\"WithHierarchies\",{\"hop\":[3712,[\"CI:CT\",\"I|i|null\"],[\"CT:CP\",\"T|level\"],\"S|3\"]}]" );
         }
 
         [ExternalName( "ComplexTuple" )]
@@ -98,12 +98,12 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var o2 = JsonTestHelper.Roundtrip( directory, o, text: t => serialized = t );
             o2.Should().BeEquivalentTo( o );
 
-            serialized.Should().Be( "[\"ComplexTuple\",{\"Hop\":[0,null,null,null,null,null]}]" );
+            serialized.Should().Be( "[\"ComplexTuple\",{\"hop\":[0,null,null,null,null,null]}]" );
 
             o.Hop = (5, "Albert", null, null, new List<string?>() { "X", null, "Y" }, 37.12);
             o2 = JsonTestHelper.Roundtrip( directory, o, text: t => serialized = t );
             o2.Should().BeEquivalentTo( o );
-            serialized.Should().Be( "[\"ComplexTuple\",{\"Hop\":[5,\"Albert\",null,null,[\"X\",null,\"Y\"],37.12]}]" );
+            serialized.Should().Be( "[\"ComplexTuple\",{\"hop\":[5,\"Albert\",null,null,[\"X\",null,\"Y\"],37.12]}]" );
 
         }
 

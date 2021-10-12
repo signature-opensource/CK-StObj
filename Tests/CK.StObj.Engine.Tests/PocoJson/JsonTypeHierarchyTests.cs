@@ -34,7 +34,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var root2 = JsonTestHelper.Roundtrip( directory, root, text: t =>
             {
                 TestHelper.Monitor.Info( $"ITest serialization: " + t );
-                t.Should().Be( @"[""NoIntern"",{""Person"":[""CP"",""Jean""],""Teacher"":""Paul|Aggreg"",""Student"":""Sartre|3712""}]" );
+                t.Should().Be( @"[""NoIntern"",{""person"":[""CP"",""Jean""],""teacher"":""Paul|Aggreg"",""student"":""Sartre|3712""}]" );
             } );
             root2.Should().BeEquivalentTo( root );
         }
@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             root.Person =  new Student( "Sartre", 3712 );
 
             // Here, the serialization relies on ToString() that is virtual: the Student is serialized (it shouldn't!).
-            root.ToString().Should().Be( "{\"Person\":\"Sartre|3712\"}" );
+            root.ToString().Should().Be( "{\"person\":\"Sartre|3712\"}" );
 
             // But the deserialization calls Person.Parse.
             FluentActions.Invoking( () => JsonTestHelper.Roundtrip( directory, root ) ).Should().Throw<ArgumentException>().Where( ex => ex.Message.StartsWith( "Invalid | in name.", StringComparison.OrdinalIgnoreCase ) );
@@ -74,7 +74,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             // The Person is not IsFinal: the actual Student is serialized.
             // Here, the serialization relies on ToString() that is virtual (so everything works fine). 
-            root.ToString().Should().Be( "{\"Person\":[\"CS:CP\",\"Sartre|3712\"]}" );
+            root.ToString().Should().Be( "{\"person\":[\"CS:CP\",\"Sartre|3712\"]}" );
 
             // And the deserialization, based on the type name, calls Student.Parse.
             var root2 = JsonTestHelper.Roundtrip( directory, root );
@@ -166,7 +166,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 root.Persons.Add( new Person( "Albert" ) );
                 root.Persons.Add( new Intern( "Spi", "Newbie", 3712 ) );
 
-                root.ToString().Should().Be( "{\"Persons\":[[\"CS:CP\",\"Sartre|3712\"],[\"CT:CP\",\"Camus|Sisyphe\"],[\"CP\",\"Albert\"],[\"CI:CT\",\"Spi|Newbie|3712\"]]}", "Items MUST HAVE a type." );
+                root.ToString().Should().Be( "{\"persons\":[[\"CS:CP\",\"Sartre|3712\"],[\"CT:CP\",\"Camus|Sisyphe\"],[\"CP\",\"Albert\"],[\"CI:CT\",\"Spi|Newbie|3712\"]]}", "Items MUST HAVE a type." );
                 JsonTestHelper.Roundtrip( directory, root );
             }
             {
@@ -177,7 +177,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 root.Interns.Add( new Intern( "Houphouët", "Boigny", null ) );
                 root.Interns.Add( null );
 
-                root.ToString().Should().Be( "{\"Students\":[\"Sartre|3712\"],\"Interns\":[\"Spi|Newbie|3712\",null,\"Houphou\\u00EBt|Boigny|null\",null]}", "Items are NOT typed since their type is final." );
+                root.ToString().Should().Be( "{\"students\":[\"Sartre|3712\"],\"interns\":[\"Spi|Newbie|3712\",null,\"Houphou\\u00EBt|Boigny|null\",null]}", "Items are NOT typed since their type is final." );
                 JsonTestHelper.Roundtrip( directory, root );
             }
         }

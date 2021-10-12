@@ -63,7 +63,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Power = 3712; o.Hip = "Here!"; } );
-            o.ToString().Should().Be( @"{""Power"":3712,""Hip"":""Here!""}" );
+            o.ToString().Should().Be( @"{""power"":3712,""hip"":""Here!""}" );
         }
 
         public interface IPocoA : IPoco
