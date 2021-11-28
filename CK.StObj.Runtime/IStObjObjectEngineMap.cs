@@ -16,14 +16,14 @@ namespace CK.Setup
         /// </summary>
         /// <param name="t">Key type.</param>
         /// <returns>Most specialized StObj or null if no mapping exists for this type.</returns>
-        new IStObjResult ToLeaf( Type t );
+        new IStObjResult? ToLeaf( Type t );
 
         /// <summary>
         /// Gets the most abstract type for any type mapped.
         /// </summary>
         /// <param name="t">Any mapped type.</param>
         /// <returns>The most abstract, less specialized, associated type.</returns>
-        IStObjResult ToHead( Type t );
+        IStObjResult? ToHead( Type t );
 
         /// <summary>
         /// Gets all the <see cref="IStObjResult"/> ordered by their dependencies.

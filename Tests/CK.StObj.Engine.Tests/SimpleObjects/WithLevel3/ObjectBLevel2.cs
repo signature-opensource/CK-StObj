@@ -1,7 +1,6 @@
 using System.Reflection;
 using NUnit.Framework;
 using CK.Core;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 
 namespace CK.StObj.Engine.Tests.SimpleObjects.WithLevel3
 {

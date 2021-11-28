@@ -5,6 +5,9 @@ using CK.Core;
 using System.Reflection;
 using System.Diagnostics;
 
+#nullable disable
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+
 namespace CK.Setup
 {
     /// <summary>
@@ -46,9 +49,9 @@ namespace CK.Setup
                         result = new TypeInfoForBaseClasses();
                         if( t == typeof( object ) )
                         {
-                            result.AmbientProperties = Util.Array.Empty<AmbientPropertyInfo>();
-                            result.InjectObjects = Util.Array.Empty<InjectObjectInfo>();
-                            result.StObjProperties = Util.Array.Empty<StObjPropertyInfo>();
+                            result.AmbientProperties = Array.Empty<AmbientPropertyInfo>();
+                            result.InjectObjects = Array.Empty<InjectObjectInfo>();
+                            result.StObjProperties = Array.Empty<StObjPropertyInfo>();
                         }
                         else
                         {
@@ -166,8 +169,8 @@ namespace CK.Setup
             {
                 if( type == typeof( object ) )
                 {
-                    apListResult = Util.Array.Empty<AmbientPropertyInfo>();
-                    acListResult = Util.Array.Empty<InjectObjectInfo>();
+                    apListResult = Array.Empty<AmbientPropertyInfo>();
+                    acListResult = Array.Empty<InjectObjectInfo>();
                 }
                 else
                 {
@@ -320,7 +323,7 @@ namespace CK.Setup
             // RegisterStartupServices method checks: (non virtual) void RegisterStartupServices( IActivityMonitor, SimpleServiceContainer )
             RegisterStartupServices = ReadRegisterStartupServices( monitor, t );
 
-            // ConfigureServices method checks: (non virtual) void ConfigureServices( [in] StObjContextRoot.ServiceRegister, ... )
+            // ConfigureServices method checks: (non virtual) void ConfigureServices( StObjContextRoot.ServiceRegister, ... )
             ConfigureServicesParameters = ReadConfigureServices( monitor, t );
         }
 
@@ -426,7 +429,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Checks that ConfigureServices method if it exists is non virtual: void ConfigureServices( [in] StObjContextRoot.ServiceRegister, ... ).
+        /// Checks that ConfigureServices method if it exists is non virtual: void ConfigureServices( StObjContextRoot.ServiceRegister, ... ).
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="t">The type.</param>
@@ -467,7 +470,7 @@ namespace CK.Setup
         /// </summary>
         public IStObjTypeRootParentInfo BaseTypeInfo { get; }
 
-        public new RealObjectClassInfo Generalization => (RealObjectClassInfo)base.Generalization;
+        public new RealObjectClassInfo? Generalization => (RealObjectClassInfo?)base.Generalization;
 
         public IReadOnlyList<AmbientPropertyInfo> AmbientProperties { get; private set; }
 
@@ -537,15 +540,15 @@ namespace CK.Setup
             }
         }
 
-        internal void InitializeInterfaces( IActivityMonitor m, CKTypeKindDetector d )
+        internal void InitializeInterfaces( IActivityMonitor m, CKTypeCollector collector )
         {
-            // If there is a path ambiguity we'll reach an already initialized parent.
+            // If there is a path ambiguity we'll reach an already initialized parent set of interfaces.
             if( _realObjectInterfaces == null )
             {
                 List<Type> all = null;
                 foreach( Type tI in Interfaces )
                 {
-                    var k = d.GetKind( m, tI );
+                    var k = collector.KindDetector.GetKind( m, tI );
                     if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                     {
                         if( all == null ) all = new List<Type>();
@@ -553,11 +556,11 @@ namespace CK.Setup
                     }
                     else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
                     {
-                        AddMultipleMapping( tI );
+                        AddMultipleMapping( tI, k, collector );
                     }
                 }
-                _realObjectInterfaces = (IReadOnlyList<Type>)all ?? Type.EmptyTypes;
-                Generalization?.InitializeInterfaces( m, d );
+                _realObjectInterfaces = (IReadOnlyList<Type>?)all ?? Type.EmptyTypes;
+                Generalization?.InitializeInterfaces( m, collector );
             }
         }
 
@@ -567,7 +570,7 @@ namespace CK.Setup
             IActivityMonitor monitor,
             IServiceProvider services,
             StObjObjectEngineMap engineMap,
-            MutableItem generalization,
+            MutableItem? generalization,
             IDynamicAssembly tempAssembly,
             List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
             List<Type> abstractTails )

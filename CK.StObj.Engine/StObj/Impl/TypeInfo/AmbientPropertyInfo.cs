@@ -25,7 +25,7 @@ namespace CK.Setup
         /// <summary>
         /// Link to the ambient property above.
         /// </summary>
-        public AmbientPropertyInfo Generalization { get; private set; }
+        public AmbientPropertyInfo? Generalization { get; private set; }
 
         public PropertyResolutionSource ResolutionSource { get; private set; }
 

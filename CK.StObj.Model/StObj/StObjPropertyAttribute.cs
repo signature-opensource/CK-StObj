@@ -28,7 +28,7 @@ namespace CK.Core
         }
         
         /// <summary>
-        /// Intitalize a new attribute on a class: <see cref="PropertyName"/> and <see cref="PropertyType"/> must 
+        /// Initialize a new attribute on a class: <see cref="PropertyName"/> and <see cref="PropertyType"/> must 
         /// be defined.
         /// </summary>
         /// <param name="propertyName">Name of the StObj property.</param>

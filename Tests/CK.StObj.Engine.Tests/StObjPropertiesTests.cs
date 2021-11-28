@@ -4,7 +4,6 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
@@ -14,10 +13,8 @@ namespace CK.StObj.Engine.Tests
     {
         public class StObjPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
-            [InitRequired]
             public string PropertyName { get; set; }
 
-            [InitRequired]
             public object PropertyValue { get; set; }
 
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
@@ -91,14 +88,14 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( SpecializedObjectWithExplicitContainer ) );
             var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
 
-            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
+            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" )!.ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer" ) );
 
-            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( SpecializedObject ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
+            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( SpecializedObject ) ).GetStObjProperty( "SchmurtzProp" )!.ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => BaseObject belongs to SpecializedContainer => Finally: SpecializedObject inherits from BaseObject" ),
                 "Here, we follow the Generalization link, since there is NO direct Container." );
 
-            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( SpecializedObjectWithExplicitContainer ) ).GetStObjProperty( "SchmurtzProp" ).ToString(),
+            Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( SpecializedObjectWithExplicitContainer ) ).GetStObjProperty( "SchmurtzProp" )!.ToString(),
                 Is.EqualTo( "Root => SpecializedContainer specializes Root => SpecializedObjectWithExplicitContainer inherits from BaseObject BUT is directly associated to SpecializedContainer" ),
                 "Here, we DO NOT follow the Generalization link, since the Container is set, the Container has the priority." );
         }

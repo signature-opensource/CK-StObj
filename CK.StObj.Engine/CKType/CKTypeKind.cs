@@ -49,10 +49,12 @@ namespace CK.Setup
         IsScoped = 16,
 
         /// <summary>
-        /// Multiple registration flag (services must be registered with TryAddEnumerable instead of TryAdd).
-        /// See <see cref="IsMultipleAttribute"/>. 
+        /// Multiple registration flag. Applies only to interfaces. See <see cref="IsMultipleAttribute"/>. 
         /// External (Auto) services are flagged with this (without the <see cref="IsAutoService"/> bit).
         /// </summary>
+        /// <remarks>
+        /// Such "Multiple" services must be registered with TryAddEnumerable instead of TryAdd.
+        /// </remarks>
         IsMultipleService = 32,
 
         /// <summary>
@@ -87,7 +89,9 @@ namespace CK.Setup
     public static class CKTypeKindExtension
     {
         /// <summary>
-        /// Gets the <see cref="AutoServiceKind"/>.
+        /// Gets the <see cref="AutoServiceKind"/> (masks the internal bits).
+        /// Note that a check of the "IsFrontService => IsFrontProcessService and IsScoped" rule
+        /// is made: an <see cref="ArgumentException"/> may be thrown.
         /// </summary>
         /// <param name="this">This type kind.</param>
         /// <returns>The Auto service kind.</returns>
@@ -111,7 +115,7 @@ namespace CK.Setup
         /// <returns>A readable string.</returns>
         public static string ToStringClear( this CKTypeKind @this, bool isClass )
         {
-            string error = GetCombinationError( @this, isClass );
+            string? error = GetCombinationError( @this, isClass );
             return error == null ? ToStringFlags( @this ) : error;
         }
 
@@ -133,7 +137,7 @@ namespace CK.Setup
         /// <param name="this">This CK type kind.</param>
         /// <param name="isClass">True for Class type (not for interface).</param>
         /// <returns>An error message or null.</returns>
-        public static string GetCombinationError( this CKTypeKind @this, bool isClass )
+        public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
         {
             if( @this < 0 || @this > CKTypeKindDetector.MaskPublicInfo )
             {
@@ -159,7 +163,7 @@ namespace CK.Setup
                 throw new Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
             }
 
-            string conflict = null;
+            string? conflict = null;
             if( isPoco )
             {
                 if( @this != CKTypeKind.IsPoco ) conflict = "Poco cannot be combined with any other aspect";

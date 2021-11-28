@@ -17,7 +17,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the external configuration object.
         /// </summary>
-        StObjEngineConfiguration ExternalConfiguration { get; }
+        StObjEngineConfiguration StObjEngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered
@@ -28,7 +28,8 @@ namespace CK.Setup
         /// objects.
         /// </para>
         /// <para>
-        /// At the end of the process, this container is used as the base service provider to
+        /// At the end of the process, this container is used as the base service provider of code generation (see
+        /// <see cref="ICSCodeGenerationContext.GlobalServiceContainer"/>).
         /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }

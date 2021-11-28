@@ -7,7 +7,7 @@ namespace CK.Setup
     /// Associates to <see cref="IPoco"/> interface its final, unified, implementation 
     /// and its <see cref="IPocoFactory{T}"/> interface type.
     /// </summary>
-    public interface IPocoInterfaceInfo
+    public interface IPocoInterfaceInfo : IAnnotationSet
     {
         /// <summary>
         /// Gets the IPoco interface type.

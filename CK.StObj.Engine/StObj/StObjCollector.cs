@@ -15,8 +15,8 @@ namespace CK.Setup
     public partial class StObjCollector
     {
         readonly CKTypeCollector _cc;
-        readonly IStObjStructuralConfigurator _configurator;
-        readonly IStObjValueResolver _valueResolver;
+        readonly IStObjStructuralConfigurator? _configurator;
+        readonly IStObjValueResolver? _valueResolver;
         readonly IActivityMonitor _monitor;
         readonly DynamicAssembly _tempAssembly;
         int _registerFatalOrErrorCount;
@@ -35,44 +35,29 @@ namespace CK.Setup
         /// Used to explicitly resolve or alter StObjConstruct parameters and object ambient properties.
         /// See <see cref="IStObjValueResolver"/>.
         /// </param>
-        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is is the default name.</param>
+        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
         public StObjCollector(
             IActivityMonitor monitor,
             IServiceProvider serviceProvider,
             bool traceDepencySorterInput = false,
             bool traceDepencySorterOutput = false,
-            IStObjTypeFilter typeFilter = null,
-            IStObjStructuralConfigurator configurator = null,
-            IStObjValueResolver valueResolver = null,
-            IEnumerable<string> names = null )
+            IStObjTypeFilter? typeFilter = null,
+            IStObjStructuralConfigurator? configurator = null,
+            IStObjValueResolver? valueResolver = null,
+            IEnumerable<string>? names = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             _monitor = monitor;
             _tempAssembly = new DynamicAssembly();
-            Func<IActivityMonitor,Type,bool> tFilter = null;
+            Func<IActivityMonitor, Type, bool>? tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
-            _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter );
+            _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter, names );
             _configurator = configurator;
             _valueResolver = valueResolver;
             if( traceDepencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
             if( traceDepencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
 
-            // The IActivityMobitor is by design a scoped service.It is not Optional (since it necessarily exists).
-            SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
-
-            // Registration must be done from the most specific types to the basic ones: here we must start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot`1, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService, isOptional: true );
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
-            // IOptionsMonitor is independent.
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
-
-            // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations are automatocally registered.
-            SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton|AutoServiceKind.IsMultipleService, isOptional: true );
-
-            // Other well known services life time can be defined...
-            SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerFactory, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
-            SetAutoServiceKind( "Microsoft.Extensions.Logging.ILoggerProvider, Microsoft.Extensions.Logging.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
-            SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
+            AddWellKnownServices();
         }
 
         /// <summary>
@@ -102,7 +87,7 @@ namespace CK.Setup
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            else if( _cc.CKTypeKindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
+            else if( _cc.KindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
             {
                  return true;
             }
@@ -123,14 +108,19 @@ namespace CK.Setup
         {
             if( String.IsNullOrWhiteSpace( typeName ) ) throw new ArgumentNullException( nameof( typeName ) );
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
-            if( t != null && kind != AutoServiceKind.None ) return SetAutoServiceKind( t, kind );
+            if( t != null )
+            {
+                return kind != AutoServiceKind.None
+                        ? SetAutoServiceKind( t, kind )
+                        : true;
+            }
             if( isOptional )
             {
-                _monitor.Warn( $"Type name '{typeName}' not found. It is ignored." );
+                _monitor.Warn( $"Type name '{typeName}' not found. It is ignored (SetAutoServiceKind: {kind})." );
                 return true;
             }
             ++_registerFatalOrErrorCount;
-            _monitor.Error( $"Unable to resolve expected type named '{typeName}'." );
+            _monitor.Error( $"Unable to resolve expected type named '{typeName}' (SetAutoServiceKind: {kind})." );
             return false;
         }
 
@@ -152,7 +142,7 @@ namespace CK.Setup
                 {
                     using( _monitor.OpenTrace( $"Registering assembly '{one}'." ) )
                     {
-                        Assembly a = null;
+                        Assembly? a = null;
                         try
                         {
                             a = Assembly.Load( one );
@@ -161,11 +151,14 @@ namespace CK.Setup
                         {
                             _monitor.Error( $"Error while loading assembly '{one}'.", ex );
                         }
-                        int nbAlready = _cc.RegisteredTypeCount;
-                        _cc.RegisterTypes( a.GetTypes() );
-                        int delta = _cc.RegisteredTypeCount - nbAlready;
-                        _monitor.CloseGroup( $"{delta} types(s) registered." );
-                        totalRegistered += delta;
+                        if( a != null )
+                        {
+                            int nbAlready = _cc.RegisteredTypeCount;
+                            _cc.RegisterTypes( a.GetTypes() );
+                            int delta = _cc.RegisteredTypeCount - nbAlready;
+                            _monitor.CloseGroup( $"{delta} types(s) registered." );
+                            totalRegistered += delta;
+                        }
                     }
                 }
             }
@@ -212,7 +205,7 @@ namespace CK.Setup
         public void RegisterTypes( IReadOnlyCollection<string> typeNames )
         {
             if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-            DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ), typeNames.Count );
+            DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ), typeNames.Count );
         }
 
         void DoRegisterTypes( IEnumerable<Type> types, int count )
@@ -252,12 +245,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets or sets a function that will be called with the list of items once all of them are registered.
         /// </summary>
-        public Action<IEnumerable<IDependentItem>> DependencySorterHookInput { get; set; }
+        public Action<IEnumerable<IDependentItem>>? DependencySorterHookInput { get; set; }
 
         /// <summary>
-        /// Gets or sets a function that will be called when items have been successfuly sorted.
+        /// Gets or sets a function that will be called when items have been successfully sorted.
         /// </summary>
-        public Action<IEnumerable<ISortedItem>> DependencySorterHookOutput { get; set; }
+        public Action<IEnumerable<ISortedItem>>? DependencySorterHookOutput { get; set; }
 
         /// <summary>
         /// Builds and returns a <see cref="StObjCollectorResult"/> if no error occurred during type registration.
@@ -281,9 +274,9 @@ namespace CK.Setup
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should
                     // not exist and be replaced with intermediate - functional-like - value results).
-                    // But this would be a massive refactoring and this internal mutable state is, to be honnest,
+                    // But this would be a massive refactoring and this internal mutable state is, to be honest,
                     // quite convenient!
-                    typeResult.RealObjects.EngineMap.SetFinalOrderedResults( orderedItems );
+                    typeResult.SetFinalOrderedResults( orderedItems );
                     if( !RegisterServices( typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
@@ -299,7 +292,7 @@ namespace CK.Setup
             }
         }
 
-        (CKTypeCollectorResult, IReadOnlyList<MutableItem>, BuildValueCollector) CreateTypeAndObjectResults()
+        (CKTypeCollectorResult, IReadOnlyList<MutableItem>?, BuildValueCollector?) CreateTypeAndObjectResults()
         {
             bool error = false;
             using( _monitor.OnError( () => error = true ) )
@@ -313,7 +306,7 @@ namespace CK.Setup
                         typeResult.LogErrorAndWarnings( _monitor );
                     }
                     if( error || typeResult.HasFatalError ) return (typeResult, null, null);
-                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeeded." );
+                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
                     using( _monitor.OpenInfo( "Creating final objects and configuring items." ) )
                     {
                         int nbItems = ConfigureMutableItems( typeResult.RealObjects );
@@ -323,7 +316,7 @@ namespace CK.Setup
                 if( error ) return (typeResult, null, null); 
 
                 StObjObjectEngineMap engineMap = typeResult.RealObjects.EngineMap;
-                IDependencySorterResult sortResult = null;
+                IDependencySorterResult? sortResult = null;
                 BuildValueCollector valueCollector = new BuildValueCollector();
                 using( _monitor.OpenInfo( "Topological graph ordering." ) )
                 {
@@ -332,7 +325,7 @@ namespace CK.Setup
                     {
                         // Transfers construct parameters type as requirements for the object, binds dependent
                         // types to their respective MutableItem, resolve generalization and container
-                        // inheritance, and intializes StObjProperties.
+                        // inheritance, and initializes StObjProperties.
                         foreach( MutableItem item in engineMap.FinalImplementations )
                         {
                             noCycleDetected &= item.PrepareDependentItem( _monitor, valueCollector );
@@ -376,7 +369,7 @@ namespace CK.Setup
                 }
 
                 Debug.Assert( sortResult != null );
-                // We now can setup the final ordered list of MutableItems (ie. of IStObjResult).
+                // We now can setup the final ordered list of MutableItems (i.e. of IStObjResult).
                 List<MutableItem> ordered = new List<MutableItem>();
                 using( _monitor.OpenInfo( "Finalizing graph." ) )
                 {
@@ -444,7 +437,7 @@ namespace CK.Setup
 
                 MutableItem specialization = pathTypes[pathTypes.Count - 1];
 
-                object theObject = specialization.CreateStructuredObject( _monitor );
+                object? theObject = specialization.CreateStructuredObject( _monitor );
                 // If we failed to create an instance, we ensure that an error is logged and
                 // continue the process.
                 if( theObject == null )
@@ -461,7 +454,7 @@ namespace CK.Setup
                 Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Generalization" ) == null );
                 Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Specialization" ) == null );
                 MutableItem generalization = pathTypes[0];
-                MutableItem m = generalization;
+                MutableItem? m = generalization;
                 do
                 {
                     m.ConfigureTopDown( _monitor, generalization );

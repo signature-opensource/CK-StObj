@@ -1,4 +1,5 @@
 using CK.Core;
+using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests.Poco.Sample
 {
@@ -15,7 +16,7 @@ namespace CK.StObj.Engine.Tests.Poco.Sample
 
     public interface IEBasicPocoWithReadOnly : IEBasicPoco
     {
-        int ReadOnlyProperty { get; }
+        IList<int> ReadOnlyProperty { get; }
     }
 
     public interface IEAlternateBasicPoco : IBasicPoco

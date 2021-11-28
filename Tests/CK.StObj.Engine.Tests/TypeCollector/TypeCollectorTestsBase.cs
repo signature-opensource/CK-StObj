@@ -22,12 +22,18 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                         f );
         }
 
-        public static CKTypeCollectorResult CheckSuccess( CKTypeCollector c )
+        public static CKTypeCollectorResult CheckSuccess( Action<CKTypeCollector> registerTypes, CKTypeCollector? existing = null )
         {
-            var r = c.GetResult();
-            r.LogErrorAndWarnings( TestHelper.Monitor );
-            r.HasFatalError.Should().Be( false, "There must be no error." );
-            return r;
+            bool error = false;
+            using( TestHelper.Monitor.OnError( () => error = true ) )
+            {
+                if( existing == null ) existing = CreateCKTypeCollector();
+                registerTypes( existing );
+                var r = existing.GetResult();
+                r.LogErrorAndWarnings( TestHelper.Monitor );
+                (r.HasFatalError || error ).Should().Be( false, "There must be no error." );
+                return r;
+            }
         }
 
         public static CKTypeCollectorResult CheckFailure( CKTypeCollector c )

@@ -8,21 +8,23 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Describes Poco property.
+    /// Describes a Poco property.
+    /// This handles potentially more than one <see cref="DeclaredProperties"/> that must be identical across the different interfaces.
     /// </summary>
-    public interface IPocoPropertyInfo
+    public interface IPocoPropertyInfo : IPocoBasePropertyInfo
     {
         /// <summary>
-        /// Gets whether this property is a <see cref="IPoco"/> or a ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;
-        /// and that at least one of the <see cref="DeclaredProperties"/> is read only.
+        /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
+        /// Note that if the default value is defined by more than one interface, it must be the same (this is checked) and that if this
+        /// is true then <see cref="IsReadOnly"/> is necessarily false.
         /// </summary>
-        bool AutoInstantiated { get; }
+        bool HasDefaultValue { get; }
 
         /// <summary>
-        /// Gets whether this property is always readonly. If at least one of the <see cref="DeclaredProperties"/>
-        /// defines a setter then a setter will eventually be generated even if <see cref="AutoInstantiated"/> is true.
+        /// Gets the default value. This must be considered if and only if <see cref="HasDefaultValue"/> is true.
+        /// If this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/> (HasDefaultValue is false), this is null.
         /// </summary>
-        bool HasDeclaredSetter { get; }
+        object? DefaultValue { get; }
 
         /// <summary>
         /// Gets the default value as a source string or a null if this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/>.
@@ -30,47 +32,19 @@ namespace CK.Setup
         string? DefaultValueSource { get; }
 
         /// <summary>
-        /// Gets the index of this property in the Poco class.
-        /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
-        /// by index (MessagePack) rather than by name (Json).
+        /// Gets the set of types that defines the union type in their non-nullable form.
+        /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
+        /// assignable to any of the variants. Nullability applies to the whole property: the <see cref="PropertyNullableTypeTree"/> defines it.
         /// <para>
-        /// Note that the generated backing field is named <c>_v{Index}</c>.
+        /// The set of possible types is "cleaned up":
+        /// <list type="bullet">
+        ///     <item>Only one instance of duplicated types is kept.</item>
+        ///     <item>When a type and its specializations appear (IsAssginableFrom), only the most general one is kept.</item>
+        /// </list>
+        /// These rules guaranty that there is no duplicated actual <see cref="NullableTypeTree.Type"/> in any Union .
         /// </para>
         /// </summary>
-        int Index { get; }
-
-        /// <summary>
-        /// Gets the property type.
-        /// </summary>
-        Type PropertyType { get; }
-
-        /// <summary>
-        /// Gets the <see cref="NullabilityTypeInfo"/> of this property.
-        /// </summary>
-        NullabilityTypeInfo PropertyNullabilityInfo { get; }
-
-        /// <summary>
-        /// Gets the <see cref="NullableTypeTree"/> of this property.
-        /// </summary>
-        NullableTypeTree PropertyNullableTypeTree { get; }
-
-        /// <summary>
-        /// Gets whether this property should not be null: either it is a union with at least one <see cref="NullabilityTypeKind.IsNullable"/>
-        /// flag, or it is not an union and the <see cref="PropertyNullabilityInfo"/> itself has the flag set.
-        /// </summary>
-        bool IsEventuallyNullable { get; }
-
-        /// <summary>
-        /// Gets the set of types that defines the union type with their nullability kind.
-        /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
-        /// assignable to any of the variants.
-        /// </summary>
-        IEnumerable<(Type Type, NullabilityTypeKind Kind)> PropertyUnionTypes { get; }
-
-        /// <summary>
-        /// Gets the property name.
-        /// </summary>
-        string PropertyName { get; }
+        IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }
 
         /// <summary>
         /// Gets the property declarations from the different <see cref="IPoco"/> interfaces (use <see cref="PropertyInfo.MemberType"/> to

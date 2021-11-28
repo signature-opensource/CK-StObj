@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests
             Schurmtz = s;
         }
 
-        bool IMergeable.Merge( object source, IServiceProvider services )
+        bool IMergeable.Merge( object source, IServiceProvider? services )
         {
             SchmurtzProperty s = (SchmurtzProperty)source;
             Schurmtz = s.Schurmtz + " => " + Schurmtz;

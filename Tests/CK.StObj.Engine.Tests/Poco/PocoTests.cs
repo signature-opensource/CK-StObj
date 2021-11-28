@@ -7,7 +7,6 @@ using System.Linq;
 using FluentAssertions;
 using System.Diagnostics;
 using System.Reflection;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using CK.StObj.Engine.Tests.Poco.Sample;
 using System.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,7 +27,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 Factory = f;
             }
 
-            [InitRequired]
             public IPocoFactory<IBasicPoco> Factory { get; private set; }
 
         }
@@ -39,7 +37,7 @@ namespace CK.StObj.Engine.Tests.Poco
             StObjCollectorResult result = BuildPocoSample( typeof( PackageWithBasicPoco ) );
             Debug.Assert( result.EngineMap != null );
 
-            IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) );
+            IStObjResult p = result.EngineMap.StObjs.ToHead( typeof( PackageWithBasicPoco ) )!;
             var package = (PackageWithBasicPoco)p.FinalImplementation.Implementation;
             package.Factory.Should().NotBeNull();
         }
@@ -97,7 +95,7 @@ namespace CK.StObj.Engine.Tests.Poco
             StObjCollectorResult result = BuildPocoSample();
             Debug.Assert( result.EngineMap != null, "No error." );
 
-            var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IBasicPoco>>();
+            var p = result.EngineMap.StObjs.Obtain<IPocoFactory<IBasicPoco>>()!;
 
             Type pocoType = p.PocoClassType;
             Assert.That( typeof( IBasicPoco ).IsAssignableFrom( pocoType ) );
@@ -111,10 +109,10 @@ namespace CK.StObj.Engine.Tests.Poco
         public interface IDefTest : IPoco
         {
             [DefaultValue( 3712 )]
-            int PDef { get; }
+            int PDef { get; set; }
 
             [DefaultValue( "Hello \"World\"!" )]
-            string Message { get; }
+            string Message { get; set; }
         }
 
         [Test]
@@ -129,18 +127,24 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IDefPropInt : IDefBase
         {
-            int PDef { get; }
+            int PDef { get; set; }
         }
 
         public interface IDefPropFloat : IDefBase
         {
-            float PDef { get; }
+            float PDef { get; set; }
+        }
+
+        public interface IDefPropNullableFloat : IDefBase
+        {
+            float? PDef { get; set; }
         }
 
         [Test]
         public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same()
         {
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDefPropInt ), typeof( IDefPropFloat ) ) );
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDefPropNullableFloat ), typeof( IDefPropFloat ) ) );
         }
 
 
@@ -204,42 +208,32 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IRootTest : IPoco
         {
-            ISubTest Sub { get; }
+            ISubTest Sub { get; set; }
         }
 
         public interface ISubTest : IPoco
         {
-            string SubMessage { get; }
+            string SubMessage { get; set; }
         }
 
         public interface IRootBetterTest : IRootTest
         {
-            new ISubBestTest Sub { get; }
+            new ISubBestTest Sub { get; set; }
         }
 
         public interface IRootBestTest : IRootBetterTest
         {
-            new ISubBestTest Sub { get; }
-        }
-
-        public interface IRootAbsoluteBestTest : IRootBestTest
-        {
-            new ISubBetterTest Sub { get; }
+            new ISubBestTest Sub { get; set; }
         }
 
         public interface ISubBetterTest : ISubTest
         {
-            string SubBetterMessage { get; }
+            string SubBetterMessage { get; set; }
         }
 
         public interface ISubBestTest : ISubBetterTest
         {
-            string SubBestMessage { get; }
-        }
-
-        public interface IRootBuggyOtherFamily : IRootTest
-        {
-            new IDefBase Sub { get; }
+            string SubBestMessage { get; set; }
         }
 
 
@@ -249,17 +243,27 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
                 typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ) ) );
 
-            TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
-                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
+            //TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
+            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
 
-            // Without registering the IDefBase Poco:
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
-                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
+            //// Without registering the IDefBase Poco:
+            //TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
 
-            // With IDefBase Poco registration:
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
-                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
+            //// With IDefBase Poco registration:
+            //TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
         }
+
+        //public interface IRootAbsoluteBestTest : IRootBestTest
+        //{
+        //    new ISubBetterTest Sub { get; set; }
+        //}
+
+        //public interface IRootBuggyOtherFamily : IRootTest
+        //{
+        //    new IDefBase Sub { get; set; }
+        //}
 
 
     }

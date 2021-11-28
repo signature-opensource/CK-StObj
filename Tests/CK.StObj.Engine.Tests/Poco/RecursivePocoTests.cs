@@ -20,7 +20,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IIndirectError1 : IPoco
         {
-            IDirectError Pouf { get; }
+            IIndirectErrorConsumer Pouf { get; }
         }
 
         public interface IIndirectErrorConsumer : IPoco
@@ -32,8 +32,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Direct_recursion_is_detected()
         {
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDirectError ) ) );
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IIndirectError1 ), typeof( IDirectError ) ) );
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IIndirectErrorConsumer ), typeof( IIndirectError1 ), typeof( IDirectError ), typeof( IDirectError ) ) );
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IIndirectError1 ), typeof( IIndirectErrorConsumer ) ) );
         }
 
         public interface ICycleError : IPoco
@@ -72,25 +71,10 @@ namespace CK.StObj.Engine.Tests.Poco
             ICycleErrorA PoufA { get; }
         }
 
-        public interface ICycleErrorConsumer1 : IPoco
-        {
-            ICycleErrorA C { get; }
-        }
-
         [Test]
         public void Indirect_multiple_level_recursion_is_detected()
         {
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) ) );
-        }
-
-        [Test]
-        public void Cycles_can_be_broken()
-        {
-            var s = TestHelper.GetAutomaticServices( TestHelper.CreateStObjCollector( typeof( ICycleErrorA ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) ) ).Services;
-            var pocoC = s.GetRequiredService<IPocoFactory<ICycleErrorC>>().Create();
-            pocoC.PoufD.Should().NotBeNull();
-            pocoC.PoufD.PoufA.Should().NotBeNull();
-            pocoC.PoufD.PoufA.PoufB.Should().BeNull( "Cycle is broken: we did not register B." );
         }
 
         public interface ICycleErrorConsumerIntermediate : IPoco

@@ -42,7 +42,7 @@ namespace CK.Setup
         /// one <see cref="IStObjStructuralConfigurator"/>, it is <see cref="System.Type.Missing"/>. 
         /// Use <see cref="SetParameterValue"/> to set it.
         /// </summary>
-        object Value { get; }
+        object? Value { get; }
 
         /// <summary>
         /// Sets the <see cref="Value"/> for this parameter.
@@ -56,7 +56,7 @@ namespace CK.Setup
         /// Value to set. Type must be compatible otherwise an exception will be thrown when
         /// calling the actual StObjConstruct method.
         /// </param>
-        void SetParameterValue( object value );
+        void SetParameterValue( object? value );
 
     }
 }

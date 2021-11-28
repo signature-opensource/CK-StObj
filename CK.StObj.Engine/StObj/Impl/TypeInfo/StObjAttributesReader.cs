@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using CK.Core;
 
@@ -26,7 +27,7 @@ namespace CK.Setup
         /// <returns>
         /// Null if no <see cref="IStObjAttribute"/> is set.
         /// </returns>
-        static internal IStObjAttribute GetStObjAttributeForExactType( Type objectType, IActivityMonitor monitor, LogLevel multipleContainerLogLevel = LogLevel.Warn )
+        static internal IStObjAttribute? GetStObjAttributeForExactType( Type objectType, IActivityMonitor monitor, LogLevel multipleContainerLogLevel = LogLevel.Warn )
         {
             if( objectType == null ) throw new ArgumentNullException( "objectType" );
             if( monitor == null ) throw new ArgumentNullException( "monitor" );
@@ -35,13 +36,13 @@ namespace CK.Setup
             if( a.Length == 0 ) return null;
             if( a.Length == 1 ) return a[0];
 
-            IList<Type> requires = null;
-            IList<Type> requiredBy = null;
-            IList<Type> children = null;
-            IList<Type> group = null;
+            IList<Type>? requires = null;
+            IList<Type>? requiredBy = null;
+            IList<Type>? children = null;
+            IList<Type>? group = null;
             DependentItemKindSpec itemKind = DependentItemKindSpec.Unknown;
-            Type container = null;
-            IStObjAttribute containerDefiner = null;
+            Type? container = null;
+            IStObjAttribute? containerDefiner = null;
             foreach( IStObjAttribute attr in a )
             {
                 if( attr.Container != null )
@@ -53,6 +54,7 @@ namespace CK.Setup
                     }
                     else
                     {
+                        Debug.Assert( containerDefiner != null && containerDefiner.Container != null );
                         if( monitor.ShouldLogLine( multipleContainerLogLevel ) )
                         {
                             string msg = $"Attribute {attr.GetType().Name} for type {objectType} specifies Container type '{attr.Container.Name}' but attribute {containerDefiner.GetType().Name} specifies Container type '{containerDefiner.Container.Name}'. Container remains '{containerDefiner.Container.Name}'.";
@@ -78,7 +80,7 @@ namespace CK.Setup
             return r;
         }
 
-        static void CombineTypes( ref IList<Type> list, Type[] types )
+        static void CombineTypes( ref IList<Type>? list, Type[]? types )
         {
             if( types != null && types.Length > 0 )
             {

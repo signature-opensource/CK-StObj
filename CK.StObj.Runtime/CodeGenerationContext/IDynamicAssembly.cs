@@ -20,7 +20,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets a shared dictionary associated to this dynamic assembly. 
         /// Methods that generate code can rely on this to store shared information as required by their generation process.
-        /// If information has to be shared among different <see cref="IGeneratedBinPath"/> contexts, then the <see cref="ICodeGenerationContext.GlobalMemory"/>
+        /// If information has to be shared among different <see cref="IGeneratedBinPath"/> contexts, then the <see cref="ICSCodeGenerationContext.GlobalMemory"/>
         /// must be used.
         /// </summary>
         IDictionary<object, object?> Memory { get; }

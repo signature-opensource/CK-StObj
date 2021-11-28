@@ -22,14 +22,14 @@ namespace CK.Setup
             RealObjectCollectorResult c,
             AutoServiceCollectorResult s,
             IReadOnlyDictionary<Type,TypeAttributesCache?> regularTypes,
-            CKTypeKindDetector typeKindDetector )
+            IAutoServiceKindComputeFacade kindComputeFacade )
         {
             PocoSupport = pocoSupport;
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
             _regularTypes = regularTypes;
-            TypeKindDetector = typeKindDetector;
+            KindComputeFacade = kindComputeFacade;
         }
 
         /// <summary>
@@ -49,21 +49,26 @@ namespace CK.Setup
         public RealObjectCollectorResult RealObjects { get; }
 
         /// <summary>
-        /// Gets the reults for <see cref="IScopedAutoService"/> objects.
+        /// Gets the results for <see cref="IAutoService"/> objects.
         /// </summary>
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
-        /// Gets the ambient type detector.
+        /// Gets the AutoServiceKind compute façade.
         /// </summary>
-        public CKTypeKindDetector TypeKindDetector { get; }
+        internal IAutoServiceKindComputeFacade KindComputeFacade { get; }
 
         /// <summary>
         /// Gets whether an error exists that prevents the process to continue.
+        /// Note that errors or fatals that may have been emitted while registering types
+        /// are ignored here. The <see cref="StObjCollector"/> wraps all its work, including type registration
+        /// in a <see cref="ActivityMonitorExtension.OnError(IActivityMonitor, Action)"/> block and consider
+        /// any <see cref="LogLevel.Error"/> or <see cref="LogLevel.Fatal"/> to be fatal errors, but at this level,
+        /// those are ignored.
         /// </summary>
         /// <returns>
         /// False to continue the process (only warnings - or error considered as 
-        /// warning - occured), true to stop remaining processes.
+        /// warning - occurred), true to stop remaining processes.
         /// </returns>
         public bool HasFatalError => PocoSupport == null || RealObjects.HasFatalError || AutoServices.HasFatalError;
 
@@ -87,26 +92,24 @@ namespace CK.Setup
             }
         }
 
+
         /// <summary>
-        /// Gets all the type attribute providers from all <see cref="IStObjResult"/> (Real Objects) or <see cref="AutoServiceClassInfo"/>
-        /// without any duplicates (AutoService that are RealObjects don't appear twice).
+        /// Crappy hook...
         /// </summary>
-        /// <returns>The attribute providers.</returns>
-        public IEnumerable<ICKCustomAttributeTypeMultiProvider> AllTypeAttributeProviders
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered )
         {
-            get
-            {
-                Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
-                Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
+            // Compute the indexed AllTypesAttributesCache.
+            Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
+            Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
 
-                var all = RealObjects.EngineMap.StObjs.OrderedStObjs.Select( o => o.Attributes )
-                              .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
-                              .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
-                              .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
+            var all = ordered.Select( o => o.Attributes )
+                          .Concat( AutoServices.AllClasses.Where( c => !c.IsRealObject ).Select( c => c.TypeInfo.Attributes! ) )
+                          .Concat( AutoServices.AllInterfaces.Select( i => i.Attributes ) )
+                          .Concat( _regularTypes.Values.Where( a => a != null ).Select( a => a! ) );
 
-                Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
-                return all;
-            }
+            Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
+
+            RealObjects.EngineMap.SetFinalOrderedResults( ordered, all.ToDictionary( c => c.Type ) );
         }
 
         /// <summary>

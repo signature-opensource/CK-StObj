@@ -14,12 +14,12 @@ namespace CK.Setup
     /// and <see cref="IPoco"/> marker interfaces.
     /// The <see cref="GetResult"/> method encapsulates the whole work.
     /// </summary>
-    public partial class CKTypeCollector
+    public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     {
         readonly IActivityMonitor _monitor;
         readonly IDynamicAssembly _tempAssembly;
         readonly IServiceProvider _serviceProvider;
-        readonly PocoRegisterer _pocoRegisterer;
+        readonly PocoRegistrar _pocoRegistrar;
         readonly HashSet<Assembly> _assemblies;
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
         readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
@@ -46,7 +46,7 @@ namespace CK.Setup
             if( serviceProvider == null ) throw new ArgumentNullException( nameof( serviceProvider ) );
             if( tempAssembly == null ) throw new ArgumentNullException( nameof( tempAssembly ) );
             _monitor = monitor;
-            _typeFilter = typeFilter ?? ((m,type) => true);
+            _typeFilter = typeFilter ?? ((m,type) => type.FullName != null);
             _tempAssembly = tempAssembly;
             _serviceProvider = serviceProvider;
             _assemblies = new HashSet<Assembly>();
@@ -56,15 +56,16 @@ namespace CK.Setup
             _serviceCollector = new Dictionary<Type, AutoServiceClassInfo>();
             _serviceRoots = new List<AutoServiceClassInfo>();
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
-            CKTypeKindDetector = new CKTypeKindDetector();
-            _pocoRegisterer = new PocoRegisterer( ( m, t ) => (CKTypeKindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _multipleMappings = new Dictionary<Type, MultipleImpl>();
+            KindDetector = new CKTypeKindDetector();
+            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
         /// <summary>
         /// Exposes the <see cref="Setup.CKTypeKindDetector"/>.
         /// </summary>
-        public CKTypeKindDetector CKTypeKindDetector { get; }
+        public CKTypeKindDetector KindDetector { get; }
 
         /// <summary>
         /// Gets the number of registered types.
@@ -102,7 +103,7 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoRegisterer.Register( _monitor, type ) )
+                    if( _pocoRegistrar.Register( _monitor, type ) )
                     {
                         RegisterAssembly( type );
                     }
@@ -150,23 +151,26 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind lt = CKTypeKindDetector.GetKind( _monitor, t );
-            var conflictMsg = lt.GetCombinationError( true );
-            if( conflictMsg != null )
+            CKTypeKind? lt = KindDetector.GetExtendedKind( _monitor, t );
+            if( lt != null )
             {
-                _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
-            }
-            else
-            {
-                if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                var conflictMsg = lt.Value.GetCombinationError( true );
+                if( conflictMsg != null )
                 {
-                    objectInfo = RegisterObjectClassInfo( t, acParent );
-                    Debug.Assert( objectInfo != null );
+                    _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
                 }
-                if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
+                else
                 {
-                    serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
-                    Debug.Assert( serviceInfo != null );
+                    if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
+                    {
+                        objectInfo = RegisterObjectClassInfo( t, acParent );
+                        Debug.Assert( objectInfo != null );
+                    }
+                    if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
+                    {
+                        serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
+                        Debug.Assert( serviceInfo != null );
+                    }
                 }
             }
             // Marks the type as a registered one and gives it a chance to carry
@@ -174,7 +178,7 @@ namespace CK.Setup
             if( objectInfo == null && serviceInfo == null )
             {
                 _objectCollector.Add( t, null );
-                RegisterRegularType( t );
+                if( lt != null ) RegisterRegularType( t );
             }
             
             return true;
@@ -212,9 +216,10 @@ namespace CK.Setup
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                var c = _typeFilter(_monitor,t)
-                           ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
-                           : null;
+                // Ignores the type if type filter says so or if a [StObjGen] attribute exists.
+                var c = _typeFilter( _monitor, t ) && KindDetector.GetExtendedKind( _monitor, t ) != null
+                               ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
+                               : null;
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
@@ -236,7 +241,7 @@ namespace CK.Setup
                 IPocoSupportResult? pocoSupport;
                 using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
-                    pocoSupport = _pocoRegisterer.Finalize( _tempAssembly, _monitor );
+                    pocoSupport = _pocoRegistrar.Finalize( _tempAssembly, _monitor );
                     if( pocoSupport != null )
                     {
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
@@ -261,14 +266,14 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( contracts );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, _regularTypeCollector, CKTypeKindDetector );
+                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, _regularTypeCollector, this );
             }
         }
 
         RealObjectCollectorResult GetRealObjectResult()
         {
             List<MutableItem> allSpecializations = new List<MutableItem>( _roots.Count );
-            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _names, allSpecializations, CKTypeKindDetector, _assemblies );
+            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _names, allSpecializations, KindDetector, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
             List<IReadOnlyList<Type>>? classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();
@@ -285,12 +290,12 @@ namespace CK.Setup
                     MutableItem last = deepestConcretes[0].Item1;
                     allSpecializations.Add( last );
                     var path = new List<MutableItem>();
-                    last.InitializeBottomUp( null, deepestConcretes[0].Item2 );
+                    last.InitializeBottomUp( null );
                     path.Add( last );
-                    MutableItem spec = last, toInit = last;
+                    MutableItem? spec = last, toInit = last;
                     while( (toInit = toInit.Generalization) != null )
                     {
-                        toInit.InitializeBottomUp( spec, null );
+                        toInit.InitializeBottomUp( spec );
                         path.Add( toInit );
                         spec = toInit;
                     }
@@ -311,7 +316,7 @@ namespace CK.Setup
             foreach( var path in concreteClasses )
             {
                 MutableItem finalType = path[path.Count - 1];
-                finalType.RealObjectType.InitializeInterfaces( _monitor, CKTypeKindDetector );
+                finalType.RealObjectType.InitializeInterfaces( _monitor, this );
                 foreach( var item in path )
                 {
                     foreach( Type itf in item.RealObjectType.ThisRealObjectInterfaces )

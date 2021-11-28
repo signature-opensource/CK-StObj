@@ -1,11 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <Import Project="..\Common\Shared.props" />
-
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
-    <Description>Extends TestHelper to exploit generated assemblies (loading, deletion, obtaining a IServiceProvider with the AutomaticServices, etc.).</Description>
+    <TargetFramework>net6.0</TargetFramework>
+    <Description>Extends CK.Testing.Monitoring TestHelper to exploit generated assemblies (loading, deletion, obtaining a IServiceProvider with the AutomaticServices, etc.). This package doesn't know how to generate the code (it only provides access to the final compiled code). CK.Testing.StObjSetup uses this package along with CK.Testing.CKSetup to fully support out-of-process setup.</Description>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

@@ -8,16 +8,17 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    class StObjEngineRunContext : IStObjEngineRunContext
+    class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineConfigureContext _startContext;
         readonly List<GenBinPath> _binPaths;
         readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
+        readonly StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext> _trampolinePostCode;
         readonly Dictionary<string, object> _unifiedRunCache;
         readonly Dictionary<object, object?> _codeGenerationGlobalMemory;
 
-        internal class GenBinPath : IGeneratedBinPath, ICodeGenerationContext
+        internal class GenBinPath : IGeneratedBinPath, ICSCodeGenerationContext
         {
             readonly StObjEngineRunContext _global;
 
@@ -32,6 +33,7 @@ namespace CK.Setup
                 Result = result;
                 BinPathConfigurations = binPathConfigurations;
                 GroupedPaths = groupedPaths;
+                Memory = new Dictionary<object, object?>();
                 ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
                 ServiceContainer.Add( result.DynamicAssembly.GetPocoSupportResult() );
             }
@@ -45,6 +47,8 @@ namespace CK.Setup
             public IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
 
             public ISimpleServiceContainer ServiceContainer { get; }
+
+            public IDictionary<object, object?> Memory { get; }
 
             IGeneratedBinPath ICodeGenerationContext.UnifiedBinPath => _global.UnifiedBinPath;
 
@@ -71,23 +75,29 @@ namespace CK.Setup
 
             IGeneratedBinPath ICodeGenerationContext.CurrentRun => this;
 
-            IDynamicAssembly ICodeGenerationContext.Assembly => Result.DynamicAssembly;
+            IDynamicAssembly ICSCodeGenerationContext.Assembly => Result.DynamicAssembly;
 
-            bool ICodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
+            bool ICSCodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
 
-            CompileOption ICodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
+            CompileOption ICSCodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
         }
 
 
-        public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext, IGrouping<BinPathConfiguration, BinPathConfiguration> primaryCompatibleBinPaths, StObjCollectorResult primaryResult )
+        public StObjEngineRunContext( IActivityMonitor monitor,
+                                      StObjEngineConfigureContext startContext,
+                                      IGrouping<BinPathConfiguration, BinPathConfiguration> primaryCompatibleBinPaths,
+                                      StObjCollectorResult primaryResult,
+                                      bool isUnifiedPure )
         {
             Debug.Assert( primaryResult.EngineMap != null );
             _monitor = monitor;
             _startContext = startContext;
             _binPaths = new List<GenBinPath>();
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
+            _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
             _unifiedRunCache = new Dictionary<string, object>();
             _codeGenerationGlobalMemory = new Dictionary<object, object?>();
+            IsUnifiedPure = isUnifiedPure;
             AddResult( primaryCompatibleBinPaths, primaryResult );
         }
 
@@ -98,7 +108,13 @@ namespace CK.Setup
 
         public IGeneratedBinPath UnifiedBinPath => _binPaths[0];
 
+        public bool IsUnifiedPure { get; }
+
+        ICodeGenerationContext IStObjEnginePostCodeRunContext.UnifiedBinPath => _binPaths[0];
+
         IReadOnlyList<IGeneratedBinPath> IStObjEngineRunContext.AllBinPaths => _binPaths;
+
+        IReadOnlyList<ICodeGenerationContext> IStObjEnginePostCodeRunContext.AllBinPaths => _binPaths;
 
         public IReadOnlyList<GenBinPath> AllBinPaths => _binPaths;
 
@@ -110,9 +126,11 @@ namespace CK.Setup
 
         public void PushDeferredAction( Func<IActivityMonitor, IStObjEngineRunContext, bool> postAction ) => _trampoline.Push( postAction );
 
-        internal void RunAspects( Func<bool> onError )
+        public void PushDeferredAction( Func<IActivityMonitor, IStObjEnginePostCodeRunContext, bool> postAction ) => _trampolinePostCode.Push( postAction );
+
+        internal void RunAspects( Func<bool> onError, bool postCode )
         {
-            using( _monitor.OpenInfo( "Running Aspects." ) )
+            using( _monitor.OpenInfo( $"Running Aspects ({(postCode ? "Post" : "Before" )} Code Generation)." ) )
             {
                 foreach( var a in _startContext.Aspects )
                 {
@@ -120,7 +138,8 @@ namespace CK.Setup
                     {
                         try
                         {
-                            if( !a.Run( _monitor, this ) ) onError();
+                            bool success = postCode ? a.RunPostCode( _monitor, this ) : a.Run( _monitor, this );
+                            if( !success ) onError();
                         }
                         catch( Exception ex )
                         {
@@ -129,7 +148,8 @@ namespace CK.Setup
                         }
                     }
                 }
-                _trampoline.Execute( _monitor, onError );
+                if( postCode ) _trampolinePostCode.Execute( _monitor, onError );
+                else _trampoline.Execute( _monitor, onError );
             }
         }
 

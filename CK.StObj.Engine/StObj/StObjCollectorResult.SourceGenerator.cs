@@ -52,20 +52,21 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Executes the first pass of code generation. This must be called on all <see cref="ICodeGenerationContext.AllBinPaths"/>, starting with
-        /// the <see cref="ICodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
+        /// Executes the first pass of code generation. This must be called on all <see cref="ICSCodeGenerationContext.AllBinPaths"/>, starting with
+        /// the <see cref="ICSCodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="codeGenContext">The code generation context that must be the one of this result.</param>
         /// <param name="informationalVersion">Optional informational version attribute content.</param>
         /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
         /// <returns>True on success, false on error.</returns>
-        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICodeGenerationContext codeGenContext, string? informationalVersion, List<SecondPassCodeGeneration> collector )
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext, string? informationalVersion, List<MultiPassCodeGeneration> collector )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
             try
             {
+                Debug.Assert( _valueCollector != null );
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
                 using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
@@ -80,7 +81,7 @@ namespace CK.Setup
 
                     // Retrieves CK._g workspace.
                     var ws = _tempAssembly.Code;
-                    // Gets the global name space and starst with the informational version (if any),
+                    // Gets the global name space and starts with the informational version (if any),
                     // and, once for all, basic namespaces that we always want available.
                     var global = ws.Global;
 
@@ -113,12 +114,15 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
-                    // We don't generate nullable enabled code.
-                    global.Append( "#nullable disable" ).NewLine();
+                    // We don't generate nullable enabled code nor comments.
+                    global.Append( "#nullable disable" ).NewLine()
+                          .Append( "#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member" ).NewLine();
 
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
-                    nsStObj.Append( @"internal class SignatureAttribute : Attribute" )
+                    nsStObj.GeneratedByComment().NewLine()
+                        .Append( "[AttributeUsage(AttributeTargets.Assembly)]" ).NewLine()
+                        .Append( @"internal sealed class SignatureAttribute : Attribute" )
                         .OpenBlock()
                         .Append( "public SignatureAttribute( string s ) {}" ).NewLine()
                         .Append( "public readonly static (SHA1Value Signature, IReadOnlyList<string> Names) V = ( SHA1Value.Parse( (string)typeof( SignatureAttribute ).Assembly.GetCustomAttributesData().First( a => a.AttributeType == typeof( SignatureAttribute ) ).ConstructorArguments[0].Value )" ).NewLine()
@@ -128,10 +132,10 @@ namespace CK.Setup
                     // Generates the StObjContextRoot implementation.
                     GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
-                    // Calls all ICodeGenerator items.
-                    foreach( var g in CKTypeResult.AllTypeAttributeProviders.SelectMany( attr => attr.GetAllCustomAttributes<ICodeGenerator>() ) )
+                    // Calls all ICSCodeGenerator items.
+                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() ) )
                     {
-                        var second = SecondPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                        var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector.Add( second );
                     }
                     
@@ -166,27 +170,27 @@ namespace CK.Setup
 
         /// <summary>
         /// Finalizes the source code generation and compilation.
-        /// Sources (if <see cref="ICodeGenerationContext.SaveSource"/> is true) will be generated
+        /// Sources (if <see cref="ICSCodeGenerationContext.SaveSource"/> is true) will be generated
         /// in the <paramref name="finalFilePath"/> folder.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="finalFilePath">The final generated assembly full path.</param>
         /// <param name="codeGenContext">The code generation context.</param>
         /// <param name="secondPass">
-        /// The list of second passes actions to apply on the <see cref="ICodeGenerationContext"/> before
-        /// generating the source file and compiling them (<see cref="ICodeGenerationContext.CompileOption"/>).
+        /// The list of second passes actions to apply on the <see cref="ICSCodeGenerationContext"/> before
+        /// generating the source file and compiling them (<see cref="ICSCodeGenerationContext.CompileOption"/>).
         /// </param>
         /// <param name="availableStObjMap">
-        /// Predicate that states whether a signature can be bound to an already available StObjMap.
-        /// When true is returned, the process stops as early as possible and the available map should be used.
+        /// Predicate to find an already available StObjMap from the signature. When an existing map is found, the process
+        /// stops as early as possible and the available map should be used.
+        /// See <see cref="StObjContextRoot.GetAvailableMapInfos(IActivityMonitor?)"/>.
         /// </param>
         /// <returns>A Code generation result.</returns>
-        public CodeGenerateResult GenerateSourceCodeSecondPass(
-            IActivityMonitor monitor,
-            string finalFilePath,
-            ICodeGenerationContext codeGenContext,
-            List<SecondPassCodeGeneration> secondPass,
-            Func<SHA1Value,bool> availableStObjMap )
+        public CodeGenerateResult GenerateSourceCodeSecondPass( IActivityMonitor monitor,
+                                                                string finalFilePath,
+                                                                ICSCodeGenerationContext codeGenContext,
+                                                                List<MultiPassCodeGeneration> secondPass,
+                                                                Func<IActivityMonitor, SHA1Value, bool> availableStObjMap )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
@@ -197,7 +201,7 @@ namespace CK.Setup
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {codeGenContext.CurrentRun.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
-                    SecondPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
+                    MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
                 }
                 if( errorSummary != null )
                 {
@@ -216,6 +220,7 @@ namespace CK.Setup
                     monitor.Info( "Configured GenerateSourceFile is false and CompileOption is None: nothing more to do." );
                     return new CodeGenerateResult( true, generatedFileNames );
                 }
+                // The signature may be externally injected one day but currently, we always compute it.
                 SHA1Value signature = SHA1Value.ZeroSHA1;
 
                 // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
@@ -238,9 +243,15 @@ namespace CK.Setup
                     monitor.Info( $"Using provided file signature: {signature}." );
                 }
 
-                if( availableStObjMap( signature ) )
+                var fSignature = finalFilePath + StObjEngineConfiguration.ExistsSignatureFileExtension;
+                monitor.Info( $"Creating signature file '{fSignature}'." );
+                File.WriteAllText( fSignature, signature.ToString() );
+
+                if( availableStObjMap( monitor, signature ) )
                 {
-                    monitor.Info( "An existing StObjMap with the signature exists: skipping the generation." );
+                    monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and the compilation." );
+                    generatedFileNames.Add( fSignature );
+                    Debug.Assert( generatedFileNames.Count == 1 );
                     return new CodeGenerateResult( true, generatedFileNames, signature );
                 }
 
@@ -345,8 +356,9 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
         {
             Debug.Assert( EngineMap != null );
 
-            ns.Append( _sourceGStObj ).NewLine();
-            ns.Append( _sourceFinalGStObj ).NewLine();
+            ns.GeneratedByComment().NewLine()
+              .Append( _sourceGStObj ).NewLine()
+              .Append( _sourceFinalGStObj ).NewLine();
 
             var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
                                 .Append( "readonly GStObj[] _stObjs;" ).NewLine()
@@ -502,11 +514,20 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
 
             GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
+
+            // Generated code, by casting IStObjMap (available in DI) into GeneratedRootContext can access to this by index.
+            internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
+            internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
+
             " );
+
+            // Ignores boolean error return here.
+            HostedServiceLifetimeTriggerImpl.DiscoverMethods( monitor, EngineMap, out var hostedServiceLifetimeTriggerImpl );
+            hostedServiceLifetimeTriggerImpl?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
-            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
+            serviceGen.CreateConfigureServiceMethod( orderedStObjs, hostedServiceLifetimeTriggerImpl != null );
 
             GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }
@@ -554,7 +575,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootType.Append( "public IReadOnlyCollection<VFeature> Features => _vFeatures;" ).NewLine();
         }
 
-        static void GenerateValue( ICodeWriter b, object o )
+        static void GenerateValue( ICodeWriter b, object? o )
         {
             if( o is IActivityMonitor )
             {

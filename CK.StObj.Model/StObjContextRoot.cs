@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -24,7 +25,7 @@ namespace CK.Core
         public static readonly string RootContextTypeFullName = "CK.StObj." + RootContextTypeName;
 
         /// <summary>
-        /// Holds the name of 'Construct' method: StObjConstruct.
+        /// Holds the name of the construct method: StObjConstruct.
         /// </summary>
         public static readonly string ConstructMethodName = "StObjConstruct";
 
@@ -42,11 +43,36 @@ namespace CK.Core
 
         /// <summary>
         /// Holds the name 'ConfigureServices'.
-        /// This must be a non virtual, typically private void method with parameters that must start with an input (in) <see cref="StObjContextRoot.ServiceRegister"/>.
+        /// This must be a non virtual, typically private void method with parameters that must start with an input <see cref="StObjContextRoot.ServiceRegister"/>.
         /// Following parameters can be a IActivityMonitor or any services previously registered in the ISimpleServiceContainer by
         /// any <see cref="RegisterStartupServicesMethodName"/>.
         /// </summary>
         public static readonly string ConfigureServicesMethodName = "ConfigureServices";
+
+        /// <summary>
+        /// Holds the name 'OnHostStartAsync'.
+        /// This must be a non virtual and private Task or ValueTask returning method with parameters that can be any singleton or scoped services 
+        /// (a dedicated scope is created for the call, scoped services won't pollute the application services).
+        /// </summary>
+        public static readonly string StartMethodNameAsync = "OnHostStartAsync";
+
+        /// <summary>
+        /// Holds the name 'OnHostStart'.
+        /// This must be a non virtual, typically private void method with parameters that can be any singleton or scoped services 
+        /// (a dedicated scope is created for the call, scoped services won't pollute the application services).
+        /// </summary>
+        public static readonly string StartMethodName = "OnHostStart";
+
+        /// <summary>
+        /// Holds the name 'OnHostStopAsync'. Same as the <see cref="StartMethodNameAsync"/>.
+        /// </summary>
+        public static readonly string StopMethodNameAsync = "OnHostStopAsync";
+
+        /// <summary>
+        /// Holds the name 'OnHostStop'. Same as the <see cref="StopMethodNameAsync"/>.
+        /// </summary>
+        public static readonly string StopMethodName = "OnHostStop";
+
 
         // We index the StObjMapInfo by the Assembly and by the Signature: assemblies are stable keys but
         // a new info with the same signature replaces the existing one.
@@ -83,21 +109,22 @@ namespace CK.Core
             var attr = a.GetCustomAttributesData().FirstOrDefault( m => m.AttributeType.Name == "SignatureAttribute" && m.AttributeType.Namespace == "CK.StObj" );
             if( attr != null )
             {
-                using( monitor.OpenInfo( $"Analysing '{a.FullName}' assembly." ) )
+                using( monitor.OpenInfo( $"Analyzing '{a.FullName}' assembly." ) )
                 {
                     info = StObjMapInfo.Create( monitor, a, attr );
                     if( info != null )
                     {
-                        if( _alreadyHandled.TryGetValue( info.GeneratedSignature, out var exists ) )
+                        var sha1S = info.GeneratedSignature.ToString();
+                        if( _alreadyHandled.TryGetValue( sha1S, out var exists ) )
                         {
                             Debug.Assert( exists != null );
                             monitor.Info( $"StObjMap found replaces the one from '{exists.AssemblyName}' that has the same signature." );
-                            _alreadyHandled[info.GeneratedSignature] = info;
+                            _alreadyHandled[sha1S] = info;
                             _availableMaps.Remove( exists );
                         }
                         else
                         {
-                            _alreadyHandled.Add( info.GeneratedSignature, info );
+                            _alreadyHandled.Add( sha1S, info );
                         }
                         _availableMaps.Add( info );
                     }
@@ -121,7 +148,7 @@ namespace CK.Core
             lock( _alreadyHandled )
             {
                 LockedGetAvailableMapInfos( ref monitor );
-                return _alreadyHandled.GetValueOrDefault( signature );
+                return _alreadyHandled.GetValueOrDefault( signature.ToString() );
             }
         }
 
@@ -147,7 +174,7 @@ namespace CK.Core
             }
         }
 
-        static List<StObjMapInfo> LockedGetAvailableMapInfos( ref IActivityMonitor? monitor )
+        static List<StObjMapInfo> LockedGetAvailableMapInfos( [NotNullIfNotNull("monitor")] ref IActivityMonitor? monitor )
         {
             var all = AppDomain.CurrentDomain.GetAssemblies();
             if( all.Length != _allAssemblyCount )
@@ -182,7 +209,7 @@ namespace CK.Core
             }
         }
 
-        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, ref IActivityMonitor? monitor )
+        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
         {
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             monitor = LockedEnsureMonitor( monitor );
@@ -209,12 +236,12 @@ namespace CK.Core
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static IStObjMap? Load( Assembly a, IActivityMonitor? monitor = null )
         {
+            if( a == null ) throw new ArgumentNullException( nameof( a ) );
             lock( _alreadyHandled )
             {
                 var info = LockedGetMapInfo( a, ref monitor );
                 if( info == null ) return null;
                 return LockedGetStObjMap( info, ref monitor );
-
             }
         }
 
@@ -229,7 +256,7 @@ namespace CK.Core
             lock( _alreadyHandled )
             {
                 LockedGetAvailableMapInfos( ref monitor );
-                if( _alreadyHandled.TryGetValue( signature, out var info ) )
+                if( _alreadyHandled.TryGetValue( signature.ToString(), out var info ) )
                 {
                     Debug.Assert( info != null );
                     return LockedGetStObjMap( info, ref monitor );
@@ -237,6 +264,72 @@ namespace CK.Core
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Attempts to load a StObjMap from an assembly name.
+        /// </summary>
+        /// <param name="assemblyName">The assembly name.</param>
+        /// <param name="monitor">Optional monitor to use.</param>
+        /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
+        public static IStObjMap? Load( string assemblyName, IActivityMonitor? monitor = null )
+        {
+            if( string.IsNullOrEmpty( assemblyName ) ) throw new ArgumentNullException( nameof( assemblyName ) );
+
+            // We could support here that if a / or \ appear in the name, then its a path and then we could use Assembly.LoadFile.
+            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
+
+            string assemblyNameWithExtension; 
+            if( assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) || assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
+            {
+                assemblyNameWithExtension = assemblyName;
+                assemblyName = assemblyName.Substring( 0, assemblyName.Length - 4 );
+            }
+            else
+            {
+                assemblyNameWithExtension = assemblyName + ".dll";
+            }
+            string assemblyFullPath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyNameWithExtension );
+            string assemblyFullPathSig = assemblyFullPath + Setup.StObjEngineConfiguration.ExistsSignatureFileExtension;
+
+            lock( _alreadyHandled )
+            {
+                monitor = LockedEnsureMonitor( monitor );
+                using( monitor.OpenInfo( $"Loading StObj map from '{assemblyName}'." ) )
+                {
+                    try
+                    {
+                        StObjMapInfo? info;
+                        if( System.IO.File.Exists( assemblyFullPathSig ) )
+                        {
+                            var sig = System.IO.File.ReadAllText( assemblyFullPathSig );
+                            LockedGetAvailableMapInfos( ref monitor );
+                            info = _alreadyHandled.GetValueOrDefault( sig );
+                            if( info != null )
+                            {
+                                monitor.CloseGroup( $"Found existing map from signature file {assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}: {info}." );
+                                return LockedGetStObjMap( info, ref monitor );
+                            }
+                            monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' ({sig}). Trying to load the assembly." );
+                        }
+                        else
+                        {
+                            monitor.Warn( $"No Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' found. Trying to load the assembly." );
+                        }
+                        var a = Assembly.LoadFile( assemblyFullPath );
+                        info = LockedGetMapInfo( a, ref monitor );
+                        if( info == null ) return null;
+                        return LockedGetStObjMap( info, ref monitor );
+                    }
+                    catch( Exception ex )
+                    {
+                        Debug.Assert( monitor != null, "Not detected by nullable analysis..." );
+                        monitor.Error( ex );
+                        return null;
+                    }
+                }
+            }
+
         }
     }
 }

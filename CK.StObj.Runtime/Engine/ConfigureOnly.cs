@@ -3,7 +3,7 @@ using System;
 namespace CK.Setup
 {
     /// <summary>
-    /// Wrapper around any service used to comunicate the fact that the registered service
+    /// Wrapper around any service used to communicate the fact that the registered service
     /// should only be used by the other following aspects only from
     /// their <see cref="IStObjEngineAspect.Configure"/> method.
     /// </summary>

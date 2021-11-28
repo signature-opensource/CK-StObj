@@ -13,8 +13,8 @@ namespace CK.Setup
     /// Attributes must be retrieved thanks to <see cref="Attributes"/>.
     /// This type information are built top-down (from generalization to most specialized type).
     /// <para>
-    /// An CKTypeInfo can be either a <see cref="AutoServiceClassInfo"/> or an independent one (this is a concrete class)
-    /// that is associated to a <see cref="AutoServiceClassInfo"/> (via ServiceClass). 
+    /// A CKTypeInfo can be either a <see cref="RealObjectClassInfo"/> (RealObjectClassInfo inherits from CKTypeInfo) or
+    /// an independent one (this is a concrete class) that is associated to a <see cref="AutoServiceClassInfo"/> (<see cref="AutoServiceClassInfo.TypeInfo"/>). 
     /// </para>
     /// </summary>
     public class CKTypeInfo
@@ -92,11 +92,11 @@ namespace CK.Setup
             }
         }
 
-
         /// <summary>
-        /// Gets the service classe information for this type if there is one.
+        /// Gets the service class information for this type if there is one.
         /// If this <see cref="CKTypeInfo"/> is an independent one, then this is necessarily not null.
-        /// If this is a <see cref="RealObjectClassInfo"/> this can be null or not.
+        /// If this is a <see cref="RealObjectClassInfo"/> this can be null if the Real object doesn't
+        /// support any IAutoService interfaces.
         /// </summary>
         public AutoServiceClassInfo? ServiceClass { get; internal set; }
 
@@ -171,7 +171,7 @@ namespace CK.Setup
         /// All attributes related to <see cref="Type"/> (either on the type itself or on any of its members) should be retrieved 
         /// thanks to this property otherwise stateful attributes will not work correctly.
         /// </remarks>
-        public ICKCustomAttributeTypeMultiProvider? Attributes => _attributes;
+        public ITypeAttributesCache? Attributes => _attributes;
 
         /// <summary>
         /// Gets whether this type has at least one <see cref="Specializations"/>
@@ -254,18 +254,25 @@ namespace CK.Setup
         /// <summary>
         /// Registers a new multiple mapping.
         /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
-        /// The type t must not already be registered (it can, of course be mapped to other finale types).
+        /// The type t must not already be registered (it can, of course be mapped to other final types).
         /// </summary>
         /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
-        internal void AddMultipleMapping( Type t )
+        /// <param name="k">The kind from the <see cref="CKTypeKindDetector"/>.</param>
+        /// <param name="collector">The type collector.</param>
+        internal void AddMultipleMapping( Type t, CKTypeKind k, CKTypeCollector collector )
         {
             Debug.Assert( !IsSpecialized, "We are on the leaf." );
             Debug.Assert( t != Type, $"Multiple mapping {ToString()} must not be mapped to itself." );
             Debug.Assert( t.IsAssignableFrom( Type ), $"Multiple mapping '{t}' must be assignable from {ToString()}!" );
             Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Multiple mapping '{t}' already registered in {ToString()}." );
             Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Multiple mapping '{t}' already registered in UNIQUE mappings of {ToString()}." );
+            Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
             if( _multipleMappings == null ) _multipleMappings = new List<Type>();
             _multipleMappings.Add( t );
+            if( (k&(CKTypeKind.IsFrontService|CKTypeKind.IsMarshallable)) != (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
+            {
+                collector.RegisterMultipleInterfaces( t, k, this );
+            }
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace CK.Setup
     /// When used with another type or a member of another type from the one provided 
     /// in the constructor, an exception is thrown.
     /// </summary>
-    public class TypeAttributesCache : ICKCustomAttributeTypeMultiProvider
+    public class TypeAttributesCache : ITypeAttributesCache
     {
         readonly struct Entry
         {
@@ -77,7 +77,7 @@ namespace CK.Setup
                 {
                     if( e.Attr is IAttributeContextBoundInitializer aM )
                     {
-                        aM.Initialize( this, e.M );
+                        aM.Initialize( monitor, this, e.M );
                         if( --initializerCount == 0 ) break;
                     }
                 }
@@ -99,14 +99,15 @@ namespace CK.Setup
                 object? finalAttributeToUse = a;
                 if( a is ContextBoundDelegationAttribute delegated )
                 {
-                    Type dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
+                    Type? dT = SimpleTypeFinder.WeakResolver( delegated.ActualAttributeTypeAssemblyQualifiedName, true );
+                    Debug.Assert( dT != null );
                     // When ContextBoundDelegationAttribute is not specialized, it is useless: the attribute
                     // parameter must not be specified.
                     using( var sLocal = new SimpleServiceContainer( services ) )
                     {
                         Debug.Assert( _all.Length == 0, "Constructors see no attributes at all. IAttributeContextBoundInitializer must be used to have access to other attributes." );
                         sLocal.Add<Type>( Type );
-                        sLocal.Add<ICKCustomAttributeTypeMultiProvider>( this );
+                        sLocal.Add<ITypeAttributesCache>( this );
                         sLocal.Add<MemberInfo>( m );
                         if( m is MethodInfo method ) sLocal.Add<MethodInfo>( method );
                         else if( m is PropertyInfo property ) sLocal.Add<PropertyInfo>( property );
@@ -141,6 +142,13 @@ namespace CK.Setup
         /// Get the Type that is managed by this cache.
         /// </summary>
         public Type Type { get; } 
+
+        /// <summary>
+        /// Gets all <see cref="MemberInfo"/> that this <see cref="ICKCustomAttributeMultiProvider"/> handles.
+        /// The <see cref="Type"/> is appended to this list.
+        /// </summary>
+        /// <returns>Enumeration of members.</returns>
+        public IEnumerable<MemberInfo> GetMembers() => _typeMembers.Append( Type );
 
         /// <summary>
         /// Gets whether an attribute that is assignable to the given <paramref name="attributeType"/> 
@@ -204,13 +212,7 @@ namespace CK.Setup
             return GetAllCustomAttributes( attributeType );
         }
 
-        /// <summary>
-        /// Gets all attributes that are assignable to the given <paramref name="attributeType"/>, regardless of the <see cref="MemberInfo"/>
-        /// that carries it. 
-        /// </summary>
-        /// <param name="attributeType">Type of requested attributes.</param>
-        /// <param name="memberOnly">True to ignore attributes of the type itself.</param>
-        /// <returns>Enumeration of attributes (possibly empty).</returns>
+        /// <inheritdoc />
         public IEnumerable<object> GetAllCustomAttributes( Type attributeType, bool memberOnly = false )
         {
             var fromCache = _all.Where( e => (!memberOnly || e.M != Type) && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
@@ -242,11 +244,31 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets all <see cref="MemberInfo"/> that this <see cref="ICKCustomAttributeMultiProvider"/> handles.
-        /// The <see cref="Type"/> is appended to this list.
+        /// Gets all <see cref="Type"/>'s attributes that are assignable to the given <paramref name="attributeType"/>.
+        /// No attribute members appear.
         /// </summary>
-        /// <returns>Enumeration of members.</returns>
-        public IEnumerable<MemberInfo> GetMembers() => _typeMembers.Append( Type );
+        /// <param name="attributeType">Type of requested attributes.</param>
+        /// <returns>Enumeration of attributes (possibly empty).</returns>
+        public IEnumerable<object> GetTypeCustomAttributes( Type attributeType )
+        {
+            var fromCache = _all.Where( e => e.M == Type && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
+            var fromType = Type.GetCustomAttributes( _includeBaseClasses ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) );
+            return fromCache.Concat( fromType );
+        }
+
+        /// <summary>
+        /// Gets all <see cref="Type"/>'s attributes that are assignable to the given type.
+        /// No attribute members appear.
+        /// </summary>
+        /// <typeparam name="T">Type of the attributes.</typeparam>
+        /// <returns>Enumeration of attributes (possibly empty).</returns>
+        public IEnumerable<T> GetTypeCustomAttributes<T>()
+        {
+            var fromCache = _all.Where( e => e.Attr is T && e.M == Type ).Select( e => (T)e.Attr );
+            var fromType = Type.GetCustomAttributes( _includeBaseClasses )
+                                .Where( a => !(a is IAttributeContextBound) && a is T ).Select( a => (T)(object)a );
+            return fromCache.Concat( fromType );
+        }
 
     }
 

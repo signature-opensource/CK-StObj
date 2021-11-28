@@ -138,11 +138,15 @@ namespace CK.Testing
             return new GenerateCodeResult( result, r, embedded );
         }
 
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegisterer, IServiceProvider Services) IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c, SimpleServiceContainer? startupServices )
+        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegistrar, ServiceProvider Services)
+                        IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c,
+                                                                         Action<StObjContextRoot.ServiceRegister>? configureServices,
+                                                                         SimpleServiceContainer? startupServices )
         {
             var (result, map) = DoCompileAndLoadStObjMap( c, skipEmbeddedStObjMap: startupServices != null );
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+            configureServices?.Invoke( reg );
             return (result, map, reg, reg.Services.BuildServiceProvider());
         }
 

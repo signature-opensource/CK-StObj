@@ -5,7 +5,6 @@ using System.Linq;
 using CK.Core;
 using CK.Setup;
 using NUnit.Framework;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.ActorZoneTests
@@ -16,7 +15,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         internal static void CheckChildren<T>( IStObjObjectEngineMap map, string childrenTypeNames )
         {
-            IEnumerable<IStObjResult> items = map.ToHead( typeof( T ) ).Children;
+            IEnumerable<IStObjResult> items = map.ToHead( typeof( T ) )!.Children;
             var s1 = items.Select( i => i.ClassType.Name ).OrderBy( Util.FuncIdentity );
             var s2 = childrenTypeNames.Split( ',' ).OrderBy( Util.FuncIdentity );
             if( !s1.SequenceEqual( s2 ) )
@@ -28,10 +27,8 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         public class AmbientPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
-            [InitRequired]
             public string PropertyName { get; set; }
 
-            [InitRequired]
             public object PropertyValue { get; set; }
 
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
@@ -48,7 +45,6 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
                 ConnectionString = connectionString;
             }
 
-            [InitRequired]
             public string ConnectionString { get; private set; }
         }
 
@@ -70,11 +66,9 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public class BasicPackage : BaseDatabaseObject
         {
             [InjectObject]
-            [InitRequired]
             public BasicUser UserHome { get; protected set; }
             
             [InjectObject]
-            [InitRequired]
             public BasicGroup GroupHome { get; protected set; }
         }
 
@@ -191,14 +185,17 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             CheckChildren<SqlDatabaseDefault>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser,AuthenticationDetail" );
 
             var basicPackage = map.StObjs.Obtain<BasicPackage>();
+            Debug.Assert( basicPackage != null );
             Assert.That( basicPackage is ZonePackage );
             Assert.That( basicPackage.GroupHome is ZoneGroup );
             Assert.That( basicPackage.Schema, Is.EqualTo( "CK" ) );
 
             var authenticationUser = map.StObjs.Obtain<AuthenticationUser>();
+            Debug.Assert( authenticationUser != null );
             Assert.That( authenticationUser.Schema, Is.EqualTo( "CK" ) );
             
             var authenticationDetail = map.StObjs.Obtain<AuthenticationDetail>();
+            Debug.Assert( authenticationDetail != null );
             Assert.That( authenticationDetail.Schema, Is.EqualTo( "CKAuth" ) );
         }
     }

@@ -8,7 +8,7 @@ namespace CK.Setup
 {
     partial class MutableItem
     {
-        void AddPreConstructProperty( PropertyInfo p, object o, BuildValueCollector valueCollector )
+        void AddPreConstructProperty( PropertyInfo p, object? o, BuildValueCollector valueCollector )
         {
             if( _preConstruct == null ) _preConstruct = new List<PropertySetter>();
             _preConstruct.Add( new PropertySetter( p, o, valueCollector ) );
@@ -21,7 +21,7 @@ namespace CK.Setup
             _leafData.PostBuildProperties.Add( new PropertySetter( p, o, valueCollector ) );
         }
 
-        internal void CallConstruct( IActivityMonitor monitor, BuildValueCollector valueCollector, IStObjValueResolver valueResolver )
+        internal void CallConstruct( IActivityMonitor monitor, BuildValueCollector valueCollector, IStObjValueResolver? valueResolver )
         {
             Debug.Assert( _constructParameterEx != null, "Always allocated." );
             if( _preConstruct != null )
@@ -45,9 +45,9 @@ namespace CK.Setup
             }
         }
 
-        private void DoCallStObjConstruct( IActivityMonitor monitor, BuildValueCollector valueCollector, IStObjValueResolver valueResolver, MethodInfo stobjConstruct, IReadOnlyList<MutableParameter> mutableParameters )
+        private void DoCallStObjConstruct( IActivityMonitor monitor, BuildValueCollector valueCollector, IStObjValueResolver? valueResolver, MethodInfo stobjConstruct, IReadOnlyList<MutableParameter> mutableParameters )
         {
-            object[] parameters = new object[mutableParameters.Count];
+            object?[] parameters = new object[mutableParameters.Count];
             int i = 0;
             foreach( MutableParameter t in mutableParameters )
             {
@@ -59,7 +59,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    MutableItem resolved = null;
+                    MutableItem? resolved = null;
                     if( t.Value == System.Type.Missing )
                     {
                         // Parameter reference have already been resolved as dependencies for graph construction since 
@@ -81,6 +81,7 @@ namespace CK.Setup
                             // This behavior (FailFastOnFailureToResolve) may be an option once. For the moment: log the error.
                             monitor.Fatal( $"{t}: Unable to resolve non optional. Attempting to use a default value to continue the setup process in order to detect other errors." );
                         }
+                        Debug.Assert( t.Type != null );
                         t.SetParameterValue( t.Type.IsValueType ? Activator.CreateInstance( t.Type ) : null );
                     }
                     if( resolved != null && t.Value == resolved.InitialObject )
@@ -112,10 +113,10 @@ namespace CK.Setup
         public readonly struct PropertySetter
         {
             public readonly PropertyInfo Property;
-            public readonly object Value;
+            public readonly object? Value;
             internal readonly int IndexValue;
 
-            internal PropertySetter( PropertyInfo p, object o, BuildValueCollector valueCollector )
+            internal PropertySetter( PropertyInfo p, object? o, BuildValueCollector valueCollector )
             {
                 Property = p;
                 Value = o;
@@ -129,13 +130,13 @@ namespace CK.Setup
 
         void SetPropertyValue( IActivityMonitor monitor, PropertySetter p )
         {
-            object o = p.Value;
-            MutableItem m = o as MutableItem;
+            object? o = p.Value;
+            MutableItem? m = o as MutableItem;
             if( m != null ) o = m.InitialObject;
             DoSetPropertyValue( monitor, p.Property, o );
         }
 
-        void DoSetPropertyValue( IActivityMonitor monitor, PropertyInfo p, object o )
+        void DoSetPropertyValue( IActivityMonitor monitor, PropertyInfo p, object? o )
         {
             try
             {
@@ -143,7 +144,7 @@ namespace CK.Setup
             }
             catch( Exception ex )
             {
-                monitor.Error( $"While setting '{p.DeclaringType.FullName}.{p.Name}'.", ex );
+                monitor.Error( $"While setting '{p.DeclaringType!.FullName}.{p.Name}'.", ex );
             }
         }
     }

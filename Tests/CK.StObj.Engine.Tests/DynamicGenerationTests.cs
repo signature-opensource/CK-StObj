@@ -5,7 +5,6 @@ using CK.Testing.StObjEngine;
 using FluentAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
-using SmartAnalyzers.CSharpExtensions.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,7 +20,7 @@ namespace CK.StObj.Engine.Tests
     [Category( "DynamicGeneration" )]
     public class DynamicGenerationTests
     {
-        public class CConstructCalledAndStObjProperties
+        public static class CConstructCalledAndStObjProperties
         {
             public class A : IRealObject
             {
@@ -45,7 +44,6 @@ namespace CK.StObj.Engine.Tests
                     TheB = b;
                 }
 
-                [InitRequired]
                 public B TheB { get; private set; }
             }
 
@@ -56,7 +54,6 @@ namespace CK.StObj.Engine.Tests
                     TheA = a;
                 }
 
-                [InitRequired]
                 public A TheA { get; private set; }
             }
 
@@ -69,9 +66,10 @@ namespace CK.StObj.Engine.Tests
                 }
             }
 
-            public void DoTest()
+            public static void DoTest()
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new StObjPropertyConfigurator() );
+                using var container = new SimpleServiceContainer();
+                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator: new StObjPropertyConfigurator() );
                 collector.RegisterType( typeof( B ) );
                 collector.RegisterType( typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
@@ -82,12 +80,12 @@ namespace CK.StObj.Engine.Tests
                     Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
                     IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
-                    Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
-                    Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
-                    Assert.That( stObjs.ToHead( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
-                    Assert.That( stObjs.ToHead( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
+                    Assert.That( stObjs.Obtain<B>()!.TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
+                    Assert.That( stObjs.Obtain<ASpec>()!.TheB, Is.SameAs( stObjs.Obtain<B>() ) );
+                    Assert.That( stObjs.ToHead( typeof( A ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( stObjs.ToHead( typeof( ASpec ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
-                    ASpec theA = (ASpec)stObjs.Obtain<A>();
+                    ASpec theA = (ASpec)stObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
@@ -98,10 +96,10 @@ namespace CK.StObj.Engine.Tests
                     IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
                     Debug.Assert( c != null );
                     c.Should().NotBeNull();
-                    Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( c.StObjs.Obtain<ASpec>().TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
+                    Assert.That( c.StObjs.Obtain<B>()!.TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
+                    Assert.That( c.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
 
-                    ASpec theA = (ASpec)c.StObjs.Obtain<A>();
+                    ASpec theA = (ASpec)c.StObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
@@ -112,7 +110,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void ConstructCalledAndStObjProperties()
         {
-            new CConstructCalledAndStObjProperties().DoTest();
+            CConstructCalledAndStObjProperties.DoTest();
         }
 
         public class PostBuildSet
@@ -142,7 +140,6 @@ namespace CK.StObj.Engine.Tests
                 }
 
                 [InjectObject]
-                [InitRequired]
                 public BSpec TheB { get; private set; }
             }
 
@@ -172,11 +169,9 @@ namespace CK.StObj.Engine.Tests
             public class B : IRealObject
             {
                 [InjectObject]
-                [InitRequired]
                 public A TheA { get; private set; }
 
                 [InjectObject]
-                [InitRequired]
                 public A TheInjectedA { get; private set; }
             }
 
@@ -213,12 +208,12 @@ namespace CK.StObj.Engine.Tests
                     Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
                     IStObjObjectEngineMap stObjs = r.EngineMap.StObjs;
 
-                    Assert.That( stObjs.Obtain<B>().TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
-                    Assert.That( stObjs.Obtain<ASpec>().TheB, Is.SameAs( stObjs.Obtain<B>() ) );
-                    Assert.That( stObjs.ToHead( typeof( A ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
-                    Assert.That( stObjs.ToHead( typeof( ASpec ) ).GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
+                    Assert.That( stObjs.Obtain<B>()!.TheA, Is.SameAs( stObjs.Obtain<A>() ).And.SameAs( stObjs.Obtain<ASpec>() ) );
+                    Assert.That( stObjs.Obtain<ASpec>()!.TheB, Is.SameAs( stObjs.Obtain<B>() ) );
+                    Assert.That( stObjs.ToHead( typeof( A ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "This is the A property." ) );
+                    Assert.That( stObjs.ToHead( typeof( ASpec ) )!.GetStObjProperty( "StObjPower" ), Is.EqualTo( "ASpec level property." ) );
 
-                    ASpec theA = (ASpec)stObjs.Obtain<A>();
+                    ASpec theA = (ASpec)stObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
@@ -230,16 +225,16 @@ namespace CK.StObj.Engine.Tests
                     IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
                     c.Should().NotBeNull();
                     Debug.Assert( c != null );
-                    Assert.That( c.StObjs.Obtain<B>().TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( c.StObjs.Obtain<ASpec>().TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
+                    Assert.That( c.StObjs.Obtain<B>()!.TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
+                    Assert.That( c.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
 
-                    ASpec theA = (ASpec)c.StObjs.Obtain<A>();
+                    ASpec theA = (ASpec)c.StObjs.Obtain<A>()!;
                     theA.Should().NotBeNull();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
 
                     Assert.That( theA.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
-                    Assert.That( c.StObjs.Obtain<B>().TheInjectedA, Is.SameAs( theA ) );
+                    Assert.That( c.StObjs.Obtain<B>()!.TheInjectedA, Is.SameAs( theA ) );
 
                     Assert.That( theA.StObjInitializeOnACalled, Is.True );
                     Assert.That( theA.StObjInitializeOnASpecCalled, Is.True );
@@ -262,7 +257,7 @@ namespace CK.StObj.Engine.Tests
             /// Actual implementation that takes care of all the abstract properties.
             /// This doesn't handle abstract methods at all.
             /// </summary>
-            public class DefaultPropertyImplementationAttributeImpl : IAutoImplementorType, IAutoImplementorProperty
+            public class DefaultPropertyImplementationAttributeImpl : ICSCodeGeneratorType, IAutoImplementorProperty
             {
                 readonly DefaultPropertyImplementationAttribute _attr;
 
@@ -282,14 +277,14 @@ namespace CK.StObj.Engine.Tests
                 // Here we tell the engine: "I'm handling this property implementation" only if the property name starts with a 'H'.
                 // This is rather stupid but this shows an easy way to enforce naming rules.
                 // We could have returned a dedicated instance but instead we implement the IAutoImplementorProperty interface directly.
-                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H" ) ? this : null;
+                public IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => p.Name.StartsWith( "H", StringComparison.Ordinal ) ? this : null;
 
-                // We choose to implement all the properties as a whole in Implement method below: by returning AutoImplementationResult.Success
+                // We choose to implement all the properties as a whole in Implement method below: by returning CSCodeGenerationResult.Success
                 // we tell the engine: "Okay, I handled it, please continue your business."
                 // (We can also implement each property here and do nothing in the Implement method.)
-                AutoImplementationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICodeGenerationContext c, ITypeScope typeBuilder ) => AutoImplementationResult.Success;
+                CSCodeGenerationResult IAutoImplementor<PropertyInfo>.Implement( IActivityMonitor monitor, PropertyInfo p, ICSCodeGenerationContext c, ITypeScope typeBuilder ) => CSCodeGenerationResult.Success;
 
-                public AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     foreach( var p in classType.GetProperties() )
                     {
@@ -308,7 +303,7 @@ namespace CK.StObj.Engine.Tests
                         }
                         scope.Append( ";" ).NewLine();
                     }
-                    return AutoImplementationResult.Success;
+                    return CSCodeGenerationResult.Success;
                 }
             }
 
@@ -369,7 +364,7 @@ namespace CK.StObj.Engine.Tests
         }
 
         [Test]
-        public void IAutoImplementorType_implements_interface()
+        public void ICSCodeGenratorType_implements_interface()
         {
             new CTypeImplementor().DoTest();
         }
@@ -411,29 +406,29 @@ namespace CK.StObj.Engine.Tests
             new ContextBoundDelegationAttributeDI().DoTest();
         }
 
-        public class SecondPassCodeGenerationDI
+        public static class SecondPassCodeGenerationDI
         {
             public interface ISourceCodeHelper1
             {
                 string IHelpTheCodeGeneration();
             }
 
-            public class AutoImpl1 : AutoImplementorType
+            public class AutoImpl1 : CSCodeGeneratorType
             {
                 class SourceCodeHelper1 : ISourceCodeHelper1
                 {
                     public string IHelpTheCodeGeneration() => "I'm great!";
                 }
 
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     var helper = new SourceCodeHelper1();
                     c.CurrentRun.ServiceContainer.Add( helper );
                     c.CurrentRun.ServiceContainer.Add<ISourceCodeHelper1>( helper );
-                    return new AutoImplementationResult( typeof( ActualImpl1 ) );
+                    return new CSCodeGenerationResult( typeof( ActualImpl1 ) );
                 }
 
-                class ActualImpl1 : AutoImplementorType
+                class ActualImpl1 : CSCodeGeneratorType
                 {
                     readonly SourceCodeHelper1 _h1;
                     readonly SourceCodeHelper2 _h2;
@@ -448,11 +443,11 @@ namespace CK.StObj.Engine.Tests
                         _h2 = h2;
                     }
 
-                    public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                    public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                     {
                         _theOwner.Should().NotBeNull();
                         monitor.Info( $"ActualImpl1: {_h1.IHelpTheCodeGeneration()}, {_h2.IAlsoHelpTheCodeGeneration()}." );
-                        return AutoImplementationResult.Success;
+                        return CSCodeGenerationResult.Success;
                     }
                 }
             }
@@ -467,15 +462,15 @@ namespace CK.StObj.Engine.Tests
                 public string ICannotHelpTheCodeGeneration() => "Because nobody added me :'(.";
             }
 
-            public class AutoImpl2 : AutoImplementorType
+            public class AutoImpl2 : CSCodeGeneratorType
             {
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     c.CurrentRun.ServiceContainer.Add( new SourceCodeHelper2() );
-                    return new AutoImplementationResult( typeof( ActualImpl2 ) );
+                    return new CSCodeGenerationResult( typeof( ActualImpl2 ) );
                 }
 
-                public class ActualImpl2 : AutoImplementorType
+                public class ActualImpl2 : CSCodeGeneratorType
                 {
                     readonly ISourceCodeHelper1 _h1;
                     readonly SourceCodeHelper2 _h2;
@@ -486,10 +481,10 @@ namespace CK.StObj.Engine.Tests
                         _h2 = h2;
                     }
 
-                    public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                    public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                     {
                         monitor.Info( $"ActualImpl2: {_h1.IHelpTheCodeGeneration()}, {_h2.IAlsoHelpTheCodeGeneration()}." );
-                        return AutoImplementationResult.Success;
+                        return CSCodeGenerationResult.Success;
                     }
                 }
             }
@@ -504,7 +499,7 @@ namespace CK.StObj.Engine.Tests
             {
             }
 
-            public void DoTest()
+            public static void DoTest()
             {
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -513,7 +508,7 @@ namespace CK.StObj.Engine.Tests
                     TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
                 }
                 logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
-                logs.Should().Contain( e => e.Text == "ActualImpl2: I'm great!, I'm SOOOO great!." );
+                logs.Should().NotContain( e => e.Text.Contains( "Because nobody added me", StringComparison.Ordinal ) );
             }
 
         }
@@ -521,7 +516,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void SecondPass_code_generation_can_use_dependency_injection()
         {
-            new SecondPassCodeGenerationDI().DoTest();
+            SecondPassCodeGenerationDI.DoTest();
         }
 
         public class MultiPassCodeGenerationParameterInjectionDI
@@ -531,36 +526,36 @@ namespace CK.StObj.Engine.Tests
                 string IHelpTheCodeGeneration();
             }
 
-            public class AutoImpl1 : AutoImplementorType
+            public class AutoImpl1 : CSCodeGeneratorType
             {
                 class SourceCodeHelper : ISourceCodeHelper
                 {
                     public string IHelpTheCodeGeneration() => "I'm great!";
                 }
 
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
                     c.CurrentRun.ServiceContainer.Add<ISourceCodeHelper>( new SourceCodeHelper() );
-                    return AutoImplementationResult.Success;
+                    return CSCodeGenerationResult.Success;
                 }
             }
 
-            public class AutoImpl2 : AutoImplementorType
+            public class AutoImpl2 : CSCodeGeneratorType
             {
-                public override AutoImplementationResult Implement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope )
+                public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
                 {
-                    return new AutoImplementationResult( nameof(DoImplement) );
+                    return new CSCodeGenerationResult( nameof(DoImplement) );
                 }
 
-                AutoImplementationResult DoImplement( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                CSCodeGenerationResult DoImplement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
                 {
                     c.Should().NotBeNull();
                     scope.Should().NotBeNull();
                     monitor.Info( $"AutoImpl2: {helper.IHelpTheCodeGeneration()}." );
-                    return new AutoImplementationResult( nameof( FinalizeImpl ) );
+                    return new CSCodeGenerationResult( nameof( FinalizeImpl ) );
                 }
 
-                bool FinalizeImpl( IActivityMonitor monitor, Type classType, ICodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
+                bool FinalizeImpl( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope, ISourceCodeHelper helper )
                 {
                     monitor.Info( $"AutoImpl in another pass: {helper.IHelpTheCodeGeneration()}." );
                     return true;

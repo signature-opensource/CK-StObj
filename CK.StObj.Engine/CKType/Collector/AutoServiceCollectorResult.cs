@@ -17,8 +17,8 @@ namespace CK.Setup
             IReadOnlyList<AutoServiceInterfaceInfo> leafInterfaces,
             IReadOnlyList<AutoServiceInterfaceInfo> rootInterfaces,
             IReadOnlyList<AutoServiceClassInfo> rootClasses,
-            IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>> classAmbiguities,
-            IReadOnlyList<Type> abstractTails,
+            IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
+            IReadOnlyList<Type>? abstractTails,
             IReadOnlyList<AutoServiceClassInfo> subGraphs )
         {
             AllInterfaces = allInterfaces;

@@ -6,6 +6,12 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service
 {
+    /// <summary>
+    /// The idea of this "ServiceDispatcher" is that a class that implements an auto service interface
+    /// and has a ctor parameter that is a IEnumerable of such service is an unifier.
+    /// A better name could be: "UnifierService" since one could say that "Service Unification" relies on
+    /// interface (more precisely on enumerable of service interfaces) and "Class Unification" relies on classes.
+    /// </summary>
     [TestFixture]
     public class DispatcherServiceTests
     {
@@ -26,9 +32,9 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class SDispatcher : IServiceBase
         {
-            readonly IReadOnlyCollection<IServiceBase> _others;
+            readonly IEnumerable<IServiceBase> _others;
 
-            public SDispatcher( IReadOnlyCollection<IServiceBase> others )
+            public SDispatcher( IEnumerable<IServiceBase> others )
             {
                 _others = others;
             }

@@ -59,14 +59,14 @@ namespace CK.Setup
         public bool MoveFilesAndCheckSignature( StObjCollectorResult.CodeGenerateResult r )
         {
             bool modified = false;
-            int idxFile = 0;
+            int idxCSFile = 0;
             foreach( var f in r.GeneratedFileNames )
             {
-                if( f.EndsWith( ".cs" ) )
+                if( f.EndsWith( ".cs", StringComparison.OrdinalIgnoreCase ) )
                 {
-                    bool isPrimaryFile = idxFile == 0;
+                    bool isPrimaryFile = idxCSFile == 0;
                     var fPath = _originPath.AppendPart( f );
-                    var t = GetCSFileTargetPath( idxFile++ );
+                    var t = GetCSFileTargetPath( idxCSFile++ );
                     if( File.Exists( t ) )
                     {
                         // The primary source file that has the signature is the first one.
@@ -95,7 +95,9 @@ namespace CK.Setup
                     }
                     DoMoveOrCopy( _monitor, fPath, t, copy: false );
                 }
-                else if( f.EndsWith( ".dll" ) || f.EndsWith( ".exe" ) ) continue;
+                else if( f.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase )
+                         || f.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase )
+                         || f.EndsWith( StObjEngineConfiguration.ExistsSignatureFileExtension, StringComparison.OrdinalIgnoreCase ) ) continue;
                 else
                 {
                     // Other generated files?
@@ -103,20 +105,20 @@ namespace CK.Setup
                     throw new NotImplementedException( $"Other generated files that .cs are not yet handled: {f}" );
                 }
             }
-            // Cleaning "G{X}.cs" files only if at least one files has been generated:
-            // On error or if no files have been generated (typically because of a successful available StObjMap
-            // match) we let ALL the existing files as-is.
-            if( r.GeneratedFileNames.Count > 0 )
+            // Cleaning "G{X}.cs" files only if at least one C# file has been generated:
+            // On error or if no files have been generated (typically because of a successful available
+            // StObjMap match) we let ALL the existing files as-is.
+            if( idxCSFile > 0 )
             {
                 // Implemented cleaning here is currently useless since there are no G{X}.cs where X > 0.
                 for(; ; )
                 {
-                    var previous = GetCSFileTargetPath( idxFile++ );
+                    var previous = GetCSFileTargetPath( idxCSFile++ );
                     if( File.Exists( previous ) )
                     {
                         using( _monitor.OpenTrace( $"Deleting old project source file '{previous.LastPart}'." ) )
                         {
-                            SafeDelete( previous );
+                            SafeDelete( _monitor, previous );
                         }
                     }
                     else break;
@@ -155,7 +157,8 @@ namespace CK.Setup
             }
         }
 
-        void SafeDelete( NormalizedPath filePath )
+
+        internal static void SafeDelete( IActivityMonitor monitor, NormalizedPath filePath )
         {
             try
             {
@@ -163,7 +166,7 @@ namespace CK.Setup
             }
             catch( Exception ex )
             {
-                _monitor.Error( ex );
+                monitor.Error( $"Error while deleting file '{filePath}'. Ignored.", ex );
             }
         }
 

@@ -16,7 +16,7 @@ namespace CK.Setup
             /// on the StObj of a Type that does not define the property (either by a property with a [StObjPropertyAttribute] 
             /// nor with a [StObjPropertyAttribute( PropertyName == ..., PropertyType = ...)] on the class itself.
             /// </summary>
-            public readonly StObjPropertyInfo InfoOnType;
+            public readonly StObjPropertyInfo? InfoOnType;
             public readonly string Name;
             public Type Type { get { return InfoOnType != null ? InfoOnType.Type : typeof( object ); } }
             object _value;
@@ -76,14 +76,14 @@ namespace CK.Setup
                 if( p.InfoOnType == null || p.InfoOnType.ResolutionSource == PropertyResolutionSource.FromContainerAndThenGeneralization )
                 {
                     // Check the Type constraint that could potentially hurt one day.
-                    bool containerHasSetOrMerged = IsOwnContainer && HandleStObjPropertySource( monitor, p, _dContainer, "Container", true );
+                    bool containerHasSetOrMerged = IsOwnContainer && HandleStObjPropertySource( monitor, p, _dContainer!, "Container", true );
                     if( Generalization != null ) HandleStObjPropertySource( monitor, p, Generalization, "Generalization", !containerHasSetOrMerged );
                 }
                 else if( p.InfoOnType.ResolutionSource == PropertyResolutionSource.FromGeneralizationAndThenContainer )
                 {
                     // Check the Type constraint that could potentially hurt one day.
                     bool generalizationHasSetOrMerged = Generalization != null && HandleStObjPropertySource( monitor, p, Generalization, "Generalization", true );
-                    if( IsOwnContainer ) HandleStObjPropertySource( monitor, p, _dContainer, "Container", !generalizationHasSetOrMerged );
+                    if( IsOwnContainer ) HandleStObjPropertySource( monitor, p, _dContainer!, "Container", !generalizationHasSetOrMerged );
                 }
                 // If the value is missing (it has never been set or has been explicitly "removed"), we have nothing to do.
                 // If the type is not constrained, we have nothing to do.
@@ -112,6 +112,7 @@ namespace CK.Setup
                     }
                     if( setIt )
                     {
+                        Debug.Assert( p.InfoOnType != null );
                         AddPreConstructProperty( p.InfoOnType.PropertyInfo, v, valueCollector );
                     }
                 }
@@ -120,7 +121,7 @@ namespace CK.Setup
 
         private bool HandleStObjPropertySource( IActivityMonitor monitor, StObjProperty p, MutableItem source, string sourceName, bool doSetOrMerge )
         {
-            StObjProperty c = source.GetStObjProperty( p.Name );
+            StObjProperty? c = source.GetStObjProperty( p.Name );
             // Source property is defined somewhere in the source.
             if( c != null )
             {
@@ -131,7 +132,7 @@ namespace CK.Setup
                     // It is a warning because if actual values work, everything is okay... but one day, it should fail.
                     var msg = String.Format( "StObjProperty '{0}.{1}' of type '{2}' is not compatible with the one of its {6} ('{3}.{4}' of type '{5}'). Type should be compatible since {6}'s property value will be propagated if no explicit value is set for '{7}.{1}' or if '{3}.{4}' is set with an incompatible value.",
                         ToString(), p.Name, p.Type.Name,
-                        _dContainer.RealObjectType.Type.Name, c.Name, c.Type.Name,
+                        source.RealObjectType.Type.Name, c.Name, c.Type.Name,
                         sourceName,
                         RealObjectType.Type.Name );
                     monitor.Warn( msg ); 
@@ -161,23 +162,23 @@ namespace CK.Setup
             return false;
         }
 
-        StObjProperty GetStObjProperty( string propertyName, PropertyResolutionSource source = PropertyResolutionSource.FromContainerAndThenGeneralization )
+        StObjProperty? GetStObjProperty( string propertyName, PropertyResolutionSource source = PropertyResolutionSource.FromContainerAndThenGeneralization )
         {
             if( _stObjProperties != null )
             {
                 int idx = _stObjProperties.FindIndex( p => p.Name == propertyName );
                 if( idx >= 0 ) return _stObjProperties[idx];
             }
-            StObjProperty result = null;
+            StObjProperty? result = null;
             if( source == PropertyResolutionSource.FromContainerAndThenGeneralization )
             {
-                result = IsOwnContainer ? _dContainer.GetStObjProperty( propertyName ) : null;
+                result = IsOwnContainer ? _dContainer!.GetStObjProperty( propertyName ) : null;
                 if( result == null && Generalization != null ) result = Generalization.GetStObjProperty( propertyName );
             }
             else
             {
                 result = Generalization != null ? Generalization.GetStObjProperty( propertyName, PropertyResolutionSource.FromGeneralizationAndThenContainer ) : null;
-                if( result == null && IsOwnContainer ) result = _dContainer.GetStObjProperty( propertyName, PropertyResolutionSource.FromGeneralizationAndThenContainer );
+                if( result == null && IsOwnContainer ) result = _dContainer!.GetStObjProperty( propertyName, PropertyResolutionSource.FromGeneralizationAndThenContainer );
             }
             return result;
         }

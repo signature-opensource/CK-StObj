@@ -4,6 +4,7 @@ using FluentAssertions;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
@@ -13,7 +14,7 @@ namespace CK.StObj.Engine.Tests
     [TestFixture]
     public class RawCodeGeneratorTests
     {
-        public class CGen : ICodeGenerator
+        public class CGen : ICSCodeGenerator
         {
             public static bool Called;
 
@@ -21,10 +22,10 @@ namespace CK.StObj.Engine.Tests
             {
             }
 
-            public AutoImplementationResult Implement( IActivityMonitor monitor, ICodeGenerationContext codeGenContext )
+            public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
             {
                 Called = true;
-                return AutoImplementationResult.Success;
+                return CSCodeGenerationResult.Success;
             }
         }
 
@@ -34,12 +35,13 @@ namespace CK.StObj.Engine.Tests
         }
 
         [Test]
-        public void ICodeGenerator_on_regular_class()
+        public void ICSCodeGenerator_on_regular_class()
         {
             CGen.Called = false;
             var c = TestHelper.CreateStObjCollector( typeof( Holder ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            r.CKTypeResult.AllTypeAttributeProviders.Select( a => a.Type ).Should().Contain( typeof( Holder ) );
+            Debug.Assert( r.EngineMap != null );
+            r.EngineMap.AllTypesAttributesCache.Values.Select( a => a.Type ).Should().Contain( typeof( Holder ) );
             TestHelper.GenerateCode( r ).CodeGen.Success.Should().BeTrue();
             CGen.Called.Should().BeTrue();
         }

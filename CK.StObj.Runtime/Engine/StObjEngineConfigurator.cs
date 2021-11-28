@@ -33,7 +33,11 @@ namespace CK.Setup
             if( configurator.Host != this ) throw new ArgumentException( $"{nameof(StObjConfigurationLayer)} is not hosted by this {nameof(StObjEngineConfigurator)}.", nameof( configurator ) );
             StObjConfigurationLayer? prev = null;
             StObjConfigurationLayer? x = _first;
-            while( x != configurator ) x = x!.Next;
+            while( x != configurator )
+            {
+                prev = x;
+                x = x!.Next;
+            }
             if( prev != null ) prev.Next = configurator.Next;
             else _first = configurator.Next;
             configurator.Host = null;

@@ -16,7 +16,7 @@ namespace CK.Setup
     partial class MutableItem
     {
 
-        public object CreateStructuredObject( IActivityMonitor monitor )
+        public object? CreateStructuredObject( IActivityMonitor monitor )
         {
             Debug.Assert( Specialization == null );
             Debug.Assert( _leafData.StructuredObject == null, "Called once and only once." );
@@ -41,7 +41,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the post build properties to set. Potentially not null only on leaves.
         /// </summary>
-        public IReadOnlyList<PropertySetter> PostBuildProperties => _leafData?.PostBuildProperties;
+        public IReadOnlyList<PropertySetter>? PostBuildProperties => _leafData?.PostBuildProperties;
 
         internal void RegisterRemainingDirectPropertiesAsPostBuildProperties( BuildValueCollector valueCollector )
         {

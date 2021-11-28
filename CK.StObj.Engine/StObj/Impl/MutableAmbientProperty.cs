@@ -29,12 +29,13 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Initializes a new marker object: the ambient property has not been found. 
+        /// Initializes a new marker object: the ambient property has not been found.
+        /// A marker is not used.
         /// </summary>
         internal MutableAmbientProperty( MutableItem owner, string unexistingPropertyName )
             : base( owner, StObjMutableReferenceKind.AmbientProperty )
         {
-            _info = null;
+            _info = null!;
             Type = typeof(object);
             IsOptional = false;
             _maxSpecializationDepthSet = Int32.MaxValue;
@@ -57,7 +58,7 @@ namespace CK.Setup
         /// <summary>
         /// Sets the final value. Public in order to implement IStObjFinalAmbientProperty.SetValue.
         /// </summary>
-        public void SetValue( object value )
+        public void SetValue( object? value )
         {
             _maxSpecializationDepthSet = Int32.MaxValue;
             Value = value;

@@ -102,12 +102,12 @@ namespace CK.StObj.Engine.Tests.Service
 
         public interface IOther1UserCloPoc : IUserCloPoc
         {
-            int OtherId1 { get; }
+            int OtherId1 { get; set; }
         }
 
         public interface IOther2UserCloPoc : ICultureUserCloPoc
         {
-            int OtherId2 { get; }
+            int OtherId2 { get; set; }
         }
 
         public interface IUserFinalCloPoc : IOther1UserCloPoc, IOther2UserCloPoc
