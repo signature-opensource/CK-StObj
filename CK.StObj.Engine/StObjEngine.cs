@@ -5,7 +5,6 @@ using CK.Core;
 using System.Diagnostics;
 using System.Xml.Linq;
 using System.IO;
-using CK.Text;
 
 #pragma warning disable CA1001 // Types that own disposable fields should be disposable (StObjEngine._status is used only 
 
@@ -61,10 +60,8 @@ namespace CK.Setup
         /// <param name="config">Configuration that describes the key aspects of the build.</param>
         public StObjEngine( IActivityMonitor monitor, StObjEngineConfiguration config )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( config == null ) throw new ArgumentNullException( nameof( config ) );
-            _monitor = monitor;
-            _config = config;
+            _monitor = monitor ?? throw new ArgumentNullException( nameof( monitor ) );
+            _config = config ?? throw new ArgumentNullException( nameof( config ) );
         }
 
         /// <summary>
@@ -419,7 +416,7 @@ namespace CK.Setup
                                        .Select( e => e.Value )
                                        .Where( s => s != null );
 
-                    var path = (string)xB.Attribute( StObjEngineConfiguration.xPath );
+                    var path = (string?)xB.Attribute( StObjEngineConfiguration.xPath );
                     if( path == null ) throw new ArgumentException( $"Missing Path attribute in '{xB}'." );
 
                     var rootedPath = MakeAbsolutePath( path );

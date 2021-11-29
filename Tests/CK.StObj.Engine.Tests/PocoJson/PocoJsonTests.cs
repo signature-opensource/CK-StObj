@@ -231,8 +231,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var oSFromL = JsonTestHelper.Deserialize<IWithSet>( services, oLb.Span );
             Debug.Assert( oLFromS != null && oSFromL != null );
 
-            oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
-            oSFromL.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
+            oLFromS.Numbers.Should().BeEquivalentTo( new[] { 12, 87, 54 } );
+            oSFromL.Numbers.Should().BeEquivalentTo( new[] { 1, 2, 3, 4, 5 } );
         }
 
         public interface IWithArray : IPoco
@@ -265,8 +265,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var oSFromA = JsonTestHelper.Deserialize<IWithSet>( services, oAb.Span );
             Debug.Assert( oAFromS != null && oSFromA != null );
 
-            oAFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
-            oSFromA.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
+            oAFromS.Numbers.Should().BeEquivalentTo( new[] { 12, 87, 54 } );
+            oSFromA.Numbers.Should().BeEquivalentTo( new[] { 1, 2, 3, 4, 5 } );
         }
 
 

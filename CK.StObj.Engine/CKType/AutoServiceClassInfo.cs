@@ -1,6 +1,5 @@
 using CK.Core;
 using CK.Setup;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -673,6 +672,7 @@ namespace CK.Setup
                     if( !(initializationError |= !EnsureCtorBinding( m, collector )) )
                     {
                         var replacedTargets = GetReplacedTargetsFromReplaceServiceAttribute( m, collector );
+                        Debug.Assert( ConstructorParameters != null );
                         initializationError |= AddCoveredParameters( ConstructorParameters.Select( p => p.ServiceClass )
                                                                        .Where( p => p != null )
                                                                        .Select( p => p! )

@@ -593,7 +593,7 @@ namespace CK.StObj.Engine.Tests.Service
 
                     } ).Services;
                     var resolved = s.GetService<ServiceWithVaryingParams>();
-                    resolved.Things.Should().BeEquivalentTo( 1, 2, 3 );
+                    resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
                 }
             }
 

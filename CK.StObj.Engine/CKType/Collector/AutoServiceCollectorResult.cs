@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,7 +95,7 @@ namespace CK.Setup
         /// <param name="monitor">Logger (must not be null).</param>
         public void LogErrorAndWarnings( IActivityMonitor monitor )
         {
-            if( monitor == null ) throw new ArgumentNullException( "monitor" );
+            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             using( monitor.OpenTrace( $"Auto Services: {LeafInterfaces.Count} most specialized interfaces and {RootClasses.Count} concrete paths." ) )
             {
                 foreach( var a in ClassAmbiguities )

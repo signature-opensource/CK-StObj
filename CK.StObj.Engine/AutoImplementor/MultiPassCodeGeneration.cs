@@ -166,7 +166,7 @@ namespace CK.Setup
                     }
                     object? o = m.Invoke( _secondRunner, values );
                     if( o == null ) r = CSCodeGenerationResult.Success;
-                    else if( o is CSCodeGenerationResult ) r = (CSCodeGenerationResult)o;
+                    else if( o is CSCodeGenerationResult result ) r = result;
                     else if( o is bool b ) r = b ? CSCodeGenerationResult.Success : CSCodeGenerationResult.Failed;
                     else
                     {

@@ -23,7 +23,7 @@ namespace CK.Setup
         /// If information has to be shared among different <see cref="IGeneratedBinPath"/> contexts, then the <see cref="ICSCodeGenerationContext.GlobalMemory"/>
         /// must be used.
         /// </summary>
-        IDictionary<object, object?> Memory { get; }
+        Dictionary<object, object?> Memory { get; }
 
         /// <summary>
         /// Gets the <see cref="ModuleBuilder"/> to use to emit stub types and other

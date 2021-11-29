@@ -7,7 +7,6 @@ using CK.Reflection;
 using CK.CodeGen;
 using System.Reflection.Emit;
 using CK.Core;
-using CK.Text;
 using CK.Setup;
 
 #nullable enable

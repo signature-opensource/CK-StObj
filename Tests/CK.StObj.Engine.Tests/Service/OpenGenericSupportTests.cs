@@ -69,7 +69,8 @@ namespace CK.StObj.Engine.Tests.Service
             r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
 
             r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
-            r.Result.EngineMap.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo( typeof(InterfaceService) );
+            r.Result.EngineMap.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo(
+                new[] { typeof( InterfaceService ) } );
 
             r.Services.GetService<InterfaceService>().Should().Be( r.Services.GetService<ClassFromInterfaceService>() );
         }

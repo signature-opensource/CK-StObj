@@ -1,7 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
-using CK.Text;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
@@ -221,20 +220,20 @@ namespace CK.Setup
                     return new CodeGenerateResult( true, generatedFileNames );
                 }
                 // The signature may be externally injected one day but currently, we always compute it.
-                SHA1Value signature = SHA1Value.ZeroSHA1;
+                SHA1Value signature = SHA1Value.Zero;
 
                 // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
                 // without the signature header, a part is injected at the top of the file (before anything else) and
                 // the final big string is built only once.
                 var ws = codeGenContext.Assembly.Code;
-                if( signature.IsZero || signature == SHA1Value.EmptySHA1 )
+                if( signature.IsZero || signature == SHA1Value.Empty )
                 {
-                    using( var s = new SHA1Stream() )
+                    using( var s = new HashStream( System.Security.Cryptography.HashAlgorithmName.SHA1 ) )
                     using( var w = new StreamWriter( s ) )
                     {
                         ws.WriteGlobalSource( w );
                         w.Flush();
-                        signature = s.GetFinalResult();
+                        signature = new SHA1Value( s.GetFinalResult().AsSpan() );
                     }
                     monitor.Info( $"Computed file signature: {signature}." );
                 }
@@ -552,7 +551,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootCtor.Append( "});" ).NewLine();
         }
 
-        void GenerateVFeatures( IActivityMonitor monitor, ITypeScope rootType, IFunctionScope rootCtor, IReadOnlyCollection<VFeature> features )
+        static void GenerateVFeatures( IActivityMonitor monitor, ITypeScope rootType, IFunctionScope rootCtor, IReadOnlyCollection<VFeature> features )
         {
             monitor.Info( $"Generating VFeatures: {features.Select( f => f.ToString()).Concatenate()}." );
 
@@ -581,9 +580,9 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             {
                 b.Append( "monitor" );
             }
-            else if( o is MutableItem )
+            else if( o is MutableItem item )
             {
-                b.Append( $"_stObjs[{((MutableItem)o).IndexOrdered}].FinalImplementation.Implementation" );
+                b.Append( $"_stObjs[{item.IndexOrdered}].FinalImplementation.Implementation" );
             }
             else
             {

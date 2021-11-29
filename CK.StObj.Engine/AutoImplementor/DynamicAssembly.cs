@@ -37,7 +37,7 @@ namespace CK.Setup
         }
 
         /// <inheritdoc />
-        public IDictionary<object,object?> Memory => _memory;
+        public Dictionary<object,object?> Memory => _memory;
 
         /// <inheritdoc />
         public ModuleBuilder StubModuleBuilder { get; }

@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,7 +51,7 @@ namespace CK.Setup.Json
         int _typeInfoAutoNumber;
 
         // The list of readers for "ECMAScript standard" mode. Initialized with "BigInt" and "Number".
-        List<ECMAScriptStandardReader> _standardReaders;
+        readonly List<ECMAScriptStandardReader> _standardReaders;
         bool? _finalizedCall;
 
         /// <summary>

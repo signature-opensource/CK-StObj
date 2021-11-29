@@ -1,7 +1,7 @@
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
@@ -35,6 +35,7 @@ namespace CK.Setup
         /// When set to null (the default), <see cref="DefaultGeneratedAssemblyName"/> "CK.StObj.AutoAssembly" is returned.
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
+        [AllowNull]
         public string GeneratedAssemblyName
         {
             get => _generatedAssemblyName ?? DefaultGeneratedAssemblyName;

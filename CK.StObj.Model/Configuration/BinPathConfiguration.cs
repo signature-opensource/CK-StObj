@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,8 +30,8 @@ namespace CK.Setup
             /// <param name="e">The Xml element.</param>
             public TypeConfiguration( XElement e )
             {
-                Name = (string)e.Attribute( StObjEngineConfiguration.xName ) ?? e.Value;
-                string k = (string)e.Attribute( StObjEngineConfiguration.xKind );
+                Name = (string?)e.Attribute( StObjEngineConfiguration.xName ) ?? e.Value;
+                var k = (string?)e.Attribute( StObjEngineConfiguration.xKind );
                 if( k != null ) Kind = (AutoServiceKind)Enum.Parse( typeof( AutoServiceKind ), k.Replace( '|', ',' ) );
                 Optional = (bool?)e.Attribute( StObjEngineConfiguration.xOptional ) ?? false;
             }
@@ -100,9 +99,9 @@ namespace CK.Setup
         public BinPathConfiguration( XElement e )
         {
             Name = (string?)e.Attribute( StObjEngineConfiguration.xName );
-            Path = (string)e.Attribute( StObjEngineConfiguration.xPath );
-            OutputPath = (string)e.Element( StObjEngineConfiguration.xOutputPath );
-            ProjectPath = (string)e.Element( StObjEngineConfiguration.xProjectPath );
+            Path = (string?)e.Attribute( StObjEngineConfiguration.xPath );
+            OutputPath = (string?)e.Element( StObjEngineConfiguration.xOutputPath );
+            ProjectPath = (string?)e.Element( StObjEngineConfiguration.xProjectPath );
 
             if( e.Element( "SkipCompilation" ) != null )
             {

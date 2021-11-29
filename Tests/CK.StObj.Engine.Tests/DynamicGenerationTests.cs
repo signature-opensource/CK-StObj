@@ -378,7 +378,7 @@ namespace CK.StObj.Engine.Tests
                 // a Sql database context with the default database and secondary databases).
                 public AttributeImpl( IServiceProvider p, Func<string> hello )
                 {
-                    TestHelper.Monitor.Info( hello );
+                    TestHelper.Monitor.Info( hello() );
                 }
             }
 

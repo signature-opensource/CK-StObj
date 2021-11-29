@@ -70,7 +70,7 @@ namespace CK.Core
         /// </summary>
         /// <param name="obj">The other object.</param>
         /// <returns>True when equals, false otherwise.</returns>
-        public override bool Equals( object obj ) => obj is VFeature a ? Equals( a ) : false;
+        public override bool Equals( object? obj ) => obj is VFeature a && Equals( a );
 
         /// <summary>
         /// Returns a hash based on <see cref="Name"/> and <see cref="Version"/>.

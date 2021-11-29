@@ -97,7 +97,7 @@ namespace CK.StObj.Engine.Tests.Service
             interfaces.Should().HaveCount( 1 );
             var iSU = interfaces[0];
             iSU.Type.Should().Be( typeof( ISU ) );
-            iSU.Interfaces.Select( i => i.Type ).Should().BeEquivalentTo( typeof(ISBase), typeof(IS1), typeof(IS2) );
+            iSU.Interfaces.Select( i => i.Type ).Should().BeEquivalentTo( new[] { typeof( ISBase ), typeof( IS1 ), typeof( IS2 ) } );
             r.CKTypeResult.AutoServices.RootClasses.Should().ContainSingle().And.Contain( c => c.ClassType == typeof( ServiceUnifiedImpl ) );
             Debug.Assert( r.EngineMap != null, "No initialization error." );
             r.EngineMap.Services.SimpleMappings[typeof( ISU )].ClassType.Should().BeSameAs( typeof( ServiceUnifiedImpl ) );
@@ -175,11 +175,11 @@ namespace CK.StObj.Engine.Tests.Service
                 var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
                 interfaces.Should().HaveCount( 1 );
                 var classes = r.CKTypeResult.AutoServices.RootClasses;
-                classes.Select( c => c.ClassType ).Should().BeEquivalentTo( typeof( ServiceImplBaseBase ) );
+                classes.Select( c => c.ClassType ).Should().BeEquivalentTo( new[] { typeof( ServiceImplBaseBase ) } );
                 r.CKTypeResult.AutoServices.ClassAmbiguities.Should().HaveCount( 1 );
                 r.CKTypeResult.AutoServices.ClassAmbiguities[0]
                     .Select( c => c.ClassType )
-                    .Should().BeEquivalentTo( typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) );
+                    .Should().BeEquivalentTo( new[] { typeof( ServiceImplRootProblem ), typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) } );
             }
         }
 
