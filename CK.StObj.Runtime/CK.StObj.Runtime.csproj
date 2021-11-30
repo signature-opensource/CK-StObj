@@ -3,7 +3,7 @@
   <Import Project="..\Common\Shared.props" />
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Description>Façade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
+    <Description>Facade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>

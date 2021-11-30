@@ -1,4 +1,3 @@
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,7 +51,7 @@ namespace CK.Core
             GeneratedSignature = s;
             Names = n;
             StObjMapType = t;
-            AssemblyName = t.Assembly.GetName().Name;
+            AssemblyName = t.Assembly.GetName().Name!;
         }
 
         internal static StObjMapInfo? Create( IActivityMonitor m, Assembly a, CustomAttributeData attr )

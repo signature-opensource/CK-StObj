@@ -1,12 +1,9 @@
 using CK.CodeGen;
-using CK.Text;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using CK.Core;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace CK.Setup
 {

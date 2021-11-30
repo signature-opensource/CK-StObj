@@ -19,7 +19,6 @@ namespace CK.Setup
     /// </summary>
     partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineMap, IStObjServiceEngineMap
     {
-        readonly CKTypeKindDetector _typeKindDetector;
         readonly Dictionary<object, MutableItem> _map;
         readonly IReadOnlyList<MutableItem> _finaImplementations;
         readonly IReadOnlyCollection<Assembly> _assemblies;
@@ -62,8 +61,6 @@ namespace CK.Setup
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
             _serviceRealObjects = new List<MutableItem>();
             _serviceToObjectMapExposed = _serviceToObjectMap.AsIReadOnlyDictionary<Type,MutableItem,IStObjFinalImplementation>();
-
-            _typeKindDetector = typeKindDetector;
         }
 
         internal void AddClassMapping( Type t, MutableItem m )
@@ -86,7 +83,7 @@ namespace CK.Setup
         /// </summary>
         public IStObjObjectEngineMap StObjs => this;
 
-        SHA1Value IStObjMap.GeneratedSignature => SHA1Value.EmptySHA1;
+        SHA1Value IStObjMap.GeneratedSignature => SHA1Value.Empty;
 
         IStObjObjectMap IStObjMap.StObjs => this;
 

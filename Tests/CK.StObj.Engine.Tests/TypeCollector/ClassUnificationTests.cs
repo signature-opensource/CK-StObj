@@ -170,7 +170,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             var a = ambiguities[0];
             a.Should().HaveCount( 1 + 2 );
             a[0].ClassType.Should().BeSameAs( typeof( s_AS2Base ) );
-            a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( typeof( s_AS2a ), typeof( s_AS2b ) );
+            a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( new[] { typeof( s_AS2a ), typeof( s_AS2b ) } );
         }
 
         [TestCase( typeof( s_SubUnifier1 ) )]
@@ -189,7 +189,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             var a = ambiguities[0];
             a.Should().HaveCount( 1 + 4 );
             a[0].ClassType.Should().BeSameAs( typeof( s_A ) );
-            a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) );
+            a.Skip( 1 ).Select( i => i.ClassType ).Should().BeEquivalentTo( new[] { typeof( s_AS1 ), unifier, typeof( s_AS2a ), typeof( s_AS2b ) } );
         }
 
         [Test]

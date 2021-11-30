@@ -2,7 +2,6 @@
 
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -94,7 +93,7 @@ namespace CK.Setup.Json
             // That's why we generate a dedicated switch-case for writing here. If one of the handler is bound to the ObjectType (currently
             // that's true when jsonTypeInfo.IsFinal is false), we call the generic write object in the default: case.
             //
-            Debug.Assert( allHandlers.Select( h => h.TypeInfo.GenCSharpName ).GroupBy( Util.FuncIdentity ).Count( g => g.Count() > 1 ) == 0 );
+            Debug.Assert( !allHandlers.Select( h => h.TypeInfo.GenCSharpName ).GroupBy( Util.FuncIdentity ).Any( g => g.Count() > 1 ) );
 
             var info = new PocoJsonPropertyInfo( p, allHandlers, isECMAScriptStandardCompliant ? ecmaStandardReadhandlers : null );
             _finalReadWrite.Add( () =>

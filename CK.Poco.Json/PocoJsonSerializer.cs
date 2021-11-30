@@ -179,8 +179,8 @@ namespace CK.Core
 
             if( reader.TokenType != JsonTokenType.StartArray ) throw new JsonException( "Expecting Json Poco array." );
             reader.Read();
-            string name = reader.GetString();
-            IPocoFactory? f = @this.Find( name );
+            string? name = reader.GetString();
+            IPocoFactory? f = name != null ? @this.Find( name ) : null;
             if( f == null ) throw new JsonException( $"Poco type '{name}' not found." );
             reader.Read();
             var p = ((IFactoryReader)f).ReadTyped( ref reader, options );

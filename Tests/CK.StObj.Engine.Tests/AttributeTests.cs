@@ -311,7 +311,7 @@ namespace CK.StObj.Engine.Tests
             r.EngineMap.AllTypesAttributesCache.Values
                           .Select( attrs => attrs.Type )
                           .Where( t => !typeof(PocoDirectory).IsAssignableFrom( t ) )
-                          .Should().BeEquivalentTo( typeof( S6 ), typeof( IServiceWithAttributeOnMember ) );
+                          .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
             r.EngineMap.AllTypesAttributesCache.Values
                           .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() )
@@ -355,8 +355,10 @@ namespace CK.StObj.Engine.Tests
             var r = TestHelper.GetSuccessfulResult( c );
             Debug.Assert( r.EngineMap != null );
 
-            r.EngineMap.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo( typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) );
-            r.EngineMap.AllTypesAttributesCache.Values.SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
+            r.EngineMap.AllTypesAttributesCache.Values.Select( attrs => attrs.Type ).Should().BeEquivalentTo(
+                new[] { typeof( S7 ), typeof( IRealObjectWithAttributeOnMember ) } );
+            r.EngineMap.AllTypesAttributesCache.Values
+                .SelectMany( attrs => attrs.GetAllCustomAttributes<IAttributeTypeSample>() ).Should().HaveCount( 1 );
 
             OneCtorAttributeImpl.Constructed.Should().BeTrue();
         }

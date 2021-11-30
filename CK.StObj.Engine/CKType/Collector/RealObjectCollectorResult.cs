@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CK.Text;
 using CK.Core;
 
 #nullable enable
@@ -15,7 +14,7 @@ namespace CK.Setup
     /// </summary>
     public class RealObjectCollectorResult
     {
-        IReadOnlyList<IReadOnlyList<MutableItem>> _concreteClassesPath;
+        readonly IReadOnlyList<IReadOnlyList<MutableItem>> _concreteClassesPath;
 
         internal RealObjectCollectorResult(
             StObjObjectEngineMap mappings,
@@ -77,7 +76,7 @@ namespace CK.Setup
         /// <param name="monitor">Logger (must not be null).</param>
         public void LogErrorAndWarnings( IActivityMonitor monitor )
         {
-            if( monitor == null ) throw new ArgumentNullException( "monitor" );
+            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             using( monitor.OpenTrace( $"Real Objects: {EngineMap.RawMappings.Count} mappings for {_concreteClassesPath.Count} concrete paths." ) )
             {
                 foreach( var a in InterfaceAmbiguities )

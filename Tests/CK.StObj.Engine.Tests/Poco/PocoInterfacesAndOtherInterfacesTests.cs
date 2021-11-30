@@ -62,13 +62,13 @@ namespace CK.StObj.Engine.Tests.Poco
             var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
             Debug.Assert( poco != null );
 
-            poco.AllInterfaces.Keys.Should().BeEquivalentTo( typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) );
-            poco.OtherInterfaces.Keys.Should().BeEquivalentTo( typeof( ICommand ),
-                                                               typeof( ICommandPart ),
-                                                               typeof( ICommandAuthUnsafe ),
-                                                               typeof( ICommandAuthNormal ),
-                                                               typeof( ICommandAuthCritical ),
-                                                               typeof( ICommandAuthDeviceId ) );
+            poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) } );
+            poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
+                                                                       typeof( ICommandPart ),
+                                                                       typeof( ICommandAuthUnsafe ),
+                                                                       typeof( ICommandAuthNormal ),
+                                                                       typeof( ICommandAuthCritical ),
+                                                                       typeof( ICommandAuthDeviceId ) } );
         }
 
         [Test]
@@ -80,12 +80,12 @@ namespace CK.StObj.Engine.Tests.Poco
                 var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
                 Debug.Assert( poco != null );
 
-                poco.AllInterfaces.Keys.Should().BeEquivalentTo( typeof( IFinal1 ), typeof( IIndependent ) );
-                poco.OtherInterfaces.Keys.Should().BeEquivalentTo( typeof( ICommand ),
-                                                                   typeof( ICommandPart ),
-                                                                   typeof( ICommandAuthUnsafe ),
-                                                                   typeof( ICommandAuthNormal ),
-                                                                   typeof( ICommandAuthCritical ) );
+                poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IIndependent ) } );
+                poco.OtherInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( ICommand ),
+                                                                           typeof( ICommandPart ),
+                                                                           typeof( ICommandAuthUnsafe ),
+                                                                           typeof( ICommandAuthNormal ),
+                                                                           typeof( ICommandAuthCritical ) } );
             }
             // Without IPoco at all: no definers are referenced.
             {
@@ -93,7 +93,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
                 Debug.Assert( poco != null );
 
-                poco.AllInterfaces.Keys.Should().BeEquivalentTo( typeof( IIndependent ) );
+                poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );
                 poco.OtherInterfaces.Keys.Should().BeEmpty();
             }
         }

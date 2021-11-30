@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,7 +26,7 @@ namespace CK.Setup
             public HashSet<Type> OtherInterfaces;
 
             public readonly Dictionary<string, PocoPropertyInfo> Properties;
-            IReadOnlyDictionary<string, IPocoPropertyInfo> _exposedProperties;
+            readonly IReadOnlyDictionary<string, IPocoPropertyInfo> _exposedProperties;
             public IReadOnlyList<PocoPropertyInfo> PropertyList { get; }
 
             IReadOnlyDictionary<string, IPocoPropertyInfo> IPocoRootInfo.Properties => _exposedProperties;

@@ -6,7 +6,6 @@ using System.Xml.Linq;
 using CK.Core;
 using CK.Setup;
 using CK.Testing.StObjSetup;
-using CK.Text;
 using CKSetup;
 
 namespace CK.Testing

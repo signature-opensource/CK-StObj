@@ -5,6 +5,9 @@
     <IsPackable>False</IsPackable>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CK.Core" Version="15.0.0-a01" />
+  </ItemGroup>
   <ItemGroup />
   <ItemGroup>
     <PackageReference Include="NuGet.Credentials" Version="6.0.0" />

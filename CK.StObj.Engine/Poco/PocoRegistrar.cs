@@ -2,7 +2,6 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Reflection;
 using CK.Setup;
-using CK.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;

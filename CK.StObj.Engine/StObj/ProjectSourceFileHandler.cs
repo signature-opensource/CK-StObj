@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using CK.Core;
-using CK.Text;
 
 namespace CK.Setup
 {
