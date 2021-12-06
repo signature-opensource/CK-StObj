@@ -23,11 +23,11 @@ namespace CK.StObj.Engine.Tests
             e.Attribute( StObjEngineConfiguration.xType ).Should().NotBeNull( "The Type attribute has been used to locate this type!" );
 
             // This is how Aspect version should be managed.
-            int version = (int)e.Attribute( StObjEngineConfiguration.xVersion );
+            int version = (int)e.AttributeRequired( StObjEngineConfiguration.xVersion );
             if( version <= 0 || version > Version ) throw new ArgumentOutOfRangeException( nameof( Version ) );
 
             if( Version == 1 ) Data = "This was not available in version 1.";
-            else Data = (string)e.Element( "Data" ) ?? "<No Data>";
+            else Data = (string?)e.Element( "Data" ) ?? "<No Data>";
         }
 
         public XElement SerializeXml( XElement e )

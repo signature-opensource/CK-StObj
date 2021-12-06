@@ -286,11 +286,11 @@ namespace CK.Setup
                 Debug.Assert( maxICount < expanded.Count );
                 if( maxICount < expanded.Count - 1 )
                 {
-                    monitor.Error( $"Poco family '{interfaces.Select( b => b.FullName ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
+                    monitor.Error( $"Poco family '{interfaces.Select( b => b.ToCSharpName() ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
                     return null;
                 }
                 Debug.Assert( closure != null, "Since there is at least one interface." );
-                monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
+                monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.ToCSharpName() ).Concatenate()}." );
             }
             // Supports the IPocoClass interface.
             tB.AddInterfaceImplementation( typeof( IPocoClass ) );

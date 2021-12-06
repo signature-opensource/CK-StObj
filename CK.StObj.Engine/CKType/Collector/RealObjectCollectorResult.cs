@@ -81,11 +81,11 @@ namespace CK.Setup
             {
                 foreach( var a in InterfaceAmbiguities )
                 {
-                    monitor.Error( $"Interface '{a[0].FullName}' is implemented by more than one concrete classes: {a.Skip( 1 ).Select( t => t.FullName ).Concatenate( "', '" )}." );
+                    monitor.Error( $"Interface '{a[0].FullName}' is implemented by more than one concrete classes: {a.Skip( 1 ).Select( t => t.ToCSharpName() ).Concatenate( "', '" )}." );
                 }
                 foreach( var a in ClassAmbiguities )
                 {
-                    monitor.Error( $"Base class '{a[0].FullName}' has more than one concrete specialization: '{a.Skip( 1 ).Select( t => t.FullName ).Concatenate( "', '" )}'." );
+                    monitor.Error( $"Base class '{a[0].FullName}' has more than one concrete specialization: '{a.Skip( 1 ).Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
                 }
                 CommonLogAndWarings( monitor, AbstractTails );
             }
@@ -95,7 +95,7 @@ namespace CK.Setup
         {
             if( abstractTails.Count > 0 )
             {
-                monitor.Warn( $"Abstract classes without specialization are ignored: {abstractTails.Select( t => t.FullName ).Concatenate()}." );
+                monitor.Warn( $"Abstract classes without specialization are ignored: {abstractTails.Select( t => t.ToCSharpName() ).Concatenate()}." );
             }
         }
     }

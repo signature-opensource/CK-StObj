@@ -248,12 +248,12 @@ namespace CK.Setup
 
             public string BaseInterfacesToString()
             {
-                return Interfaces.Where( i => !i.IsSpecialized ).Select( i => i.Type.FullName ).Concatenate( "', '" );
+                return Interfaces.Where( i => !i.IsSpecialized ).Select( i => i.Type.ToCSharpName() ).Concatenate( "', '" );
             }
 
             public string RootInterfacesToString()
             {
-                return Interfaces.Where( i => i.SpecializationDepth == 0 ).Select( i => i.Type.FullName ).Concatenate( "', '" );
+                return Interfaces.Where( i => i.SpecializationDepth == 0 ).Select( i => i.Type.ToCSharpName() ).Concatenate( "', '" );
             }
 
             public override string ToString()
