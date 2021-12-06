@@ -166,7 +166,7 @@ namespace CK.Setup
                                                     && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( ExternalNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
                 if( others.Any() )
                 {
-                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.ToCSharpName() ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.FullName}') should define the Poco names." );
+                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.ToCSharpName() ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.ToCSharpName()}') should define the Poco names." );
                     return false;
                 }
                 Name = name;
