@@ -92,7 +92,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( ICmdSecondary ) );
             using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                     && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).FullName}'.", StringComparison.Ordinal ) ) ) ) )
+                                                                     && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName( true, true, true )}'.", StringComparison.Ordinal ) ) ) ) )
             {
                 TestHelper.GetFailedResult( c );
             }

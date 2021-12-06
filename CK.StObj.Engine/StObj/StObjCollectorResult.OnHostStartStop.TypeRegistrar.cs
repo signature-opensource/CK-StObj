@@ -67,7 +67,7 @@ namespace CK.Setup
                     if( idx != 1 )
                     {
                         declSpace.Append( "var s" ).Append( idx )
-                             .Append( " = scope.ServiceProvider.GetService<" ).AppendCSharpName( t ).Append( ">( " ).Append( !opt ).Append( " );" ).NewLine();
+                             .Append( " = scope.ServiceProvider.GetService<" ).AppendCSharpName( t, true, true, true ).Append( ">( " ).Append( !opt ).Append( " );" ).NewLine();
                     }
                 }
                 foreach( var (name, def) in _parametersArray )

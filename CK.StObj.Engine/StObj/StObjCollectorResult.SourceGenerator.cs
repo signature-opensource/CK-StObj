@@ -378,7 +378,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 if( m.Specialization == null )
                 {
                     rootCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
-                            .AppendCSharpName( m.FinalImplementation.FinalType ).Append("(), " )
+                            .AppendCSharpName( m.FinalImplementation.FinalType, true, true, true ).Append("(), " )
                             .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();

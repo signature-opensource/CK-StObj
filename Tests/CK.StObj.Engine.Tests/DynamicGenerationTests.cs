@@ -299,7 +299,7 @@ namespace CK.StObj.Engine.Tests
                         }
                         else
                         {
-                            scope.Append( "default(" ).AppendCSharpName( p.PropertyType ).Append( ")" );
+                            scope.Append( "default(" ).AppendCSharpName( p.PropertyType, true, true, true ).Append( ")" );
                         }
                         scope.Append( ";" ).NewLine();
                     }

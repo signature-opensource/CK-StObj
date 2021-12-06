@@ -70,7 +70,7 @@ namespace CK.Setup
             }
             if( @this.PocoLike.ByType.TryGetValue( autoType, out var pocoLike ) && pocoLike.IsDefaultNewable )
             {
-                writer.Append( "new " ).AppendCSharpName( autoType ).Append( "();" ).NewLine();
+                writer.Append( "new " ).AppendCSharpName( autoType, true, true, true ).Append( "();" ).NewLine();
                 return;
             }
             if( autoType.IsGenericType )
@@ -78,22 +78,22 @@ namespace CK.Setup
                 Type genType = autoType.GetGenericTypeDefinition();
                 if( genType == typeof( IList<> ) || genType == typeof( List<> ) )
                 {
-                    writer.Append( "new List<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                    writer.Append( "new List<" ).AppendCSharpName( autoType.GetGenericArguments()[0], true, true, true ).Append( ">();" ).NewLine();
                     return;
                 }
                 if( genType == typeof( IDictionary<,> ) || genType == typeof( Dictionary<,> ) )
                 {
                     writer.Append( "new Dictionary<" )
-                                        .AppendCSharpName( autoType.GetGenericArguments()[0] )
+                                        .AppendCSharpName( autoType.GetGenericArguments()[0], true, true, true )
                                         .Append( ',' )
-                                        .AppendCSharpName( autoType.GetGenericArguments()[1] )
+                                        .AppendCSharpName( autoType.GetGenericArguments()[1], true, true, true )
                                         .Append( ">();" )
                                         .NewLine();
                     return;
                 }
                 if( genType == typeof( ISet<> ) || genType == typeof( HashSet<> ) )
                 {
-                    writer.Append( "new HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0] ).Append( ">();" ).NewLine();
+                    writer.Append( "new HashSet<" ).AppendCSharpName( autoType.GetGenericArguments()[0], true, true, true ).Append( ">();" ).NewLine();
                     return;
                 }
             }

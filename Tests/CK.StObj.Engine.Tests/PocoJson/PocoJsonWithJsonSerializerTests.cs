@@ -79,7 +79,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             r.Read().Should().BeFalse();
 
             o2.Should().NotBeEquivalentTo( o, "Unfortunately... Sub IList is not filled." );
-            o2.Sub.Should().BeEmpty();
+            o2!.Sub.Should().BeEmpty();
         }
 
         public class IndependentObjectWithReadonlyList
@@ -137,7 +137,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             r.Read().Should().BeFalse();
 
             o2.Should().NotBeEquivalentTo( o, "Unfortunately... Sub List is not filled." );
-            o2.Sub.Should().BeEmpty();
+            o2!.Sub.Should().BeEmpty();
         }
         public enum Status
         {

@@ -456,13 +456,13 @@ namespace CK.Setup.Json
             info.Configure( ( ICodeWriter write, string variableName ) =>
             {
                 write.Append( "System.Text.Json.JsonSerializer.Serialize<" )
-                     .AppendCSharpName( t.Type, false )
+                     .AppendCSharpName( t.Type, true, false, true )
                      .Append( ">( w, " ).Append( variableName ).Append( ", (options ?? PocoJsonSerializerOptions.Default).ForJsonSerializer );" );
             },
             ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
             {
                 read.Append( variableName ).Append( " = System.Text.Json.JsonSerializer.Deserialize<" )
-                     .AppendCSharpName( t.Type, false )
+                     .AppendCSharpName( t.Type, true, false, true )
                      .Append( ">( ref r, (options ?? PocoJsonSerializerOptions.Default).ForJsonSerializer );" ).NewLine()
                      .Append( "r.Read();" );
             } );

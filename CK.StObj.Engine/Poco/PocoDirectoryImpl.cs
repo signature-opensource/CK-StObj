@@ -184,10 +184,10 @@ namespace CK.Setup
                 foreach( var i in root.Interfaces )
                 {
                     tFB.Definition.BaseTypes.Add( new ExtendedTypeName( i.PocoFactoryInterface.ToCSharpName() ) );
-                    tFB.AppendCSharpName( i.PocoInterface )
+                    tFB.AppendCSharpName( i.PocoInterface, true, true, true )
                        .Space()
-                       .AppendCSharpName( i.PocoFactoryInterface )
-                       .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass ).Append( "();" )
+                       .AppendCSharpName( i.PocoFactoryInterface, true, true, true )
+                       .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass, true, true, true ).Append( "();" )
                        .NewLine();
                 }
             }
