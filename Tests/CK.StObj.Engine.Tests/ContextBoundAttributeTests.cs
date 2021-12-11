@@ -74,7 +74,7 @@ namespace CK.StObj.Engine.Tests
 
         public class S2 : IRealObject
         {
-            [ContextBoundDelegation( "CK.StObj.Engine.Tests.AttributeTests+DirectAttributeImpl, CK.StObj.Engine.Tests" )]
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+DirectAttributeImpl, CK.StObj.Engine.Tests" )]
             void M() { }
         }
 
@@ -123,7 +123,7 @@ namespace CK.StObj.Engine.Tests
         public class OneAttribute : ContextBoundDelegationAttribute, IAttributeContextBoundInitializer
         {
             public OneAttribute()
-                : base( "CK.StObj.Engine.Tests.AttributeTests+OneAttributeImpl, CK.StObj.Engine.Tests" )
+                : base( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+OneAttributeImpl, CK.StObj.Engine.Tests" )
             {
 
             }
@@ -186,7 +186,7 @@ namespace CK.StObj.Engine.Tests
         public class OneCtorAttribute : ContextBoundDelegationAttribute
         {
             public OneCtorAttribute()
-                : base( "CK.StObj.Engine.Tests.AttributeTests+OneCtorAttributeImpl, CK.StObj.Engine.Tests" )
+                : base( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+OneCtorAttributeImpl, CK.StObj.Engine.Tests" )
             {
             }
         }
@@ -245,7 +245,7 @@ namespace CK.StObj.Engine.Tests
         public class OtherCtorAttribute : ContextBoundDelegationAttribute
         {
             public OtherCtorAttribute()
-                : base( "CK.StObj.Engine.Tests.AttributeTests+OtherCtorAttributeImpl, CK.StObj.Engine.Tests" )
+                : base( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+OtherCtorAttributeImpl, CK.StObj.Engine.Tests" )
             {
             }
         }
