@@ -9,11 +9,16 @@ using System.Linq;
 using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
+#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable CA1018 // Mark attributes with AttributeUsageAttribute
+#pragma warning disable IDE0051 // Remove unused private members
+#pragma warning disable CA2211 // Non-constant fields should not be visible
+
 namespace CK.StObj.Engine.Tests
 {
 
     [TestFixture]
-    public class AttributeTests
+    public class ContextBoundAttributeTests
     {
         #region S1 
 
@@ -159,7 +164,7 @@ namespace CK.StObj.Engine.Tests
 
             public static bool Constructed;
 
-            public OneCtorAttributeImpl( AttributeTests thisTest, OneCtorAttribute a, ITypeAttributesCache owner, Type type, MethodInfo m )
+            public OneCtorAttributeImpl( ContextBoundAttributeTests thisTest, OneCtorAttribute a, ITypeAttributesCache owner, Type type, MethodInfo m )
             {
                 _attribute = a ?? throw new ArgumentNullException( nameof( a ) );
                 Constructed = true;

@@ -7,8 +7,9 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-
 using static CK.Testing.StObjEngineTestHelper;
+
+#pragma warning disable IDE0051 // Remove unused private members
 
 namespace CK.StObj.Engine.Tests.Service
 {
@@ -164,12 +165,11 @@ namespace CK.StObj.Engine.Tests.Service
             /// <param name="optionalService">
             /// This is injected if it exists in the StartupServices: startup services can be optional.
             /// </param>
-            void ConfigureServices(
-                StObjContextRoot.ServiceRegister register,
-                IStObjObjectMap ambientObjects,
-                SuperStartupService superService,
-                TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem ext,
-                IOptionalStartupService? optionalService = null )
+            void ConfigureServices( StObjContextRoot.ServiceRegister register,
+                                    IStObjObjectMap ambientObjects,
+                                    SuperStartupService superService,
+                                    TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem ext,
+                                    IOptionalStartupService? optionalService = null )
             {
                 ambientObjects.Obtain<IA1>().Should().BeSameAs( this );
                 superService.Should().NotBeNull();
@@ -544,7 +544,7 @@ namespace CK.StObj.Engine.Tests.Service
                         services.Services.AddSingleton( typeof( bool ), true );
 
                     } ).Services;
-                    var resolved = s.GetService<ServiceWithValueTypeCtorParameters>();
+                    var resolved = s.GetRequiredService<ServiceWithValueTypeCtorParameters>();
                     resolved.RequiredValueType.Should().BeTrue();
 
                 }
@@ -592,7 +592,7 @@ namespace CK.StObj.Engine.Tests.Service
                         services.Services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
 
                     } ).Services;
-                    var resolved = s.GetService<ServiceWithVaryingParams>();
+                    var resolved = s.GetRequiredService<ServiceWithVaryingParams>();
                     resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
                 }
             }

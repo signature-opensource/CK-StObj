@@ -3,14 +3,13 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 using static CK.Testing.StObjEngineTestHelper;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace CK.StObj.Engine.Tests.PocoJson
 {
@@ -219,7 +218,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Obj = oI; } );

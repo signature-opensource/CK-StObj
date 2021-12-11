@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Working = Code.Pending; o.NullableWorking = Code.Working; o.Result = Code.None; } );

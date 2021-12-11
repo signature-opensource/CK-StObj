@@ -427,9 +427,8 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     {
                         Debug.Assert( setter.Property.DeclaringType != null );
                         Type decl = setter.Property.DeclaringType;
-                        string? varName;
                         var key = ValueTuple.Create( decl, setter.Property.Name );
-                        if(!propertyCache.TryGetValue( key, out varName ))
+                        if(!propertyCache.TryGetValue( key, out string? varName ))
                         {
                             varName = "pI" + propertyCache.Count.ToString();
                             rootCtor

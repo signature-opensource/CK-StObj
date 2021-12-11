@@ -69,7 +69,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             {
                 var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), t );
                 var services = TestHelper.GetAutomaticServices( c ).Services;
-                var directory = services.GetService<PocoDirectory>();
+                var directory = services.GetRequiredService<PocoDirectory>();
 
                 var u = ((IPocoFactory)services.GetRequiredService( typeof(IPocoFactory<>).MakeGenericType( t ) )).Create();
 
@@ -106,7 +106,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant1 ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant1>>().Create();
             u.T1 = 1;
@@ -146,7 +146,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant2 ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant2>>().Create();
             u.T1 = 1;
@@ -186,7 +186,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // across 
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant3 ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant3>>().Create();
             u.T1 = new[] { 2.5d, 85.8d };

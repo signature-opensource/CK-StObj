@@ -6,6 +6,8 @@ using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
 namespace CK.StObj.Engine.Tests
 {
     [TestFixture]
@@ -37,7 +39,7 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( SimpleContainer ) );
                 var result = collector.GetResult().EngineMap!.StObjs;
                 result.OrderedStObjs
-                      .Where( o => !(o.FinalImplementation.Implementation is PocoDirectory))
+                      .Where( o => o.FinalImplementation.Implementation is not PocoDirectory )
                       .First()
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
             }

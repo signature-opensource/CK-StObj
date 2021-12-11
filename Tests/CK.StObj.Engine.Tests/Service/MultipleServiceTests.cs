@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.Service
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var s = TestHelper.GetAutomaticServices( collector, null ).Services;
-                    var resolved = s.GetService<MayWork>();
+                    var resolved = s.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeEmpty();
                 }
                 logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
@@ -124,7 +124,7 @@ namespace CK.StObj.Engine.Tests.Service
                         services.Services.AddSingleton( typeof( IEnumerable<int> ), explicitInstance );
 
                     } ).Services;
-                    var resolved = s.GetService<MayWork>();
+                    var resolved = s.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeSameAs( explicitInstance );
 
                 }
@@ -336,7 +336,7 @@ namespace CK.StObj.Engine.Tests.Service
                 result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
-                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetService<ManyAuto>(), result.Services.GetService<ManySingleton>() } );
+                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManySingleton>() } );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -347,7 +347,7 @@ namespace CK.StObj.Engine.Tests.Service
                 result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
-                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetService<ManyAuto>(), result.Services.GetService<ManyScoped>() } );
+                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManyScoped>() } );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -360,9 +360,9 @@ namespace CK.StObj.Engine.Tests.Service
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
                 m.All.Should().HaveCount( 3 )
-                              .And.Contain( result.Services.GetService<ManyAuto>() )
-                              .And.Contain( result.Services.GetService<ManySingleton>() )
-                              .And.Contain( result.Services.GetService<ManyScoped>() );
+                              .And.Contain( result.Services.GetRequiredService<ManyAuto>() )
+                              .And.Contain( result.Services.GetRequiredService<ManySingleton>() )
+                              .And.Contain( result.Services.GetRequiredService<ManyScoped>() );
             }
         }
 
@@ -379,7 +379,7 @@ namespace CK.StObj.Engine.Tests.Service
                 result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Could be resolved as Singleton, but Scoped as stated." );
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
-                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetService<ManyAuto>(), result.Services.GetService<ManySingleton>() } );
+                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManySingleton>() } );
             }
         }
 

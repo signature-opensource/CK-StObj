@@ -47,9 +47,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllIntegers ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
 
-            var u = services.GetService<IPocoFactory<IAllIntegers>>().Create();
+            var u = services.GetRequiredService<IPocoFactory<IAllIntegers>>().Create();
 
             string? serialized = null;
 
