@@ -47,9 +47,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllBasicTypes ) ); ;
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
 
-            var nMax = services.GetService<IPocoFactory<IAllBasicTypes>>().Create();
+            var nMax = services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
             nMax.PByte = Byte.MaxValue;
             nMax.PSByte = SByte.MaxValue;
             nMax.PShort = Int16.MaxValue;
@@ -67,7 +67,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMax.PTimeSpan = TimeSpan.MaxValue;
             nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
 
-            var nMin = services.GetService<IPocoFactory<IAllBasicTypes>>().Create();
+            var nMin = services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
             nMin.PByte = Byte.MinValue;
             nMin.PSByte = SByte.MinValue;
             nMin.PShort = Int16.MinValue;
@@ -122,11 +122,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllNullableBasicTypes ) ); ;
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
 
-            var nNull = services.GetService<IPocoFactory<IAllNullableBasicTypes>>().Create();
+            var nNull = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
 
-            var nMax = services.GetService<IPocoFactory<IAllNullableBasicTypes>>().Create();
+            var nMax = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
             nMax.PByte = Byte.MaxValue;
             nMax.PSByte = SByte.MaxValue;
             nMax.PShort = Int16.MaxValue;
@@ -144,7 +144,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMax.PTimeSpan = TimeSpan.MaxValue;
             nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
 
-            var nMin = services.GetService<IPocoFactory<IAllNullableBasicTypes>>().Create();
+            var nMin = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();
             nMin.PByte = Byte.MinValue;
             nMin.PSByte = SByte.MinValue;
             nMin.PShort = Int16.MinValue;

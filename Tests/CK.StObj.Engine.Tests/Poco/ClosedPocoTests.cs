@@ -48,7 +48,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
-        Type[] BaseUserAndDocumentCloPocs = new Type[]
+        readonly Type[] BaseUserAndDocumentCloPocs = new Type[]
         {
             typeof(ICloPoc), typeof(ICloPocPart),
             typeof(IAuthenticatedCloPocPart), typeof(ICultureDependentCloPocPart),
@@ -75,7 +75,7 @@ namespace CK.StObj.Engine.Tests.Service
             pocoSupportResult.Should().BeSameAs( all.Result.DynamicAssembly.GetPocoSupportResult() );
             var services = all.Services;
 
-            var dCloPoc = services.GetService<IPocoFactory<IDocumentCloPoc>>().Create();
+            var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();
             dCloPoc.Should().NotBeNull( "Factories work." );
 
             var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();

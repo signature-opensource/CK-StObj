@@ -24,7 +24,7 @@ namespace CK.Setup
             IReadOnlyList<IPocoLikeInfo> IPocoLikeInfo.Specializations => _specializations ?? (IReadOnlyList<IPocoLikeInfo>)Array.Empty<IPocoLikeInfo>();
 
             public readonly Dictionary<string, PocoLikePropertyInfo> Properties;
-            IReadOnlyDictionary<string, IPocoLikePropertyInfo> _exposedProperties;
+            readonly IReadOnlyDictionary<string, IPocoLikePropertyInfo> _exposedProperties;
             IReadOnlyDictionary<string, IPocoLikePropertyInfo> IPocoLikeInfo.Properties => _exposedProperties;
 
             public IReadOnlyList<PocoLikePropertyInfo> PropertyList { get; }

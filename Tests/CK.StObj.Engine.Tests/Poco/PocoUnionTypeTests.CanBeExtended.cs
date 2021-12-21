@@ -147,7 +147,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPoco2>>().Create();
 

@@ -9,11 +9,16 @@ using System.Linq;
 using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
+#pragma warning disable CA1822 // Mark members as static
+#pragma warning disable CA1018 // Mark attributes with AttributeUsageAttribute
+#pragma warning disable IDE0051 // Remove unused private members
+#pragma warning disable CA2211 // Non-constant fields should not be visible
+
 namespace CK.StObj.Engine.Tests
 {
 
     [TestFixture]
-    public class AttributeTests
+    public class ContextBoundAttributeTests
     {
         #region S1 
 
@@ -69,7 +74,7 @@ namespace CK.StObj.Engine.Tests
 
         public class S2 : IRealObject
         {
-            [ContextBoundDelegation( "CK.StObj.Engine.Tests.AttributeTests+DirectAttributeImpl, CK.StObj.Engine.Tests" )]
+            [ContextBoundDelegation( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+DirectAttributeImpl, CK.StObj.Engine.Tests" )]
             void M() { }
         }
 
@@ -118,7 +123,7 @@ namespace CK.StObj.Engine.Tests
         public class OneAttribute : ContextBoundDelegationAttribute, IAttributeContextBoundInitializer
         {
             public OneAttribute()
-                : base( "CK.StObj.Engine.Tests.AttributeTests+OneAttributeImpl, CK.StObj.Engine.Tests" )
+                : base( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+OneAttributeImpl, CK.StObj.Engine.Tests" )
             {
 
             }
@@ -159,7 +164,7 @@ namespace CK.StObj.Engine.Tests
 
             public static bool Constructed;
 
-            public OneCtorAttributeImpl( AttributeTests thisTest, OneCtorAttribute a, ITypeAttributesCache owner, Type type, MethodInfo m )
+            public OneCtorAttributeImpl( ContextBoundAttributeTests thisTest, OneCtorAttribute a, ITypeAttributesCache owner, Type type, MethodInfo m )
             {
                 _attribute = a ?? throw new ArgumentNullException( nameof( a ) );
                 Constructed = true;
@@ -181,7 +186,7 @@ namespace CK.StObj.Engine.Tests
         public class OneCtorAttribute : ContextBoundDelegationAttribute
         {
             public OneCtorAttribute()
-                : base( "CK.StObj.Engine.Tests.AttributeTests+OneCtorAttributeImpl, CK.StObj.Engine.Tests" )
+                : base( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+OneCtorAttributeImpl, CK.StObj.Engine.Tests" )
             {
             }
         }
@@ -240,7 +245,7 @@ namespace CK.StObj.Engine.Tests
         public class OtherCtorAttribute : ContextBoundDelegationAttribute
         {
             public OtherCtorAttribute()
-                : base( "CK.StObj.Engine.Tests.AttributeTests+OtherCtorAttributeImpl, CK.StObj.Engine.Tests" )
+                : base( "CK.StObj.Engine.Tests.ContextBoundAttributeTests+OtherCtorAttributeImpl, CK.StObj.Engine.Tests" )
             {
             }
         }

@@ -105,7 +105,8 @@ namespace CK.Setup
                     }
 
                     // Injects, once for all, basic namespaces that we always want available into the global namespace.
-                    global.EnsureUsing( "CK.Core" )
+                    global.GeneratedByComment().NewLine()
+                          .EnsureUsing( "CK.Core" )
                           .EnsureUsing( "System" )
                           .EnsureUsing( "System.Collections.Generic" )
                           .EnsureUsing( "System.Linq" )
@@ -113,13 +114,13 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
-                    // We don't generate nullable enabled code nor comments.
-                    global.Append( "#nullable disable" ).NewLine()
-                          .Append( "#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member" ).NewLine();
+                    global.Append( "// We don't generate nullable enabled code and we disable all warnings." ).NewLine()
+                          .Append( "#nullable disable" ).NewLine()
+                          .Append( "#pragma warning disable" ).NewLine();
 
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
-                    nsStObj.GeneratedByComment().NewLine()
+                    nsStObj
                         .Append( "[AttributeUsage(AttributeTargets.Assembly)]" ).NewLine()
                         .Append( @"internal sealed class SignatureAttribute : Attribute" )
                         .OpenBlock()
@@ -426,9 +427,8 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     {
                         Debug.Assert( setter.Property.DeclaringType != null );
                         Type decl = setter.Property.DeclaringType;
-                        string? varName;
                         var key = ValueTuple.Create( decl, setter.Property.Name );
-                        if(!propertyCache.TryGetValue( key, out varName ))
+                        if(!propertyCache.TryGetValue( key, out string? varName ))
                         {
                             varName = "pI" + propertyCache.Count.ToString();
                             rootCtor

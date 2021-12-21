@@ -202,7 +202,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
 
@@ -421,7 +421,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
 

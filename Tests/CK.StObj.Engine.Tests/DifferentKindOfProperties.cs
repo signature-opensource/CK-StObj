@@ -5,6 +5,8 @@ using NUnit.Framework;
 using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+
 namespace CK.StObj.Engine.Tests
 {
     [TestFixture]
@@ -131,7 +133,7 @@ namespace CK.StObj.Engine.Tests
         public class CB : IRealObject
         {
             [InjectObject]
-            public CA A { get; set; }
+            public CA A { get; private set; }
         }
 
         public class CB2 : CB

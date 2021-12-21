@@ -7,6 +7,9 @@ using CK.Setup;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable IDE0051 // Remove unused private members
+
 namespace CK.StObj.Engine.Tests.ActorZoneTests
 {
     [TestFixture]
@@ -24,7 +27,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             }
         }
 
-
+        [AttributeUsage( AttributeTargets.Class )]
         public class AmbientPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
             public string PropertyName { get; set; }
@@ -66,10 +69,10 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public class BasicPackage : BaseDatabaseObject
         {
             [InjectObject]
-            public BasicUser UserHome { get; protected set; }
+            public BasicUser UserHome { get; private set; }
             
             [InjectObject]
-            public BasicGroup GroupHome { get; protected set; }
+            public BasicGroup GroupHome { get; private set; }
         }
 
         [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
