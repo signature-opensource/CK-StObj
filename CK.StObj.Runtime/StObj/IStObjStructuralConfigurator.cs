@@ -11,7 +11,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// This interface allows dynamic configuration of items.
-    /// It can be supported by attributes (to be aplied on Structured Object type or on its members) or be 
+    /// It can be supported by attributes (to be applied on Structured Object type or on its members) or be 
     /// used globally as a configuration of StObjCollector object.
     /// </summary>
     public interface IStObjStructuralConfigurator

@@ -186,12 +186,11 @@ namespace CK.Setup
             }
         }
 
-        internal RealObjectClassInfo(
-            IActivityMonitor monitor,
-            RealObjectClassInfo parent,
-            Type t,
-            IServiceProvider provider,
-            bool isExcluded )
+        internal RealObjectClassInfo( IActivityMonitor monitor,
+                                      RealObjectClassInfo parent,
+                                      Type t,
+                                      IServiceProvider provider,
+                                      bool isExcluded )
             : base( monitor, parent, t, provider, isExcluded, null )
         {
             Debug.Assert( parent == Generalization );
