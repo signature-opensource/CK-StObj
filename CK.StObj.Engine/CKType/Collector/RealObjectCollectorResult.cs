@@ -16,12 +16,11 @@ namespace CK.Setup
     {
         readonly IReadOnlyList<IReadOnlyList<MutableItem>> _concreteClassesPath;
 
-        internal RealObjectCollectorResult(
-            StObjObjectEngineMap mappings,
-            IReadOnlyList<IReadOnlyList<MutableItem>> concreteClasses,
-            IReadOnlyList<IReadOnlyList<Type>> classAmbiguities,
-            IReadOnlyList<IReadOnlyList<Type>> interfaceAmbiguities,
-            IReadOnlyList<Type> abstractTails )
+        internal RealObjectCollectorResult( StObjObjectEngineMap mappings,
+                                            IReadOnlyList<IReadOnlyList<MutableItem>> concreteClasses,
+                                            IReadOnlyList<IReadOnlyList<Type>> classAmbiguities,
+                                            IReadOnlyList<IReadOnlyList<Type>> interfaceAmbiguities,
+                                            IReadOnlyList<Type> abstractTails )
         {
             EngineMap = mappings;
             _concreteClassesPath = concreteClasses;
