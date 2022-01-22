@@ -140,7 +140,7 @@ namespace CK.Setup
             // Here we AddPreConstructProperty the current direct properties: they will be set on the final object before 
             // the call to StObjConstruct.
             // We flush the dictionary and the next calls to SetDirectProperty will be AddPostBuildProperty.
-            // This enforces the conherency between build time and runtime.
+            // This enforces the coherency between build time and runtime.
             if( _leafData.DirectPropertiesToSet != null )
             {
                 foreach( var k in _leafData.DirectPropertiesToSet )

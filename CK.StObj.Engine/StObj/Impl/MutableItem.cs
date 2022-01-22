@@ -248,12 +248,21 @@ namespace CK.Setup
             Debug.Assert( _constructParameterEx == null, "Called only once right after object instantiation..." );
             Debug.Assert( _container != null, "...and after ApplyTypeInformation." );
 
-            var fromAbove = RealObjectType.BaseTypeInfo?.StObjConstructCollector;
-            if( fromAbove != null )
+            // _constructParametersAbove is not null only for the root of the specialization path.
+            var baseTypeInfo = RealObjectType.BaseTypeInfo;
+            if( baseTypeInfo != null )
             {
-                _constructParametersAbove = fromAbove
-                        .Select( c => (c.Item1,(IReadOnlyList<MutableParameter>)c.Item2.Select( p => new MutableParameter( this, p, false ) ).ToArray() ) )
-                        .ToArray();
+                var fromAbove = baseTypeInfo.StObjConstructCollector;
+                if( fromAbove != null )
+                {
+                    _constructParametersAbove = fromAbove
+                            .Select( c => (c.Item1, (IReadOnlyList<MutableParameter>)c.Item2.Select( p => new MutableParameter( this, p, false ) ).ToArray()) )
+                            .ToArray();
+                }
+                else
+                {
+                    _constructParametersAbove = Array.Empty<(MethodInfo, IReadOnlyList<MutableParameter>)>();
+                }
             }
 
             if( RealObjectType.StObjConstruct != null )
@@ -369,9 +378,11 @@ namespace CK.Setup
 
         IStObjMutableReferenceList IStObjMutableItem.Groups => _groups;
 
+        IStObjMutableItem? IStObjMutableItem.Generalization => Generalization;
+
         public IReadOnlyList<IStObjMutableParameter> ConstructParameters => _constructParameterEx;
 
-        public IEnumerable<(MethodInfo,IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAbove => _constructParametersAbove?.Select( mp => (mp.Item1, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
+        public IEnumerable<(Type,IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAboveRoot => _constructParametersAbove?.Select( mp => (mp.Item1.DeclaringType!, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
 
         IReadOnlyList<IStObjAmbientProperty> IStObjMutableItem.SpecializedAmbientProperties => _ambientPropertiesEx; 
 

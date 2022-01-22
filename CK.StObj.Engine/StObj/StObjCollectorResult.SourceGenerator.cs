@@ -451,12 +451,12 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                         rootCtor.Append( ");" ).NewLine();
                     }
                 }
-                if( m.ConstructParametersAbove != null )
+                if( m.ConstructParametersAboveRoot != null )
                 {
-                    foreach( var mp in m.ConstructParametersAbove )
+                    foreach( var mp in m.ConstructParametersAboveRoot )
                     {
                         Debug.Assert( mp.Item2.Count > 0 );
-                        rootCtor.AppendTypeOf( mp.Item1.DeclaringType! );
+                        rootCtor.AppendTypeOf( mp.Item1 );
                         CallConstructMethod( rootCtor, m, mp.Item2 );
                     }
                 }

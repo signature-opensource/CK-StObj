@@ -344,14 +344,13 @@ namespace CK.Setup
                     }
                 }
             }
-            return new RealObjectCollectorResult(
-                engineMap,
-                concreteClasses,
-                classAmbiguities ?? (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
-                interfaceAmbiguities != null
-                    ? interfaceAmbiguities.Values.Select( list => list.ToArray() ).ToArray()
-                    : Array.Empty<IReadOnlyList<Type>>(),
-                abstractTails );
+            return new RealObjectCollectorResult( engineMap,
+                                                  concreteClasses,
+                                                  classAmbiguities ?? (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
+                                                  interfaceAmbiguities != null
+                                                    ? interfaceAmbiguities.Values.Select( list => list.ToArray() ).ToArray()
+                                                    : Array.Empty<IReadOnlyList<Type>>(),
+                                                  abstractTails );
         }
 
     }

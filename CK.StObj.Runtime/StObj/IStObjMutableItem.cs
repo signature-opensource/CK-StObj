@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using CK.Core;
 
 namespace CK.Setup
@@ -19,13 +20,13 @@ namespace CK.Setup
         /// <summary>
         /// Gets the associated object instance (the final, most specialized, structured object).
         /// The final object is exposed by this interface to allow (exceptional) direct accesses to "intrinsic" properties (fields or methods) 
-        /// of the object (like readonly properties initalized by constructor) but care should be taken when accessing
+        /// of the object (like readonly properties initialized by constructor) but care should be taken when accessing
         /// the final object since, depending of the current step in the process, it has not necessarily been constructed/initialized correctly yet.
         /// </summary>
         object InitialObject { get; }
 
         /// <summary>
-        /// Gets the type of the structure object.
+        /// Gets the type of the object's slice.
         /// </summary>
         Type ClassType { get; }
 
@@ -57,6 +58,12 @@ namespace CK.Setup
         IStObjMutableReference Container { get; }
 
         /// <summary>
+        /// Gets the generalization if this is not the root of the concrete specializations path.
+        /// When this item is the root,
+        /// </summary>
+        IStObjMutableItem? Generalization { get; }
+
+        /// <summary>
         /// Contained items of the object.
         /// Initialized by <see cref="StObjAttribute.Children"/>.
         /// </summary>
@@ -81,9 +88,15 @@ namespace CK.Setup
         IStObjMutableReferenceList Groups { get; }
 
         /// <summary>
-        /// Gets a list of mutable StObjConstruct parameters.
+        /// Gets a list of mutable StObjConstruct parameters for this slice.
         /// </summary>
         IReadOnlyList<IStObjMutableParameter> ConstructParameters { get; }
+
+        /// <summary>
+        /// Gets a set of StObjConstruct parameters for types above the root of the specializations path if this <see cref="Generalization"/> is null.
+        /// This is null if this item is not the root (when Generalization is not null).
+        /// </summary>
+        IEnumerable<(Type, IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAboveRoot { get; }
 
         /// <summary>
         /// Gets a list of Ambient properties defined at this level (and above) but potentially specialized.
