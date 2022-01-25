@@ -7,12 +7,12 @@
     <!-- This is for CK.StObj.Hosting. -->
     <PackageReference Update="Microsoft.Extensions.Hosting.Abstractions" Version="3.1.19" />
     <PackageReference Update="CK.Testing.Monitoring" Version="2.2.1" />
-    <PackageReference Update="CK.Testing.CKSetup" Version="14.2.2--0008-develop" />
+    <PackageReference Update="CK.Testing.CKSetup" Version="14.2.1" />
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="14.2.1" />
     <PackageReference Update="CSemVer" Version="9.1.0" />
     <PackageReference Update="CK.CodeGen.Roslyn" Version="3.0.1" />
     <PackageReference Update="CK.CodeGen" Version="3.0.1" />
-    <PackageReference Update="CK.Reflection" Version="9.0.3--0007-develop" />
+    <PackageReference Update="CK.Reflection" Version="9.0.2" />
     <PackageReference Update="CK.Setup.Dependency" Version="11.2.1" />
     <PackageReference Update="CK.Core" Version="14.2.1" />
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="1.0.0" />
