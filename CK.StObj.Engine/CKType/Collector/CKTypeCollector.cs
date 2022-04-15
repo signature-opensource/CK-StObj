@@ -35,12 +35,11 @@ namespace CK.Setup
         /// <param name="tempAssembly">The temporary <see cref="IDynamicAssembly"/>.</param>
         /// <param name="typeFilter">Optional type filter.</param>
         /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is is the default name.</param>
-        public CKTypeCollector(
-            IActivityMonitor monitor,
-            IServiceProvider serviceProvider,
-            IDynamicAssembly tempAssembly,
-            Func<IActivityMonitor,Type,bool>? typeFilter = null,
-            IEnumerable<string>? names = null )
+        public CKTypeCollector( IActivityMonitor monitor,
+                                IServiceProvider serviceProvider,
+                                IDynamicAssembly tempAssembly,
+                                Func<IActivityMonitor, Type, bool>? typeFilter = null,
+                                IEnumerable<string>? names = null )
         {
             if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             if( serviceProvider == null ) throw new ArgumentNullException( nameof( serviceProvider ) );

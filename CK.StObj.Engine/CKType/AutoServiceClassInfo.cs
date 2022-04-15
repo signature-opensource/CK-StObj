@@ -115,13 +115,12 @@ namespace CK.Setup
             }
         }
 
-        internal AutoServiceClassInfo(
-            IActivityMonitor m,
-            IServiceProvider serviceProvider,
-            AutoServiceClassInfo? parent,
-            Type t,
-            bool isExcluded,
-            RealObjectClassInfo? objectInfo )
+        internal AutoServiceClassInfo( IActivityMonitor m,
+                                       IServiceProvider serviceProvider,
+                                       AutoServiceClassInfo? parent,
+                                       Type t,
+                                       bool isExcluded,
+                                       RealObjectClassInfo? objectInfo )
         {
             Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
             if( objectInfo != null )
