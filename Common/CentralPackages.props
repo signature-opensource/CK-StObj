@@ -6,7 +6,7 @@
     <!-- This is for CK.StObj.Hosting. -->
     <PackageReference Update="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Update="CK.Testing.Monitoring" Version="3.0.0-r06-02-0011-develop" />
-    <PackageReference Update="CK.Testing.CKSetup" Version="15.0.0-r06-02-0014-develop" />
+    <PackageReference Update="CK.Testing.CKSetup" Version="15.0.0-r06-02-0016-develop" />
     <PackageReference Update="CK.ActivityMonitor.SimpleSender" Version="15.0.0-r06-02-0018-develop" />
     <PackageReference Update="CSemVer" Version="10.1.0" />
     <PackageReference Update="CK.CodeGen.Roslyn" Version="4.0.0-r06-02-0013-develop" />
