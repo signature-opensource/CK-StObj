@@ -356,7 +356,7 @@ namespace CK.Setup
 
                 if( p.IsReadOnly && p.DefaultValueSource != null )
                 {
-                    monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attribute: [DefaultValue( {p.DefaultValueSource} )]." );
+                    monitor.Error($"Read only {p} cannot have a default value attribute: [DefaultValue( {p.DefaultValueSource} )].");
                     return null;
                 }
                 foreach( var propInfo in p.DeclaredProperties )

@@ -191,13 +191,12 @@ namespace CK.Testing.StObjEngine
         /// <param name="assemblyName">The assembly to generate.</param>
         /// <param name="saveSource">False to not save the generated source files.</param>
         /// <returns><see cref="StObjCollectorResult.CodeGenerateResult"/>.</returns>
-        public static StObjCollectorResult.CodeGenerateResult TryGenerateAssembly(
-            IActivityMonitor monitor,
-            StObjCollectorResult result,
-            CompileOption compileOption,
-            bool skipEmbeddedStObjMap,
-            string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName,
-            bool saveSource = true )
+        public static StObjCollectorResult.CodeGenerateResult TryGenerateAssembly( IActivityMonitor monitor,
+                                                                                   StObjCollectorResult result,
+                                                                                   CompileOption compileOption,
+                                                                                   bool skipEmbeddedStObjMap,
+                                                                                   string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName,
+                                                                                   bool saveSource = true )
         {
             if( result.HasFatalError ) return default;
             var ctx = new SimpleEngineRunContext( result );
