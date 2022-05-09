@@ -462,7 +462,7 @@ namespace CK.Setup
                 // A union type, it cannot be readonly. 
                 if( implP.IsReadOnly )
                 {
-                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or IList<>, IDictionary<,> or ISet<>." );
+                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or List<>, Dictionary<,> or Set<>." );
                     return false;
                 }
                 // A union type is not a basic property (fix the fact that typeof(object) is a basic property).
@@ -470,7 +470,7 @@ namespace CK.Setup
                 bool isPropertyNullable = implP.PropertyNullableTypeTree.Kind.IsNullable();
                 List<string>? typeDeviants = null;
                 List<string>? nullableDef = null;
-                List<string>? concreteCollections = null;
+                List<string>? interfaceCollections = null;
 
                 if( unionTypesDef == null )
                 {
@@ -509,20 +509,20 @@ namespace CK.Setup
                     else if( sub.Type.IsGenericType )
                     {
                         var tGen = sub.Type.GetGenericTypeDefinition();
-                        if( tGen == typeof( List<> ) )
+                        if( tGen == typeof( IList<> ) )
                         {
-                            if( concreteCollections == null ) concreteCollections = new List<string>();
-                            concreteCollections.Add( $"{sub} should be a IList<{sub.RawSubTypes[0]}>" );
+                            if( interfaceCollections == null ) interfaceCollections = new List<string>();
+                            interfaceCollections.Add( $"{sub} should be a List<{sub.RawSubTypes[0]}>" );
                         }
-                        else if( tGen == typeof( Dictionary<,> ) )
+                        else if( tGen == typeof( IDictionary<,> ) )
                         {
-                            if( concreteCollections == null ) concreteCollections = new List<string>();
-                            concreteCollections.Add( $"{sub} should be a IDictionary<{sub.RawSubTypes[0]},{sub.RawSubTypes[1]}>" );
+                            if( interfaceCollections == null ) interfaceCollections = new List<string>();
+                            interfaceCollections.Add( $"{sub} should be a Dictionary<{sub.RawSubTypes[0]},{sub.RawSubTypes[1]}>" );
                         }
-                        else if( tGen == typeof( HashSet<> ) )
+                        else if( tGen == typeof( ISet<> ) )
                         {
-                            if( concreteCollections == null ) concreteCollections = new List<string>();
-                            concreteCollections.Add( $"{sub} should be a ISet<{sub.RawSubTypes[0]}>" );
+                            if( interfaceCollections == null ) interfaceCollections = new List<string>();
+                            interfaceCollections.Add( $"{sub} should be a HashSet<{sub.RawSubTypes[0]}>" );
                         }
                     }
                     if( sub.Kind.IsNullable() )
@@ -535,16 +535,16 @@ namespace CK.Setup
                 {
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
                 }
-                if( concreteCollections != null )
+                if( interfaceCollections != null )
                 {
-                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must use their interfaces: {concreteCollections.Concatenate()}." );
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must be concrete: {interfaceCollections.Concatenate()}." );
                 }
                 if( nullableDef != null )
                 {
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type definitions must not be nullable: please change '{nullableDef.Concatenate( "' ,'" )}' to be not nullable." );
                     return false;
                 }
-                if( typeDeviants != null || concreteCollections != null ) return false;
+                if( typeDeviants != null || interfaceCollections != null ) return false;
 
                 // Type definitions are non-nullable.
                 var types = tree.SubTypes.ToList();
