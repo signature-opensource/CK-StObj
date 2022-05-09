@@ -73,8 +73,8 @@ byte[] (encoded in [base64](https://source.dot.net/#System.Text.Json/System/Text
 
 The following complex types are handled:
 
-- A `T[]` (array), `IList<T>`, `ISet<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
-- A `IDictionary<,>` is serialized as 
+- A `T[]` (array), `List<T>`, `HashSet<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
+- A `Dictionary<,>` is serialized as 
   - a Json object when the type of the key is string 
   - an array of 2-cells arrays when the key is an object. 
 - Value tuples are serialized as arrays.
@@ -247,7 +247,7 @@ We then consider 2 different "modes" to serialize things:
 Mapping multiple C# types to only `Number` and `BigInt` must be "complete". No C# type like `sbyte` must be exposed to the Client. It means that
 collection handling is impacted: a `Dictionary<float,sbyte>` becomes a `M(Number,Number)`, a `Dictionary<string,decimal>` becomes a `O(BigInt)`.
 
-_Note:_ the type erasure of `T[]` and `IList<T>` (both are mapped to `T[]`) has been introduced before.
+_Note:_ the type erasure of `T[]` and `List<T>` (both are mapped to `T[]`) has been introduced before.
 
 This obviously generates ambiguities when reading the JSON sent by a Client. But the good news is that this is a concern only for polymorphism
 of heterogeneous types, not the polymorphism of specialized classes or interfaces.
@@ -313,11 +313,11 @@ an `object` type constrained by a `UnionType` deeply differs from an unconstrain
 
 The following definitions are ambiguous:
 - When there's more than one `Number` (regardless of their nullabilities) like a `(int?, byte)` or a `(byte, float, int)` and `double` doesn't appear.
-- When collections resolves to the same "ECMAScript Standard" mapping: `(IPerson[],IList<IPerson>?)` are both `Number[]`.
+- When collections resolves to the same "ECMAScript Standard" mapping: `(IPerson[],List<IPerson>?)` are both `Number[]`.
 
 The following definitions are not ambiguous:
-- When a big numbers coexists with a number: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
-- When ECMAScript collections differ: `(IList<int>,ISet<double>)` maps to `Number[]|S(Number)`.
+- When a big numbers coexists with a number: `(int,long)` maps to `Number|BigInt`, `(decimal[],List<int?>?)` maps to `BigInt[]|Number[]`.
+- When ECMAScript collections differ: `(List<int>,HshSet<double>)` maps to `Number[]|S(Number)`.
 
 Ambiguities are detected and warnings are emitted. With such ambiguous `UnionType` a Poco will not be "ECMAScriptStandard" compliant
 and a `NotSupportedException` will be thrown at runtime.
@@ -328,7 +328,7 @@ and a `NotSupportedException` will be thrown at runtime.
 
 __Note__: The current implementation tries to find an unambiguous mapping by grouping the union types
 by their standard representation and if, in each group the "standard mapping" appears only once, then
-we handle it: for example `(IList<int>,IList<double>,int,double)` can be safely deserialized into `IList<double>`
+we handle it: for example `(List<int>,List<double>,int,double)` can be safely deserialized into `List<double>`
 or `double`.
 
 ```csharp

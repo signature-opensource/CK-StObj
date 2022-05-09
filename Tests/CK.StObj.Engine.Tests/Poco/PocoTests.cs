@@ -243,27 +243,27 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
                 typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ) ) );
 
-            //TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
-            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
+            TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
 
-            //// Without registering the IDefBase Poco:
-            //TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
-            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
+            // Without registering the IDefBase Poco:
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
 
-            //// With IDefBase Poco registration:
-            //TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
-            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
+            // With IDefBase Poco registration:
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
         }
 
-        //public interface IRootAbsoluteBestTest : IRootBestTest
-        //{
-        //    new ISubBetterTest Sub { get; set; }
-        //}
+        public interface IRootAbsoluteBestTest : IRootBestTest
+        {
+            new ISubBetterTest Sub { get; set; }
+        }
 
-        //public interface IRootBuggyOtherFamily : IRootTest
-        //{
-        //    new IDefBase Sub { get; set; }
-        //}
+        public interface IRootBuggyOtherFamily : IRootTest
+        {
+            new IDefBase Sub { get; set; }
+        }
 
 
     }
