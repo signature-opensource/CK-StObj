@@ -384,7 +384,7 @@ namespace CK.Setup
         {
             // We cannot check the equality of property type here because we need to consider IPoco families: we
             // have to wait that all of them have been registered.
-            // Same as the Poco-like: we can only consider them once IPoco analysis is done.
+            // Same as the Poco-like: it's easier to consider them once IPoco analysis is done.
             // ClassInfo.CheckPropertiesVarianceAndUnionTypes checks the type and the nullability.
             bool success = true;
             var isReadOnly = !p.CanWrite;
@@ -416,9 +416,9 @@ namespace CK.Setup
                 var nullTree = p.PropertyType.GetNullableTypeTree( nullabilityInfo, NullableTypeTree.ObliviousDefaultBuilder );
                 bool isBasicProperty = PocoSupportResultExtension.IsBasicPropertyType( nullTree.Type );
                 Type? genRefType = nullTree.Kind.IsReferenceType() && nullTree.Type.IsGenericType ? nullTree.Type.GetGenericTypeDefinition() : null;
-                bool isReadonlyCompliantCollection = genRefType != null && (genRefType == typeof( IList<> ) || genRefType == typeof( List<> )
-                                                                          || genRefType == typeof( IDictionary<,> ) || genRefType == typeof( Dictionary<,> )
-                                                                          || genRefType == typeof( ISet<> ) || genRefType == typeof( HashSet<> ));
+                bool isReadonlyCompliantCollection = genRefType != null && (genRefType == typeof( List<> )
+                                                                            || genRefType == typeof( Dictionary<,> )
+                                                                            || genRefType == typeof( HashSet<> ));
                 bool isStandardCollection = isReadonlyCompliantCollection || p.PropertyType.IsArray;
                 if( isReadOnly && success )
                 {

@@ -171,7 +171,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface ITestSetNumbers : ITest
         {
-            ISet<decimal> Numbers { get; }
+            HashSet<decimal> Numbers { get; }
         }
 
         [TestCase( PocoJsonSerializerMode.ECMAScriptSafe )]
@@ -201,16 +201,16 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IWithSet : IPoco
         {
-            ISet<int> Numbers { get; }
+            HashSet<int> Numbers { get; }
         }
 
         public interface IWithList : IPoco
         {
-            IList<int> Numbers { get; }
+            List<int> Numbers { get; }
         }
 
         [Test]
-        public void ISet_and_IList_can_read_each_other()
+        public void HashSet_and_List_can_read_each_other()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithSet ), typeof( IWithList ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -241,7 +241,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void ISet_and_Array_can_read_each_other()
+        public void HashSet_and_Array_can_read_each_other()
         {
             // Implementation uses this fact: an array is a IList.
             typeof( int[] ).Should().BeAssignableTo<IList<int>>();

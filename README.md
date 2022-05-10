@@ -34,8 +34,10 @@ Poco are basic interfaces that extend the `IPoco` interface marker. They exposes
 Poco compliant types are:
  - Basic types like `int`, `string`, `Guid`, etc.
  - Other `IPoco` objects (through their interface).
+ - Value tuples of compliant types.
  - A class decorated with the `[PocoLike]` attribute.
  - `List<>`, `HashSet<>`, `Dictionary<,>` or array of Poco compliant objects.
+ - Formally `object` is allowed: at runtime, the instance must be a Poco compliant type.
 
 This `IPoco` concept fulfills 2 goals:
 - Supporting true modularity: any modules/packages can enrich any `IPoco` interface independently of others.

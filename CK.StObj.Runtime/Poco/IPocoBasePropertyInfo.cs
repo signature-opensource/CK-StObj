@@ -47,8 +47,7 @@ namespace CK.Setup
         ///         <list type="bullet">
         ///             <item>Another family of <see cref="IPoco"/>...</item>
         ///             <item>...or a Poco-like object with a true <see cref="IPocoLikeInfo.IsDefaultNewable"/>...</item>
-        ///             <item>...or a standard collection (ISet&lt;&gt;, Set&lt;&gt;, IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt;
-        ///             or Dictionary&lt;,&gt;) but it cannot be an array.</item>
+        ///             <item>...or a standard collection (HashSet&lt;&gt;, List&lt;&gt;, Dictionary&lt;,&gt; but it cannot be an array.</item>
         ///         </list>
         ///     </item>
         /// </list>
@@ -77,6 +76,27 @@ namespace CK.Setup
         NullableTypeTree PropertyNullableTypeTree { get; }
 
         /// <summary>
+        /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
+        /// If this is true then <see cref="IsReadOnly"/> is necessarily false.
+        /// <para>
+        /// Applies to <see cref="IPocoPropertyInfo"/>: if the default value is defined by more than one interface,
+        /// it must be the same (this is checked).
+        /// </para>
+        /// </summary>
+        bool HasDefaultValue { get; }
+
+        /// <summary>
+        /// Gets the default value. This must be considered if and only if <see cref="HasDefaultValue"/> is true.
+        /// If this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/> (HasDefaultValue is false), this is null.
+        /// </summary>
+        object? DefaultValue { get; }
+
+        /// <summary>
+        /// Gets the default value as a source string or a null if this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/>.
+        /// </summary>
+        string? DefaultValueSource { get; }
+
+        /// <summary>
         /// Gets the Poco-like information if this <see cref="PropertyType"/> is not one of the other
         /// property type.
         /// </summary>
@@ -88,8 +108,8 @@ namespace CK.Setup
         IPocoRootInfo? PocoType { get; }
 
         /// <summary>
-        /// Gets whether this property is a standard collection: an array, ISet&lt;&gt;, Set&lt;&gt;,
-        /// IList&lt;&gt;, List&lt;&gt;, IDictionary&lt;,&gt; or Dictionary&lt;,&gt;.
+        /// Gets whether this property is a standard collection: an array, HashSet&lt;&gt;,
+        /// List&lt;&gt;, or Dictionary&lt;,&gt;.
         /// </summary>
         bool IsStandardCollectionType { get; }
 

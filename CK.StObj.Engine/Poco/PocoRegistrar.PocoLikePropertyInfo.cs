@@ -26,6 +26,12 @@ namespace CK.Setup
 
             public NullableTypeTree PropertyNullableTypeTree { get; }
 
+            public bool HasDefaultValue { get; set; }
+
+            public object? DefaultValue { get; set; }
+
+            public string? DefaultValueSource { get; set; }
+
             public IPocoLikeInfo? PocoLikeType { get; set; }
 
             public IPocoRootInfo? PocoType { get; set; }

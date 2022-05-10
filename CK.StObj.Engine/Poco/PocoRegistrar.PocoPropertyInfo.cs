@@ -64,7 +64,12 @@ namespace CK.Setup
             // without relying on useless recomputations (either of nullability info or nullable tree).
             internal readonly NullabilityTypeInfo NullabilityTypeInfo;
 
-            public PocoPropertyInfo( PropertyInfo first, int initialIndex, bool isReadOnly, NullabilityTypeInfo nullabilityTypeInfo, NullableTypeTree nullTree, bool isStandardCollection )
+            public PocoPropertyInfo( PropertyInfo first,
+                                     int initialIndex,
+                                     bool isReadOnly,
+                                     NullabilityTypeInfo nullabilityTypeInfo,
+                                     NullableTypeTree nullTree,
+                                     bool isStandardCollection )
             {
                 DeclaredProperties = new List<PropertyInfo>() { first };
                 Index = initialIndex;

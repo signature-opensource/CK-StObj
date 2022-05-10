@@ -254,7 +254,7 @@ of heterogeneous types, not the polymorphism of specialized classes or interface
 "Polymorphic heterogeneous types" is provided by either by an `object` or by a UnionType.
 
 #### Reading an `object`.
-Choices have to be made and this is fine: the developer put no constraint on the type (either because it doesn't directly use the property or because
+The developer put no constraint on the type (either because it doesn't directly use the property or because
 it discovers its type dynamically). Our main concern here is to follow the _Least Surprise Principle_ and handle the incoming data.
 
 - For `T[]`, we choose to instantiate a `List<T>`. Having a dynamic list rather than a fixed-length array is often more convenient.
@@ -426,7 +426,7 @@ The `nMax` representation below shows the number/string mappings for the basic t
 ```
 
 -----
-<a id="n1" href="#r1"><sup>1</sup></a>: The classical approach to define Know Types is to mark them with a decorator/attribute, but this has limitations,
+<a id="n1" href="#r1"><sup>1</sup></a>: The classical approach to define **Know Types** is to mark them with a decorator/attribute, but this has limitations,
 please read this [article about WCF Data Contract](https://docs.microsoft.com/en-us/archive/msdn-magazine/2011/february/msdn-magazine-data-contract-inheritance-known-types-and-the-generic-resolver)
 (and note that the final solution of the author - the "[generic resolver](https://docs.microsoft.com/en-us/archive/msdn-magazine/2011/february/msdn-magazine-data-contract-inheritance-known-types-and-the-generic-resolver#the-generic-resolver)"
 with its default constructor - defeats the purpose of the "Known Types" idea that is to restrict the set of allowed types to the minimum).

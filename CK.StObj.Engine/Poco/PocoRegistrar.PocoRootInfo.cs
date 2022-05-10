@@ -69,7 +69,8 @@ namespace CK.Setup
             /// either NOT co nor contravariant (general case), or BOTH co and contravariant (for
             /// IPoco types).
             /// There may be an evolution here: covariance may be accepted as long as base properties
-            /// do not expose a setter... 
+            /// do not expose a setter... But currently a property must be either readonly or not on all
+            /// interfaces that expose it, so this is irrelevant.
             /// </summary>
             /// <param name="monitor">The monitor to use.</param>
             /// <param name="allInterfaces">The interfaces indexes.</param>
