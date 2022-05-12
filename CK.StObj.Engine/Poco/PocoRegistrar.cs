@@ -62,28 +62,36 @@ namespace CK.Setup
         /// <param name="typeFilter">Optional type filter.</param>
         public PocoRegistrar( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
-            _actualPocoPredicate = actualPocoPredicate ?? throw new ArgumentNullException( nameof( actualPocoPredicate ) );
-            _namespace = @namespace ?? "CK.GPoco";
+            Throw.CheckNotNullArgument( actualPocoPredicate );
+            Throw.CheckNotNullArgument( @namespace );
+            _actualPocoPredicate = actualPocoPredicate;
+            _namespace = @namespace;
             _all = new Dictionary<Type, PocoType?>();
             _result = new List<List<Type>>();
             _typeFilter = typeFilter ?? (( m, type ) => true);
         }
 
         /// <summary>
-        /// Registers a type that may be a <see cref="IPoco"/> interface.
+        /// Registers a type that must be an interface that may be a <see cref="IPoco"/> interface.
         /// </summary>
         /// <param name="monitor">Monitor that will be used to signal errors.</param>
-        /// <param name="t">Type to register (must not be null).</param>
+        /// <param name="t">Interface type to register (must not be null).</param>
         /// <returns>True if the type has been registered, false otherwise.</returns>
-        public bool Register( IActivityMonitor monitor, Type t )
+        public bool RegisterInterface( IActivityMonitor monitor, Type t )
         {
-            if( t == null ) throw new ArgumentNullException( nameof( t ) );
-            return t.IsInterface && _actualPocoPredicate( monitor, t )
-                    ? DoRegister( monitor, t ) != null
+            Throw.CheckArgument( t?.IsInterface is true );
+            return _actualPocoPredicate( monitor, t )
+                    ? DoRegisterInterface( monitor, t ) != null
                     : false;
         }
 
-        PocoType? DoRegister( IActivityMonitor monitor, Type t )
+        //public bool RegisterPocoLikeClass( IActivityMonitor monitor, Type t )
+        //{
+        //    Throw.CheckArgument( t?.IsClass is true );
+        //    return true;
+        //}
+
+        PocoType? DoRegisterInterface( IActivityMonitor monitor, Type t )
         {
             Debug.Assert( t.IsInterface && _actualPocoPredicate( monitor, t ) );
             if( !_all.TryGetValue( t, out var p ) )
@@ -116,7 +124,7 @@ namespace CK.Setup
                 // Attempts to register the base if and only if it is not a "definer".
                 if( _actualPocoPredicate( monitor, b ) )
                 {
-                    var baseType = DoRegister( monitor, b );
+                    var baseType = DoRegisterInterface( monitor, b );
                     if( baseType == null ) return null;
                     // Detect multiple root Poco.
                     if( theOnlyRoot != null )

@@ -68,9 +68,14 @@ namespace CK.Setup
         IsPoco = 128,
 
         /// <summary>
+        /// A IPoco marked interface.
+        /// </summary>
+        IsPocoLike = 256,
+
+        /// <summary>
         /// A real object is a singleton. 
         /// </summary>
-        RealObject = IsSingleton | 256,
+        RealObject = IsSingleton | 512,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsFrontService"/> | <see cref="IsFrontProcessService"/>.
@@ -101,7 +106,7 @@ namespace CK.Setup
                 &&
                 (@this & (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped)) != (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped) )
             {
-                throw new ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService and IsScoped." );
+                Throw.ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService and IsScoped." );
             }
             return (AutoServiceKind)((int)@this & 63);
         }
@@ -149,6 +154,7 @@ namespace CK.Setup
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
+            bool isPocoLike = (@this & CKTypeKind.IsPocoLike) != 0;
             bool isFrontEndPoint = (@this & CKTypeKind.IsFrontService) != 0;
             bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
@@ -172,6 +178,10 @@ namespace CK.Setup
                     if( conflict != null ) conflict += ", ";
                     conflict += "A class cannot be a IPoco";
                 }
+            }
+            else if( isPocoLike )
+            {
+                if( @this != CKTypeKind.IsPocoLike ) conflict = "PocoLike class cannot be combined with any other aspect";
             }
             else if( isRealObject )
             {
@@ -217,17 +227,27 @@ namespace CK.Setup
         /// <returns>A readable string.</returns>
         public static string ToStringFlags( this CKTypeKind @this )
         {
-            string[] flags = new[] { "IsAutoService", "IsScopedService", "IsSingleton", "IsRealObject", "IsPoco", "IsFrontService", "IsFrontProcessService", "IsMarshallable", "IsMultipleService" };
+            string[] flags = new[] { "IsAutoService",
+                                     "IsScopedService",
+                                     "IsSingleton",
+                                     "IsRealObject",
+                                     "IsPoco",
+                                     "IsPocoLike",
+                                     "IsFrontService",
+                                     "IsFrontProcessService",
+                                     "IsMarshallable",
+                                     "IsMultipleService" };
             if( @this == CKTypeKind.None ) return "None";
             var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
                                              || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)
                                              || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && (@this & CKTypeKind.IsFrontService) != 0)
-                                             || (i == 6 && (@this & CKTypeKind.IsFrontProcessService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsMarshallable) != 0)
-                                             || (i == 8 && (@this & CKTypeKind.IsMultipleService) != 0));
+                                             || (i == 5 && (@this & CKTypeKind.IsPocoLike) != 0)
+                                             || (i == 6 && (@this & CKTypeKind.IsFrontService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
+                                             || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
+                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0));
             return String.Join( "|", f );
         }
     }

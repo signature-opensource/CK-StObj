@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CK.Setup
 {
@@ -12,7 +11,7 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeKindDetector
     {
-        const int PrivateStart = 512;
+        const int PrivateStart = 1024;
 
         /// <summary>
         /// Mask for public information defined in the <see cref="CKTypeKind"/> enumeration.
@@ -53,16 +52,22 @@ namespace CK.Setup
         const CKTypeKind IsStObjGen = (CKTypeKind)(PrivateStart << 10);
 
         // A [ExcludeCKType] attribute exists: the type is not handled.
-        const CKTypeKind IsExcludedType = (CKTypeKind)(PrivateStart << 11);
+        const CKTypeKind IsExcludedCKType = (CKTypeKind)(PrivateStart << 11);
+
+        // Type has been filtered out: the type is not handled.
+        const CKTypeKind IsFilteredType = (CKTypeKind)(PrivateStart << 12);
 
         readonly Dictionary<Type, CKTypeKind> _cache;
+        readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
 
         /// <summary>
         /// Initializes a new detector.
         /// </summary>
-        public CKTypeKindDetector()
+        /// <param name="typeFilter">Optional type filter.</param>
+        public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
+            _typeFilter = typeFilter;
         }
 
         /// <summary>
@@ -119,6 +124,29 @@ namespace CK.Setup
             return SetLifetimeOrFrontType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
         }
 
+        /// <summary>
+        /// Tries to set the <see cref="CKTypeKind.IsPocoLike"/> flag for a type (that must be a class).
+        /// </summary>
+        /// <param name="m">The monitor to use.</param>
+        /// <param name="t">The type to configure.</param>
+        /// <returns>True on success, false on error.</returns>
+        internal bool SetPocoLike( IActivityMonitor m, Type t )
+        {
+            Debug.Assert( t.IsClass );
+            var exist = RawGet( m, t );
+            if( exist == CKTypeKind.None )
+            {
+                m.Trace( $"Type '{t}' is now defined as a PocoLike." );
+                _cache[t] = CKTypeKind.IsPocoLike;
+            }
+            else if( exist != CKTypeKind.IsPocoLike )
+            {
+                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as a PocoLike." );
+                return false;
+            }
+            return true;
+        }
+
         CKTypeKind? SetLifetimeOrFrontType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
@@ -136,7 +164,7 @@ namespace CK.Setup
             var exist = RawGet( m, t );
             if( (exist & (IsDefiner|IsSuperDefiner)) != 0 )
             {
-                throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
+                Throw.Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
             var updated = exist | kind;
             string? error = (updated & MaskPublicInfo).GetCombinationError( t.IsClass );
@@ -170,19 +198,17 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Same as <see cref="GetKind"/> except that if a <see cref="StObjGenAttribute"/> exists on the
-        /// type, null is returned instead of the <see cref="CKTypeKind.None"/>.
+        /// Same as <see cref="GetKind"/> except that if a <see cref="StObjGenAttribute"/> or a <see cref="ExcludeCKTypeAttribute"/>
+        /// exists on the type or if the type has been filtered out, null is returned instead of the <see cref="CKTypeKind.None"/>.
         /// </summary>
-        /// <param name="m"></param>
-        /// <param name="t"></param>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type that can be an interface or a class.</param>
         /// <returns>The CK type kind (may be invalid) or null if [StObjGen] or [ExcludeCKType] attribute exists on the type.</returns>
-        public CKTypeKind? GetExtendedKind( IActivityMonitor m, Type t )
+        public CKTypeKind? GetFilteredKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
             return (k & (IsDefiner | IsSuperDefiner)) == 0
-                        ? (k == IsStObjGen || k == IsExcludedType ? null : k & MaskPublicInfo)
+                        ? ((k & (IsStObjGen|IsExcludedCKType|IsFilteredType)) != 0 ? null : k & MaskPublicInfo)
                    : CKTypeKind.None;
         }
 
@@ -194,191 +220,207 @@ namespace CK.Setup
             {
                 Debug.Assert( k == CKTypeKind.None );
 
-                var baseType = t.BaseType;
-                var allInterfaces = t.GetInterfaces();
-                // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
-                // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IFrontAutoService are extending IAutoService...
-                // ...and unfortunately we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService
-                // ...and unfortunately we must also consider the ones with 3 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
-                // that extends IFrontAutoService. 
-                if( t.IsInterface
-                    && allInterfaces.Length <= 3
-                    && t.GetMembers().Length == 0 )
+                if( t.FullName == null || (_typeFilter != null && !_typeFilter( m, t )) )
                 {
-                    if( t.Name == nameof( IRealObject ) ) k = CKTypeKind.RealObject | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IFrontProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontProcessService | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontService | CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
-                    else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
+                    k = IsFilteredType;
                 }
-                // If it's not one of the interface marker and it's not an internal interface, we analyze it.
-                // Any "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
-                // So, "internal interfaces" are leaves, we don't need to handle "holes" in the interface hierarchy and implementations are free to
-                // define and use them.
-                if( k == CKTypeKind.None && !(t.IsInterface && !t.IsPublic && !t.IsNestedPublic) )
+                else
                 {
-                    Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                    Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                    Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
-                    Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
-                    Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                    Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
-                    bool hasSuperDefiner = false;
-                    bool hasDefiner = false;
-                    bool isMultipleInterface = false;
-                    bool hasMarshallable = false;
-
-                    foreach( var a in t.GetCustomAttributesData() )
+                    var baseType = t.BaseType;
+                    var allInterfaces = t.GetInterfaces();
+                    // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
+                    // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IFrontAutoService are extending IAutoService...
+                    // ...and unfortunately we must also consider the ones with 2 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
+                    // that extends IFrontAutoService. 
+                    if( t.IsInterface
+                        && allInterfaces.Length <= 2
+                        && t.GetMembers().Length == 0 )
                     {
-                        var n = a.AttributeType.Name;
-                        if( n == "StObjGenAttribute" )
-                        {
-                            k = IsStObjGen;
-                            m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
-                            break;
-                        }
-                        if( n == "ExcludeCKTypeAttribute" )
-                        {
-                            k = IsExcludedType;
-                            m.Trace( $"Type '{t}' is [ExcludeCKType]. It is ignored." );
-                            break;
-                        }
-                        if( n == "CKTypeDefinerAttribute" ) hasDefiner = true;
-                        if( n == "CKTypeSuperDefinerAttribute" ) hasSuperDefiner = true;
-                        if( t.IsInterface && n == "IsMultipleAttribute" ) isMultipleInterface = true;
-                        if( n == "IsMarshallableAttribute" ) hasMarshallable = true;
+                        if( t.Name == nameof( IRealObject ) ) k = CKTypeKind.RealObject | IsDefiner | IsReasonMarker;
+                        else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
+                        else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
+                        else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
+                        else if( t.Name == nameof( IFrontProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontProcessService | IsDefiner | IsReasonMarker;
+                        else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontService | CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
+                        else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                     }
-                    if( k == CKTypeKind.None) 
+                    // If it's not one of the interface marker and it's not an internal interface, we analyze it.
+                    // Any "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
+                    // So, "internal interfaces" are leaves, we don't need to handle "holes" in the interface hierarchy and implementations are free to
+                    // define and use them.
+                    if( k == CKTypeKind.None && !(t.IsInterface && !t.IsPublic && !t.IsNestedPublic) )
                     {
-                        if( hasSuperDefiner )
+                        Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
+                        Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                        Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
+                        Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
+                        Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                        Debug.Assert( typeof( PocoLikeAttribute ).Name == "PocoLikeAttribute" );
+                        Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
+                        bool hasSuperDefiner = false;
+                        bool hasDefiner = false;
+                        bool isMultipleInterface = false;
+                        bool hasMarshallable = false;
+                        bool isPocoLike = false;
+
+                        foreach( var a in t.GetCustomAttributesData() )
                         {
+                            var n = a.AttributeType.Name;
+                            if( n == "StObjGenAttribute" )
+                            {
+                                k = IsStObjGen;
+                                m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
+                                break;
+                            }
+                            if( n == "ExcludeCKTypeAttribute" )
+                            {
+                                k = IsExcludedCKType;
+                                m.Trace( $"Type '{t}' is [ExcludeCKType]. It is ignored." );
+                                break;
+                            }
+                            if( n == "CKTypeDefinerAttribute" ) hasDefiner = true;
+                            if( n == "CKTypeSuperDefinerAttribute" ) hasSuperDefiner = true;
+                            if( t.IsInterface && n == "IsMultipleAttribute" ) isMultipleInterface = true;
+                            if( n == "IsMarshallableAttribute" ) hasMarshallable = true;
+                            if( n == "PocoLikeAttribute" ) isPocoLike = true;
+                        }
+                        if( k == CKTypeKind.None )
+                        {
+                            if( hasSuperDefiner )
+                            {
+                                if( hasDefiner )
+                                {
+                                    m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t}' is useless since [CKTypeSuperDefiner] is also defined." );
+                                }
+                                hasDefiner = true;
+                            }
                             if( hasDefiner )
                             {
-                                m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t}' is useless since [CKTypeSuperDefiner] is also defined." );
-                            }
-                            hasDefiner = true;
-                        }
-                        if( hasDefiner )
-                        {
-                            // If this is a definer, we can skip any handling of potential Super Definer.
-                            // We also clear any IsMultipleService and IsMarshallable since these flags are not transitive.
-                            foreach( var i in allInterfaces )
-                            {
-                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
-                            }
-                            k |= IsDefiner;
-                            if( hasSuperDefiner ) k |= IsSuperDefiner;
-                        }
-                        else
-                        {
-                            Debug.Assert( k == CKTypeKind.None );
-                            // If the base type is a SuperDefiner, then this is a Definer.
-                            if( baseType != null )
-                            {
-                                // IsMarshallable is not propagated.
-                                var kBase = RawGet( m, baseType ) & ~CKTypeKind.IsMarshallable;
-                                Debug.Assert( (kBase & CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
-                                if( (kBase & IsSuperDefiner) != 0 )
-                                {
-                                    Debug.Assert( (kBase & IsDefiner) != 0 );
-                                    k = kBase & ~IsSuperDefiner;
-                                }
-                                else k = kBase & ~IsDefiner;
-                            }
-                            if( (k & IsDefiner) != 0 )
-                            {
-                                // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
+                                // If this is a definer, we can skip any handling of potential Super Definer.
+                                // We also clear any IsMultipleService and IsMarshallable since these flags are not transitive.
                                 foreach( var i in allInterfaces )
                                 {
                                     k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                    Debug.Assert( (k & CKTypeKind.IsPocoLike) == 0, "PocoLike attribute can only be on class." );
+                                }
+                                k |= IsDefiner;
+                                if( hasSuperDefiner ) k |= IsSuperDefiner;
+                                // PocoLike cannot be a definer or a super definer.
+                                if( isPocoLike )
+                                {
+                                    m.Error( $"PocoLike '{t}' cannot be a [{(hasSuperDefiner ? "CKTypeSuperDefiner" : "CKTypeDefiner")}]." );
                                 }
                             }
                             else
                             {
-                                // We are not (yet?) a Definer.
-                                foreach( var i in allInterfaces )
+                                Debug.Assert( k == CKTypeKind.None );
+                                // If the base type is a SuperDefiner, then this is a Definer.
+                                if( baseType != null )
                                 {
-                                    var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
-                                    if( (k & IsDefiner) == 0 // We are not yet a Definer...
-                                        && (kI & IsSuperDefiner) != 0 ) // ...but this base interface is a SuperDefiner.
+                                    // IsMarshallable and IsPocoLike is not propagated.
+                                    var kBase = RawGet( m, baseType ) & ~CKTypeKind.IsMarshallable & ~CKTypeKind.IsPocoLike;
+                                    Debug.Assert( (kBase & CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
+                                    if( (kBase & IsSuperDefiner) != 0 )
                                     {
-                                        // Really?
-                                        bool indirect = (baseType != null && i.IsAssignableFrom( baseType ))
-                                                         || allInterfaces.Any( baseInterface => i != baseInterface && i.IsAssignableFrom( baseInterface ) );
-                                        kI &= ~IsSuperDefiner;
-                                        if( !indirect ) kI |= IsDefiner;
+                                        Debug.Assert( (kBase & IsDefiner) != 0 );
+                                        k = kBase & ~IsSuperDefiner;
                                     }
-                                    k |= kI & ~IsSuperDefiner;
+                                    else k = kBase & ~IsDefiner;
+                                }
+                                if( (k & IsDefiner) != 0 )
+                                {
+                                    // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
+                                    foreach( var i in allInterfaces )
+                                    {
+                                        k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                    }
+                                }
+                                else
+                                {
+                                    // We are not (yet?) a Definer.
+                                    foreach( var i in allInterfaces )
+                                    {
+                                        var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                        if( (k & IsDefiner) == 0 // We are not yet a Definer...
+                                            && (kI & IsSuperDefiner) != 0 ) // ...but this base interface is a SuperDefiner.
+                                        {
+                                            // Really?
+                                            bool indirect = (baseType != null && i.IsAssignableFrom( baseType ))
+                                                             || allInterfaces.Any( baseInterface => i != baseInterface && i.IsAssignableFrom( baseInterface ) );
+                                            kI &= ~IsSuperDefiner;
+                                            if( !indirect ) kI |= IsDefiner;
+                                        }
+                                        k |= kI & ~IsSuperDefiner;
+                                    }
                                 }
                             }
-                        }
-                        // Propagation from base and interfaces has been done.
-                        // If we're still None here, we look for an open generic definition.
-                        if( k == CKTypeKind.None && t.IsGenericType && !t.IsGenericTypeDefinition )
-                        {
-                            // A Generic Type definition can be a (Super)Definer or be a multiple service definition: this
-                            // applies directly to the specialized type.
-                            // Even the IsMarshallable is kept: we consider that a generic marshaller is possible!
-                            var tGen = t.GetGenericTypeDefinition();
-                            k = RawGet( m, tGen );
-                        }
-                        if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
-                        if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
-                        // Check for errors and handle 
-                        if( k != CKTypeKind.None )
-                        {
-                            // Checking errors here that cannot be checked by the central GetCombinationError method.
-
-                            // A type MUST be public only if it is an IAutoService.
-                            // External services definitions are not concerned by public/private access!
-                            if( !t.Assembly.IsDynamic
-                                && (k & CKTypeKind.IsAutoService) != 0
-                                && !(t.IsPublic || t.IsNestedPublic) )
+                            // Propagation from base and interfaces has been done.
+                            // If we're still None here, we look for an open generic definition.
+                            if( k == CKTypeKind.None && t.IsGenericType && !t.IsGenericTypeDefinition )
                             {
-                                m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                // A Generic Type definition can be a (Super)Definer or be a multiple service definition: this
+                                // applies directly to the specialized type.
+                                // Even the IsMarshallable is kept: we consider that a generic marshaller is possible!
+                                var tGen = t.GetGenericTypeDefinition();
+                                k = RawGet( m, tGen );
                             }
-                            if( t.IsClass )
+                            if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
+                            if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
+                            if( isPocoLike ) k |= CKTypeKind.IsPocoLike;
+                            // Check for errors and handle 
+                            if( k != CKTypeKind.None )
                             {
-                                Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
-                                if( (k & CKTypeKind.IsAutoService) != 0 )
-                                {
-                                    foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
-                                    {
-                                        Type marshallable = marshaller.GetGenericArguments()[0];
-                                        m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
-                                        SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
+                                // Checking errors here that cannot be checked by the central GetCombinationError method.
 
-                                        // The marshaller interface (the closed generic) is promoted to be an IAutoService since it must be
-                                        // mapped (without ambiguities) on the currently registering class (that is itself an IAutoService).
-                                        var exists = RawGet( m, marshaller );
-                                        if( (exists & CKTypeKind.IsAutoService) == 0 )
+                                // A type MUST be public only if it is an IAutoService.
+                                // External services definitions are not concerned by public/private access!
+                                if( !t.Assembly.IsDynamic
+                                    && (k & CKTypeKind.IsAutoService) != 0
+                                    && !(t.IsPublic || t.IsNestedPublic) )
+                                {
+                                    m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                }
+                                if( t.IsClass )
+                                {
+                                    Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleAttribute targets interface only and is not propagated." );
+                                    if( (k & CKTypeKind.IsAutoService) != 0 )
+                                    {
+                                        foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
                                         {
-                                            exists |= CKTypeKind.IsAutoService;
-                                            var error = exists.GetCombinationError( false );
-                                            if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
-                                            else
+                                            Type marshallable = marshaller.GetGenericArguments()[0];
+                                            m.Info( $"Type '{marshallable}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t}' that is a IAutoService." );
+                                            SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
+
+                                            // The marshaller interface (the closed generic) is promoted to be an IAutoService since it must be
+                                            // mapped (without ambiguities) on the currently registering class (that is itself an IAutoService).
+                                            var exists = RawGet( m, marshaller );
+                                            if( (exists & CKTypeKind.IsAutoService) == 0 )
                                             {
-                                                m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
-                                                _cache[marshaller] = exists;
+                                                exists |= CKTypeKind.IsAutoService;
+                                                var error = exists.GetCombinationError( false );
+                                                if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
+                                                else
+                                                {
+                                                    m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
+                                                    _cache[marshaller] = exists;
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            else
-                            {
-                                Debug.Assert( t.IsInterface );
-                                // We are registering classes (not interfaces): the combination errors for classes are (at least should be) checked by the
-                                // root register code.
-                                // Here we check and log an error for any interface combination error. Some errors don't propagate to their final classes
-                                // like for instance the fact that a IRealObject interface cannot be marked IsMultiple (the attribute applies only to the
-                                // interface it decorates).
-                                // We may have test here only these kind of specific errors (currently only this one), however we consider that it is better
-                                // and safer to rely on the central GetCombinationError() method: this method concentrates all the checks.
-                                var error = (k & MaskPublicInfo).GetCombinationError( false );
-                                if( error != null ) m.Error( $"Invalid interface '{t.FullName}' kind: {error}" );
+                                else
+                                {
+                                    Debug.Assert( t.IsInterface );
+                                    // We are registering classes (not interfaces): the combination errors for classes are (at least should be) checked by the
+                                    // root register code.
+                                    // Here we check and log an error for any interface combination error. Some errors don't propagate to their final classes
+                                    // like for instance the fact that a IRealObject interface cannot be marked IsMultiple (the attribute applies only to the
+                                    // interface it decorates).
+                                    // We may have test here only these kind of specific errors (currently only this one), however we consider that it is better
+                                    // and safer to rely on the central GetCombinationError() method: this method concentrates all the checks.
+                                    var error = (k & MaskPublicInfo).GetCombinationError( false );
+                                    if( error != null ) m.Error( $"Invalid interface '{t.FullName}' kind: {error}" );
+                                }
                             }
                         }
                     }
@@ -402,7 +444,7 @@ namespace CK.Setup
             if( (t & IsFrontTypeReasonExternal) != 0 ) c += " [FrontType:External]";
             if( (t & IsMultipleReasonExternal) != 0 ) c += " [Multiple:External]";
             if( (t & IsStObjGen) != 0 ) c += " [StObjGen]";
-            if( (t & IsExcludedType) != 0 ) c += " [ExcludeCKType]";
+            if( (t & IsExcludedCKType) != 0 ) c += " [ExcludeCKType]";
             return c;
         }
 
