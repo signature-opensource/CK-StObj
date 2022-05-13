@@ -41,14 +41,15 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous()
         {
-            {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceS1Impl ) );
-                collector.RegisterType( typeof( ServiceS2Impl ) );
-                var r = TestHelper.GetFailedResult( collector );
-                Debug.Assert( r != null, "We have a (failed) result." );
-                r.CKTypeResult.AutoServices.RootClasses.Should().HaveCount( 2 );
-            }
+            //{
+            //    var collector = TestHelper.CreateStObjCollector();
+            //    collector.RegisterType( typeof( ServiceS1Impl ) );
+            //    collector.RegisterType( typeof( ServiceS2Impl ) );
+            //    var r = TestHelper.GetFailedResult( collector );
+            //    Debug.Assert( r != null, "We have a (failed) result." );
+            //    r.CKTypeResult.AutoServices.RootClasses.Should().HaveCount( 2 );
+            //}
+
             // Same tests as above but excluding ISBase type: success since
             // ISBase is no more considered a IScopedAutoService.
             {

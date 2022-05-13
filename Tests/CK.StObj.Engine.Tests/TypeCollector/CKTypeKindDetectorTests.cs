@@ -237,6 +237,16 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 bool success = true;
                 using( TestHelper.Monitor.OnError( () => success = false ) )
                 {
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService );
+                }
+                success.Should().BeFalse( "From general to specific: this fails!" );
+            }
+            {
+                var a = new CKTypeKindDetector();
+                bool success = true;
+                using( TestHelper.Monitor.OnError( () => success = false ) )
+                {
                     a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService );
                     a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService );
                 }
@@ -246,21 +256,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 specO.ToStringClear( false ).Should().Be( "IsScopedService|IsFrontProcessService" );
 
                 success.Should().BeTrue( "From specific to general: success!" );
-            }
-            {
-                var a = new CKTypeKindDetector();
-                bool success = true;
-                using( TestHelper.Monitor.OnError( () => success = false ) )
-                {
-                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService );
-                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService );
-                }
-                var baseO = a.GetKind( TestHelper.Monitor, typeof( IOptions<> ) );
-                var specO = a.GetKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ) );
-                baseO.ToStringClear( false ).Should().Be( "IsSingleton|IsFrontProcessService" );
-                specO.ToStringClear( false ).Should().Be( "IsScopedService|IsFrontProcessService" );
-
-                success.Should().BeFalse( "From general to specific: this fails!" );
             }
         }
     }

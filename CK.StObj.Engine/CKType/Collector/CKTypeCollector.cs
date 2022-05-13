@@ -56,7 +56,7 @@ namespace CK.Setup
             _serviceRoots = new List<AutoServiceClassInfo>();
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
-            KindDetector = new CKTypeKindDetector();
+            KindDetector = new CKTypeKindDetector( typeFilter );
             _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }

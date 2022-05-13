@@ -220,7 +220,7 @@ namespace CK.Setup
             {
                 Debug.Assert( k == CKTypeKind.None );
 
-                if( t.FullName == null || (_typeFilter != null && !_typeFilter( m, t )) )
+                if( _typeFilter != null && !_typeFilter( m, t ) )
                 {
                     k = IsFilteredType;
                 }
