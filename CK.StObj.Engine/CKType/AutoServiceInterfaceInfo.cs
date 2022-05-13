@@ -29,8 +29,7 @@ namespace CK.Setup
         /// Gets the initial type kind that is the result of the marker interfaces, attributes
         /// on the type itself and of any setting done through <see cref="CKTypeKindDetector.SetAutoServiceKind(IActivityMonitor, Type, AutoServiceKind)"/>
         /// before types registration.
-        /// This can never be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind,bool)"/> since
-        /// in such cases, the AutoServiceInterfaceInfo is not instantiated.
+        /// This is always valid since otherwise the AutoServiceInterfaceInfo is not instantiated.
         /// </summary>
         public CKTypeKind InitialTypeKind { get; }
 

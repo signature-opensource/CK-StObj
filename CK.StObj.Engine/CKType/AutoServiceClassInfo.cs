@@ -433,7 +433,7 @@ namespace CK.Setup
             Debug.Assert( !TypeInfo.IsSpecialized, "This is called only on leaf, most specialized, class." );
             if( !FinalTypeKind.HasValue )
             {
-                var initial = kindComputeFacade.KindDetector.GetKind( m, ClassType ).ToAutoServiceKind();
+                var initial = kindComputeFacade.KindDetector.GetValidKind( m, ClassType ).ToAutoServiceKind();
                 var final = initial;
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
                 {
@@ -482,7 +482,7 @@ namespace CK.Setup
                             }
                             else
                             {
-                                kP = kindComputeFacade.KindDetector.GetKind( m, p.ParameterType ).ToAutoServiceKind();
+                                kP = kindComputeFacade.KindDetector.GetValidKind( m, p.ParameterType ).ToAutoServiceKind();
                                 paramTypeName = p.ParameterType.Name;
                                 if( (kP & (AutoServiceKind.IsSingleton | AutoServiceKind.IsScoped)) == 0 )
                                 {
@@ -799,10 +799,9 @@ namespace CK.Setup
             }
         }
 
-        CtorParameterData CreateCtorParameterData(
-            IActivityMonitor m,
-            CKTypeCollector collector,
-            ParameterInfo p )
+        CtorParameterData CreateCtorParameterData( IActivityMonitor m,
+                                                   CKTypeCollector collector,
+                                                   ParameterInfo p )
         {
             var tParam = p.ParameterType;
             bool isEnumerable = false;
@@ -816,17 +815,17 @@ namespace CK.Setup
                 }
                 else 
                 {
-                    var genKind = collector.KindDetector.GetKind( m, tGen );
+                    var genKind = collector.KindDetector.GetValidKind( m, tGen );
                     if( genKind != CKTypeKind.None )
                     {
                         return new CtorParameterData( true, null, null, false, genKind, tParam );
                     }
                 }
             }
-            var kind = collector.KindDetector.GetKind( m, tParam );
+            var kind = collector.KindDetector.GetRawKind( m, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
-            var conflictMsg = kind.GetCombinationError( tParam.IsClass );
+            var conflictMsg = (kind & CKTypeKind.HasCombinationError) != 0 ? kind.GetCombinationError( tParam.IsClass ) : null;
             if( conflictMsg == null )
             {
                 // Direct check here of the fact that a [IsMultiple] interface MUST NOT be a direct, single, parameter. 

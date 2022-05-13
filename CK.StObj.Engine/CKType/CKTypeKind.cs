@@ -85,7 +85,19 @@ namespace CK.Setup
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
         /// </summary>
-        LifetimeMask = IsScoped | IsSingleton
+        LifetimeMask = IsScoped | IsSingleton,
+
+        /// <summary>
+        /// Flags set when this type is excluded (by [ExcludeCKType] or type filtering function).
+        /// This is also set when [StObjGen] attribute exists.
+        /// </summary>
+        IsExcludedType = 1024,
+
+        /// <summary>
+        /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
+        /// (that has been logged) returned an error.
+        /// </summary>
+        HasCombinationError = 2048
     }
 
     /// <summary>
@@ -144,10 +156,7 @@ namespace CK.Setup
         /// <returns>An error message or null.</returns>
         public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
         {
-            if( @this < 0 || @this > CKTypeKindDetector.MaskPublicInfo )
-            {
-                throw new ArgumentOutOfRangeException( nameof(CKTypeKind), @this, "Undefined enum values appear." );
-            }
+            Throw.CheckArgument( @this >= 0 && @this <= CKTypeKindDetector.MaskPublicInfo );
             // Pure predicates: checks are made against them.
             bool isAuto = (@this & CKTypeKind.IsAutoService) != 0;
             bool isScoped = (@this & CKTypeKind.IsScoped) != 0;
@@ -162,11 +171,11 @@ namespace CK.Setup
 
             if( isFrontEndPoint && !isFrontProcess )
             {
-                throw new ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsFrontService: " + @this.ToStringFlags() );
+                Throw.ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsFrontService: " + @this.ToStringFlags() );
             }
             if( isRealObject && !isSingleton )
             {
-                throw new Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
+                Throw.Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
             }
 
             string? conflict = null;
@@ -236,7 +245,9 @@ namespace CK.Setup
                                      "IsFrontService",
                                      "IsFrontProcessService",
                                      "IsMarshallable",
-                                     "IsMultipleService" };
+                                     "IsMultipleService",
+                                     "IsExcludedType",
+                                     "HasCombinationError"};
             if( @this == CKTypeKind.None ) return "None";
             var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
                                              || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)
@@ -247,7 +258,9 @@ namespace CK.Setup
                                              || (i == 6 && (@this & CKTypeKind.IsFrontService) != 0)
                                              || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
                                              || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
-                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0));
+                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
+                                             || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
+                                             || (i == 11 && (@this & CKTypeKind.HasCombinationError) != 0) );
             return String.Join( "|", f );
         }
     }

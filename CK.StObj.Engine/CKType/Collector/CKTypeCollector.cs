@@ -57,7 +57,7 @@ namespace CK.Setup
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
             KindDetector = new CKTypeKindDetector( typeFilter );
-            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
@@ -149,26 +149,19 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind? lt = KindDetector.GetFilteredKind( _monitor, t );
-            if( lt != null )
+            CKTypeKind lt = KindDetector.GetRawKind( _monitor, t );
+            if( (lt & CKTypeKind.HasCombinationError) == 0 )
             {
-                var conflictMsg = lt.Value.GetCombinationError( true );
-                if( conflictMsg != null )
+                bool isExcluded = (lt & CKTypeKind.IsExcludedType) != 0;
+                if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                 {
-                    _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
+                    objectInfo = RegisterObjectClassInfo( t, isExcluded, acParent );
+                    Debug.Assert( objectInfo != null );
                 }
-                else
+                if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
                 {
-                    if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
-                    {
-                        objectInfo = RegisterObjectClassInfo( t, acParent );
-                        Debug.Assert( objectInfo != null );
-                    }
-                    if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
-                    {
-                        serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
-                        Debug.Assert( serviceInfo != null );
-                    }
+                    serviceInfo = RegisterServiceClassInfo( t, isExcluded, sParent, objectInfo );
+                    Debug.Assert( serviceInfo != null );
                 }
             }
             // Marks the type as a registered one and gives it a chance to carry
@@ -176,15 +169,14 @@ namespace CK.Setup
             if( objectInfo == null && serviceInfo == null )
             {
                 _objectCollector.Add( t, null );
-                if( lt != null ) RegisterRegularType( t );
+                if( (lt & CKTypeKind.IsExcludedType) == 0 ) RegisterRegularType( t );
             }
-            
             return true;
         }
 
-        RealObjectClassInfo RegisterObjectClassInfo( Type t, RealObjectClassInfo? parent )
+        RealObjectClassInfo RegisterObjectClassInfo( Type t, bool isExcluded, RealObjectClassInfo? parent )
         {
-            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, !_typeFilter( _monitor, t ) );
+            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, isExcluded );
             if( !result.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -214,14 +206,11 @@ namespace CK.Setup
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                // Ignores the type if type filter says so or if a [StObjGen] attribute exists.
-                var c = _typeFilter( _monitor, t ) && KindDetector.GetFilteredKind( _monitor, t ) != null
-                               ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
-                               : null;
+                var c = TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t );
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
-                    _monitor.Trace( $"Attributes registration on '{t.FullName}'." );
+                    _monitor.Trace( $"At least one bound attribute on '{t}' has been registered." );
                     RegisterAssembly( t );
                 }
             }
