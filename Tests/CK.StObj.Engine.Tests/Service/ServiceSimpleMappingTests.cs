@@ -13,6 +13,8 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class ServiceSimpleMappingTests 
     {
+        // These services can be singleton: IAUtoService would lead to singletons.
+        // Specifying scoped is not the default.
         public interface ISBase : IScopedAutoService
         {
         }
@@ -37,7 +39,22 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
-
+        // This test shows that excluding a base interface does not exclude the interfaces it implies.
+        // Type exclusion is "weak". A "stronger" exclusion (by analyzing declared interfaces) would de facto
+        // completely exclude any service implementations since IAutoService would not appear anymore.
+        //
+        // For interfaces this makes sense: here the ISBase being excluded, no more ISBase service would be available.
+        // It would be up to the developer to reintroduce IS1 and/or IS2 into the CK type system by explicitly configuring them.
+        //
+        // However, more generally, this is not so "logically sound". "Strongly" excluding a base class for instance would
+        // mean to remove all impacts of the class on its specializations. Among these impacts there is the IRealObject interface, so
+        // to reintroduce some specializations of it we would need to expose a "SetRealObjectKind" method and offer external configuration
+        // support like the one for AutoService.
+        // And what about the exclusion of a type that is a [CKTypeSuperDefiner]: should this condemn its direct specializations to not
+        // be CKTypeDefiner?
+        // I have no doubt that for each of these cases a "best specific behavior" can be found, but this would require a lot of
+        // thoughts (and may be trial and errors on real projects).
+        // Current exclusion semantics is what it is, not perfect and used rarely and always on leaf types, so let it be.
         [Test]
         public void service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous()
         {
@@ -59,7 +76,11 @@ namespace CK.StObj.Engine.Tests.Service
                 Debug.Assert( map != null, "No initialization error." );
 
                 map.Services.SimpleMappings.ContainsKey( typeof( ISBase ) ).Should().BeFalse();
-                map.Services.SimpleMappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( ServiceS1Impl ) );
+
+                Setup.IStObjServiceFinalSimpleMapping s1 = map.Services.SimpleMappings[typeof( IS1 )];
+                s1.ClassType.Should().BeSameAs( typeof( ServiceS1Impl ) );
+                s1.IsScoped.Should().BeTrue( "Excluding ISBase keeps IScopedAutoService (and hence the IAutoService) base." );
+
                 map.Services.SimpleMappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( ServiceS2Impl ) );
                 map.Services.SimpleMappings[typeof( ServiceS1Impl )].ClassType.Should().BeSameAs( typeof( ServiceS1Impl ) );
                 map.Services.SimpleMappings[typeof( ServiceS2Impl )].ClassType.Should().BeSameAs( typeof( ServiceS2Impl ) );
