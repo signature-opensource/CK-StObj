@@ -68,7 +68,7 @@ namespace CK.Setup
         IsPoco = 128,
 
         /// <summary>
-        /// A IPoco marked interface.
+        /// A [PocoLike] class.
         /// </summary>
         IsPocoLike = 256,
 
