@@ -39,9 +39,9 @@ namespace CK.Setup
             /// <summary>
             /// Setting of this property (just like PocoType) is done when the global result is built.
             /// </summary>
-            public PocoLikeInfo? PocoLikeType { get; set; }
+            public PocoClassInfo? PocoClassType { get; set; }
 
-            IPocoLikeInfo? IPocoBasePropertyInfo.PocoLikeType => PocoLikeType;
+            IPocoClassInfo? IPocoBasePropertyInfo.PocoClassType => PocoClassType;
 
             /// <summary>
             /// Setting of this property (just like PocoType) is done when the global result is built.

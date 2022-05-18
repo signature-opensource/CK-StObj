@@ -68,9 +68,9 @@ namespace CK.Setup
         IsPoco = 128,
 
         /// <summary>
-        /// A [PocoLike] class.
+        /// A [PocoClass] class.
         /// </summary>
-        IsPocoLike = 256,
+        IsPocoClass = 256,
 
         /// <summary>
         /// A real object is a singleton. 
@@ -163,7 +163,7 @@ namespace CK.Setup
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
-            bool isPocoLike = (@this & CKTypeKind.IsPocoLike) != 0;
+            bool isPocoClass = (@this & CKTypeKind.IsPocoClass) != 0;
             bool isFrontEndPoint = (@this & CKTypeKind.IsFrontService) != 0;
             bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
@@ -188,9 +188,9 @@ namespace CK.Setup
                     conflict += "A class cannot be a IPoco";
                 }
             }
-            else if( isPocoLike )
+            else if( isPocoClass )
             {
-                if( @this != CKTypeKind.IsPocoLike ) conflict = "PocoLike class cannot be combined with any other aspect";
+                if( @this != CKTypeKind.IsPocoClass ) conflict = "[PocoClass] class cannot be combined with any other aspect";
             }
             else if( isRealObject )
             {
@@ -241,7 +241,7 @@ namespace CK.Setup
                                      "IsSingleton",
                                      "IsRealObject",
                                      "IsPoco",
-                                     "IsPocoLike",
+                                     "IsPocoClass",
                                      "IsFrontService",
                                      "IsFrontProcessService",
                                      "IsMarshallable",
@@ -254,7 +254,7 @@ namespace CK.Setup
                                              || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && (@this & CKTypeKind.IsPocoLike) != 0)
+                                             || (i == 5 && (@this & CKTypeKind.IsPocoClass) != 0)
                                              || (i == 6 && (@this & CKTypeKind.IsFrontService) != 0)
                                              || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
                                              || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)

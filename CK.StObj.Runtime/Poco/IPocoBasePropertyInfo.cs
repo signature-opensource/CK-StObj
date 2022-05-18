@@ -8,17 +8,17 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Describes shared properties of <see cref="IPocoLikePropertyInfo"/> and <see cref="IPocoPropertyInfo"/>.
+    /// Describes shared properties of <see cref="IPocoClassPropertyInfo"/> and <see cref="IPocoPropertyInfo"/>.
     /// <para>
     /// Properties that describe the type have been designed as a union type: they are all mutually exclusive
     /// and one of them is necessarily set.
     /// </para>
     /// <para>
     /// For instance, when <see cref="IsBasicPropertyType"/> is true, then <see cref="IsStandardCollectionType"/>, <see cref="IsTupleType"/>,
-    /// <see cref="IsEnumType"/> and <see cref="IsUnionType"/> are all false and <see cref="PocoLikeType"/> and <see cref="PocoType"/> are both null.
+    /// <see cref="IsEnumType"/> and <see cref="IsUnionType"/> are all false and <see cref="PocoClassType"/> and <see cref="PocoType"/> are both null.
     /// </para>
     /// <para>
-    /// The <see cref="PocoLikeType"/> acts as a fallback: a <see cref="IPocoLikeInfo"/> is created for any type that is not a IPoco, a standard collection,
+    /// The <see cref="PocoClassType"/> acts as a fallback: a <see cref="IPocoClassInfo"/> is created for any type that is not a IPoco, a standard collection,
     /// an enumeration or a basic property. These Poco-like objects "close" the Poco's type space onto which serializers/exporters/marshalers rely to
     /// handle "allowed" types.
     /// </para>
@@ -26,7 +26,7 @@ namespace CK.Setup
     public interface IPocoBasePropertyInfo : IAnnotationSet
     {
         /// <summary>
-        /// Gets the index of this property in the <see cref="IPocoRootInfo.PropertyList"/> or <see cref="IPocoLikePropertyInfo.PropertyList"/>.
+        /// Gets the index of this property in the <see cref="IPocoRootInfo.PropertyList"/> or <see cref="IPocoClassPropertyInfo.PropertyList"/>.
         /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
         /// by index (MessagePack) rather than by name (Json).
         /// <para>
@@ -46,14 +46,14 @@ namespace CK.Setup
         ///     <item>Property's type is necessarily:
         ///         <list type="bullet">
         ///             <item>Another family of <see cref="IPoco"/>...</item>
-        ///             <item>...or a Poco-like object with a true <see cref="IPocoLikeInfo.IsDefaultNewable"/>...</item>
+        ///             <item>...or a Poco-like object with a true <see cref="IPocoClassInfo.IsDefaultNewable"/>...</item>
         ///             <item>...or a standard collection (HashSet&lt;&gt;, List&lt;&gt;, Dictionary&lt;,&gt; but it cannot be an array.</item>
         ///         </list>
         ///     </item>
         /// </list>
         /// </para>
         /// <para>
-        /// For <see cref="IPocoLikePropertyInfo"/>, there is no such restriction but to make serialization/export/marshalling easy
+        /// For <see cref="IPocoClassPropertyInfo"/>, there is no such restriction but to make serialization/export/marshalling easy
         /// (or even automatically doable), the property's type should be as simple as possible...
         /// </para>
         /// </summary>
@@ -100,7 +100,7 @@ namespace CK.Setup
         /// Gets the Poco-like information if this <see cref="PropertyType"/> is not one of the other
         /// property type.
         /// </summary>
-        IPocoLikeInfo? PocoLikeType { get; }
+        IPocoClassInfo? PocoClassType { get; }
 
         /// <summary>
         /// Gets the Poco root information if this <see cref="PropertyType"/> is a <see cref="IPoco"/>.
@@ -115,7 +115,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether this property is a union type.
-        /// This is always false for <see cref="IPocoLikePropertyInfo"/>.
+        /// This is always false for <see cref="IPocoClassPropertyInfo"/>.
         /// </summary>
         bool IsUnionType { get; }
 

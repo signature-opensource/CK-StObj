@@ -85,7 +85,7 @@ namespace CK.Setup
                     : false;
         }
 
-        //public bool RegisterPocoLikeClass( IActivityMonitor monitor, Type t )
+        //public bool RegisterPocoClass( IActivityMonitor monitor, Type t )
         //{
         //    Throw.CheckArgument( t?.IsClass is true );
         //    return true;

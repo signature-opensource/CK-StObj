@@ -10,7 +10,7 @@ namespace CK.Setup
 {
     partial class PocoRegistrar
     {
-        sealed class PocoLikePropertyInfo : IPocoLikePropertyInfo
+        sealed class PocoClassPropertyInfo : IPocoClassPropertyInfo
         {
             AnnotationSetImpl _annotations;
 
@@ -32,7 +32,7 @@ namespace CK.Setup
 
             public string? DefaultValueSource { get; set; }
 
-            public IPocoLikeInfo? PocoLikeType { get; set; }
+            public IPocoClassInfo? PocoClassType { get; set; }
 
             public IPocoRootInfo? PocoType { get; set; }
 
@@ -42,7 +42,7 @@ namespace CK.Setup
 
             public bool IsBasicPropertyType { get; }
 
-            public PocoLikePropertyInfo( PropertyInfo p, int index )
+            public PocoClassPropertyInfo( PropertyInfo p, int index )
             {
                 Debug.Assert( p != null );
                 PropertyInfo = p;

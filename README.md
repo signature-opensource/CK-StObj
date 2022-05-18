@@ -30,21 +30,24 @@ Please see [here](https://github.com/Invenietis/CK-Core/tree/develop/CK.Core/Aut
 Then come the Poco (Plain Old C# Objects) that are simple objects. Poco are typically used as [Data Transfer Object](https://en.wikipedia.org/wiki/Data_transfer_object),
 they carry data and have no or very few associated behaviors.
 
-Poco are basic interfaces that extend the `IPoco` interface marker. They exposes properties that must be of "Poco compliant" types.
+Poco are either `PocoClass` or basic interfaces that extend the `IPoco` interface marker.
+They both exposes properties that must be of "Poco compliant" types.
 Poco compliant types are:
  - Basic types like `int`, `string`, `Guid`, etc.
- - Other `IPoco` objects (through their interface).
+ - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant types.
- - A class decorated with the `[PocoLike]` attribute.
+ - A class decorated with the `[PocoClas]` attribute.
  - `List<>`, `HashSet<>`, `Dictionary<,>` or array of Poco compliant objects.
  - Formally `object` is allowed: at runtime, the instance must be a Poco compliant type.
 
-This `IPoco` concept fulfills 2 goals:
+This Poco concept fulfills 2 goals:
 - Supporting true modularity: any modules/packages can enrich any `IPoco` interface independently of others.
 - Defining a "closed world" of DTO that are the only ones that should be authorized to be exchanged with external parties.
 
 By allowing independent packages (packages that don't know each other) to simultaneously extend the same _eventual_ type,
 the `IPoco` interface is one of the key of the *Package First* approach.
+
+By supporting standard class hierarchy, `[PocoClass]` classes support simple objects like configuration data.
 
 ## Automatic DI
 

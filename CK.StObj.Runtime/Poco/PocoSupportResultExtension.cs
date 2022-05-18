@@ -36,7 +36,7 @@ namespace CK.Setup
         };
 
         /// <summary>
-        /// Gets whether the given type is a basic type that doesn't require a <see cref="IPocoLikeInfo"/>.
+        /// Gets whether the given type is a basic type that doesn't require a <see cref="IPocoClassInfo"/>.
         /// It is one of these types:
         /// <code>
         ///     int, long, short, byte, string, bool, double, float, object, DateTime, DateTimeOffset, TimeSpan,
@@ -69,7 +69,7 @@ namespace CK.Setup
                 writer.Append( "new " ).Append( info.Root.PocoClass.FullName! ).Append( "();" ).NewLine();
                 return;
             }
-            if( @this.PocoLike.ByType.ContainsKey( autoType ) )
+            if( @this.PocoClass.ByType.ContainsKey( autoType ) )
             {
                 writer.Append( "new " ).AppendCSharpName( autoType, true, true, true ).Append( "();" ).NewLine();
                 return;
@@ -98,7 +98,7 @@ namespace CK.Setup
                     return;
                 }
             }
-            Throw.ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco-like objects (marked with a [PocoLike] attribute), HashSet<>, List<>, or Dictionary<,>.", nameof( autoType ) );
+            Throw.ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco objects (marked with a [PocoClass] attribute), HashSet<>, List<>, or Dictionary<,>.", nameof( autoType ) );
         }
 
     }
