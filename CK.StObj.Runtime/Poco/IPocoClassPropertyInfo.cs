@@ -10,7 +10,7 @@ namespace CK.Setup
     /// <summary>
     /// Describes a Poco-like property.
     /// </summary>
-    public interface IPocoLikePropertyInfo : IPocoBasePropertyInfo
+    public interface IPocoClassPropertyInfo : IPocoBasePropertyInfo
     {
         /// <summary>
         /// Gets the property info.

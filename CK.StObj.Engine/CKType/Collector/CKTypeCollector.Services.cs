@@ -20,9 +20,9 @@ namespace CK.Setup
         int _serviceInterfaceCount;
         int _serviceRootInterfaceCount;
 
-        AutoServiceClassInfo RegisterServiceClassInfo( Type t, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
+        AutoServiceClassInfo RegisterServiceClassInfo( Type t, bool isExcluded, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
         {
-            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, !_typeFilter( _monitor, t ), objectInfo );
+            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, isExcluded, objectInfo );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -33,7 +33,7 @@ namespace CK.Setup
         }
 
 
-        bool IsAutoService( Type t ) => (KindDetector.GetKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( Type t ) => (KindDetector.GetRawKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo? FindServiceClassInfo( Type t )
         {
@@ -55,17 +55,18 @@ namespace CK.Setup
         /// </summary>
         AutoServiceInterfaceInfo? RegisterServiceInterface( Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface && lt == KindDetector.GetKind( _monitor, t ) );
+            Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
             lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
-            Debug.Assert( lt == CKTypeKind.IsAutoService
-                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
-                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
             {
-                if( _typeFilter( _monitor, t ) )
+                if( (lt & CKTypeKind.IsExcludedType) == 0 )
                 {
-                    var attr = new TypeAttributesCache( _monitor, t, _serviceProvider, false ); 
+                    Debug.Assert( lt == CKTypeKind.IsAutoService
+                                    || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+                                    || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
+
+                    var attr = new TypeAttributesCache( _monitor, t, _serviceProvider, false );
                     info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;
                     if( info.Interfaces.Count == 0 ) ++_serviceRootInterfaceCount;
@@ -80,20 +81,18 @@ namespace CK.Setup
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind k = KindDetector.GetKind( _monitor, iT );
-                var conflictMsg = k.GetCombinationError( false );
-                if( conflictMsg != null )
+                CKTypeKind k = KindDetector.GetRawKind( _monitor, iT );
+                if( (k & CKTypeKind.HasCombinationError) == 0 )
                 {
-                    _monitor.Error( $"Interface '{iT.FullName}': {conflictMsg}" );
-                }
-                else if( (k & CKTypeKind.IsMultipleService) != 0 )
-                {
-                    multipleImplementation?.Invoke( iT, k, this );
-                }
-                else if( (k&CKTypeKind.IsAutoService) != 0 )
-                {
-                    var r = RegisterServiceInterface( iT, k );
-                    if( r != null ) yield return r;
+                    if( (k & CKTypeKind.IsMultipleService) != 0 )
+                    {
+                        multipleImplementation?.Invoke( iT, k, this );
+                    }
+                    else if( (k & CKTypeKind.IsAutoService) != 0 )
+                    {
+                        var r = RegisterServiceInterface( iT, k );
+                        if( r != null ) yield return r;
+                    }
                 }
             }
         }

@@ -14,15 +14,15 @@ namespace CK.StObj.Engine.Tests.Poco
     {
         public interface ISimpleCollections : IPoco
         {
-            public IList<string> Strings { get; }
+            public List<string> Strings { get; }
 
-            public IDictionary<string, ISimpleCollections> Configurations { get; }
+            public Dictionary<string, ISimpleCollections> Configurations { get; }
 
-            public ISet<int> DistinctValues { get; }
+            public HashSet<int> DistinctValues { get; }
         }
 
         [Test]
-        public void IList_IDictionary_and_ISet_properties_with_getter_only_are_automatically_initialized_with_an_empty_instance()
+        public void readonly_List_Dictionary_and_HashSet_properties_are_automatically_initialized_with_an_empty_instance()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ISimpleCollections ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
@@ -38,17 +38,17 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IWithListString : IPoco
         {
-            IList<string> L { get; }
+            List<string> L { get; }
         }
 
         public interface IWithListNullableString : IWithListString
         {
-            new IList<string?> L { get; }
+            new List<string?> L { get; }
         }
 
         public interface IWithNullableListString : IWithListString
         {
-            new IList<string>? L { get; }
+            new List<string>? L { get; }
         }
 
         [Test]

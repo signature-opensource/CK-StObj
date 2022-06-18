@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class ServiceSimpleMappingTests 
     {
-        // These services can be singleton: IAUtoService would lead to singletons.
+        // The 2 services below can be singleton: IAutoService would lead to singletons.
         // Specifying scoped is not the default.
         public interface ISBase : IScopedAutoService
         {
@@ -39,33 +39,66 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
+
         // This test shows that excluding a base interface does not exclude the interfaces it implies.
-        // Type exclusion is "weak". A "stronger" exclusion (by analyzing declared interfaces) would de facto
+        //
+        // Type exclusion is currently "weak". A "stronger" exclusion (by analyzing declared interfaces) would de facto
         // completely exclude any service implementations since IAutoService would not appear anymore.
         //
         // For interfaces this makes sense: here the ISBase being excluded, no more ISBase service would be available.
-        // It would be up to the developer to reintroduce IS1 and/or IS2 into the CK type system by explicitly configuring them.
+        // It would be up to the developer to reintroduce IS1 and/or IS2 into the CK type system by explicitly configuring them
+        // thanks to the "SetAutoServiceKind" API.
         //
-        // However, more generally, this is not so "logically sound". "Strongly" excluding a base class for instance would
-        // mean to remove all impacts of the class on its specializations. Among these impacts there is the IRealObject interface, so
-        // to reintroduce some specializations of it we would need to expose a "SetRealObjectKind" method and offer external configuration
-        // support like the one for AutoService.
-        // And what about the exclusion of a type that is a [CKTypeSuperDefiner]: should this condemn its direct specializations to not
-        // be CKTypeDefiner?
-        // I have no doubt that for each of these cases a "best specific behavior" can be found, but this would require a lot of
-        // thoughts (and may be trial and errors on real projects).
-        // Current exclusion semantics is what it is, not perfect and used rarely and always on leaf types, so let it be.
+        // # Weak exclusion
+        //
+        // The type itself is ignored but not its impacts. To remove a "family" of services, one need to exclude explicitly
+        // all of them.
+        // Excluding a [CKTypeDefiner] doesn't "undefine" its specializations. Same as above.
+        //
+        // Weak exclusion may be renamed into "Type masking" or "Type hiding". This doesn't change the code, the structure of the
+        // program, instead it just says "don't use this type".
+        //
+        // # Strong exclusion
+        // 
+        // Weak exclusion is definitely not "logically sound" and it is not easy to reason about it. Strong exclusion is easier:
+        // the type is cleared from any "CK Type" impact... But is it?
+        //
+        // "Strongly" excluding a base class for instance means to remove all impacts of the class on its specializations. Among
+        // these impacts there is the IRealObject interface, so to reintroduce some specializations of it we would need to expose a
+        // "SetRealObjectKind" method and offer external configuration support like the one for AutoService.
+        // Tedious but feasible...
+        // 
+        // Excluding a [CKTypeSuperTypeDefiner] condemns is specializations in the same manner.
+        //
+        // Propagation through inheritance can be handled (but, still, the type appear in the hierarchy). For attributes, it's
+        // more problematic. Should the attributes that drives auto-implementation of abstract methods for instance be skipped?
+        // If yes, some abstract methods may never be implemented (final code generation will fail) but since the type is excluded
+        // so it must not be used... So one can consider that this is fine.
+        //
+        // # But why do we need to exclude some types?
+        //
+        // One reason is to resolve ambiguities between types, basically between services or real objects implementations.
+        // Here, leaf types are concerned: weak exclusion is fine.
+        //
+        // This is actually the only good reason. Using type exclusion as a way to configure a System is a dead end, a maintenance
+        // nightmare. I can't think of any other (good) reason to use it.
+        //
+        // If "type exclusion is only a way to resolve type mapping ambiguities and should never be used as a way to configure or change the code" then:
+        // - Using it on base types make very little sense: leaf types are primarily concerned.
+        // - Whether exclusion is "weak" or "strong" doesn't really matter: they really differ when a base type is excluded.
+        //
+        // Current exclusion semantics is what it is, not perfect and used rarely and quite always on leaf types, so let it be.
         [Test]
         public void service_interfaces_requires_unification_otherwise_ISBase_would_be_ambiguous()
         {
-            {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceS1Impl ) );
-                collector.RegisterType( typeof( ServiceS2Impl ) );
-                var r = TestHelper.GetFailedResult( collector );
-                Debug.Assert( r != null, "We have a (failed) result." );
-                r.CKTypeResult.AutoServices.RootClasses.Should().HaveCount( 2 );
-            }
+            //{
+            //    var collector = TestHelper.CreateStObjCollector();
+            //    collector.RegisterType( typeof( ServiceS1Impl ) );
+            //    collector.RegisterType( typeof( ServiceS2Impl ) );
+            //    var r = TestHelper.GetFailedResult( collector );
+            //    Debug.Assert( r != null, "We have a (failed) result." );
+            //    r.CKTypeResult.AutoServices.RootClasses.Should().HaveCount( 2 );
+            //}
             // Same tests as above but excluding ISBase type: success since
             // ISBase is no more considered a IScopedAutoService.
             {

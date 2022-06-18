@@ -139,13 +139,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface ITestWithCollections : IPoco
         {
-            IList<Person> Persons { get; }
+            List<Person> Persons { get; }
         }
 
         public interface ITestWithCollectionsOfFinal : IPoco
         {
-            IList<Student> Students { get; }
-            IList<Intern?> Interns { get; }
+            List<Student> Students { get; }
+            List<Intern?> Interns { get; }
         }
 
         [Test]

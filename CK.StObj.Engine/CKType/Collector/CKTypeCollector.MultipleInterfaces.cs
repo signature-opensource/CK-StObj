@@ -249,17 +249,17 @@ namespace CK.Setup
                 Type tEnumerable = typeof( IEnumerable<> ).MakeGenericType( tI );
                 if( (enumeratedKind & (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable)) == (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
                 {
-                    // Only if the T interface is a IFrontService (and hence a Scoped) and is marked with IsMarshallable atttribute
-                    // can we avoid the implementations analyzis. Even if a IFrontService interface marked with IsMarshallable atttribute should be rare,
+                    // Only if the T interface is a IFrontService (and hence a Scoped) and is marked with IsMarshallable attribute
+                    // can we avoid the implementations analyzis. Even if a IFrontService interface marked with IsMarshallable attribute should be rare,
                     // we can benefit here from this minor (but logical) optimization.
                     _multipleMappings.Add( tI, new MultipleImpl( tEnumerable, tI ) );
                 }
                 else
                 {
                     // The IEnumerable itself may have been explicitly registered via SetAutoServiceKind.
-                    // We check its compatibility with its enumerated interface (there may be incoherencies) later in the DoComputeFinalTypeKind.
+                    // We check its compatibility with its enumerated interface (there may be incoherences) later in the DoComputeFinalTypeKind.
                     // Here we just check the "worst case":
-                    CKTypeKind enumKind = KindDetector.GetKind( _monitor, tEnumerable );
+                    CKTypeKind enumKind = KindDetector.GetValidKind( _monitor, tEnumerable );
                     Debug.Assert( enumKind.GetCombinationError( false ) == null );
                     if( (enumKind & (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable)) == (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
                     {

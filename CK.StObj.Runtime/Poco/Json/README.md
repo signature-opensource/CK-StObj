@@ -12,7 +12,7 @@ reference types, from the JSON point of view, are always nullable (references, o
 A `List<IUserInfo?>` is the same as a `List<IUserInfo>` and the Client side will never see a `IUserInfo?` but always a  `IUserInfo`.
 
 On the contrary, nullable value types are seen by the Client since reading a `List<int>` or a `List<int?>` cannot be handled by the same code.
-This distinction applies to the "ECMAScriptStandard" mode: a Client will receive `Number` and `Number?` and must send either a `BigInt` or a `BigInt?' type
+This distinction applies to the "ECMAScriptStandard" mode: a Client will receive `Number` and `Number?` and must send either a `BigInt` or a `BigInt?` type
 when ambiguities exist.
 
 ## When Type Information is required
@@ -58,4 +58,7 @@ exposed on the Utf8Writer/Reader.
 
 > We currently handle long, ulong, decimal, BigInteger and TimeSpan (BigInteger and TimeSpan have no direct support) by writing/reading and parsing strings.
 > Waiting for https://github.com/dotnet/runtime/issues/54016 and https://github.com/dotnet/runtime/issues/1784 (for BigInteger) for a more efficient implementation.
+>
+> Edit: This should now be doable thanks to the new `WriteRawValue` methods.
+
 

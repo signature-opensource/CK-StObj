@@ -68,9 +68,14 @@ namespace CK.Setup
         IsPoco = 128,
 
         /// <summary>
+        /// A [PocoClass] class.
+        /// </summary>
+        IsPocoClass = 256,
+
+        /// <summary>
         /// A real object is a singleton. 
         /// </summary>
-        RealObject = IsSingleton | 256,
+        RealObject = IsSingleton | 512,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsFrontService"/> | <see cref="IsFrontProcessService"/>.
@@ -80,7 +85,19 @@ namespace CK.Setup
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
         /// </summary>
-        LifetimeMask = IsScoped | IsSingleton
+        LifetimeMask = IsScoped | IsSingleton,
+
+        /// <summary>
+        /// Flags set when this type is excluded (by [ExcludeCKType] or type filtering function).
+        /// This is also set when [StObjGen] attribute exists.
+        /// </summary>
+        IsExcludedType = 1024,
+
+        /// <summary>
+        /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
+        /// (that has been logged) returned an error.
+        /// </summary>
+        HasCombinationError = 2048
     }
 
     /// <summary>
@@ -101,7 +118,7 @@ namespace CK.Setup
                 &&
                 (@this & (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped)) != (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped) )
             {
-                throw new ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService and IsScoped." );
+                Throw.ArgumentException( $"Invalid CKTypeKind: IsFrontService must imply IsFrontProcessService and IsScoped." );
             }
             return (AutoServiceKind)((int)@this & 63);
         }
@@ -139,16 +156,14 @@ namespace CK.Setup
         /// <returns>An error message or null.</returns>
         public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
         {
-            if( @this < 0 || @this > CKTypeKindDetector.MaskPublicInfo )
-            {
-                throw new ArgumentOutOfRangeException( nameof(CKTypeKind), @this, "Undefined enum values appear." );
-            }
+            Throw.CheckArgument( @this >= 0 && @this <= CKTypeKindDetector.MaskPublicInfo );
             // Pure predicates: checks are made against them.
             bool isAuto = (@this & CKTypeKind.IsAutoService) != 0;
             bool isScoped = (@this & CKTypeKind.IsScoped) != 0;
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
+            bool isPocoClass = (@this & CKTypeKind.IsPocoClass) != 0;
             bool isFrontEndPoint = (@this & CKTypeKind.IsFrontService) != 0;
             bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
@@ -156,11 +171,11 @@ namespace CK.Setup
 
             if( isFrontEndPoint && !isFrontProcess )
             {
-                throw new ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsFrontService: " + @this.ToStringFlags() );
+                Throw.ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsFrontService: " + @this.ToStringFlags() );
             }
             if( isRealObject && !isSingleton )
             {
-                throw new Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
+                Throw.Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
             }
 
             string? conflict = null;
@@ -172,6 +187,10 @@ namespace CK.Setup
                     if( conflict != null ) conflict += ", ";
                     conflict += "A class cannot be a IPoco";
                 }
+            }
+            else if( isPocoClass )
+            {
+                if( @this != CKTypeKind.IsPocoClass ) conflict = "[PocoClass] class cannot be combined with any other aspect";
             }
             else if( isRealObject )
             {
@@ -217,17 +236,31 @@ namespace CK.Setup
         /// <returns>A readable string.</returns>
         public static string ToStringFlags( this CKTypeKind @this )
         {
-            string[] flags = new[] { "IsAutoService", "IsScopedService", "IsSingleton", "IsRealObject", "IsPoco", "IsFrontService", "IsFrontProcessService", "IsMarshallable", "IsMultipleService" };
+            string[] flags = new[] { "IsAutoService",
+                                     "IsScopedService",
+                                     "IsSingleton",
+                                     "IsRealObject",
+                                     "IsPoco",
+                                     "IsPocoClass",
+                                     "IsFrontService",
+                                     "IsFrontProcessService",
+                                     "IsMarshallable",
+                                     "IsMultipleService",
+                                     "IsExcludedType",
+                                     "HasCombinationError"};
             if( @this == CKTypeKind.None ) return "None";
             var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
                                              || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)
                                              || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && (@this & CKTypeKind.IsFrontService) != 0)
-                                             || (i == 6 && (@this & CKTypeKind.IsFrontProcessService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsMarshallable) != 0)
-                                             || (i == 8 && (@this & CKTypeKind.IsMultipleService) != 0));
+                                             || (i == 5 && (@this & CKTypeKind.IsPocoClass) != 0)
+                                             || (i == 6 && (@this & CKTypeKind.IsFrontService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
+                                             || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
+                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
+                                             || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
+                                             || (i == 11 && (@this & CKTypeKind.HasCombinationError) != 0) );
             return String.Join( "|", f );
         }
     }

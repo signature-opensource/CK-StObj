@@ -44,7 +44,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (IList<int>, int?[]) Thing { get; }
+                public (List<int>, int?[]) Thing { get; }
             }
         }
 
@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (IList<(int,string)>, (int,string)?[]) Thing { get; }
+                public (List<(int,string)>, (int,string)?[]) Thing { get; }
             }
         }
 
@@ -173,9 +173,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (IList<double>, ISet<double>) T1 { get; }
+                public (List<double>, HashSet<double>) T1 { get; }
 
-                public (IDictionary<string,double>, IDictionary<string, byte>) T2 { get; }
+                public (Dictionary<string,double>, Dictionary<string, byte>) T2 { get; }
             }
         }
 
@@ -189,7 +189,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant3>>().Create();
-            u.T1 = new[] { 2.5d, 85.8d };
+            u.T1 = new List<double> { 2.5d, 85.8d };
             u.T2 = new Dictionary<string, byte> { { "A", 1 }, { "B", 2 } };
 
             var serialized = u.JsonSerialize( true, ECMAScriptStandard );
