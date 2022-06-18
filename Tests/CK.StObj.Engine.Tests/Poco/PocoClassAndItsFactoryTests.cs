@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var f = s.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
             var o = f.Create();
-            var f2 = ((IPocoClass)o).Factory;
+            var f2 = ((IPocoGeneratedClass)o).Factory;
             f.Should().BeSameAs( f2 );
         }
 

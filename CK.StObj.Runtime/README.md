@@ -6,7 +6,7 @@ a lightweight attribute that simply contains the Assembly Qualified Name (a stri
 This enables "Model" assemblies to also be as lightweight as possible: Model objects have absolutely NO dependencies on code generators or
 any setup mechanism, as "Models" they solely focus on:
  - Describing reality, things that must exist in the System: "Hey! I'm an Azure table (in a Storage Account) that hold users data!".
- - Exposing functionalities, capabilities of those things: "You can call this method to add or updates a User data.".
+ - Exposing functionalities, capabilities of those things: "You can call this method to add or update a User data.".
 
 The *implementations* types that the attributes target reside in Engine (or Runtime) assemblies that are dynamically loaded during the Setup phase:
 they exist only during Setup to build the reality (creating Sql or powershell install or upgrade scripts for instance) and/or to generate code that

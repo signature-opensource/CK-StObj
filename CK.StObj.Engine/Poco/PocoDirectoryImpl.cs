@@ -77,13 +77,13 @@ namespace CK.Setup
                 // 
                 tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
                   .NewLine();
-                tB.Append( "IPocoFactory IPocoClass.Factory => _factory;" ).NewLine();
+                tB.Append( "IPocoFactory IPocoGeneratedClass.Factory => _factory;" ).NewLine();
                 
                 // Always create the constructor so that other code generators
                 // can always find it.
                 // We support the interfaces here: if other participants have already created this type, it is
                 // up to us, here, to handle the "exact" type definition.
-                tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoClass" ) );
+                tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
                 tB.Definition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );

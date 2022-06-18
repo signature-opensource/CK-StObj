@@ -24,16 +24,17 @@ Restrictions apply to a PocoClass class so it "looks like" IPoco and can be hand
 
 - It can be abstract: this base type will be Poco compliant (but cannot obviously be used as a read only property).
 - Concrete classes MUST have a public default constructor since:
-  - having to deal with constructor parameter while restoring an object graph is rather complex;
-  - this enables a PocoClass object to appear as a read only property (the constructor is in charge of instantiating the 
-    object).
+  - having to deal with constructor parameters while restoring an object graph is rather complex;
+  - this enables a PocoClass object to appear as a read only property (the constructor of the property owner can instantiate
+    the property instance).
 - Its public properties MUST be of Poco compliant types.
 
 Each class of a hierarchy MUST declare the attribute (the attribute doesn't inherit). Specialized classes that haven't the attribute
 are not Poco compliant.
 
-> This opt-in approach has been chosen to avoid leaks or security holes. The ultimate set of Poco types is a closed world that is
-> strictly defined.
+> This opt-in approach has been chosen to avoid leaks or security holes. The ultimate set of Poco types is a strictly defined
+> closed world.
+
 
 ## Future...
 Currently, only IPoco and [PocoClass] are handled. One may introduce a [PocoLikeSupport] or [PocoLikeImplementation] or other
@@ -54,7 +55,7 @@ Actually, the returned type can formally be any Poco compliant type since these 
 A type `TPocoLike` is either:
 1.  a type that supports the [PocoLikeSupport] attribute and has `T ToPocoJon()` and `constructor( T )` 
   members (where T is a Poco compliant type);
-2. or a `IPocoJsonConverter<TPocoLike> : ISingletonAutoService` exists that implements the conversion methods, ideally 
+2. or a `IPocoConverter<TPocoLike> : ISingletonAutoService` exists that implements the conversion methods, ideally 
    without explicit type constraint (like above).
 
 The n°1 can be implemented more easily than n°2. The latter would require to:
@@ -64,7 +65,7 @@ The n°1 can be implemented more easily than n°2. The latter would require to:
     already been registered as Poco compliant ones. This limitation may be acceptable.
   - Check: We can consider that any type that appear in IPoco closure MUST eventually have a converter and check 
     the converters existence after the AutoService resolution.
-  - Discover: the `IPocoJsonConverter<TPocoLike>` converters are discovered and analyzed early by the KindDetector and their 
+  - Discover: the `IPocoConverter<TPocoLike>` converters are discovered and analyzed early by the KindDetector and their 
     conversion target is registered as being "PocoLike" or "PocoConvertible".
 
 - Give the PocoDirectory (that is a IRealObject) the IServiceProvider to resolve the converters.

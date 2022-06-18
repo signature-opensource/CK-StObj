@@ -250,7 +250,7 @@ namespace CK.Setup
                 g.Emit( OpCodes.Ret );
             }
 
-            // The IPocoClass implementation.
+            // The IPocoGeneratedClass implementation.
             var properties = new Dictionary<string, PocoPropertyInfo>();
             var propertyList = new List<PocoPropertyInfo>();
             List<PropertyInfo>? externallyImplementedPropertyList = null;
@@ -300,14 +300,14 @@ namespace CK.Setup
                 Debug.Assert( closure != null, "Since there is at least one interface." );
                 monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.ToCSharpName() ).Concatenate()}." );
             }
-            // Supports the IPocoClass interface.
-            tB.AddInterfaceImplementation( typeof( IPocoClass ) );
+            // Supports the IPocoGeneratedClass interface.
+            tB.AddInterfaceImplementation( typeof( IPocoGeneratedClass ) );
             {
                 MethodBuilder m = tB.DefineMethod( "get_Factory", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPocoFactory ), Type.EmptyTypes );
                 ILGenerator g = m.GetILGenerator();
                 g.Emit( OpCodes.Ldnull );
                 g.Emit( OpCodes.Ret );
-                var p = tB.DefineProperty( nameof( IPocoClass.Factory ), PropertyAttributes.None, typeof( IPocoFactory ), null );
+                var p = tB.DefineProperty( nameof( IPocoGeneratedClass.Factory ), PropertyAttributes.None, typeof( IPocoFactory ), null );
                 p.SetGetMethod( m );
             }
 
