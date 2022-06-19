@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Extends CK.Testing.StObjMap and CK.Testing.CKSetup TestHelper to generate and expose compiled StObjMap using out-of-process run of CKSetup.</Description>
@@ -7,6 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Testing.StObjMap\CK.Testing.StObjMap.csproj" />
-    <PackageReference Include="CK.Testing.CKSetup" />
+    <PackageReference Include="CK.Testing.CKSetup" Version="15.0.0-r08" />
   </ItemGroup>
 </Project>

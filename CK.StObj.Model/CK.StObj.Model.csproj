@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -8,9 +7,9 @@ Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStOb
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CSemVer" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="CSemVer" Version="10.1.0" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.0-r08" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
