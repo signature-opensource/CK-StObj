@@ -65,7 +65,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
             void TestRoundTrip<T>( IServiceProvider services ) where T : class, ICommand
             {
                 var factory = services.GetRequiredService<IPocoFactory<T>>();
-                var directory = services.GetService<PocoDirectory>();
+                var directory = services.GetRequiredService<PocoDirectory>();
 
                 Debug.Assert( factory != null );
 

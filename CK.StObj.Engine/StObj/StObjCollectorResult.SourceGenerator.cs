@@ -1,7 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
-using CK.Text;
 using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
@@ -106,7 +105,8 @@ namespace CK.Setup
                     }
 
                     // Injects, once for all, basic namespaces that we always want available into the global namespace.
-                    global.EnsureUsing( "CK.Core" )
+                    global.GeneratedByComment().NewLine()
+                          .EnsureUsing( "CK.Core" )
                           .EnsureUsing( "System" )
                           .EnsureUsing( "System.Collections.Generic" )
                           .EnsureUsing( "System.Linq" )
@@ -114,13 +114,13 @@ namespace CK.Setup
                           .EnsureUsing( "System.Text" )
                           .EnsureUsing( "System.Reflection" );
 
-                    // We don't generate nullable enabled code nor comments.
-                    global.Append( "#nullable disable" ).NewLine()
-                          .Append( "#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member" ).NewLine();
+                    global.Append( "// We don't generate nullable enabled code and we disable all warnings." ).NewLine()
+                          .Append( "#nullable disable" ).NewLine()
+                          .Append( "#pragma warning disable" ).NewLine();
 
                     // Generates the Signature attribute implementation.
                     var nsStObj = global.FindOrCreateNamespace( "CK.StObj" );
-                    nsStObj.GeneratedByComment().NewLine()
+                    nsStObj
                         .Append( "[AttributeUsage(AttributeTargets.Assembly)]" ).NewLine()
                         .Append( @"internal sealed class SignatureAttribute : Attribute" )
                         .OpenBlock()
@@ -221,20 +221,20 @@ namespace CK.Setup
                     return new CodeGenerateResult( true, generatedFileNames );
                 }
                 // The signature may be externally injected one day but currently, we always compute it.
-                SHA1Value signature = SHA1Value.ZeroSHA1;
+                SHA1Value signature = SHA1Value.Zero;
 
                 // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
                 // without the signature header, a part is injected at the top of the file (before anything else) and
                 // the final big string is built only once.
                 var ws = codeGenContext.Assembly.Code;
-                if( signature.IsZero || signature == SHA1Value.EmptySHA1 )
+                if( signature.IsZero || signature == SHA1Value.Empty )
                 {
-                    using( var s = new SHA1Stream() )
+                    using( var s = new HashStream( System.Security.Cryptography.HashAlgorithmName.SHA1 ) )
                     using( var w = new StreamWriter( s ) )
                     {
                         ws.WriteGlobalSource( w );
                         w.Flush();
-                        signature = s.GetFinalResult();
+                        signature = new SHA1Value( s.GetFinalResult().AsSpan() );
                     }
                     monitor.Info( $"Computed file signature: {signature}." );
                 }
@@ -379,7 +379,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                 if( m.Specialization == null )
                 {
                     rootCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
-                            .AppendCSharpName( m.FinalImplementation.FinalType ).Append("(), " )
+                            .AppendCSharpName( m.FinalImplementation.FinalType, true, true, true ).Append("(), " )
                             .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
                             .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();
@@ -427,9 +427,8 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     {
                         Debug.Assert( setter.Property.DeclaringType != null );
                         Type decl = setter.Property.DeclaringType;
-                        string? varName;
                         var key = ValueTuple.Create( decl, setter.Property.Name );
-                        if(!propertyCache.TryGetValue( key, out varName ))
+                        if(!propertyCache.TryGetValue( key, out string? varName ))
                         {
                             varName = "pI" + propertyCache.Count.ToString();
                             rootCtor
@@ -451,12 +450,12 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                         rootCtor.Append( ");" ).NewLine();
                     }
                 }
-                if( m.ConstructParametersAbove != null )
+                if( m.ConstructParametersAboveRoot != null )
                 {
-                    foreach( var mp in m.ConstructParametersAbove )
+                    foreach( var mp in m.ConstructParametersAboveRoot )
                     {
                         Debug.Assert( mp.Item2.Count > 0 );
-                        rootCtor.AppendTypeOf( mp.Item1.DeclaringType! );
+                        rootCtor.AppendTypeOf( mp.Item1 );
                         CallConstructMethod( rootCtor, m, mp.Item2 );
                     }
                 }
@@ -552,7 +551,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             rootCtor.Append( "});" ).NewLine();
         }
 
-        void GenerateVFeatures( IActivityMonitor monitor, ITypeScope rootType, IFunctionScope rootCtor, IReadOnlyCollection<VFeature> features )
+        static void GenerateVFeatures( IActivityMonitor monitor, ITypeScope rootType, IFunctionScope rootCtor, IReadOnlyCollection<VFeature> features )
         {
             monitor.Info( $"Generating VFeatures: {features.Select( f => f.ToString()).Concatenate()}." );
 
@@ -581,9 +580,9 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
             {
                 b.Append( "monitor" );
             }
-            else if( o is MutableItem )
+            else if( o is MutableItem item )
             {
-                b.Append( $"_stObjs[{((MutableItem)o).IndexOrdered}].FinalImplementation.Implementation" );
+                b.Append( $"_stObjs[{item.IndexOrdered}].FinalImplementation.Implementation" );
             }
             else
             {

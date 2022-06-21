@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace CK.Setup
 {
@@ -12,7 +11,7 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeKindDetector
     {
-        const int PrivateStart = 512;
+        const int PrivateStart = 4096;
 
         /// <summary>
         /// Mask for public information defined in the <see cref="CKTypeKind"/> enumeration.
@@ -21,6 +20,7 @@ namespace CK.Setup
         public const CKTypeKind MaskPublicInfo = (CKTypeKind)(PrivateStart-1);
 
         const CKTypeKind IsDefiner = (CKTypeKind)PrivateStart;
+
         const CKTypeKind IsSuperDefiner = (CKTypeKind)(PrivateStart << 1);
 
         // The lifetime reason is the interface marker (applies to all our marker interfaces).
@@ -38,29 +38,28 @@ namespace CK.Setup
         const CKTypeKind IsScopedReasonReference = (CKTypeKind)(PrivateStart << 5);
 
         // The service is Marshallable because a IAutoService Marshaller class has been found.
-        const CKTypeKind IsMarshallableReasonMarshaller = (CKTypeKind)(PrivateStart << 8);
+        const CKTypeKind IsMarshallableReasonMarshaller = (CKTypeKind)(PrivateStart << 6);
 
         // The lifetime reason is an external definition (applies to IsSingleton and IsScoped).
-        const CKTypeKind IsLifetimeReasonExternal = (CKTypeKind)(PrivateStart << 9);
+        const CKTypeKind IsLifetimeReasonExternal = (CKTypeKind)(PrivateStart << 7);
 
         // The front type reason is an external definition (applies to IsMarshallable and IsFrontOnly).
-        const CKTypeKind IsFrontTypeReasonExternal = (CKTypeKind)(PrivateStart << 10);
+        const CKTypeKind IsFrontTypeReasonExternal = (CKTypeKind)(PrivateStart << 8);
 
         // The IsMultiple reason is an external definition.
-        const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 11);
-
-        // A [StObjGen] attribute exists: the type is not handled.
-        const CKTypeKind IsStObjGen = (CKTypeKind)(PrivateStart << 12);
-
+        const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 9);
 
         readonly Dictionary<Type, CKTypeKind> _cache;
+        readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
 
         /// <summary>
         /// Initializes a new detector.
         /// </summary>
-        public CKTypeKindDetector()
+        /// <param name="typeFilter">Optional type filter.</param>
+        public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
+            _typeFilter = typeFilter;
         }
 
         /// <summary>
@@ -76,7 +75,7 @@ namespace CK.Setup
         /// <returns>The type kind on success, null on error (errors - included combination ones - are logged).</returns>
         public CKTypeKind? SetAutoServiceKind( IActivityMonitor m, Type t, AutoServiceKind kind )
         {
-            if( kind == AutoServiceKind.None ) throw new ArgumentException( nameof( kind ) );
+            Throw.CheckArgument( kind != AutoServiceKind.None );
 
             bool hasFrontType = (kind & (AutoServiceKind.IsFrontProcessService|AutoServiceKind.IsFrontService)) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
@@ -117,6 +116,30 @@ namespace CK.Setup
             return SetLifetimeOrFrontType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
         }
 
+        /// <summary>
+        /// Tries to set the <see cref="CKTypeKind.IsPocoClass"/> flag for a type (that must be a class).
+        /// This fails if the type is already registered as another kind of type.
+        /// </summary>
+        /// <param name="m">The monitor to use.</param>
+        /// <param name="t">The type to configure.</param>
+        /// <returns>True on success, false on error.</returns>
+        internal bool SetPocoClass( IActivityMonitor m, Type t )
+        {
+            Debug.Assert( t.IsClass );
+            var exist = RawGet( m, t );
+            if( exist == CKTypeKind.None )
+            {
+                m.Trace( $"Type '{t}' is now defined as a PocoClass." );
+                _cache[t] = CKTypeKind.IsPocoClass;
+            }
+            else if( exist != CKTypeKind.IsPocoClass )
+            {
+                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as a PocoClass." );
+                return false;
+            }
+            return true;
+        }
+
         CKTypeKind? SetLifetimeOrFrontType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
@@ -134,7 +157,7 @@ namespace CK.Setup
             var exist = RawGet( m, t );
             if( (exist & (IsDefiner|IsSuperDefiner)) != 0 )
             {
-                throw new Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
+                Throw.Exception( $"Type '{t}' is a Definer or a SuperDefiner. It cannot be defined as {ToStringFull( kind )}." );
             }
             var updated = exist | kind;
             string? error = (updated & MaskPublicInfo).GetCombinationError( t.IsClass );
@@ -150,38 +173,38 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Checks whether the type supports a IAutoService, IScopedAutoService, ISingletonAutoService, IFrontAutoService, IMarshalledAutoService, 
-        /// or IRealObject interface or has been explicitly registered as a <see cref="CKTypeKind.IsScoped"/> or <see cref="CKTypeKind.IsSingleton"/>.
+        /// Checks whether the type kind: <see cref="CKTypeKind.IsExcludedType"/> or <see cref="CKTypeKind.HasCombinationError"/> flag set.
         /// <para>
-        /// The result can be <see cref="CKTypeKindExtension.IsNoneOrInvalid(CKTypeKind, bool)"/>.
+        /// Note that [CKTypeDefiner] and [CKTypeSuperDefiner] kind is always <see cref="CKTypeKind.None"/>.
         /// </para>
         /// </summary>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type that can be an interface or a class.</param>
-        /// <returns>The CK type kind (may be invalid).</returns>
-        public CKTypeKind GetKind( IActivityMonitor m, Type t )
+        /// <returns>The CK type kind (may be invalid or excluded).</returns>
+        public CKTypeKind GetRawKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner|IsSuperDefiner)) == 0
+            return (k & (IsDefiner | IsSuperDefiner)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
         }
 
         /// <summary>
-        /// Same as <see cref="GetKind"/> except that if a <see cref="StObjGenAttribute"/> exists on the
-        /// type, null is returned instead of the <see cref="CKTypeKind.None"/>.
+        /// Checks whether the type is a non excluded and valid CK Type.
+        /// Invalid or excluded types are <see cref="CKTypeKind.None"/>.
+        /// <para>
+        /// Note that [CKTypeDefiner] and [CKTypeSuperDefiner] kind is always <see cref="CKTypeKind.None"/>.
+        /// </para>
         /// </summary>
-        /// <param name="m"></param>
-        /// <param name="t"></param>
         /// <param name="m">The monitor to use.</param>
         /// <param name="t">The type that can be an interface or a class.</param>
-        /// <returns>The CK type kind (may be invalid) or null if [StObjGen] attribute exists on the type.</returns>
-        public CKTypeKind? GetExtendedKind( IActivityMonitor m, Type t )
+        /// <returns>The CK type kind.</returns>
+        public CKTypeKind GetValidKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner | IsSuperDefiner)) == 0
-                        ? (k == IsStObjGen ? null : k & MaskPublicInfo)
-                   : CKTypeKind.None;
+            return (k & (IsDefiner | IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasCombinationError)) == 0
+                        ? k & MaskPublicInfo
+                        : CKTypeKind.None;
         }
 
         CKTypeKind RawGet( IActivityMonitor m, Type t )
@@ -192,15 +215,23 @@ namespace CK.Setup
             {
                 Debug.Assert( k == CKTypeKind.None );
 
+                // This would be the code to implement "Strong Exclusion".
+                // But since, for the moment, exclusion is a weak concept, we process the type as if it was not excluded.
+                //
+                //   if( _typeFilter != null && !_typeFilter( m, t ) )
+                //   {
+                //      k = IsFilteredType;
+                //   }
+                //   else
+                //
                 var baseType = t.BaseType;
                 var allInterfaces = t.GetInterfaces();
                 // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
                 // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IFrontAutoService are extending IAutoService...
-                // ...and unfortunately we must also consider the ones with 2 base interfaces because of IMarshallableAutoService that extends IFrontAutoService
-                // ...and unfortunately we must also consider the ones with 3 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
+                // ...and unfortunately we must also consider the ones with 2 base interfaces because of IFrontAutoService that extends IFrontProcessAutoService
                 // that extends IFrontAutoService. 
                 if( t.IsInterface
-                    && allInterfaces.Length <= 3
+                    && allInterfaces.Length <= 2
                     && t.GetMembers().Length == 0 )
                 {
                     if( t.Name == nameof( IRealObject ) ) k = CKTypeKind.RealObject | IsDefiner | IsReasonMarker;
@@ -218,20 +249,57 @@ namespace CK.Setup
                 if( k == CKTypeKind.None && !(t.IsInterface && !t.IsPublic && !t.IsNestedPublic) )
                 {
                     Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
-                    var attrData = t.GetCustomAttributesData();
-                    if( attrData.Any( a => a.AttributeType.Name == "StObjGenAttribute" ) )
+                    Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
+                    Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
+                    Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
+                    Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
+                    Debug.Assert( typeof( PocoClassAttribute ).Name == "PocoClassAttribute" );
+                    Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
+                    bool hasSuperDefiner = false;
+                    bool hasDefiner = false;
+                    bool isMultipleInterface = false;
+                    bool hasMarshallable = false;
+                    bool isPocoClass = false;
+                    bool isExcludedType = false;
+
+                    foreach( var a in t.GetCustomAttributesData() )
                     {
-                        k = IsStObjGen;
-                        m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
+                        var n = a.AttributeType.Name;
+                        if( n == "StObjGenAttribute" )
+                        {
+                            // This attributes stops all subsequent analysis (it's the only one).
+                            // A [StObjGen] is necessarily None.
+                            k = CKTypeKind.IsExcludedType;
+                            m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
+                            break;
+                        }
+                        switch( n )
+                        {
+                            case "ExcludeCKTypeAttribute":
+                                isExcludedType = true;
+                                break;
+                            case "CKTypeDefinerAttribute":
+                                hasDefiner = true;
+                                break;
+                            case "CKTypeSuperDefinerAttribute":
+                                hasSuperDefiner = true;
+                                break;
+                            case "IsMarshallableAttribute":
+                                hasMarshallable = true;
+                                break;
+                            case "PocoClassAttribute":
+                                isPocoClass = true;
+                                break;
+                            case "IsMultipleAttribute" when t.IsInterface:
+                                isMultipleInterface = true;
+                                break;
+                        }
                     }
-                    else 
+                    Debug.Assert( k == CKTypeKind.None || k == CKTypeKind.IsExcludedType );
+                    if( k == CKTypeKind.None )
                     {
-                        Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
-                        Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
-                        Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                        Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
-                        bool hasSuperDefiner = attrData.Any( a => a.AttributeType.Name == "CKTypeSuperDefinerAttribute" );
-                        bool hasDefiner = attrData.Any( a => a.AttributeType.Name == "CKTypeDefinerAttribute" );
+                        isExcludedType |= _typeFilter != null && !_typeFilter( m, t );
+
                         if( hasSuperDefiner )
                         {
                             if( hasDefiner )
@@ -242,14 +310,25 @@ namespace CK.Setup
                         }
                         if( hasDefiner )
                         {
-                            // If this is a definer, we can skip any handling of potential Super Definer.
-                            // We also clear any IsMultipleService and IsMarshallable since thess flags are not transitive.
+                            // Since this is a definer, we can skip any handling of potential Super Definer.
+                            // We ignore the base type, we only consider its interfaces.
+                            // We also clear any IsMultipleService and IsMarshallable since these flags are not transitive.
+                            //
+                            // (Note that [IsMultiple] may be "transmitted" here but a CKTypeDefiner for "Multiple" interfaces would not be
+                            // a good idea: an explicit [IsMultiple] attribute on the interface is much more maintainable.)
+                            //
                             foreach( var i in allInterfaces )
                             {
-                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | IsReasonMarker);
+                                Debug.Assert( (k & CKTypeKind.IsPocoClass) == 0, "PocoClass attribute can only be on class." );
                             }
                             k |= IsDefiner;
                             if( hasSuperDefiner ) k |= IsSuperDefiner;
+                            // PocoClass cannot be a definer or a super definer.
+                            if( isPocoClass )
+                            {
+                                m.Error( $"PocoClass '{t}' cannot be a [{(hasSuperDefiner ? "CKTypeSuperDefiner" : "CKTypeDefiner")}]." );
+                            }
                         }
                         else
                         {
@@ -257,8 +336,9 @@ namespace CK.Setup
                             // If the base type is a SuperDefiner, then this is a Definer.
                             if( baseType != null )
                             {
-                                // IsMarshallable is not propagated.
-                                var kBase = RawGet( m, baseType ) & ~CKTypeKind.IsMarshallable;
+                                // IsMarshallable and IsPocoClass is not propagated.
+                                // "Weak Exclusion": an excluded (or filtered) base type doesn't exclude it specializations.
+                                var kBase = RawGet( m, baseType ) & ~(CKTypeKind.IsMarshallable | CKTypeKind.IsPocoClass | CKTypeKind.IsExcludedType | IsReasonMarker) ;
                                 Debug.Assert( (kBase & CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
                                 if( (kBase & IsSuperDefiner) != 0 )
                                 {
@@ -272,7 +352,7 @@ namespace CK.Setup
                                 // If the base type was a SuperDefiner, this is a definer and we can skip any handling of Super Definer.
                                 foreach( var i in allInterfaces )
                                 {
-                                    k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                    k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType | IsReasonMarker);
                                 }
                             }
                             else
@@ -280,13 +360,13 @@ namespace CK.Setup
                                 // We are not (yet?) a Definer.
                                 foreach( var i in allInterfaces )
                                 {
-                                    var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable);
+                                    var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType);
                                     if( (k & IsDefiner) == 0 // We are not yet a Definer...
                                         && (kI & IsSuperDefiner) != 0 ) // ...but this base interface is a SuperDefiner.
                                     {
                                         // Really?
                                         bool indirect = (baseType != null && i.IsAssignableFrom( baseType ))
-                                                         || allInterfaces.Any( baseInterface => i != baseInterface && i.IsAssignableFrom( baseInterface ) );
+                                                            || allInterfaces.Any( baseInterface => i != baseInterface && i.IsAssignableFrom( baseInterface ) );
                                         kI &= ~IsSuperDefiner;
                                         if( !indirect ) kI |= IsDefiner;
                                     }
@@ -301,22 +381,20 @@ namespace CK.Setup
                             // A Generic Type definition can be a (Super)Definer or be a multiple service definition: this
                             // applies directly to the specialized type.
                             // Even the IsMarshallable is kept: we consider that a generic marshaller is possible!
+                            // We also keep excluded type flags here: it seems appropriate that by excluding the open generics (IProcessor<T>), the intent
+                            // is to exclude the closed ones (IProcessor<Document>) since excluding specifically the open one has no real meaning.
                             var tGen = t.GetGenericTypeDefinition();
                             k = RawGet( m, tGen );
                         }
-                        if( t.IsInterface )
-                        {
-                            if( attrData.Any( a => a.AttributeType.Name == "IsMultipleAttribute" ) )
-                            {
-                                k |= CKTypeKind.IsMultipleService;
-                            }
-                        }
-                        if( attrData.Any( a => a.AttributeType.Name == "IsMarshallableAttribute" ) )
-                        {
-                            k |= CKTypeKind.IsMarshallable;
-                        }
-                        // Check for errors and handle 
-                        if( k != CKTypeKind.None )
+                        // Applying the direct flags. Any inherited combination error is cleared.
+                        k &= ~CKTypeKind.HasCombinationError;
+                        if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
+                        if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
+                        if( isPocoClass ) k |= CKTypeKind.IsPocoClass;
+                        if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
+
+                        // Check for errors and handle IMarshaller<> only if the type is not excluded.
+                        if( k != CKTypeKind.None && !isExcludedType )
                         {
                             // Checking errors here that cannot be checked by the central GetCombinationError method.
 
@@ -330,13 +408,20 @@ namespace CK.Setup
                             }
                             if( t.IsClass )
                             {
-                                Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleServiceAttribute targets interface only and is not propagated." );
-                                if( (k & CKTypeKind.IsAutoService) != 0 )
+                                Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleAttribute targets interface only and is not propagated." );
+                                // Always use the central GetCombinationError() method when possible: this method concentrates all the checks.
+                                var error = (k & MaskPublicInfo).GetCombinationError( true );
+                                if( error != null )
+                                {
+                                    m.Error( $"Invalid class '{t}' kind: {error}" );
+                                    k |= CKTypeKind.HasCombinationError;
+                                }
+                                else if( (k & CKTypeKind.IsAutoService) != 0 )
                                 {
                                     foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
                                     {
                                         Type marshallable = marshaller.GetGenericArguments()[0];
-                                        m.Info( $"Type '{marshallable.FullName}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t.FullName}' that is a IAutoService." );
+                                        m.Info( $"Type '{marshallable}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t}' that is a IAutoService." );
                                         SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
 
                                         // The marshaller interface (the closed generic) is promoted to be an IAutoService since it must be
@@ -345,7 +430,7 @@ namespace CK.Setup
                                         if( (exists & CKTypeKind.IsAutoService) == 0 )
                                         {
                                             exists |= CKTypeKind.IsAutoService;
-                                            var error = exists.GetCombinationError( false );
+                                            error = exists.GetCombinationError( false );
                                             if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
                                             else
                                             {
@@ -359,15 +444,12 @@ namespace CK.Setup
                             else
                             {
                                 Debug.Assert( t.IsInterface );
-                                // We are registering classes (not interfaces): the combination errors for classes are (at least should be) checked by the
-                                // root register code.
-                                // Here we check and log an error for any interface combination error. Some errors don't propagate to their final classes
-                                // like for instance the fact that a IRealObject interface cannot be marked IsMultiple (the attribute applies only to the
-                                // interface it decorates).
-                                // We may have test here only these kind of specific errors (currently only this one), however we consider that it is better
-                                // and safer to rely on the central GetCombinationError() method: this method concentrates all the checks.
                                 var error = (k & MaskPublicInfo).GetCombinationError( false );
-                                if( error != null ) m.Error( $"Invalid interface '{t.FullName}' kind: {error}" );
+                                if( error != null )
+                                {
+                                    m.Error( $"Invalid interface '{t}' kind: {error}" );
+                                    k |= CKTypeKind.HasCombinationError;
+                                }
                             }
                         }
                     }
@@ -390,7 +472,6 @@ namespace CK.Setup
             if( (t & IsMarshallableReasonMarshaller) != 0 ) c += " [FrontType:MarshallableSinceMarshallerExists]";
             if( (t & IsFrontTypeReasonExternal) != 0 ) c += " [FrontType:External]";
             if( (t & IsMultipleReasonExternal) != 0 ) c += " [Multiple:External]";
-            if( (t & IsStObjGen) != 0 ) c += " [StObjGen]";
             return c;
         }
 

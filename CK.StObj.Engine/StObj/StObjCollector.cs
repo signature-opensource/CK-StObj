@@ -449,9 +449,8 @@ namespace CK.Setup
                 // It is important here to go top-down since specialized configuration 
                 // should override more general ones.
                 // Note that this works because we do NOT offer any access to Specialization 
-                // in IStObjMutableItem. We actually could offer an access to the Generalization 
-                // since it is configured, but it seems useless and may annoy us later.
-                Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Generalization" ) == null );
+                // in IStObjMutableItem. We offer an access to the Generalization (it is configured) and can help
+                // target the root of a specialization path (typically to set ConstructParametersAboveRoot).
                 Debug.Assert( typeof( IStObjMutableItem ).GetProperty( "Specialization" ) == null );
                 MutableItem generalization = pathTypes[0];
                 MutableItem? m = generalization;

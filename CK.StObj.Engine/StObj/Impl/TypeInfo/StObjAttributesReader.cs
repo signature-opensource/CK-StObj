@@ -55,11 +55,7 @@ namespace CK.Setup
                     else
                     {
                         Debug.Assert( containerDefiner != null && containerDefiner.Container != null );
-                        if( monitor.ShouldLogLine( multipleContainerLogLevel ) )
-                        {
-                            string msg = $"Attribute {attr.GetType().Name} for type {objectType} specifies Container type '{attr.Container.Name}' but attribute {containerDefiner.GetType().Name} specifies Container type '{containerDefiner.Container.Name}'. Container remains '{containerDefiner.Container.Name}'.";
-                            monitor.UnfilteredLog( ActivityMonitor.Tags.Empty, multipleContainerLogLevel, msg, monitor.NextLogTime(), null );
-                        }
+                        monitor.Log( multipleContainerLogLevel, $"Attribute {attr.GetType().Name} for type {objectType} specifies Container type '{attr.Container.Name}' but attribute {containerDefiner.GetType().Name} specifies Container type '{containerDefiner.Container.Name}'. Container remains '{containerDefiner.Container.Name}'." );
                     }
                 }
                 if( attr.ItemKind != DependentItemKindSpec.Unknown )

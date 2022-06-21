@@ -1,24 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
-  <Import Project="..\Common\Shared.props" />
-
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net6.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <Description>Minimalist model with attributes, interfaces and basic objects that define StObj (Real Objects), Automatic DI configuration and enables Source Code Generation across multiple projects.
 Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStObjMap, StObjContextRoot.
     </Description>
   </PropertyGroup>
-  
   <ItemGroup>
-    <PackageReference Include="CSemVer" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="CSemVer" Version="11.0.0" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
   </ItemGroup>
-  
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
-  
 </Project>

@@ -55,7 +55,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                         },
                         ( read, variableName, assignOnly, isNullable ) =>
                         {
-                            read.Append( variableName ).Append( " = " ).AppendCSharpName( toSupport ).Append( ".Parse( r.GetString() ); r.Read();" ).NewLine();
+                            read.Append( variableName ).Append( " = " ).AppendCSharpName( toSupport, true, true, true ).Append( ".Parse( r.GetString() ); r.Read();" ).NewLine();
                         } );
                 }
             }

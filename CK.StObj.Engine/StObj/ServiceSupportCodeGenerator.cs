@@ -285,7 +285,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                     configure.Append( "m.Invoke( s.FinalImplementation.Implementation, new object[]{ register" );
                     foreach( var p in parameters.Skip( 1 ) )
                     {
-                        configure.Append( $", Resolve<" ).AppendCSharpName( p.ParameterType, false ).Append( ">(" ).Append( p.HasDefaultValue ).Append( ')' );
+                        configure.Append( $", Resolve<" ).AppendCSharpName( p.ParameterType, true, false, true ).Append( ">(" ).Append( p.HasDefaultValue ).Append( ')' );
                     }
                     configure.Append( " } );" ).NewLine();
                 }
@@ -318,7 +318,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             t.CreateFunction( func =>
             {
                 func.Append( "public object CreateInstance( IServiceProvider p ) {" );
-                func.Append( "return new " ).AppendCSharpName( c.FinalType ).Append( "(" );
+                func.Append( "return new " ).AppendCSharpName( c.FinalType, true, true, true ).Append( "(" );
                 var ctor = c.GetSingleConstructor();
                 var parameters = ctor.GetParameters();
                 for( int i = 0; i < parameters.Length; ++i )
@@ -338,7 +338,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                         }
                         else if( mapped.IsEnumerated )
                         {
-                            func.Append( "new " ).AppendCSharpName( p.ParameterType ).Append( "[]{" );
+                            func.Append( "new " ).AppendCSharpName( p.ParameterType, true, true, true ).Append( "[]{" );
                             for( int idxType = 0; idxType < mapped.Value.Count; ++idxType )
                             {
                                 if( idxType > 0 ) func.Append( ", " );

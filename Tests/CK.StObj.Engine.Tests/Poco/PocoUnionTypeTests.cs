@@ -192,8 +192,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (int, string, IList<string>)? Thing { get; }
-                public (int, string, IList<string?>) AnotherThing { get; }
+                public (int, string, List<string>)? Thing { get; }
+                public (int, string, List<string?>) AnotherThing { get; }
             }
         }
 
@@ -202,7 +202,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
 
@@ -224,18 +224,6 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public class Person { }
         public class Student : Person { }
-
-        [ExternalName("I1")]
-        public interface IPocoWithDuplicatesUnionTypes1 : IPoco
-        {
-            [UnionType]
-            object? Thing { get; set; }
-
-            class UnionTypes
-            {
-                public (int, IEnumerable<string>, IList<string>, string)? Thing { get; }
-            }
-        }
 
         [ExternalName( "I2" )]
         public interface IPocoWithDuplicatesUnionTypes2 : IPoco
@@ -266,14 +254,6 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes1 ) );
-                TestHelper.GetSuccessfulResult( c );
-
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "'System.Collections.Generic.IEnumerable<string>' is assignable from (is more general than) 'System.Collections.Generic.IList<string>'. Removing the second one.", StringComparison.Ordinal ) );
-            }
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
-            {
                 var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes2 ) );
                 TestHelper.GetSuccessfulResult( c );
 
@@ -295,60 +275,72 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [ExternalName( "I4" )]
-        public interface IPocoWithConcreteListInUnion : IPoco
+        public interface IPocoWithIListInUnion : IPoco
         {
             [UnionType]
             object ConcreteList { get; set; }
 
             class UnionTypes
             {
-                public (int, List<string>) ConcreteList { get; }
+                public (int, IList<string>) ConcreteList { get; }
             }
         }
 
         [ExternalName( "I4" )]
-        public interface IPocoWithConcreteDictionaryInUnion : IPoco
+        public interface IPocoWithIDictionaryInUnion : IPoco
         {
             [UnionType]
             object ConcreteDictionary { get; set; }
 
             class UnionTypes
             {
-                public (int, Dictionary<string,int>) ConcreteDictionary { get; }
+                public (int, IDictionary<string,int>) ConcreteDictionary { get; }
             }
         }
 
         [ExternalName( "I5" )]
-        public interface IPocoWithHashSetInUnion : IPoco
+        public interface IPocoWithISetInUnion : IPoco
         {
             [UnionType]
             object ConcreteSet { get; set; }
 
             class UnionTypes
             {
-                public (int, HashSet<string>) ConcreteSet { get; }
+                public (int, ISet<string>) ConcreteSet { get; }
             }
         }
 
         [Test]
-        public void Union_property_types_must_be_ISet_IDictionary_and_IList_not_corresponding_concrete_types()
+        public void Union_property_types_must_be_HashSet_Dictionary_and_List_not_corresponding_interfaces()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithConcreteListInUnion ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithIListInUnion ) );
             TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IPocoWithConcreteDictionaryInUnion ) );
+            c = TestHelper.CreateStObjCollector( typeof( IPocoWithIDictionaryInUnion ) );
             TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IPocoWithHashSetInUnion ) );
+            c = TestHelper.CreateStObjCollector( typeof( IPocoWithISetInUnion ) );
             TestHelper.GetFailedResult( c );
+        }
+
+        [ExternalName( "I1" )]
+        public interface IPocoWithNullableUnionType : IPoco
+        {
+            [UnionType]
+            object? Thing { get; set; }
+
+            class UnionTypes
+            {
+                public (int, List<string>, string)? Thing { get; }
+            }
         }
 
         [Test]
         public void boxing_lifts_nullable_value_types_so_nullable_value_type_in_union_when_set_can_only_result_in_value_types()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes1 ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithNullableUnionType ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
 
-            var p = s.GetRequiredService<IPocoFactory<IPocoWithDuplicatesUnionTypes1>>().Create();
+            var p = s.GetRequiredService<IPocoFactory<IPocoWithNullableUnionType>>().Create();
 
             FluentActions.Invoking( () => p.Thing = 5 ).Should().NotThrow();
             p.Thing.Should().NotBeOfType<int?>().And.Subject.Should().BeOfType<int>( "Unfortunately..." );
@@ -363,12 +355,12 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (IList<int>, IList<int?>) ListOfNullableValueTypesOrNotNullable { get; }
+                public (List<int>, List<int?>) ListOfNullableValueTypesOrNotNullable { get; }
             }
         }
 
         [Test]
-        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_value_types_are_diffferent()
+        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_value_types_are_different()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -387,12 +379,12 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (IList<string>, IList<string?>) ListOfNullableReferenceTypesOrNotNullable { get; }
+                public (List<string>, List<string?>) ListOfNullableReferenceTypesOrNotNullable { get; }
             }
         }
 
         [Test]
-        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_reference_types_are_considered_diffferent()
+        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_reference_types_are_considered_different()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -421,7 +413,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
 

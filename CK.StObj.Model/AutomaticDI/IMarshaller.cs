@@ -11,9 +11,9 @@ namespace CK.StObj.Model
     /// Such marshaller implementations must be registered and available in the DI container as soon
     /// as the marshallable service is used from a remote/background context.
     /// Whenever a marshaller interface is also marked as a <see cref="IAutoService"/>, its registration automatically
-    /// declares the <typeparamref name="T"/> to be a Marshallable service (even if T is not marked with any interface).
+    /// declares the <typeparamref name="T"/> to be a Marshallable service (even if T is not marked with [IsMarshallable] attribute).
     /// </summary>
-    /// <typeparam name="T">Type of the service to marshall.</typeparam>
+    /// <typeparam name="T">Type of the service to marshal.</typeparam>
     public interface IMarshaller<T>
     {
         /// <summary>
@@ -21,7 +21,7 @@ namespace CK.StObj.Model
         /// instantiate a copy of the <paramref name="service"/>.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="service">The service to marshall.</param>
+        /// <param name="service">The service to marshal.</param>
         void Write( ICKBinaryWriter writer, T service );
 
         /// <summary>

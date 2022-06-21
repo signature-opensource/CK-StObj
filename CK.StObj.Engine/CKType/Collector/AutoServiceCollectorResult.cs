@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,7 +59,7 @@ namespace CK.Setup
         public IReadOnlyList<AutoServiceClassInfo> RootClasses { get; }
 
         /// <summary>
-        /// Gets all classe that is <see cref="RootClasses"/> and all their recursive <see cref="AutoServiceClassInfo.Specializations"/>.
+        /// Gets all classes that is <see cref="RootClasses"/> and all their recursive <see cref="AutoServiceClassInfo.Specializations"/>.
         /// </summary>
         public IEnumerable<AutoServiceClassInfo> AllClasses => RootClasses.Concat( RootClasses.SelectMany( r => r.AllSpecializations ) );
 
@@ -86,7 +85,7 @@ namespace CK.Setup
         /// </summary>
         /// <returns>
         /// False to continue the process (only warnings - or error considered as 
-        /// warning - occured), true to stop remaining processes.
+        /// warning - occurred), true to stop remaining processes.
         /// </returns>
         public bool HasFatalError { get; }
 
@@ -96,12 +95,12 @@ namespace CK.Setup
         /// <param name="monitor">Logger (must not be null).</param>
         public void LogErrorAndWarnings( IActivityMonitor monitor )
         {
-            if( monitor == null ) throw new ArgumentNullException( "monitor" );
+            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             using( monitor.OpenTrace( $"Auto Services: {LeafInterfaces.Count} most specialized interfaces and {RootClasses.Count} concrete paths." ) )
             {
                 foreach( var a in ClassAmbiguities )
                 {
-                    monitor.Error( $"Base class '{a[0].ClassType.FullName}' cannot be unified by any of this candidates: '{a.Skip( 1 ).Select( t => t.ClassType.FullName ).Concatenate( "', '" )}'." );
+                    monitor.Error( $"Base class '{a[0].ClassType}' cannot be unified by any of this candidates: '{a.Skip( 1 ).Select( t => t.ClassType.ToCSharpName( false ) ).Concatenate( "', '" )}'." );
                 }
                 RealObjectCollectorResult.CommonLogAndWarings( monitor, AbstractTails );
             }

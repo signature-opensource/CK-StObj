@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using CK.Core;
 using CK.Setup;
+using FluentAssertions;
 using NUnit.Framework;
 
 using static CK.Testing.StObjEngineTestHelper;
@@ -11,6 +12,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
     [TestFixture]
     public class WithoutAmbientTests
     {
+        // This is not how the real SqlDefaultDatabase is implemented: see WithAmbientTests for a more accurate reproduction.
         [StObj( ItemKind = DependentItemKindSpec.Group,
                 Children = new Type[] 
                 { 
@@ -24,9 +26,15 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
                     typeof( AuthenticationPackage ),
                     typeof( AuthenticationUser )
                 } )]
-
-        public class SqlDatabaseDefault : IRealObject
+        public class SqlDefaultDatabase : IRealObject
         {
+            public string? ConnectionString { get; private set; }
+
+            // We'll use the ValueResolver below to set the parameter.
+            void StObjConstruct( string connectionString )
+            {
+                ConnectionString = connectionString;
+            }
         }
 
         #region Basic Package
@@ -98,13 +106,28 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         {
         }
 
-        #endregion 
+        #endregion
 
+        public class ValueResolver : IStObjValueResolver
+        {
+            public void ResolveExternalPropertyValue( IActivityMonitor monitor, IStObjFinalAmbientProperty ambientProperty )
+            {
+            }
+
+            public void ResolveParameterValue( IActivityMonitor monitor, IStObjFinalParameter parameter )
+            {
+                if( parameter.Name == "connectionString" && parameter.Type == typeof( string ) )
+                {
+                    parameter.SetParameterValue( "The connection String" );
+                }
+            }
+        }
 
         [Test]
         public void LayeredArchitecture()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+            var valueResolver = new ValueResolver();
+            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), valueResolver: valueResolver );
             collector.RegisterType( typeof( BasicPackage ) );
             collector.RegisterType( typeof( BasicActor ) );
             collector.RegisterType( typeof( BasicUser ) );
@@ -114,7 +137,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             collector.RegisterType( typeof( SecurityZone ) );
             collector.RegisterType( typeof( AuthenticationPackage ) );
             collector.RegisterType( typeof( AuthenticationUser ) );
-            collector.RegisterType( typeof( SqlDatabaseDefault ) );
+            collector.RegisterType( typeof( SqlDefaultDatabase ) );
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
             
@@ -123,7 +146,10 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
             WithAmbientTests.CheckChildren<BasicPackage>( r.StObjs, "BasicActor,BasicUser,BasicGroup" );
             WithAmbientTests.CheckChildren<ZonePackage>( r.StObjs, "SecurityZone,ZoneGroup" );
-            WithAmbientTests.CheckChildren<SqlDatabaseDefault>( r.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
+            WithAmbientTests.CheckChildren<SqlDefaultDatabase>( r.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser" );
+            var db = r.StObjs.Obtain<SqlDefaultDatabase>();
+            Debug.Assert( db != null );
+            db.ConnectionString.Should().Be( "The connection String" );
         }
     }
 }

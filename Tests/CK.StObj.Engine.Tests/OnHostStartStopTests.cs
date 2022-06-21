@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Text;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -64,13 +63,13 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class O1Spec : O1
         {
-            ValueTask OnHostStartAsync( CancellationToken cancel, IActivityMonitor m )
+            ValueTask OnHostStartAsync( IActivityMonitor m, CancellationToken cancel )
             {
                 m.Info( $"O1Spec is starting." );
                 return default;
             }
 
-            ValueTask OnHostStopAstnc( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
+            ValueTask OnHostStopAsync( IActivityMonitor m, ISqlCallContext ctx, CancellationToken cancel )
             {
                 ctx.Disposed.Should().BeFalse();
                 m.Info( $"O1Spec is stopping." );
@@ -103,7 +102,7 @@ namespace CK.StObj.Engine.Tests.Service
 
 
         [Test]
-        public async Task HostedServiceLifetimeTrigger_at_work()
+        public async Task HostedServiceLifetimeTrigger_at_work_Async()
         {
             var allTypes= typeof( OnHostStartStopTests ).GetNestedTypes();
             var collector = TestHelper.CreateStObjCollector( allTypes );
@@ -122,7 +121,7 @@ namespace CK.StObj.Engine.Tests.Service
                 }
                 entries.Select( e => e.Text ).Concatenate( "|" )
                     .Should().Be( "Calling: 1 'OnHostStart' method and 2 'OnHostStartAsync' methods.|O1 is starting.|O1Spec is starting.|O2Spec is starting."
-                                  + "|Calling: 1 'OnHostStopAsync' method and 1 'OnHostStop' method.|O2Spec is stopping.|Mail Service Shutdown.|O1 is stopping." );
+                                  + "|Calling: 2 'OnHostStopAsync' methods and 1 'OnHostStop' method.|O2Spec is stopping.|Mail Service Shutdown.|O1Spec is stopping.|O1 is stopping." );
             }
         }
     }

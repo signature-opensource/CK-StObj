@@ -186,12 +186,11 @@ namespace CK.Setup
             }
         }
 
-        internal RealObjectClassInfo(
-            IActivityMonitor monitor,
-            RealObjectClassInfo parent,
-            Type t,
-            IServiceProvider provider,
-            bool isExcluded )
+        internal RealObjectClassInfo( IActivityMonitor monitor,
+                                      RealObjectClassInfo parent,
+                                      Type t,
+                                      IServiceProvider provider,
+                                      bool isExcluded )
             : base( monitor, parent, t, provider, isExcluded, null )
         {
             Debug.Assert( parent == Generalization );
@@ -548,7 +547,7 @@ namespace CK.Setup
                 List<Type> all = null;
                 foreach( Type tI in Interfaces )
                 {
-                    var k = collector.KindDetector.GetKind( m, tI );
+                    var k = collector.KindDetector.GetValidKind( m, tI );
                     if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                     {
                         if( all == null ) all = new List<Type>();

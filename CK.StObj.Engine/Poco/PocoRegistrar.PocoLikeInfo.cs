@@ -8,7 +8,7 @@ namespace CK.Setup
 {
     partial class PocoRegistrar
     {
-        class PocoLikeInfo : IPocoLikeInfo
+        class PocoClassInfo : IPocoClassInfo
         {
             AnnotationSetImpl _annotations;
 
@@ -20,29 +20,29 @@ namespace CK.Setup
 
             public bool IsDefaultNewable { get; }
 
-            List<IPocoLikeInfo>? _specializations;
-            IReadOnlyList<IPocoLikeInfo> IPocoLikeInfo.Specializations => _specializations ?? (IReadOnlyList<IPocoLikeInfo>)Array.Empty<IPocoLikeInfo>();
+            List<IPocoClassInfo>? _specializations;
+            IReadOnlyList<IPocoClassInfo> IPocoClassInfo.Specializations => _specializations ?? (IReadOnlyList<IPocoClassInfo>)Array.Empty<IPocoClassInfo>();
 
-            public readonly Dictionary<string, PocoLikePropertyInfo> Properties;
-            IReadOnlyDictionary<string, IPocoLikePropertyInfo> _exposedProperties;
-            IReadOnlyDictionary<string, IPocoLikePropertyInfo> IPocoLikeInfo.Properties => _exposedProperties;
+            public readonly Dictionary<string, PocoClassPropertyInfo> Properties;
+            readonly IReadOnlyDictionary<string, IPocoClassPropertyInfo> _exposedProperties;
+            IReadOnlyDictionary<string, IPocoClassPropertyInfo> IPocoClassInfo.Properties => _exposedProperties;
 
-            public IReadOnlyList<PocoLikePropertyInfo> PropertyList { get; }
-            IReadOnlyList<IPocoLikePropertyInfo> IPocoLikeInfo.PropertyList => PropertyList;
+            public IReadOnlyList<PocoClassPropertyInfo> PropertyList { get; }
+            IReadOnlyList<IPocoClassPropertyInfo> IPocoClassInfo.PropertyList => PropertyList;
 
-            public PocoLikeInfo( Type t,
+            public PocoClassInfo( Type t,
                                  string name,
                                  string[] previousNames,
                                  bool isDefaultNewable,
-                                 Dictionary<string, PocoLikePropertyInfo> properties,
-                                 IReadOnlyList<PocoLikePropertyInfo> propertyList )
+                                 Dictionary<string, PocoClassPropertyInfo> properties,
+                                 IReadOnlyList<PocoClassPropertyInfo> propertyList )
             {
                 PocoType = t;
                 Name = name;
                 PreviousNames = previousNames;
                 IsDefaultNewable = isDefaultNewable;
                 Properties = properties;
-                _exposedProperties = Properties.AsIReadOnlyDictionary<string, PocoLikePropertyInfo, IPocoLikePropertyInfo>();
+                _exposedProperties = Properties.AsIReadOnlyDictionary<string, PocoClassPropertyInfo, IPocoClassPropertyInfo>();
                 PropertyList = propertyList;
             }
 

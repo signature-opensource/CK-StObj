@@ -217,7 +217,7 @@ namespace CK.Core
             {
                 try
                 {
-                    return info.StObjMap = (IStObjMap)Activator.CreateInstance( info.StObjMapType, new object[] { monitor } );
+                    return info.StObjMap = (IStObjMap?)Activator.CreateInstance( info.StObjMapType, new object[] { monitor } );
                 }
                 catch( Exception ex )
                 {

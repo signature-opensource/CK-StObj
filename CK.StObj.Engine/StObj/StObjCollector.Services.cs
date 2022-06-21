@@ -1,5 +1,4 @@
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -70,6 +69,7 @@ namespace CK.Setup
                 }
                 if( success )
                 {
+                Debug.Assert( Class.Interfaces != null );
                     _isHeadCandidate = !Family.Interfaces.Except( Class.Interfaces ).Any();
                     _isHead = _isHeadCandidate
                               && Family.Classes.Where( c => c != this )
@@ -248,12 +248,12 @@ namespace CK.Setup
 
             public string BaseInterfacesToString()
             {
-                return Interfaces.Where( i => !i.IsSpecialized ).Select( i => i.Type.FullName ).Concatenate( "', '" );
+                return Interfaces.Where( i => !i.IsSpecialized ).Select( i => i.Type.ToCSharpName() ).Concatenate( "', '" );
             }
 
             public string RootInterfacesToString()
             {
-                return Interfaces.Where( i => i.SpecializationDepth == 0 ).Select( i => i.Type.FullName ).Concatenate( "', '" );
+                return Interfaces.Where( i => i.SpecializationDepth == 0 ).Select( i => i.Type.ToCSharpName() ).Concatenate( "', '" );
             }
 
             public override string ToString()
@@ -454,7 +454,7 @@ namespace CK.Setup
             void RegisterMapping( Type t, AutoServiceClassInfo final, ref bool success )
             {
                 Debug.Assert( _infos.Count == 0, "Currently, no manual instantiation is available since IEnumerable is not yet handled." );
-                IStObjServiceFinalManualMapping? manual = null;
+                IStObjServiceFinalManualMapping? manual;
                 if( _infos.TryGetValue( final, out var build )
                     && (manual = build.GetFinalMapping( _monitor, _engineMap, _kindComputeFacade, ref success )) != null )
                 {

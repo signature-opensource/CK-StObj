@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             ITest? nullPoco = null;
 
@@ -46,7 +46,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();
             var o = f.Create( o => { o.Power = 3712; o.Hip += "CodeGen!"; } );
@@ -96,7 +96,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
             var a = fA.Create( a => { a.B2.ValB = "B2"; a.B2.C.ValC = "B2.C"; } );
@@ -119,7 +119,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithGeneric ), typeof( IPocoA ), typeof( IPocoB ), typeof( IPocoC ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var fG = s.GetRequiredService<IPocoFactory<IPocoWithGeneric>>();
             var fA = s.GetRequiredService<IPocoFactory<IPocoA>>();
@@ -143,7 +143,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithGeneric ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var fG = s.GetRequiredService<IPocoFactory<IPocoWithGeneric>>();
 
@@ -171,7 +171,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface ITestSetNumbers : ITest
         {
-            ISet<decimal> Numbers { get; }
+            HashSet<decimal> Numbers { get; }
         }
 
         [TestCase( PocoJsonSerializerMode.ECMAScriptSafe )]
@@ -182,7 +182,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITestSetNumbers ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITestSetNumbers>>();
             var o = f.Create( o =>
@@ -201,16 +201,16 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         public interface IWithSet : IPoco
         {
-            ISet<int> Numbers { get; }
+            HashSet<int> Numbers { get; }
         }
 
         public interface IWithList : IPoco
         {
-            IList<int> Numbers { get; }
+            List<int> Numbers { get; }
         }
 
         [Test]
-        public void ISet_and_IList_can_read_each_other()
+        public void HashSet_and_List_can_read_each_other()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithSet ), typeof( IWithList ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
@@ -231,8 +231,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var oSFromL = JsonTestHelper.Deserialize<IWithSet>( services, oLb.Span );
             Debug.Assert( oLFromS != null && oSFromL != null );
 
-            oLFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
-            oSFromL.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
+            oLFromS.Numbers.Should().BeEquivalentTo( new[] { 12, 87, 54 } );
+            oSFromL.Numbers.Should().BeEquivalentTo( new[] { 1, 2, 3, 4, 5 } );
         }
 
         public interface IWithArray : IPoco
@@ -241,7 +241,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         }
 
         [Test]
-        public void ISet_and_Array_can_read_each_other()
+        public void HashSet_and_Array_can_read_each_other()
         {
             // Implementation uses this fact: an array is a IList.
             typeof( int[] ).Should().BeAssignableTo<IList<int>>();
@@ -265,8 +265,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var oSFromA = JsonTestHelper.Deserialize<IWithSet>( services, oAb.Span );
             Debug.Assert( oAFromS != null && oSFromA != null );
 
-            oAFromS.Numbers.Should().BeEquivalentTo( 12, 87, 54 );
-            oSFromA.Numbers.Should().BeEquivalentTo( 1, 2, 3, 4, 5 );
+            oAFromS.Numbers.Should().BeEquivalentTo( new[] { 12, 87, 54 } );
+            oSFromA.Numbers.Should().BeEquivalentTo( new[] { 1, 2, 3, 4, 5 } );
         }
 
 
@@ -309,7 +309,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoCrossA ), typeof( IPocoCrossB ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var fA = s.GetRequiredService<IPocoFactory<IPocoCrossA>>();
             var a = fA.Create( a =>
@@ -337,7 +337,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoCrossASpec ), typeof( IPocoCrossB ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var fA = s.GetRequiredService<IPocoFactory<IPocoCrossA>>();
             var a = fA.Create( a =>
@@ -365,7 +365,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithDictionary ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var fA = s.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
             var a = fA.Create( a =>
@@ -388,7 +388,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
             var a = f.Create( a =>
@@ -404,7 +404,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ), typeof( IPocoWithDictionary ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
             var fO = s.GetRequiredService<IPocoFactory<IPocoWithDictionary>>();
@@ -427,7 +427,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ), typeof( IPocoWithDictionary ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             // IPocoWithDictionary brings Dictionary<string, int> and Dictionary<int,string>.
             var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
@@ -448,7 +448,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // Here we don't add IPocoWithDictionary: Dictionary<string, int> and Dictionary<int,string> are not registered.
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IPocoWithObject ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
             var f = s.GetRequiredService<IPocoFactory<IPocoWithObject>>();
             var a = f.Create( a =>
             {
@@ -465,7 +465,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             class UnionTypes
             {
-                public (IList<int>, int, IDictionary<int, string>)? V { get; }
+                public (List<int>, int, Dictionary<int, string>)? V { get; }
             }
         }
 
@@ -474,7 +474,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithUnionType ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
             var f = services.GetRequiredService<IPocoFactory<IWithUnionType>>();
             var a = f.Create( a =>
             {
@@ -522,7 +522,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithMutableCollections ), typeof( IWithUnionType ) );
             var services = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = services.GetService<PocoDirectory>();
+            var directory = services.GetRequiredService<PocoDirectory>();
             var f = services.GetRequiredService<IPocoFactory<IWithMutableCollections>>();
             var a = f.Create( a =>
             {

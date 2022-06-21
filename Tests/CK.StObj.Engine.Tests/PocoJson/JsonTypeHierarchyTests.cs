@@ -24,9 +24,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( IPocoNoIntern ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
-            var root = s.GetService<IPocoFactory<IPocoNoIntern>>().Create();
+            var root = s.GetRequiredService<IPocoFactory<IPocoNoIntern>>().Create();
             root.Person = new Person( "Jean" );
             root.Teacher = new Teacher( "Paul", "Aggreg" );
             root.Student = new Student( "Sartre", 3712 );
@@ -50,9 +50,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITestBaseClassOnly ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
-            var root = s.GetService<IPocoFactory<ITestBaseClassOnly>>().Create();
+            var root = s.GetRequiredService<IPocoFactory<ITestBaseClassOnly>>().Create();
             root.Person =  new Student( "Sartre", 3712 );
 
             // Here, the serialization relies on ToString() that is virtual: the Student is serialized (it shouldn't!).
@@ -67,9 +67,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITestBaseClassOnly ), typeof( IPocoAllOfThem ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
-            var root = s.GetService<IPocoFactory<ITestBaseClassOnly>>().Create();
+            var root = s.GetRequiredService<IPocoFactory<ITestBaseClassOnly>>().Create();
             root.Person =  new Student( "Sartre", 3712 );
 
             // The Person is not IsFinal: the actual Student is serialized.
@@ -105,9 +105,9 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( IUnionPersonOrString ),
                                                      typeof( IPocoAllOfThem ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
-            var root = s.GetService<IPocoFactory<IUnionPersonOrString>>().Create();
+            var root = s.GetRequiredService<IPocoFactory<IUnionPersonOrString>>().Create();
             root.PersonOrString = new Student( "Sartre", 3712 );
             var root2 = JsonTestHelper.Roundtrip( directory, root, null, text => TestHelper.Monitor.Info( text ) );
         }
@@ -130,22 +130,22 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( IUnionPersonOrPocoOrString ),
                                                      typeof( IPocoAllOfThem ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
-            var root = s.GetService<IPocoFactory<IUnionPersonOrPocoOrString>>().Create();
+            var root = s.GetRequiredService<IPocoFactory<IUnionPersonOrPocoOrString>>().Create();
             root.PersonOrPocoOrString = new Student( "Sartre", 3712 );
             var root2 = JsonTestHelper.Roundtrip( directory, root, null, text => TestHelper.Monitor.Info( text ) );
         }
 
         public interface ITestWithCollections : IPoco
         {
-            IList<Person> Persons { get; }
+            List<Person> Persons { get; }
         }
 
         public interface ITestWithCollectionsOfFinal : IPoco
         {
-            IList<Student> Students { get; }
-            IList<Intern?> Interns { get; }
+            List<Student> Students { get; }
+            List<Intern?> Interns { get; }
         }
 
         [Test]
@@ -157,10 +157,10 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( ITestWithCollectionsOfFinal ),
                                                      typeof( IPocoNoIntern ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             {
-                var root = s.GetService<IPocoFactory<ITestWithCollections>>().Create();
+                var root = s.GetRequiredService<IPocoFactory<ITestWithCollections>>().Create();
                 root.Persons.Add( new Student( "Sartre", 3712 ) );
                 root.Persons.Add( new Teacher( "Camus", "Sisyphe" ) );
                 root.Persons.Add( new Person( "Albert" ) );
@@ -170,7 +170,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                 JsonTestHelper.Roundtrip( directory, root );
             }
             {
-                var root = s.GetService<IPocoFactory<ITestWithCollectionsOfFinal>>().Create();
+                var root = s.GetRequiredService<IPocoFactory<ITestWithCollectionsOfFinal>>().Create();
                 root.Students.Add( new Student( "Sartre", 3712 ) );
                 root.Interns.Add( new Intern( "Spi", "Newbie", 3712 ) );
                 root.Interns.Add( null );

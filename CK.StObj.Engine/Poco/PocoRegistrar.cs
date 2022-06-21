@@ -2,7 +2,6 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Reflection;
 using CK.Setup;
-using CK.Text;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -63,28 +62,36 @@ namespace CK.Setup
         /// <param name="typeFilter">Optional type filter.</param>
         public PocoRegistrar( Func<IActivityMonitor, Type, bool> actualPocoPredicate, string @namespace = "CK.GPoco", Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
-            _actualPocoPredicate = actualPocoPredicate ?? throw new ArgumentNullException( nameof( actualPocoPredicate ) );
-            _namespace = @namespace ?? "CK.GPoco";
+            Throw.CheckNotNullArgument( actualPocoPredicate );
+            Throw.CheckNotNullArgument( @namespace );
+            _actualPocoPredicate = actualPocoPredicate;
+            _namespace = @namespace;
             _all = new Dictionary<Type, PocoType?>();
             _result = new List<List<Type>>();
             _typeFilter = typeFilter ?? (( m, type ) => true);
         }
 
         /// <summary>
-        /// Registers a type that may be a <see cref="IPoco"/> interface.
+        /// Registers a type that must be an interface that may be a <see cref="IPoco"/> interface.
         /// </summary>
         /// <param name="monitor">Monitor that will be used to signal errors.</param>
-        /// <param name="t">Type to register (must not be null).</param>
+        /// <param name="t">Interface type to register (must not be null).</param>
         /// <returns>True if the type has been registered, false otherwise.</returns>
-        public bool Register( IActivityMonitor monitor, Type t )
+        public bool RegisterInterface( IActivityMonitor monitor, Type t )
         {
-            if( t == null ) throw new ArgumentNullException( nameof( t ) );
-            return t.IsInterface && _actualPocoPredicate( monitor, t )
-                    ? DoRegister( monitor, t ) != null
+            Throw.CheckArgument( t?.IsInterface is true );
+            return _actualPocoPredicate( monitor, t )
+                    ? DoRegisterInterface( monitor, t ) != null
                     : false;
         }
 
-        PocoType? DoRegister( IActivityMonitor monitor, Type t )
+        //public bool RegisterPocoClass( IActivityMonitor monitor, Type t )
+        //{
+        //    Throw.CheckArgument( t?.IsClass is true );
+        //    return true;
+        //}
+
+        PocoType? DoRegisterInterface( IActivityMonitor monitor, Type t )
         {
             Debug.Assert( t.IsInterface && _actualPocoPredicate( monitor, t ) );
             if( !_all.TryGetValue( t, out var p ) )
@@ -117,7 +124,7 @@ namespace CK.Setup
                 // Attempts to register the base if and only if it is not a "definer".
                 if( _actualPocoPredicate( monitor, b ) )
                 {
-                    var baseType = DoRegister( monitor, b );
+                    var baseType = DoRegisterInterface( monitor, b );
                     if( baseType == null ) return null;
                     // Detect multiple root Poco.
                     if( theOnlyRoot != null )
@@ -243,7 +250,7 @@ namespace CK.Setup
                 g.Emit( OpCodes.Ret );
             }
 
-            // The IPocoClass implementation.
+            // The IPocoGeneratedClass implementation.
             var properties = new Dictionary<string, PocoPropertyInfo>();
             var propertyList = new List<PocoPropertyInfo>();
             List<PropertyInfo>? externallyImplementedPropertyList = null;
@@ -287,20 +294,20 @@ namespace CK.Setup
                 Debug.Assert( maxICount < expanded.Count );
                 if( maxICount < expanded.Count - 1 )
                 {
-                    monitor.Error( $"Poco family '{interfaces.Select( b => b.FullName ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
+                    monitor.Error( $"Poco family '{interfaces.Select( b => b.ToCSharpName() ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
                     return null;
                 }
                 Debug.Assert( closure != null, "Since there is at least one interface." );
-                monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.FullName ).Concatenate()}." );
+                monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.ToCSharpName() ).Concatenate()}." );
             }
-            // Supports the IPocoClass interface.
-            tB.AddInterfaceImplementation( typeof( IPocoClass ) );
+            // Supports the IPocoGeneratedClass interface.
+            tB.AddInterfaceImplementation( typeof( IPocoGeneratedClass ) );
             {
                 MethodBuilder m = tB.DefineMethod( "get_Factory", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPocoFactory ), Type.EmptyTypes );
                 ILGenerator g = m.GetILGenerator();
                 g.Emit( OpCodes.Ldnull );
                 g.Emit( OpCodes.Ret );
-                var p = tB.DefineProperty( nameof( IPocoClass.Factory ), PropertyAttributes.None, typeof( IPocoFactory ), null );
+                var p = tB.DefineProperty( nameof( IPocoGeneratedClass.Factory ), PropertyAttributes.None, typeof( IPocoFactory ), null );
                 p.SetGetMethod( m );
             }
 
@@ -357,7 +364,7 @@ namespace CK.Setup
 
                 if( p.IsReadOnly && p.DefaultValueSource != null )
                 {
-                    monitor.Error( $"Property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}' of type {p.PropertyType.Name} cannot have a default value attribute: [DefaultValue( {p.DefaultValueSource} )]." );
+                    monitor.Error($"Read only {p} cannot have a default value attribute: [DefaultValue( {p.DefaultValueSource} )].");
                     return null;
                 }
                 foreach( var propInfo in p.DeclaredProperties )
@@ -385,7 +392,7 @@ namespace CK.Setup
         {
             // We cannot check the equality of property type here because we need to consider IPoco families: we
             // have to wait that all of them have been registered.
-            // Same as the Poco-like: we can only consider them once IPoco analysis is done.
+            // Same as the Poco-like: it's easier to consider them once IPoco analysis is done.
             // ClassInfo.CheckPropertiesVarianceAndUnionTypes checks the type and the nullability.
             bool success = true;
             var isReadOnly = !p.CanWrite;
@@ -417,9 +424,9 @@ namespace CK.Setup
                 var nullTree = p.PropertyType.GetNullableTypeTree( nullabilityInfo, NullableTypeTree.ObliviousDefaultBuilder );
                 bool isBasicProperty = PocoSupportResultExtension.IsBasicPropertyType( nullTree.Type );
                 Type? genRefType = nullTree.Kind.IsReferenceType() && nullTree.Type.IsGenericType ? nullTree.Type.GetGenericTypeDefinition() : null;
-                bool isReadonlyCompliantCollection = genRefType != null && (genRefType == typeof( IList<> ) || genRefType == typeof( List<> )
-                                                                          || genRefType == typeof( IDictionary<,> ) || genRefType == typeof( Dictionary<,> )
-                                                                          || genRefType == typeof( ISet<> ) || genRefType == typeof( HashSet<> ));
+                bool isReadonlyCompliantCollection = genRefType != null && (genRefType == typeof( List<> )
+                                                                            || genRefType == typeof( Dictionary<,> )
+                                                                            || genRefType == typeof( HashSet<> ));
                 bool isStandardCollection = isReadonlyCompliantCollection || p.PropertyType.IsArray;
                 if( isReadOnly && success )
                 {
@@ -463,7 +470,7 @@ namespace CK.Setup
                 // A union type, it cannot be readonly. 
                 if( implP.IsReadOnly )
                 {
-                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or IList<>, IDictionary<,> or ISet<>." );
+                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or List<>, Dictionary<,> or Set<>." );
                     return false;
                 }
                 // A union type is not a basic property (fix the fact that typeof(object) is a basic property).
@@ -471,7 +478,7 @@ namespace CK.Setup
                 bool isPropertyNullable = implP.PropertyNullableTypeTree.Kind.IsNullable();
                 List<string>? typeDeviants = null;
                 List<string>? nullableDef = null;
-                List<string>? concreteCollections = null;
+                List<string>? interfaceCollections = null;
 
                 if( unionTypesDef == null )
                 {
@@ -510,20 +517,20 @@ namespace CK.Setup
                     else if( sub.Type.IsGenericType )
                     {
                         var tGen = sub.Type.GetGenericTypeDefinition();
-                        if( tGen == typeof( List<> ) )
+                        if( tGen == typeof( IList<> ) )
                         {
-                            if( concreteCollections == null ) concreteCollections = new List<string>();
-                            concreteCollections.Add( $"{sub} should be a IList<{sub.RawSubTypes[0]}>" );
+                            if( interfaceCollections == null ) interfaceCollections = new List<string>();
+                            interfaceCollections.Add( $"{sub} should be a List<{sub.RawSubTypes[0]}>" );
                         }
-                        else if( tGen == typeof( Dictionary<,> ) )
+                        else if( tGen == typeof( IDictionary<,> ) )
                         {
-                            if( concreteCollections == null ) concreteCollections = new List<string>();
-                            concreteCollections.Add( $"{sub} should be a IDictionary<{sub.RawSubTypes[0]},{sub.RawSubTypes[1]}>" );
+                            if( interfaceCollections == null ) interfaceCollections = new List<string>();
+                            interfaceCollections.Add( $"{sub} should be a Dictionary<{sub.RawSubTypes[0]},{sub.RawSubTypes[1]}>" );
                         }
-                        else if( tGen == typeof( HashSet<> ) )
+                        else if( tGen == typeof( ISet<> ) )
                         {
-                            if( concreteCollections == null ) concreteCollections = new List<string>();
-                            concreteCollections.Add( $"{sub} should be a ISet<{sub.RawSubTypes[0]}>" );
+                            if( interfaceCollections == null ) interfaceCollections = new List<string>();
+                            interfaceCollections.Add( $"{sub} should be a HashSet<{sub.RawSubTypes[0]}>" );
                         }
                     }
                     if( sub.Kind.IsNullable() )
@@ -536,16 +543,16 @@ namespace CK.Setup
                 {
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type{(typeDeviants.Count > 1 ? "s" : "")} '{typeDeviants.Concatenate( "' ,'" )}' {(typeDeviants.Count > 1 ? "are" : "is")} incompatible with the property type '{p.PropertyType.Name}'." );
                 }
-                if( concreteCollections != null )
+                if( interfaceCollections != null )
                 {
-                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must use their interfaces: {concreteCollections.Concatenate()}." );
+                    monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Collection types must be concrete: {interfaceCollections.Concatenate()}." );
                 }
                 if( nullableDef != null )
                 {
                     monitor.Error( $"Invalid [UnionType] attribute on '{interfaceType.FullName}.{p.Name}'. Union type definitions must not be nullable: please change '{nullableDef.Concatenate( "' ,'" )}' to be not nullable." );
                     return false;
                 }
-                if( typeDeviants != null || concreteCollections != null ) return false;
+                if( typeDeviants != null || interfaceCollections != null ) return false;
 
                 // Type definitions are non-nullable.
                 var types = tree.SubTypes.ToList();

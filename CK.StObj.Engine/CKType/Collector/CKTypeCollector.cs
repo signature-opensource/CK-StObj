@@ -34,17 +34,16 @@ namespace CK.Setup
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="tempAssembly">The temporary <see cref="IDynamicAssembly"/>.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is is the default name.</param>
-        public CKTypeCollector(
-            IActivityMonitor monitor,
-            IServiceProvider serviceProvider,
-            IDynamicAssembly tempAssembly,
-            Func<IActivityMonitor,Type,bool>? typeFilter = null,
-            IEnumerable<string>? names = null )
+        /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
+        public CKTypeCollector( IActivityMonitor monitor,
+                                IServiceProvider serviceProvider,
+                                IDynamicAssembly tempAssembly,
+                                Func<IActivityMonitor, Type, bool>? typeFilter = null,
+                                IEnumerable<string>? names = null )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( serviceProvider == null ) throw new ArgumentNullException( nameof( serviceProvider ) );
-            if( tempAssembly == null ) throw new ArgumentNullException( nameof( tempAssembly ) );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( serviceProvider );
+            Throw.CheckNotNullArgument( tempAssembly );
             _monitor = monitor;
             _typeFilter = typeFilter ?? ((m,type) => type.FullName != null);
             _tempAssembly = tempAssembly;
@@ -57,8 +56,8 @@ namespace CK.Setup
             _serviceRoots = new List<AutoServiceClassInfo>();
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
-            KindDetector = new CKTypeKindDetector();
-            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            KindDetector = new CKTypeKindDetector( typeFilter );
+            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
@@ -89,12 +88,12 @@ namespace CK.Setup
         /// Registers a type.
         /// </summary>
         /// <param name="type">
-        /// Any type that could be a <see cref="IRealObject"/>, a <see cref="IPoco"/> or a <see cref="IAutoService"/>.
-        /// Must not be null.
+        /// Any type that could be a <see cref="IRealObject"/>, a <see cref="IPoco"/> or a <see cref="IAutoService"/>
+        /// or a type decorated by some attributes.
         /// </param>
         public void RegisterType( Type type )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            Throw.CheckNotNullArgument( type );
             if( type != typeof( object ) )
             {
                 if( type.IsClass )
@@ -103,7 +102,7 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoRegistrar.Register( _monitor, type ) )
+                    if( _pocoRegistrar.RegisterInterface( _monitor, type ) )
                     {
                         RegisterAssembly( type );
                     }
@@ -124,8 +123,7 @@ namespace CK.Setup
         /// <returns>True if it is a new class for this collector, false if it has already been registered.</returns>
         public bool RegisterClass( Type c )
         {
-            if( c == null ) throw new ArgumentNullException( nameof( c ) );
-            if( !c.IsClass ) throw new ArgumentException();
+            Throw.CheckArgument( c?.IsClass is true );
             return c != typeof( object ) ? DoRegisterClass( c, out _, out _ ) : false;
         }
 
@@ -134,8 +132,8 @@ namespace CK.Setup
             Debug.Assert( t != null && t != typeof( object ) && t.IsClass );
 
             // Skips already processed types.
-            // The object collector contains null RealObjectClassInfo value for already processed types
-            // that are skipped or on error.
+            // The object collectors contains null RealObjectClassInfo and AutoServiceClassInfo value for
+            // already processed types that are skipped or on error.
             serviceInfo = null;
             if( _objectCollector.TryGetValue( t, out objectInfo )
                 || _serviceCollector.TryGetValue( t, out serviceInfo ) )
@@ -151,26 +149,19 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind? lt = KindDetector.GetExtendedKind( _monitor, t );
-            if( lt != null )
+            CKTypeKind lt = KindDetector.GetRawKind( _monitor, t );
+            if( (lt & CKTypeKind.HasCombinationError) == 0 )
             {
-                var conflictMsg = lt.Value.GetCombinationError( true );
-                if( conflictMsg != null )
+                bool isExcluded = (lt & CKTypeKind.IsExcludedType) != 0;
+                if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                 {
-                    _monitor.Error( $"Type {t.FullName}: {conflictMsg}." );
+                    objectInfo = RegisterObjectClassInfo( t, isExcluded, acParent );
+                    Debug.Assert( objectInfo != null );
                 }
-                else
+                if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
                 {
-                    if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )
-                    {
-                        objectInfo = RegisterObjectClassInfo( t, acParent );
-                        Debug.Assert( objectInfo != null );
-                    }
-                    if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
-                    {
-                        serviceInfo = RegisterServiceClassInfo( t, sParent, objectInfo );
-                        Debug.Assert( serviceInfo != null );
-                    }
+                    serviceInfo = RegisterServiceClassInfo( t, isExcluded, sParent, objectInfo );
+                    Debug.Assert( serviceInfo != null );
                 }
             }
             // Marks the type as a registered one and gives it a chance to carry
@@ -178,15 +169,14 @@ namespace CK.Setup
             if( objectInfo == null && serviceInfo == null )
             {
                 _objectCollector.Add( t, null );
-                if( lt != null ) RegisterRegularType( t );
+                if( (lt & CKTypeKind.IsExcludedType) == 0 ) RegisterRegularType( t );
             }
-            
             return true;
         }
 
-        RealObjectClassInfo RegisterObjectClassInfo( Type t, RealObjectClassInfo? parent )
+        RealObjectClassInfo RegisterObjectClassInfo( Type t, bool isExcluded, RealObjectClassInfo? parent )
         {
-            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, !_typeFilter( _monitor, t ) );
+            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, isExcluded );
             if( !result.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -216,14 +206,11 @@ namespace CK.Setup
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                // Ignores the type if type filter says so or if a [StObjGen] attribute exists.
-                var c = _typeFilter( _monitor, t ) && KindDetector.GetExtendedKind( _monitor, t ) != null
-                               ? TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t )
-                               : null;
+                var c = TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t );
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
-                    _monitor.Trace( $"Attributes registration on '{t.FullName}'." );
+                    _monitor.Trace( $"At least one bound attribute on '{t}' has been registered." );
                     RegisterAssembly( t );
                 }
             }
@@ -344,14 +331,13 @@ namespace CK.Setup
                     }
                 }
             }
-            return new RealObjectCollectorResult(
-                engineMap,
-                concreteClasses,
-                classAmbiguities ?? (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
-                interfaceAmbiguities != null
-                    ? interfaceAmbiguities.Values.Select( list => list.ToArray() ).ToArray()
-                    : Array.Empty<IReadOnlyList<Type>>(),
-                abstractTails );
+            return new RealObjectCollectorResult( engineMap,
+                                                  concreteClasses,
+                                                  classAmbiguities ?? (IReadOnlyList<IReadOnlyList<Type>>)Array.Empty<IReadOnlyList<Type>>(),
+                                                  interfaceAmbiguities != null
+                                                    ? interfaceAmbiguities.Values.Select( list => list.ToArray() ).ToArray()
+                                                    : Array.Empty<IReadOnlyList<Type>>(),
+                                                  abstractTails );
         }
 
     }

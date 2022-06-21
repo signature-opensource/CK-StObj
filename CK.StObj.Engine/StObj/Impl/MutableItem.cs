@@ -248,12 +248,21 @@ namespace CK.Setup
             Debug.Assert( _constructParameterEx == null, "Called only once right after object instantiation..." );
             Debug.Assert( _container != null, "...and after ApplyTypeInformation." );
 
-            var fromAbove = RealObjectType.BaseTypeInfo?.StObjConstructCollector;
-            if( fromAbove != null )
+            // _constructParametersAbove is not null only for the root of the specialization path.
+            var baseTypeInfo = RealObjectType.BaseTypeInfo;
+            if( baseTypeInfo != null )
             {
-                _constructParametersAbove = fromAbove
-                        .Select( c => (c.Item1,(IReadOnlyList<MutableParameter>)c.Item2.Select( p => new MutableParameter( this, p, false ) ).ToArray() ) )
-                        .ToArray();
+                var fromAbove = baseTypeInfo.StObjConstructCollector;
+                if( fromAbove != null )
+                {
+                    _constructParametersAbove = fromAbove
+                            .Select( c => (c.Item1, (IReadOnlyList<MutableParameter>)c.Item2.Select( p => new MutableParameter( this, p, false ) ).ToArray()) )
+                            .ToArray();
+                }
+                else
+                {
+                    _constructParametersAbove = Array.Empty<(MethodInfo, IReadOnlyList<MutableParameter>)>();
+                }
             }
 
             if( RealObjectType.StObjConstruct != null )
@@ -369,9 +378,11 @@ namespace CK.Setup
 
         IStObjMutableReferenceList IStObjMutableItem.Groups => _groups;
 
+        IStObjMutableItem? IStObjMutableItem.Generalization => Generalization;
+
         public IReadOnlyList<IStObjMutableParameter> ConstructParameters => _constructParameterEx;
 
-        public IEnumerable<(MethodInfo,IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAbove => _constructParametersAbove?.Select( mp => (mp.Item1, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
+        public IEnumerable<(Type,IReadOnlyList<IStObjMutableParameter>)>? ConstructParametersAboveRoot => _constructParametersAbove?.Select( mp => (mp.Item1.DeclaringType!, (IReadOnlyList<IStObjMutableParameter>)mp.Item2) ); 
 
         IReadOnlyList<IStObjAmbientProperty> IStObjMutableItem.SpecializedAmbientProperties => _ambientPropertiesEx; 
 
@@ -389,7 +400,7 @@ namespace CK.Setup
             // and a simple warning if the property is defined by a specialization (the developer may not be aware of it).
             // Note: since we check properties' type homogeneity in StObjTypeInfo, an Ambient/StObj/Direct property is always 
             // of the same "kind" regardless of its owner specialization depth.
-            MutableAmbientProperty mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
+            MutableAmbientProperty? mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
             if( mp != null )
             {
                 monitor.Error( $"Unable to set direct property '{RealObjectType.Type.FullName}.{propertyName}' since it is defined as an Ambient property. Use SetAmbientPropertyValue to set it. (Source:{sourceDescription})" );
@@ -422,7 +433,7 @@ namespace CK.Setup
 
             // Is it an Ambient property?
             // If yes, set the value onto the property.
-            MutableAmbientProperty mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
+            MutableAmbientProperty? mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
             if( mp != null )
             {
                 return mp.SetValue( RealObjectType.SpecializationDepth, monitor, value );
@@ -436,7 +447,7 @@ namespace CK.Setup
             if( monitor == null ) throw new ArgumentNullException( "monitor", "Source:" + sourceDescription );
             if( String.IsNullOrEmpty( propertyName ) ) throw new ArgumentException( "Can not be null nor empty. Source:" + sourceDescription, "propertyName" );
 
-            MutableAmbientProperty mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
+            MutableAmbientProperty? mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
             if( mp != null )
             {
                 return mp.SetConfiguration( RealObjectType.SpecializationDepth, monitor, type, behavior );
@@ -451,7 +462,7 @@ namespace CK.Setup
             if( String.IsNullOrEmpty( propertyName ) ) throw new ArgumentException( "Can not be null nor empty. Source:" + sourceDescription, "propertyName" );
             if( value == System.Type.Missing ) throw new ArgumentException( "Setting property to System.Type.Missing is not allowed. Source:" + sourceDescription, "value" );
 
-            MutableAmbientProperty mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
+            MutableAmbientProperty? mp = _leafData.AllAmbientProperties.FirstOrDefault( a => a.Name == propertyName );
             if( mp != null )
             {
                 monitor.Error( $"Unable to set StObj property '{RealObjectType.Type.FullName}.{propertyName}' since it is defined as an Ambient property. Use SetAmbientPropertyValue to set it. (Source:{sourceDescription})" );

@@ -1,15 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <Sdk Name="Microsoft.Build.CentralPackageVersions" Version="2.0.52" />
-  <Import Project="..\Common\Shared.props" />
-
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
-    <Description>Extends CK.Testing.StObjMap TestHelper to rebuild/compile generated assemblies thanks to CK.Testing.CKSetup.</Description>
+    <TargetFramework>net6.0</TargetFramework>
+    <Description>Extends CK.Testing.StObjMap and CK.Testing.CKSetup TestHelper to generate and expose compiled StObjMap using out-of-process run of CKSetup.</Description>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.Testing.StObjMap\CK.Testing.StObjMap.csproj" />
-    <PackageReference Include="CK.Testing.CKSetup" />
+    <PackageReference Include="CK.Testing.CKSetup" Version="15.0.0" />
   </ItemGroup>
 </Project>

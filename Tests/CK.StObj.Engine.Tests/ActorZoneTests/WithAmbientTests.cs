@@ -4,8 +4,12 @@ using System.Diagnostics;
 using System.Linq;
 using CK.Core;
 using CK.Setup;
+using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable IDE0051 // Remove unused private members
 
 namespace CK.StObj.Engine.Tests.ActorZoneTests
 {
@@ -24,7 +28,7 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             }
         }
 
-
+        [AttributeUsage( AttributeTargets.Class )]
         public class AmbientPropertySetAttribute : Attribute, IStObjStructuralConfigurator
         {
             public string PropertyName { get; set; }
@@ -33,26 +37,91 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
             public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
             {
-                o.SetAmbientPropertyValue( monitor, PropertyName, PropertyValue, "AmbientPropertySetAttribute" );
+                o.SetAmbientPropertyValue( monitor, PropertyName, PropertyValue, sourceDescription: "AmbientPropertySetAttribute" );
             }
         }
 
+        [CKTypeDefiner]
         [StObj( ItemKind = DependentItemKindSpec.Group, TrackAmbientProperties = TrackAmbientPropertiesMode.AddPropertyHolderAsChildren )]
-        public class SqlDatabaseDefault : IRealObject
+        public class SqlDatabase : IRealObject
         {
-            void StObjConstruct( string connectionString )
+            readonly string _name;
+            bool _hasCKCore;
+            bool _useSnapshotIsolation;
+
+            public SqlDatabase( string name )
             {
-                ConnectionString = connectionString;
+                Throw.CheckNotNullOrWhiteSpaceArgument( name );
+                _name = name;
             }
 
-            public string ConnectionString { get; private set; }
+            public string Name => _name;
+            public bool IsDefaultDatabase => Name == "db";
+            public string? ConnectionString { get; set; }
+
+            public bool HasCKCore
+            {
+                get => _hasCKCore | IsDefaultDatabase;
+                // There is no setter in reality (StObjConstruct is used), this
+                // is only here to show an alternative way to set the configuration by using SetDirectProperty.
+                private set => _hasCKCore = value;
+            }
+
+            public bool UseSnapshotIsolation
+            {
+                get => _useSnapshotIsolation | IsDefaultDatabase;
+                // There is no setter in reality (StObjConstruct is used), this
+                // is only here to show an alternative way to set the configuration by using SetDirectProperty.
+                private set => _useSnapshotIsolation = value;
+            }
+
+            void StObjConstruct( string? connectionString = null, bool hasCKCore = false, bool useSnapshotIsolation = false )
+            {
+                // If "UseSetDirectProperty" is used, the Connection string has been set on "db" and "histo".
+                // We protect this case here because StObjConstruct is always called (with System.Type.Missing parameters that triggers
+                // the use of the default values).
+                if( ConnectionString == null )
+                {
+                    ConnectionString = connectionString;
+                    _hasCKCore = hasCKCore;
+                    _useSnapshotIsolation = useSnapshotIsolation;
+                }
+            }
         }
 
+        public class SqlDefaultDatabase : SqlDatabase
+        {
+            public SqlDefaultDatabase()
+                : base( "db" )
+            {
+            }
+        }
+
+        public class SqlHistoDatabase : SqlDatabase
+        {
+            public SqlHistoDatabase()
+                : base( "histo" )
+            {
+            }
+        }
+
+        // This database is not configured by StObjConstruct parameters.
+        public class SqlAlienDatabase : SqlDatabase
+        {
+            public SqlAlienDatabase()
+                : base( "alien" )
+            {
+            }
+        }
+
+        /// <summary>
+        /// This acts as the "SqlPackage".
+        /// </summary>
         [CKTypeDefiner]
         public class BaseDatabaseObject : IRealObject
         {
             [AmbientProperty]
-            public SqlDatabaseDefault? Database { get; set; }
+            public SqlDefaultDatabase? Database { get; set; }
             
             [AmbientProperty]
             public string? Schema { get; set; }
@@ -66,10 +135,10 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public class BasicPackage : BaseDatabaseObject
         {
             [InjectObject]
-            public BasicUser UserHome { get; protected set; }
+            public BasicUser UserHome { get; private set; }
             
             [InjectObject]
-            public BasicGroup GroupHome { get; protected set; }
+            public BasicGroup GroupHome { get; private set; }
         }
 
         [StObj( Container = typeof( BasicPackage ), ItemKind = DependentItemKindSpec.Item )]
@@ -143,26 +212,94 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
 
         #endregion
 
-        public class ValueResolver : IStObjValueResolver
+        // This is how the SqlAspect configures the database.
+        // There is no "mode" in reality: StObjConstruct is used.
+        public class ConfiguratorByStObjConstruct : IStObjStructuralConfigurator
         {
-            public void ResolveExternalPropertyValue( IActivityMonitor monitor, IStObjFinalAmbientProperty ambientProperty )
+            readonly string _mode;
+
+            public ConfiguratorByStObjConstruct( string mode )
             {
+                _mode = mode;
             }
 
-            public void ResolveParameterValue( IActivityMonitor monitor, IStObjFinalParameter parameter )
+            public void Configure( IActivityMonitor monitor, IStObjMutableItem o )
             {
-                if( parameter.Name == "connectionString" && parameter.Type == typeof( string ) )
+                if( o.InitialObject is SqlDatabase db && o.Generalization == null )
                 {
-                    parameter.SetParameterValue( "The connection String" );
+                    if( _mode == "UseStObjConstruct" )
+                    {
+                        ConfigureByStObjConstruct( monitor, o, db );
+                    }
+                    else if( _mode == "UseSetDirectProperty" )
+                    {
+                        ConfigureByDirectSetProperties( monitor, o, db );
+                    }
+                }
+            }
+
+            // This is NOT how it works in CK.SqlServer.Setup.Engine: StObjConstruct is used.
+            static void ConfigureByDirectSetProperties( IActivityMonitor monitor, IStObjMutableItem o, SqlDatabase db )
+            {
+                if( db.IsDefaultDatabase )
+                {
+                    o.SetDirectPropertyValue( monitor, nameof( SqlDatabase.ConnectionString ), "The default connection string.", sourceDescription: "By configurator." );
+                }
+                else if( db.Name == "histo" )
+                {
+                    o.SetDirectPropertyValue( monitor, nameof( SqlDatabase.ConnectionString ), "The histo connection string.", sourceDescription: "By configurator." );
+                    o.SetDirectPropertyValue( monitor, nameof( SqlDatabase.HasCKCore ), true, sourceDescription: "By configurator." );
+                    o.SetDirectPropertyValue( monitor, nameof( SqlDatabase.UseSnapshotIsolation ), true, sourceDescription: "By configurator." );
+                }
+                else
+                {
+                    monitor.Warn( $"Unable to find configuration for Database named '{db.Name}' of type {db.GetType()}. Its ConnectionString will be null." );
+                }
+            }
+
+            static void ConfigureByStObjConstruct( IActivityMonitor monitor, IStObjMutableItem o, SqlDatabase db )
+            {
+                var fromAbove = o.ConstructParametersAboveRoot;
+                Debug.Assert( fromAbove != null, "Since we are on the root of the specializations path." );
+                fromAbove.Should().NotBeEmpty().And.HaveCount( 1, "We have only one base class with a StObjConstruct method." );
+                var (t, parameters) = fromAbove.Single();
+                t.Should().Be( typeof( SqlDatabase ) );
+
+                if( parameters.Count != 3
+                    || parameters[0].Name != "connectionString"
+                    || parameters[0].Type != typeof( string )
+                    || parameters[1].Name != "hasCKCore"
+                    || parameters[1].Type != typeof( bool )
+                    || parameters[2].Name != "useSnapshotIsolation"
+                    || parameters[2].Type != typeof( bool ) )
+                {
+                    throw new CKException( "Expected SqlDatabase.StObjContruct(string connectionString, bool hasCKCore, bool useSnapshotIsolation)" );
+                }
+                if( db.IsDefaultDatabase )
+                {
+                    parameters[0].SetParameterValue( "The default connection string." );
+                }
+                else if( db.Name == "histo" )
+                {
+                    parameters[0].SetParameterValue( "The histo connection string." );
+                    parameters[1].SetParameterValue( true );
+                    parameters[2].SetParameterValue( true );
+                }
+                else
+                {
+                    monitor.Warn( $"Unable to find configuration for Database named '{db.Name}' of type {db.GetType()}. Its ConnectionString will be null." );
                 }
             }
         }
 
-        [Test]
-        public void LayeredArchitecture()
+
+
+        [TestCase("UseStObjConstruct")]
+        [TestCase( "UseSetDirectProperty" )]
+        public void LayeredArchitecture_and_SqlDatabase_configurations( string mode )
         {
-            var valueResolver = new ValueResolver();
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), valueResolver: valueResolver );
+            var configurator = new ConfiguratorByStObjConstruct( mode );
+            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: configurator );
             collector.RegisterType( typeof( BasicPackage ) );
             collector.RegisterType( typeof( BasicActor ) );
             collector.RegisterType( typeof( BasicUser ) );
@@ -173,7 +310,9 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             collector.RegisterType( typeof( AuthenticationPackage ) );
             collector.RegisterType( typeof( AuthenticationUser ) );
             collector.RegisterType( typeof( AuthenticationDetail ) );
-            collector.RegisterType( typeof( SqlDatabaseDefault ) );
+            collector.RegisterType( typeof( SqlDefaultDatabase ) );
+            collector.RegisterType( typeof( SqlHistoDatabase ) );
+            collector.RegisterType( typeof( SqlAlienDatabase ) );
 
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
@@ -182,21 +321,33 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
             Debug.Assert( map != null, "No initialization error." );
             CheckChildren<BasicPackage>( map.StObjs, "BasicActor,BasicUser,BasicGroup" );
             CheckChildren<ZonePackage>( map.StObjs, "SecurityZone,ZoneGroup" );
-            CheckChildren<SqlDatabaseDefault>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser,AuthenticationDetail" );
+            CheckChildren<SqlDefaultDatabase>( map.StObjs, "BasicPackage,BasicActor,BasicUser,BasicGroup,ZonePackage,SecurityZone,ZoneGroup,AuthenticationPackage,AuthenticationUser,AuthenticationDetail" );
 
             var basicPackage = map.StObjs.Obtain<BasicPackage>();
             Debug.Assert( basicPackage != null );
-            Assert.That( basicPackage is ZonePackage );
-            Assert.That( basicPackage.GroupHome is ZoneGroup );
-            Assert.That( basicPackage.Schema, Is.EqualTo( "CK" ) );
+            basicPackage.Should().BeAssignableTo<ZonePackage>();
+            basicPackage.GroupHome.Should().BeAssignableTo<ZoneGroup>();
+            basicPackage.Schema.Should().Be( "CK" );
 
             var authenticationUser = map.StObjs.Obtain<AuthenticationUser>();
             Debug.Assert( authenticationUser != null );
-            Assert.That( authenticationUser.Schema, Is.EqualTo( "CK" ) );
+            authenticationUser.Schema.Should().Be( "CK" );
             
             var authenticationDetail = map.StObjs.Obtain<AuthenticationDetail>();
             Debug.Assert( authenticationDetail != null );
-            Assert.That( authenticationDetail.Schema, Is.EqualTo( "CKAuth" ) );
+            authenticationDetail.Schema.Should().Be( "CKAuth" );
+
+            var db = map.StObjs.Obtain<SqlDefaultDatabase>();
+            Debug.Assert( db != null );
+            db.ConnectionString.Should().Be( "The default connection string." );
+
+            var histo = map.StObjs.Obtain<SqlHistoDatabase>();
+            Debug.Assert( histo != null );
+            histo.ConnectionString.Should().Be( "The histo connection string." );
+
+            var alien = map.StObjs.Obtain<SqlAlienDatabase>();
+            Debug.Assert( alien != null );
+            alien.ConnectionString.Should().BeNull();
         }
     }
 }

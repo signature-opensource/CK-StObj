@@ -73,8 +73,8 @@ byte[] (encoded in [base64](https://source.dot.net/#System.Text.Json/System/Text
 
 The following complex types are handled:
 
-- A `T[]` (array), `IList<T>`, `ISet<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
-- A `IDictionary<,>` is serialized as 
+- A `T[]` (array), `List<T>`, `HashSet<T>` is serialized as an array (the JSON representation is the same, the C# types can be interchanged). 
+- A `Dictionary<,>` is serialized as 
   - a Json object when the type of the key is string 
   - an array of 2-cells arrays when the key is an object. 
 - Value tuples are serialized as arrays.
@@ -247,14 +247,14 @@ We then consider 2 different "modes" to serialize things:
 Mapping multiple C# types to only `Number` and `BigInt` must be "complete". No C# type like `sbyte` must be exposed to the Client. It means that
 collection handling is impacted: a `Dictionary<float,sbyte>` becomes a `M(Number,Number)`, a `Dictionary<string,decimal>` becomes a `O(BigInt)`.
 
-_Note:_ the type erasure of `T[]` and `IList<T>` (both are mapped to `T[]`) has been introduced before.
+_Note:_ the type erasure of `T[]` and `List<T>` (both are mapped to `T[]`) has been introduced before.
 
 This obviously generates ambiguities when reading the JSON sent by a Client. But the good news is that this is a concern only for polymorphism
 of heterogeneous types, not the polymorphism of specialized classes or interfaces.
 "Polymorphic heterogeneous types" is provided by either by an `object` or by a UnionType.
 
 #### Reading an `object`.
-Choices have to be made and this is fine: the developer put no constraint on the type (either because it doesn't directly use the property or because
+The developer put no constraint on the type (either because it doesn't directly use the property or because
 it discovers its type dynamically). Our main concern here is to follow the _Least Surprise Principle_ and handle the incoming data.
 
 - For `T[]`, we choose to instantiate a `List<T>`. Having a dynamic list rather than a fixed-length array is often more convenient.
@@ -313,11 +313,11 @@ an `object` type constrained by a `UnionType` deeply differs from an unconstrain
 
 The following definitions are ambiguous:
 - When there's more than one `Number` (regardless of their nullabilities) like a `(int?, byte)` or a `(byte, float, int)` and `double` doesn't appear.
-- When collections resolves to the same "ECMAScript Standard" mapping: `(IPerson[],IList<IPerson>?)` are both `Number[]`.
+- When collections resolves to the same "ECMAScript Standard" mapping: `(IPerson[],List<IPerson>?)` are both `Number[]`.
 
 The following definitions are not ambiguous:
-- When a big numbers coexists with a number: `(int,long)` maps to `Number|BigInt`, `(decimal[],IList<int?>?)` maps to `BigInt[]|Number[]`.
-- When ECMAScript collections differ: `(IList<int>,ISet<double>)` maps to `Number[]|S(Number)`.
+- When a big numbers coexists with a number: `(int,long)` maps to `Number|BigInt`, `(decimal[],List<int?>?)` maps to `BigInt[]|Number[]`.
+- When ECMAScript collections differ: `(List<int>,HshSet<double>)` maps to `Number[]|S(Number)`.
 
 Ambiguities are detected and warnings are emitted. With such ambiguous `UnionType` a Poco will not be "ECMAScriptStandard" compliant
 and a `NotSupportedException` will be thrown at runtime.
@@ -328,7 +328,7 @@ and a `NotSupportedException` will be thrown at runtime.
 
 __Note__: The current implementation tries to find an unambiguous mapping by grouping the union types
 by their standard representation and if, in each group the "standard mapping" appears only once, then
-we handle it: for example `(IList<int>,IList<double>,int,double)` can be safely deserialized into `IList<double>`
+we handle it: for example `(List<int>,List<double>,int,double)` can be safely deserialized into `List<double>`
 or `double`.
 
 ```csharp
@@ -426,7 +426,7 @@ The `nMax` representation below shows the number/string mappings for the basic t
 ```
 
 -----
-<a id="n1" href="#r1"><sup>1</sup></a>: The classical approach to define Know Types is to mark them with a decorator/attribute, but this has limitations,
+<a id="n1" href="#r1"><sup>1</sup></a>: The classical approach to define **Know Types** is to mark them with a decorator/attribute, but this has limitations,
 please read this [article about WCF Data Contract](https://docs.microsoft.com/en-us/archive/msdn-magazine/2011/february/msdn-magazine-data-contract-inheritance-known-types-and-the-generic-resolver)
 (and note that the final solution of the author - the "[generic resolver](https://docs.microsoft.com/en-us/archive/msdn-magazine/2011/february/msdn-magazine-data-contract-inheritance-known-types-and-the-generic-resolver#the-generic-resolver)"
 with its default constructor - defeats the purpose of the "Known Types" idea that is to restrict the set of allowed types to the minimum).

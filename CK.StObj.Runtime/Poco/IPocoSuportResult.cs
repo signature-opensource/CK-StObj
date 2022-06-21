@@ -87,7 +87,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Poco-like objects informations.
         /// </summary>
-        IPocoLikeSupportResult PocoLike { get; }
+        IPocoClassSupportResult PocoClass { get; }
 
     }
 }

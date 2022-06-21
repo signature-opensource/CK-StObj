@@ -187,6 +187,9 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
+            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontService1 )];
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
+
             var dM = map.Services.SimpleMappings[typeof( MService1 )];
             var dMClass = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontService1> )];
             dM.Should().NotBeNull();
@@ -209,12 +212,14 @@ namespace CK.StObj.Engine.Tests.Service
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
+
+            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontService1 )];
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
+
             IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
-            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontService1 )];
             dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
             dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsScoped );
         }
 
 

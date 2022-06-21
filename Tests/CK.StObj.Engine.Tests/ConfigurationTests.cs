@@ -11,7 +11,6 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.Xml.Linq;
 using System.Diagnostics;
-using CK.Text;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -24,11 +23,11 @@ namespace CK.StObj.Engine.Tests
             e.Attribute( StObjEngineConfiguration.xType ).Should().NotBeNull( "The Type attribute has been used to locate this type!" );
 
             // This is how Aspect version should be managed.
-            int version = (int)e.Attribute( StObjEngineConfiguration.xVersion );
+            int version = (int)e.AttributeRequired( StObjEngineConfiguration.xVersion );
             if( version <= 0 || version > Version ) throw new ArgumentOutOfRangeException( nameof( Version ) );
 
             if( Version == 1 ) Data = "This was not available in version 1.";
-            else Data = (string)e.Element( "Data" ) ?? "<No Data>";
+            else Data = (string?)e.Element( "Data" ) ?? "<No Data>";
         }
 
         public XElement SerializeXml( XElement e )
@@ -117,11 +116,11 @@ namespace CK.StObj.Engine.Tests
         public void parsing_a_configuration()
         {
             StObjEngineConfiguration c = new StObjEngineConfiguration( _config );
-            c.BasePath.Should().Be( new Text.NormalizedPath( "/The/Base/Path" ) );
+            c.BasePath.Should().Be( new NormalizedPath( "/The/Base/Path" ) );
 
             c.BinPaths.Should().HaveCount( 2 );
             var b1 = c.BinPaths[0];
-            b1.Path.Should().Be( new Text.NormalizedPath( "../../Relative/To/Base/[Debug|Release]/netcoreapp3.1" ) );
+            b1.Path.Should().Be( new NormalizedPath( "../../Relative/To/Base/[Debug|Release]/netcoreapp3.1" ) );
             b1.Assemblies.Should().BeEquivalentTo( "An.Assembly.Name", "Another.Assembly" );
 
             b1.Types.Should().HaveCount( 3 );
@@ -151,7 +150,7 @@ namespace CK.StObj.Engine.Tests
             bSample.Element( "Path" )?.Value.Should().Be( "comm/ands" );
 
             b1.ExcludedTypes.Should().BeEquivalentTo( "CK.Core.ActivityMonitor, CK.ActivityMonitor", "CK.Testing.StObjEngineTestHelper, CK.Testing.StObjEngine" );
-            b1.OutputPath.Should().Be( new Text.NormalizedPath( "Another/Relative" ) );
+            b1.OutputPath.Should().Be( new NormalizedPath( "Another/Relative" ) );
             b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
 

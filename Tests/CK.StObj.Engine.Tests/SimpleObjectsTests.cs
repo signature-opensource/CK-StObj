@@ -1,24 +1,25 @@
-using System;
 using CK.Core;
 using CK.Setup;
 using CK.StObj.Engine.Tests.SimpleObjects;
-using NUnit.Framework;
-using System.Linq;
 using FluentAssertions;
-
-using static CK.Testing.StObjEngineTestHelper;
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using static CK.Testing.StObjEngineTestHelper;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable IDE0051 // Remove unused private members
 
 namespace CK.StObj.Engine.Tests
 {
     [TestFixture]
     public class SimpleObjectsTests
     {
-        static Assembly ThisAssembly = typeof( SimpleObjectsTests ).Assembly;
+        static readonly Assembly ThisAssembly = typeof( SimpleObjectsTests ).Assembly;
 
         public class ObjectALevel1Conflict : ObjectA
         {
@@ -410,7 +411,7 @@ namespace CK.StObj.Engine.Tests
             var c = TestHelper.CreateStObjCollector( typeof( MissingAutoImplementation ) );
             var m = TestHelper.GetSuccessfulResult( c ).EngineMap;
             Debug.Assert( m != null );
-            m.StObjs.FinalImplementations.Where( i => !(i.Implementation is PocoDirectory) ).Should().BeEmpty();
+            m.StObjs.FinalImplementations.Where( i => i.Implementation is not PocoDirectory ).Should().BeEmpty();
         }
     }
 }

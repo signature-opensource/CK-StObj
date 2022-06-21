@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -22,7 +21,7 @@ namespace CK.Setup
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
             public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
-            public readonly PocoLikeResult PocoLike;
+            public readonly PocoClassResult PocoClass;
 
             public Result()
             {
@@ -31,7 +30,7 @@ namespace CK.Setup
                 _exportedAllInterfaces = AllInterfaces.AsIReadOnlyDictionary<Type, InterfaceInfo, IPocoInterfaceInfo>();
                 OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
                 NamedRoots = new Dictionary<string, IPocoRootInfo>();
-                PocoLike = new PocoLikeResult();
+                PocoClass = new PocoClassResult();
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
@@ -44,7 +43,7 @@ namespace CK.Setup
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
 
-            IPocoLikeSupportResult IPocoSupportResult.PocoLike => PocoLike;
+            IPocoClassSupportResult IPocoSupportResult.PocoClass => PocoClass;
 
             public bool CheckPropertiesVarianceAndInstantiationCycleError( IActivityMonitor monitor )
             {

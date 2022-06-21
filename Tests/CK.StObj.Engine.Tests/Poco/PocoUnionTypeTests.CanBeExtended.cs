@@ -125,7 +125,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             new class UnionTypes
             {
-                public (string, IList<string>) Thing { get; }
+                public (string, List<string>) Thing { get; }
 
                 public (int, double)? AnotherThing { get; }
             }
@@ -138,7 +138,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             new class UnionTypes
             {
-                public (string,IList<string?>)? AnotherThing { get; }
+                public (string,List<string?>)? AnotherThing { get; }
             }
         }
 
@@ -147,7 +147,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ), typeof( PocoJsonSerializer ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPoco2>>().Create();
 

@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -27,7 +26,7 @@ namespace CK.Setup
             public HashSet<Type> OtherInterfaces;
 
             public readonly Dictionary<string, PocoPropertyInfo> Properties;
-            IReadOnlyDictionary<string, IPocoPropertyInfo> _exposedProperties;
+            readonly IReadOnlyDictionary<string, IPocoPropertyInfo> _exposedProperties;
             public IReadOnlyList<PocoPropertyInfo> PropertyList { get; }
 
             IReadOnlyDictionary<string, IPocoPropertyInfo> IPocoRootInfo.Properties => _exposedProperties;
@@ -70,7 +69,8 @@ namespace CK.Setup
             /// either NOT co nor contravariant (general case), or BOTH co and contravariant (for
             /// IPoco types).
             /// There may be an evolution here: covariance may be accepted as long as base properties
-            /// do not expose a setter... 
+            /// do not expose a setter... But currently a property must be either readonly or not on all
+            /// interfaces that expose it, so this is irrelevant.
             /// </summary>
             /// <param name="monitor">The monitor to use.</param>
             /// <param name="allInterfaces">The interfaces indexes.</param>
@@ -167,7 +167,7 @@ namespace CK.Setup
                                                     && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( ExternalNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
                 if( others.Any() )
                 {
-                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.FullName ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.FullName}') should define the Poco names." );
+                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.ToCSharpName() ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.ToCSharpName()}') should define the Poco names." );
                     return false;
                 }
                 Name = name;

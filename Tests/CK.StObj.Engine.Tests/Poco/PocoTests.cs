@@ -1,17 +1,17 @@
-using System;
 using CK.Core;
 using CK.Setup;
-using NUnit.Framework;
-using CK.StObj.Engine.Tests.Poco;
-using System.Linq;
-using FluentAssertions;
-using System.Diagnostics;
-using System.Reflection;
 using CK.StObj.Engine.Tests.Poco.Sample;
-using System.ComponentModel;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using static CK.Testing.StObjEngineTestHelper;
-using System.Collections.Generic;
+
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable IDE0051 // Remove unused private members
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -243,27 +243,27 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
                 typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ) ) );
 
-            //TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
-            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
+            TestHelper.GetSuccessfulResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ) ) );
 
-            //// Without registering the IDefBase Poco:
-            //TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
-            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
+            // Without registering the IDefBase Poco:
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ) ) );
 
-            //// With IDefBase Poco registration:
-            //TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
-            //    typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
+            // With IDefBase Poco registration:
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector(
+                typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ), typeof( IRootAbsoluteBestTest ), typeof( IRootBuggyOtherFamily ), typeof( IDefBase ) ) );
         }
 
-        //public interface IRootAbsoluteBestTest : IRootBestTest
-        //{
-        //    new ISubBetterTest Sub { get; set; }
-        //}
+        public interface IRootAbsoluteBestTest : IRootBestTest
+        {
+            new ISubBetterTest Sub { get; set; }
+        }
 
-        //public interface IRootBuggyOtherFamily : IRootTest
-        //{
-        //    new IDefBase Sub { get; set; }
-        //}
+        public interface IRootBuggyOtherFamily : IRootTest
+        {
+            new IDefBase Sub { get; set; }
+        }
 
 
     }

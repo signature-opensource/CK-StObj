@@ -178,17 +178,17 @@ namespace CK.Setup
         public StObjEngineConfiguration( XElement e )
         {
             // Global options.
-            BasePath = (string)e.Element( xBasePath );
-            GeneratedAssemblyName = (string)e.Element( xGeneratedAssemblyName );
+            BasePath = (string?)e.Element( xBasePath );
+            GeneratedAssemblyName = (string?)e.Element( xGeneratedAssemblyName );
             TraceDependencySorterInput = (bool?)e.Element( xTraceDependencySorterInput ) ?? false;
             TraceDependencySorterOutput = (bool?)e.Element( xTraceDependencySorterOutput ) ?? false;
             RevertOrderingNames = (bool?)e.Element( xRevertOrderingNames ) ?? false;
-            InformationalVersion = (string)e.Element( xInformationalVersion );
+            InformationalVersion = (string?)e.Element( xInformationalVersion );
             AvailableStObjMapSignatures = new HashSet<SHA1Value>( FromXml( e, xAvailableStObjMapSignatures, xSignature )
-                                                                    .Select( s => SHA1Value.TryParse( s, 0, out SHA1Value sha1 )
+                                                                    .Select( s => SHA1Value.TryParse( s, out SHA1Value sha1 )
                                                                                     ? sha1
-                                                                                    : SHA1Value.ZeroSHA1 )
-                                                                    .Where( sha => sha != SHA1Value.ZeroSHA1 ) );
+                                                                                    : SHA1Value.Zero )
+                                                                    .Where( sha => sha != SHA1Value.Zero ) );
             GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
 
             // BinPaths.
@@ -201,7 +201,7 @@ namespace CK.Setup
                 string type = (string)a.AttributeRequired( xType );
                 Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
                 Debug.Assert( tAspect != null );
-                IStObjEngineAspectConfiguration aspect = (IStObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a );
+                IStObjEngineAspectConfiguration aspect = (IStObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
                 Aspects.Add( aspect );
             }
         }
@@ -216,7 +216,7 @@ namespace CK.Setup
         {
             static string CleanName( Type t )
             {
-                SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName, out string weaken );
+                SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName!, out string weaken );
                 return weaken;
             }
             return new XElement( xConfigurationRoot,
@@ -243,7 +243,7 @@ namespace CK.Setup
 
         static internal IEnumerable<string> FromXml( XElement e, XName names, XName name )
         {
-            return e.Elements( names ).Elements( name ).Select( c => (string)c.Attribute( StObjEngineConfiguration.xName ) ?? c.Value );
+            return e.Elements( names ).Elements( name ).Select( c => (string?)c.Attribute( StObjEngineConfiguration.xName ) ?? c.Value );
         }
 
     }

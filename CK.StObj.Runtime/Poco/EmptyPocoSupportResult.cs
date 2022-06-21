@@ -17,11 +17,11 @@ namespace CK.Setup
         /// </summary>
         public static IPocoSupportResult Default { get; } = new EmptyPocoSupportResult();
 
-        class PocoLikeEmpty : IPocoLikeSupportResult
+        class PocoClassEmpty : IPocoClassSupportResult
         {
-            public IReadOnlyDictionary<Type, IPocoLikeInfo> ByType => ImmutableDictionary<Type, IPocoLikeInfo>.Empty;
+            public IReadOnlyDictionary<Type, IPocoClassInfo> ByType => ImmutableDictionary<Type, IPocoClassInfo>.Empty;
         }
-        static IPocoLikeSupportResult PocoLike = new PocoLikeEmpty();
+        static IPocoClassSupportResult PocoClass = new PocoClassEmpty();
 
         EmptyPocoSupportResult() {}
 
@@ -41,6 +41,6 @@ namespace CK.Setup
 
         bool IPocoSupportResult.IsAssignableFrom( Type target, NullabilityTypeKind targetNullability, Type from, NullabilityTypeKind fromNullability ) => false;
 
-        IPocoLikeSupportResult IPocoSupportResult.PocoLike => PocoLike;
+        IPocoClassSupportResult IPocoSupportResult.PocoClass => PocoClass;
     }
 }

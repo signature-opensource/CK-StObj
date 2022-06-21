@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,7 +51,7 @@ namespace CK.Setup.Json
         int _typeInfoAutoNumber;
 
         // The list of readers for "ECMAScript standard" mode. Initialized with "BigInt" and "Number".
-        List<ECMAScriptStandardReader> _standardReaders;
+        readonly List<ECMAScriptStandardReader> _standardReaders;
         bool? _finalizedCall;
 
         /// <summary>
@@ -457,13 +456,13 @@ namespace CK.Setup.Json
             info.Configure( ( ICodeWriter write, string variableName ) =>
             {
                 write.Append( "System.Text.Json.JsonSerializer.Serialize<" )
-                     .AppendCSharpName( t.Type, false )
+                     .AppendCSharpName( t.Type, true, false, true )
                      .Append( ">( w, " ).Append( variableName ).Append( ", (options ?? PocoJsonSerializerOptions.Default).ForJsonSerializer );" );
             },
             ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
             {
                 read.Append( variableName ).Append( " = System.Text.Json.JsonSerializer.Deserialize<" )
-                     .AppendCSharpName( t.Type, false )
+                     .AppendCSharpName( t.Type, true, false, true )
                      .Append( ">( ref r, (options ?? PocoJsonSerializerOptions.Default).ForJsonSerializer );" ).NewLine()
                      .Append( "r.Read();" );
             } );

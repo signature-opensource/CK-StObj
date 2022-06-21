@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -40,9 +39,9 @@ namespace CK.Setup
             /// <summary>
             /// Setting of this property (just like PocoType) is done when the global result is built.
             /// </summary>
-            public PocoLikeInfo? PocoLikeType { get; set; }
+            public PocoClassInfo? PocoClassType { get; set; }
 
-            IPocoLikeInfo? IPocoBasePropertyInfo.PocoLikeType => PocoLikeType;
+            IPocoClassInfo? IPocoBasePropertyInfo.PocoClassType => PocoClassType;
 
             /// <summary>
             /// Setting of this property (just like PocoType) is done when the global result is built.
@@ -65,7 +64,12 @@ namespace CK.Setup
             // without relying on useless recomputations (either of nullability info or nullable tree).
             internal readonly NullabilityTypeInfo NullabilityTypeInfo;
 
-            public PocoPropertyInfo( PropertyInfo first, int initialIndex, bool isReadOnly, NullabilityTypeInfo nullabilityTypeInfo, NullableTypeTree nullTree, bool isStandardCollection )
+            public PocoPropertyInfo( PropertyInfo first,
+                                     int initialIndex,
+                                     bool isReadOnly,
+                                     NullabilityTypeInfo nullabilityTypeInfo,
+                                     NullableTypeTree nullTree,
+                                     bool isStandardCollection )
             {
                 DeclaredProperties = new List<PropertyInfo>() { first };
                 Index = initialIndex;

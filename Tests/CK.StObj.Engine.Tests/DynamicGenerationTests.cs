@@ -13,6 +13,9 @@ using System.Linq;
 using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+#pragma warning disable IDE0051 // Remove unused private members
+
 
 namespace CK.StObj.Engine.Tests
 {
@@ -133,7 +136,7 @@ namespace CK.StObj.Engine.Tests
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
                     map.FinalImplementations
-                        .Count( f => f.Implementation is IRealObject && !(f.Implementation is PocoDirectory) )
+                        .Count( f => f.Implementation is IRealObject && f.Implementation is not PocoDirectory )
                         .Should().Be( 2 );
 
                     StObjInitializeOnACalled = true;
@@ -158,7 +161,7 @@ namespace CK.StObj.Engine.Tests
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
                     map.FinalImplementations
-                       .Count( f => f.Implementation is IRealObject && !(f.Implementation is PocoDirectory) )
+                       .Count( f => f.Implementation is IRealObject && f.Implementation is not PocoDirectory )
                        .Should().Be( 2 );
                     Assert.That( StObjInitializeOnACalled );
                     StObjInitializeOnASpecCalled = true;
@@ -299,7 +302,7 @@ namespace CK.StObj.Engine.Tests
                         }
                         else
                         {
-                            scope.Append( "default(" ).AppendCSharpName( p.PropertyType ).Append( ")" );
+                            scope.Append( "default(" ).AppendCSharpName( p.PropertyType, true, true, true ).Append( ")" );
                         }
                         scope.Append( ";" ).NewLine();
                     }
@@ -378,7 +381,7 @@ namespace CK.StObj.Engine.Tests
                 // a Sql database context with the default database and secondary databases).
                 public AttributeImpl( IServiceProvider p, Func<string> hello )
                 {
-                    TestHelper.Monitor.Info( hello );
+                    TestHelper.Monitor.Info( hello() );
                 }
             }
 

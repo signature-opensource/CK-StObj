@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithTuple ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithTuple>>();
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
@@ -41,7 +41,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithNullableTuple ) ); ;
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithNullableTuple>>();
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
@@ -67,7 +67,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // We use IPocoAllOfThem to make sure that Intern is allowed.
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( IPocoAllOfThem ), typeof( ITupleWithHierachies ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var o = s.GetRequiredService<IPocoFactory<ITupleWithHierachies>>().Create();
             o.Hop = (3712, new Intern( "I", "i", null ), new Teacher( "T", "level" ), new Student( "S", 3 ));
@@ -91,7 +91,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IComplexTuple ) );
             var s = TestHelper.GetAutomaticServices( c ).Services;
-            var directory = s.GetService<PocoDirectory>();
+            var directory = s.GetRequiredService<PocoDirectory>();
 
             var o = s.GetRequiredService<IPocoFactory<IComplexTuple>>().Create();
             string? serialized = null;

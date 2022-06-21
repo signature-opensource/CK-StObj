@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CK.Text;
 using CK.Core;
 
 #nullable enable
@@ -15,14 +14,13 @@ namespace CK.Setup
     /// </summary>
     public class RealObjectCollectorResult
     {
-        IReadOnlyList<IReadOnlyList<MutableItem>> _concreteClassesPath;
+        readonly IReadOnlyList<IReadOnlyList<MutableItem>> _concreteClassesPath;
 
-        internal RealObjectCollectorResult(
-            StObjObjectEngineMap mappings,
-            IReadOnlyList<IReadOnlyList<MutableItem>> concreteClasses,
-            IReadOnlyList<IReadOnlyList<Type>> classAmbiguities,
-            IReadOnlyList<IReadOnlyList<Type>> interfaceAmbiguities,
-            IReadOnlyList<Type> abstractTails )
+        internal RealObjectCollectorResult( StObjObjectEngineMap mappings,
+                                            IReadOnlyList<IReadOnlyList<MutableItem>> concreteClasses,
+                                            IReadOnlyList<IReadOnlyList<Type>> classAmbiguities,
+                                            IReadOnlyList<IReadOnlyList<Type>> interfaceAmbiguities,
+                                            IReadOnlyList<Type> abstractTails )
         {
             EngineMap = mappings;
             _concreteClassesPath = concreteClasses;
@@ -77,16 +75,16 @@ namespace CK.Setup
         /// <param name="monitor">Logger (must not be null).</param>
         public void LogErrorAndWarnings( IActivityMonitor monitor )
         {
-            if( monitor == null ) throw new ArgumentNullException( "monitor" );
+            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
             using( monitor.OpenTrace( $"Real Objects: {EngineMap.RawMappings.Count} mappings for {_concreteClassesPath.Count} concrete paths." ) )
             {
                 foreach( var a in InterfaceAmbiguities )
                 {
-                    monitor.Error( $"Interface '{a[0].FullName}' is implemented by more than one concrete classes: {a.Skip( 1 ).Select( t => t.FullName ).Concatenate( "', '" )}." );
+                    monitor.Error( $"Interface '{a[0].FullName}' is implemented by more than one concrete classes: {a.Skip( 1 ).Select( t => t.ToCSharpName() ).Concatenate( "', '" )}." );
                 }
                 foreach( var a in ClassAmbiguities )
                 {
-                    monitor.Error( $"Base class '{a[0].FullName}' has more than one concrete specialization: '{a.Skip( 1 ).Select( t => t.FullName ).Concatenate( "', '" )}'." );
+                    monitor.Error( $"Base class '{a[0].FullName}' has more than one concrete specialization: '{a.Skip( 1 ).Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
                 }
                 CommonLogAndWarings( monitor, AbstractTails );
             }
@@ -96,7 +94,7 @@ namespace CK.Setup
         {
             if( abstractTails.Count > 0 )
             {
-                monitor.Warn( $"Abstract classes without specialization are ignored: {abstractTails.Select( t => t.FullName ).Concatenate()}." );
+                monitor.Warn( $"Abstract classes without specialization are ignored: {abstractTails.Select( t => t.ToCSharpName() ).Concatenate()}." );
             }
         }
     }

@@ -31,8 +31,8 @@ namespace CK.StObj.Engine.Tests.Service
             result.Map.Services.SimpleMappings.ContainsKey( typeof( IHostedService ) ).Should().BeFalse();
             IStObjServiceClassDescriptor s1 = result.Map.Services.SimpleMappings[typeof( S1 )];
             IStObjServiceClassDescriptor s2 = result.Map.Services.SimpleMappings[typeof( S2 )];
-            s1.MultipleMappings.Should().BeEquivalentTo( typeof( IHostedService ) );
-            s2.MultipleMappings.Should().BeEquivalentTo( typeof( IHostedService ) );
+            s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IHostedService ) } );
+            s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IHostedService ) } );
             s1.IsScoped.Should().BeFalse( "Nothing prevents S1 to be singleton." );
             s2.IsScoped.Should().BeFalse( "Nothing prevents S2 to be singleton." );
 
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.Service
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var s = TestHelper.GetAutomaticServices( collector, null ).Services;
-                    var resolved = s.GetService<MayWork>();
+                    var resolved = s.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeEmpty();
                 }
                 logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
@@ -124,7 +124,7 @@ namespace CK.StObj.Engine.Tests.Service
                         services.Services.AddSingleton( typeof( IEnumerable<int> ), explicitInstance );
 
                     } ).Services;
-                    var resolved = s.GetService<MayWork>();
+                    var resolved = s.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeSameAs( explicitInstance );
 
                 }
@@ -179,14 +179,14 @@ namespace CK.StObj.Engine.Tests.Service
             result.Map.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
             IStObjFinalImplementation g = result.Result.EngineMap.StObjs.ToHead( typeof( IUserGoogle ) )!.FinalImplementation;
             IStObjFinalImplementation o = result.Result.EngineMap.StObjs.ToHead( typeof( UserOffice ) )!.FinalImplementation;
-            g.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
-            o.MultipleMappings.Should().BeEquivalentTo( typeof( IAuthProvider ) );
+            g.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
+            o.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
 
             var authProviders = result.Services.GetRequiredService<IEnumerable<IAuthProvider>>();
             var gS = result.Services.GetRequiredService<IUserGoogle>();
             var oS = result.Services.GetRequiredService<UserOffice>();
 
-            authProviders.Should().BeEquivalentTo( gS, oS );
+            authProviders.Should().BeEquivalentTo( new IAuthProvider[] { gS, oS } );
 
         }
 
@@ -217,7 +217,7 @@ namespace CK.StObj.Engine.Tests.Service
             var g = result.Services.GetRequiredService<IUserGoogle>();
             var o = result.Services.GetRequiredService<UserOffice>();
 
-            c.Providers.Should().BeEquivalentTo( g, o );
+            c.Providers.Should().BeEquivalentTo( new IAuthProvider[] { g, o } );
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void IsMutiple_works_on_external_interfaces_and_this_is_the_magic_for_IHostedService_auto_registering()
         {
-            // Here class HNot is a IOfficialHostedService but not an IAutoService and not explictly registered: it is not automaticall registered.
+            // Here class HNot is a IOfficialHostedService but not an IAutoService and not explicitly registered: it is not automatically registered.
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
@@ -247,8 +247,8 @@ namespace CK.StObj.Engine.Tests.Service
                 IStObjServiceClassDescriptor s2 = result.Map.Services.SimpleMappings[typeof( H2 )];
 
                 result.Map.Services.SimpleMappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
-                s1.MultipleMappings.Should().BeEquivalentTo( typeof( IOfficialHostedService ) );
-                s2.MultipleMappings.Should().BeEquivalentTo( typeof( IOfficialHostedService ) );
+                s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
+                s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
                 s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
                 s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
 
@@ -277,8 +277,8 @@ namespace CK.StObj.Engine.Tests.Service
                 IStObjServiceClassDescriptor s1 = result.Map.Services.SimpleMappings[typeof( H1 )];
                 IStObjServiceClassDescriptor s2 = result.Map.Services.SimpleMappings[typeof( H2 )];
                 result.Map.Services.SimpleMappings.ContainsKey( typeof( HNot ) ).Should().BeFalse( "HNot is not an AutoService!" );
-                s1.MultipleMappings.Should().BeEquivalentTo( typeof( IOfficialHostedService ) );
-                s2.MultipleMappings.Should().BeEquivalentTo( typeof( IOfficialHostedService ) );
+                s1.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
+                s2.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IOfficialHostedService ) } );
                 s1.IsScoped.Should().BeFalse( "Nothing prevents H1 to be singleton." );
                 s2.IsScoped.Should().BeTrue( "H2 is IScopedAutoService." );
 
@@ -336,7 +336,7 @@ namespace CK.StObj.Engine.Tests.Service
                 result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
-                m.All.Should().BeEquivalentTo( result.Services.GetService<ManyAuto>(), result.Services.GetService<ManySingleton>() );
+                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManySingleton>() } );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -347,7 +347,7 @@ namespace CK.StObj.Engine.Tests.Service
                 result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
-                m.All.Should().BeEquivalentTo( result.Services.GetService<ManyAuto>(), result.Services.GetService<ManyScoped>() );
+                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManyScoped>() } );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -360,9 +360,9 @@ namespace CK.StObj.Engine.Tests.Service
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
                 m.All.Should().HaveCount( 3 )
-                              .And.Contain( result.Services.GetService<ManyAuto>() )
-                              .And.Contain( result.Services.GetService<ManySingleton>() )
-                              .And.Contain( result.Services.GetService<ManyScoped>() );
+                              .And.Contain( result.Services.GetRequiredService<ManyAuto>() )
+                              .And.Contain( result.Services.GetRequiredService<ManySingleton>() )
+                              .And.Contain( result.Services.GetRequiredService<ManyScoped>() );
             }
         }
 
@@ -379,7 +379,7 @@ namespace CK.StObj.Engine.Tests.Service
                 result.Map.Services.SimpleMappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Could be resolved as Singleton, but Scoped as stated." );
 
                 var m = result.Services.GetRequiredService<ManyConsumer>();
-                m.All.Should().BeEquivalentTo( result.Services.GetService<ManyAuto>(), result.Services.GetService<ManySingleton>() );
+                m.All.Should().BeEquivalentTo( new IMany[] { result.Services.GetRequiredService<ManyAuto>(), result.Services.GetRequiredService<ManySingleton>() } );
             }
         }
 

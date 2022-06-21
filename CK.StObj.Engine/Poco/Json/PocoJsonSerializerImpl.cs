@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -83,7 +82,7 @@ namespace CK.Setup.Json
                                             {
                                                 read.Append( "if( " ).Append( variableName ).Append( " != null ) " ).NewLine();
                                             }
-                                            read.Append( "((" ).AppendCSharpName( root.PocoClass ).Append( ')' ).Append( variableName ).Append( ')' ).Append( ".Read( ref r, options );" );
+                                            read.Append( "((" ).AppendCSharpName( root.PocoClass, true, true, true ).Append( ')' ).Append( variableName ).Append( ')' ).Append( ".Read( ref r, options );" );
                                             if( isNullable )
                                             {
                                                 read.NewLine().Append( "else" ).NewLine();
@@ -93,7 +92,7 @@ namespace CK.Setup.Json
                                         if( assignOnly )
                                         {
                                             read.Append( variableName )
-                                                .Append( " = new " ).AppendCSharpName( root.PocoClass )
+                                                .Append( " = new " ).AppendCSharpName( root.PocoClass, true, true, true )
                                                 .Append( "( ref r, options );" );
                                         }
                                     } );

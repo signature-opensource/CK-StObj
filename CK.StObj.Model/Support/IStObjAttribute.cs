@@ -17,19 +17,22 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the container of the object.
-        /// This property is inherited from base classes that are not Real Objects.
+        /// This property is inherited from base classes that are not Real Objects (or marked with <see cref="CKTypeDefinerAttribute"/>).
         /// </summary>
         Type? Container { get; }
 
         /// <summary>
-        /// Gets the kind of object (simple item, group or container).
-        /// This property is inherited from base classes that are not Real Objects.
+        /// Gets or sets how this object must be considered regarding other items: it can be a <see cref="DependentItemKindSpec.Item"/>, 
+        /// a <see cref="DependentItemKindSpec.Group"/> or a <see cref="DependentItemKindSpec.Container"/>.
+        /// When let to the default <see cref="DependentItemKindSpec.Unknown"/>, this property is inherited (it is eventually 
+        /// considered as <see cref="DependentItemKindSpec.Container"/> when not set).
+        /// This property is inherited from base classes that are not Real Objects (or marked with <see cref="CKTypeDefinerAttribute"/>).
         /// </summary>
         DependentItemKindSpec ItemKind { get; }
 
         /// <summary>
         /// Gets how Ambient Properties that reference the object must be tracked.
-        /// This property is inherited from base classes that are not Real Objects.
+        /// This property is inherited from base classes that are not Real Objects (or marked with <see cref="CKTypeDefinerAttribute"/>).
         /// </summary>
         TrackAmbientPropertiesMode TrackAmbientProperties { get; }
 
