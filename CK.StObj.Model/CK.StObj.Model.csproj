@@ -14,4 +14,12 @@ Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStOb
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="CK.StObj.Model.targets">
+		<Pack>true</Pack>
+		<PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
+    </Content>
+  </ItemGroup>
+
 </Project>
