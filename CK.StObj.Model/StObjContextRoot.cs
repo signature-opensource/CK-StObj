@@ -205,11 +205,11 @@ namespace CK.Core
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             lock( _alreadyHandled )
             {
-                return LockedGetStObjMap( info, ref monitor );
+                return LockedGetStObjMapFromInfo( info, ref monitor );
             }
         }
 
-        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
+        static IStObjMap? LockedGetStObjMapFromInfo( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
         {
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             monitor = LockedEnsureMonitor( monitor );
@@ -241,7 +241,7 @@ namespace CK.Core
             {
                 var info = LockedGetMapInfo( a, ref monitor );
                 if( info == null ) return null;
-                return LockedGetStObjMap( info, ref monitor );
+                return LockedGetStObjMapFromInfo( info, ref monitor );
             }
         }
 
@@ -259,7 +259,7 @@ namespace CK.Core
                 if( _alreadyHandled.TryGetValue( signature.ToString(), out var info ) )
                 {
                     Debug.Assert( info != null );
-                    return LockedGetStObjMap( info, ref monitor );
+                    return LockedGetStObjMapFromInfo( info, ref monitor );
 
                 }
                 return null;
@@ -274,10 +274,10 @@ namespace CK.Core
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static IStObjMap? Load( string assemblyName, IActivityMonitor? monitor = null )
         {
-            if( string.IsNullOrEmpty( assemblyName ) ) throw new ArgumentNullException( nameof( assemblyName ) );
+            Throw.CheckNotNullOrEmptyArgument( assemblyName );
 
             // We could support here that if a / or \ appear in the name, then its a path and then we could use Assembly.LoadFile.
-            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
+            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) Throw.ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
 
             string assemblyNameWithExtension; 
             if( assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) || assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
@@ -308,7 +308,7 @@ namespace CK.Core
                             if( info != null )
                             {
                                 monitor.CloseGroup( $"Found existing map from signature file {assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}: {info}." );
-                                return LockedGetStObjMap( info, ref monitor );
+                                return LockedGetStObjMapFromInfo( info, ref monitor );
                             }
                             monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' ({sig}). Trying to load the assembly." );
                         }
@@ -319,7 +319,7 @@ namespace CK.Core
                         var a = Assembly.LoadFile( assemblyFullPath );
                         info = LockedGetMapInfo( a, ref monitor );
                         if( info == null ) return null;
-                        return LockedGetStObjMap( info, ref monitor );
+                        return LockedGetStObjMapFromInfo( info, ref monitor );
                     }
                     catch( Exception ex )
                     {

@@ -21,8 +21,13 @@ namespace CK.Setup
         /// that contains the SHA1 signature of an existing map. In such case, the assembly generation is skipped
         /// and the existing map should be used.
         /// See <see cref="StObjContextRoot.GetMapInfo(SHA1Value, IActivityMonitor?)"/>.
+        /// <para>
+        /// Those signature files are automatically deleted on build thanks to the CK.StObj.Model.targets that
+        /// is added as a NuGet build transitive dependency: all projects that depend on CK.StObj.Model will
+        /// have this behavior.
+        /// </para>
         /// </summary>
-        public const string ExistsSignatureFileExtension = ".exists.txt";
+        public const string ExistsSignatureFileExtension = ".ckode-gen-signature.txt";
 
 
         /// <summary>

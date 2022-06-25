@@ -34,10 +34,9 @@ namespace CK.Setup
         /// <param name="projectPath">
         /// The target project path into which a "$StObjGen" folder is updated.
         /// </param>
-        public ProjectSourceFileHandler(
-            IActivityMonitor monitor,
-            NormalizedPath originPath,
-            NormalizedPath projectPath )
+        public ProjectSourceFileHandler( IActivityMonitor monitor,
+                                         NormalizedPath originPath,
+                                         NormalizedPath projectPath )
         {
             _monitor = monitor;
             _originPath = originPath;
@@ -52,7 +51,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="r">The generation result.</param>
         /// <returns>
-        /// True if tehre is no generated source files or if the primary source file exists and has
+        /// True if there is no generated source files or if the primary source file exists and has
         /// the same signature as the generated result. False otherwise.
         /// </returns>
         public bool MoveFilesAndCheckSignature( StObjCollectorResult.CodeGenerateResult r )
@@ -82,7 +81,7 @@ namespace CK.Setup
                             }
                             // The signature has matched.
                             // We skip the move in such case since we want the embedded source files that already exist to
-                            // actually be editable by the developper (Ctrl+K,D for a simple reformating
+                            // actually be editable by the developer (Ctrl+K,D for a simple reformatting
                             // and/or manual fixes to fix the generated code.
                             // Note that we are leaving the original sources in the working folder.
                             if( !modified ) continue;

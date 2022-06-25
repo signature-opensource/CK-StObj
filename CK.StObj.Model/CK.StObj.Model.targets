@@ -1,9 +1,13 @@
 <Project>
-  <Target Name="BeforeBuild">
-    <!-- MSBuild stopped to delete foreign file when building
-    This make CKSetup loading old stobjmap.
-    To avoid this, we delete the signature(which allow to know that the stobjmap has been generated) on build.
-  -->
-      <Delete Files="$(OutDir)CK.StObj.AutoAssembly.dll.exists.txt"/>
+   
+  <Target Name="DeleteCKodeGenSignatureFiles" AfterTargets="CoreBuild">
+    <ItemGroup>
+      <FilesToDelete Include="$(OutDir)*.dll.ckode-gen-signature.txt"/>
+    </ItemGroup>
+    <Delete Files="@(FilesToDelete)" >
+      <Output TaskParameter="DeletedFiles" ItemName="DeletedList"/>
+    </Delete>
+    <Message Text="Deleted signature files: '@(DeletedList)'"/>
   </Target>
+  
 </Project>
