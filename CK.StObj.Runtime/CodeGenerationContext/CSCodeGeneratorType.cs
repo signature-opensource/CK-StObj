@@ -35,7 +35,7 @@ namespace CK.Setup
         public virtual IAutoImplementorProperty? HandleProperty( IActivityMonitor monitor, PropertyInfo p ) => this;
 
         /// <summary>
-        /// See <see cref="ICodeGenerator.Implement"/>.
+        /// See <see cref="ICSCodeGenerator.Implement"/>.
         /// This default implementation returns <see cref="CSCodeGenerationResult.Success"/>: the abstract <see cref="Implement(IActivityMonitor, Type, ICSCodeGenerationContext, ITypeScope)"/> "type
         /// based" method must do the job.
         /// </summary>
@@ -47,7 +47,7 @@ namespace CK.Setup
         public virtual CSCodeGenerationResult Implement( IActivityMonitor monitor, MethodInfo m, ICSCodeGenerationContext c, ITypeScope typeBuilder ) => CSCodeGenerationResult.Success;
 
         /// <summary>
-        /// See <see cref="ICodeGenerator.Implement"/>.
+        /// See <see cref="ICSCodeGenerator.Implement"/>.
         /// This default implementation returns <see cref="CSCodeGenerationResult.Success"/>: the abstract <see cref="Implement(IActivityMonitor, Type, ICSCodeGenerationContext, ITypeScope)"/> "type
         /// based" method must do the job.
         /// </summary>

@@ -29,7 +29,7 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// At the end of the process, this container is used as the base service provider of code generation (see
-        /// <see cref="ICSCodeGenerationContext.GlobalServiceContainer"/>).
+        /// <see cref="ICodeGenerationContext.GlobalServiceContainer"/>).
         /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }

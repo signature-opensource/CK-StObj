@@ -22,12 +22,12 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/>, <see cref="ICSCodeGeneratorType"/>
-        /// or <see cref="ICodeGenerator"/> that initiated this second pass.
+        /// or <see cref="ICSCodeGenerator"/> that initiated this second pass.
         /// </summary>
         public object FirstRunner { get; }
 
         /// <summary>
-        /// Gets whether this is a global <see cref="ICodeGenerator"/> or a targeted <see cref="IAutoImplementor{T}"/> implementor.
+        /// Gets whether this is a global <see cref="ICSCodeGenerator"/> or a targeted <see cref="IAutoImplementor{T}"/> implementor.
         /// </summary>
         [MemberNotNullWhen( false, nameof(Target) )]
         public bool IsCodeGenerator => Target == null;
@@ -72,8 +72,11 @@ namespace CK.Setup
         ///     <item>If <see cref="Implementor"/> is a Type: instantiating it and executing its <see cref="IAutoImplementor{T}.Implement"/> method.</item>
         ///     <item>If <see cref="Implementor"/> is a MethodInfo: calling it.</item>
         /// </list>
-        /// Subsequent runs can use methods as long as a <see cref="CSCodeGenerationResult(string)"/> is returned by implementors.
+        /// Subsequent runs can use methods as long as a <see cref="CSCodeGenerationResult(string)"/> or <see cref="CSCodeGenerationResult(Type)"/>
+        /// is returned by implementors.
+        /// <para>
         /// On error, a fatal or error message has necessarily been logged.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="context">The code generation context.</param>

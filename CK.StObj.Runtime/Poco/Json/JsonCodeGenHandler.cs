@@ -20,7 +20,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Gets the type handled.
         /// It can differ from the <see cref="JsonTypeInfo.Type"/> if nullability differs from
-        /// the "null normality" or this <see cref="IsTypeMapping"/> is true.
+        /// the "null normality" or this <see cref="TypeMapping"/> is not null.
         /// </summary>
         public virtual NullableTypeTree Type => TypeInfo.Type;
 
@@ -72,7 +72,7 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Gets a handler that unambiguously handles this <see cref="Type"/>: this Type is not the same as the
-        /// actual <see cref="TypeInfo.Type"/>.
+        /// actual <see cref="JsonTypeInfo.Type"/>.
         /// </summary>
         public virtual JsonCodeGenHandler? TypeMapping => null;
 
@@ -94,7 +94,7 @@ namespace CK.Setup.Json
 
         /// <summary>
         /// Generates the code required to read a value into a <paramref name="variableName"/>.
-        /// This calls <see cref="JsonTypeInfo.GenerateRead"/> (with <see cref="IsNullable"/>) or, if
+        /// This calls <see cref="JsonCodeGenHandler.GenerateRead(ICodeWriter, string, bool)"/> (with <see cref="IsNullable"/>) or, if
         /// <see cref="JsonTypeInfo.IsFinal"/> is false (applies to reference types only) a call
         /// to the generic ReadObject method is generated.
         /// </summary>

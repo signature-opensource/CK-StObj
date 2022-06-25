@@ -43,7 +43,6 @@ namespace CK.Setup
         ///     Guid, decimal, System.Numerics.BigInteger, uint, ulong, ushort, sbyte. 
         /// </code>
         /// </summary>
-        /// <param name="this"></param>
         /// <param name="t"></param>
         /// <returns></returns>
         public static bool IsBasicPropertyType( Type t ) => Array.IndexOf( _basicPropertyTypes, t ) >= 0;

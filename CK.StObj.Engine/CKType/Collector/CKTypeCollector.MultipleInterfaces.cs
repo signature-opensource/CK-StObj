@@ -14,7 +14,7 @@ namespace CK.Setup
         readonly Dictionary<Type, MultipleImpl> _multipleMappings;
 
         /// <summary>
-        /// To support IEnumerable<T> where T is [IsMultiple] with constraint propagations, we need to
+        /// To support IEnumerable&lt;T&gt; where T is [IsMultiple] with constraint propagations, we need to
         /// analyze the final implementations of the multiple interface.
         /// This is currently not exported, it only computes the AutoServiceKind of an IEnumerable of [IsMultiple] interfaces
         /// that are actually used by an <see cref="AutoServiceClassInfo"/> (not all of them are computed).

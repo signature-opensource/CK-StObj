@@ -70,6 +70,7 @@ namespace CK.Testing.StObjEngine
 
             IStObjEngineMap IGeneratedBinPath.EngineMap => Result!.EngineMap!;
 
+            /// <inheritdoc />
             public IDictionary<object, object?> Memory { get; }
 
 

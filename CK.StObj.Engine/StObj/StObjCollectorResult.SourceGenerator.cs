@@ -51,15 +51,18 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Executes the first pass of code generation. This must be called on all <see cref="ICSCodeGenerationContext.AllBinPaths"/>, starting with
-        /// the <see cref="ICSCodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
+        /// Executes the first pass of code generation. This must be called on all <see cref="ICodeGenerationContext.AllBinPaths"/>, starting with
+        /// the <see cref="ICodeGenerationContext.UnifiedBinPath"/>, before finalizing code generation by calling <see cref="GenerateSourceCodeSecondPass"/>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="codeGenContext">The code generation context that must be the one of this result.</param>
         /// <param name="informationalVersion">Optional informational version attribute content.</param>
         /// <param name="collector">The collector for second pass actions (for this <paramref name="codeGenContext"/>).</param>
         /// <returns>True on success, false on error.</returns>
-        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext, string? informationalVersion, List<MultiPassCodeGeneration> collector )
+        public bool GenerateSourceCodeFirstPass( IActivityMonitor monitor,
+                                                 ICSCodeGenerationContext codeGenContext,
+                                                 string? informationalVersion,
+                                                 List<MultiPassCodeGeneration> collector )
         {
             if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
             if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );

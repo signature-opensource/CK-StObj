@@ -22,7 +22,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the types that must be marshalled for this enumeration to be marshallable.
-        /// This is null until the <see cref="ComputeFinalTypeKind"/> method has been called.
+        /// This is null until the <see cref="AutoServiceClassInfo.ComputeFinalTypeKind"/> method has been called.
         /// This is empty (if this service is not marshallable), it contains this <see cref="EnumeratedType"/>
         /// (if the enumerated interface is marked with [IsMarshallable] and is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/>
         /// available), or is a set of one or more types that must have a marshaller.
@@ -32,8 +32,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets the types that must be marshalled for this enumeration to be marshallable inside the same process.
         /// This is empty if this service is not marshallable or if it doesn't need to be: only services marked
-        /// with <see cref="AutoServiceKind.IsFrontService"/> are concerned since, by design, services that are
-        /// not front services at all or are <see cref="AutoServiceKind.IsFrontProcessService"/> don't need to be
+        /// with <see cref="CKTypeKind.IsFrontService"/> are concerned since, by design, services that are
+        /// not front services at all or are <see cref="CKTypeKind.IsFrontProcessService"/> don't need to be
         /// marshalled inside the same process.
         /// <para>
         /// Note that it contains this <see cref="EnumeratedType"/> if the enumerated interface is marked with [IsMarshallable] and is the one

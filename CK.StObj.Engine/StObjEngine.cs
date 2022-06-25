@@ -80,7 +80,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets whether this engine is running or has <see cref="Run"/> (it can run only once).
+        /// Gets whether this engine is running or has <see cref="Run()"/> (it can run only once).
         /// </summary>
         public bool Started => _startContext != null;
 
@@ -125,13 +125,13 @@ namespace CK.Setup
         /// <returns>True on success, false if an error occurred.</returns>
         public bool Run( IStObjCollectorResultResolver resolver )
         {
-            if( resolver == null ) throw new ArgumentNullException( nameof( resolver ) );
+            Throw.CheckNotNullArgument( resolver );
             return DoRun( resolver );
         }
 
         bool DoRun( IStObjCollectorResultResolver? resolver )
         {
-            if( _startContext != null ) throw new InvalidOperationException( "Run can be called only once." );
+            Throw.CheckState( "Run can be called only once.", _startContext == null );
             if( !PrepareAndCheckConfigurations() ) return false;
             if( _ckSetupConfig != null && !ApplyCKSetupConfiguration() ) return false;
             var unifiedBinPath = CreateUnifiedBinPathConfiguration( _monitor, _config.BinPaths, _config.GlobalExcludedTypes );
