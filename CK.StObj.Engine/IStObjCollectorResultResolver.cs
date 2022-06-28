@@ -9,19 +9,11 @@ namespace CK.Setup
     public interface IStObjCollectorResultResolver
     {
         /// <summary>
-        /// Computes the <see cref="StObjCollectorResult"/> for the unified bin path.
+        /// Computes the <see cref="StObjCollectorResult"/> for the bin path.
         /// </summary>
-        /// <param name="unified">The unified bin path.</param>
+        /// <param name="binPath">The bin path for which a collector result must be provided.</param>
         /// <returns>The collector or null on error.</returns>
-        StObjCollectorResult? GetUnifiedResult( BinPathConfiguration unified );
-
-        /// <summary>
-        /// Computes a <see cref="StObjCollectorResult"/> for a set of equivalent bin paths.
-        /// </summary>
-        /// <param name="head">The configuration that represents the set.</param>
-        /// <param name="all">The set of equivalent bin paths (including the <paramref name="head"/>.</param>
-        /// <returns>The collector or null on error.</returns>
-        StObjCollectorResult? GetSecondaryResult( BinPathConfiguration head, IEnumerable<BinPathConfiguration> all );
+        StObjCollectorResult? GetResult( IRunningBinPathConfiguration binPath );
     }
 
 }

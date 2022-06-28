@@ -94,8 +94,7 @@ namespace CK.Setup
                     DoMoveOrCopy( _monitor, fPath, t, copy: false );
                 }
                 else if( f.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase )
-                         || f.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase )
-                         || f.EndsWith( StObjEngineConfiguration.ExistsSignatureFileExtension, StringComparison.OrdinalIgnoreCase ) ) continue;
+                         || f.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) ) continue;
                 else
                 {
                     // Other generated files?

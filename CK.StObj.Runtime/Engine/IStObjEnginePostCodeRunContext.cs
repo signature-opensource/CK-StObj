@@ -27,18 +27,12 @@ namespace CK.Setup
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 
         /// <summary>
-        /// Gets the unified bin path.
-        /// This is the first to be processed.
-        /// </summary>
-        ICodeGenerationContext UnifiedBinPath { get; }
-
-        /// <summary>
-        /// Gets all the <see cref="ICodeGenerationContext"/> including the <see cref="UnifiedBinPath"/>.
+        /// Gets all the <see cref="ICodeGenerationContext"/>.
         /// </summary>
         IReadOnlyList<ICodeGenerationContext> AllBinPaths { get; }
 
         /// <summary>
-        /// Pushes a defered action.
+        /// Pushes a deferred action.
         /// It will be executed after the Run call on all aspects.
         /// An action can be pushed at any moment and a pushed action can push another action.
         /// </summary>

@@ -231,8 +231,8 @@ namespace CK.Setup
         /// <param name="context">The generation context.</param>
         /// <returns>Whether the first pass succeeded and an optional second pass to execute.</returns>
         public static (bool Success, MultiPassCodeGeneration? SecondPass) FirstPass( IActivityMonitor monitor,
-                                                                                      ICSCodeGenerator first,
-                                                                                      ICSCodeGenerationContext context )
+                                                                                     ICSCodeGenerator first,
+                                                                                     ICSCodeGenerationContext context )
         {
             var r = first.Implement( monitor, context );
             return HandleFirstResult<Type>( monitor, r, first, context, null, null );

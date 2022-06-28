@@ -64,8 +64,8 @@ namespace CK.Setup
                                                  string? informationalVersion,
                                                  List<MultiPassCodeGeneration> collector )
         {
-            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
-            if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
+            Throw.CheckState( EngineMap != null );
+            Throw.CheckArgument( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
             try
             {
                 Debug.Assert( _valueCollector != null );
@@ -179,6 +179,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="finalFilePath">The final generated assembly full path.</param>
         /// <param name="codeGenContext">The code generation context.</param>
+        /// <param name="signatureCode">The SHA1 of the BinPath group.</param>
         /// <param name="secondPass">
         /// The list of second passes actions to apply on the <see cref="ICSCodeGenerationContext"/> before
         /// generating the source file and compiling them (<see cref="ICSCodeGenerationContext.CompileOption"/>).
@@ -192,11 +193,12 @@ namespace CK.Setup
         public CodeGenerateResult GenerateSourceCodeSecondPass( IActivityMonitor monitor,
                                                                 string finalFilePath,
                                                                 ICSCodeGenerationContext codeGenContext,
+                                                                in SHA1Value signatureCode,
                                                                 List<MultiPassCodeGeneration> secondPass,
                                                                 Func<IActivityMonitor, SHA1Value, bool> availableStObjMap )
         {
-            if( EngineMap == null ) throw new InvalidOperationException( nameof( HasFatalError ) );
-            if( codeGenContext.Assembly != _tempAssembly ) throw new ArgumentException( "CodeGenerationContext mismatch.", nameof( codeGenContext ) );
+            Throw.CheckNotNullArgument( EngineMap );
+            Throw.CheckArgument( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
             List<string> generatedFileNames = new List<string>();
             try
             {
@@ -223,43 +225,41 @@ namespace CK.Setup
                     monitor.Info( "Configured GenerateSourceFile is false and CompileOption is None: nothing more to do." );
                     return new CodeGenerateResult( true, generatedFileNames );
                 }
-                // The signature may be externally injected one day but currently, we always compute it.
-                SHA1Value signature = SHA1Value.Zero;
 
+                ICodeWorkspace? ws = codeGenContext.Assembly.Code;
+
+                // The SHA1 is currently always provided.
+                // However, the code below is kept in comment just in case, one day, we need
+                // to compute the generated source code SHA1.
+                //
                 // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
                 // without the signature header, a part is injected at the top of the file (before anything else) and
                 // the final big string is built only once.
-                var ws = codeGenContext.Assembly.Code;
-                if( signature.IsZero || signature == SHA1Value.Empty )
-                {
-                    using( var s = new HashStream( System.Security.Cryptography.HashAlgorithmName.SHA1 ) )
-                    using( var w = new StreamWriter( s ) )
-                    {
-                        ws.WriteGlobalSource( w );
-                        w.Flush();
-                        signature = new SHA1Value( s.GetFinalResult().AsSpan() );
-                    }
-                    monitor.Info( $"Computed file signature: {signature}." );
-                }
-                else
-                {
-                    monitor.Info( $"Using provided file signature: {signature}." );
-                }
 
-                var fSignature = finalFilePath + StObjEngineConfiguration.ExistsSignatureFileExtension;
-                monitor.Info( $"Creating signature file '{fSignature}'." );
-                File.WriteAllText( fSignature, signature.ToString() );
+                //if( signatureCode.IsZero || signatureCode == SHA1Value.Empty )
+                //{
+                //    using( var s = new HashStream( System.Security.Cryptography.HashAlgorithmName.SHA1 ) )
+                //    using( var w = new StreamWriter( s ) )
+                //    {
+                //        ws.WriteGlobalSource( w );
+                //        w.Flush();
+                //        signatureCode = new SHA1Value( s.GetFinalResult().AsSpan() );
+                //    }
+                //    monitor.Info( $"Computed file signature: {signatureCode}." );
+                //}
+                //else
+                //{
+                //    monitor.Info( $"Using provided file signature: {signatureCode}." );
+                //}
 
-                if( availableStObjMap( monitor, signature ) )
+                if( availableStObjMap( monitor, signatureCode ) )
                 {
                     monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and the compilation." );
-                    generatedFileNames.Add( fSignature );
-                    Debug.Assert( generatedFileNames.Count == 1 );
-                    return new CodeGenerateResult( true, generatedFileNames, signature );
+                    return new CodeGenerateResult( true, generatedFileNames, signatureCode );
                 }
 
                 // Injects the SHA1 signature at the top.
-                ws.Global.BeforeNamespace.CreatePart( top: true ).Append( @"[assembly: CK.StObj.Signature( " ).AppendSourceString( signature.ToString() ).Append( " )]" );
+                ws.Global.BeforeNamespace.CreatePart( top: true ).Append( @"[assembly: CK.StObj.Signature( " ).AppendSourceString( signatureCode.ToString() ).Append( " )]" );
 
                 // The source code is available.
                 string code = ws.GetGlobalSource();
@@ -275,17 +275,17 @@ namespace CK.Setup
                 if( codeGenContext.CompileOption == CompileOption.None )
                 {
                     monitor.Info( "Configured CompileOption is None: nothing more to do." );
-                    return new CodeGenerateResult( true, generatedFileNames, signature );
+                    return new CodeGenerateResult( true, generatedFileNames, signatureCode );
                 }
 
                 using( monitor.OpenInfo( codeGenContext.CompileOption == CompileOption.Compile
-                                            ? "Compiling source code (using C# v8.0 language version)."
-                                            : "Only parsing source code, using C# v8.0 language version (skipping compilation)." ) )
+                                            ? "Compiling source code (using C# v9.0 language version)."
+                                            : "Only parsing source code, using C# v9.0 language version (skipping compilation)." ) )
                 {
                     var result = CodeGenerator.Generate( code,
                                                          codeGenContext.CompileOption == CompileOption.Parse ? null : finalFilePath,
                                                          ws.AssemblyReferences,
-                                                         new CSharpParseOptions( LanguageVersion.CSharp8 ) );
+                                                         new CSharpParseOptions( LanguageVersion.CSharp9 ) );
 
                     if( result.Success && codeGenContext.CompileOption == CompileOption.Compile )
                     {
@@ -297,7 +297,7 @@ namespace CK.Setup
                         monitor.Debug( code );
                         monitor.CloseGroup( "Failed" );
                     }
-                    return new CodeGenerateResult( result.Success, generatedFileNames, signature );
+                    return new CodeGenerateResult( result.Success, generatedFileNames, signatureCode );
                 }
                 
             }

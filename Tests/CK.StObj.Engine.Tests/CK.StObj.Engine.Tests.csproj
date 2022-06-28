@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -19,11 +19,12 @@
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <!-- This is required for HostedServiceLifetimeTriggerTests: OnHostStart/Stop[Async] support. -->
+    <!-- Required for HostedServiceLifetimeTriggerTests: OnHostStart/Stop[Async] support. -->
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="%24StObjGen\" />
     <Folder Include="Logs\" />
   </ItemGroup>
+
 </Project>

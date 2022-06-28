@@ -38,7 +38,7 @@ namespace CK.Setup
         /// side effects (from a bin path) are possible that may be useful to others.
         /// </para>
         /// <para>
-        /// This applies to the <see cref="ICodeGenerationContext.IsUnifiedRun"/> if the unified bin path doesn't correspond to any of the
+        /// This applies to the <see cref="ICodeGenerationContext.IsPrimaryRun"/> if the unified bin path doesn't correspond to any of the
         /// existing <see cref="BinPathConfiguration"/> (<see cref="IStObjEngineRunContext.IsUnifiedPure"/>).
         /// </para>
         /// </summary>

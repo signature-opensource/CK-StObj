@@ -44,7 +44,7 @@ namespace CK.Setup
 
         readonly IActivityMonitor _monitor;
         readonly IStObjEngineStatus _status;
-        readonly StObjEngineConfiguration _config;
+        readonly RunningStObjEngineConfiguration _config;
         readonly List<IStObjEngineAspect> _aspects;
         readonly List<Func<IActivityMonitor, IStObjEngineConfigureContext, bool>> _postActions;
         readonly Container _container;
@@ -54,7 +54,7 @@ namespace CK.Setup
 
         List<Type>? _explicitRegisteredTypes;
 
-        internal StObjEngineConfigureContext( IActivityMonitor monitor, StObjEngineConfiguration config, IStObjEngineStatus status )
+        internal StObjEngineConfigureContext( IActivityMonitor monitor, RunningStObjEngineConfiguration config, IStObjEngineStatus status )
         {
             _monitor = monitor;
             _config = config;
@@ -76,7 +76,7 @@ namespace CK.Setup
             _explicitRegisteredTypes.Add( type );
         }
 
-        public StObjEngineConfiguration StObjEngineConfiguration => _config;
+        public RunningStObjEngineConfiguration StObjEngineConfiguration => _config;
 
         internal IReadOnlyList<Type> ExplicitRegisteredTypes => (IReadOnlyList<Type>?)_explicitRegisteredTypes ?? Type.EmptyTypes;
 
@@ -90,13 +90,13 @@ namespace CK.Setup
 
         public void PushPostConfigureAction( Func<IActivityMonitor, IStObjEngineConfigureContext, bool> postAction ) => _trampoline.Push( postAction );
 
-        internal void CreateAndConfigureAspects( IReadOnlyList<IStObjEngineAspectConfiguration> configs, Func<bool> onError )
+        internal void CreateAspects( Func<bool> onError )
         {
             bool success = true;
-            using( _monitor.OpenTrace( $"Creating and configuring {configs.Count} aspect(s)." ) )
+            using( _monitor.OpenTrace( $"Creating {_config.Aspects.Count} aspect(s)." ) )
             {
                 var aspectsType = new HashSet<Type>();
-                foreach( var c in configs )
+                foreach( var c in _config.Aspects )
                 {
                     if( c == null ) continue;
                     string aspectTypeName = c.AspectType;
@@ -123,24 +123,32 @@ namespace CK.Setup
                             else
                             {
                                 _aspects.Add( a );
-                                using( _monitor.OpenTrace( $"Configuring aspect '{t.FullName}'." ) )
-                                {
-                                    try
-                                    {
-                                        if( !a.Configure( _monitor, this ) ) success = onError();
-                                    }
-                                    catch( Exception ex )
-                                    {
-                                        success = onError();
-                                        _monitor.Error( ex );
-                                    }
-                                }
-                                if( success )
-                                {
-                                    // Adds the aspect itself to the container.
-                                    _container.Add( t, a, null );
-                                }
+                                // Adds the aspect itself to the container.
+                                _container.Add( t, a, null );
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        internal void ConfigureAspects( Func<bool> onError )
+        {
+            bool success = true;
+            using( _monitor.OpenTrace( $"Configuring {_aspects.Count} aspect(s)." ) )
+            {
+                foreach( var a in _aspects )
+                {
+                    using( _monitor.OpenTrace( $"Configuring aspect '{a}'." ) )
+                    {
+                        try
+                        {
+                            if( !a.Configure( _monitor, this ) ) success = onError();
+                        }
+                        catch( Exception ex )
+                        {
+                            success = onError();
+                            _monitor.Error( ex );
                         }
                     }
                 }
@@ -148,6 +156,9 @@ namespace CK.Setup
                 if( success ) _container.ConfigureDone( _monitor );
             }
         }
+
+        IRunningStObjEngineConfiguration IStObjEngineConfigureContext.StObjEngineConfiguration => _config;
+
 
     }
 }

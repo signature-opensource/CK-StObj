@@ -221,7 +221,7 @@ namespace CK.Setup
         /// <param name="secondPass">The second pass collector.</param>
         public void RunFirstPass( IActivityMonitor monitor, ICSCodeGenerationContext c, List<MultiPassCodeGeneration> secondPass )
         {
-            if( _stubType == null ) throw new InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
+            if( _stubType == null ) Throw.InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
             ITypeScope cB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, _stubType );
 

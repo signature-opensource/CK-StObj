@@ -60,12 +60,6 @@ namespace CK.Testing.StObjEngine
                 }
             }
 
-            /// <summary>
-            /// Mutable list of <see cref="BinPathConfiguration"/>.
-            /// There is no check about these.
-            /// </summary>
-            public List<BinPathConfiguration> BinPathConfigurations { get; } = new List<BinPathConfiguration>();
-
             ISimpleServiceContainer IGeneratedBinPath.ServiceContainer => _container;
 
             IStObjEngineMap IGeneratedBinPath.EngineMap => Result!.EngineMap!;
@@ -73,8 +67,9 @@ namespace CK.Testing.StObjEngine
             /// <inheritdoc />
             public IDictionary<object, object?> Memory { get; }
 
+            IReadOnlyCollection<IRunningBinPathConfiguration> IGeneratedBinPath.BinPathConfigurations => Array.Empty<IRunningBinPathConfiguration>();
 
-            IReadOnlyCollection<BinPathConfiguration> IGeneratedBinPath.BinPathConfigurations => BinPathConfigurations;
+            bool IGeneratedBinPath.IsUnifiedPure => false;
         }
 
         /// <summary>
@@ -82,21 +77,20 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         public class CodeGenerationContext : ICSCodeGenerationContext
         {
-            readonly StObjEngine.SimpleEngineRunContext _global;
+            readonly SimpleEngineRunContext _global;
             readonly GeneratedBinPath _currentRun;
 
-            internal CodeGenerationContext( StObjEngine.SimpleEngineRunContext global )
+            internal CodeGenerationContext( SimpleEngineRunContext global )
             {
                 _global = global;
                 _currentRun = new GeneratedBinPath( global );
             }
 
             /// <summary>
-            /// Gets the unified generated bin path.
+            /// Gets the primary bin path.
             /// </summary>
-            public GeneratedBinPath UnifiedBinPath => _global.UnifiedBinPath;
+            public GeneratedBinPath PrimaryBinPath => _global.PrimaryBinPath;
 
-            IGeneratedBinPath ICodeGenerationContext.UnifiedBinPath => UnifiedBinPath;
 
             IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global._all.Select( g => g.CurrentRun ).ToArray();
 
@@ -112,7 +106,7 @@ namespace CK.Testing.StObjEngine
             /// </summary>
             public IDynamicAssembly Assembly => CurrentRun!.Result!.DynamicAssembly;
 
-            bool ICodeGenerationContext.IsUnifiedRun => CurrentRun == UnifiedBinPath;
+            bool ICodeGenerationContext.IsPrimaryRun => CurrentRun == PrimaryBinPath;
 
             IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._globalMemory;
 
@@ -124,16 +118,16 @@ namespace CK.Testing.StObjEngine
             /// <inheritdoc />
             public CompileOption CompileOption { get; set; }
 
-            void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
+            void ICodeGenerationContext.SetPrimaryRunResult( string key, object o, bool addOrUpdate )
             {
-                if( UnifiedBinPath != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
+                if( PrimaryBinPath != _global.PrimaryBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsPrimaryRun ) );
                 if( addOrUpdate ) _global._unifiedRunCache[key] = o;
                 else _global._unifiedRunCache.Add( key, o );
             }
 
-            object ICodeGenerationContext.GetUnifiedRunResult( string key )
+            object ICodeGenerationContext.GetPrimaryRunResult( string key )
             {
-                if( UnifiedBinPath == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsUnifiedRun ) );
+                if( PrimaryBinPath == _global.PrimaryBinPath ) throw new InvalidOperationException( nameof( ICSCodeGenerationContext.IsPrimaryRun ) );
                 return _global._unifiedRunCache[key];
             }
         }
@@ -144,19 +138,19 @@ namespace CK.Testing.StObjEngine
         /// <param name="unifiedResult">Optional result that must be valid.</param>
         public SimpleEngineRunContext( StObjCollectorResult? unifiedResult = null )
         {
-            if( unifiedResult != null && unifiedResult.HasFatalError ) throw new ArgumentException( nameof( unifiedResult ) ); 
+            Throw.CheckArgument( unifiedResult == null || !unifiedResult.HasFatalError ); 
             _all = new List<CodeGenerationContext>();
             _unifiedRunCache = new Dictionary<string, object>();
             _globalMemory = new Dictionary<object, object?>();
             _globalServiceContainer = new SimpleServiceContainer();
-            UnifiedBinPath = AddContext().CurrentRun;
-            UnifiedBinPath.Result = unifiedResult;
+            PrimaryBinPath = AddContext().CurrentRun;
+            PrimaryBinPath.Result = unifiedResult;
         }
 
         /// <summary>
         /// Gets the <see cref="UnifiedBinPath"/>.
         /// </summary>
-        public GeneratedBinPath UnifiedBinPath { get; }
+        public GeneratedBinPath PrimaryBinPath { get; }
 
         /// <summary>
         /// Gets the first context of <see cref="All"/>.
@@ -196,7 +190,7 @@ namespace CK.Testing.StObjEngine
                                                                                    StObjCollectorResult result,
                                                                                    CompileOption compileOption,
                                                                                    bool skipEmbeddedStObjMap,
-                                                                                   string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName,
+                                                                                   string assemblyName = StObjContextRoot.GeneratedAssemblyName,
                                                                                    bool saveSource = true )
         {
             if( result.HasFatalError ) return default;
@@ -209,7 +203,7 @@ namespace CK.Testing.StObjEngine
             Func<IActivityMonitor, SHA1Value, bool> mapFinder = skipEmbeddedStObjMap
                             ? ( m, v ) => false
                             : ( m, v ) => StObjContextRoot.GetMapInfo( v, m ) != null;
-            return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, secondPass, mapFinder );
+            return result.GenerateSourceCodeSecondPass( monitor, finalFilePath, ctx.UnifiedCodeContext, SHA1Value.Zero, secondPass, mapFinder );
         }
 
         /// <summary>
@@ -225,11 +219,11 @@ namespace CK.Testing.StObjEngine
         /// </param>
         /// <param name="compileOption">Compilation behavior.</param>
         /// <param name="saveSource">False to not save the generated source files.</param>
-        public static void GenerateAssembly(IActivityMonitor monitor, StObjCollectorResult result, CompileOption compileOption, bool skipEmbeddedStObjMap, string assemblyName = StObjEngineConfiguration.DefaultGeneratedAssemblyName, bool saveSource = true )
+        public static void GenerateAssembly(IActivityMonitor monitor, StObjCollectorResult result, CompileOption compileOption, bool skipEmbeddedStObjMap, string assemblyName = StObjContextRoot.GeneratedAssemblyName, bool saveSource = true )
         {
             if( !TryGenerateAssembly(monitor, result, compileOption, skipEmbeddedStObjMap, assemblyName, saveSource).Success )
             {
-                throw new Exception( $"Unable to generate assembly '{assemblyName}'." );
+                Throw.Exception( $"Unable to generate assembly '{assemblyName}'." );
             }
         }
 

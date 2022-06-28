@@ -28,19 +28,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the unified bin path.
-        /// This is the first to be processed.
+        /// This is the first to be processed and may be <see cref="IGeneratedBinPath.IsPure"/>.
         /// </summary>
-        IGeneratedBinPath UnifiedBinPath { get; }
+        IGeneratedBinPath PrimaryBinPath { get; }
 
         /// <summary>
-        /// Gets whether the <see cref="UnifiedBinPath"/> is purely a unified ones:
-        /// it is not an actual BinPath and has been initialized only with IPoco and IRealObjet (no services)
-        /// and no code generation is required since it will never "run".
-        /// </summary>
-        bool IsUnifiedPure { get; }
-
-        /// <summary>
-        /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="UnifiedBinPath"/>.
+        /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="PrimaryBinPath"/> (that is the first one).
         /// </summary>
         IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 

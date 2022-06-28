@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
 
 namespace CK.Setup
 {
@@ -9,107 +10,179 @@ namespace CK.Setup
     /// Encapsulates configuration of the StObjEngine.
     /// This configuration is compatible with CKSetup SetupConfiguration object.
     /// </summary>
-    public sealed partial class StObjEngineConfiguration
+    public sealed class StObjEngineConfiguration : StObjEngineConfiguration<BinPathConfiguration>
     {
-        /// <summary>
-        /// Default assembly name.
-        /// </summary>
-        public const string DefaultGeneratedAssemblyName = "CK.StObj.AutoAssembly";
-
-        /// <summary>
-        /// File extension added to the "<see cref="StObjEngineConfiguration.GeneratedAssemblyName"/>.dll" file
-        /// that contains the SHA1 signature of an existing map. In such case, the assembly generation is skipped
-        /// and the existing map should be used.
-        /// See <see cref="StObjContextRoot.GetMapInfo(SHA1Value, IActivityMonitor?)"/>.
-        /// <para>
-        /// Those signature files are automatically deleted on build thanks to the CK.StObj.Model.targets that
-        /// is added as a NuGet build transitive dependency: all projects that depend on CK.StObj.Model will
-        /// have this behavior.
-        /// </para>
-        /// </summary>
-        public const string ExistsSignatureFileExtension = ".ckode-gen-signature.txt";
-
-
-        /// <summary>
-        /// Gets the mutable list of all configuration aspects that must participate to setup.
-        /// </summary>
-        public List<IStObjEngineAspectConfiguration> Aspects { get; }
-
-        /// <summary>
-        /// Gets or sets the final Assembly name.
-        /// When set to null (the default), <see cref="DefaultGeneratedAssemblyName"/> "CK.StObj.AutoAssembly" is returned.
-        /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
-        /// </summary>
-        [AllowNull]
-        public string GeneratedAssemblyName
+        /// <inheritdoc />
+        public StObjEngineConfiguration()
         {
-            get => _generatedAssemblyName ?? DefaultGeneratedAssemblyName;
-            set
-            {
-                if( value != null && FileUtil.IndexOfInvalidFileNameChars( value ) >= 0 )
-                {
-                    throw new ArgumentException( $"Invalid file character in file name '{value}'." );
-                }
-                _generatedAssemblyName = String.IsNullOrWhiteSpace( value ) ? null : value;
-            }
         }
 
-        /// <summary>
-        /// Gets or sets the <see cref="System.Diagnostics.FileVersionInfo.ProductVersion"/> of
-        /// the <see cref="GeneratedAssemblyName"/> assembly or assemblies.
-        /// Defaults to null (no <see cref="System.Reflection.AssemblyInformationalVersionAttribute"/> should be generated).
-        /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
-        /// </summary>
-        public string? InformationalVersion { get; set; }
+        /// <inheritdoc />
+        public StObjEngineConfiguration( XElement e )
+            : base( e )
+        {
+        }
+
+        protected override BinPathConfiguration CreateBinPath( XElement e ) => new BinPathConfiguration( e );
+
+        #region Xml centralized names.
 
         /// <summary>
-        /// Gets ors sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
-        /// Defaults to false.
-        /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
+        /// The root configuration name is Setup (it can be anything).
         /// </summary>
-        public bool RevertOrderingNames { get; set; }
+        static public readonly XName xConfigurationRoot = XNamespace.None + "Setup";
 
         /// <summary>
-        /// Gets or sets whether the dependency graph (the set of IDependentItem) associated
-        /// to the StObj objects must be send to the monitor before sorting.
-        /// Defaults to false.
-        /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
+        /// The version attribute name.
         /// </summary>
-        public bool TraceDependencySorterInput { get; set; }
+        static public readonly XName xVersion = XNamespace.None + "Version";
 
         /// <summary>
-        /// Gets or sets whether the dependency graph (the set of ISortedItem) associated
-        /// to the StObj objects must be send to the monitor once the graph is sorted.
-        /// Defaults to false.
-        /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
+        /// The Aspect element name.
         /// </summary>
-        public bool TraceDependencySorterOutput { get; set; }
+        static public readonly XName xAspect = XNamespace.None + "Aspect";
 
         /// <summary>
-        /// Gets or sets an optional base path that applies to relative <see cref="BinPaths"/>.
-        /// When null or empty, the current directory is used.
+        /// The Assemblies element name.
         /// </summary>
-        public NormalizedPath BasePath { get; set; }
+        static public readonly XName xAssemblies = XNamespace.None + "Assemblies";
 
         /// <summary>
-        /// Gets a list of binary paths to setup (must not be empty).
-        /// Their <see cref="BinPathConfiguration.Assemblies"/> must exist in the current <see cref="AppContext.BaseDirectory"/>.
+        /// The Assembly element name.
         /// </summary>
-        public List<BinPathConfiguration> BinPaths { get; }
+        static public readonly XName xAssembly = XNamespace.None + "Assembly";
 
         /// <summary>
-        /// Gets a mutable set of assembly qualified type names that must be excluded from registration.
-        /// This applies to all <see cref="BinPaths"/>: excluding a type here guaranties its exclusion
-        /// from any BinPath.
+        /// The Types element name.
         /// </summary>
-        public HashSet<string> GlobalExcludedTypes { get; }
+        static public readonly XName xTypes = XNamespace.None + "Types";
 
         /// <summary>
-        /// Gets a mutable set of SHA1 file signatures. Whenever any generated source file's signature
-        /// appears in this list, the source file is not generated nor compiled: the available map should
-        /// be used.
+        /// The ExternalSingletonTypes element name.
         /// </summary>
-        public HashSet<SHA1Value> AvailableStObjMapSignatures { get; }
+        static public readonly XName xExternalSingletonTypes = XNamespace.None + "ExternalSingletonTypes";
+
+        /// <summary>
+        /// The ExternalScopedTypes element name.
+        /// </summary>
+        static public readonly XName xExternalScopedTypes = XNamespace.None + "ExternalScopedTypes";
+
+        /// <summary>
+        /// The ExcludedTypes element name.
+        /// </summary>
+        static public readonly XName xExcludedTypes = XNamespace.None + "ExcludedTypes";
+
+        /// <summary>
+        /// The ExcludedTypes element name.
+        /// </summary>
+        static public readonly XName xGlobalExcludedTypes = XNamespace.None + "GlobalExcludedTypes";
+
+        /// <summary>
+        /// The AvailableStObjMapSignatures element name.
+        /// </summary>
+        static public readonly XName xAvailableStObjMapSignatures = XNamespace.None + "AvailableStObjMapSignatures";
+
+        /// <summary>
+        /// The Signature element name.
+        /// </summary>
+        static public readonly XName xSignature = XNamespace.None + "Signature";
+
+        /// <summary>
+        /// The Type element name.
+        /// </summary>
+        static public readonly XName xType = XNamespace.None + "Type";
+
+        /// <summary>
+        /// The BasePath element name.
+        /// </summary>
+        static public readonly XName xBasePath = XNamespace.None + "BasePath";
+
+        /// <summary>
+        /// The BinPath element name.
+        /// </summary>
+        static public readonly XName xBinPath = XNamespace.None + "BinPath";
+
+        /// <summary>
+        /// The BinPaths element name.
+        /// </summary>
+        static public readonly XName xBinPaths = XNamespace.None + "BinPaths";
+
+        /// <summary>
+        /// The Path element name.
+        /// </summary>
+        static public readonly XName xPath = XNamespace.None + "Path";
+
+        /// <summary>
+        /// The RevertOrderingNames element name.
+        /// </summary>
+        static public readonly XName xRevertOrderingNames = XNamespace.None + "RevertOrderingNames";
+
+        /// <summary>
+        /// The OutputPath element name.
+        /// </summary>
+        static public readonly XName xOutputPath = XNamespace.None + "OutputPath";
+
+        /// <summary>
+        /// The OutputPath element name.
+        /// </summary>
+        static public readonly XName xProjectPath = XNamespace.None + "ProjectPath";
+
+        /// <summary>
+        /// The GenerateSourceFiles element name.
+        /// </summary>
+        static public readonly XName xGenerateSourceFiles = XNamespace.None + "GenerateSourceFiles";
+
+        /// <summary>
+        /// The CompileOption element name.
+        /// </summary>
+        static public readonly XName xCompileOption = XNamespace.None + "CompileOption";
+
+        /// <summary>
+        /// The TraceDependencySorterInput element name.
+        /// </summary>
+        static public readonly XName xTraceDependencySorterInput = XNamespace.None + "TraceDependencySorterInput";
+
+        /// <summary>
+        /// The TraceDependencySorterOutput element name.
+        /// </summary>
+        static public readonly XName xTraceDependencySorterOutput = XNamespace.None + "TraceDependencySorterOutput";
+
+        /// <summary>
+        /// The GeneratedAssemblyName element name.
+        /// </summary>
+        static public readonly XName xGeneratedAssemblyName = XNamespace.None + "GeneratedAssemblyName";
+
+        /// <summary>
+        /// The attribute Name.
+        /// </summary>
+        static public readonly XName xName = XNamespace.None + "Name";
+
+        /// <summary>
+        /// The attribute Kind.
+        /// </summary>
+        static public readonly XName xKind = XNamespace.None + "Kind";
+
+        /// <summary>
+        /// The attribute Optional.
+        /// </summary>
+        static public readonly XName xOptional = XNamespace.None + "Optional";
+
+        /// <summary>
+        /// The InformationalVersion element name.
+        /// </summary>
+        static public readonly XName xInformationalVersion = XNamespace.None + "InformationalVersion";
+
+        /// <summary>
+        /// The BaseSHA1 element name.
+        /// </summary>
+        static public readonly XName xBaseSHA1 = XNamespace.None + "BaseSHA1";
+
+        /// <summary>
+        /// The ForceRun element name.
+        /// </summary>
+        static public readonly XName xForceRun = XNamespace.None + "ForceRun";
+
+        #endregion
 
     }
 }

@@ -20,6 +20,11 @@ namespace CK.Core
         public static readonly string RootContextTypeName = "GeneratedRootContext";
 
         /// <summary>
+        /// Default assembly name.
+        /// </summary>
+        public const string GeneratedAssemblyName = "CK.StObj.AutoAssembly";
+
+        /// <summary>
         /// Holds the full name of the root class.
         /// </summary>
         public static readonly string RootContextTypeFullName = "CK.StObj." + RootContextTypeName;
@@ -99,13 +104,13 @@ namespace CK.Core
             }
         }
 
-        static StObjMapInfo? LockedGetMapInfo( Assembly a, ref IActivityMonitor? monitor )
+        static StObjMapInfo? LockedGetMapInfo( Assembly a, [AllowNull]ref IActivityMonitor monitor )
         {
             if( _alreadyHandled.TryGetValue( a, out var info ) )
             {
                 return info;
             }
-            monitor = LockedEnsureMonitor( monitor );
+            LockedEnsureMonitor( ref monitor );
             var attr = a.GetCustomAttributesData().FirstOrDefault( m => m.AttributeType.Name == "SignatureAttribute" && m.AttributeType.Namespace == "CK.StObj" );
             if( attr != null )
             {
@@ -152,13 +157,12 @@ namespace CK.Core
             }
         }
 
-        static IActivityMonitor LockedEnsureMonitor( IActivityMonitor? monitor )
+        static void LockedEnsureMonitor( [AllowNull]ref IActivityMonitor monitor )
         {
             if( monitor == null )
             {
                 monitor = (_contextMonitor ??= new ActivityMonitor( "CK.Core.StObjContextRoot" ));
             }
-            return monitor;
         }
 
         /// <summary>
@@ -212,7 +216,7 @@ namespace CK.Core
         static IStObjMap? LockedGetStObjMapFromInfo( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
         {
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
-            monitor = LockedEnsureMonitor( monitor );
+            LockedEnsureMonitor( ref monitor );
             using( monitor.OpenInfo( $"Instantiating StObjMap from {info}." ) )
             {
                 try
@@ -290,40 +294,23 @@ namespace CK.Core
                 assemblyNameWithExtension = assemblyName + ".dll";
             }
             string assemblyFullPath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyNameWithExtension );
-            string assemblyFullPathSig = assemblyFullPath + Setup.StObjEngineConfiguration.ExistsSignatureFileExtension;
 
             lock( _alreadyHandled )
             {
-                monitor = LockedEnsureMonitor( monitor );
+                LockedEnsureMonitor( ref monitor );
                 using( monitor.OpenInfo( $"Loading StObj map from '{assemblyName}'." ) )
                 {
                     try
                     {
-                        StObjMapInfo? info;
-                        if( System.IO.File.Exists( assemblyFullPathSig ) )
-                        {
-                            var sig = System.IO.File.ReadAllText( assemblyFullPathSig );
-                            LockedGetAvailableMapInfos( ref monitor );
-                            info = _alreadyHandled.GetValueOrDefault( sig );
-                            if( info != null )
-                            {
-                                monitor.CloseGroup( $"Found existing map from signature file {assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}: {info}." );
-                                return LockedGetStObjMapFromInfo( info, ref monitor );
-                            }
-                            monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' ({sig}). Trying to load the assembly." );
-                        }
-                        else
-                        {
-                            monitor.Warn( $"No Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' found. Trying to load the assembly." );
-                        }
+                        // Assembly.LoadFile caches the assemblies by their path.
+                        // No need to do it.
                         var a = Assembly.LoadFile( assemblyFullPath );
-                        info = LockedGetMapInfo( a, ref monitor );
+                        var info = LockedGetMapInfo( a, ref monitor );
                         if( info == null ) return null;
                         return LockedGetStObjMapFromInfo( info, ref monitor );
                     }
                     catch( Exception ex )
                     {
-                        Debug.Assert( monitor != null, "Not detected by nullable analysis..." );
                         monitor.Error( ex );
                         return null;
                     }

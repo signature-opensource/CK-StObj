@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using CK.Core;
 
 #nullable enable
 
 namespace CK.Setup
 {
-    class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
+    partial class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineConfigureContext _startContext;
@@ -18,78 +16,8 @@ namespace CK.Setup
         readonly Dictionary<string, object> _unifiedRunCache;
         readonly Dictionary<object, object?> _codeGenerationGlobalMemory;
 
-        internal class GenBinPath : IGeneratedBinPath, ICSCodeGenerationContext
+        public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext )
         {
-            readonly StObjEngineRunContext _global;
-
-            public GenBinPath(
-                StObjEngineRunContext global,
-                StObjCollectorResult result,
-                IReadOnlyCollection<BinPathConfiguration> binPathConfigurations,
-                IGrouping<BinPathConfiguration, BinPathConfiguration> groupedPaths )
-            {
-                Debug.Assert( !result.HasFatalError );
-                _global = global;
-                Result = result;
-                BinPathConfigurations = binPathConfigurations;
-                GroupedPaths = groupedPaths;
-                Memory = new Dictionary<object, object?>();
-                ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
-                ServiceContainer.Add( result.DynamicAssembly.GetPocoSupportResult() );
-            }
-
-            public readonly StObjCollectorResult Result;
-
-            public readonly IGrouping<BinPathConfiguration, BinPathConfiguration> GroupedPaths;
-
-            public IStObjEngineMap EngineMap => Result.EngineMap!;
-
-            public IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
-
-            public ISimpleServiceContainer ServiceContainer { get; }
-
-            public IDictionary<object, object?> Memory { get; }
-
-            IGeneratedBinPath ICodeGenerationContext.UnifiedBinPath => _global.UnifiedBinPath;
-
-            IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global.AllBinPaths;
-
-            IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._codeGenerationGlobalMemory;
-
-            ISimpleServiceContainer ICodeGenerationContext.GlobalServiceContainer => _global.ServiceContainer;
-
-            bool ICodeGenerationContext.IsUnifiedRun => this == _global.UnifiedBinPath;
-
-            void ICodeGenerationContext.SetUnifiedRunResult( string key, object o, bool addOrUpdate )
-            {
-                if( this != _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
-                if( addOrUpdate ) _global._unifiedRunCache[key] = o;
-                else _global._unifiedRunCache.Add( key, o );
-            }
-
-            object ICodeGenerationContext.GetUnifiedRunResult( string key )
-            {
-                if( this == _global.UnifiedBinPath ) throw new InvalidOperationException( nameof( ICodeGenerationContext.IsUnifiedRun ) );
-                return _global._unifiedRunCache[key];
-            }
-
-            IGeneratedBinPath ICodeGenerationContext.CurrentRun => this;
-
-            IDynamicAssembly ICSCodeGenerationContext.Assembly => Result.DynamicAssembly;
-
-            bool ICSCodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
-
-            CompileOption ICSCodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
-        }
-
-
-        public StObjEngineRunContext( IActivityMonitor monitor,
-                                      StObjEngineConfigureContext startContext,
-                                      IGrouping<BinPathConfiguration, BinPathConfiguration> primaryCompatibleBinPaths,
-                                      StObjCollectorResult primaryResult,
-                                      bool isUnifiedPure )
-        {
-            Debug.Assert( primaryResult.EngineMap != null );
             _monitor = monitor;
             _startContext = startContext;
             _binPaths = new List<GenBinPath>();
@@ -97,20 +25,14 @@ namespace CK.Setup
             _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
             _unifiedRunCache = new Dictionary<string, object>();
             _codeGenerationGlobalMemory = new Dictionary<object, object?>();
-            IsUnifiedPure = isUnifiedPure;
-            AddResult( primaryCompatibleBinPaths, primaryResult );
         }
 
-        internal void AddResult( IGrouping<BinPathConfiguration, BinPathConfiguration> binPaths, StObjCollectorResult secondaryResult )
+        internal void AddResult( RunningBinPathGroup g, StObjCollectorResult secondaryResult )
         {
-            _binPaths.Add( new GenBinPath( this, secondaryResult, binPaths.ToArray(), binPaths ) );
+            _binPaths.Add( new GenBinPath( this, secondaryResult, g ) );
         }
 
-        public IGeneratedBinPath UnifiedBinPath => _binPaths[0];
-
-        public bool IsUnifiedPure { get; }
-
-        ICodeGenerationContext IStObjEnginePostCodeRunContext.UnifiedBinPath => _binPaths[0];
+        public IGeneratedBinPath PrimaryBinPath => _binPaths[0];
 
         IReadOnlyList<IGeneratedBinPath> IStObjEngineRunContext.AllBinPaths => _binPaths;
 
@@ -130,7 +52,7 @@ namespace CK.Setup
 
         internal void RunAspects( Func<bool> onError, bool postCode )
         {
-            using( _monitor.OpenInfo( $"Running Aspects ({(postCode ? "Post" : "Before" )} Code Generation)." ) )
+            using( _monitor.OpenInfo( $"Running Aspects ({(postCode ? "Post" : "Pre" )} Code Generation)." ) )
             {
                 foreach( var a in _startContext.Aspects )
                 {

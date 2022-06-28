@@ -17,10 +17,21 @@ namespace CK.Setup
         IStObjEngineMap EngineMap { get; }
 
         /// <summary>
-        /// Gets one or more <see cref="BinPathConfiguration"/> that share/are compatible with this <see cref="EngineMap"/>.
+        /// Gets whether this <see cref="IGeneratedBinPath"/> is the purely unified one.
+        /// <para>
+        /// This unified BinPath has not the same Assemblies, ExcludedTypes and Types configurations as any of the actual BinPaths.
+        /// This BinPath is only used to create an incomplete primary StObjMap (without AutoService resolution) that will
+        /// contain all the IPoco and IRealObject. Generating the code for this BinPath will impact the real world with
+        /// the unified types from all the BinPaths but this code will never be used.
+        /// </para>
+        /// </summary>
+        bool IsUnifiedPure { get; }
+
+        /// <summary>
+        /// Gets one or more <see cref="IRunningBinPathConfiguration"/> that share/are compatible with this <see cref="EngineMap"/>.
         /// When used by tests Mock objects may not have any configuration.
         /// </summary>
-        IReadOnlyCollection<BinPathConfiguration> BinPathConfigurations { get; }
+        IReadOnlyCollection<IRunningBinPathConfiguration> BinPathConfigurations { get; }
 
         /// <summary>
         /// Gets a local service container, scoped to this path. This local container is backed by

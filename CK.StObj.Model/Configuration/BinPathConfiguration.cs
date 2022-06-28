@@ -241,7 +241,7 @@ namespace CK.Setup
         /// </summary>
         /// <typeparam name="T">The aspect's type.</typeparam>
         /// <returns>The element or null.</returns>
-        public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof(T).Name );
+        public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof( T ).Name );
 
         /// <summary>
         /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect name:

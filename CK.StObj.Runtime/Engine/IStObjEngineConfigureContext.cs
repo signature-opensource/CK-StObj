@@ -15,9 +15,9 @@ namespace CK.Setup
         IStObjEngineStatus EngineStatus { get; }
 
         /// <summary>
-        /// Gets the external configuration object.
+        /// Gets the configuration object.
         /// </summary>
-        StObjEngineConfiguration StObjEngineConfiguration { get; }
+        IRunningStObjEngineConfiguration StObjEngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered
@@ -63,7 +63,7 @@ namespace CK.Setup
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 
         /// <summary>
-        /// Pushes a defered configure action.
+        /// Pushes a deferred configure action.
         /// It will be executed after the configuration of all aspects.
         /// An action can be pushed at any moment and a pushed action can push another action.
         /// </summary>

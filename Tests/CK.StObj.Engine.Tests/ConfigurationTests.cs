@@ -95,7 +95,7 @@ namespace CK.StObj.Engine.Tests
       <GenerateSourceFiles>True</GenerateSourceFiles>
     </BinPath>
   </BinPaths>
-  <GeneratedAssemblyName>Not the default CK.StObj.AutoAssembly</GeneratedAssemblyName>
+  <GeneratedAssemblyName>CK.StObj.AutoAssembly.Not the default</GeneratedAssemblyName>
   <InformationalVersion>This will be in the generated Assembly.</InformationalVersion>
   <TraceDependencySorterInput>True</TraceDependencySorterInput>
   <TraceDependencySorterOutput>True</TraceDependencySorterOutput>
@@ -154,7 +154,7 @@ namespace CK.StObj.Engine.Tests
             b1.CompileOption.Should().Be( CompileOption.Parse );
             b1.GenerateSourceFiles.Should().BeTrue();
 
-            c.GeneratedAssemblyName.Should().Be( "Not the default CK.StObj.AutoAssembly" );
+            c.GeneratedAssemblyName.Should().Be( "CK.StObj.AutoAssembly.Not the default" );
             c.InformationalVersion.Should().Be( "This will be in the generated Assembly." );
             c.TraceDependencySorterInput.Should().BeTrue();
             c.TraceDependencySorterOutput.Should().BeTrue();

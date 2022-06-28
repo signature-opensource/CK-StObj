@@ -18,7 +18,6 @@ namespace CK.Testing
     {
         readonly ITestHelperConfiguration _config;
         readonly IMonitorTestHelper _monitor;
-        readonly string _originGeneratedAssemblyName;
         string _generatedAssemblyName;
         bool _stObjMapRetryOnError;
         bool _lastStObjMapLoadFailed; 
@@ -44,12 +43,8 @@ namespace CK.Testing
         {
             _config = config;
             _monitor = monitor;
-            _generatedAssemblyName = _originGeneratedAssemblyName = _config.Get( "StObjMap/GeneratedAssemblyName", StObjEngineConfiguration.DefaultGeneratedAssemblyName );
+            _generatedAssemblyName = StObjContextRoot.GeneratedAssemblyName;
             _stObjMapRetryOnError = _config.GetBoolean( "StObjMap/StObjMapRetryOnError" ) ?? false;
-            if( _generatedAssemblyName.IndexOf( ".Reset.", StringComparison.OrdinalIgnoreCase ) >= 0 )
-            {
-                throw new ArgumentException( "Must not contain '.Reset.' substring.", "StObjMap/GeneratedAssemblyName" );
-            }           
         }
 
         IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService( null );
@@ -86,7 +81,7 @@ namespace CK.Testing
                     hIng( this, configureArgs );
                 }
             }
-            if( !reg.AddStObjMap( current ) ) throw new Exception( "AddStObjMap failed. The logs contains detailed information." );
+            if( !reg.AddStObjMap( current ) ) Throw.Exception( "AddStObjMap failed. The logs contains detailed information." );
             var hEd = _automaticServicesConfigured;
             if( hEd != null )
             {
@@ -149,7 +144,7 @@ namespace CK.Testing
                 if( _map == null )
                 {
                     _lastStObjMapLoadFailed = true;
-                    throw new Exception( "Unable to load StObjMap. See logs for details." );
+                    Throw.Exception( "Unable to load StObjMap. See logs for details." );
                 }
                 _lastAccessMapUtc = _lastLoadedMapUtc = DateTime.UtcNow;
             }
@@ -158,7 +153,7 @@ namespace CK.Testing
             {
                 if( _lastStObjMapLoadFailed && !_stObjMapRetryOnError )
                 {
-                    throw new Exception( "Previous attempt to load the StObj map failed and StObjMapRetryOnError is false." );
+                    Throw.Exception( "Previous attempt to load the StObj map failed and StObjMapRetryOnError is false." );
                 }
                 var msg = "Accessing null StObj map.";
                 if( _lastStObjMapLoadFailed ) msg += " (Previous attempt to load it failed but retrying since StObjMapRetryOnError is true.)";
@@ -210,7 +205,7 @@ namespace CK.Testing
             if( _map == null ) _monitor.Monitor.Info( $"StObjMap is not loaded yet." );
             _map = null;
             var num = Interlocked.Increment( ref _resetNumer );
-            _generatedAssemblyName = $"{_originGeneratedAssemblyName}.Reset.{num}";
+            _generatedAssemblyName = $"{StObjContextRoot.GeneratedAssemblyName}.Reset.{num}";
             _monitor.Monitor.Info( $"Reseting StObjMap: Generated assembly name is now: {_generatedAssemblyName}." );
             if( deleteGeneratedBinFolderAssembly ) DoDeleteGeneratedAssemblies( _monitor.BinFolder );
             _lastStObjMapLoadFailed = false;
@@ -222,7 +217,7 @@ namespace CK.Testing
         {
             using( _monitor.Monitor.OpenInfo( $"Deleting generated assemblies from {directory}." ) )
             {
-                var r = new Regex( Regex.Escape( _originGeneratedAssemblyName ) + @"(\.Reset\.\d+)?\.dll", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
+                var r = new Regex( Regex.Escape( StObjContextRoot.GeneratedAssemblyName ) + @"(\.Reset\.\d+)?\.dll", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase );
                 int count = 0;
                 if( Directory.Exists( directory ) )
                 {

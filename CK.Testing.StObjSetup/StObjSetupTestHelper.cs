@@ -38,31 +38,16 @@ namespace CK.Testing
         void OnStObjMapLoading( object? sender, EventArgs e )
         {
             var fName = _stObjMap.GeneratedAssemblyName + ".dll";
-            var fNameSig = fName + StObjEngineConfiguration.ExistsSignatureFileExtension;
-
             var file = _stObjMap.BinFolder.AppendPart( fName );
-            var fileSig = _stObjMap.BinFolder.AppendPart( fNameSig );
 
-            bool fExists = File.Exists( file );
-            bool fSigExists = File.Exists( fileSig );
-
-            if( !fExists && !fSigExists )
+            if( !File.Exists( file ) )
             {
-                using( _stObjMap.Monitor.OpenInfo( $"File '{file}' does not exist nor '{fNameSig}'. Running StObjSetup to create it." ) )
+                using( _stObjMap.Monitor.OpenInfo( $"File '{file}' does not exist. Running StObjSetup to create it." ) )
                 {
                     Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
-                    var defaultConf = CreateDefaultConfiguration( _mixin! );
-                    DoRunStObjSetup( defaultConf.Configuration, defaultConf.ForceSetup );
+                    var (configuration, forceSetup) = CreateDefaultConfiguration( _mixin! );
+                    DoRunStObjSetup( configuration, forceSetup );
                 }
-            }
-            else if( fExists && fSigExists )
-            {
-                _stObjMap.Monitor.Info( $"Both file '{fileSig}' and '{fName}' files found. An existing loaded StObjMap with the signature should exist otherwise the '{fName}' will be loaded." );
-            }
-            else
-            {
-                if( fSigExists ) _stObjMap.Monitor.Info( $"Signature file '{fileSig}' found: An existing loaded StObjMap with the signature should exist." );
-                else _stObjMap.Monitor.Info( $"File '{file}' found. It will be loaded." );
             }
         }
 
@@ -74,11 +59,6 @@ namespace CK.Testing
         /// <returns>The configuration and the flag.</returns>
         static public (StObjEngineConfiguration Configuration, bool ForceSetup) CreateDefaultConfiguration( IStObjSetupTestHelper helper )
         {
-            bool forceSetup = helper.CKSetup.DefaultForceSetup
-                                || helper.CKSetup.DefaultBinPaths.Append( helper.BinFolder )
-                                        .Select( p => p.AppendPart( helper.GeneratedAssemblyName + ".dll" ) )
-                                        .Any( p => !File.Exists( p ) );
-
             var stObjConf = new StObjEngineConfiguration
             {
                 RevertOrderingNames = helper.StObjRevertOrderingNames,
@@ -95,12 +75,12 @@ namespace CK.Testing
             };
             stObjConf.BinPaths.Add( b );
 
-            return (stObjConf, forceSetup);
+            return (stObjConf, helper.CKSetup.DefaultForceSetup);
         }
 
         CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, bool forceSetup )
         {
-            if( stObjConf == null ) throw new ArgumentNullException( nameof( stObjConf ) );
+            Throw.CheckNotNullArgument( stObjConf );
             using( _ckSetup.Monitor.OpenInfo( $"Running StObjSetup." ) )
             {
                 try
