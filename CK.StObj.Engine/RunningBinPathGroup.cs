@@ -123,32 +123,33 @@ namespace CK.Setup
 
         void Copy( IActivityMonitor monitor, NormalizedPath source, IGeneratedArtifact t )
         {
-            if( t.GetSignature( monitor ) != SignatureCode )
+            if( source != t.Path && t.GetSignature( monitor ) != SignatureCode )
             {
                 monitor.Info( $"Updating '{t.Path}'." );
                 SafeCopy( monitor, source, t.Path );
             }
-        }
 
-        internal static void SafeCopy( IActivityMonitor monitor, NormalizedPath f, NormalizedPath t )
-        {
-            int retryCount = 0;
-            retry:
-            try
+            static void SafeCopy( IActivityMonitor monitor, NormalizedPath f, NormalizedPath t )
             {
-                File.Copy( f, t, true );
-            }
-            catch( Exception ex )
-            {
-                if( retryCount++ < 3 )
+                int retryCount = 0;
+                retry:
+                try
                 {
-                    monitor.Warn( $"Failed to copy project file: '{f.LastPart}'. Retrying.", ex );
-                    System.Threading.Thread.Sleep( retryCount * 50 );
-                    goto retry;
+                    File.Copy( f, t, true );
                 }
-                monitor.Error( $"Failed to copy file: '{f}' to '{t}'. Rethrowing.", ex );
-                throw;
+                catch( Exception ex )
+                {
+                    if( retryCount++ < 3 )
+                    {
+                        monitor.Warn( $"Failed to copy project file: '{f.LastPart}'. Retrying.", ex );
+                        System.Threading.Thread.Sleep( retryCount * 50 );
+                        goto retry;
+                    }
+                    monitor.Error( $"Failed to copy file: '{f}' to '{t}'. Rethrowing.", ex );
+                    throw;
+                }
             }
+
         }
 
 
