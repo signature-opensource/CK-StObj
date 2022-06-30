@@ -42,10 +42,9 @@ namespace CK.Testing
 
         StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
         {
-            return new StObjCollector(
-                        _monitor.Monitor,
-                        new SimpleServiceContainer(),
-                        typeFilter: typeFilter != null ? new TypeFilter( typeFilter ) : null );
+            return new StObjCollector( _monitor.Monitor,
+                                       new SimpleServiceContainer(),
+                                       typeFilter: typeFilter != null ? new TypeFilter( typeFilter ) : null );
         }
 
         StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( params Type[] types )
@@ -81,8 +80,8 @@ namespace CK.Testing
 
         static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c, bool skipEmbeddedStObjMap )
         {
-            GenerateCodeResult r = DoGenerateCode( c, CompileOption.Compile, out string assemblyName, skipEmbeddedStObjMap );
-            r.CodeGen.Success.Should().BeTrue( "CodeGeneration should work." );
+            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), out string assemblyName, skipEmbeddedStObjMap );
+            r.Success.Should().BeTrue( "CodeGeneration should work." );
             var map = skipEmbeddedStObjMap ? null : r.EmbeddedStObjMap;
             if( map == null )
             {
@@ -93,49 +92,46 @@ namespace CK.Testing
             return (r.Collector, map!);
         }
 
-        GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollector c, CompileOption compileOption ) => DoGenerateCode( c, compileOption, out _, false );
-
-        GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollectorResult r, CompileOption compileOption ) => DoGenerateCode( r, compileOption, out _, false );
-
-        static GenerateCodeResult DoGenerateCode( StObjCollector c, CompileOption compileOption, out string assemblyName, bool skipEmbeddedStObjMap )
-        {
-            return DoGenerateCode( DoGetSuccessfulResult( c ), compileOption, out assemblyName, skipEmbeddedStObjMap );
-        }
-
         /// <summary>
         /// Compiles from a successful <see cref="StObjCollectorResult"/>. <see cref="StObjCollectorResult.HasFatalError"/> must be
         /// false otherwise an <see cref="ArgumentException"/> is thrown.
         /// <para>
-        /// This is a minimalist helper that simply calls <see cref="SimpleEngineRunContext.TryGenerateAssembly"/> with an
-        /// assembly name that is <c>DateTime.Now.ToString( "Service_yyMdHmsffff" )</c>.
+        /// The assembly name is <c>CK.StObj.AutoAssembly + DateTime.Now.ToString( ".yyMdHmsffff" )</c>.
         /// </para>
         /// </summary>
         /// <param name="result">The collector result.</param>
-        /// <param name="compileOption">Compilation behavior.</param>
         /// <param name="assemblyName">The automatically computed assembly name that has been generated based on current time.</param>
         /// <param name="skipEmbeddedStObjMap">
         /// True to skip any available StObjMap: this MUST be true when
         /// a setup depends on externally injected services.
         /// </param>
         /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
-        static GenerateCodeResult DoGenerateCode( StObjCollectorResult result, CompileOption compileOption, out string assemblyName, bool skipEmbeddedStObjMap )
+        static GenerateCodeResult DoGenerateCode( StObjCollectorResult result, out string assemblyName, bool skipEmbeddedStObjMap )
         {
-            if( result.HasFatalError ) throw new ArgumentException( "StObjCollectorResult.HasFatalError must be false.", nameof( result ) );
-            assemblyName = DateTime.Now.ToString( "Service_yyMdHmsffff" );
-            StObjCollectorResult.CodeGenerateResult r = SimpleEngineRunContext.TryGenerateAssembly( TestHelper.Monitor, result, compileOption, skipEmbeddedStObjMap, assemblyName );
-            if( skipEmbeddedStObjMap ) return new GenerateCodeResult( result, r, null );
+            Throw.CheckArgument( !result.HasFatalError );
+            assemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" );
 
-            IStObjMap? embedded = null;
-            // Always update the Project files, even if an error occurred. Consider the embedded StObjMap only
-            // if the generation succeeded.
-            var h = new ProjectSourceFileHandler( TestHelper.Monitor, AppContext.BaseDirectory, TestHelper.TestProjectFolder );
-            if( h.MoveFilesAndCheckSignature( r ) && r.Success )
+            var config = new StObjEngineConfiguration()
             {
-                Debug.Assert( r.GeneratedSignature.HasValue );
-                embedded = StObjContextRoot.Load( r.GeneratedSignature.Value, TestHelper.Monitor );
+                GeneratedAssemblyName = assemblyName,
+            };
+            config.BinPaths.Add( new BinPathConfiguration()
+            {
+                CompileOption = CompileOption.Compile,
+                GenerateSourceFiles = !skipEmbeddedStObjMap,
+                ProjectPath = TestHelper.TestProjectFolder
+            } );
+
+            var success = CK.Setup.StObjEngine.Run( TestHelper.Monitor, result, config );
+
+            if( skipEmbeddedStObjMap || !success ) return new GenerateCodeResult( result, success, null );
+
+            IStObjMap? embedded = StObjContextRoot.Load( config.BaseSHA1, TestHelper.Monitor );
+            if( embedded != null )
+            {
                 TestHelper.Monitor.Info( embedded == null ? "No embedded generated source code." : "Embedded generated source code is available." );
             }
-            return new GenerateCodeResult( result, r, embedded );
+            return new GenerateCodeResult( result, success, embedded );
         }
 
         (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegistrar, ServiceProvider Services)

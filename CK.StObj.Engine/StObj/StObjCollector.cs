@@ -36,17 +36,16 @@ namespace CK.Setup
         /// See <see cref="IStObjValueResolver"/>.
         /// </param>
         /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
-        public StObjCollector(
-            IActivityMonitor monitor,
-            IServiceProvider serviceProvider,
-            bool traceDepencySorterInput = false,
-            bool traceDepencySorterOutput = false,
-            IStObjTypeFilter? typeFilter = null,
-            IStObjStructuralConfigurator? configurator = null,
-            IStObjValueResolver? valueResolver = null,
-            IEnumerable<string>? names = null )
+        public StObjCollector( IActivityMonitor monitor,
+                               IServiceProvider serviceProvider,
+                               bool traceDepencySorterInput = false,
+                               bool traceDepencySorterOutput = false,
+                               IStObjTypeFilter? typeFilter = null,
+                               IStObjStructuralConfigurator? configurator = null,
+                               IStObjValueResolver? valueResolver = null,
+                               IEnumerable<string>? names = null )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
+            Throw.CheckNotNullArgument( monitor );
             _monitor = monitor;
             _tempAssembly = new DynamicAssembly();
             Func<IActivityMonitor, Type, bool>? tFilter = null;

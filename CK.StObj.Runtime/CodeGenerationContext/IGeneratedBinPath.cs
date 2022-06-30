@@ -17,21 +17,12 @@ namespace CK.Setup
         IStObjEngineMap EngineMap { get; }
 
         /// <summary>
-        /// Gets whether this <see cref="IGeneratedBinPath"/> is the purely unified one.
+        /// Gets the groups of similar <see cref="BinPathConfiguration"/>.
         /// <para>
-        /// This unified BinPath has not the same Assemblies, ExcludedTypes and Types configurations as any of the actual BinPaths.
-        /// This BinPath is only used to create an incomplete primary StObjMap (without AutoService resolution) that will
-        /// contain all the IPoco and IRealObject. Generating the code for this BinPath will impact the real world with
-        /// the unified types from all the BinPaths but this code will never be used.
+        /// Configuration objects exposed here must not be altered.
         /// </para>
         /// </summary>
-        bool IsUnifiedPure { get; }
-
-        /// <summary>
-        /// Gets one or more <see cref="IRunningBinPathConfiguration"/> that share/are compatible with this <see cref="EngineMap"/>.
-        /// When used by tests Mock objects may not have any configuration.
-        /// </summary>
-        IReadOnlyCollection<IRunningBinPathConfiguration> BinPathConfigurations { get; }
+        IRunningBinPathGroup ConfigurationGroup { get; }
 
         /// <summary>
         /// Gets a local service container, scoped to this path. This local container is backed by
@@ -50,13 +41,5 @@ namespace CK.Setup
         /// and if required should be properly encapsulated, typically by extension methods on this generated bin path.
         /// </summary>
         IDictionary<object, object?> Memory { get; }
-
-        /// <summary>
-        /// Gets the name (or comma separated names) of the <see cref="BinPathConfigurations"/>.
-        /// When no configuration exists, this is "CurrentTest" since only with Mock test objects can we have no BinPathConfigurations.
-        /// </summary>
-        public string Names => BinPathConfigurations.Count > 0
-                                ? BinPathConfigurations.Select( c => String.IsNullOrEmpty( c.Name ) ? "(Unified)" : c.Name ).Concatenate()
-                                : "CurrentTest";
     }
 }

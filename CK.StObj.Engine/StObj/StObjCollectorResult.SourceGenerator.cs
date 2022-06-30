@@ -15,39 +15,14 @@ namespace CK.Setup
 {
     public partial class StObjCollectorResult
     {
-        /// <summary>
-        /// Captures code generation result.
-        /// The default values is a failed result.
-        /// </summary>
-        public readonly struct CodeGenerateResult
+
+        public bool GenerateSourceCode( IActivityMonitor monitor,
+                                        ICSCodeGenerationContext codeGenContext,
+                                        string? informationalVersion )
         {
-            readonly IReadOnlyList<string> _fileNames;
-
-            /// <summary>
-            /// Gets whether the generation succeeded.
-            /// </summary>
-            public readonly bool Success;
-
-            /// <summary>
-            /// Gets the generated file signature.
-            /// Null whenever success is false.
-            /// This can be non null when Success is false if an error occurred
-            /// during the parse or compilation of the source files.
-            /// </summary>
-            public readonly SHA1Value? GeneratedSignature;
-
-            /// <summary>
-            /// Gets the list of files that have been generated: the assembly itself and
-            /// any source code or other files.
-            /// </summary>
-            public IReadOnlyList<string> GeneratedFileNames => _fileNames ?? Array.Empty<string>();
-
-            internal CodeGenerateResult( bool success, IReadOnlyList<string> fileNames, SHA1Value? s = null )
-            {
-                Success = success;
-                _fileNames = fileNames;
-                GeneratedSignature = s;
-            }
+            List<MultiPassCodeGeneration> collector = new List<MultiPassCodeGeneration>();
+            return GenerateSourceCodeFirstPass( monitor, codeGenContext, informationalVersion, collector )
+                   && GenerateSourceCodeSecondPass( monitor, codeGenContext, collector );
         }
 
         /// <summary>
@@ -70,7 +45,7 @@ namespace CK.Setup
             {
                 Debug.Assert( _valueCollector != null );
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
-                using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.Names}." ) )
+                using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.ConfigurationGroup.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
                     using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
@@ -141,7 +116,7 @@ namespace CK.Setup
                         var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector.Add( second );
                     }
-                    
+
                     // Asks every ImplementableTypeInfo to generate their code. 
                     // This step MUST always be done, even if CompileOption is None and GenerateSourceFiles is false
                     // since during this step, side effects MAY occur (this is typically the case of the first run where
@@ -166,44 +141,22 @@ namespace CK.Setup
             }
             catch( Exception ex )
             {
-                monitor.Error( $"While generating final source code.", ex );
+                monitor.Error( "While generating final source code.", ex );
                 return false;
             }
         }
 
-        /// <summary>
-        /// Finalizes the source code generation and compilation.
-        /// Sources (if <see cref="ICSCodeGenerationContext.SaveSource"/> is true) will be generated
-        /// in the <paramref name="finalFilePath"/> folder.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="finalFilePath">The final generated assembly full path.</param>
-        /// <param name="codeGenContext">The code generation context.</param>
-        /// <param name="signatureCode">The SHA1 of the BinPath group.</param>
-        /// <param name="secondPass">
-        /// The list of second passes actions to apply on the <see cref="ICSCodeGenerationContext"/> before
-        /// generating the source file and compiling them (<see cref="ICSCodeGenerationContext.CompileOption"/>).
-        /// </param>
-        /// <param name="availableStObjMap">
-        /// Predicate to find an already available StObjMap from the signature. When an existing map is found, the process
-        /// stops as early as possible and the available map should be used.
-        /// See <see cref="StObjContextRoot.GetAvailableMapInfos(IActivityMonitor?)"/>.
-        /// </param>
-        /// <returns>A Code generation result.</returns>
-        public CodeGenerateResult GenerateSourceCodeSecondPass( IActivityMonitor monitor,
-                                                                string finalFilePath,
-                                                                ICSCodeGenerationContext codeGenContext,
-                                                                in SHA1Value signatureCode,
-                                                                List<MultiPassCodeGeneration> secondPass,
-                                                                Func<IActivityMonitor, SHA1Value, bool> availableStObjMap )
+        public bool GenerateSourceCodeSecondPass( IActivityMonitor monitor,
+                                                  ICSCodeGenerationContext codeGenContext,
+                                                  List<MultiPassCodeGeneration> secondPass )
         {
             Throw.CheckNotNullArgument( EngineMap );
             Throw.CheckArgument( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
-            List<string> generatedFileNames = new List<string>();
+            var configurationGroup = codeGenContext.CurrentRun.ConfigurationGroup;
             try
             {
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
-                using( monitor.OpenInfo( $"Generating source code (second pass) for: {codeGenContext.CurrentRun.Names}." ) )
+                using( monitor.OpenInfo( $"Generating source code (second pass) for: {configurationGroup.Names}." ) )
                 using( monitor.CollectEntries( entries => errorSummary = entries ) )
                 {
                     MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
@@ -217,20 +170,22 @@ namespace CK.Setup
                             monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
                         }
                     }
-                    return new CodeGenerateResult( false, generatedFileNames );
+                    return false;
                 }
                 // Code generation itself succeeds.
                 if( !codeGenContext.SaveSource && codeGenContext.CompileOption == CompileOption.None )
                 {
                     monitor.Info( "Configured GenerateSourceFile is false and CompileOption is None: nothing more to do." );
-                    return new CodeGenerateResult( true, generatedFileNames );
+                    return true;
                 }
 
                 ICodeWorkspace? ws = codeGenContext.Assembly.Code;
 
                 // The SHA1 is currently always provided.
+                Debug.Assert( !configurationGroup.SignatureCode.IsZero );
+
                 // However, the code below is kept in comment just in case, one day, we need
-                // to compute the generated source code SHA1.
+                // to compute the generated source code SHA1 again.
                 //
                 // Trick to avoid allocating the big string code more than once: the hash is first computed on the source
                 // without the signature header, a part is injected at the top of the file (before anything else) and
@@ -252,14 +207,10 @@ namespace CK.Setup
                 //    monitor.Info( $"Using provided file signature: {signatureCode}." );
                 //}
 
-                if( availableStObjMap( monitor, signatureCode ) )
-                {
-                    monitor.Info( $"An existing StObjMap with the signature exists: skipping the generation and the compilation." );
-                    return new CodeGenerateResult( true, generatedFileNames, signatureCode );
-                }
-
                 // Injects the SHA1 signature at the top.
-                ws.Global.BeforeNamespace.CreatePart( top: true ).Append( @"[assembly: CK.StObj.Signature( " ).AppendSourceString( signatureCode.ToString() ).Append( " )]" );
+                ws.Global.BeforeNamespace.CreatePart( top: true ).Append( @"[assembly: CK.StObj.Signature( " )
+                                                                 .AppendSourceString( configurationGroup.SignatureCode.ToString() )
+                                                                 .Append( " )]" );
 
                 // The source code is available.
                 string code = ws.GetGlobalSource();
@@ -267,15 +218,13 @@ namespace CK.Setup
                 // If asked to do so, we always save it, even if parsing or compilation fails. 
                 if( codeGenContext.SaveSource )
                 {
-                    var sourceFile = finalFilePath + ".cs";
-                    File.WriteAllText( sourceFile, code );
-                    generatedFileNames.Add( Path.GetFileName( sourceFile ) );
-                    monitor.Info( $"Saved source file: {sourceFile}." );
+                    File.WriteAllText( configurationGroup.GeneratedSource.Path, code );
+                    monitor.Info( $"Saved source file: {configurationGroup.GeneratedSource.Path}." );
                 }
                 if( codeGenContext.CompileOption == CompileOption.None )
                 {
                     monitor.Info( "Configured CompileOption is None: nothing more to do." );
-                    return new CodeGenerateResult( true, generatedFileNames, signatureCode );
+                    return true;
                 }
 
                 using( monitor.OpenInfo( codeGenContext.CompileOption == CompileOption.Compile
@@ -283,28 +232,26 @@ namespace CK.Setup
                                             : "Only parsing source code, using C# v9.0 language version (skipping compilation)." ) )
                 {
                     var result = CodeGenerator.Generate( code,
-                                                         codeGenContext.CompileOption == CompileOption.Parse ? null : finalFilePath,
+                                                         codeGenContext.CompileOption == CompileOption.Parse
+                                                            ? null
+                                                            : configurationGroup.GeneratedAssembly.Path,
                                                          ws.AssemblyReferences,
                                                          new CSharpParseOptions( LanguageVersion.CSharp9 ) );
 
-                    if( result.Success && codeGenContext.CompileOption == CompileOption.Compile )
-                    {
-                        generatedFileNames.Add( Path.GetFileName( finalFilePath ) );
-                    }
                     result.LogResult( monitor );
                     if( !result.Success )
                     {
                         monitor.Debug( code );
                         monitor.CloseGroup( "Failed" );
                     }
-                    return new CodeGenerateResult( result.Success, generatedFileNames, signatureCode );
+                    return result.Success;
                 }
                 
             }
             catch( Exception ex )
             {
-                monitor.Error( $"While generating final assembly '{finalFilePath}' from source code.", ex );
-                return new CodeGenerateResult( false, generatedFileNames );
+                monitor.Error( "While generating final source code.", ex );
+                return false;
             }
         }
 

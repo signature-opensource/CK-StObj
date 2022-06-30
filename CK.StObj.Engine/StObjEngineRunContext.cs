@@ -6,14 +6,14 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    partial class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
+    sealed partial class StObjEngineRunContext : IStObjEngineRunContext, IStObjEnginePostCodeRunContext
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineConfigureContext _startContext;
         readonly List<GenBinPath> _binPaths;
         readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
         readonly StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext> _trampolinePostCode;
-        readonly Dictionary<string, object> _unifiedRunCache;
+        readonly Dictionary<string, object> _primaryRunCache;
         readonly Dictionary<object, object?> _codeGenerationGlobalMemory;
 
         public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext )
@@ -23,7 +23,7 @@ namespace CK.Setup
             _binPaths = new List<GenBinPath>();
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
             _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
-            _unifiedRunCache = new Dictionary<string, object>();
+            _primaryRunCache = new Dictionary<string, object>();
             _codeGenerationGlobalMemory = new Dictionary<object, object?>();
         }
 

@@ -35,11 +35,8 @@ namespace CK.Setup
         /// and <see cref="CompileOption"/> is <see cref="CompileOption.None"/>.
         /// <para>
         /// This does not mean that the whole code generation process should be skipped: when generating code,
-        /// side effects (from a bin path) are possible that may be useful to others.
-        /// </para>
-        /// <para>
-        /// This applies to the <see cref="ICodeGenerationContext.IsPrimaryRun"/> if the unified bin path doesn't correspond to any of the
-        /// existing <see cref="BinPathConfiguration"/> (<see cref="IStObjEngineRunContext.IsUnifiedPure"/>).
+        /// side effects (typically from the <see cref="ICodeGenerationContext.IsPrimaryRun"/>) are possible
+        /// that may be useful to others.
         /// </para>
         /// </summary>
         bool ActualSourceCodeIsUseless => SaveSource == false && CompileOption == CompileOption.None;

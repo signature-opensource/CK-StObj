@@ -46,7 +46,6 @@ namespace CK.Setup
         readonly IStObjEngineStatus _status;
         readonly RunningStObjEngineConfiguration _config;
         readonly List<IStObjEngineAspect> _aspects;
-        readonly List<Func<IActivityMonitor, IStObjEngineConfigureContext, bool>> _postActions;
         readonly Container _container;
         readonly SimpleServiceContainer _configureOnlycontainer;
         readonly StObjEngineConfigurator _configurator;
@@ -60,7 +59,6 @@ namespace CK.Setup
             _config = config;
             _status = status;
             _aspects = new List<IStObjEngineAspect>();
-            _postActions = new List<Func<IActivityMonitor, IStObjEngineConfigureContext, bool>>();
             _configurator = new StObjEngineConfigurator();
             _container = new Container( this );
             _configureOnlycontainer = new SimpleServiceContainer( _container );
@@ -78,6 +76,8 @@ namespace CK.Setup
 
         public RunningStObjEngineConfiguration StObjEngineConfiguration => _config;
 
+        IRunningStObjEngineConfiguration IStObjEngineConfigureContext.StObjEngineConfiguration => _config;
+
         internal IReadOnlyList<Type> ExplicitRegisteredTypes => (IReadOnlyList<Type>?)_explicitRegisteredTypes ?? Type.EmptyTypes;
 
         public IReadOnlyList<IStObjEngineAspect> Aspects => _aspects;
@@ -93,10 +93,10 @@ namespace CK.Setup
         internal void CreateAspects( Func<bool> onError )
         {
             bool success = true;
-            using( _monitor.OpenTrace( $"Creating {_config.Aspects.Count} aspect(s)." ) )
+            using( _monitor.OpenTrace( $"Creating {_config.Configuration.Aspects.Count} aspect(s)." ) )
             {
                 var aspectsType = new HashSet<Type>();
-                foreach( var c in _config.Aspects )
+                foreach( var c in _config.Configuration.Aspects )
                 {
                     if( c == null ) continue;
                     string aspectTypeName = c.AspectType;
@@ -156,8 +156,6 @@ namespace CK.Setup
                 if( success ) _container.ConfigureDone( _monitor );
             }
         }
-
-        IRunningStObjEngineConfiguration IStObjEngineConfigureContext.StObjEngineConfiguration => _config;
 
 
     }

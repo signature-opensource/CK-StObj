@@ -1,50 +1,31 @@
-using CK.Core;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml.Linq;
-using System;
 
 namespace CK.Setup
 {
-    /// <summary>
-    /// Extended <see cref="StObjEngineConfiguration"/> for the engine.
-    /// </summary>
     public interface IRunningStObjEngineConfiguration
     {
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.Aspect"/>
-        IReadOnlyList<IStObjEngineAspectConfiguration> Aspects { get; }
+        /// <summary>
+        /// Gets the engine configuration.
+        /// Even if this configuration is technically mutable, it should not be altered.
+        /// </summary>
+        StObjEngineConfiguration Configuration { get; }
 
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.GeneratedAssemblyName"/>
-        string GeneratedAssemblyName { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.BasePath"/>
-        NormalizedPath BasePath { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.BaseSHA1"/>
-        SHA1Value BaseSHA1 { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.ForceRun"/>
-        bool ForceRun { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.BinPaths"/>
-        IReadOnlyList<IRunningBinPathConfiguration> BinPaths { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.GlobalExcludedTypes"/>
-        IReadOnlySet<string> GlobalExcludedTypes { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.InformationalVersion"/>
-        string? InformationalVersion { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.RevertOrderingNames"/>
-        bool RevertOrderingNames { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.TraceDependencySorterInput"/>
-        bool TraceDependencySorterInput { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.TraceDependencySorterOutput"/>
-        bool TraceDependencySorterOutput { get; }
-
-        /// <inheritdoc cref="StObjEngineConfiguration{T}.ToXml"/>
-        XElement ToXml();
+        /// <summary>
+        /// Gets the groups of similar <see cref="BinPathConfiguration"/>.
+        /// <list type="bullet">
+        ///     <item>
+        ///     If it has been required, the purely unified BinPath is the single configuration
+        ///     of the first group of this list.
+        ///     </item>
+        ///     <item>
+        ///     If no unified BinPath is required, the first group of this list is guaranteed to "cover"
+        ///     all the other groups.
+        ///     </item>
+        /// </list>
+        /// <para>
+        /// In both case, the first group is processed first: this is the <see cref="IStObjEngineRunContext.PrimaryBinPath"/>.
+        /// </para>
+        /// </summary>
+        IReadOnlyList<IRunningBinPathGroup> Groups { get; }
     }
 }

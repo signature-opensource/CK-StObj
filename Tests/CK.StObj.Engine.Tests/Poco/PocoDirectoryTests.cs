@@ -77,7 +77,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
                                                                      && x.Text.StartsWith( $"Poco '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) ) ) )
             {
-                TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeTrue();
+                TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
             }
         }
 

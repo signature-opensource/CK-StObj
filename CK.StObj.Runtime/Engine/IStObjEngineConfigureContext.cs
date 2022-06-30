@@ -15,7 +15,7 @@ namespace CK.Setup
         IStObjEngineStatus EngineStatus { get; }
 
         /// <summary>
-        /// Gets the configuration object.
+        /// Gets the engine configuration.
         /// </summary>
         IRunningStObjEngineConfiguration StObjEngineConfiguration { get; }
 

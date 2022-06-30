@@ -4,7 +4,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    class StObjEngineTerminateContext : IStObjEngineTerminateContext
+    sealed class StObjEngineTerminateContext : IStObjEngineTerminateContext
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineRunContext _runContext;

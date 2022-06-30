@@ -19,7 +19,8 @@ namespace CK.Setup
         IGeneratedBinPath CurrentRun { get; }
 
         /// <summary>
-        /// Gets all the <see cref="IGeneratedBinPath"/> including the <see cref="UnifiedBinPath"/>.
+        /// Gets all the <see cref="IGeneratedBinPath"/> that are processed in order: the first one (the <see cref="IStObjEngineRunContext.PrimaryBinPath"/>)
+        /// is guaranteed to "cover" all of them.
         /// </summary>
         IReadOnlyList<IGeneratedBinPath> AllBinPaths { get; }
 

@@ -7,7 +7,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    partial class StObjEngineRunContext
+    sealed partial class StObjEngineRunContext
     {
         internal sealed class GenBinPath : IGeneratedBinPath, ICSCodeGenerationContext
         {
@@ -20,7 +20,7 @@ namespace CK.Setup
                 Debug.Assert( !result.HasFatalError );
                 _global = global;
                 Result = result;
-                Group = group;
+                ConfigurationGroup = group;
                 Memory = new Dictionary<object, object?>();
                 ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
                 ServiceContainer.Add( result.DynamicAssembly.GetPocoSupportResult() );
@@ -28,17 +28,17 @@ namespace CK.Setup
 
             public readonly StObjCollectorResult Result;
 
-            public RunningBinPathGroup Group { get; }
+            public RunningBinPathGroup ConfigurationGroup { get; }
 
             public IStObjEngineMap EngineMap => Result.EngineMap!;
-
-            public IReadOnlyCollection<IRunningBinPathConfiguration> BinPathConfigurations => Group.SimilarConfigurations;
 
             public ISimpleServiceContainer ServiceContainer { get; }
 
             public IDictionary<object, object?> Memory { get; }
 
-            public bool IsUnifiedPure => Group.Configuration.IsUnifiedPure;
+            public bool IsUnifiedPure => ConfigurationGroup.IsUnifiedPure;
+
+            IRunningBinPathGroup IGeneratedBinPath.ConfigurationGroup => ConfigurationGroup;
 
             IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global.AllBinPaths;
 
@@ -51,23 +51,23 @@ namespace CK.Setup
             void ICodeGenerationContext.SetPrimaryRunResult( string key, object o, bool addOrUpdate )
             {
                 Throw.CheckState( this == _global.PrimaryBinPath );
-                if( addOrUpdate ) _global._unifiedRunCache[key] = o;
-                else _global._unifiedRunCache.Add( key, o );
+                if( addOrUpdate ) _global._primaryRunCache[key] = o;
+                else _global._primaryRunCache.Add( key, o );
             }
 
             object ICodeGenerationContext.GetPrimaryRunResult( string key )
             {
                 Throw.CheckState( this != _global.PrimaryBinPath );
-                return _global._unifiedRunCache[key];
+                return _global._primaryRunCache[key];
             }
 
             IGeneratedBinPath ICodeGenerationContext.CurrentRun => this;
 
             IDynamicAssembly ICSCodeGenerationContext.Assembly => Result.DynamicAssembly;
 
-            bool ICSCodeGenerationContext.SaveSource => BinPathConfigurations.Any( f => f.GenerateSourceFiles );
+            bool ICSCodeGenerationContext.SaveSource => ConfigurationGroup.SaveSource;
 
-            CompileOption ICSCodeGenerationContext.CompileOption => BinPathConfigurations.Max( f => f.CompileOption );
+            CompileOption ICSCodeGenerationContext.CompileOption => ConfigurationGroup.CompileOption;
         }
 
     }

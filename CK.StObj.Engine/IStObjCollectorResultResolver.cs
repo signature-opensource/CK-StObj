@@ -3,17 +3,18 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Optional interface that enables to hook the <see cref="StObjCollector"/> work
-    /// thanks to <see cref="StObjEngine.Run(IStObjCollectorResultResolver)"/>.
+    /// Optional interface that enables to replace the configuration based <see cref="StObjCollector"/>
+    /// scaffolding with already available <see cref="StObjCollectorResult"/> thanks
+    /// to <see cref="StObjEngine.Run(IStObjCollectorResultResolver)"/>.
     /// </summary>
     public interface IStObjCollectorResultResolver
     {
         /// <summary>
-        /// Computes the <see cref="StObjCollectorResult"/> for the bin path.
+        /// Obtains the <see cref="StObjCollectorResult"/> for the similar group of bin paths.
         /// </summary>
-        /// <param name="binPath">The bin path for which a collector result must be provided.</param>
+        /// <param name="g">The group of bin paths for which a collector result must be provided.</param>
         /// <returns>The collector or null on error.</returns>
-        StObjCollectorResult? GetResult( IRunningBinPathConfiguration binPath );
+        StObjCollectorResult? GetResult( RunningBinPathGroup g );
     }
 
 }

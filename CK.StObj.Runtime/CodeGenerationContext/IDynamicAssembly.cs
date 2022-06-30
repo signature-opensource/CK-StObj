@@ -33,7 +33,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the <see cref="ICodeWorkspace"/> for this <see cref="IDynamicAssembly"/> into which
-        /// code should be generated.
+        /// source code should be generated.
         /// </summary>
         ICodeWorkspace Code { get; }
     }

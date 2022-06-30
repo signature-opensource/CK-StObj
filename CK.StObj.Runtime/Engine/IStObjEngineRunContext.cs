@@ -27,8 +27,8 @@ namespace CK.Setup
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 
         /// <summary>
-        /// Gets the unified bin path.
-        /// This is the first to be processed and may be <see cref="IGeneratedBinPath.IsPure"/>.
+        /// Gets the primary bin path.
+        /// This is the first to be processed and may be the "pure" working folder one (<see cref="IRunningBinPathGroup.IsUnifiedPure"/>).
         /// </summary>
         IGeneratedBinPath PrimaryBinPath { get; }
 

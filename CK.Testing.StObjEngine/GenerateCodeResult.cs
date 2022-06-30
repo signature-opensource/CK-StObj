@@ -17,19 +17,19 @@ namespace CK.Testing
         public readonly StObjCollectorResult Collector;
 
         /// <summary>
-        /// Gets the code genration result.
+        /// Gets whether the code generation succeeded.
         /// </summary>
-        public readonly StObjCollectorResult.CodeGenerateResult CodeGen;
+        public readonly bool Success;
 
         /// <summary>
         /// Gets the <see cref="IStObjMap"/> if it is available.
         /// </summary>
         public readonly IStObjMap? EmbeddedStObjMap;
 
-        internal GenerateCodeResult( StObjCollectorResult r, StObjCollectorResult.CodeGenerateResult c, IStObjMap? m )
+        internal GenerateCodeResult( StObjCollectorResult r, bool s, IStObjMap? m )
         {
             Collector = r;
-            CodeGen = c;
+            Success = s;
             EmbeddedStObjMap = m;
         }
     }
