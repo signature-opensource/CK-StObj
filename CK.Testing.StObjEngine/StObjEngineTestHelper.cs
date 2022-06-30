@@ -76,9 +76,11 @@ namespace CK.Testing
             return r;
         }
 
-        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c, Action<StObjEngineConfiguration>? engineConfigurator ) => DoCompileAndLoadStObjMap( c, engineConfigurator, false );
+        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c, Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator ) => DoCompileAndLoadStObjMap( c, engineConfigurator, false );
 
-        static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c, Action<StObjEngineConfiguration>? engineConfigurator, bool skipEmbeddedStObjMap )
+        static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c,
+                                                                                      Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                      bool skipEmbeddedStObjMap )
         {
             GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, skipEmbeddedStObjMap );
             r.Success.Should().BeTrue( "CodeGeneration should work." );
@@ -101,7 +103,7 @@ namespace CK.Testing
         /// </summary>
         /// <param name="result">The collector result.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
         /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
         /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
@@ -118,7 +120,7 @@ namespace CK.Testing
         /// </param>
         /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
         static GenerateCodeResult DoGenerateCode( StObjCollectorResult result,
-                                                  Action<StObjEngineConfiguration>? engineConfigurator,
+                                                  Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                   bool skipEmbeddedStObjMap )
         {
             Throw.CheckArgument( !result.HasFatalError );
@@ -134,7 +136,11 @@ namespace CK.Testing
                 GenerateSourceFiles = !skipEmbeddedStObjMap,
                 ProjectPath = TestHelper.TestProjectFolder
             } );
-            engineConfigurator?.Invoke( config );
+            if( engineConfigurator != null )
+            {
+                config = engineConfigurator.Invoke( config );
+                Throw.CheckState( "The returned engine configuration cannot be null.", config != null );
+            }
             var success = CK.Setup.StObjEngine.Run( TestHelper.Monitor, result, config );
 
             if( skipEmbeddedStObjMap || !success ) return new GenerateCodeResult( result, success, null, assemblyName );
@@ -148,7 +154,7 @@ namespace CK.Testing
         }
 
         AutoServiceResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
-                                                                              Action<StObjEngineConfiguration>? engineConfigurator,
+                                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                                               SimpleServiceContainer? startupServices,
                                                                               Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
@@ -160,7 +166,7 @@ namespace CK.Testing
         }
 
         StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
-                                                                                                             Action<StObjEngineConfiguration>? engineConfigurator,
+                                                                                                             Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                                                                              SimpleServiceContainer? startupServices )
         {
             IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, skipEmbeddedStObjMap: startupServices != null ).Map;

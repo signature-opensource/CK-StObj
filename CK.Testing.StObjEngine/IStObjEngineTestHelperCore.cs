@@ -48,7 +48,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
         /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
         /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
@@ -60,11 +60,12 @@ namespace CK.Testing.StObjEngine
         /// </para>
         /// </param>
         /// <returns>The (successful) collector result and the ready-to-use map.</returns>
-        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c, Action<StObjEngineConfiguration>? engineConfigurator = null );
+        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c,
+                                                                             Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null );
 
         /// <summary>
         /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileAndLoadStObjMap(StObjCollector)"/> and returns all
-        /// the intermediate results: the (successful) collector result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service registrar
+        /// the intermediate results: the (successful) collector result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service register
         /// and the final, fully configured, service provider.
         /// <para>
         /// Note that <see cref="AutoServiceResult.Services"/> is a <see cref="ServiceProvider"/> that is <see cref="IDisposable"/>: it SHOULD be disposed.
@@ -72,7 +73,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
         /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
         /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
@@ -87,7 +88,7 @@ namespace CK.Testing.StObjEngine
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
         AutoServiceResult CreateAutomaticServices( StObjCollector c,
-                                                   Action<StObjEngineConfiguration>? engineConfigurator = null,
+                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                    SimpleServiceContainer? startupServices = null,
                                                    Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 
@@ -96,7 +97,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
         /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
         /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
@@ -110,7 +111,8 @@ namespace CK.Testing.StObjEngine
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <returns>The (failed) service register.</returns>
         StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
-                                                                                  Action<StObjEngineConfiguration>? engineConfigurator = null,
+                                                                                  Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                                                   SimpleServiceContainer? startupServices = null );
+
     }
 }
