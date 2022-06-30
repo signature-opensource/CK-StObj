@@ -299,10 +299,10 @@ namespace CK.StObj.Engine.Tests
             collector.RegisterType( typeof( Dep1 ) );
             collector.RegisterType( typeof( Dep2 ) );
             collector.RegisterType( typeof( Defined ) );
-            var r = TestHelper.GetAutomaticServices( collector );
-            r.Services.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
-            r.Services.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
-            var defined = r.Services.GetRequiredService<Defined>();
+            using var s = TestHelper.CreateAutomaticServices( collector ).Services;
+            s.GetService<SuperDef>().Should().BeNull( "This is a SuperDefiner. It is NOT a real object." );
+            s.GetService<Def>().Should().BeNull( "This is SuperDefiner direct specialization. It is NOT a real object." );
+            var defined = s.GetRequiredService<Defined>();
             defined.Dep0.Should().NotBeNull();
             defined.Dep1.Should().NotBeNull();
             defined.Dep2.Should().NotBeNull();

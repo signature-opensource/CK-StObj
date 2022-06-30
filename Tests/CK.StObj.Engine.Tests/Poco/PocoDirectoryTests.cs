@@ -25,7 +25,8 @@ namespace CK.StObj.Engine.Tests.Poco
         public void simple_Poco()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
-            var d = TestHelper.GetAutomaticServices( c ).Services.GetRequiredService<PocoDirectory>();
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
             var f0 = d.Find( "Test" );
             var f1 = d.Find( "PreviousTest1" );
             var f2 = d.Find( "PreviousTest2" );

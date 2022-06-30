@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void extending_json_serialization()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( IPocoNoIntern ) ); ;
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var root = s.GetRequiredService<IPocoFactory<IPocoNoIntern>>().Create();
@@ -49,7 +49,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void when_a_specialization_is_not_registered_the_known_static_Type_drives_and_this_may_not_be_good()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITestBaseClassOnly ) ); ;
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var root = s.GetRequiredService<IPocoFactory<ITestBaseClassOnly>>().Create();
@@ -66,7 +66,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void registered_specialization_triggers_overridable_behavior()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( JsonStringParseSupport ), typeof( ITestBaseClassOnly ), typeof( IPocoAllOfThem ) ); ;
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var root = s.GetRequiredService<IPocoFactory<ITestBaseClassOnly>>().Create();
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( JsonStringParseSupport ),
                                                      typeof( IUnionPersonOrString ),
                                                      typeof( IPocoAllOfThem ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var root = s.GetRequiredService<IPocoFactory<IUnionPersonOrString>>().Create();
@@ -129,7 +129,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( JsonStringParseSupport ),
                                                      typeof( IUnionPersonOrPocoOrString ),
                                                      typeof( IPocoAllOfThem ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var root = s.GetRequiredService<IPocoFactory<IUnionPersonOrPocoOrString>>().Create();
@@ -156,7 +156,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
                                                      typeof( ITestWithCollections ),
                                                      typeof( ITestWithCollectionsOfFinal ),
                                                      typeof( IPocoNoIntern ) ); ;
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             {

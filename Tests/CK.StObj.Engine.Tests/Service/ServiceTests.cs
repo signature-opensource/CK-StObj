@@ -104,20 +104,28 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( Obj ) );
-                var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
+                var (collectorResult, map, reg, sp) = TestHelper.CreateAutomaticServices( collector );
+                Debug.Assert( collectorResult.EngineMap != null );
+                try
+                {
+                    // On runtime data.
+                    collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
+                    collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
+                    collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                    // On generated data.
+                    map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
+                    map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
+                    map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                    // On built ServiceProvider.
+                    var o = sp.GetRequiredService<Obj>();
+                    sp.GetRequiredService<ISampleService>().Should().BeSameAs( o );
+                }
+                finally
+                {
+                    sp.Dispose();
+                }
                 Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
 
-                // On runtime data.
-                collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
-                collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
-                collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-                // On generated data.
-                map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeOfType<Obj>();
-                map.StObjs.Obtain<Obj>().Should().BeOfType<Obj>();
-                map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-                // On built ServiceProvider.
-                var o = sp.GetRequiredService<Obj>();
-                sp.GetRequiredService<ISampleService>().Should().BeSameAs( o );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -135,22 +143,29 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ObjSpec ) );
-            var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
+            var (collectorResult, map, reg, sp) = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
-            // On runtime data.
-            collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
-            collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
-            collectorResult.EngineMap.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
-            // On generated data.
-            map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
-            map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
-            map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
-            // On the built ServiceProvider.
-            var o = sp.GetRequiredService<Obj>();
-            sp.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
-            sp.GetRequiredService<ISampleService>().Should().BeSameAs( o );
+            try
+            {
+                // On runtime data.
+                collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
+                collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
+                collectorResult.EngineMap.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
+                // On generated data.
+                map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpec>();
+                map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpec>();
+                map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpec>();
+                // On the built ServiceProvider.
+                var o = sp.GetRequiredService<Obj>();
+                sp.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
+                sp.GetRequiredService<ISampleService>().Should().BeSameAs( o );
+            }
+            finally
+            {
+                sp.Dispose();
+            }
         }
 
         public interface ISampleServiceSpec : ISampleService
@@ -171,31 +186,39 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ObjSpecFinal ) );
-            var (collectorResult, map, reg, sp) = TestHelper.GetAutomaticServices( collector );
+            var (collectorResult, map, reg, sp) = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
-            // On runtime data.
-            collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            collectorResult.EngineMap.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
-            collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.EngineMap.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
-            collectorResult.EngineMap.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
-            // On generated data.
-            map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
-            map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
-            map.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
-            map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
-            map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
-            map.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
-            // On build ServiceProvider.
-            var o = sp.GetRequiredService<ObjSpecFinal>();
-            sp.GetRequiredService<Obj>().Should().BeSameAs( o );
-            sp.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
-            sp.GetRequiredService<ObjSpecIntermediate>().Should().BeSameAs( o );
-            sp.GetRequiredService<ISampleService>().Should().BeSameAs( o );
-            sp.GetRequiredService<ISampleServiceSpec>().Should().BeSameAs( o );
+            try
+            {
+                // On runtime data.
+                collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+                collectorResult.EngineMap.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+                collectorResult.EngineMap.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                collectorResult.EngineMap.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
+                collectorResult.EngineMap.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
+                collectorResult.EngineMap.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
+                collectorResult.EngineMap.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
+                // On generated data.
+                map.Services.ObjectMappings[typeof( ISampleService )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+                map.Services.ObjectMappings[typeof( ISampleServiceSpec )].Implementation.Should().BeAssignableTo<ObjSpecFinal>();
+                map.StObjs.Obtain<ISampleService>().Should().BeNull( "ISampleService is a Service." );
+                map.StObjs.Obtain<ISampleServiceSpec>().Should().BeNull( "ISampleServiceSpec is a Service." );
+                map.StObjs.Obtain<Obj>().Should().BeAssignableTo<ObjSpecFinal>();
+                map.StObjs.Obtain<ObjSpec>().Should().BeAssignableTo<ObjSpecFinal>();
+                map.StObjs.Obtain<ObjSpecIntermediate>().Should().BeAssignableTo<ObjSpecFinal>();
+                // On build ServiceProvider.
+                var o = sp.GetRequiredService<ObjSpecFinal>();
+                sp.GetRequiredService<Obj>().Should().BeSameAs( o );
+                sp.GetRequiredService<ObjSpec>().Should().BeSameAs( o );
+                sp.GetRequiredService<ObjSpecIntermediate>().Should().BeSameAs( o );
+                sp.GetRequiredService<ISampleService>().Should().BeSameAs( o );
+                sp.GetRequiredService<ISampleServiceSpec>().Should().BeSameAs( o );
+            }
+            finally
+            {
+                sp.Dispose();
+            }
+
         }
 
         public interface IBase : IAutoService
@@ -224,7 +247,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ODep ) );
             collector.RegisterType( typeof( OBase ) );
-            var sp = TestHelper.GetAutomaticServices( collector ).Services;
+            using var sp = TestHelper.CreateAutomaticServices( collector ).Services;
             var oDep = sp.GetRequiredService<ODep>();
             sp.GetRequiredService<IBase>().Should().BeSameAs( oDep );
             sp.GetRequiredService<IDerived>().Should().BeSameAs( oDep );
@@ -307,31 +330,37 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( A ) );
             collector.RegisterType( typeof( B ) );
             collector.RegisterType( typeof( SqlCallContext ) );
-            var r = TestHelper.GetAutomaticServices( collector );
+            var r = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( r.Result.EngineMap != null, "No initialization error." );
-            r.Result.EngineMap.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
-            r.Result.EngineMap.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
-            r.Result.EngineMap.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
-
-            // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
-            var rootA = r.Services.GetRequiredService<A>();
-            rootA.Should().Be( r.Services.GetRequiredService<IA>() ).And.NotBeNull();
-            var rootB = r.Services.GetRequiredService<B>();
-            rootB.Should().Be( r.Services.GetRequiredService<IB>() ).And.NotBeNull();
-            rootB.Ctx.Should().Be( r.Services.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
-
-            using( var scope = r.Services.CreateScope() )
+            try
             {
-                var scopeA = scope.ServiceProvider.GetRequiredService<A>();
-                scopeA.Should().NotBeSameAs( rootA ).And.NotBeNull();
+                r.Result.EngineMap.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
+                r.Result.EngineMap.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
+                r.Result.EngineMap.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
 
-                var scopeB = scope.ServiceProvider.GetRequiredService<B>();
-                scopeB.Should().NotBeSameAs( rootB ).And.NotBeNull();
-                scopeB.Ctx.Should().Be( scope.ServiceProvider.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
+                // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
+                var rootA = r.Services.GetRequiredService<A>();
+                rootA.Should().Be( r.Services.GetRequiredService<IA>() ).And.NotBeNull();
+                var rootB = r.Services.GetRequiredService<B>();
+                rootB.Should().Be( r.Services.GetRequiredService<IB>() ).And.NotBeNull();
+                rootB.Ctx.Should().Be( r.Services.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
 
-                scopeB.Ctx.Should().NotBeSameAs( rootB.Ctx );
+                using( var scope = r.Services.CreateScope() )
+                {
+                    var scopeA = scope.ServiceProvider.GetRequiredService<A>();
+                    scopeA.Should().NotBeSameAs( rootA ).And.NotBeNull();
+
+                    var scopeB = scope.ServiceProvider.GetRequiredService<B>();
+                    scopeB.Should().NotBeSameAs( rootB ).And.NotBeNull();
+                    scopeB.Ctx.Should().Be( scope.ServiceProvider.GetRequiredService<ISqlCallContext>() ).And.NotBeNull();
+
+                    scopeB.Ctx.Should().NotBeSameAs( rootB.Ctx );
+                }
             }
-
+            finally
+            {
+                r.Services.Dispose();
+            }
         }
 
         #endregion
@@ -347,8 +376,8 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( SampleServiceGenerated ) );
             collector.RegisterType( typeof( SampleService ) );
-            var r = TestHelper.GetAutomaticServices( collector );
-            r.Services.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
+            using var s = TestHelper.CreateAutomaticServices( collector ).Services;
+            s.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
         }
 
 

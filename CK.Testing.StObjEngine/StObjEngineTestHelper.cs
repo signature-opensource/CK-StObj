@@ -76,16 +76,16 @@ namespace CK.Testing
             return r;
         }
 
-        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c ) => DoCompileAndLoadStObjMap( c, false );
+        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c, Action<StObjEngineConfiguration>? engineConfigurator ) => DoCompileAndLoadStObjMap( c, engineConfigurator, false );
 
-        static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c, bool skipEmbeddedStObjMap )
+        static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c, Action<StObjEngineConfiguration>? engineConfigurator, bool skipEmbeddedStObjMap )
         {
-            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), out string assemblyName, skipEmbeddedStObjMap );
+            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, skipEmbeddedStObjMap );
             r.Success.Should().BeTrue( "CodeGeneration should work." );
             var map = skipEmbeddedStObjMap ? null : r.EmbeddedStObjMap;
             if( map == null )
             {
-                var a = Assembly.Load( new AssemblyName( assemblyName ) );
+                var a = Assembly.Load( new AssemblyName( r.AssemblyName ) );
                 map = StObjContextRoot.Load( a, TestHelper.Monitor );
                 map.Should().NotBeNull();
             }
@@ -100,16 +100,29 @@ namespace CK.Testing
         /// </para>
         /// </summary>
         /// <param name="result">The collector result.</param>
-        /// <param name="assemblyName">The automatically computed assembly name that has been generated based on current time.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
         /// <param name="skipEmbeddedStObjMap">
         /// True to skip any available StObjMap: this MUST be true when
         /// a setup depends on externally injected services.
         /// </param>
         /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
-        static GenerateCodeResult DoGenerateCode( StObjCollectorResult result, out string assemblyName, bool skipEmbeddedStObjMap )
+        static GenerateCodeResult DoGenerateCode( StObjCollectorResult result,
+                                                  Action<StObjEngineConfiguration>? engineConfigurator,
+                                                  bool skipEmbeddedStObjMap )
         {
             Throw.CheckArgument( !result.HasFatalError );
-            assemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" );
+            var assemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" );
 
             var config = new StObjEngineConfiguration()
             {
@@ -121,34 +134,36 @@ namespace CK.Testing
                 GenerateSourceFiles = !skipEmbeddedStObjMap,
                 ProjectPath = TestHelper.TestProjectFolder
             } );
-
+            engineConfigurator?.Invoke( config );
             var success = CK.Setup.StObjEngine.Run( TestHelper.Monitor, result, config );
 
-            if( skipEmbeddedStObjMap || !success ) return new GenerateCodeResult( result, success, null );
+            if( skipEmbeddedStObjMap || !success ) return new GenerateCodeResult( result, success, null, assemblyName );
 
             IStObjMap? embedded = StObjContextRoot.Load( config.BaseSHA1, TestHelper.Monitor );
             if( embedded != null )
             {
                 TestHelper.Monitor.Info( embedded == null ? "No embedded generated source code." : "Embedded generated source code is available." );
             }
-            return new GenerateCodeResult( result, success, embedded );
+            return new GenerateCodeResult( result, success, embedded, assemblyName );
         }
 
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegistrar, ServiceProvider Services)
-                        IStObjEngineTestHelperCore.GetAutomaticServices( StObjCollector c,
-                                                                         Action<StObjContextRoot.ServiceRegister>? configureServices,
-                                                                         SimpleServiceContainer? startupServices )
+        AutoServiceResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
+                                                                              Action<StObjEngineConfiguration>? engineConfigurator,
+                                                                              SimpleServiceContainer? startupServices,
+                                                                              Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
-            var (result, map) = DoCompileAndLoadStObjMap( c, skipEmbeddedStObjMap: startupServices != null );
+            var (result, map) = DoCompileAndLoadStObjMap( c, engineConfigurator, skipEmbeddedStObjMap: startupServices != null );
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
             configureServices?.Invoke( reg );
             return (result, map, reg, reg.Services.BuildServiceProvider());
         }
 
-        StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c, SimpleServiceContainer? startupServices )
+        StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                                             Action<StObjEngineConfiguration>? engineConfigurator,
+                                                                                                             SimpleServiceContainer? startupServices )
         {
-            IStObjMap map = DoCompileAndLoadStObjMap( c, skipEmbeddedStObjMap: startupServices != null ).Map;
+            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, skipEmbeddedStObjMap: startupServices != null ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
             return reg;

@@ -68,7 +68,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
                 var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), t );
-                var services = TestHelper.GetAutomaticServices( c ).Services;
+                using var services = TestHelper.CreateAutomaticServices( c ).Services;
                 var directory = services.GetRequiredService<PocoDirectory>();
 
                 var u = ((IPocoFactory)services.GetRequiredService( typeof(IPocoFactory<>).MakeGenericType( t ) )).Create();
@@ -105,7 +105,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void number_types_with_a_double_among_them_are_compliant()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant1 ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant1>>().Create();
@@ -145,7 +145,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void when_a_number_is_not_ambiguous_it_is_correctly_typed()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant2 ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant2>>().Create();
@@ -185,7 +185,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         {
             // across 
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ICompliant3 ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<ICompliant3>>().Create();

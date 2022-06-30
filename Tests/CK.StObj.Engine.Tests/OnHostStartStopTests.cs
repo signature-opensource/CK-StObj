@@ -106,7 +106,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var allTypes= typeof( OnHostStartStopTests ).GetNestedTypes();
             var collector = TestHelper.CreateStObjCollector( allTypes );
-            var services = TestHelper.GetAutomaticServices( collector, services =>
+            using var services = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
             {
                 services.Services.AddScoped<IActivityMonitor>( sp => TestHelper.Monitor );
             } ).Services;

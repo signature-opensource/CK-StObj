@@ -47,32 +47,70 @@ namespace CK.Testing.StObjEngine
         /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
         /// <returns>The (successful) collector result and the ready-to-use map.</returns>
-        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c );
+        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c, Action<StObjEngineConfiguration>? engineConfigurator = null );
 
         /// <summary>
         /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileAndLoadStObjMap(StObjCollector)"/> and returns all
         /// the intermediate results: the (successful) collector result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service registrar
         /// and the final, fully configured, service provider.
         /// <para>
-        /// Note that the final <see cref="ServiceProvider"/> is a <see cref="IDisposable"/> object: it SHOULD be disposed.
+        /// Note that <see cref="AutoServiceResult.Services"/> is a <see cref="ServiceProvider"/> that is <see cref="IDisposable"/>: it SHOULD be disposed.
         /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegistrar, ServiceProvider Services) GetAutomaticServices(
-                                                                StObjCollector c,
-                                                                Action<StObjContextRoot.ServiceRegister>? configureServices = null,
-                                                                SimpleServiceContainer? startupServices = null );
+        AutoServiceResult CreateAutomaticServices( StObjCollector c,
+                                                   Action<StObjEngineConfiguration>? engineConfigurator = null,
+                                                   SimpleServiceContainer? startupServices = null,
+                                                   Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 
         /// <summary>
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/>.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
-        /// <returns>The (failed) service registrar.</returns>
-        StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c, SimpleServiceContainer? startupServices = null );
+        /// <returns>The (failed) service register.</returns>
+        StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                  Action<StObjEngineConfiguration>? engineConfigurator = null,
+                                                                                  SimpleServiceContainer? startupServices = null );
     }
 }

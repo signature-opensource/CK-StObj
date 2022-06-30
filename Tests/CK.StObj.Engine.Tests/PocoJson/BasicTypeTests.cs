@@ -46,7 +46,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void all_basic_types_roundtrip( PocoJsonSerializerMode mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllBasicTypes ) ); ;
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var nMax = services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
@@ -121,7 +121,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void all_nullable_basic_types_roundtrip( PocoJsonSerializerMode mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllNullableBasicTypes ) ); ;
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var nNull = services.GetRequiredService<IPocoFactory<IAllNullableBasicTypes>>().Create();

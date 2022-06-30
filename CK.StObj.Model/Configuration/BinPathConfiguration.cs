@@ -162,13 +162,17 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets the name that uniquely identifies this configuration among the others.
-        /// When null, an automatically numbered name is generated: only the unified bin path has an empty name.
+        /// When null, an automatically numbered name is generated.
         /// </summary>
         public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the path of the directory to setup (this property is shared with CKSetup configuration).
         /// It can be relative: it will be combined to the <see cref="StObjEngineConfiguration.BasePath"/>.
+        /// <para>
+        /// Nothing prevents multiple <see cref="BinPathConfiguration"/> to have the same Path. In such case, <see cref="OutputPath"/>
+        /// and/or <see cref="ProjectPath"/> should be set to different directories (otherwise file generation will be in trouble).
+        /// </para>
         /// </summary>
         public NormalizedPath Path { get; set; }
 

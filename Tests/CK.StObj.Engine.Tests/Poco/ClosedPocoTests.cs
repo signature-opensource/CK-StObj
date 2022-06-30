@@ -69,43 +69,50 @@ namespace CK.StObj.Engine.Tests.Service
                 c.RegisterType( typeof( IDocumentCloPoc ) );
                 c.RegisterType( typeof( ICultureUserCloPoc ) );
             }
-            var all = TestHelper.GetAutomaticServices( c );
-            var pocoSupportResult = all.Result.CKTypeResult.PocoSupport;
-            Debug.Assert( pocoSupportResult != null );
-            pocoSupportResult.Should().BeSameAs( all.Result.DynamicAssembly.GetPocoSupportResult() );
-            var services = all.Services;
+            var all = TestHelper.CreateAutomaticServices( c );
+            try
+            {
+                var pocoSupportResult = all.Result.CKTypeResult.PocoSupport;
+                Debug.Assert( pocoSupportResult != null );
+                pocoSupportResult.Should().BeSameAs( all.Result.DynamicAssembly.GetPocoSupportResult() );
+                var services = all.Services;
 
-            var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();
-            dCloPoc.Should().NotBeNull( "Factories work." );
+                var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();
+                dCloPoc.Should().NotBeNull( "Factories work." );
 
-            var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();
-            factoryCloPoc.Should().NotBeNull();
+                var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();
+                factoryCloPoc.Should().NotBeNull();
 
-            services.GetService<IPocoFactory<ICloPoc>>().Should().BeNull( "ICloPoc is a CKTypeDefiner." );
-            services.GetService<IPocoFactory<ICloPocPart>>().Should().BeNull( "ICloPocPart is a CKTypeSuperDefiner." );
-            services.GetService<IPocoFactory<IAuthenticatedCloPocPart>>().Should().BeNull( "Since ICloPocPart is a CKTypeSuperDefiner, a command part is NOT Poco." );
+                services.GetService<IPocoFactory<ICloPoc>>().Should().BeNull( "ICloPoc is a CKTypeDefiner." );
+                services.GetService<IPocoFactory<ICloPocPart>>().Should().BeNull( "ICloPocPart is a CKTypeSuperDefiner." );
+                services.GetService<IPocoFactory<IAuthenticatedCloPocPart>>().Should().BeNull( "Since ICloPocPart is a CKTypeSuperDefiner, a command part is NOT Poco." );
 
-            pocoSupportResult.AllInterfaces.Should().HaveCount( 3 );
-            pocoSupportResult.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo(
-                new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
+                pocoSupportResult.AllInterfaces.Should().HaveCount( 3 );
+                pocoSupportResult.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo(
+                    new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
 
-            pocoSupportResult.OtherInterfaces.Keys.Should().BeEquivalentTo(
-                new[] { typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
+                pocoSupportResult.OtherInterfaces.Keys.Should().BeEquivalentTo(
+                    new[] { typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
 
-            pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
-                .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );
-            pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface ).Should().BeEquivalentTo(
-                new[] { typeof( IDocumentCloPoc ), typeof( IUserCloPoc ) } );
+                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
+                    .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );
+                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface ).Should().BeEquivalentTo(
+                    new[] { typeof( IDocumentCloPoc ), typeof( IUserCloPoc ) } );
 
-            pocoSupportResult.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have parts." );
-            pocoSupportResult.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].Should().BeEquivalentTo(
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
-            pocoSupportResult.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo(
-                new[] { typeof( ICultureUserCloPoc ) } );
+                pocoSupportResult.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
+                    pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have parts." );
+                pocoSupportResult.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].Should().BeEquivalentTo(
+                    pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
+                pocoSupportResult.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo(
+                    new[] { typeof( ICultureUserCloPoc ) } );
 
-            var factoryCultCloPoc = services.GetService<IPocoFactory<ICultureUserCloPoc>>();
-            factoryCultCloPoc.Should().BeSameAs( factoryCloPoc );
+                var factoryCultCloPoc = services.GetService<IPocoFactory<ICultureUserCloPoc>>();
+                factoryCultCloPoc.Should().BeSameAs( factoryCloPoc );
+            }
+            finally
+            {
+                all.Services.Dispose();
+            }
         }
 
         public interface IOther1UserCloPoc : IUserCloPoc
@@ -148,7 +155,7 @@ namespace CK.StObj.Engine.Tests.Service
                 c.RegisterType( typeof( IUserFinalCloPoc ) );
             }
 
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var factoryCloPoc = services.GetService<IPocoFactory<IUserCloPoc>>();
             factoryCloPoc.Should().NotBeNull();
             services.GetService<IPocoFactory<IOther1UserCloPoc>>().Should().BeSameAs( factoryCloPoc );

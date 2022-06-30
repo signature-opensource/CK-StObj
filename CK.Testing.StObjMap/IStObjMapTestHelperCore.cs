@@ -12,7 +12,7 @@ namespace CK.Testing.StObjMap
     {
         /// <summary>
         /// Gets the generated assembly name.
-        /// Initially <see cref="Setup.StObjContextRoot.GeneratedAssemblyName"/>.
+        /// Initially <see cref="StObjContextRoot.GeneratedAssemblyName"/>.
         /// <para>
         /// This is updated each time <see cref="ResetStObjMap"/> is called with a ".Reset.#num" suffix
         /// (where #num is an incremented number starting at 1).
@@ -68,7 +68,7 @@ namespace CK.Testing.StObjMap
         /// Gets whether a failed attempt to obtain the <see cref="StObjMap"/> should be ignored: subsequent attempt to
         /// get it will trigger a full resolution.
         /// By default, this is "StObjMap/StObjMapRetryOnError" configuration that is false: if the first attempt to obtain the
-        /// current <see cref="StObjMap"/> failed, subsequent obtentions immediately throw.
+        /// current <see cref="StObjMap"/> failed, subsequent attempts immediately throw.
         /// <para>
         /// Note that calls to <see cref="ResetStObjMap(bool)"/> resets any current load error.
         /// </para>

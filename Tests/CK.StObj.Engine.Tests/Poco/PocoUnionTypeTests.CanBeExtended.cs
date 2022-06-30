@@ -146,7 +146,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ), typeof( PocoJsonSerializer ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPoco2>>().Create();

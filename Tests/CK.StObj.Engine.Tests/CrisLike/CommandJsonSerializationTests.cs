@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
                                                      typeof( ICriticalCommand ),
                                                      typeof( IDeviceCommand ),
                                                      typeof( IFullAuthCommand ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             Debug.Assert( services != null );
 
             TestRoundTrip<ISimpleCommand>( services );

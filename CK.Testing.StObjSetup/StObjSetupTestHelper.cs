@@ -57,14 +57,14 @@ namespace CK.Testing
         /// </summary>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
-        static public (StObjEngineConfiguration Configuration, bool ForceSetup) CreateDefaultConfiguration( IStObjSetupTestHelper helper )
+        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IStObjSetupTestHelper helper )
         {
             var stObjConf = new StObjEngineConfiguration
             {
                 RevertOrderingNames = helper.StObjRevertOrderingNames,
                 TraceDependencySorterInput = helper.StObjTraceGraphOrdering,
                 TraceDependencySorterOutput = helper.StObjTraceGraphOrdering,
-                GeneratedAssemblyName = helper.GeneratedAssemblyName
+                GeneratedAssemblyName = helper.GeneratedAssemblyName,
             };
             var b = new BinPathConfiguration
             {
@@ -78,7 +78,7 @@ namespace CK.Testing
             return (stObjConf, helper.CKSetup.DefaultForceSetup);
         }
 
-        CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, bool forceSetup )
+        CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, ForceSetupLevel forceSetup )
         {
             Throw.CheckNotNullArgument( stObjConf );
             using( _ckSetup.Monitor.OpenInfo( $"Running StObjSetup." ) )
@@ -110,7 +110,7 @@ namespace CK.Testing
             remove => _stObjSetupRunning -= value;
         }
 
-        CKSetupRunResult IStObjSetupTestHelperCore.RunStObjSetup( StObjEngineConfiguration configuration, bool forceSetup ) => DoRunStObjSetup( configuration, forceSetup );
+        CKSetupRunResult IStObjSetupTestHelperCore.RunStObjSetup( StObjEngineConfiguration configuration, ForceSetupLevel forceSetup ) => DoRunStObjSetup( configuration, forceSetup );
 
         void ITestHelperResolvedCallback.OnTestHelperGraphResolved( object resolvedObject )
         {

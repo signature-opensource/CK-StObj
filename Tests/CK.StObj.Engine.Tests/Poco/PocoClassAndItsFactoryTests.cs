@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void poco_knows_its_Factory()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoKnowsItsFactory ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var f = s.GetRequiredService<IPocoFactory<IPocoKnowsItsFactory>>();
             var o = f.Create();
             var f2 = ((IPocoGeneratedClass)o).Factory;
@@ -32,7 +32,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
 
-        // Idea for ReadOnly Poco: introducing the IPocoWriter
+        // Idea for ReadOnly Poco: introducing the IPocoBuilder
         // and an extension of the factory to create a builder instance.
         // With this, read only properties and read only collections 
         // can be safely managed.
@@ -44,7 +44,7 @@ namespace CK.StObj.Engine.Tests.Poco
         /// as a mutable version of its IPoco.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        public interface IPocoWriter<out T> where T : IPoco
+        public interface IPocoBuilder<out T> where T : IPoco
         {
             /// <summary>
             /// Retrieves the currently edited instance.
@@ -55,19 +55,19 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         /// <summary>
-        /// Extends the <see cref="IPocoFactory{T}"/> to support a companion <see cref="IPocoWriter{T}"/>.
+        /// Extends the <see cref="IPocoFactory{T}"/> to support a companion <see cref="IPocoBuilder{T}"/>.
         /// </summary>
         /// <typeparam name="T">The Poco type.</typeparam>
-        /// <typeparam name="TWriter">The Poco writer type.</typeparam>
-        public interface IPocoFactory<out T, out TWriter> : IPocoFactory<T>
+        /// <typeparam name="TBuilder">The Poco builder type.</typeparam>
+        public interface IPocoFactory<out T, out TBuilder> : IPocoFactory<T>
             where T : IPoco
-            where TWriter : IPocoWriter<T>
+            where TBuilder : IPocoBuilder<T>
         {
             /// <summary>
             /// Creates a writer that can be used to configure a read only Poco.
             /// </summary>
-            /// <returns>A writer.</returns>
-            TWriter CreateWriter();
+            /// <returns>A builder.</returns>
+            TBuilder CreateBuilder();
         }
 
         public interface IThing : IPoco
@@ -87,23 +87,22 @@ namespace CK.StObj.Engine.Tests.Poco
             string SomethingElse { get; }
         }
 
-        public interface IThingWriter : IPocoWriter<IThing>
+        public interface IThingBuilder : IPocoBuilder<IThing>
         {
             int One { get; set; }
         }
 
-        public interface ISuperThingWriter : IThingWriter
+        public interface ISuperThingBuilder : IThingBuilder
         {
             int Two { get; set; }
 
             IList<int> List { get; }
         }
 
-        public interface IOtherThingWriter : IThingWriter
+        public interface IOtherThingBuilder : IThingBuilder
         {
             string SetSomethingElse { get; set; }
         }
-
 
     }
 }

@@ -22,15 +22,24 @@ namespace CK.Testing
         public readonly bool Success;
 
         /// <summary>
-        /// Gets the <see cref="IStObjMap"/> if it is available.
+        /// Gets the embedded <see cref="IStObjMap"/> if it is available.
         /// </summary>
         public readonly IStObjMap? EmbeddedStObjMap;
 
-        internal GenerateCodeResult( StObjCollectorResult r, bool s, IStObjMap? m )
+        /// <summary>
+        /// Gets the assembly name that may have been generated or not.
+        /// <para>
+        /// If the assembly exists and <see cref="EmbeddedStObjMap"/> is null, a new StObjMap can be obtained from it.
+        /// </para>
+        /// </summary>
+        public readonly string AssemblyName;
+
+        internal GenerateCodeResult( StObjCollectorResult r, bool s, IStObjMap? embedded, string assemblyName )
         {
             Collector = r;
             Success = s;
-            EmbeddedStObjMap = m;
+            EmbeddedStObjMap = embedded;
+            AssemblyName = assemblyName;
         }
     }
 }

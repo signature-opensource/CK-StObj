@@ -119,7 +119,8 @@ namespace CK.StObj.Engine.Tests.Poco
         public void poco_property_supports_DefaultValueAttribute_from_System_ComponentModel()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IDefTest ) );
-            var f = TestHelper.GetAutomaticServices( c ).Services.GetRequiredService<IPocoFactory<IDefTest>>();
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var f = s.GetRequiredService<IPocoFactory<IDefTest>>();
             var o = f.Create();
             o.PDef.Should().Be( 3712 );
             o.Message.Should().Be( @"Hello ""World""!" );

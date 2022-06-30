@@ -51,7 +51,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void some_poco_properties_can_be_handled_by_independent_CodeGenerator()
         {
             var c = TestHelper.CreateStObjCollector( typeof( GlobalSequenceGenerator ), typeof( IPocoWithSpecialProperty ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var f = s.GetRequiredService<IPocoFactory<IPocoWithSpecialProperty>>();
             var o = f.Create();
             o.GlobalSequence.Should().Be( 45343 );

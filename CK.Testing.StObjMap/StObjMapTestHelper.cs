@@ -170,9 +170,9 @@ namespace CK.Testing
                     var now = DateTime.UtcNow;
                     var e = new StObjMapAccessedEventArgs( _map, now - _lastAccessMapUtc, now - _lastLoadedMapUtc );
                     h( this, e );
-                    if( e.ShouldReload )
+                    if( e.ShouldReset )
                     {
-                        using( _monitor.Monitor.OpenInfo( $"Accessing StObj map: current StObjMap should be reloaded." ) )
+                        using( _monitor.Monitor.OpenInfo( $"Accessing StObj map: current StObjMap should be reset." ) )
                         {
                             DoResetStObjMap( true );
                             Load();
@@ -204,7 +204,7 @@ namespace CK.Testing
         {
             if( _map == null ) _monitor.Monitor.Info( $"StObjMap is not loaded yet." );
             _map = null;
-            var num = Interlocked.Increment( ref _resetNumer );
+            var num = ++_resetNumer;
             _generatedAssemblyName = $"{StObjContextRoot.GeneratedAssemblyName}.Reset.{num}";
             _monitor.Monitor.Info( $"Reseting StObjMap: Generated assembly name is now: {_generatedAssemblyName}." );
             if( deleteGeneratedBinFolderAssembly ) DoDeleteGeneratedAssemblies( _monitor.BinFolder );
