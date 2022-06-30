@@ -30,8 +30,8 @@ namespace CK.Setup
         /// <returns>The object instance or null on error.</returns>
         public static object? Create( IActivityMonitor monitor, Type t, IServiceProvider services, IEnumerable<object>? requiredParameters = null )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( t == null ) throw new ArgumentNullException( nameof( t ) );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( t );
             using( monitor.OpenDebug( $"Creating instance of type: {t.AssemblyQualifiedName}." ) )
                 try
                 {
@@ -72,7 +72,7 @@ namespace CK.Setup
                             var resolved = services.GetService( p.ParameterType );
                             if( resolved == null && !p.HasDefaultValue )
                             {
-                                monitor.Error( $"Resolution failed for parameter '{p.Name}', type: '{p.ParameterType.Name}'." );
+                                monitor.Error( $"Resolution failed for parameter '{p.Name}', type: '{p.ParameterType}'." );
                                 ++failCount;
                             }
                             longestCtor.Mapped[i] = resolved;

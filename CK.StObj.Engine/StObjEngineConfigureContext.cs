@@ -90,10 +90,10 @@ namespace CK.Setup
 
         public void PushPostConfigureAction( Func<IActivityMonitor, IStObjEngineConfigureContext, bool> postAction ) => _trampoline.Push( postAction );
 
-        internal void CreateAspects( Func<bool> onError )
+        internal void CreateAndConfigureAspects( Func<bool> onError )
         {
             bool success = true;
-            using( _monitor.OpenTrace( $"Creating {_config.Configuration.Aspects.Count} aspect(s)." ) )
+            using( _monitor.OpenTrace( $"Creating and configuring {_config.Configuration.Aspects.Count} aspect(s)." ) )
             {
                 var aspectsType = new HashSet<Type>();
                 foreach( var c in _config.Configuration.Aspects )
@@ -103,7 +103,7 @@ namespace CK.Setup
                     if( String.IsNullOrWhiteSpace( aspectTypeName ) )
                     {
                         success = onError();
-                        _monitor.Error( $"Null or empty {c.GetType().FullName}.AspectType string." );
+                        _monitor.Error( $"Null or empty {c.GetType()}.AspectType string." );
                     }
                     else
                     {
@@ -114,7 +114,7 @@ namespace CK.Setup
                         if( !aspectsType.Add( t ) )
                         {
                             success = onError();
-                            _monitor.Error( $"Aspect '{t.FullName}' occurs more than once in configuration." );
+                            _monitor.Error( $"Aspect '{t}' occurs more than once in configuration." );
                         }
                         else
                         {
@@ -123,32 +123,24 @@ namespace CK.Setup
                             else
                             {
                                 _aspects.Add( a );
-                                // Adds the aspect itself to the container.
-                                _container.Add( t, a, null );
+                                using( _monitor.OpenTrace( $"Configuring aspect '{t}'." ) )
+                                {
+                                    try
+                                    {
+                                        if( !a.Configure( _monitor, this ) ) success = onError();
+                                    }
+                                    catch( Exception ex )
+                                    {
+                                        success = onError();
+                                        _monitor.Error( ex );
+                                    }
+                                }
+                                if( success )
+                                {
+                                    // Adds the aspect itself to the container.
+                                    _container.Add( t, a, null );
+                                }
                             }
-                        }
-                    }
-                }
-            }
-        }
-
-        internal void ConfigureAspects( Func<bool> onError )
-        {
-            bool success = true;
-            using( _monitor.OpenTrace( $"Configuring {_aspects.Count} aspect(s)." ) )
-            {
-                foreach( var a in _aspects )
-                {
-                    using( _monitor.OpenTrace( $"Configuring aspect '{a}'." ) )
-                    {
-                        try
-                        {
-                            if( !a.Configure( _monitor, this ) ) success = onError();
-                        }
-                        catch( Exception ex )
-                        {
-                            success = onError();
-                            _monitor.Error( ex );
                         }
                     }
                 }

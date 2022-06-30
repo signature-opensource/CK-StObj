@@ -145,11 +145,7 @@ namespace CK.Setup
             try
             {
                 // Creating the aspects.
-                _startContext.CreateAspects( () => _status.Success = false );
-                if( _status.Success )
-                {
-                    _startContext.ConfigureAspects( () => _status.Success = false );
-                }
+                _startContext.CreateAndConfigureAspects( () => _status.Success = false );
                 if( _status.Success )
                 {
                     StObjEngineRunContext runCtx = new StObjEngineRunContext( _monitor, _startContext );
