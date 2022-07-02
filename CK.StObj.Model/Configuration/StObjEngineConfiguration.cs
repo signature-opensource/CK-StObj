@@ -97,11 +97,11 @@ namespace CK.Setup
         /// <summary>
         /// Gets or sets a base SHA1 for the StObjMaps (CKSetup sets this to the files signature).
         /// <para>
-        /// By defaults, when <see cref="SHA1Value.Zero"/> or <see cref="SHA1Value.Empty"/>, the base signature is random
-        /// (any cache is disabled).
+        /// By defaults, when <see cref="SHA1Value.Zero"/> or <see cref="SHA1Value.Empty"/>, the final signatures
+        /// of each BinPath are computed from the generated source code.
         /// </para>
         /// <para>
-        /// The final signatures are the hashes of this property and the normalized <see cref="BinPathConfiguration.Path"/>.
+        /// When set to non zero, the BinPaths' signature are the hashes of this property and the normalized <see cref="BinPathConfiguration.Path"/>.
         /// </para>
         /// </summary>
         public SHA1Value BaseSHA1 { get; set; }

@@ -1,7 +1,10 @@
-﻿using CK.Core;
+using CK.Core;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Generalization of an artifact produced that can be a file or directory.
+    /// </summary>
     public interface IGeneratedArtifact
     {
         /// <summary>
@@ -22,7 +25,6 @@ namespace CK.Setup
 
         /// <summary>
         /// Tries to extract a SHA1 signature for this artifact.
-        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns><see cref="SHA1Value.Zero"/> if not found.</returns>

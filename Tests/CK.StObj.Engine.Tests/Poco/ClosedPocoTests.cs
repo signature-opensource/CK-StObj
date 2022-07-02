@@ -72,9 +72,9 @@ namespace CK.StObj.Engine.Tests.Service
             var all = TestHelper.CreateAutomaticServices( c );
             try
             {
-                var pocoSupportResult = all.Result.CKTypeResult.PocoSupport;
+                var pocoSupportResult = all.CollectorResult.CKTypeResult.PocoSupport;
                 Debug.Assert( pocoSupportResult != null );
-                pocoSupportResult.Should().BeSameAs( all.Result.DynamicAssembly.GetPocoSupportResult() );
+                pocoSupportResult.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoSupportResult() );
                 var services = all.Services;
 
                 var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();

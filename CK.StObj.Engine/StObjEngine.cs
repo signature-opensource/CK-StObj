@@ -98,48 +98,51 @@ namespace CK.Setup
         /// <summary>
         /// Helper with a single <see cref="StObjCollectorResult"/> for a configuration.
         /// If the <paramref name="config"/> has more than one <see cref="StObjEngineConfiguration.BinPaths"/>,
-        /// they will share the same result.
+        /// they will share the same <see cref="IRunningBinPathGroup"/>: their <see cref="BinPathConfiguration.Path"/> must be the same
+        /// otherwise an <see cref="ArgumentException"/> is thrown.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="result">The collector result.</param>
         /// <param name="config">The configuration.</param>
         /// <returns>True on success, false otherwise.</returns>
-        public static bool Run( IActivityMonitor monitor, StObjCollectorResult result, StObjEngineConfiguration config )
+        public static StObjEngineResult Run( IActivityMonitor monitor, StObjCollectorResult result, StObjEngineConfiguration config )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( result );
             Throw.CheckNotNullArgument( config );
+            Throw.CheckArgument( config.BinPaths.Select( b => b.Path ).Distinct().Count() == 1 );
             var e = new StObjEngine( monitor, config );
             return e.Run( new MonoResolver( result ) );
         }
 
 
         /// <summary>
-        /// Runs the setup.
+        /// Runs the setup, fully defined by the configuration.
+        /// This is the entry point when run by CKSetup.
         /// </summary>
         /// <returns>True on success, false if an error occurred.</returns>
-        public bool Run() => DoRun( null );
+        public bool Run() => DoRun( null ).Success;
 
         /// <summary>
         /// Runs the setup, delegating the obtention of the <see cref="StObjCollectorResult"/> to an external resolver.
         /// </summary>
         /// <param name="resolver">The resolver to use.</param>
-        /// <returns>True on success, false if an error occurred.</returns>
-        public bool Run( IStObjCollectorResultResolver resolver )
+        /// <returns>The run result.</returns>
+        public StObjEngineResult Run( IStObjCollectorResultResolver resolver )
         {
             Throw.CheckNotNullArgument( resolver );
             return DoRun( resolver );
         }
 
-        bool DoRun( IStObjCollectorResultResolver? resolver )
+        StObjEngineResult DoRun( IStObjCollectorResultResolver? resolver )
         {
             Throw.CheckState( "Run can be called only once.", _startContext == null );
-            if( !_config.CheckAndValidate( _monitor ) ) return false;
+            if( !_config.CheckAndValidate( _monitor ) ) return new StObjEngineResult( false, _config );
             if( _ckSetupConfig != null )
             {
                 _config.ApplyCKSetupConfiguration( _monitor, _ckSetupConfig );
             }
-            if( !_config.Initialize( _monitor ) ) return false;
+            if( !_config.Initialize( _monitor ) ) return new StObjEngineResult( false, _config );
             _status = new Status( _monitor );
             _startContext = new StObjEngineConfigureContext( _monitor, _config, _status );
             try
@@ -200,11 +203,14 @@ namespace CK.Setup
                             {
                                 foreach( var (g, secondPasses) in secondPass )
                                 {
-                                    if( !g.Result.GenerateSourceCodeSecondPass( _monitor, g, secondPasses ) )
+                                    var (success, runSignature) = g.Result.GenerateSourceCodeSecondPass( _monitor, g, secondPasses );
+                                    if( !success )
                                     {
                                         _status.Success = false;
                                         break;
                                     }
+                                    Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
+                                    g.ConfigurationGroup.RunSignature = runSignature;
                                     g.ConfigurationGroup.CopyArtifactsFromHead( _monitor );
                                 }
                             }
@@ -234,7 +240,7 @@ namespace CK.Setup
                     var termCtx = new StObjEngineTerminateContext( _monitor, runCtx );
                     termCtx.TerminateAspects( () => _status.Success = false );
                 }
-                return _status.Success;
+                return new StObjEngineResult( _status.Success, _config );
             }
             finally
             {

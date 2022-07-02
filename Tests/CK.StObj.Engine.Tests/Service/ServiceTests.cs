@@ -331,12 +331,12 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( B ) );
             collector.RegisterType( typeof( SqlCallContext ) );
             var r = TestHelper.CreateAutomaticServices( collector );
-            Debug.Assert( r.Result.EngineMap != null, "No initialization error." );
+            Debug.Assert( r.CollectorResult.EngineMap != null, "No initialization error." );
             try
             {
-                r.Result.EngineMap.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
-                r.Result.EngineMap.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
-                r.Result.EngineMap.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
 
                 // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
                 var rootA = r.Services.GetRequiredService<A>();

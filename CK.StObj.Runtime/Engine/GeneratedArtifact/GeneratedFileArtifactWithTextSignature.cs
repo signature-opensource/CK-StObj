@@ -14,17 +14,22 @@ namespace CK.Setup
     /// </summary>
     public sealed class GeneratedFileArtifactWithTextSignature : GeneratedFileArtifact
     {
+        /// <summary>
+        /// Suffix of the companion signature file.
+        /// </summary>
         public const string SuffixSignature = ".signature.txt";
 
         readonly NormalizedPath _signatureFile;
 
+        /// <summary>
+        /// Initializes a new <see cref="GeneratedFileArtifactWithTextSignature"/>.
+        /// </summary>
+        /// <param name="filePath">File path. It MUST not be <see cref="NormalizedPath.IsEmptyPath"/> otherwise an <see cref="ArgumentException"/> is thrown.</param>
         public GeneratedFileArtifactWithTextSignature( NormalizedPath filePath )
             : base( filePath )
         {
-            if( !filePath.IsEmptyPath )
-            {
-                _signatureFile = filePath.RemoveLastPart().AppendPart( filePath.LastPart + SuffixSignature );
-            }
+            Throw.CheckArgument( !filePath.IsEmptyPath );
+            _signatureFile = filePath.RemoveLastPart().AppendPart( filePath.LastPart + SuffixSignature );
         }
 
         /// <summary>
@@ -38,13 +43,11 @@ namespace CK.Setup
 
         /// <summary>
         /// Writes the SHA1 file signature for this file.
-        /// Nothing is done if <see cref="Path"/>.<see cref="NormalizedPath.IsEmptyPath">IsEmptyPath</see>
-        /// </para>
         /// </summary>
         /// <param name="signature">The signature to write.</param>
         public void CreateOrUpdateSignatureFile( SHA1Value signature )
         {
-            if( !_signatureFile.IsEmptyPath ) File.WriteAllText( _signatureFile, signature.ToString() );
+            File.WriteAllText( _signatureFile, signature.ToString() );
         }
 
         /// <summary>

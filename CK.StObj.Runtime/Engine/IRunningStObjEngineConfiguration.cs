@@ -2,6 +2,10 @@ using System.Collections.Generic;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Associates the <see cref="Groups"/> of similar configurations and the mutable
+    /// original engine configuration. Note that the original configuration is updated by the engine.
+    /// </summary>
     public interface IRunningStObjEngineConfiguration
     {
         /// <summary>

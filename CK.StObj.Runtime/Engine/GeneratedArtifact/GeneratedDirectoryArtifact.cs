@@ -10,14 +10,22 @@ namespace CK.Setup
 {
     /// <summary>
     /// Generic directory artifact that uses a <see cref="SignatureFileName"/>
-    /// file in the directory to associate the signature.
+    /// companion file in the directory to associate the signature.
     /// </summary>
     public class GeneratedDirectoryArtifact : IGeneratedArtifact
     {
+        /// <summary>
+        /// Name of the companion signature file.
+        /// </summary>
         public const string SignatureFileName = "signature.directory.txt";
 
+        /// <summary>
+        /// Initializes a new generated directory. 
+        /// </summary>
+        /// <param name="path">Directory path. It MUST not be <see cref="NormalizedPath.IsEmptyPath"/> otherwise an <see cref="ArgumentException"/> is thrown.</param>
         public GeneratedDirectoryArtifact( NormalizedPath path )
         {
+            Throw.CheckArgument( !path.IsEmptyPath );
             Path = path;
         }
 
@@ -32,22 +40,19 @@ namespace CK.Setup
         /// Gets whether <see cref="Directory.Exists(string?)"/>.
         /// </summary>
         /// <returns>True if this directory exists, false otherwise.</returns>
-        public virtual bool Exists() => !Path.IsEmptyPath && Directory.Exists( Path );
+        public virtual bool Exists() => Directory.Exists( Path );
 
         /// <summary>
         /// Writes a SHA1 signature for this directory.
-        /// Nothing is done if <see cref="Path"/>.<see cref="NormalizedPath.IsEmptyPath">IsEmptyPath</see>
-        /// </para>
         /// </summary>
         /// <param name="signature">The signature to write.</param>
         public void CreateOrUpdateSignatureFile( SHA1Value signature )
         {
-            if( !Path.IsEmptyPath ) File.WriteAllText( Path.AppendPart( SignatureFileName ), signature.ToString() );
+            File.WriteAllText( Path.AppendPart( SignatureFileName ), signature.ToString() );
         }
 
         /// <summary>
         /// Tries to extract a SHA1 signature for this artifact.
-        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns><see cref="SHA1Value.Zero"/> if not found.</returns>

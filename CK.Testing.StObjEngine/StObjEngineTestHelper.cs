@@ -76,52 +76,36 @@ namespace CK.Testing
             return r;
         }
 
-        (StObjCollectorResult Result, IStObjMap Map) IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c, Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator ) => DoCompileAndLoadStObjMap( c, engineConfigurator, false );
-
-        static (StObjCollectorResult Result, IStObjMap Map) DoCompileAndLoadStObjMap( StObjCollector c,
-                                                                                      Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
-                                                                                      bool skipEmbeddedStObjMap )
+        GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollector c,
+                                                                    Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                    bool generateSourceFile,
+                                                                    CompileOption compileOption )
         {
-            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, skipEmbeddedStObjMap );
-            r.Success.Should().BeTrue( "CodeGeneration should work." );
-            var map = skipEmbeddedStObjMap ? null : r.EmbeddedStObjMap;
-            if( map == null )
-            {
-                var a = Assembly.Load( new AssemblyName( r.AssemblyName ) );
-                map = StObjContextRoot.Load( a, TestHelper.Monitor );
-                map.Should().NotBeNull();
-            }
-            return (r.Collector, map!);
+            return DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, generateSourceFile, compileOption );
         }
 
-        /// <summary>
-        /// Compiles from a successful <see cref="StObjCollectorResult"/>. <see cref="StObjCollectorResult.HasFatalError"/> must be
-        /// false otherwise an <see cref="ArgumentException"/> is thrown.
-        /// <para>
-        /// The assembly name is <c>CK.StObj.AutoAssembly + DateTime.Now.ToString( ".yyMdHmsffff" )</c>.
-        /// </para>
-        /// </summary>
-        /// <param name="result">The collector result.</param>
-        /// <param name="engineConfigurator">
-        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
-        /// <para>
-        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
-        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
-        /// </para>
-        /// <para>
-        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
-        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
-        /// configurations.
-        /// </para>
-        /// </param>
-        /// <param name="skipEmbeddedStObjMap">
-        /// True to skip any available StObjMap: this MUST be true when
-        /// a setup depends on externally injected services.
-        /// </param>
-        /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
+        CompileAndLoadResult IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c,
+                                                                                Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
+        {
+            return DoCompileAndLoadStObjMap( c, engineConfigurator, useEmbeddedStObjMapIfPossible: false );
+        }
+
+        static CompileAndLoadResult DoCompileAndLoadStObjMap( StObjCollector c,
+                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                              bool useEmbeddedStObjMapIfPossible )
+        {
+            // If the embeddedStObjMap must be used, we update the G0.cs file, but if the StObjMap must be loaded from the assembly
+            // we avoid updating G0.cs.
+            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, useEmbeddedStObjMapIfPossible, CompileOption.Compile );
+            r.Success.Should().BeTrue( "CodeGeneration should work." );
+            var map = r.EngineResult.Groups[0].LoadStObjMap( useEmbeddedStObjMapIfPossible );
+            return new CompileAndLoadResult( r, map! );
+        }
+
         static GenerateCodeResult DoGenerateCode( StObjCollectorResult result,
                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
-                                                  bool skipEmbeddedStObjMap )
+                                                  bool generateSourceFiles,
+                                                  CompileOption compileOption )
         {
             Throw.CheckArgument( !result.HasFatalError );
             var assemblyName = StObjContextRoot.GeneratedAssemblyName + DateTime.Now.ToString( ".yyMdHmsffff" );
@@ -132,44 +116,37 @@ namespace CK.Testing
             };
             config.BinPaths.Add( new BinPathConfiguration()
             {
-                CompileOption = CompileOption.Compile,
-                GenerateSourceFiles = !skipEmbeddedStObjMap,
+                CompileOption = compileOption,
+                GenerateSourceFiles = generateSourceFiles,
                 ProjectPath = TestHelper.TestProjectFolder
             } );
             if( engineConfigurator != null )
             {
                 config = engineConfigurator.Invoke( config );
-                Throw.CheckState( "The returned engine configuration cannot be null.", config != null );
+                Throw.CheckState( "The engine configuration returned by the engineConfigurator cannot be null.", config != null );
             }
-            var success = CK.Setup.StObjEngine.Run( TestHelper.Monitor, result, config );
-
-            if( skipEmbeddedStObjMap || !success ) return new GenerateCodeResult( result, success, null, assemblyName );
-
-            IStObjMap? embedded = StObjContextRoot.Load( config.BaseSHA1, TestHelper.Monitor );
-            if( embedded != null )
-            {
-                TestHelper.Monitor.Info( embedded == null ? "No embedded generated source code." : "Embedded generated source code is available." );
-            }
-            return new GenerateCodeResult( result, success, embedded, assemblyName );
+            return new GenerateCodeResult( result, Setup.StObjEngine.Run( TestHelper.Monitor, result, config ) );
         }
 
-        AutoServiceResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
-                                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
-                                                                              SimpleServiceContainer? startupServices,
-                                                                              Action<StObjContextRoot.ServiceRegister>? configureServices )
+        AutomaticServicesResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
+                                                                                    Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                    SimpleServiceContainer? startupServices,
+                                                                                    Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
-            var (result, map) = DoCompileAndLoadStObjMap( c, engineConfigurator, skipEmbeddedStObjMap: startupServices != null );
+            var loadResult = DoCompileAndLoadStObjMap( c, engineConfigurator, true );
+
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
-            reg.AddStObjMap( map ).Should().BeTrue( "Service configuration succeed." );
+            reg.AddStObjMap( loadResult.Map ).Should().BeTrue( "Service configuration succeed." );
             configureServices?.Invoke( reg );
-            return (result, map, reg, reg.Services.BuildServiceProvider());
+
+            return new AutomaticServicesResult( loadResult, reg, reg.Services.BuildServiceProvider() );
         }
 
         StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                                                                              SimpleServiceContainer? startupServices )
         {
-            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, skipEmbeddedStObjMap: startupServices != null ).Map;
+            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, useEmbeddedStObjMapIfPossible: false ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
             return reg;

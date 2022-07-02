@@ -8,11 +8,20 @@ using System.Threading.Tasks;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Simple file artifact where the SHA1 should appear in the file path.
+    /// <see cref="DoGetSignature(IActivityMonitor)"/> can be overridden.
+    /// </summary>
     public class GeneratedFileArtifact : IGeneratedArtifact
     {
-        public GeneratedFileArtifact( NormalizedPath path )
+        /// <summary>
+        /// Initializes a new <see cref="GeneratedFileArtifact"/>.
+        /// </summary>
+        /// <param name="filePath">File path. It MUST not be <see cref="NormalizedPath.IsEmptyPath"/> otherwise an <see cref="ArgumentException"/> is thrown.</param>
+        public GeneratedFileArtifact( NormalizedPath filePath )
         {
-            Path = path;
+            Throw.CheckArgument( !filePath.IsEmptyPath );
+            Path = filePath;
         }
 
         /// <inheritdoc />
@@ -28,7 +37,6 @@ namespace CK.Setup
 
         /// <summary>
         /// Tries to extract a SHA1 signature for this artifact.
-        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns><see cref="SHA1Value.Zero"/> if not found.</returns>
@@ -59,7 +67,7 @@ namespace CK.Setup
             return SHA1Value.Zero;
         }
 
-        public static string? SafeReadFirstLine( IActivityMonitor monitor, NormalizedPath path )
+        internal static string? SafeReadFirstLine( IActivityMonitor monitor, NormalizedPath path )
         {
             try
             {

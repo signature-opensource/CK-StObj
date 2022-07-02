@@ -181,12 +181,12 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( UserOffice ) );
 
             var result = TestHelper.CreateAutomaticServices( collector );
-            Debug.Assert( result.Result.EngineMap != null, "No initialization error." );
+            Debug.Assert( result.CollectorResult.EngineMap != null, "No initialization error." );
             try
             {
                 result.Map.Services.SimpleMappings.ContainsKey( typeof( IAuthProvider ) ).Should().BeFalse();
-                IStObjFinalImplementation g = result.Result.EngineMap.StObjs.ToHead( typeof( IUserGoogle ) )!.FinalImplementation;
-                IStObjFinalImplementation o = result.Result.EngineMap.StObjs.ToHead( typeof( UserOffice ) )!.FinalImplementation;
+                IStObjFinalImplementation g = result.CollectorResult.EngineMap.StObjs.ToHead( typeof( IUserGoogle ) )!.FinalImplementation;
+                IStObjFinalImplementation o = result.CollectorResult.EngineMap.StObjs.ToHead( typeof( UserOffice ) )!.FinalImplementation;
                 g.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
                 o.MultipleMappings.Should().BeEquivalentTo( new[] { typeof( IAuthProvider ) } );
 

@@ -1,12 +1,17 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Group of <see cref="SimilarConfigurations"/>: Assemblies, ExcludedTypes and Types configurations
+    /// are the same.
+    /// </summary>
     public interface IRunningBinPathGroup
     {
         /// <summary>
@@ -24,6 +29,7 @@ namespace CK.Setup
         /// the unified types from all the BinPaths but this code will never be used.
         /// </para>
         /// </summary>
+        [MemberNotNullWhen( false, nameof( GeneratedSource ), nameof( GeneratedAssembly ) )]
         public bool IsUnifiedPure { get; }
 
         /// <summary>
@@ -34,10 +40,14 @@ namespace CK.Setup
         /// <summary>
         /// Gets the SHA1 for this BinPath. All <see cref="SimilarConfigurations"/> share the same SHA1.
         /// <para>
-        /// The <see cref="IStObjEngineRunContext.PrimaryBinPath"/> always uses the <see cref="StObjEngineConfiguration.BaseSHA1"/>.
+        /// If <see cref="IsUnifiedPure"/> is true, this is always <see cref="SHA1Value.IsZero"/>.
+        /// </para>
+        /// <para>
+        /// If no <see cref="StObjEngineConfiguration.BaseSHA1"/> has been provided, this is the SHA1 of
+        /// the generated source code.
         /// </para>
         /// </summary>
-        SHA1Value SignatureCode { get; }
+        SHA1Value RunSignature { get; }
 
         /// <summary>
         /// Gets the name (or comma separated names) of the <see cref="SimilarConfigurations"/>.
@@ -48,6 +58,7 @@ namespace CK.Setup
         /// Gets whether at least one <see cref="BinPathConfiguration.GenerateSourceFiles"/> in <see cref="SimilarConfigurations"/> is true
         /// and the <see cref="GeneratedSource"/> is not already up to date.
         /// </summary>
+        [MemberNotNullWhen( true, nameof( GeneratedSource ) )]
         bool SaveSource { get; }
 
         /// <summary>
@@ -59,14 +70,16 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the assembly file path.
+        /// Null if and only if <see cref="IsUnifiedPure"/> is true.
         /// It will be generated only if <see cref="CompileOption"/> is <see cref="CompileOption.Compile"/>.
         /// </summary>
-        GeneratedFileArtifactWithTextSignature GeneratedAssembly { get; }
+        GeneratedFileArtifactWithTextSignature? GeneratedAssembly { get; }
 
         /// <summary>
         /// Gets the source file path.
+        /// Null if and only if <see cref="IsUnifiedPure"/> is true.
         /// It will be generated only if <see cref="SaveSource"/> is true.
         /// </summary>
-        GeneratedG0Artifact GeneratedSource { get; }
+        GeneratedG0Artifact? GeneratedSource { get; }
     }
 }

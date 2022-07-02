@@ -38,10 +38,10 @@ namespace CK.Setup
         /// </param>
         /// <param name="typeKindDetector">The type kind detector.</param>
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
-        internal protected StObjObjectEngineMap( IReadOnlyList<string> names,
-                                                 IReadOnlyList<MutableItem> allSpecializations,
-                                                 CKTypeKindDetector typeKindDetector,
-                                                 IReadOnlyCollection<Assembly> assemblies )
+        internal StObjObjectEngineMap( IReadOnlyList<string> names,
+                                       IReadOnlyList<MutableItem> allSpecializations,
+                                       CKTypeKindDetector typeKindDetector,
+                                       IReadOnlyCollection<Assembly> assemblies )
         {
             Debug.Assert( names != null );
             Names = names;

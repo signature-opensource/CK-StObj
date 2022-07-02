@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace CK.Core
 {
@@ -240,11 +241,20 @@ namespace CK.Core
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static IStObjMap? Load( Assembly a, IActivityMonitor? monitor = null )
         {
-            if( a == null ) throw new ArgumentNullException( nameof( a ) );
+            Throw.CheckNotNullArgument( a );
             lock( _alreadyHandled )
             {
                 var info = LockedGetMapInfo( a, ref monitor );
                 if( info == null ) return null;
+                var alc = AssemblyLoadContext.GetLoadContext( a );
+                if( alc == null )
+                {
+                    monitor.Warn( $"Assembly '{a.FullName}' is not in any AssemblyLoadContext." );
+                }
+                else if( alc != AssemblyLoadContext.Default )
+                {
+                    monitor.Warn( $"Assembly '{a.FullName}' is loaded in non-default AssemblyLoadContext '{alc.Name}'." );
+                }
                 return LockedGetStObjMapFromInfo( info, ref monitor );
             }
         }

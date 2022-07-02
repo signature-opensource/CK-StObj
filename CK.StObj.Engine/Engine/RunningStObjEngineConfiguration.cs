@@ -7,6 +7,9 @@ using System.Xml.Linq;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Implements <see cref="IRunningStObjEngineConfiguration"/>.
+    /// </summary>
     public sealed class RunningStObjEngineConfiguration : IRunningStObjEngineConfiguration
     {
         readonly List<RunningBinPathGroup> _binPathGroups;
@@ -43,9 +46,10 @@ namespace CK.Setup
                 c.BasePath = Environment.CurrentDirectory;
                 monitor.Info( $"No BasePath. Using current directory '{c.BasePath}'." );
             }
-            if( !c.GeneratedAssemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
+            if( c.GeneratedAssemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) )
             {
-                c.GeneratedAssemblyName += ".dll";
+                monitor.Info( $"GeneratedAssemblyName should not end with '.dll'. Removing suffix." );
+                c.GeneratedAssemblyName += c.GeneratedAssemblyName.Substring( 0, c.GeneratedAssemblyName.Length - 4 );
             }
             int idx = 1;
             foreach( var b in c.BinPaths )
@@ -193,19 +197,16 @@ namespace CK.Setup
 
         internal bool Initialize( IActivityMonitor monitor )
         {
-            bool findLoadedStObjMap = !Configuration.ForceRun;
             if( Configuration.BaseSHA1.IsZero || Configuration.BaseSHA1 == SHA1Value.Empty )
             {
-                // TODO: use SHA1Value.CreateRadom().
-                Configuration.BaseSHA1 = SHA1Value.ComputeHash( System.Security.Cryptography.RandomNumberGenerator.GetBytes( 20 ) );
-                monitor.Info( $"Zero or Empty BaseSHA1, using a random one '{Configuration.BaseSHA1}'. This disables any cache." );
-                findLoadedStObjMap = false;
+                Configuration.BaseSHA1 = SHA1Value.Zero;
+                monitor.Info( $"Zero or Empty BaseSHA1, the generated code source SHA1 will be used." );
             }
             if( Configuration.BinPaths.Count == 1 )
             {
                 var b = Configuration.BinPaths[0];
                 b.ExcludedTypes.AddRange( Configuration.GlobalExcludedTypes );
-                _binPathGroups.Add( new RunningBinPathGroup( Configuration.GeneratedAssemblyName, b, Configuration.BaseSHA1, isUnifiedPure: false ) );
+                _binPathGroups.Add( new RunningBinPathGroup( Configuration.GeneratedAssemblyName, b, Configuration.BaseSHA1 ) );
                 monitor.Trace( $"No unification required (single BinPath)." );
             }
             else
@@ -215,7 +216,7 @@ namespace CK.Setup
             //
             foreach( var g in _binPathGroups )
             {
-                if( !g.Initialize( monitor, Configuration.ForceRun, findLoadedStObjMap ) ) return false;
+                if( !g.Initialize( monitor, Configuration.ForceRun ) ) return false;
             }
             return true;
         }
@@ -233,7 +234,10 @@ namespace CK.Setup
             {
                 // Ordering the set here to ensure a deterministic head for the group. 
                 var similar = g.OrderBy( b => b.Path ).ToArray();
-                var group = new RunningBinPathGroup( Configuration.GeneratedAssemblyName, similar[0], similar, SHA1Value.ComputeHash( Configuration.BaseSHA1.ToString() + similar[0].Path ) );
+                var shaGroup = Configuration.BaseSHA1.IsZero
+                                ? SHA1Value.Zero
+                                : SHA1Value.ComputeHash( Configuration.BaseSHA1.ToString() + similar[0].Path );
+                var group = new RunningBinPathGroup( Configuration.GeneratedAssemblyName, similar[0], similar, shaGroup );
                 _binPathGroups.Add( group );
             }
             if( _binPathGroups.Count > 1 )
@@ -250,13 +254,11 @@ namespace CK.Setup
                     primaryRun = _binPathGroups[idx];
                     monitor.Trace( $"No unification required, BinPath '{primaryRun.Configuration.Path}' covers all the required components." );
                     _binPathGroups.RemoveAt( idx );
-                    // Sets the BaseSha1 as the primary SHA1.
-                    primaryRun.SignatureCode = Configuration.BaseSHA1;
                 }
                 else
                 {
-                    primaryRun = new RunningBinPathGroup( Configuration.GeneratedAssemblyName, unifiedBinPath, Configuration.BaseSHA1, isUnifiedPure: true );
-                    monitor.Info( $"Unification required." );
+                    primaryRun = new RunningBinPathGroup( unifiedBinPath );
+                    monitor.Info( $"Unified group is required." );
                 }
                 // Ensures that it is the first in the list of BinPaths to process:
                 // the "covering" bin path must be the PrimaryPath, be it a pure unified or a regular one.
@@ -304,7 +306,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">Monitor for error.</param>
         /// <param name="configurations">Multiple configurations.</param>
-        /// <param name="globalExcludedTypes">Types to exclude: see <see cref="StObjEngineConfiguration{T}.GlobalExcludedTypes"/>.</param>
+        /// <param name="globalExcludedTypes">Types to exclude: see <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/>.</param>
         /// <returns>The unified configuration or null on error.</returns>
         static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
                                                                         IEnumerable<RunningBinPathGroup> configurations,

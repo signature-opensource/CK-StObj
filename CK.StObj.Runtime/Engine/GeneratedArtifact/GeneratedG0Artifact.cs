@@ -16,8 +16,12 @@ namespace CK.Setup
     public sealed class GeneratedG0Artifact : GeneratedFileArtifact
     {
 
+        /// <summary>
+        /// Initializes a new <see cref="GeneratedG0Artifact"/>.
+        /// </summary>
+        /// <param name="filePath">File path. It MUST not be <see cref="NormalizedPath.IsEmptyPath"/> otherwise an <see cref="ArgumentException"/> is thrown.</param>
         public GeneratedG0Artifact( NormalizedPath filePath )
-            : base( filePath)
+            : base( filePath )
         {
         }
 
@@ -31,7 +35,7 @@ namespace CK.Setup
             var firstLine = SafeReadFirstLine( monitor, Path );
             if( firstLine != null )
             {
-                var m = Regex.Match( firstLine, @"\s*\[\s*assembly\s*:\s*CK.StObj.Signature\s*\(\s*""(?<1>.*?)""" );
+                var m = Regex.Match( firstLine, @"\s*\[\s*assembly\s*:\s*CK.StObj.Signature\s*\(\s*@?""(?<1>.*?)""" );
                 if( m.Success && SHA1Value.TryParse( m.Groups[1].Value, out var signature ) )
                 {
                     return signature;
