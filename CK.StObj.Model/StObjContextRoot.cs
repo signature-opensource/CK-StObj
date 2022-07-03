@@ -124,15 +124,14 @@ namespace CK.Core
                         if( _alreadyHandled.TryGetValue( sha1S, out var exists ) )
                         {
                             Debug.Assert( exists != null );
-                            monitor.Info( $"StObjMap found replaces the one from '{exists.AssemblyName}' that has the same signature." );
-                            _alreadyHandled[sha1S] = info;
-                            _availableMaps.Remove( exists );
+                            monitor.Info( $"StObjMap found with the same signature as an already existing one. Keeping the previous one." );
+                            info = exists;
                         }
                         else
                         {
                             _alreadyHandled.Add( sha1S, info );
+                            _availableMaps.Add( info );
                         }
-                        _availableMaps.Add( info );
                     }
                 }
                 _alreadyHandled.Add( a, info );
@@ -314,7 +313,7 @@ namespace CK.Core
                     {
                         // Assembly.LoadFile caches the assemblies by their path.
                         // No need to do it.
-                        var a = Assembly.LoadFile( assemblyFullPath );
+                        var a = AssemblyLoadContext.Default.LoadFromAssemblyPath( assemblyFullPath );
                         var info = LockedGetMapInfo( a, ref monitor );
                         if( info == null ) return null;
                         return LockedGetStObjMapFromInfo( info, ref monitor );

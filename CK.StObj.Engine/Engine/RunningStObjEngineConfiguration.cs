@@ -316,11 +316,10 @@ namespace CK.Setup
             {
                 Path = AppContext.BaseDirectory,
                 OutputPath = AppContext.BaseDirectory,
-                // The root (the Working directory) doesn't want any output by itself.
-                GenerateSourceFiles = false,
                 Name = "(Unified)"
             };
-            Debug.Assert( unified.CompileOption == CompileOption.None );
+            // The root (the Working directory) doesn't want any output by itself.
+            Debug.Assert( !unified.GenerateSourceFiles && unified.CompileOption == CompileOption.None );
             // Assemblies and types are the union of the assemblies and types of the bin paths.
             unified.Assemblies.AddRange( configurations.SelectMany( b => b.Configuration.Assemblies ) );
 
