@@ -10,18 +10,20 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Associates an <see cref="IAutoImplementorProperty"/> to use for a <see cref="Property"/>.
+    /// Associates an <see cref="IAutoImplementorProperty"/> to use for a <see cref="Property"/>
+    /// that is abstract or virtual.
     /// </summary>
-    public struct ImplementableAbstractPropertyInfo
+    public readonly struct ImplementablePropertyInfo
     {
-        internal ImplementableAbstractPropertyInfo( PropertyInfo p, IAutoImplementorProperty impl )
+        internal ImplementablePropertyInfo( PropertyInfo p, IAutoImplementorProperty impl )
         {
             Property = p;
             ImplementorToUse = impl;
         }
 
         /// <summary>
-        /// Abstract property that has to be automatically implemented.
+        /// Abstract property that has to be automatically implemented
+        /// or virtual property that can be overridden.
         /// </summary>
         public readonly PropertyInfo Property;
 
