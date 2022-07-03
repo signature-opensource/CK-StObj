@@ -95,6 +95,7 @@ namespace CK.Testing
                     var ev = new StObjSetupRunningEventArgs( stObjConf, forceSetup );
                     _stObjSetupRunning?.Invoke( this, ev );
                     var ckSetupConf = new SetupConfiguration( new XDocument( ev.StObjEngineConfiguration.ToXml() ), "CK.Setup.StObjEngine, CK.StObj.Engine" );
+                    ckSetupConf.CKSetupName = _ckSetup.TestProjectName;
                     return _ckSetup.CKSetup.Run( ckSetupConf, forceSetup: ev.ForceSetup );
                 }
                 catch( Exception ex )
