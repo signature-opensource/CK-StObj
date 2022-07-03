@@ -76,10 +76,10 @@ namespace CK.Testing
             // but if it is None, set it to Engine: the engine must run even if
             // all the binaries are unchanged to check the G0.cs and assembly.
            
-            var f = helper.CKSetup.DefaultForceSetup;
+            var f = helper.CKSetup.ForceSetup;
             if( f == ForceSetupLevel.None )
             {
-                monitor.Trace( $"Setting CKSetup ForceSetupLevel to Engine so it can check the required artifact." );
+                monitor.Trace( $"Setting CKSetup ForceSetupLevel to Engine so it can check the required artifacts." );
                 f = ForceSetupLevel.Engine;
             }
             return (stObjConf, f);
