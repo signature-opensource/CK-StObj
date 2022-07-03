@@ -55,7 +55,7 @@ namespace CK.Setup
 
         GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
 
-        internal bool Initialize( IActivityMonitor monitor, bool forceRun )
+        internal bool Initialize( IActivityMonitor monitor, bool forceRun, ref bool canSkipRun )
         {
             if( IsUnifiedPure )
             {
@@ -100,6 +100,7 @@ namespace CK.Setup
                     // will not update any files.
                     _saveSource = SaveSourceLevel.RequiredForSHA1;
                 }
+                canSkipRun = false;
             }
             else if( !forceRun && (_saveSource != SaveSourceLevel.None || compile != CompileOption.None ) )
             {
@@ -125,6 +126,7 @@ namespace CK.Setup
                         CompileOption = CompileOption.None;
                     }
                 }
+                canSkipRun &= _saveSource == SaveSourceLevel.None && CompileOption == CompileOption.None;
             }
             return true;
         }

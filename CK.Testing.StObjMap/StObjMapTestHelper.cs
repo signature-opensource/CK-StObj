@@ -164,15 +164,11 @@ namespace CK.Testing
                 bool currentExists = File.Exists( currentPath );
                 if( currentExists )
                 {
-                    msg += $" Deleting current '{current}'.";
+                    msg += $" The assembly '{current}' exists.";
                 }
                 if( _lastStObjMapLoadFailed ) msg += " (Previous attempt to load it failed but retrying since StObjMapRetryOnError is true.)";
                 using( _monitor.Monitor.OpenInfo( msg ) )
                 {
-                    if( currentExists )
-                    {
-                        File.Delete( current );
-                    }
                     Load();
                 }
             }

@@ -13,7 +13,7 @@ namespace LibWithSampleModel.Tests
         public void Lib_testing()
         {
             var service = TestHelper.AutomaticServices.GetRequiredService<ServiceWithStupidCodeGeneration>();
-            service.GetName().Should().Be( "Hello from generated code!" );
+            service.GetName().Should().Be( "Hello from generated code! (touch)" );
         }
     }
 }

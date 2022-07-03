@@ -195,8 +195,11 @@ namespace CK.Setup
             }
         }
 
-        internal bool Initialize( IActivityMonitor monitor )
+        internal bool Initialize( IActivityMonitor monitor, out bool canSkipRun )
         {
+            // Lets be optimistic (and if an error occurred the returned false will skip the run anyway).
+            // If ForceRun is true, we'll always run. This flag can only transition from true to false.
+            canSkipRun = !Configuration.ForceRun;
             if( Configuration.BaseSHA1.IsZero || Configuration.BaseSHA1 == SHA1Value.Empty )
             {
                 Configuration.BaseSHA1 = SHA1Value.Zero;
@@ -213,10 +216,10 @@ namespace CK.Setup
             {
                 if( !InitializeMultipleBinPaths( monitor ) ) return false;
             }
-            //
+            // Provides the canSkipRun to each group.
             foreach( var g in _binPathGroups )
             {
-                if( !g.Initialize( monitor, Configuration.ForceRun ) ) return false;
+                if( !g.Initialize( monitor, Configuration.ForceRun, ref canSkipRun ) ) return false;
             }
             return true;
         }

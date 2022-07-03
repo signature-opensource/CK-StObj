@@ -23,8 +23,9 @@ namespace CK.Setup
 
         Status? _status;
         StObjEngineConfigureContext? _startContext;
+        bool _hasRun;
 
-        class Status : IStObjEngineStatus, IDisposable
+        sealed class Status : IStObjEngineStatus, IDisposable
         {
             readonly IActivityMonitor _m;
             readonly ActivityMonitorPathCatcher _pathCatcher;
@@ -136,13 +137,27 @@ namespace CK.Setup
 
         StObjEngineResult DoRun( IStObjCollectorResultResolver? resolver )
         {
-            Throw.CheckState( "Run can be called only once.", _startContext == null );
+            Throw.CheckState( "Run can be called only once.", !_hasRun );
+            _hasRun = true;
             if( !_config.CheckAndValidate( _monitor ) ) return new StObjEngineResult( false, _config );
             if( _ckSetupConfig != null )
             {
                 _config.ApplyCKSetupConfiguration( _monitor, _ckSetupConfig );
             }
-            if( !_config.Initialize( _monitor ) ) return new StObjEngineResult( false, _config );
+            if( !_config.Initialize( _monitor, out bool canSkipRun ) ) return new StObjEngineResult( false, _config );
+            if( canSkipRun )
+            {
+                _monitor.Info( "Skipping run (updating the artifacts to similar BinPaths if any)." );
+                foreach( var g in _config.Groups )
+                {
+                    if( !g.IsUnifiedPure )
+                    {
+                        g.CopyArtifactsFromHead( _monitor );
+                    }
+                }
+                return new StObjEngineResult( true, _config );
+            }
+            using var _ = _monitor.OpenInfo( "Running StObjEngine setup." );
             _status = new Status( _monitor );
             _startContext = new StObjEngineConfigureContext( _monitor, _config, _status );
             try
@@ -209,9 +224,12 @@ namespace CK.Setup
                                         _status.Success = false;
                                         break;
                                     }
-                                    Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
-                                    g.ConfigurationGroup.RunSignature = runSignature;
-                                    g.ConfigurationGroup.CopyArtifactsFromHead( _monitor );
+                                    if( !g.IsUnifiedPure )
+                                    {
+                                        Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
+                                        g.ConfigurationGroup.RunSignature = runSignature;
+                                        g.ConfigurationGroup.CopyArtifactsFromHead( _monitor );
+                                    }
                                 }
                             }
                         }

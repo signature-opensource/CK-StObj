@@ -38,7 +38,7 @@ namespace CK.Testing
         void OnStObjMapLoading( object? sender, EventArgs e )
         {
             Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
-            var (configuration, forceSetup) = CreateDefaultConfiguration( _mixin! );
+            var (configuration, forceSetup) = CreateDefaultConfiguration( _mixin.Monitor, _mixin! );
             DoRunStObjSetup( configuration, forceSetup );
         }
 
@@ -48,7 +48,7 @@ namespace CK.Testing
         /// </summary>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
-        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IStObjSetupTestHelper helper )
+        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor, IStObjSetupTestHelper helper )
         {
             var stObjConf = new StObjEngineConfiguration
             {
@@ -60,29 +60,35 @@ namespace CK.Testing
             {
                 // The name of the BinPath to use is the current IStObjMapTestHelper.BinPathName.
                 Name = helper.BinPathName,
-                // Here, we should be able to decorate the tested project reference with an Item Metadata:
-                //      <ProjectReference Include="..\..\Component\Component.csproj" StObjSetup="true" />
-                // and get the target path here from a const? a static that a generated code set?...
-                //
-                // This would be better than relying on the project naming conventions...
-                //
-                Path = helper.BinFolder,
+                // Use the ClosestSUTProjectFolder for the BinPath. If it's not found, it's
+                // the test BinFolder.
+                Path = helper.ClosestSUTProjectFolder.Combine( helper.PathToBin ),
                 // Then the OutputPath will copy the generated assembly to this bin folder.
                 OutputPath = helper.BinFolder,
                 CompileOption = CompileOption.Compile,
-
+                // ...and the G0.cs to the TestProjectFolder.
                 GenerateSourceFiles = helper.StObjGenerateSourceFiles,
                 ProjectPath = helper.TestProjectFolder
             };
             stObjConf.BinPaths.Add( b );
 
-            return (stObjConf, helper.CKSetup.DefaultForceSetup);
+            // Consider by default the CKSetup configuration that be not None,
+            // but if it is None, set it to Engine: the engine must run even if
+            // all the binaries are unchanged to check the G0.cs and assembly.
+           
+            var f = helper.CKSetup.DefaultForceSetup;
+            if( f == ForceSetupLevel.None )
+            {
+                monitor.Trace( $"Setting CKSetup ForceSetupLevel to Engine so it can check the required artifact." );
+                f = ForceSetupLevel.Engine;
+            }
+            return (stObjConf, f);
         }
 
         CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, ForceSetupLevel forceSetup )
         {
             Throw.CheckNotNullArgument( stObjConf );
-            using( _ckSetup.Monitor.OpenInfo( $"Running StObjSetup." ) )
+            using( _ckSetup.Monitor.OpenInfo( $"Invoking StObjSetupRunning event." ) )
             {
                 try
                 {
