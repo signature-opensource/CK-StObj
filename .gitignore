@@ -277,3 +277,4 @@ $StObjGen/
 CodeCakeBuilder/[Rr]elease/
 CodeCakeBuilder/[Rr]eleases/
 /Tests/StObjSetupTesting/Tests/LocalSolutionStore/
+/Tests/StObjSetupTesting/Tests/LibWithSampleModel.Tests/LocalSolutionStore/
