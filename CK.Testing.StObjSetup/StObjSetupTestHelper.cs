@@ -37,23 +37,14 @@ namespace CK.Testing
 
         void OnStObjMapLoading( object? sender, EventArgs e )
         {
-            var fName = _stObjMap.GeneratedAssemblyName + ".dll";
-            var file = _stObjMap.BinFolder.AppendPart( fName );
-
-            if( !File.Exists( file ) )
-            {
-                using( _stObjMap.Monitor.OpenInfo( $"File '{file}' does not exist. Running StObjSetup to create it." ) )
-                {
-                    Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
-                    var (configuration, forceSetup) = CreateDefaultConfiguration( _mixin! );
-                    DoRunStObjSetup( configuration, forceSetup );
-                }
-            }
+            Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
+            var (configuration, forceSetup) = CreateDefaultConfiguration( _mixin! );
+            DoRunStObjSetup( configuration, forceSetup );
         }
 
         /// <summary>
         /// Low level helper that initializes a new <see cref="StObjEngineConfiguration"/> and computes the force setup flag
-        /// that can be used by other helpers that need to run a DBSetup.
+        /// that can be used by other helpers that need to run a setup.
         /// </summary>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
@@ -64,12 +55,22 @@ namespace CK.Testing
                 RevertOrderingNames = helper.StObjRevertOrderingNames,
                 TraceDependencySorterInput = helper.StObjTraceGraphOrdering,
                 TraceDependencySorterOutput = helper.StObjTraceGraphOrdering,
-                GeneratedAssemblyName = helper.GeneratedAssemblyName,
             };
             var b = new BinPathConfiguration
             {
-                CompileOption = CompileOption.Compile,
+                // The name of the BinPath to use is the current IStObjMapTestHelper.BinPathName.
+                Name = helper.BinPathName,
+                // Here, we should be able to decorate the tested project reference with an Item Metadata:
+                //      <ProjectReference Include="..\..\Component\Component.csproj" StObjSetup="true" />
+                // and get the target path here from a const? a static that a generated code set?...
+                //
+                // This would be better than relying on the project naming conventions...
+                //
                 Path = helper.BinFolder,
+                // Then the OutputPath will copy the generated assembly to this bin folder.
+                OutputPath = helper.BinFolder,
+                CompileOption = CompileOption.Compile,
+
                 GenerateSourceFiles = helper.StObjGenerateSourceFiles,
                 ProjectPath = helper.TestProjectFolder
             };

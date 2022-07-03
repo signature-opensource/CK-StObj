@@ -7,7 +7,7 @@ namespace CK.Testing.StObjMap
     /// Event of <see cref="IStObjMapTestHelperCore.StObjMapAccessed"/>.
     /// This event can be used to challenge external conditions that may require to reload the <see cref="IStObjMapTestHelperCore.StObjMap"/>.
     /// </summary>
-    public class StObjMapAccessedEventArgs : EventArgs
+    public sealed class StObjMapAccessedEventArgs : EventArgs
     {
         /// <summary>
         /// Initializes a new <see cref="StObjMapAccessedEventArgs"/>.
