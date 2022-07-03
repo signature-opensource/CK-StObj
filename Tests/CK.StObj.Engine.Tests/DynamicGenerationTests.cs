@@ -312,7 +312,7 @@ namespace CK.StObj.Engine.Tests
             }
 
             /// <summary>
-            /// This is the atribute that will trigger the abstract properties implementation.
+            /// This is the attribute that will trigger the abstract properties implementation.
             /// This is a very small attribute that does nothing else than redirecting to the
             /// actual implementation that must be in a ".Runtime" or ".Engine" assembly.
             /// <para>

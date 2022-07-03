@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
@@ -6,9 +6,6 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="%24StObjGen\G0-protected.cs" />
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="NUnit" Version="3.13.3" />
@@ -24,7 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="%24StObjGen\" />
-    <Folder Include="Logs\" />
   </ItemGroup>
 
 </Project>
