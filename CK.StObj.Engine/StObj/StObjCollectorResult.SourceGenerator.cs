@@ -227,7 +227,24 @@ namespace CK.Setup
                     && configurationGroup.GeneratedSource.GetSignature( monitor ) != runSignature )
                 {
                     code = ws.GetGlobalSource();
-                    File.WriteAllText( configurationGroup.GeneratedSource.Path, code );
+                    Directory.CreateDirectory( configurationGroup.GeneratedSource.Path.RemoveLastPart() );
+                    int tryCount = 0;
+                    retry:
+                    try
+                    {
+                        File.WriteAllText( configurationGroup.GeneratedSource.Path, code );
+                    }
+                    catch( Exception ex )
+                    {
+                        if( ++tryCount > 5 )
+                        {
+                            monitor.Error( $"Unable to write source code to '{configurationGroup.GeneratedSource.Path}' after 5 tries.", ex );
+                            return (false, runSignature);
+                        }
+                        monitor.Warn( $"Error while writing source code. Retrying in {tryCount * 50} ms.", ex );
+                        System.Threading.Thread.Sleep( tryCount * 50 );
+                        goto retry;
+                    }
                     monitor.Info( $"Saved source file: {configurationGroup.GeneratedSource.Path}." );
                 }
                 if( codeGenContext.CompileOption == CompileOption.None )
@@ -238,14 +255,15 @@ namespace CK.Setup
                 code ??= ws.GetGlobalSource();
                 Debug.Assert( code != null );
 
+                var targetPath = codeGenContext.CompileOption == CompileOption.Compile
+                                                            ? configurationGroup.GeneratedAssembly.Path
+                                                            : default;
                 using( monitor.OpenInfo( codeGenContext.CompileOption == CompileOption.Compile
-                                            ? "Compiling source code (using C# v9.0 language version)."
+                                            ? $"Compiling source code (using C# v9.0 language version) and saving to '{targetPath}'."
                                             : "Only parsing source code, using C# v9.0 language version (skipping compilation)." ) )
                 {
                     var result = CodeGenerator.Generate( code,
-                                                         codeGenContext.CompileOption == CompileOption.Compile
-                                                            ? configurationGroup.GeneratedAssembly.Path
-                                                            : null,
+                                                         targetPath.IsEmptyPath ? null : targetPath,
                                                          ws.AssemblyReferences,
                                                          new CSharpParseOptions( LanguageVersion.CSharp9 ) );
 
