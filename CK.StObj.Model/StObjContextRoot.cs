@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -24,6 +25,11 @@ namespace CK.Core
         /// Default assembly name.
         /// </summary>
         public const string GeneratedAssemblyName = "CK.StObj.AutoAssembly";
+
+        /// <summary>
+        /// Suffix of the companion signature file when present, contains the RunSignature of the StObjMap.
+        /// </summary>
+        public const string SuffixSignature = ".signature.txt";
 
         /// <summary>
         /// Holds the full name of the root class.
@@ -205,7 +211,7 @@ namespace CK.Core
         /// <returns>The loaded map or null on error.</returns>
         public static IStObjMap? GetStObjMap( StObjMapInfo info, IActivityMonitor? monitor = null )
         {
-            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            Throw.CheckNotNullArgument( info );
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             lock( _alreadyHandled )
             {
@@ -281,6 +287,10 @@ namespace CK.Core
 
         /// <summary>
         /// Attempts to load a StObjMap from an assembly name.
+        /// <para>
+        /// If a <see cref="SuffixSignature"/> file exists and contains a valid signature, the StObjMap is
+        /// loaded from the <see cref="GetAvailableMapInfos(IActivityMonitor?)"/> if it exists.
+        /// </para>
         /// </summary>
         /// <param name="assemblyName">The assembly name.</param>
         /// <param name="monitor">Optional monitor to use.</param>
@@ -288,21 +298,21 @@ namespace CK.Core
         public static IStObjMap? Load( string assemblyName, IActivityMonitor? monitor = null )
         {
             Throw.CheckNotNullOrEmptyArgument( assemblyName );
+            Throw.CheckArgument( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) < 0 );
 
-            // We could support here that if a / or \ appear in the name, then its a path and then we could use Assembly.LoadFile.
-            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) Throw.ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
-
-            string assemblyNameWithExtension; 
-            if( assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) || assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
+            if( !assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase )
+                && !assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
             {
-                assemblyNameWithExtension = assemblyName;
-                assemblyName = assemblyName.Substring( 0, assemblyName.Length - 4 );
+                assemblyName = assemblyName + ".dll";
             }
-            else
+            string assemblyFullPath = Path.Combine( AppContext.BaseDirectory, assemblyName );
+            var signaturePath = assemblyFullPath + SuffixSignature;
+            if( File.Exists( signaturePath )
+                && SHA1Value.TryParse( File.ReadAllText( signaturePath ), out var signature ) )
             {
-                assemblyNameWithExtension = assemblyName + ".dll";
+                var map = Load( signature, monitor );
+                if( map != null ) return map;
             }
-            string assemblyFullPath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyNameWithExtension );
 
             lock( _alreadyHandled )
             {
@@ -311,7 +321,7 @@ namespace CK.Core
                 {
                     try
                     {
-                        // Assembly.LoadFile caches the assemblies by their path.
+                        // LoadFromAssemblyPath caches the assemblies by their path.
                         // No need to do it.
                         var a = AssemblyLoadContext.Default.LoadFromAssemblyPath( assemblyFullPath );
                         var info = LockedGetMapInfo( a, ref monitor );

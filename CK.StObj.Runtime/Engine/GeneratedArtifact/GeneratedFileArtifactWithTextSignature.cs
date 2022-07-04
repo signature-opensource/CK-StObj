@@ -10,15 +10,10 @@ using System.Threading.Tasks;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements any file that uses a companion file with a ".signature.txt" suffix to store the signature.
+    /// Implements any file that uses a companion file with a <see cref="StObjContextRoot.SuffixSignature"/> to store the signature.
     /// </summary>
     public sealed class GeneratedFileArtifactWithTextSignature : GeneratedFileArtifact
     {
-        /// <summary>
-        /// Suffix of the companion signature file.
-        /// </summary>
-        public const string SuffixSignature = ".signature.txt";
-
         readonly NormalizedPath _signatureFile;
 
         /// <summary>
@@ -29,7 +24,7 @@ namespace CK.Setup
             : base( filePath )
         {
             Throw.CheckArgument( !filePath.IsEmptyPath );
-            _signatureFile = filePath.RemoveLastPart().AppendPart( filePath.LastPart + SuffixSignature );
+            _signatureFile = filePath.RemoveLastPart().AppendPart( filePath.LastPart + StObjContextRoot.SuffixSignature );
         }
 
         /// <summary>
