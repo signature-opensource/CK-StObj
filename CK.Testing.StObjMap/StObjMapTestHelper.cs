@@ -17,7 +17,7 @@ namespace CK.Testing
     public class StObjMapTestHelper : IStObjMapTestHelperCore
     {
         const string _binPathNamePrefix = "StObjMapTest";
-        readonly ITestHelperConfiguration _config;
+        readonly TestHelperConfiguration _config;
         readonly IMonitorTestHelper _monitor;
         string _binPathName;
         bool _stObjMapRetryOnError;
@@ -40,7 +40,7 @@ namespace CK.Testing
         /// </summary>
         /// <param name="config">The configuration.</param>
         /// <param name="monitor">The monitor helper.</param>
-        public StObjMapTestHelper( ITestHelperConfiguration config, IMonitorTestHelper monitor )
+        public StObjMapTestHelper( TestHelperConfiguration config, IMonitorTestHelper monitor )
         {
             _config = config;
             _monitor = monitor;

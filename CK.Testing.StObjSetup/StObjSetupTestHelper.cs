@@ -24,7 +24,7 @@ namespace CK.Testing
         bool _revertOrderingNames;
         bool _traceGraphOrdering;
 
-        internal StObjSetupTestHelper( ITestHelperConfiguration config, ICKSetupTestHelper ckSetup, IStObjMapTestHelper stObjMap )
+        internal StObjSetupTestHelper( TestHelperConfiguration config, ICKSetupTestHelper ckSetup, IStObjMapTestHelper stObjMap )
         {
             _ckSetup = ckSetup;
             _stObjMap = stObjMap;
