@@ -1,0 +1,10 @@
+<Project>
+
+  <Target Name="RemoveRuntimeConfigFileFromPackedFiles" BeforeTargets="GenerateNuSpec" >
+    <ItemGroup>
+      <_BuildOutputInPackage Remove="$(ProjectRuntimeConfigFilePath)" />
+    </ItemGroup>
+  </Target>
+
+</Project>
+

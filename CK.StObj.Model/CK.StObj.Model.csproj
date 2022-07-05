@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -12,7 +12,20 @@
     <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.1--0003-develop" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <Content Include="MSBuild/CK.StObj.Model.props">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.StObj.Model.props</PackagePath>
+    </Content>
+    <Content Include="MSBuild/CK.StObj.Model.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
+    </Content>
   </ItemGroup>
+
 </Project>
