@@ -83,5 +83,66 @@ namespace CK.Setup
         /// <returns>This Path.</returns>
         public override string ToString() => Path;
 
+        /// <summary>
+        /// Copy the content of the source directory to <see cref="Path"/>.
+        /// This calls the <see cref="SafeCopy(IActivityMonitor, NormalizedPath, NormalizedPath)"/>
+        /// helper but can be overridden if needed.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="source">The source directory.</param>
+        /// <returns>True on success, false on error.</returns>
+        public virtual bool CopyFrom( IActivityMonitor monitor, NormalizedPath source )
+        {
+            return SafeCopy( monitor, source, Path );
+        }
+
+        /// <summary>
+        /// Helper that copy a directory content to another one with retries.
+        /// This first deletes the target directory before copying the content.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="source">The source directory.</param>
+        /// <param name="target">The target directory.</param>
+        /// <returns>True on success, false on error.</returns>
+        public static bool SafeCopy( IActivityMonitor monitor, NormalizedPath source, NormalizedPath target )
+        {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckArgument( !target.StartsWith( source ) && !source.StartsWith( target ) );
+            int tryCount = 0;
+            retry:
+            try
+            {
+                var dS = new DirectoryInfo( source );
+                var dT = new DirectoryInfo( target );
+                if( !dS.Exists )
+                {
+                    monitor.Error( $"Source directory '{dS.FullName}' not found." );
+                    return false;
+                }
+                if( !dT.Exists )
+                {
+                    Directory.CreateDirectory( dT.FullName );
+                }
+                else
+                {
+                    dT.Delete( recursive: true );
+                }
+                FileUtil.CopyDirectory( dS, dT );
+            }
+            catch( Exception ex )
+            {
+                if( ++tryCount > 5 )
+                {
+                    monitor.Error( $"Failed to copy directory content from {source} to '{target}' after 5 tries.", ex );
+                    return false;
+                }
+                monitor.Warn( $"Error while copying directory content. Retrying in {tryCount * 50} ms.", ex );
+                System.Threading.Thread.Sleep( tryCount * 50 );
+                goto retry;
+            }
+            monitor.Info( $"Directory content copied from '{source}' to '{target}'." );
+            return true;
+
+        }
     }
 }

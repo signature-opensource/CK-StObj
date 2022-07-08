@@ -227,25 +227,7 @@ namespace CK.Setup
                     && configurationGroup.GeneratedSource.GetSignature( monitor ) != runSignature )
                 {
                     code = ws.GetGlobalSource();
-                    Directory.CreateDirectory( configurationGroup.GeneratedSource.Path.RemoveLastPart() );
-                    int tryCount = 0;
-                    retry:
-                    try
-                    {
-                        File.WriteAllText( configurationGroup.GeneratedSource.Path, code );
-                    }
-                    catch( Exception ex )
-                    {
-                        if( ++tryCount > 5 )
-                        {
-                            monitor.Error( $"Unable to write source code to '{configurationGroup.GeneratedSource.Path}' after 5 tries.", ex );
-                            return (false, runSignature);
-                        }
-                        monitor.Warn( $"Error while writing source code. Retrying in {tryCount * 50} ms.", ex );
-                        System.Threading.Thread.Sleep( tryCount * 50 );
-                        goto retry;
-                    }
-                    monitor.Info( $"Saved source file: {configurationGroup.GeneratedSource.Path}." );
+                    configurationGroup.GeneratedSource.CreateOrUpdate( monitor, code );
                 }
                 if( codeGenContext.CompileOption == CompileOption.None )
                 {

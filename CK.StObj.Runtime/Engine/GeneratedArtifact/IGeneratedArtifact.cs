@@ -29,5 +29,14 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <returns><see cref="SHA1Value.Zero"/> if not found.</returns>
         SHA1Value GetSignature( IActivityMonitor monitor );
+
+        /// <summary>
+        /// Tries to copy a source file or directory content to <see cref="Path"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="source">The source file or directory path to copy.</param>
+        /// <returns>True on success, false on error.</returns>
+        bool CopyFrom( IActivityMonitor monitor, NormalizedPath source );
+
     }
 }

@@ -45,5 +45,28 @@ namespace CK.Setup
             return SHA1Value.Zero;
         }
 
+        /// <summary>
+        /// Overridden to ensure that the target folder exists and, if the target folder is "$StObjGen" that
+        /// a .gitignore file exists in it.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <returns>Always true.</returns>
+        protected override bool PrepareWrite( IActivityMonitor monitor )
+        {
+            var folder = Path.RemoveLastPart();
+            Directory.CreateDirectory( Path.RemoveLastPart() );
+            // For '$StObjGen' folders, ensures that a .gitignore file exists.
+            if( Path.LastPart == "$StObjGen" )
+            {
+                var gitIgnore = folder.AppendPart( ".gitignore" );
+                if( !File.Exists( gitIgnore ) )
+                {
+                    // Ignores error.
+                    SafeWrite( monitor, gitIgnore, "*" );
+                }
+            }
+            return true;
+        }
+
     }
 }
