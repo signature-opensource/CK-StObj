@@ -30,9 +30,18 @@ namespace CK.Testing
             _stObjMap = stObjMap;
             stObjMap.StObjMapLoading += OnStObjMapLoading;
 
-            _generateSourceFiles = config.GetBoolean( "StObjSetup/StObjGenerateSourceFiles" ) ?? true;
-            _revertOrderingNames = config.GetBoolean( "StObjSetup/StObjRevertOrderingNames" ) ?? false;
-            _traceGraphOrdering = config.GetBoolean( "StObjSetup/StObjTraceGraphOrdering" ) ?? false;
+            _generateSourceFiles = config.DeclareBoolean( "StObjSetup/StObjGenerateSourceFiles",
+                                                          true,
+                                                          "Whether the '$StObjGen/G0.cs' source file must be generated in the ProjectPath folder.",
+                                                          () => _generateSourceFiles.ToString() ).Value;
+            _revertOrderingNames = config.DeclareBoolean( "StObjSetup/StObjRevertOrderingNames",
+                                                          false,
+                                                          "Whether the ordering of StObj that share the same rank in the dependency graph must be inverted. This configuration can be reused by Aspects that also use topology sort instead of introducing another similar option.",
+                                                          () => _revertOrderingNames.ToString() ).Value;
+            _traceGraphOrdering = config.DeclareBoolean( "StObjSetup/StObjTraceGraphOrdering",
+                                                         false,
+                                                         "Whether the dependency graph (the set of IDependentItem) associated to the StObj objects must be send to the monitor before and after sorting. This configuration can be reused by aspects that also use topology sort instead of introducing another similar option.",
+                                                         () => _traceGraphOrdering.ToString() ).Value;
         }
 
         void OnStObjMapLoading( object? sender, EventArgs e )
@@ -48,7 +57,8 @@ namespace CK.Testing
         /// </summary>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
-        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor, IStObjSetupTestHelper helper )
+        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor,
+                                                                                                                       IStObjSetupTestHelper helper )
         {
             var stObjConf = new StObjEngineConfiguration
             {

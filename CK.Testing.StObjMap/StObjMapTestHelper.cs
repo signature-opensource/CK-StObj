@@ -45,7 +45,10 @@ namespace CK.Testing
             _config = config;
             _monitor = monitor;
             _binPathName = _binPathNamePrefix;
-            _stObjMapRetryOnError = _config.GetBoolean( "StObjMap/StObjMapRetryOnError" ) ?? false;
+            _stObjMapRetryOnError = _config.DeclareBoolean( "StObjMap/StObjMapRetryOnError",
+                                                            false,
+                                                            "By default if the first attempt to obtain the current StObjMap failed, subsequent attempts immediately throw. Set it to true to always retry.",
+                                                            () => _stObjMapRetryOnError.ToString() ).Value;
         }
 
         IServiceProvider IStObjMapTestHelperCore.AutomaticServices => DoGetAutomaticService( null );
