@@ -66,13 +66,27 @@ namespace CK.Testing
                 TraceDependencySorterInput = helper.StObjTraceGraphOrdering,
                 TraceDependencySorterOutput = helper.StObjTraceGraphOrdering,
             };
+            // BinPath by default is: the first "CKSetup/DefaultBinPaths" if it has been configured
+            // otherwise it is the {ClosestSUTProjectFolder}/{PathToBin} (if no ClosestSUTProjectFolder
+            // has been found, {ClosestSUTProjectFolder} is the {TestProjectFolder} so {ClosestSUTProjectFolder}/{PathToBin}
+            // is... this {BinFolder})
+            NormalizedPath binPath;
+            if( helper.CKSetup.DefaultBinPaths.Count > 0 )
+            {
+                binPath = helper.CKSetup.DefaultBinPaths[0];
+                monitor.Info( $"Using first configured 'CKSetup/DefaultBinPaths' = {binPath}" );
+            }
+            else
+            {
+                binPath = helper.ClosestSUTProjectFolder.Combine( helper.PathToBin );
+                monitor.Info( $"No 'CKSetup/DefaultBinPaths' configuration. Using ClosestSUTProjectFolder/PathToBin: {binPath}." );
+            }
+
             var b = new BinPathConfiguration
             {
                 // The name of the BinPath to use is the current IStObjMapTestHelper.BinPathName.
                 Name = helper.BinPathName,
-                // Use the ClosestSUTProjectFolder for the BinPath. If it's not found, it's
-                // the test BinFolder.
-                Path = helper.ClosestSUTProjectFolder.Combine( helper.PathToBin ),
+                Path = binPath,
                 // Then the OutputPath will copy the generated assembly to this bin folder.
                 OutputPath = helper.BinFolder,
                 CompileOption = CompileOption.Compile,
