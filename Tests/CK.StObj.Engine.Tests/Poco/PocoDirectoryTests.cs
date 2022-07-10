@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void simple_Poco()
+        public void simple_Poco_found_by_name_previous_name_or_interface_type()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
@@ -31,6 +31,8 @@ namespace CK.StObj.Engine.Tests.Poco
             var f1 = d.Find( "PreviousTest1" );
             var f2 = d.Find( "PreviousTest2" );
             f0.Should().NotBeNull().And.BeSameAs( f1 ).And.BeSameAs( f2 );
+            var f3 = d.Find( typeof( ICmdTest ) );
+            f3.Should().NotBeNull().And.BeSameAs( f0 );
         }
 
         [ExternalName( "Test", "Prev1", "Test" )]

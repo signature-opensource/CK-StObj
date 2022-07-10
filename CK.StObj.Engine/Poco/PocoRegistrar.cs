@@ -244,6 +244,14 @@ namespace CK.Setup
                 p.SetGetMethod( m );
             }
             {
+                MethodBuilder m = tBF.DefineMethod( "get_Interfaces", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IReadOnlyList<Type> ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.Interfaces ), PropertyAttributes.None, typeof( IReadOnlyList<Type> ), null );
+                p.SetGetMethod( m );
+            }
+            {
                 MethodBuilder m = tBF.DefineMethod( "Create", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( IPoco ), Type.EmptyTypes );
                 ILGenerator g = m.GetILGenerator();
                 g.Emit( OpCodes.Ldnull );

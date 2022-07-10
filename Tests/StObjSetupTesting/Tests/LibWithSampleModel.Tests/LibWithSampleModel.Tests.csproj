@@ -25,4 +25,8 @@
     -->
     <ProjectReference Include="..\..\..\StObjEngineTesting\Tests\Sample.Engine.Tests\Sample.Engine.Tests.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="%24StObjGen\" />
+  </ItemGroup>
 </Project>
