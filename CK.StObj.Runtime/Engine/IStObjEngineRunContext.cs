@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Context that is given to <see cref="IStObjEngineAspect.Run"/> method.
+    /// Context that is given to <see cref="IStObjEngineAspect.RunPreCode"/> method.
     /// </summary>
     public interface IStObjEngineRunContext
     {

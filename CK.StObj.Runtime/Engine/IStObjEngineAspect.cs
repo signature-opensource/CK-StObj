@@ -7,13 +7,18 @@ namespace CK.Setup
     /// <para>
     /// Concrete Aspect classes must implement this interface and have a public constructor
     /// that takes the configuration object instance.
-    /// <see cref="Configure"/> will be called once all aspects have been instantiated.
     /// </para>
     /// <para>
     /// The configuration object is a <see cref="IStObjEngineAspectConfiguration"/> that has been 
     /// added to the <see cref="StObjEngineConfiguration.Aspects"/> list and 
     /// whose <see cref="IStObjEngineAspectConfiguration.AspectType"/> is the assembly qualified name
     /// of the Aspect they configure.
+    /// </para>
+    /// <para>
+    /// Aspects can implement <see cref="ICSCodeGenerator"/> if they need to directly participate to
+    /// code generation. When implemented <see cref="ICSCodeGenerator.Implement(IActivityMonitor, ICSCodeGenerationContext)"/>
+    /// is called (for each <see cref="ICodeGenerationContext.CurrentRun"/>) after <see cref="RunPreCode(IActivityMonitor, IStObjEngineRunContext)"/>
+    /// and before <see cref="RunPostCode(IActivityMonitor, IStObjEnginePostCodeRunContext)"/>.
     /// </para>
     /// </summary>
     public interface IStObjEngineAspect
@@ -26,7 +31,7 @@ namespace CK.Setup
         /// <param name="context">Configuration context.</param>
         /// <returns>
         /// Must return true on success, false if any error occurred (errors must be logged).
-        /// Returning false prevents any subsequent <see cref="Run"/> (the engine does not even build
+        /// Returning false prevents any subsequent <see cref="RunPreCode"/> (the engine does not even build
         /// the StObj graph) but the remaining aspects are nevertheless configured in order to
         /// detect potential other configuration errors.
         /// </returns>
@@ -34,12 +39,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Runs the aspect once the StObjs graphs have been successfully build.
-        /// Except for the first aspect, when this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
+        /// When this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
         /// up to the implementation to decide to skip its own process in this case.
-        /// <para>
-        /// Note that a default implementation is defined that simply returns true (this methods
-        /// does not require an implementation).
-        /// </para>
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="context">Run context.</param>
@@ -49,16 +50,12 @@ namespace CK.Setup
         /// and following aspects are run, the final assembly is not generated and <see cref="Terminate"/> is
         /// called on all the aspects in reverse order.
         /// </returns>
-        bool Run( IActivityMonitor monitor, IStObjEngineRunContext context ) => true;
+        bool RunPreCode( IActivityMonitor monitor, IStObjEngineRunContext context );
 
         /// <summary>
         /// Runs the aspect once the Code generation has been successfully done.
-        /// Except for the first aspect, when this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
+        /// When this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
         /// up to the implementation to decide to skip its own process in this case.
-        /// <para>
-        /// Note that a default implementation is defined that simply returns true (this methods
-        /// does not require an implementation).
-        /// </para>
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="context">Run context.</param>
@@ -68,10 +65,10 @@ namespace CK.Setup
         /// and following aspects are run, the final assembly is not generated and <see cref="Terminate"/> is
         /// called on all the aspects in reverse order.
         /// </returns>
-        bool RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context ) => true;
+        bool RunPostCode( IActivityMonitor monitor, IStObjEnginePostCodeRunContext context );
 
         /// <summary>
-        /// Called by the engine in reverse order after all aspects have <see cref="Run"/>.
+        /// Called by the engine in reverse order after all aspects have <see cref="RunPreCode"/>.
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="context">Terminate context.</param>

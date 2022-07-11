@@ -54,11 +54,11 @@ namespace CK.Setup
             {
                 foreach( var a in _startContext.Aspects )
                 {
-                    using( _monitor.OpenInfo( $"Aspect: {a.GetType().FullName}." ) )
+                    using( _monitor.OpenInfo( $"Aspect: {a.GetType()}." ) )
                     {
                         try
                         {
-                            bool success = postCode ? a.RunPostCode( _monitor, this ) : a.Run( _monitor, this );
+                            bool success = postCode ? a.RunPostCode( _monitor, this ) : a.RunPreCode( _monitor, this );
                             if( !success ) onError();
                         }
                         catch( Exception ex )

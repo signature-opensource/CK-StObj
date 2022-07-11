@@ -41,7 +41,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets an object created by the first run: this must be called only when <see cref="IsPrimaryRun"/> is false.
-        /// The key must exist otherwise a <see cref="KeyNotFoundException"/> is throw.
+        /// The key must exist otherwise a <see cref="KeyNotFoundException"/> is thrown.
         /// </summary>
         /// <param name="key">Key of the cached result.</param>
         object GetPrimaryRunResult( string key );
