@@ -161,24 +161,25 @@ namespace CK.Setup
         /// <inheritdoc />
         public string Names => _names;
 
-        internal void CopyArtifactsFromHead( IActivityMonitor monitor )
+        internal bool CopyArtifactsFromHead( IActivityMonitor monitor )
         {
             Debug.Assert( !IsUnifiedPure );
             bool source = _saveSource == SaveSourceLevel.SaveSource && GeneratedSource.Exists();
             bool compile = CompileOption == CompileOption.Compile && GeneratedAssembly.Exists();
-            if( !source && !compile ) return;
+            if( !source && !compile ) return true;
 
             foreach( var b in SimilarConfigurations.Skip( 1 ) )
             {
                 if( source && b.GenerateSourceFiles )
                 {
-                    Copy( monitor, GeneratedSource.Path, CreateG0( b ) );
+                    if( !Copy( monitor, GeneratedSource.Path, CreateG0( b ) ) ) return false;
                 }
                 if( compile && b.CompileOption == CompileOption.Compile )
                 {
-                    Copy( monitor, GeneratedSource.Path, CreateAssembly( b ) );
+                    if( !Copy( monitor, GeneratedSource.Path, CreateAssembly( b ) ) ) return false;
                 }
             }
+            return true;
         }
 
         bool Copy( IActivityMonitor monitor, NormalizedPath source, IGeneratedArtifact t )

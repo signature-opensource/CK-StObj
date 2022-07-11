@@ -147,15 +147,8 @@ namespace CK.Setup
             if( !_config.Initialize( _monitor, out bool canSkipRun ) ) return new StObjEngineResult( false, _config );
             if( canSkipRun )
             {
-                _monitor.Info( "Skipping run (updating the artifacts to similar BinPaths if any)." );
-                foreach( var g in _config.Groups )
-                {
-                    if( !g.IsUnifiedPure )
-                    {
-                        g.CopyArtifactsFromHead( _monitor );
-                    }
-                }
-                return new StObjEngineResult( true, _config );
+                _monitor.Info( "Skipping run." );
+                return new StObjEngineResult( UpdateGeneratedArtifacts( _config.Groups ), _config );
             }
             using var _ = _monitor.OpenInfo( "Running StObjEngine setup." );
             _status = new Status( _monitor );
@@ -198,48 +191,29 @@ namespace CK.Setup
                     // Code Generation.
                     if( _status.Success )
                     {
-                        using( _monitor.OpenInfo( "Final Code Generation." ) )
+                        using( _monitor.OpenInfo( "Code Generation." ) )
                         {
-                            var secondPass = new (StObjEngineRunContext.GenBinPath GenContext, List<MultiPassCodeGeneration> SecondPasses)[runCtx.AllBinPaths.Count];
-                            int i = 0;
                             foreach( var g in runCtx.AllBinPaths )
                             {
-                                var second = new List<MultiPassCodeGeneration>();
-                                secondPass[i++] = (g, second);
-                                // This MUST not be skipped even if SaveSource is false and CompileOption is None or if g is
-                                // the "Pure" unified path.
-                                if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.Configuration.InformationalVersion, second ) )
+                                if( !g.Result.GenerateSourceCode( _monitor,
+                                                                  g,
+                                                                  _config.Configuration.InformationalVersion,
+                                                                  runCtx.Aspects.OfType<ICSCodeGenerator>() ) )
                                 {
                                     _status.Success = false;
                                     break;
                                 }
                             }
-                            if( _status.Success )
-                            {
-                                foreach( var (g, secondPasses) in secondPass )
-                                {
-                                    var (success, runSignature) = g.Result.GenerateSourceCodeSecondPass( _monitor, g, secondPasses );
-                                    if( !success )
-                                    {
-                                        _status.Success = false;
-                                        break;
-                                    }
-                                    if( !g.IsUnifiedPure )
-                                    {
-                                        Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
-                                        g.ConfigurationGroup.RunSignature = runSignature;
-                                        g.ConfigurationGroup.CopyArtifactsFromHead( _monitor );
-                                    }
-                                }
-                            }
                         }
                     }
-                    // Post Code Generation.
-                    // Run the aspects
+                    // Handling generated artifacts.
+                    _status.Success &= UpdateGeneratedArtifacts( runCtx.AllBinPaths.Select( g => g.ConfigurationGroup ) );
+                    // Run the aspects Post Code Generation.
                     if( _status.Success )
                     {
                         runCtx.RunAspects( () => _status.Success = false, postCode: true );
                     }
+                    // Secure errors (ensure error log and logs error path).
                     if( !_status.Success )
                     {
                         // Emit the last error log path as an error and ensure that at least one error
@@ -379,6 +353,21 @@ namespace CK.Setup
                 }
             }
             return null;
+        }
+
+        bool UpdateGeneratedArtifacts( IEnumerable<RunningBinPathGroup> groups )
+        {
+            using( _monitor.OpenInfo( "Updating the generated artifacts to similar BinPaths if any." ) )
+            {
+                foreach( var g in groups )
+                {
+                    if( !g.IsUnifiedPure )
+                    {
+                        if( !g.CopyArtifactsFromHead( _monitor ) ) return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>

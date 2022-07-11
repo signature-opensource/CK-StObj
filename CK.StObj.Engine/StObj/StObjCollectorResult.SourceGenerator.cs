@@ -21,12 +21,12 @@ namespace CK.Setup
                                           string? informationalVersion,
                                           IEnumerable<ICSCodeGenerator> aspectsGenerators )
         {
-            List<MultiPassCodeGeneration> secondPases = new List<MultiPassCodeGeneration>();
-            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, secondPases ) )
+            List<MultiPassCodeGeneration> secondPasses = new List<MultiPassCodeGeneration>();
+            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, secondPasses, aspectsGenerators ) )
             {
                 return false;
             }
-            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPases );
+            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses );
             if( success )
             {
                 Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
@@ -35,13 +35,14 @@ namespace CK.Setup
             return success;
         }
 
-        internal bool GenerateSourceCodeFirstPass( IActivityMonitor monitor,
-                                                   ICSCodeGenerationContext codeGenContext,
-                                                   string? informationalVersion,
-                                                   List<MultiPassCodeGeneration> collector )
+        bool GenerateSourceCodeFirstPass( IActivityMonitor monitor,
+                                          ICSCodeGenerationContext codeGenContext,
+                                          string? informationalVersion,
+                                          List<MultiPassCodeGeneration> collector,
+                                          IEnumerable<ICSCodeGenerator> aspectsGenerators )
         {
-            Throw.CheckState( EngineMap != null );
-            Throw.CheckArgument( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
+            Debug.Assert( EngineMap != null );
+            Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
             try
             {
                 Debug.Assert( _valueCollector != null );
@@ -112,7 +113,8 @@ namespace CK.Setup
                     GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
                     // Calls all ICSCodeGenerator items.
-                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() ) )
+                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
+                                               .Concat( aspectsGenerators ) )
                     {
                         var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                         if( second != null ) collector.Add( second );
@@ -147,12 +149,12 @@ namespace CK.Setup
             }
         }
 
-        internal (bool Success, SHA1Value RunSignature) GenerateSourceCodeSecondPass( IActivityMonitor monitor,
-                                                                                    ICSCodeGenerationContext codeGenContext,
-                                                                                    List<MultiPassCodeGeneration> secondPass )
+        (bool Success, SHA1Value RunSignature) GenerateSourceCodeSecondPass( IActivityMonitor monitor,
+                                                                             ICSCodeGenerationContext codeGenContext,
+                                                                             List<MultiPassCodeGeneration> secondPass )
         {
-            Throw.CheckNotNullArgument( EngineMap );
-            Throw.CheckArgument( "CodeGenerationContext mismatch.", codeGenContext.Assembly == _tempAssembly );
+            Debug.Assert( EngineMap != null );
+            Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
             var configurationGroup = codeGenContext.CurrentRun.ConfigurationGroup;
             var runSignature = configurationGroup.RunSignature;
 
