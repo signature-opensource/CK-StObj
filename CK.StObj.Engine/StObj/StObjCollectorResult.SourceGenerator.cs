@@ -19,15 +19,14 @@ namespace CK.Setup
         internal bool GenerateSourceCode( IActivityMonitor monitor,
                                           StObjEngineRunContext.GenBinPath g,
                                           string? informationalVersion,
-                                          bool skipSecondPass )
+                                          IEnumerable<ICSCodeGenerator> aspectsGenerators )
         {
-            List<MultiPassCodeGeneration> collector = new List<MultiPassCodeGeneration>();
-            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, collector ) )
+            List<MultiPassCodeGeneration> secondPases = new List<MultiPassCodeGeneration>();
+            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, secondPases ) )
             {
                 return false;
             }
-           if( skipSecondPass ) return true;
-            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, collector );
+            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPases );
             if( success )
             {
                 Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );

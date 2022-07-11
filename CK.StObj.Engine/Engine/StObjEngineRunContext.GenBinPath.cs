@@ -42,10 +42,6 @@ namespace CK.Setup
 
             IReadOnlyList<IGeneratedBinPath> ICodeGenerationContext.AllBinPaths => _global.AllBinPaths;
 
-            IDictionary<object, object?> ICodeGenerationContext.GlobalMemory => _global._codeGenerationGlobalMemory;
-
-            ISimpleServiceContainer ICodeGenerationContext.GlobalServiceContainer => _global.ServiceContainer;
-
             bool ICodeGenerationContext.IsPrimaryRun => this == _global.PrimaryBinPath;
 
             void ICodeGenerationContext.SetPrimaryRunResult( string key, object o, bool addOrUpdate )

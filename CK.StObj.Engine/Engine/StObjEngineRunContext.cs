@@ -14,7 +14,6 @@ namespace CK.Setup
         readonly StObjEngineAspectTrampoline<IStObjEngineRunContext> _trampoline;
         readonly StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext> _trampolinePostCode;
         readonly Dictionary<string, object> _primaryRunCache;
-        readonly Dictionary<object, object?> _codeGenerationGlobalMemory;
 
         public StObjEngineRunContext( IActivityMonitor monitor, StObjEngineConfigureContext startContext )
         {
@@ -24,7 +23,6 @@ namespace CK.Setup
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineRunContext>( this );
             _trampolinePostCode = new StObjEngineAspectTrampoline<IStObjEnginePostCodeRunContext>( this );
             _primaryRunCache = new Dictionary<string, object>();
-            _codeGenerationGlobalMemory = new Dictionary<object, object?>();
         }
 
         internal void AddResult( RunningBinPathGroup g, StObjCollectorResult secondaryResult )

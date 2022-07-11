@@ -45,27 +45,5 @@ namespace CK.Setup
         /// </summary>
         /// <param name="key">Key of the cached result.</param>
         object GetPrimaryRunResult( string key );
-
-        /// <summary>
-        /// Gets a shared dictionary associated to the whole code generation context. 
-        /// Note that use of such shared memory should be avoided as much as possible, and if required should be properly
-        /// encapsulated, typically by extension methods on this context.
-        /// </summary>
-        IDictionary<object, object?> GlobalMemory { get; }
-
-        /// <summary>
-        /// Gets the global <see cref="IStObjEngineRunContext.ServiceContainer"/>.
-        /// <see cref="IStObjEngineAspect"/> classes typically registers services
-        /// inside this container so that code generator can use them.
-        /// <para>
-        /// When a code generator supports a trampoline or any other means to defer a subsequent execution,
-        /// a code generation step can also registers any number of services that will be available to subsequent
-        /// code generator. A <see cref="ICSCodeGenerator.Implement"/> for instance can register services and 
-        /// deferred implementors (see <see cref="CSCodeGenerationResult.ImplementorType"/>
-        /// or <see cref="CSCodeGenerationResult.MethodName"/>) can use them.
-        /// </para>
-        /// </summary>
-        ISimpleServiceContainer GlobalServiceContainer { get; }
-
     }
 }
