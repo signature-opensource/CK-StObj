@@ -74,7 +74,7 @@ namespace CK.Setup
                 source |= b.GenerateSourceFiles;
             }
             CompileOption = compile;
-            _saveSource = source ? SaveSourceLevel.SaveSource :SaveSourceLevel.None;
+            _saveSource = source ? SaveSourceLevel.SaveSource : SaveSourceLevel.None;
 
             if( RunSignature.IsZero )
             {
@@ -161,7 +161,7 @@ namespace CK.Setup
         /// <inheritdoc />
         public string Names => _names;
 
-        internal bool CopyArtifactsFromHead( IActivityMonitor monitor )
+        internal bool UpdateSimilarArtifactsFromHead( IActivityMonitor monitor )
         {
             Debug.Assert( !IsUnifiedPure );
             bool source = _saveSource == SaveSourceLevel.SaveSource && GeneratedSource.Exists();
@@ -172,21 +172,21 @@ namespace CK.Setup
             {
                 if( source && b.GenerateSourceFiles )
                 {
-                    if( !Copy( monitor, GeneratedSource.Path, CreateG0( b ) ) ) return false;
+                    if( !Update( monitor, GeneratedSource.Path, CreateG0( b ) ) ) return false;
                 }
                 if( compile && b.CompileOption == CompileOption.Compile )
                 {
-                    if( !Copy( monitor, GeneratedSource.Path, CreateAssembly( b ) ) ) return false;
+                    if( !Update( monitor, GeneratedSource.Path, CreateAssembly( b ) ) ) return false;
                 }
             }
             return true;
         }
 
-        bool Copy( IActivityMonitor monitor, NormalizedPath source, IGeneratedArtifact t )
+        bool Update( IActivityMonitor monitor, NormalizedPath source, IGeneratedArtifact t )
         {
             if( source != t.Path && t.GetSignature( monitor ) != RunSignature )
             {
-                return t.CopyFrom( monitor, source );
+                return t.UpdateFrom( monitor, source );
             }
             return true;
         }

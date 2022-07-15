@@ -144,19 +144,26 @@ namespace CK.Setup
             {
                 _config.ApplyCKSetupConfiguration( _monitor, _ckSetupConfig );
             }
-            if( !_config.Initialize( _monitor, out bool canSkipRun ) ) return new StObjEngineResult( false, _config );
-            if( canSkipRun )
+            if( !_config.Initialize( _monitor, out bool canSkipRun ) )
             {
-                _monitor.Info( "Skipping run." );
-                return new StObjEngineResult( UpdateGeneratedArtifacts( _config.Groups ), _config );
+                return new StObjEngineResult( false, _config );
             }
+            // If canSkipRun is true here it means that regarding the 2 core generated artifacts, there is
+            // nothing to do.
             using var _ = _monitor.OpenInfo( "Running StObjEngine setup." );
             _status = new Status( _monitor );
-            _startContext = new StObjEngineConfigureContext( _monitor, _config, _status );
+            _startContext = new StObjEngineConfigureContext( _monitor, _config, _status, canSkipRun );
             try
             {
-                // Creating the aspects.
+                // Creating and configuring the aspects.
                 _startContext.CreateAndConfigureAspects( () => _status.Success = false );
+                if( _status.Success && _startContext.CanSkipRun )
+                {
+                    _monitor.Info( "Skipping run." );
+                    _status.Success |= UpdateGeneratedArtifacts( _config.Groups );
+                    _startContext.OnSkippedRun( () => _status.Success = false );
+                    return new StObjEngineResult( _status.Success, _config );
+                }
                 if( _status.Success )
                 {
                     StObjEngineRunContext runCtx = new StObjEngineRunContext( _monitor, _startContext );
@@ -363,7 +370,7 @@ namespace CK.Setup
                 {
                     if( !g.IsUnifiedPure )
                     {
-                        if( !g.CopyArtifactsFromHead( _monitor ) ) return false;
+                        if( !g.UpdateSimilarArtifactsFromHead( _monitor ) ) return false;
                     }
                 }
                 return true;

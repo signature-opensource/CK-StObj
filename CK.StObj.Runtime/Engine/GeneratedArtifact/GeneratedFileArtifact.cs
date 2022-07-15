@@ -28,8 +28,6 @@ namespace CK.Setup
         /// <inheritdoc />
         public NormalizedPath Path { get; }
 
-        bool IGeneratedArtifact.IsDirectory => false;
-
         /// <summary>
         /// Gets whether <see cref="File.Exists(string?)"/>.
         /// </summary>
@@ -110,7 +108,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="source">The source file to copy.</param>
         /// <returns>True on success, false on error.</returns>
-        public virtual bool CopyFrom( IActivityMonitor monitor, NormalizedPath source )
+        public virtual bool UpdateFrom( IActivityMonitor monitor, NormalizedPath source )
         {
             return PrepareWrite( monitor ) && SafeCopy( monitor, source, Path );
         }

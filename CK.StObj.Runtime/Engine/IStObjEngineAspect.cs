@@ -38,6 +38,17 @@ namespace CK.Setup
         bool Configure( IActivityMonitor monitor, IStObjEngineConfigureContext context );
 
         /// <summary>
+        /// Called when <see cref="IStObjEngineConfigureContext.CanSkipRun"/> is true after all aspects
+        /// have been configured: the setup is skipped, the next call will be for <see cref="Terminate(IActivityMonitor, IStObjEngineTerminateContext)"/>.
+        /// <para>
+        /// This enables aspects to update any resources (like <see cref="IGeneratedArtifact"/>) is needed.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <returns>True on success, false if an error occurred.</returns>
+        bool OnSkippedRun( IActivityMonitor monitor );
+
+        /// <summary>
         /// Runs the aspect once the StObjs graphs have been successfully build.
         /// When this method is called, <see cref="IStObjEngineStatus.Success"/> may be false: it is
         /// up to the implementation to decide to skip its own process in this case.

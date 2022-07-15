@@ -15,6 +15,17 @@ namespace CK.Setup
         IStObjEngineStatus EngineStatus { get; }
 
         /// <summary>
+        /// Gets or sets whether the run can be sipped.
+        /// This can only transition from true to false (setting it to true if it's false has no effect).
+        /// <para>
+        /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
+        /// <see cref="RunningBinPathGroup.GeneratedAssembly"/> and <see cref="RunningBinPathGroup.GeneratedSource"/>
+        /// availability.
+        /// </para>
+        /// </summary>
+        bool CanSkipRun { get; set; }
+
+        /// <summary>
         /// Gets the engine configuration.
         /// </summary>
         IRunningStObjEngineConfiguration StObjEngineConfiguration { get; }
