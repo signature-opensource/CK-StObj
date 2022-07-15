@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -9,14 +9,12 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CSemVer" Version="11.0.0" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.1--0003-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.1--0005-develop" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
   </ItemGroup>
-
   <PropertyGroup>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-
   <ItemGroup>
     <Content Include="MSBuild/CK.StObj.Model.props">
       <Pack>true</Pack>
@@ -27,5 +25,4 @@
       <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
     </Content>
   </ItemGroup>
-
 </Project>
