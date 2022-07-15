@@ -81,5 +81,6 @@ namespace CK.Setup
         /// It will be generated only if <see cref="SaveSource"/> is true.
         /// </summary>
         GeneratedG0Artifact? GeneratedSource { get; }
+
     }
 }

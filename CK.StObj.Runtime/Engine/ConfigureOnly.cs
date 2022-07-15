@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 
 namespace CK.Setup
@@ -21,7 +22,7 @@ namespace CK.Setup
         /// <param name="service">Actual instance. Must not be null.</param>
         public ConfigureOnly( T service )
         {
-            if( service == null ) throw new ArgumentNullException( nameof( service ) );
+            Throw.CheckNotNullArgument( service );
             Service = service;
         }
     }

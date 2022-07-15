@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,23 +12,27 @@ namespace CK.Setup
         {
             readonly SimpleServiceContainer _baseForConfig;
             readonly StObjEngineConfigureContext _c;
+            readonly ISimpleObjectActivator _defaultActivator;
 
             public Container( StObjEngineConfigureContext c )
             {
                 _c = c;
                 _baseForConfig = new SimpleServiceContainer();
-                _baseForConfig.Add<ISimpleObjectActivator>( new SimpleObjectActivator() );
+                _defaultActivator = new SimpleObjectActivator();
+                _baseForConfig.Add( _defaultActivator );
                 BaseProvider = _baseForConfig;
             }
 
             public void ConfigureDone( IActivityMonitor monitor )
             {
-                ISimpleObjectActivator defaultActivator = _baseForConfig.GetService<ISimpleObjectActivator>( false );
+                // Forget the Configure container.
                 BaseProvider = null;
+                // If the aspects registered a specific object activator, keep it
+                // instead of the default one.
                 if( GetService( typeof(ISimpleObjectActivator) ) == null )
                 {
                     monitor.Info( "No explicit ISimpleObjectActivator has been registered. Using a default SimpleObjectActivator." );
-                    this.Add( defaultActivator );
+                    this.Add( _defaultActivator );
                 }
             }
 
@@ -52,8 +57,12 @@ namespace CK.Setup
         readonly StObjEngineAspectTrampoline<IStObjEngineConfigureContext> _trampoline;
 
         List<Type>? _explicitRegisteredTypes;
+        bool _canSkipRun;
 
-        internal StObjEngineConfigureContext( IActivityMonitor monitor, RunningStObjEngineConfiguration config, IStObjEngineStatus status )
+        internal StObjEngineConfigureContext( IActivityMonitor monitor,
+                                              RunningStObjEngineConfiguration config,
+                                              IStObjEngineStatus status,
+                                              bool canSkipRun )
         {
             _monitor = monitor;
             _config = config;
@@ -63,6 +72,7 @@ namespace CK.Setup
             _container = new Container( this );
             _configureOnlycontainer = new SimpleServiceContainer( _container );
             _trampoline = new StObjEngineAspectTrampoline<IStObjEngineConfigureContext>( this );
+            _canSkipRun = canSkipRun;
         }
 
         public IStObjEngineStatus EngineStatus => _status;
@@ -72,6 +82,21 @@ namespace CK.Setup
             if( type == null ) throw new ArgumentNullException();
             if( _explicitRegisteredTypes == null ) _explicitRegisteredTypes = new List<Type>();
             _explicitRegisteredTypes.Add( type );
+        }
+
+        /// <summary>
+        /// Gets or sets whether the run can be sipped.
+        /// This can only transition from true to false (setting it to true if it's false has no effect).
+        /// <para>
+        /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
+        /// <see cref="RunningBinPathGroup.GeneratedAssembly"/> and <see cref="RunningBinPathGroup.GeneratedSource"/>
+        /// availability.
+        /// </para>
+        /// </summary>
+        public bool CanSkipRun
+        {
+            get => _canSkipRun;
+            set => _canSkipRun &= value;
         }
 
         public RunningStObjEngineConfiguration StObjEngineConfiguration => _config;
@@ -146,6 +171,22 @@ namespace CK.Setup
                 }
                 if( !_trampoline.Execute( _monitor, onError ) ) success = false;
                 if( success ) _container.ConfigureDone( _monitor );
+            }
+        }
+
+        internal void OnSkippedRun( Func<bool> onError )
+        {
+            foreach( var a in _aspects )
+            {
+                try
+                {
+                    if( !a.OnSkippedRun( _monitor ) ) onError();
+                }
+                catch( Exception ex )
+                {
+                    _monitor.Error( ex );
+                    onError();
+                }
             }
         }
 
