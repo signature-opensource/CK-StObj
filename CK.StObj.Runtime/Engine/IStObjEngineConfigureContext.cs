@@ -15,9 +15,20 @@ namespace CK.Setup
         IStObjEngineStatus EngineStatus { get; }
 
         /// <summary>
-        /// Gets the external configuration object.
+        /// Gets or sets whether the run can be sipped.
+        /// This can only transition from true to false (setting it to true if it's false has no effect).
+        /// <para>
+        /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
+        /// <see cref="RunningBinPathGroup.GeneratedAssembly"/> and <see cref="RunningBinPathGroup.GeneratedSource"/>
+        /// availability.
+        /// </para>
         /// </summary>
-        StObjEngineConfiguration StObjEngineConfiguration { get; }
+        bool CanSkipRun { get; set; }
+
+        /// <summary>
+        /// Gets the engine configuration.
+        /// </summary>
+        IRunningStObjEngineConfiguration StObjEngineConfiguration { get; }
 
         /// <summary>
         /// Gets the service container into which services provided by aspects can be registered
@@ -29,7 +40,7 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// At the end of the process, this container is used as the base service provider of code generation (see
-        /// <see cref="ICSCodeGenerationContext.GlobalServiceContainer"/>).
+        /// <see cref="ICodeGenerationContext.GlobalServiceContainer"/>).
         /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }
@@ -63,7 +74,7 @@ namespace CK.Setup
         IReadOnlyList<IStObjEngineAspect> Aspects { get; }
 
         /// <summary>
-        /// Pushes a defered configure action.
+        /// Pushes a deferred configure action.
         /// It will be executed after the configuration of all aspects.
         /// An action can be pushed at any moment and a pushed action can push another action.
         /// </summary>

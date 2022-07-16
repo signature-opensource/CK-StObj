@@ -77,7 +77,10 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-                var r = collector.GetResult();
+
+                var (r,map) = TestHelper.CompileAndLoadStObjMap( collector );
+
+                // Check collector result.
                 {
                     Assert.That( r.HasFatalError, Is.False );
                     Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
@@ -93,16 +96,12 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
 
-                SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_ConstructCalled" );
+                // Check compiled StObjMap.
                 {
-                    var a = Assembly.Load( "TEST_ConstructCalled" );
-                    IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
-                    Debug.Assert( c != null );
-                    c.Should().NotBeNull();
-                    Assert.That( c.StObjs.Obtain<B>()!.TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( c.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
+                    Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
+                    Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
 
-                    ASpec theA = (ASpec)c.StObjs.Obtain<A>()!;
+                    ASpec theA = (ASpec)map.StObjs.Obtain<A>()!;
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
                 }
@@ -205,7 +204,12 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-                var r = collector.GetResult();
+
+
+
+                var (r, map) = TestHelper.CompileAndLoadStObjMap( collector );
+
+                // Check collector result.
                 {
                     Assert.That( r.HasFatalError, Is.False );
                     Debug.Assert( r.EngineMap != null, "Since HasFatalError is false." );
@@ -222,22 +226,19 @@ namespace CK.StObj.Engine.Tests
                     Assert.That( theA.StObjInitializeOnACalled, Is.False, "StObjInitialize is NOT called on setup instances." );
                 }
 
-                SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_PostBuildSet" );
+                // Check generated StObjMap.
                 {
-                    var a = Assembly.Load( "TEST_PostBuildSet" );
-                    IStObjMap? c = StObjContextRoot.Load( a, TestHelper.Monitor );
-                    c.Should().NotBeNull();
-                    Debug.Assert( c != null );
-                    Assert.That( c.StObjs.Obtain<B>()!.TheA, Is.SameAs( c.StObjs.Obtain<A>() ).And.SameAs( c.StObjs.Obtain<ASpec>() ) );
-                    Assert.That( c.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
+                    Debug.Assert( map != null );
+                    Assert.That( map.StObjs.Obtain<B>()!.TheA, Is.SameAs( map.StObjs.Obtain<A>() ).And.SameAs( map.StObjs.Obtain<ASpec>() ) );
+                    Assert.That( map.StObjs.Obtain<ASpec>()!.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
 
-                    ASpec theA = (ASpec)c.StObjs.Obtain<A>()!;
+                    ASpec theA = (ASpec)map.StObjs.Obtain<A>()!;
                     theA.Should().NotBeNull();
                     Assert.That( theA.StObjPower, Is.EqualTo( "ASpec level property." ) );
                     Assert.That( typeof( A ).GetProperty( "StObjPower" )?.GetValue( theA, null ), Is.EqualTo( "This is the A property." ) );
 
-                    Assert.That( theA.TheB, Is.SameAs( c.StObjs.Obtain<B>() ) );
-                    Assert.That( c.StObjs.Obtain<B>()!.TheInjectedA, Is.SameAs( theA ) );
+                    Assert.That( theA.TheB, Is.SameAs( map.StObjs.Obtain<B>() ) );
+                    Assert.That( map.StObjs.Obtain<B>()!.TheInjectedA, Is.SameAs( theA ) );
 
                     Assert.That( theA.StObjInitializeOnACalled, Is.True );
                     Assert.That( theA.StObjInitializeOnASpecCalled, Is.True );
@@ -311,7 +312,7 @@ namespace CK.StObj.Engine.Tests
             }
 
             /// <summary>
-            /// This is the atribute that will trigger the abstract properties implementation.
+            /// This is the attribute that will trigger the abstract properties implementation.
             /// This is a very small attribute that does nothing else than redirecting to the
             /// actual implementation that must be in a ".Runtime" or ".Engine" assembly.
             /// <para>
@@ -353,10 +354,11 @@ namespace CK.StObj.Engine.Tests
             {
                 StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
                 collector.RegisterType( typeof( AutomaticallyImplemented ) );
-                var r = collector.GetResult();
-                r.HasFatalError.Should().BeFalse();
-                SimpleEngineRunContext.GenerateAssembly(TestHelper.Monitor, r, CompileOption.Compile, true, assemblyName: "TEST_TypeImplementor" );
-                var a = Assembly.Load( "TEST_TypeImplementor" );
+
+                var map = TestHelper.CompileAndLoadStObjMap( collector ).Map;
+                Debug.Assert( map != null );
+
+                var a = map.GetType().Assembly;
                 Type generated = a.GetTypes().Single( t => t.IsClass && typeof( AutomaticallyImplemented ).IsAssignableFrom( t ) );
                 AutomaticallyImplemented done = (AutomaticallyImplemented)Activator.CreateInstance( generated )!;
                 done.Hip.Should().Be( "Value is \"3712\"..." );
@@ -508,7 +510,7 @@ namespace CK.StObj.Engine.Tests
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
-                    TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
+                    TestHelper.CompileAndLoadStObjMap( collector ).Map.Should().NotBeNull();
                 }
                 logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
                 logs.Should().NotContain( e => e.Text.Contains( "Because nobody added me", StringComparison.Ordinal ) );
@@ -581,7 +583,7 @@ namespace CK.StObj.Engine.Tests
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
-                    TestHelper.GenerateCode( collector ).CodeGen.Success.Should().BeTrue();
+                    TestHelper.CompileAndLoadStObjMap( collector ).Map.Should().NotBeNull();
                 }
                 logs.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
                              .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );

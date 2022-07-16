@@ -17,7 +17,7 @@ namespace CK.Setup
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
     /// can use (and fill) it.
     /// </summary>
-    partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineMap, IStObjServiceEngineMap
+    sealed partial class StObjObjectEngineMap : IStObjEngineMap, IStObjObjectEngineMap, IStObjServiceEngineMap
     {
         readonly Dictionary<object, MutableItem> _map;
         readonly IReadOnlyList<MutableItem> _finaImplementations;
@@ -38,11 +38,10 @@ namespace CK.Setup
         /// </param>
         /// <param name="typeKindDetector">The type kind detector.</param>
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
-        internal protected StObjObjectEngineMap(
-            IReadOnlyList<string> names,
-            IReadOnlyList<MutableItem> allSpecializations,
-            CKTypeKindDetector typeKindDetector,
-            IReadOnlyCollection<Assembly> assemblies )
+        internal StObjObjectEngineMap( IReadOnlyList<string> names,
+                                       IReadOnlyList<MutableItem> allSpecializations,
+                                       CKTypeKindDetector typeKindDetector,
+                                       IReadOnlyCollection<Assembly> assemblies )
         {
             Debug.Assert( names != null );
             Names = names;

@@ -277,6 +277,10 @@ namespace CK.Setup.Json
         /// <inheritdoc />
         public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
 
+        /// <summary>
+        /// Overridden to return the <see cref="GenCSharpName"/>.
+        /// </summary>
+        /// <returns>The <see cref="GenCSharpName"/>.</returns>
         public override string ToString() => GenCSharpName;
     }
 }

@@ -13,6 +13,7 @@ namespace CK.Setup.Json
         /// </summary>
         /// <param name="monitor">The monitor that event handlers should use.</param>
         /// <param name="c">The Json code generator context.</param>
+        /// <param name="typeToConfigure">The type to configure.</param>
         public TypeInfoConfigurationRequiredEventArg( IActivityMonitor monitor, JsonSerializationCodeGen c, JsonTypeInfo typeToConfigure )
             : base( monitor )
         {

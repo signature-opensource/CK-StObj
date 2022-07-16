@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace CK.Setup
 
 {
-    class StObjEngineAspectTrampoline<T>
+    sealed class StObjEngineAspectTrampoline<T>
     {
         readonly T _holder;
         readonly List<Func<IActivityMonitor, T, bool>?> _postActions;

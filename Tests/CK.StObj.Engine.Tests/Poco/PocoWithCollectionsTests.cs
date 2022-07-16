@@ -25,7 +25,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void readonly_List_Dictionary_and_HashSet_properties_are_automatically_initialized_with_an_empty_instance()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ISimpleCollections ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var p = s.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
             p.Strings.Should().NotBeNull().And.BeEmpty();
             p.Configurations.Should().NotBeNull().And.BeEmpty();

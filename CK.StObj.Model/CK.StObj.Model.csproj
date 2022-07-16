@@ -2,16 +2,27 @@
   <PropertyGroup>
     <TargetFrameworks>net6.0</TargetFrameworks>
     <Nullable>enable</Nullable>
-    <Description>Minimalist model with attributes, interfaces and basic objects that define StObj (Real Objects), Automatic DI configuration and enables Source Code Generation across multiple projects.
-Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStObjMap, StObjContextRoot.
+    <Description>
+      Minimalist model with attributes, interfaces and basic objects that define StObj (Real Objects), Automatic DI configuration and enables Source Code Generation across multiple projects.
+      Main Types are: IAutoService, IRealObject, IPoco, CKTypeDefinerAttributes, IStObjMap, StObjContextRoot.
     </Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CSemVer" Version="11.0.0" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.0.0" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="15.1.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
   </ItemGroup>
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <Content Include="MSBuild/CK.StObj.Model.props">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.StObj.Model.props</PackagePath>
+    </Content>
+    <Content Include="MSBuild/CK.StObj.Model.targets">
+      <Pack>true</Pack>
+      <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
+    </Content>
   </ItemGroup>
 </Project>

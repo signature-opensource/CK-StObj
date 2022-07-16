@@ -16,13 +16,12 @@ namespace CK.Setup
     {
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
-        internal CKTypeCollectorResult(
-            ISet<Assembly> assemblies,
-            IPocoSupportResult? pocoSupport,
-            RealObjectCollectorResult c,
-            AutoServiceCollectorResult s,
-            IReadOnlyDictionary<Type,TypeAttributesCache?> regularTypes,
-            IAutoServiceKindComputeFacade kindComputeFacade )
+        internal CKTypeCollectorResult( ISet<Assembly> assemblies,
+                                        IPocoSupportResult? pocoSupport,
+                                        RealObjectCollectorResult c,
+                                        AutoServiceCollectorResult s,
+                                        IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
+                                        IAutoServiceKindComputeFacade kindComputeFacade )
         {
             PocoSupport = pocoSupport;
             Assemblies = assemblies;
@@ -39,7 +38,7 @@ namespace CK.Setup
         public IPocoSupportResult? PocoSupport { get; }
 
         /// <summary>
-        /// Gets the set of asssemblies for which at least one type has been registered.
+        /// Gets the set of assemblies for which at least one type has been registered.
         /// </summary>
         public ISet<Assembly> Assemblies { get; }
 
@@ -118,7 +117,7 @@ namespace CK.Setup
         /// <param name="monitor">Logger (must not be null).</param>
         public void LogErrorAndWarnings( IActivityMonitor monitor )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof(monitor) );
+            Throw.CheckNotNullArgument( monitor );
             using( monitor.OpenTrace( $"Collector summary:" ) )
             {
                 if( PocoSupport == null ) monitor.Fatal( $"Poco support failed!" );

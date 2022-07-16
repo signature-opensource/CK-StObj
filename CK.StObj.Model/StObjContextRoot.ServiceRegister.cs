@@ -53,8 +53,10 @@ namespace CK.Core
             /// </param>
             public ServiceRegister( IActivityMonitor monitor, IServiceCollection services, SimpleServiceContainer? startupServices = null )
             {
-                Monitor = monitor ?? throw new ArgumentNullException( nameof( monitor ) );
-                Services = services ?? throw new ArgumentNullException( nameof( services ) );
+                Throw.CheckNotNullArgument( monitor );
+                Throw.CheckNotNullArgument( services );
+                Monitor = monitor;
+                Services = services;
                 StartupServices = startupServices ?? new SimpleServiceContainer();
                 _registered = new Dictionary<Type, RegType>();
                 foreach( var r in services )
@@ -84,8 +86,8 @@ namespace CK.Core
             public SimpleServiceContainer StartupServices { get; }
 
             /// <summary>
-            /// Gets whether registration should override any existing registration.
-            /// Defaults to false: services must not already exist.
+            /// Gets whether registration can override any existing registration.
+            /// Defaults to false: services must not already exist, they must be registered once and only once.
             /// </summary>
             public bool AllowOverride { get; }
 
@@ -105,7 +107,7 @@ namespace CK.Core
                 {
                     try
                     {
-                        if( map == null ) throw new ArgumentNullException( nameof( map ) );
+                        Throw.CheckNotNullArgument( map );
                         DoRegisterSingletonInstance( typeof( IStObjMap ), map, isRealObject: true, isMultiple: false );
                         map.StObjs.ConfigureServices( this );
                         foreach( var o in map.StObjs.FinalImplementations )

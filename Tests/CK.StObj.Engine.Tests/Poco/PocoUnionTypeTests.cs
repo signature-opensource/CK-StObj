@@ -201,7 +201,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_implementation_guards_the_setter_when_not_nullable()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionType>>().Create();
@@ -337,7 +337,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void boxing_lifts_nullable_value_types_so_nullable_value_type_in_union_when_set_can_only_result_in_value_types()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithNullableUnionType ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithNullableUnionType>>().Create();
@@ -412,7 +412,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_if_none_of_the_variant_is_nullable()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ), typeof( PocoJsonSerializer ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();

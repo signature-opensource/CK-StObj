@@ -4,7 +4,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    class StObjEngineTerminateContext : IStObjEngineTerminateContext
+    sealed class StObjEngineTerminateContext : IStObjEngineTerminateContext
     {
         readonly IActivityMonitor _monitor;
         readonly StObjEngineRunContext _runContext;
@@ -23,7 +23,7 @@ namespace CK.Setup
 
         public IReadOnlyList<IStObjEngineAspect> Aspects => _runContext.Aspects;
 
-        public IGeneratedBinPath UnifiedBinPath => _runContext.UnifiedBinPath;
+        public IGeneratedBinPath UnifiedBinPath => _runContext.PrimaryBinPath;
 
         public IReadOnlyList<IGeneratedBinPath> AllBinPaths => _runContext.AllBinPaths;
 

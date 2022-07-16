@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    partial class StObjObjectEngineMap
+    sealed partial class StObjObjectEngineMap
     {
         IStObjServiceMap IStObjMap.Services => this;
 

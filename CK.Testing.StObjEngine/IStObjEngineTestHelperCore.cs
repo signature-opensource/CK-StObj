@@ -44,56 +44,111 @@ namespace CK.Testing.StObjEngine
         StObjCollectorResult? GetFailedResult( StObjCollector c );
 
         /// <summary>
-        /// Compiles from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
-        /// </summary>
-        /// <param name="c">The collector.</param>
-        /// <param name="compileOption">Compilation behavior.</param>
-        /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
-        GenerateCodeResult GenerateCode( StObjCollector c, CompileOption compileOption = CompileOption.None );
-
-        /// <summary>
-        /// Compiles from a successful <see cref="StObjCollectorResult"/>. <see cref="StObjCollectorResult.HasFatalError"/> must be
-        /// false otherwise an <see cref="ArgumentException"/> is thrown.
+        /// Runs the <see cref="StObjEngine"/> on a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// <para>
-        /// This is a minimalist helper that simply calls <see cref="SimpleEngineRunContext.TryGenerateAssembly"/> with an
-        /// assembly name that is <c>DateTime.Now.ToString( "Service_yyMdHmsffff" )</c>.
-        /// </para>
-        /// </summary>
-        /// <param name="result">The collector result.</param>
-        /// <param name="compileOption">Compilation behavior.</param>
-        /// <returns>The (successful) collector result and generation code result (that may be in error).</returns>
-        GenerateCodeResult GenerateCode( StObjCollectorResult result, CompileOption compileOption = CompileOption.None );
-
-        /// <summary>
-        /// Compiles and instantiates a <see cref="IStObjMap"/> from a <see cref="GetSuccessfulResult(StObjCollector)"/>.
-        /// </summary>
-        /// <param name="c">The collector.</param>
-        /// <returns>The (successful) collector result and the ready-to-use map.</returns>
-        (StObjCollectorResult Result, IStObjMap Map) CompileAndLoadStObjMap( StObjCollector c );
-
-        /// <summary>
-        /// Fully builds and configures a IServiceProvider after a successful <see cref="CompileAndLoadStObjMap(StObjCollector)"/> and returns all
-        /// the intermediate results: the (successful) collector result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service registrar
-        /// and the final, fully configured, service provider.
-        /// <para>
-        /// Note that the final <see cref="ServiceProvider"/> is a <see cref="IDisposable"/> object: it SHOULD be disposed.
+        /// Source code file G0.cs is not updated by default, and if <paramref name="compileOption"/> is <see cref="CompileOption.None"/>
+        /// or <see cref="CompileOption.Parse"/>, no assembly is generated.
         /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
+        /// <param name="compileOption">Compilation behavior.</param>
+        /// <param name="generateSourceFile">True to update the G0.cs file.</param>
+        /// <returns>The (successful) collector result and <see cref="StObjEngineResult"/> (that may be in error).</returns>
+        GenerateCodeResult GenerateCode( StObjCollector c,
+                                         Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                         bool generateSourceFile = false,
+                                         CompileOption compileOption = CompileOption.None );
+
+        /// <summary>
+        /// Compiles and loads the <see cref="IStObjMap"/> from the generated assembly based on
+        /// a <see cref="GetSuccessfulResult(StObjCollector)"/>.
+        /// <para>
+        /// Source code file G0.cs is not updated but the assembly is generated.
+        /// </para>
+        /// </summary>
+        /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
+        /// <returns>The (successful) result and the ready-to-use map.</returns>
+        CompileAndLoadResult CompileAndLoadStObjMap( StObjCollector c,
+                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null );
+
+        /// <summary>
+        /// Fully builds and configures a IServiceProvider after a successful run of the engine and returns all the intermediate results: the (successful) collector
+        /// result, the ready-to-use <see cref="IStObjMap"/>, the intermediate service register and the final, fully configured, service provider.
+        /// <para>
+        /// The G0.cs file is updated and the assembly is generated. If the StObjMap is already loaded and available, it is chosen: the second run of a
+        /// test can debug the generated code by putting breakpoints in the G0.cs file and this file can be freely modified as long as the first line
+        /// with the signature is not altered.
+        /// </para>
+        /// <para>
+        /// Note that <see cref="AutomaticServicesResult.Services"/> is a <see cref="ServiceProvider"/> that is <see cref="IDisposable"/>: it SHOULD be disposed.
+        /// </para>
+        /// </summary>
+        /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
-        (StObjCollectorResult Result, IStObjMap Map, StObjContextRoot.ServiceRegister ServiceRegistrar, ServiceProvider Services) GetAutomaticServices(
-                                                                StObjCollector c,
-                                                                Action<StObjContextRoot.ServiceRegister>? configureServices = null,
-                                                                SimpleServiceContainer? startupServices = null );
+        AutomaticServicesResult CreateAutomaticServices( StObjCollector c,
+                                                         Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                         SimpleServiceContainer? startupServices = null,
+                                                         Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 
         /// <summary>
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="engineConfigurator">
+        /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
+        /// <para>
+        /// Should be used to add <see cref="StObjEngineConfiguration.Aspects"/> and configure
+        /// the available <see cref="BinPathConfiguration"/> in <see cref="StObjEngineConfiguration.BinPaths"/>.
+        /// </para>
+        /// <para>
+        /// Other BinPaths can be added with the same <see cref="BinPathConfiguration.Path"/> as the default one
+        /// (this path is <see cref="IBasicTestHelper.TestProjectFolder"/>) but care should be taken with their
+        /// configurations.
+        /// </para>
+        /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
-        /// <returns>The (failed) service registrar.</returns>
-        StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c, SimpleServiceContainer? startupServices = null );
+        /// <returns>The (failed) service register.</returns>
+        StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                  Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                                                  SimpleServiceContainer? startupServices = null );
+
     }
 }

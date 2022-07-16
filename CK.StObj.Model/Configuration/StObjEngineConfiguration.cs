@@ -12,53 +12,47 @@ namespace CK.Setup
     public sealed partial class StObjEngineConfiguration
     {
         /// <summary>
-        /// Default assembly name.
-        /// </summary>
-        public const string DefaultGeneratedAssemblyName = "CK.StObj.AutoAssembly";
-
-        /// <summary>
-        /// File extension added to the "<see cref="StObjEngineConfiguration.GeneratedAssemblyName"/>.dll" file
-        /// that contains the SHA1 signature of an existing map. In such case, the assembly generation is skipped
-        /// and the existing map should be used.
-        /// See <see cref="StObjContextRoot.GetMapInfo(SHA1Value, IActivityMonitor?)"/>.
-        /// </summary>
-        public const string ExistsSignatureFileExtension = ".exists.txt";
-
-
-        /// <summary>
         /// Gets the mutable list of all configuration aspects that must participate to setup.
         /// </summary>
         public List<IStObjEngineAspectConfiguration> Aspects { get; }
 
         /// <summary>
         /// Gets or sets the final Assembly name.
-        /// When set to null (the default), <see cref="DefaultGeneratedAssemblyName"/> "CK.StObj.AutoAssembly" is returned.
+        /// It must be <see cref="StObjContextRoot.GeneratedAssemblyName"/> (the default "CK.StObj.AutoAssembly") or
+        /// start with "CK.StObj.AutoAssembly.".
+        /// <para>
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
+        /// </para>
         /// </summary>
         [AllowNull]
         public string GeneratedAssemblyName
         {
-            get => _generatedAssemblyName ?? DefaultGeneratedAssemblyName;
+            get => _generatedAssemblyName ?? StObjContextRoot.GeneratedAssemblyName;
             set
             {
-                if( value != null && FileUtil.IndexOfInvalidFileNameChars( value ) >= 0 )
+                if( !String.IsNullOrWhiteSpace( value ) )
                 {
-                    throw new ArgumentException( $"Invalid file character in file name '{value}'." );
+                    if( FileUtil.IndexOfInvalidFileNameChars( value ) >= 0 )
+                    {
+                        Throw.ArgumentException( $"Invalid file character in file name '{value}'." );
+                    }
+                    Throw.CheckArgument( value == StObjContextRoot.GeneratedAssemblyName || value.StartsWith( StObjContextRoot.GeneratedAssemblyName + '.' ) );
+                    _generatedAssemblyName = value;
                 }
-                _generatedAssemblyName = String.IsNullOrWhiteSpace( value ) ? null : value;
+                else _generatedAssemblyName = null;
             }
         }
 
         /// <summary>
         /// Gets or sets the <see cref="System.Diagnostics.FileVersionInfo.ProductVersion"/> of
-        /// the <see cref="GeneratedAssemblyName"/> assembly or assemblies.
+        /// the generated assembly.
         /// Defaults to null (no <see cref="System.Reflection.AssemblyInformationalVersionAttribute"/> should be generated).
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
         public string? InformationalVersion { get; set; }
 
         /// <summary>
-        /// Gets ors sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
+        /// Gets or sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
         /// Defaults to false.
         /// This is a global configuration that applies to all the <see cref="BinPaths"/>.
         /// </summary>
@@ -88,7 +82,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets a list of binary paths to setup (must not be empty).
-        /// Their <see cref="BinPathConfiguration.Assemblies"/> must exist in the current <see cref="AppContext.BaseDirectory"/>.
+        /// Their <see cref="BinPathConfiguration.Assemblies"/> or non optional <see cref="BinPathConfiguration.Types"/>
+        /// must exist in the current <see cref="AppContext.BaseDirectory"/>.
         /// </summary>
         public List<BinPathConfiguration> BinPaths { get; }
 
@@ -100,11 +95,23 @@ namespace CK.Setup
         public HashSet<string> GlobalExcludedTypes { get; }
 
         /// <summary>
-        /// Gets a mutable set of SHA1 file signatures. Whenever any generated source file's signature
-        /// appears in this list, the source file is not generated nor compiled: the available map should
-        /// be used.
+        /// Gets or sets a base SHA1 for the StObjMaps (CKSetup sets this to the files signature).
+        /// <para>
+        /// By defaults, when <see cref="SHA1Value.Zero"/> or <see cref="SHA1Value.Empty"/>, the final signatures
+        /// of each BinPath are computed from the generated source code.
+        /// </para>
+        /// <para>
+        /// When set to non zero, the BinPaths' signature are the hashes of this property and the normalized <see cref="BinPathConfiguration.Path"/>.
+        /// </para>
         /// </summary>
-        public HashSet<SHA1Value> AvailableStObjMapSignatures { get; }
+        public SHA1Value BaseSHA1 { get; set; }
+
+        /// <summary>
+        /// Gets whether caching may occur at any level (based on <see cref="BaseSHA1"/>) or if
+        /// a run must be done regardless of any previous states.
+        /// Defaults to false.
+        /// </summary>
+        public bool ForceRun { get; set; }
 
     }
 }

@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Loader;
 
 namespace CK.Core
 {
@@ -18,6 +20,16 @@ namespace CK.Core
         /// Holds the name of the root class.
         /// </summary>
         public static readonly string RootContextTypeName = "GeneratedRootContext";
+
+        /// <summary>
+        /// Default assembly name.
+        /// </summary>
+        public const string GeneratedAssemblyName = "CK.StObj.AutoAssembly";
+
+        /// <summary>
+        /// Suffix of the companion signature file when present, contains the RunSignature of the StObjMap.
+        /// </summary>
+        public const string SuffixSignature = ".signature.txt";
 
         /// <summary>
         /// Holds the full name of the root class.
@@ -99,13 +111,13 @@ namespace CK.Core
             }
         }
 
-        static StObjMapInfo? LockedGetMapInfo( Assembly a, ref IActivityMonitor? monitor )
+        static StObjMapInfo? LockedGetMapInfo( Assembly a, [AllowNull]ref IActivityMonitor monitor )
         {
             if( _alreadyHandled.TryGetValue( a, out var info ) )
             {
                 return info;
             }
-            monitor = LockedEnsureMonitor( monitor );
+            LockedEnsureMonitor( ref monitor );
             var attr = a.GetCustomAttributesData().FirstOrDefault( m => m.AttributeType.Name == "SignatureAttribute" && m.AttributeType.Namespace == "CK.StObj" );
             if( attr != null )
             {
@@ -118,15 +130,14 @@ namespace CK.Core
                         if( _alreadyHandled.TryGetValue( sha1S, out var exists ) )
                         {
                             Debug.Assert( exists != null );
-                            monitor.Info( $"StObjMap found replaces the one from '{exists.AssemblyName}' that has the same signature." );
-                            _alreadyHandled[sha1S] = info;
-                            _availableMaps.Remove( exists );
+                            monitor.Info( $"StObjMap found with the same signature as an already existing one. Keeping the previous one." );
+                            info = exists;
                         }
                         else
                         {
                             _alreadyHandled.Add( sha1S, info );
+                            _availableMaps.Add( info );
                         }
-                        _availableMaps.Add( info );
                     }
                 }
                 _alreadyHandled.Add( a, info );
@@ -152,13 +163,12 @@ namespace CK.Core
             }
         }
 
-        static IActivityMonitor LockedEnsureMonitor( IActivityMonitor? monitor )
+        static void LockedEnsureMonitor( [AllowNull]ref IActivityMonitor monitor )
         {
             if( monitor == null )
             {
                 monitor = (_contextMonitor ??= new ActivityMonitor( "CK.Core.StObjContextRoot" ));
             }
-            return monitor;
         }
 
         /// <summary>
@@ -201,18 +211,18 @@ namespace CK.Core
         /// <returns>The loaded map or null on error.</returns>
         public static IStObjMap? GetStObjMap( StObjMapInfo info, IActivityMonitor? monitor = null )
         {
-            if( info == null ) throw new ArgumentNullException( nameof( info ) );
+            Throw.CheckNotNullArgument( info );
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
             lock( _alreadyHandled )
             {
-                return LockedGetStObjMap( info, ref monitor );
+                return LockedGetStObjMapFromInfo( info, ref monitor );
             }
         }
 
-        static IStObjMap? LockedGetStObjMap( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
+        static IStObjMap? LockedGetStObjMapFromInfo( StObjMapInfo info, [NotNullIfNotNull( "monitor" )] ref IActivityMonitor? monitor )
         {
             if( info.StObjMap != null || info.LoadError != null ) return info.StObjMap;
-            monitor = LockedEnsureMonitor( monitor );
+            LockedEnsureMonitor( ref monitor );
             using( monitor.OpenInfo( $"Instantiating StObjMap from {info}." ) )
             {
                 try
@@ -236,12 +246,21 @@ namespace CK.Core
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static IStObjMap? Load( Assembly a, IActivityMonitor? monitor = null )
         {
-            if( a == null ) throw new ArgumentNullException( nameof( a ) );
+            Throw.CheckNotNullArgument( a );
             lock( _alreadyHandled )
             {
                 var info = LockedGetMapInfo( a, ref monitor );
                 if( info == null ) return null;
-                return LockedGetStObjMap( info, ref monitor );
+                var alc = AssemblyLoadContext.GetLoadContext( a );
+                if( alc == null )
+                {
+                    monitor.Warn( $"Assembly '{a.FullName}' is not in any AssemblyLoadContext." );
+                }
+                else if( alc != AssemblyLoadContext.Default )
+                {
+                    monitor.Warn( $"Assembly '{a.FullName}' is loaded in non-default AssemblyLoadContext '{alc.Name}'." );
+                }
+                return LockedGetStObjMapFromInfo( info, ref monitor );
             }
         }
 
@@ -259,7 +278,7 @@ namespace CK.Core
                 if( _alreadyHandled.TryGetValue( signature.ToString(), out var info ) )
                 {
                     Debug.Assert( info != null );
-                    return LockedGetStObjMap( info, ref monitor );
+                    return LockedGetStObjMapFromInfo( info, ref monitor );
 
                 }
                 return null;
@@ -268,62 +287,49 @@ namespace CK.Core
 
         /// <summary>
         /// Attempts to load a StObjMap from an assembly name.
+        /// <para>
+        /// If a <see cref="SuffixSignature"/> file exists and contains a valid signature, the StObjMap is
+        /// loaded from the <see cref="GetAvailableMapInfos(IActivityMonitor?)"/> if it exists.
+        /// </para>
         /// </summary>
         /// <param name="assemblyName">The assembly name.</param>
         /// <param name="monitor">Optional monitor to use.</param>
         /// <returns>A <see cref="IStObjMap"/> that provides access to the objects graph.</returns>
         public static IStObjMap? Load( string assemblyName, IActivityMonitor? monitor = null )
         {
-            if( string.IsNullOrEmpty( assemblyName ) ) throw new ArgumentNullException( nameof( assemblyName ) );
+            Throw.CheckNotNullOrEmptyArgument( assemblyName );
+            Throw.CheckArgument( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) < 0 );
 
-            // We could support here that if a / or \ appear in the name, then its a path and then we could use Assembly.LoadFile.
-            if( FileUtil.IndexOfInvalidFileNameChars( assemblyName ) >= 0 ) throw new ArgumentException( $"Invalid characters in '{assemblyName}'.", nameof( assemblyName ) );
-
-            string assemblyNameWithExtension; 
-            if( assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) || assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
+            if( !assemblyName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase )
+                && !assemblyName.EndsWith( ".exe", StringComparison.OrdinalIgnoreCase ) )
             {
-                assemblyNameWithExtension = assemblyName;
-                assemblyName = assemblyName.Substring( 0, assemblyName.Length - 4 );
+                assemblyName = assemblyName + ".dll";
             }
-            else
+            string assemblyFullPath = Path.Combine( AppContext.BaseDirectory, assemblyName );
+            var signaturePath = assemblyFullPath + SuffixSignature;
+            if( File.Exists( signaturePath )
+                && SHA1Value.TryParse( File.ReadAllText( signaturePath ), out var signature ) )
             {
-                assemblyNameWithExtension = assemblyName + ".dll";
+                var map = Load( signature, monitor );
+                if( map != null ) return map;
             }
-            string assemblyFullPath = System.IO.Path.Combine( AppContext.BaseDirectory, assemblyNameWithExtension );
-            string assemblyFullPathSig = assemblyFullPath + Setup.StObjEngineConfiguration.ExistsSignatureFileExtension;
 
             lock( _alreadyHandled )
             {
-                monitor = LockedEnsureMonitor( monitor );
+                LockedEnsureMonitor( ref monitor );
                 using( monitor.OpenInfo( $"Loading StObj map from '{assemblyName}'." ) )
                 {
                     try
                     {
-                        StObjMapInfo? info;
-                        if( System.IO.File.Exists( assemblyFullPathSig ) )
-                        {
-                            var sig = System.IO.File.ReadAllText( assemblyFullPathSig );
-                            LockedGetAvailableMapInfos( ref monitor );
-                            info = _alreadyHandled.GetValueOrDefault( sig );
-                            if( info != null )
-                            {
-                                monitor.CloseGroup( $"Found existing map from signature file {assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}: {info}." );
-                                return LockedGetStObjMap( info, ref monitor );
-                            }
-                            monitor.Warn( $"Unable to find an existing map based on the Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' ({sig}). Trying to load the assembly." );
-                        }
-                        else
-                        {
-                            monitor.Warn( $"No Signature file '{assemblyNameWithExtension}{Setup.StObjEngineConfiguration.ExistsSignatureFileExtension}' found. Trying to load the assembly." );
-                        }
-                        var a = Assembly.LoadFile( assemblyFullPath );
-                        info = LockedGetMapInfo( a, ref monitor );
+                        // LoadFromAssemblyPath caches the assemblies by their path.
+                        // No need to do it.
+                        var a = AssemblyLoadContext.Default.LoadFromAssemblyPath( assemblyFullPath );
+                        var info = LockedGetMapInfo( a, ref monitor );
                         if( info == null ) return null;
-                        return LockedGetStObjMap( info, ref monitor );
+                        return LockedGetStObjMapFromInfo( info, ref monitor );
                     }
                     catch( Exception ex )
                     {
-                        Debug.Assert( monitor != null, "Not detected by nullable analysis..." );
                         monitor.Error( ex );
                         return null;
                     }

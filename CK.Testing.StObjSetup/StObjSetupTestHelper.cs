@@ -24,90 +24,102 @@ namespace CK.Testing
         bool _revertOrderingNames;
         bool _traceGraphOrdering;
 
-        internal StObjSetupTestHelper( ITestHelperConfiguration config, ICKSetupTestHelper ckSetup, IStObjMapTestHelper stObjMap )
+        internal StObjSetupTestHelper( TestHelperConfiguration config, ICKSetupTestHelper ckSetup, IStObjMapTestHelper stObjMap )
         {
             _ckSetup = ckSetup;
             _stObjMap = stObjMap;
             stObjMap.StObjMapLoading += OnStObjMapLoading;
 
-            _generateSourceFiles = config.GetBoolean( "StObjSetup/StObjGenerateSourceFiles" ) ?? true;
-            _revertOrderingNames = config.GetBoolean( "StObjSetup/StObjRevertOrderingNames" ) ?? false;
-            _traceGraphOrdering = config.GetBoolean( "StObjSetup/StObjTraceGraphOrdering" ) ?? false;
+            _generateSourceFiles = config.DeclareBoolean( "StObjSetup/StObjGenerateSourceFiles",
+                                                          true,
+                                                          "Whether the '$StObjGen/G0.cs' source file must be generated in the ProjectPath folder.",
+                                                          () => _generateSourceFiles.ToString() ).Value;
+            _revertOrderingNames = config.DeclareBoolean( "StObjSetup/StObjRevertOrderingNames",
+                                                          false,
+                                                          "Whether the ordering of StObj that share the same rank in the dependency graph must be inverted. This configuration can be reused by Aspects that also use topology sort instead of introducing another similar option.",
+                                                          () => _revertOrderingNames.ToString() ).Value;
+            _traceGraphOrdering = config.DeclareBoolean( "StObjSetup/StObjTraceGraphOrdering",
+                                                         false,
+                                                         "Whether the dependency graph (the set of IDependentItem) associated to the StObj objects must be send to the monitor before and after sorting. This configuration can be reused by aspects that also use topology sort instead of introducing another similar option.",
+                                                         () => _traceGraphOrdering.ToString() ).Value;
         }
 
         void OnStObjMapLoading( object? sender, EventArgs e )
         {
-            var fName = _stObjMap.GeneratedAssemblyName + ".dll";
-            var fNameSig = fName + StObjEngineConfiguration.ExistsSignatureFileExtension;
-
-            var file = _stObjMap.BinFolder.AppendPart( fName );
-            var fileSig = _stObjMap.BinFolder.AppendPart( fNameSig );
-
-            bool fExists = File.Exists( file );
-            bool fSigExists = File.Exists( fileSig );
-
-            if( !fExists && !fSigExists )
-            {
-                using( _stObjMap.Monitor.OpenInfo( $"File '{file}' does not exist nor '{fNameSig}'. Running StObjSetup to create it." ) )
-                {
-                    Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
-                    var defaultConf = CreateDefaultConfiguration( _mixin! );
-                    DoRunStObjSetup( defaultConf.Configuration, defaultConf.ForceSetup );
-                }
-            }
-            else if( fExists && fSigExists )
-            {
-                _stObjMap.Monitor.Info( $"Both file '{fileSig}' and '{fName}' files found. An existing loaded StObjMap with the signature should exist otherwise the '{fName}' will be loaded." );
-            }
-            else
-            {
-                if( fSigExists ) _stObjMap.Monitor.Info( $"Signature file '{fileSig}' found: An existing loaded StObjMap with the signature should exist." );
-                else _stObjMap.Monitor.Info( $"File '{file}' found. It will be loaded." );
-            }
+            Debug.Assert( _mixin != null, "It has been initialized by ITestHelperResolvedCallback.OnTestHelperGraphResolved." );
+            var (configuration, forceSetup) = CreateDefaultConfiguration( _mixin.Monitor, _mixin! );
+            DoRunStObjSetup( configuration, forceSetup );
         }
 
         /// <summary>
         /// Low level helper that initializes a new <see cref="StObjEngineConfiguration"/> and computes the force setup flag
-        /// that can be used by other helpers that need to run a DBSetup.
+        /// that can be used by other helpers that need to run a setup.
         /// </summary>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
-        static public (StObjEngineConfiguration Configuration, bool ForceSetup) CreateDefaultConfiguration( IStObjSetupTestHelper helper )
+        static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor,
+                                                                                                                       IStObjSetupTestHelper helper )
         {
-            bool forceSetup = helper.CKSetup.DefaultForceSetup
-                                || helper.CKSetup.DefaultBinPaths.Append( helper.BinFolder )
-                                        .Select( p => p.AppendPart( helper.GeneratedAssemblyName + ".dll" ) )
-                                        .Any( p => !File.Exists( p ) );
-
             var stObjConf = new StObjEngineConfiguration
             {
                 RevertOrderingNames = helper.StObjRevertOrderingNames,
                 TraceDependencySorterInput = helper.StObjTraceGraphOrdering,
                 TraceDependencySorterOutput = helper.StObjTraceGraphOrdering,
-                GeneratedAssemblyName = helper.GeneratedAssemblyName
             };
+            // BinPath by default is: the first "CKSetup/DefaultBinPaths" if it has been configured
+            // otherwise it is the {ClosestSUTProjectFolder}/{PathToBin} (if no ClosestSUTProjectFolder
+            // has been found, {ClosestSUTProjectFolder} is the {TestProjectFolder} so {ClosestSUTProjectFolder}/{PathToBin}
+            // is... this {BinFolder})
+            NormalizedPath binPath;
+            if( helper.CKSetup.DefaultBinPaths.Count > 0 )
+            {
+                binPath = helper.CKSetup.DefaultBinPaths[0];
+                monitor.Info( $"Using first configured 'CKSetup/DefaultBinPaths' = {binPath}" );
+            }
+            else
+            {
+                binPath = helper.ClosestSUTProjectFolder.Combine( helper.PathToBin );
+                monitor.Info( $"No 'CKSetup/DefaultBinPaths' configuration. Using ClosestSUTProjectFolder/PathToBin: {binPath}." );
+            }
+
             var b = new BinPathConfiguration
             {
+                // The name of the BinPath to use is the current IStObjMapTestHelper.BinPathName.
+                Name = helper.BinPathName,
+                Path = binPath,
+                // Then the OutputPath will copy the generated assembly to this bin folder.
+                OutputPath = helper.BinFolder,
                 CompileOption = CompileOption.Compile,
-                Path = helper.BinFolder,
+                // ...and the G0.cs to the TestProjectFolder.
                 GenerateSourceFiles = helper.StObjGenerateSourceFiles,
                 ProjectPath = helper.TestProjectFolder
             };
             stObjConf.BinPaths.Add( b );
 
-            return (stObjConf, forceSetup);
+            // Consider by default the CKSetup configuration that be not None,
+            // but if it is None, set it to Engine: the engine must run even if
+            // all the binaries are unchanged to check the G0.cs and assembly.
+           
+            var f = helper.CKSetup.ForceSetup;
+            if( f == ForceSetupLevel.None )
+            {
+                monitor.Trace( $"Setting CKSetup ForceSetupLevel to Engine so it can check the required artifacts." );
+                f = ForceSetupLevel.Engine;
+            }
+            return (stObjConf, f);
         }
 
-        CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, bool forceSetup )
+        CKSetupRunResult DoRunStObjSetup( StObjEngineConfiguration stObjConf, ForceSetupLevel forceSetup )
         {
-            if( stObjConf == null ) throw new ArgumentNullException( nameof( stObjConf ) );
-            using( _ckSetup.Monitor.OpenInfo( $"Running StObjSetup." ) )
+            Throw.CheckNotNullArgument( stObjConf );
+            using( _ckSetup.Monitor.OpenInfo( $"Invoking StObjSetupRunning event." ) )
             {
                 try
                 {
                     var ev = new StObjSetupRunningEventArgs( stObjConf, forceSetup );
                     _stObjSetupRunning?.Invoke( this, ev );
                     var ckSetupConf = new SetupConfiguration( new XDocument( ev.StObjEngineConfiguration.ToXml() ), "CK.Setup.StObjEngine, CK.StObj.Engine" );
+                    ckSetupConf.CKSetupName = _ckSetup.TestProjectName;
                     return _ckSetup.CKSetup.Run( ckSetupConf, forceSetup: ev.ForceSetup );
                 }
                 catch( Exception ex )
@@ -130,7 +142,7 @@ namespace CK.Testing
             remove => _stObjSetupRunning -= value;
         }
 
-        CKSetupRunResult IStObjSetupTestHelperCore.RunStObjSetup( StObjEngineConfiguration configuration, bool forceSetup ) => DoRunStObjSetup( configuration, forceSetup );
+        CKSetupRunResult IStObjSetupTestHelperCore.RunStObjSetup( StObjEngineConfiguration configuration, ForceSetupLevel forceSetup ) => DoRunStObjSetup( configuration, forceSetup );
 
         void ITestHelperResolvedCallback.OnTestHelperGraphResolved( object resolvedObject )
         {

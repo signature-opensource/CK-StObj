@@ -7,7 +7,7 @@ namespace CK.Testing.StObjMap
     /// Event of <see cref="IStObjMapTestHelperCore.StObjMapAccessed"/>.
     /// This event can be used to challenge external conditions that may require to reload the <see cref="IStObjMapTestHelperCore.StObjMap"/>.
     /// </summary>
-    public class StObjMapAccessedEventArgs : EventArgs
+    public sealed class StObjMapAccessedEventArgs : EventArgs
     {
         /// <summary>
         /// Initializes a new <see cref="StObjMapAccessedEventArgs"/>.
@@ -17,31 +17,32 @@ namespace CK.Testing.StObjMap
         /// <param name="loadedTime">The current loaded time.</param>
         public StObjMapAccessedEventArgs( IStObjMap current, TimeSpan deltaLastAccess, TimeSpan loadedTime )
         {
-            if( current == null ) throw new ArgumentNullException( nameof( current ) );
+            Throw.CheckNotNullArgument( current );
             Current = current;
             DeltaLastAccessTime = deltaLastAccess;
             CurrentLoadedTime = loadedTime;
         }
 
         /// <summary>
-        /// Gets the curren StObjMap. Never null.
+        /// Gets the current StObjMap. Never null.
         /// </summary>
         public IStObjMap Current { get; }
 
         /// <summary>
-        /// Gets or sets whether the <see cref="Current"/> StObjMap should be reloaded.
+        /// Gets or sets whether the <see cref="Current"/> StObjMap should be reset
+        /// and a brand new one should be created and loaded.
         /// </summary>
-        public bool ShouldReload { get; set; }
+        public bool ShouldReset { get; set; }
 
         /// <summary>
         /// Gets the time span from the load of the <see cref="Current"/> database.
-        /// This can be used to debounce operations.
+        /// This can be used to de-bounce operations.
         /// </summary>
         public TimeSpan CurrentLoadedTime { get; }
 
         /// <summary>
         /// Gets the time span from the last StObjMap access.
-        /// This can be used to debounce operations.
+        /// This can be used to de-bounce operations.
         /// </summary>
         public TimeSpan DeltaLastAccessTime { get; }
     }

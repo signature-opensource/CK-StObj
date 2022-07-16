@@ -46,7 +46,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
         public void all_integer_roundtrip()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IAllIntegers ) );
-            var services = TestHelper.GetAutomaticServices( c ).Services;
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
             var u = services.GetRequiredService<IPocoFactory<IAllIntegers>>().Create();

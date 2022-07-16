@@ -21,6 +21,7 @@ namespace CK.Setup.Json
     /// Other types must be registered with their <see cref="CodeWriter"/> and <see cref="CodeReader"/> generators
     /// by providing and configuring a <see cref="JsonTypeInfo"/>.
     /// </para>
+    /// <para>
     /// This service is instantiated and registered by the Engine's PocoJsonSerializerImpl that is
     /// activated by the CK.Poco.Json package (thanks to the PocoJsonSerializer static class).
     /// </para>
@@ -275,11 +276,7 @@ namespace CK.Setup.Json
         public event EventHandler<TypeInfoConfigurationRequiredEventArg>? TypeInfoConfigurationRequired;
 
         /// <summary>
-        /// Raised when the <see cref=""/> should be allowed by registering a
-        /// <see cref="JsonTypeInfo"/> for it.
-        /// Note that the <see cref="JsonTypeInfo.CodeReader"/> and <see cref="JsonTypeInfo.CodeWriter"/> may be
-        /// configured later: <see cref="TypeInfoConfigurationRequired"/> will be raised later whenever one of them
-        /// is null.
+        /// Raised at the end of the generation.
         /// </summary>
         public event EventHandler<EventMonitoredArgs>? JsonTypeFinalized;
 
@@ -472,7 +469,7 @@ namespace CK.Setup.Json
         /// <summary>
         /// Adds an unambiguous reference type alias mapping to an already existing concrete reference type.
         /// No <see cref="JsonTypeInfo"/> is created for them, just a mapping to a couple (nullable and not nullable)
-        /// of <see cref="JsonCodeGenHandler"/> with a non null <see cref="JsonCodeGenHandler.IsTypeMapping"/>.
+        /// of <see cref="JsonCodeGenHandler"/> with a non null <see cref="JsonCodeGenHandler.TypeMapping"/>.
         /// <para>
         /// The <paramref name="alias"/> must be assignable from <paramref name="target"/>' type otherwise an <see cref="ArgumentException"/> is thrown.
         /// </para>
@@ -567,7 +564,7 @@ namespace CK.Setup.Json
         /// No duplicate detection is done here since that would require to analyze a range of items (for TypeSpecOrder = 0.0f).
         /// </summary>
         /// <param name="list">The target list.</param>
-        /// <param name="i">The info to insert.</param>
+        /// <param name="info">The info to insert.</param>
         /// <returns>True on success, false on duplicate.</returns>
         public static bool InsertAtTypeSpecOrder( List<JsonTypeInfo> list, JsonTypeInfo info )
         {

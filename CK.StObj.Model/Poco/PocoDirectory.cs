@@ -1,4 +1,5 @@
 using CK.Setup;
+using System;
 using System.Collections.Generic;
 
 namespace CK.Core
@@ -16,6 +17,13 @@ namespace CK.Core
         /// <param name="name">The Poco name.</param>
         /// <returns>The factory or null if not found.</returns>
         public abstract IPocoFactory? Find( string name );
+
+        /// <summary>
+        /// Gets a factory from a IPoco interface.
+        /// </summary>
+        /// <param name="pocoInterface">The Poco interface.</param>
+        /// <returns>The factory or null if not found.</returns>
+        public abstract IPocoFactory? Find( Type pocoInterface );
 
     }
 }

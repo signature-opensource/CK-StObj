@@ -22,14 +22,17 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void simple_Poco()
+        public void simple_Poco_found_by_name_previous_name_or_interface_type()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
-            var d = TestHelper.GetAutomaticServices( c ).Services.GetRequiredService<PocoDirectory>();
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
             var f0 = d.Find( "Test" );
             var f1 = d.Find( "PreviousTest1" );
             var f2 = d.Find( "PreviousTest2" );
             f0.Should().NotBeNull().And.BeSameAs( f1 ).And.BeSameAs( f2 );
+            var f3 = d.Find( typeof( ICmdTest ) );
+            f3.Should().NotBeNull().And.BeSameAs( f0 );
         }
 
         [ExternalName( "Test", "Prev1", "Test" )]
@@ -77,7 +80,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                             .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
                                                                      && x.Text.StartsWith( $"Poco '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) ) ) )
             {
-                TestHelper.GenerateCode( c ).CodeGen.Success.Should().BeTrue();
+                TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
             }
         }
 

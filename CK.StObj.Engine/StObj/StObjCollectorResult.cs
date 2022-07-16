@@ -17,10 +17,9 @@ namespace CK.Setup
         readonly DynamicAssembly _tempAssembly;
         readonly BuildValueCollector? _valueCollector;
 
-        internal StObjCollectorResult(
-            CKTypeCollectorResult typeResult,
-            DynamicAssembly tempAssembly,
-            BuildValueCollector? valueCollector )
+        internal StObjCollectorResult( CKTypeCollectorResult typeResult,
+                                       DynamicAssembly tempAssembly,
+                                       BuildValueCollector? valueCollector )
         {
             Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (i.e. valueCollector != null ==> !typeResult.HasFatalError)" );
             CKTypeResult = typeResult;

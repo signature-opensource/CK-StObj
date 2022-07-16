@@ -15,8 +15,8 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the set of types that defines the union type in their non-nullable form.
-        /// Empty when not applicable. When applicable <see cref="PropertyType"/> is necessarily a type
-        /// assignable to any of the variants. Nullability applies to the whole property: the <see cref="PropertyNullableTypeTree"/> defines it.
+        /// Empty when not applicable. When applicable the actual type of the property is necessarily compatible
+        /// (assignable to) any of the variants. Nullability applies to the whole property.
         /// <para>
         /// The set of possible types is "cleaned up":
         /// <list type="bullet">

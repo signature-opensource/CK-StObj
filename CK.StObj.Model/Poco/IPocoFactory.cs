@@ -35,6 +35,11 @@ namespace CK.Core
         /// Gets the previous names of this Poco if any.
         /// </summary>
         IReadOnlyList<string> PreviousNames { get; }
+
+        /// <summary>
+        /// Gets all the IPoco interface types that this Poco implements.
+        /// </summary>
+        IReadOnlyList<Type> Interfaces { get; }
     }
 
 }

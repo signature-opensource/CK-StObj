@@ -104,7 +104,7 @@ namespace CK.Setup
             public static bool DiscoverMethods( IActivityMonitor monitor, IStObjEngineMap map, out HostedServiceLifetimeTriggerImpl? impl )
             {
                 impl = null;
-                using( monitor.OpenInfo( "Discovering OnHostStart/Stop[Async] methods and generating HostedServiceLifetimeTrigger implementation." ) )
+                using( monitor.OpenInfo( "Discovering OnHostStart/Stop[Async] methods on real objects and generating HostedServiceLifetimeTrigger implementation." ) )
                 {
                     var types = map.StObjs.OrderedStObjs;
                     var startMethods = new List<(IStObjResult, MethodInfo)>();

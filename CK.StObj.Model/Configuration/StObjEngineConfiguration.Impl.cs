@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 namespace CK.Setup
 {
-    public sealed partial class StObjEngineConfiguration 
+    public sealed partial class StObjEngineConfiguration
     {
         string? _generatedAssemblyName;
 
@@ -19,7 +19,80 @@ namespace CK.Setup
             Aspects = new List<IStObjEngineAspectConfiguration>();
             BinPaths = new List<BinPathConfiguration>();
             GlobalExcludedTypes = new HashSet<string>();
-            AvailableStObjMapSignatures = new HashSet<SHA1Value>();
+        }
+
+        /// <summary>
+        /// Initializes a new <see cref="StObjEngineConfiguration"/> from a <see cref="XElement"/>.
+        /// </summary>
+        /// <param name="e">The xml element.</param>
+        public StObjEngineConfiguration( XElement e )
+        {
+            Throw.CheckNotNullArgument( e );
+
+            // Global options.
+            BasePath = (string?)e.Element( xBasePath );
+            GeneratedAssemblyName = (string?)e.Element( xGeneratedAssemblyName );
+            TraceDependencySorterInput = (bool?)e.Element( xTraceDependencySorterInput ) ?? false;
+            TraceDependencySorterOutput = (bool?)e.Element( xTraceDependencySorterOutput ) ?? false;
+            RevertOrderingNames = (bool?)e.Element( xRevertOrderingNames ) ?? false;
+            InformationalVersion = (string?)e.Element( xInformationalVersion );
+            var sha1 = (string?)e.Element( xBaseSHA1 );
+            BaseSHA1 = sha1 != null ? SHA1Value.Parse( sha1 ) : SHA1Value.Zero;
+            ForceRun = (bool?)e.Element( xForceRun ) ?? false;
+            GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
+
+            // BinPaths.
+            BinPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( e => new BinPathConfiguration( e ) ).ToList();
+
+            // Aspects.
+            Aspects = new List<IStObjEngineAspectConfiguration>();
+            foreach( var a in e.Elements( xAspect ) )
+            {
+                string type = (string)a.AttributeRequired( xType );
+                Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
+                Debug.Assert( tAspect != null );
+                IStObjEngineAspectConfiguration aspect = (IStObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
+                Aspects.Add( aspect );
+            }
+        }
+
+        /// <summary>
+        /// Serializes its content as a <see cref="XElement"/> and returns it.
+        /// The <see cref="StObjEngineConfiguration"/> constructor will be able to read this element back.
+        /// Note that this Xml can also be read as a CKSetup SetupConfiguration (in Shared Configuration Mode).
+        /// </summary>
+        /// <returns>The Xml element.</returns>
+        public XElement ToXml()
+        {
+            static string CleanName( Type t )
+            {
+                SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName!, out string weaken );
+                return weaken;
+            }
+            return new XElement( xConfigurationRoot,
+                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/StObjEngineConfiguration.cs for documentation." ),
+                        !BasePath.IsEmptyPath ? new XElement( xBasePath, BasePath ) : null,
+                        GeneratedAssemblyName != StObjContextRoot.GeneratedAssemblyName ? new XElement( xGeneratedAssemblyName, GeneratedAssemblyName ) : null,
+                        TraceDependencySorterInput ? new XElement( xTraceDependencySorterInput, true ) : null,
+                        TraceDependencySorterOutput ? new XElement( xTraceDependencySorterOutput, true ) : null,
+                        RevertOrderingNames ? new XElement( xRevertOrderingNames, true ) : null,
+                        InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
+                        !BaseSHA1.IsZero ? new XElement( xBaseSHA1, BaseSHA1.ToString() ) : null,
+                        ForceRun ? new XElement( xForceRun, true ) : null,
+                        ToXml( xGlobalExcludedTypes, xType, GlobalExcludedTypes ),
+                        Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
+                        new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/BinPathConfiguration.cs for documentation." ),
+                        new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
+        }
+
+        static internal XElement ToXml( XName names, XName name, IEnumerable<string> strings )
+        {
+            return new XElement( names, strings.Select( n => new XElement( name, n ) ) );
+        }
+
+        static internal IEnumerable<string> FromXml( XElement e, XName names, XName name )
+        {
+            return e.Elements( names ).Elements( name ).Select( c => (string?)c.Attribute( xName ) ?? c.Value );
         }
 
         #region Xml centralized names.
@@ -169,82 +242,17 @@ namespace CK.Setup
         /// </summary>
         static public readonly XName xInformationalVersion = XNamespace.None + "InformationalVersion";
 
+        /// <summary>
+        /// The BaseSHA1 element name.
+        /// </summary>
+        static public readonly XName xBaseSHA1 = XNamespace.None + "BaseSHA1";
+
+        /// <summary>
+        /// The ForceRun element name.
+        /// </summary>
+        static public readonly XName xForceRun = XNamespace.None + "ForceRun";
+
         #endregion
-
-        /// <summary>
-        /// Initializes a new <see cref="StObjEngineConfiguration"/> from a <see cref="XElement"/>.
-        /// </summary>
-        /// <param name="e">The xml element.</param>
-        public StObjEngineConfiguration( XElement e )
-        {
-            // Global options.
-            BasePath = (string?)e.Element( xBasePath );
-            GeneratedAssemblyName = (string?)e.Element( xGeneratedAssemblyName );
-            TraceDependencySorterInput = (bool?)e.Element( xTraceDependencySorterInput ) ?? false;
-            TraceDependencySorterOutput = (bool?)e.Element( xTraceDependencySorterOutput ) ?? false;
-            RevertOrderingNames = (bool?)e.Element( xRevertOrderingNames ) ?? false;
-            InformationalVersion = (string?)e.Element( xInformationalVersion );
-            AvailableStObjMapSignatures = new HashSet<SHA1Value>( FromXml( e, xAvailableStObjMapSignatures, xSignature )
-                                                                    .Select( s => SHA1Value.TryParse( s, out SHA1Value sha1 )
-                                                                                    ? sha1
-                                                                                    : SHA1Value.Zero )
-                                                                    .Where( sha => sha != SHA1Value.Zero ) );
-            GlobalExcludedTypes = new HashSet<string>( FromXml( e, xGlobalExcludedTypes, xType ) );
-
-            // BinPaths.
-            BinPaths = e.Elements( xBinPaths ).Elements( xBinPath ).Select( f => new BinPathConfiguration( f ) ).ToList();
-
-            // Aspects.
-            Aspects = new List<IStObjEngineAspectConfiguration>();
-            foreach( var a in e.Elements( xAspect ) )
-            {
-                string type = (string)a.AttributeRequired( xType );
-                Type? tAspect = SimpleTypeFinder.WeakResolver( type, true );
-                Debug.Assert( tAspect != null );
-                IStObjEngineAspectConfiguration aspect = (IStObjEngineAspectConfiguration)Activator.CreateInstance( tAspect, a )!;
-                Aspects.Add( aspect );
-            }
-        }
-
-        /// <summary>
-        /// Serializes its content as a <see cref="XElement"/> and returns it.
-        /// The <see cref="StObjEngineConfiguration"/> constructor will be able to read this element back.
-        /// Note that this Xml can also be read as a CKSetup SetupConfiguration (in Shared Configuration Mode).
-        /// </summary>
-        /// <returns>The Xml element.</returns>
-        public XElement ToXml()
-        {
-            static string CleanName( Type t )
-            {
-                SimpleTypeFinder.WeakenAssemblyQualifiedName( t.AssemblyQualifiedName!, out string weaken );
-                return weaken;
-            }
-            return new XElement( xConfigurationRoot,
-                        new XComment( "Please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/StObjEngineConfiguration.cs for documentation." ),
-                        !BasePath.IsEmptyPath ? new XElement( xBasePath, BasePath ) : null,
-                        GeneratedAssemblyName != DefaultGeneratedAssemblyName ? new XElement( xGeneratedAssemblyName, GeneratedAssemblyName ) : null,
-                        TraceDependencySorterInput ? new XElement( xTraceDependencySorterInput, true ) : null,
-                        TraceDependencySorterOutput ? new XElement( xTraceDependencySorterOutput, true ) : null,
-                        RevertOrderingNames ? new XElement( xRevertOrderingNames, true ) : null,
-                        InformationalVersion != null ? new XElement( xInformationalVersion, InformationalVersion ) : null,
-                        AvailableStObjMapSignatures.Count > 0
-                                    ? ToXml( xAvailableStObjMapSignatures, xSignature, AvailableStObjMapSignatures.Select( sha => sha.ToString() ) )
-                                    : null,
-                        ToXml( xGlobalExcludedTypes, xType, GlobalExcludedTypes ),
-                        Aspects.Select( a => a.SerializeXml( new XElement( xAspect, new XAttribute( xType, CleanName( a.GetType() ) ) ) ) ),
-                        new XComment( "BinPaths: please see https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Model/Configuration/BinPathConfiguration.cs for documentation." ),
-                        new XElement( xBinPaths, BinPaths.Select( f => f.ToXml() ) ) );
-        }
-
-        static internal XElement ToXml( XName names, XName name, IEnumerable<string> strings )
-        {
-            return new XElement( names, strings.Select( n => new XElement( name, n ) ) );
-        }
-
-        static internal IEnumerable<string> FromXml( XElement e, XName names, XName name )
-        {
-            return e.Elements( names ).Elements( name ).Select( c => (string?)c.Attribute( StObjEngineConfiguration.xName ) ?? c.Value );
-        }
 
     }
 }

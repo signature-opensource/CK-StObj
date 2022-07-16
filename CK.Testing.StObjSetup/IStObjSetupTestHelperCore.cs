@@ -45,9 +45,11 @@ namespace CK.Testing.StObjSetup
         /// the generated assembly name can not be found.
         /// </summary>
         /// <param name="configuration">Required StObj engine configuration.</param>
-        /// <param name="forceSetup">True to force the setup (skipping any signature check).</param>
+        /// <param name="forceSetup">
+        /// Can be used to skip CKSetup caching based on the SHA1 of the files that needs to be setup.
+        /// </param>
         /// <returns>The CKSetup run result.</returns>
-        CKSetupRunResult RunStObjSetup( StObjEngineConfiguration configuration, bool forceSetup = false );
+        CKSetupRunResult RunStObjSetup( StObjEngineConfiguration configuration, ForceSetupLevel forceSetup = ForceSetupLevel.None );
 
     }
 }

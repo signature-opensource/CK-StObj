@@ -10,18 +10,20 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Associates an <see cref="IAutoImplementorMethod"/> to use for a <see cref="Method"/>.
+    /// Associates an <see cref="IAutoImplementorMethod"/> to use for a <see cref="Method"/>
+    /// that is abstract or virtual.
     /// </summary>
-    public struct ImplementableAbstractMethodInfo
+    public readonly struct ImplementableMethodInfo
     {
-        internal ImplementableAbstractMethodInfo( MethodInfo m, IAutoImplementorMethod impl )
+        internal ImplementableMethodInfo( MethodInfo m, IAutoImplementorMethod impl )
         {
             Method = m;
             ImplementorToUse = impl;
         }
 
         /// <summary>
-        /// Abstract method that has to be automatically implemented.
+        /// Abstract method that has to be automatically implemented
+        /// or virtual method that can be overridden.
         /// </summary>
         public readonly MethodInfo Method;
 

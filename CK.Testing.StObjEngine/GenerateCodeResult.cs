@@ -7,30 +7,42 @@ using System.Text;
 namespace CK.Testing
 {
     /// <summary>
-    /// Defines the result of <see cref="StObjEngine.IStObjEngineTestHelperCore.GenerateCode(StObjCollector, CompileOption)"/>.
+    /// The result of <see cref="StObjEngine.IStObjEngineTestHelperCore.GenerateCode(StObjCollector, Func{StObjEngineConfiguration, StObjEngineConfiguration}?, bool, CompileOption)"/>
+    /// that captures the <see cref="StObjCollectorResult"/> and provides often needed property accessors to the single
+    /// running group of the <see cref="EngineResult"/>.
     /// </summary>
     public readonly struct GenerateCodeResult
     {
         /// <summary>
-        /// Gets the <see cref="StObjCollector"/> result that is successful.
+        /// Gets whether the code generation succeeded (alias to <see cref="StObjEngineResult.Success"/>).
         /// </summary>
-        public readonly StObjCollectorResult Collector;
+        public bool Success => EngineResult.Success;
 
         /// <summary>
-        /// Gets the code genration result.
+        /// Gets the result of the successful type analysis.
         /// </summary>
-        public readonly StObjCollectorResult.CodeGenerateResult CodeGen;
+        public StObjCollectorResult CollectorResult { get; }
 
         /// <summary>
-        /// Gets the <see cref="IStObjMap"/> if it is available.
+        /// Gets the assembly file that may have been generated or not (alias to the single <see cref="IRunningBinPathGroup.GeneratedAssembly"/>).
         /// </summary>
-        public readonly IStObjMap? EmbeddedStObjMap;
+        public IGeneratedArtifact AssemblyFile => EngineResult.Groups[0].GeneratedAssembly!;
 
-        internal GenerateCodeResult( StObjCollectorResult r, StObjCollectorResult.CodeGenerateResult c, IStObjMap? m )
+        /// <summary>
+        /// Gets the SHA1 of the run (alias to the single <see cref="IRunningBinPathGroup.RunSignature"/>).
+        /// </summary>
+        public SHA1Value RunSignature => EngineResult.Groups[0].RunSignature;
+
+        /// <summary>
+        /// Gets the engine result.
+        /// There is necessarily one and only one <see cref="StObjEngineResult.Groups"/>.
+        /// </summary>
+        public StObjEngineResult EngineResult { get; }
+
+        internal GenerateCodeResult( StObjCollectorResult r, StObjEngineResult e )
         {
-            Collector = r;
-            CodeGen = c;
-            EmbeddedStObjMap = m;
+            CollectorResult = r;
+            EngineResult = e;
         }
     }
 }

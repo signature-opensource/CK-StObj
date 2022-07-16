@@ -62,17 +62,24 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ClassFromInterfaceService ) );
-            var r = TestHelper.GetAutomaticServices( collector );
-            Debug.Assert( r.Result.EngineMap != null, "No initialization error." );
+            var r = TestHelper.CreateAutomaticServices( collector );
+            Debug.Assert( r.CollectorResult.EngineMap != null, "No initialization error." );
 
-            r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-            r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+            try
+            {
+                r.CollectorResult.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+                r.CollectorResult.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
 
-            r.Result.EngineMap.Services.SimpleMappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
-            r.Result.EngineMap.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo(
-                new[] { typeof( InterfaceService ) } );
+                r.CollectorResult.EngineMap.Services.SimpleMappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo(
+                    new[] { typeof( InterfaceService ) } );
 
-            r.Services.GetService<InterfaceService>().Should().Be( r.Services.GetService<ClassFromInterfaceService>() );
+                r.Services.GetService<InterfaceService>().Should().Be( r.Services.GetService<ClassFromInterfaceService>() );
+            }
+            finally
+            {
+                r.Services.Dispose();
+            }
         }
 
     }

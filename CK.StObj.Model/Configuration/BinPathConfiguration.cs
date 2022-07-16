@@ -72,7 +72,7 @@ namespace CK.Setup
 
             /// <summary>
             /// Overridden to return the Name - Kind and Optional value.
-            /// This is used as the equality key when configurations are grouped into equivalency classes.
+            /// This is used as the equality key when configurations are grouped into similar bin paths.
             /// </summary>
             /// <returns>A readable string.</returns>
             public override string ToString() => $"{Name} - {Kind} - {Optional}";
@@ -162,13 +162,17 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets the name that uniquely identifies this configuration among the others.
-        /// When null, an automatically numbered name is generated: only the unified bin path has an empty name.
+        /// When null, an automatically numbered name is generated.
         /// </summary>
         public string? Name { get; set; }
 
         /// <summary>
         /// Gets or sets the path of the directory to setup (this property is shared with CKSetup configuration).
         /// It can be relative: it will be combined to the <see cref="StObjEngineConfiguration.BasePath"/>.
+        /// <para>
+        /// Nothing prevents multiple <see cref="BinPathConfiguration"/> to have the same Path. In such case, <see cref="OutputPath"/>
+        /// and/or <see cref="ProjectPath"/> should be set to different directories (otherwise file generation will be in trouble).
+        /// </para>
         /// </summary>
         public NormalizedPath Path { get; set; }
 
@@ -180,10 +184,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or sets an optional target (output) directory for source files.
-        /// When not <see cref="NormalizedPath.IsEmptyPath"/>, a "$StObjGen" folder is created and
-        /// the source files are moved from the <see cref="OutputPath"/> to this one and, for ".cs" files,
-        /// they are renamed into standard names "G0.cs", "G1.cs", etc. (even if currently only one file
-        /// is generated).
+        /// When not <see cref="NormalizedPath.IsEmptyPath"/>, "$StObjGen/" folder is appended and
+        /// the source files are generated into this folder instead of <see cref="OutputPath"/>.
         /// </summary>
         public NormalizedPath ProjectPath { get; set; }
 
@@ -241,7 +243,7 @@ namespace CK.Setup
         /// </summary>
         /// <typeparam name="T">The aspect's type.</typeparam>
         /// <returns>The element or null.</returns>
-        public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof(T).Name );
+        public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof( T ).Name );
 
         /// <summary>
         /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect name:

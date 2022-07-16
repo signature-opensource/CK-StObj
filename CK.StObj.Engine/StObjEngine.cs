@@ -15,16 +15,17 @@ namespace CK.Setup
     /// <summary>
     /// Generic engine that runs a <see cref="StObjEngineConfiguration"/>.
     /// </summary>
-    public partial class StObjEngine
+    public sealed class StObjEngine
     {
         readonly IActivityMonitor _monitor;
-        readonly StObjEngineConfiguration _config;
+        readonly RunningStObjEngineConfiguration _config;
         readonly XElement? _ckSetupConfig;
 
         Status? _status;
         StObjEngineConfigureContext? _startContext;
+        bool _hasRun;
 
-        class Status : IStObjEngineStatus, IDisposable
+        sealed class Status : IStObjEngineStatus, IDisposable
         {
             readonly IActivityMonitor _m;
             readonly ActivityMonitorPathCatcher _pathCatcher;
@@ -60,8 +61,10 @@ namespace CK.Setup
         /// <param name="config">Configuration that describes the key aspects of the build.</param>
         public StObjEngine( IActivityMonitor monitor, StObjEngineConfiguration config )
         {
-            _monitor = monitor ?? throw new ArgumentNullException( nameof( monitor ) );
-            _config = config ?? throw new ArgumentNullException( nameof( config ) );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( config );
+            _monitor = monitor;
+            _config = new RunningStObjEngineConfiguration( config );
         }
 
         /// <summary>
@@ -70,215 +73,158 @@ namespace CK.Setup
         /// <param name="monitor">Logger that must be used.</param>
         /// <param name="config">Configuration that describes the key aspects of the build.</param>
         public StObjEngine( IActivityMonitor monitor, XElement config )
+            : this( monitor, new StObjEngineConfiguration( config ) )
         {
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( config == null ) throw new ArgumentNullException( nameof( config ) );
-            _monitor = monitor;
-            _config = new StObjEngineConfiguration( config );
             // We are coming from CKSetup: the configuration element has a Engine attribute.
             if( config.Attribute( "Engine" ) != null ) _ckSetupConfig = config;
         }
 
         /// <summary>
-        /// Gets whether this engine is running or has <see cref="Run"/> (it can run only once).
+        /// Gets whether this engine is running or has <see cref="Run()"/> (it can run only once).
         /// </summary>
         public bool Started => _startContext != null;
 
-        /// <summary>
-        /// Considers two BinPaths to be equal if and only if they have the same Assemblies,
-        /// same ExcludedTypes and Types configurations.
-        /// </summary>
-        class BinPathComparer : IEqualityComparer<BinPathConfiguration>
+        sealed class MonoResolver : IStObjCollectorResultResolver
         {
-            public static BinPathComparer Default = new BinPathComparer();
+            readonly StObjCollectorResult _result;
 
-            public bool Equals( BinPathConfiguration? x, BinPathConfiguration? y )
+            public MonoResolver( StObjCollectorResult result )
             {
-                Debug.Assert( x != null && y != null );
-                bool s = x.Types.Count == y.Types.Count
-                         && x.Assemblies.SetEquals( y.Assemblies )
-                         && x.ExcludedTypes.SetEquals( y.ExcludedTypes );
-                if( s )
-                {
-                    var one = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
-                    var two = x.Types.Select( xB => xB.ToString() ).OrderBy( Util.FuncIdentity );
-                    s = one.SequenceEqual( two );
-                }
-                return s;
+                _result = result;
             }
 
-            public int GetHashCode( BinPathConfiguration b ) => b.ExcludedTypes.Count
-                                                    + b.Types.Count * 59
-                                                    + b.Assemblies.Count * 117;
+            public StObjCollectorResult? GetResult( RunningBinPathGroup g ) => _result;
         }
 
         /// <summary>
-        /// Runs the setup.
+        /// Helper with a single <see cref="StObjCollectorResult"/> for a configuration.
+        /// If the <paramref name="config"/> has more than one <see cref="StObjEngineConfiguration.BinPaths"/>,
+        /// they will share the same <see cref="IRunningBinPathGroup"/>: their <see cref="BinPathConfiguration.Path"/> must be the same
+        /// otherwise an <see cref="ArgumentException"/> is thrown.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="result">The collector result.</param>
+        /// <param name="config">The configuration.</param>
+        /// <returns>True on success, false otherwise.</returns>
+        public static StObjEngineResult Run( IActivityMonitor monitor, StObjCollectorResult result, StObjEngineConfiguration config )
+        {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( result );
+            Throw.CheckNotNullArgument( config );
+            Throw.CheckArgument( config.BinPaths.Select( b => b.Path ).Distinct().Count() == 1 );
+            var e = new StObjEngine( monitor, config );
+            return e.Run( new MonoResolver( result ) );
+        }
+
+
+        /// <summary>
+        /// Runs the setup, fully defined by the configuration.
+        /// This is the entry point when run by CKSetup.
         /// </summary>
         /// <returns>True on success, false if an error occurred.</returns>
-        public bool Run() => DoRun( null );
+        public bool Run() => DoRun( null ).Success;
 
         /// <summary>
         /// Runs the setup, delegating the obtention of the <see cref="StObjCollectorResult"/> to an external resolver.
         /// </summary>
         /// <param name="resolver">The resolver to use.</param>
-        /// <returns>True on success, false if an error occurred.</returns>
-        public bool Run( IStObjCollectorResultResolver resolver )
+        /// <returns>The run result.</returns>
+        public StObjEngineResult Run( IStObjCollectorResultResolver resolver )
         {
-            if( resolver == null ) throw new ArgumentNullException( nameof( resolver ) );
+            Throw.CheckNotNullArgument( resolver );
             return DoRun( resolver );
         }
 
-        bool DoRun( IStObjCollectorResultResolver? resolver )
+        StObjEngineResult DoRun( IStObjCollectorResultResolver? resolver )
         {
-            if( _startContext != null ) throw new InvalidOperationException( "Run can be called only once." );
-            if( !PrepareAndCheckConfigurations() ) return false;
-            if( _ckSetupConfig != null && !ApplyCKSetupConfiguration() ) return false;
-            var unifiedBinPath = CreateUnifiedBinPathConfiguration( _monitor, _config.BinPaths, _config.GlobalExcludedTypes );
-            if( unifiedBinPath == null ) return false;
-
-            // Groups similar configurations to optimize runs.
-            var groups = _config.BinPaths.Append( unifiedBinPath ).GroupBy( Util.FuncIdentity, BinPathComparer.Default ).ToList();
-            var unifiedGroup = groups.Single( g => g.Contains( unifiedBinPath ) );
-            var isUnifiedPure = unifiedGroup.Count() == 1;
-
+            Throw.CheckState( "Run can be called only once.", !_hasRun );
+            _hasRun = true;
+            if( !_config.CheckAndValidate( _monitor ) ) return new StObjEngineResult( false, _config );
+            if( _ckSetupConfig != null )
+            {
+                _config.ApplyCKSetupConfiguration( _monitor, _ckSetupConfig );
+            }
+            if( !_config.Initialize( _monitor, out bool canSkipRun ) )
+            {
+                return new StObjEngineResult( false, _config );
+            }
+            // If canSkipRun is true here it means that regarding the 2 core generated artifacts, there is
+            // nothing to do.
+            using var _ = _monitor.OpenInfo( "Running StObjEngine setup." );
             _status = new Status( _monitor );
-            _startContext = new StObjEngineConfigureContext( _monitor, _config, _status );
+            _startContext = new StObjEngineConfigureContext( _monitor, _config, _status, canSkipRun );
             try
             {
-                _startContext.CreateAndConfigureAspects( _config.Aspects, () => _status.Success = false );
+                // Creating and configuring the aspects.
+                _startContext.CreateAndConfigureAspects( () => _status.Success = false );
+                if( _status.Success && _startContext.CanSkipRun )
+                {
+                    _monitor.Info( "Skipping run." );
+                    _status.Success |= UpdateGeneratedArtifacts( _config.Groups );
+                    _startContext.OnSkippedRun( () => _status.Success = false );
+                    return new StObjEngineResult( _status.Success, _config );
+                }
                 if( _status.Success )
                 {
-                    StObjEngineRunContext runCtx;
-                    using( _monitor.OpenInfo( isUnifiedPure
-                                    ? ( _config.BinPaths.Count > 1
-                                            ? $"Creating purely unified map (the unification has not the same Assemblies, ExcludedTypes and Types configurations as any of the {_config.BinPaths.Count} BinPaths)."
-                                            : "Creating map for the single BinPath." )
-                                    : $"Creating unified map that is also the map for '{unifiedGroup.Where( g => g != unifiedGroup ).Select( c => c.Name ).Concatenate( "' ,'" )}'." ) )
+                    StObjEngineRunContext runCtx = new StObjEngineRunContext( _monitor, _startContext );
+                    // Creates the StObjCollectorResult for each group of compatible BinPaths
+                    // and instantiates a StObjEngineRunContext.GenPath that exposes the engine map and the dynamic assembly
+                    // for each of them through IGeneratedBinPath, ICodeGenerationContext and ICSCodeGenerationContext.
+                    foreach( var g in _config.Groups )
                     {
-                        StObjCollectorResult? firstRun = null;
-                        if( resolver == null )
+                        using( _monitor.OpenInfo( g.IsUnifiedPure
+                                                    ? $"Analyzing types from Unified Working directory '{g.Configuration.Path}'."
+                                                    : $"Analyzing types from BinPaths '{g.SimilarConfigurations.Select( b => b.Path.Path ).Concatenate( "', '" )}'." ) )
                         {
-                            if( unifiedBinPath.Assemblies.Count == 0 )
-                            {
-                                _monitor.Error( "No Assemblies specified. Executing a setup with no content is an error." );
-                                return _status.Success = false;
-                            }
-                            firstRun = SafeBuildStObj( unifiedBinPath, isUnifiedPure );
-                        }
-                        else
-                        {
-                            firstRun = resolver.GetUnifiedResult( unifiedBinPath );
-                        }
-                        if( firstRun == null ) return _status.Success = false;
-                        // Primary StObjMap has been successfully built, we can initialize the run context
-                        // with this primary StObjMap and the bin paths that use it (including the unifiedBinPath).
-                        runCtx = new StObjEngineRunContext( _monitor, _startContext, unifiedGroup, firstRun, isUnifiedPure );
-                    }
-
-                    // Then for each set of compatible BinPaths, we can create the secondaries StObjMaps.
-                    foreach( var g in groups.Where( g => g != unifiedGroup ) )
-                    {
-                        using( _monitor.OpenInfo( $"Creating secondary map for BinPaths '{g.Select( b => b.Path.Path ).Concatenate( "', '" )}'." ) )
-                        {
-                            StObjCollectorResult? rFolder = resolver != null ? resolver.GetSecondaryResult( g.Key, g ) : SafeBuildStObj( g.Key );
-                            if( rFolder == null )
+                            StObjCollectorResult? r = resolver?.GetResult( g ) ?? SafeBuildStObj( g );
+                            if( r == null )
                             {
                                 _status.Success = false;
                                 break;
                             }
-                            runCtx.AddResult( g, rFolder );
+                            runCtx.AddResult( g, r );
                         }
                     }
+                    // This is where all aspects runs before Code generation: this is where CK.Setupable.Engine.SetupableAspect.Run():
+                    // - Builds the ISetupItem items (that support 3 steps setup) associated to each StObj (relies on EngineMap.StObjs.OrderedStObjs).
+                    // - Projects the StObj topological order on the ISetupItem items graph.
+                    // - Calls the DynamicItemInitialize methods that can create new Setup items (typically as child of existing containers like SqlProcedure on SqlTable)
+                    // - The ISetupItems are then sorted topologically (this is the second graph).
+                    // - The Init/Install/Settle steps are executed.
                     if( _status.Success )
                     {
-                        // This is where all aspects runs before Code generation: this is where CK.Setupable.Engine.SetupableAspect.Run():
-                        // - Builds the ISetupItem items (that support 3 steps setup) associated to each StObj (relies on EngineMap.StObjs.OrderedStObjs).
-                        // - Projects the StObj topological order on the ISetupItem items graph.
-                        // - Calls the DynamicItemInitialize methods that can create new Setup items (typically as child of existing containers like SqlProcedure on SqlTable)
-                        // - The ISetupItems are then sorted topologically (this is the second graph).
-                        // - The Init/Install/Settle steps are executed.
-                        runCtx.RunAspects( () => _status.Success = false, false );
+                        runCtx.RunAspects( () => _status.Success = false, postCode: false );
                     }
                     // Code Generation.
                     if( _status.Success )
                     {
-                        string dllName = _config.GeneratedAssemblyName;
-                        if( !dllName.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) ) dllName += ".dll";
-                        using( _monitor.OpenInfo( "Final Code Generation." ) )
+                        using( _monitor.OpenInfo( "Code Generation." ) )
                         {
-                            var secondPass = new (StObjEngineRunContext.GenBinPath GenContext, List<MultiPassCodeGeneration> SecondPasses)[runCtx.AllBinPaths.Count];
-                            int i = 0;
                             foreach( var g in runCtx.AllBinPaths )
                             {
-                                var second = new List<MultiPassCodeGeneration>();
-                                secondPass[i++] = (g, second);
-                                // This MUST not be skipped even if GenerateSourceFiles is false and CompileOption is None or if g is
-                                // the "Pure" unified path.
-                                if( !g.Result.GenerateSourceCodeFirstPass( _monitor, g, _config.InformationalVersion, second ) )
+                                if( !g.Result.GenerateSourceCode( _monitor,
+                                                                  g,
+                                                                  _config.Configuration.InformationalVersion,
+                                                                  runCtx.Aspects.OfType<ICSCodeGenerator>() ) )
                                 {
                                     _status.Success = false;
                                     break;
                                 }
                             }
-                            if( _status.Success )
-                            {
-                                Func<IActivityMonitor, SHA1Value, bool> stObjMapAvailable = _config.AvailableStObjMapSignatures.Count > 0
-                                                                            ? (m,v) => _config.AvailableStObjMapSignatures.Contains( v )
-                                                                            : (m,v) => StObjContextRoot.GetMapInfo( v, m ) != null;
-                                foreach( var (g, secondPasses) in secondPass )
-                                {
-                                    var head = g.GroupedPaths.Key;
-                                    var primaryOutputFile = head.OutputPath.AppendPart( dllName );
-                                    StObjCollectorResult.CodeGenerateResult gR = g.Result.GenerateSourceCodeSecondPass( _monitor, primaryOutputFile, g, secondPasses, stObjMapAvailable );
-                                    if( gR.GeneratedFileNames.Count > 0 )
-                                    {
-                                        foreach( var f in g.GroupedPaths )
-                                        {
-                                            if( !f.GenerateSourceFiles && f.CompileOption == CompileOption.None ) continue;
-
-                                            NormalizedPath outPath = head.OutputPath;
-                                            // Handling OutputPath: if the OutputPath is not empty and is not already the primary one,
-                                            // We move all the generated files.
-                                            if( !f.OutputPath.IsEmptyPath
-                                                && f.OutputPath != head.OutputPath )
-                                            {
-                                                outPath = f.OutputPath;
-                                                foreach( var file in gR.GeneratedFileNames )
-                                                {
-                                                    ProjectSourceFileHandler.DoMoveOrCopy( _monitor,
-                                                                                           head.OutputPath.Combine( file ),
-                                                                                           outPath.Combine( file ),
-                                                                                           copy: file.EndsWith( ".dll", StringComparison.OrdinalIgnoreCase ) );
-                                                }
-                                            }
-                                            // Once done, if there is a ProjectPath that is not the OutputPath, then
-                                            // we handle the "Project Mode" source files.
-                                            // There are 2 moves for file sources but the code is simpler.
-                                            if( !f.ProjectPath.IsEmptyPath
-                                                && f.ProjectPath != outPath )
-                                            {
-                                                var h = new ProjectSourceFileHandler( _monitor, outPath, f.ProjectPath );
-                                                h.MoveFilesAndCheckSignature( gR );
-                                            }
-                                        }
-                                    }
-                                    if( !gR.Success )
-                                    {
-                                        _status.Success = false;
-                                        break;
-                                    }
-                                }
-                            }
                         }
                     }
+                    // Handling generated artifacts.
+                    _status.Success &= UpdateGeneratedArtifacts( runCtx.AllBinPaths.Select( g => g.ConfigurationGroup ) );
+                    // Run the aspects Post Code Generation.
                     if( _status.Success )
                     {
-                        runCtx.RunAspects( () => _status.Success = false, true );
+                        runCtx.RunAspects( () => _status.Success = false, postCode: true );
                     }
-                    // Post Code Generation.
+                    // Secure errors (ensure error log and logs error path).
                     if( !_status.Success )
                     {
+                        // Emit the last error log path as an error and ensure that at least one error
+                        // has been logged on failure.
                         var errorPath = _status.LastErrorPath;
                         if( errorPath == null || errorPath.Count == 0 )
                         {
@@ -289,10 +235,11 @@ namespace CK.Setup
                             _monitor.Error( errorPath.ToStringPath() );
                         }
                     }
+                    // Always runs the aspects Termination.
                     var termCtx = new StObjEngineTerminateContext( _monitor, runCtx );
                     termCtx.TerminateAspects( () => _status.Success = false );
                 }
-                return _status.Success;
+                return new StObjEngineResult( _status.Success, _config );
             }
             finally
             {
@@ -301,193 +248,17 @@ namespace CK.Setup
             }
         }
 
-        /// <summary>
-        /// Ensures that <see cref="BinPathConfiguration.Path"/>, <see cref="BinPathConfiguration.OutputPath"/>
-        /// are rooted and gives automatic numbered names to empty <see cref="BinPathConfiguration.Name"/>.
-        /// </summary>
-        /// <returns>True on success, false is something's wrong.</returns>
-        bool PrepareAndCheckConfigurations()
-        {
-            if( _config.BinPaths.Count == 0 )
-            {
-                _monitor.Error( $"No BinPath defined in the configuration. Nothing can be processed." );
-                return false;
-            }
-            if( _config.BasePath.IsEmptyPath )
-            {
-                _config.BasePath = Environment.CurrentDirectory;
-                _monitor.Info( $"No BasePath. Using current directory '{_config.BasePath}'." );
-            }
-            int idx = 1;
-            foreach( var b in _config.BinPaths )
-            {
-                b.Path = MakeAbsolutePath( b.Path );
-
-                if( b.OutputPath.IsEmptyPath ) b.OutputPath = b.Path;
-                else b.OutputPath = MakeAbsolutePath( b.OutputPath );
-
-                if( !b.ProjectPath.IsEmptyPath ) b.ProjectPath = MakeAbsolutePath( b.ProjectPath );
-
-                if( String.IsNullOrWhiteSpace( b.Name ) ) b.Name = $"BinPath{idx}";
-                ++idx;
-
-                var foundAspects = _config.Aspects.Select( r => b.GetAspectConfiguration( r.GetType() ) ).Where( c => c != null ).Select( c => c! );
-                var aliens = b.AspectConfigurations.Except( foundAspects );
-                if( aliens.Any() )
-                {
-                    _monitor.Error( $"BinPath configuration {b.Name} contains elements whose name cannot be mapped to any existing aspect: {aliens.Select( a => a.Name.ToString() ).Concatenate()}. Available aspects are: {_config.Aspects.Select( a => a.GetType().Name ).Concatenate()}." );
-                    return false;
-                }
-                foreach( var a in foundAspects )
-                {
-                    EvalKnownPaths( _monitor, b.Name, a.Name.LocalName, a, _config.BasePath, b.OutputPath, b.ProjectPath );
-                }
-            }
-            // This must be done after the loop above (Name is set when empty).
-            var byName = _config.BinPaths.GroupBy( c => c.Name );
-            if( byName.Any( g => g.Count() > 1 ) )
-            {
-                _monitor.Error( $"BinPath configuration 'Name' must be unique. Duplicates found: {byName.Where( g => g.Count() > 1 ).Select( g => g.Key ).Concatenate()}" );
-                return false;
-            }
-            return true;
-
-            static void EvalKnownPaths( IActivityMonitor monitor, string binPathName, string aspectName, XElement element, NormalizedPath basePath, NormalizedPath outputPath, NormalizedPath projectPath )
-            {
-                foreach( var e in element.Elements() )
-                {
-                    if( !e.HasElements )
-                    {
-                        Debug.Assert( Math.Min( Math.Min( "{BasePath}".Length, "{OutputPath}".Length ), "{ProjectPath}".Length ) == 10 );
-                        string? v = e.Value;
-                        if( v != null && v.Length >= 10 )
-                        {
-                            var vS = ReplacePattern( basePath, "{BasePath}", v );
-                            vS = ReplacePattern( outputPath, "{OutputPath}", vS );
-                            vS = ReplacePattern( projectPath, "{ProjectPath}", vS );
-                            if( v != vS )
-                            {
-                                monitor.Trace( $"BinPathConfiguration '{binPathName}', aspect '{aspectName}': Configuration value '{v}' has been evaluated to '{vS}'." );
-                                e.Value = vS;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        EvalKnownPaths( monitor, binPathName, aspectName, e, basePath, outputPath, projectPath );
-                    }
-                }
-
-                static string ReplacePattern( NormalizedPath basePath, string pattern, string v )
-                {
-                    int len = pattern.Length;
-                    if( v.Length >= len )
-                    {
-                        NormalizedPath result;
-                        if( v.StartsWith( pattern, StringComparison.OrdinalIgnoreCase ) )
-                        {
-                            if( v.Length > len && (v[len] == '\\' || v[len] == '/') ) ++len;
-                            result = basePath.Combine( v.Substring( len ) ).ResolveDots();
-                        }
-                    }
-                    return v;
-                }
-            }
-        }
-
-        NormalizedPath MakeAbsolutePath( NormalizedPath p )
-        {
-            if( !p.IsRooted ) p = _config.BasePath.Combine( p );
-            p = p.ResolveDots();
-            return p;
-        }
-
-        bool ApplyCKSetupConfiguration()
-        {
-            Debug.Assert( _ckSetupConfig != null );
-            using( _monitor.OpenInfo( "Applying CKSetup configuration." ) )
-            {
-                var binPaths = _ckSetupConfig.Elements( StObjEngineConfiguration.xBinPaths ).SingleOrDefault();
-                if( binPaths == null ) throw new ArgumentException( $"Missing &lt;BinPaths&gt; single element in '{_ckSetupConfig}'." );
-                foreach( XElement xB in binPaths.Elements( StObjEngineConfiguration.xBinPath ) )
-                {
-                    var assemblies = xB.Descendants()
-                                       .Where( e => e.Name == "Model" || e.Name == "ModelDependent" )
-                                       .Select( e => e.Value )
-                                       .Where( s => s != null );
-
-                    var path = (string?)xB.Attribute( StObjEngineConfiguration.xPath );
-                    if( path == null ) throw new ArgumentException( $"Missing Path attribute in '{xB}'." );
-
-                    var rootedPath = MakeAbsolutePath( path );
-                    var c = _config.BinPaths.SingleOrDefault( b => b.Path == rootedPath );
-                    if( c == null ) throw new ArgumentException( $"Unable to find one BinPath element with Path '{rootedPath}' in: {_config.ToXml()}." );
-
-                    c.Assemblies.AddRange( assemblies );
-                    _monitor.Info( $"Added assemblies from CKSetup to BinPath '{rootedPath}':{Environment.NewLine}{assemblies.Concatenate(Environment.NewLine)}." );
-                }
-                return true;
-            }
-        }
-
-        /// <summary>
-        /// Creates a <see cref="BinPathConfiguration"/> that unifies multiple <see cref="BinPathConfiguration"/>.
-        /// This configuration is the one used on the unified working directory.
-        /// This unified configuration doesn't contain any <see cref="BinPathConfiguration.AspectConfigurations"/>.
-        /// </summary>
-        /// <param name="monitor">Monitor for error.</param>
-        /// <param name="configurations">Multiple configurations.</param>
-        /// <param name="globalExcludedTypes">Optional types to exclude: see <see cref="StObjEngineConfiguration.GlobalExcludedTypes"/>.</param>
-        /// <returns>The unified configuration or null on error.</returns>
-        static BinPathConfiguration? CreateUnifiedBinPathConfiguration( IActivityMonitor monitor,
-                                                                        IEnumerable<BinPathConfiguration> configurations,
-                                                                        IEnumerable<string>? globalExcludedTypes = null )
-        {
-            var rootBinPath = new BinPathConfiguration();
-            rootBinPath.Path = rootBinPath.OutputPath = AppContext.BaseDirectory;
-            // The root (the Working directory) doesn't want any output by itself.
-            rootBinPath.GenerateSourceFiles = false;
-            Debug.Assert( rootBinPath.CompileOption == CompileOption.None );
-            // Assemblies and types are the union of the assemblies and types of the bin paths.
-            rootBinPath.Assemblies.AddRange( configurations.SelectMany( b => b.Assemblies ) );
-
-            var fusion = new Dictionary<string, BinPathConfiguration.TypeConfiguration>();
-            foreach( var c in configurations.SelectMany( b => b.Types ) )
-            {
-                if( fusion.TryGetValue( c.Name, out var exists ) )
-                {
-                    if( !c.Optional ) exists.Optional = false;
-                    if( exists.Kind != c.Kind )
-                    {
-                        monitor.Error( $"Invalid Type configuration across BinPaths for '{c.Name}': {exists.Kind} vs. {c.Kind}." );
-                        return null;
-                    }
-                }
-                else fusion.Add( c.Name, new BinPathConfiguration.TypeConfiguration( c.Name, c.Kind, c.Optional ) );
-            }
-            rootBinPath.Types.AddRange( fusion.Values );
-
-            // Propagates root excluded types to all bin paths.
-            if( globalExcludedTypes != null )
-            {
-                rootBinPath.ExcludedTypes.AddRange( globalExcludedTypes );
-                foreach( var f in configurations ) f.ExcludedTypes.AddRange( rootBinPath.ExcludedTypes );
-            }
-            return rootBinPath;
-        }
-
-
-        class TypeFilterFromConfiguration : IStObjTypeFilter
+        sealed class TypeFilterFromConfiguration : IStObjTypeFilter
         {
             readonly StObjConfigurationLayer? _firstLayer;
             readonly HashSet<string> _excludedTypes;
             readonly bool _isUnifiedPure;
 
-            public TypeFilterFromConfiguration( BinPathConfiguration f, StObjConfigurationLayer? firstLayer, bool isUnifiedPure )
+            public TypeFilterFromConfiguration( RunningBinPathGroup g, StObjConfigurationLayer? firstLayer )
             {
-                _excludedTypes = f.ExcludedTypes;
+                _excludedTypes = g.Configuration.ExcludedTypes;
                 _firstLayer = firstLayer;
-                _isUnifiedPure = isUnifiedPure;
+                _isUnifiedPure = g.IsUnifiedPure;
             }
 
             bool IStObjTypeFilter.TypeFilter( IActivityMonitor monitor, Type t )
@@ -537,7 +308,7 @@ namespace CK.Setup
             }
         }
 
-        StObjCollectorResult? SafeBuildStObj( BinPathConfiguration head, bool isUnifiedPure = false )
+        StObjCollectorResult? SafeBuildStObj( RunningBinPathGroup group )
         {
             Debug.Assert( _startContext != null, "Work started." );
             bool hasError = false;
@@ -545,22 +316,24 @@ namespace CK.Setup
             {
                 StObjCollectorResult result;
                 var configurator = _startContext.Configurator.FirstLayer;
-                var typeFilter = new TypeFilterFromConfiguration( head, configurator, isUnifiedPure );
-                StObjCollector stObjC = new StObjCollector(
-                    _monitor,
-                    _startContext.ServiceContainer,
-                    _config.TraceDependencySorterInput,
-                    _config.TraceDependencySorterOutput,
-                    typeFilter, configurator, configurator,
-                    _config.BinPaths.Select( b => b.Name! ) );
-                stObjC.RevertOrderingNames = _config.RevertOrderingNames;
-                using( _monitor.OpenInfo( isUnifiedPure ? "Registering only IPoco and IRealObjects (Purely Unified BinPath).": "Registering types." ) )
+                // When head.IsUnifiedPure the type filter keeps only the IPoco and IRealObject.
+                var typeFilter = new TypeFilterFromConfiguration( group, configurator );
+                StObjCollector stObjC = new StObjCollector( _monitor,
+                                                            _startContext.ServiceContainer,
+                                                            _config.Configuration.TraceDependencySorterInput,
+                                                            _config.Configuration.TraceDependencySorterOutput,
+                                                            typeFilter,
+                                                            configurator,
+                                                            configurator,
+                                                            group.SimilarConfigurations.Select( b => b.Name! ) );
+                stObjC.RevertOrderingNames = _config.Configuration.RevertOrderingNames;
+                using( _monitor.OpenInfo( group.IsUnifiedPure ? "Registering only IPoco and IRealObjects (Purely Unified BinPath).": "Registering types." ) )
                 {
                     // First handles the explicit kind of Types.
                     // These are services: we don't care.
-                    if( !isUnifiedPure )
+                    if( !group.IsUnifiedPure )
                     {
-                        foreach( var c in head.Types )
+                        foreach( var c in group.Configuration.Types )
                         {
                             // When c.Kind is None, !Optional is challenged.
                             // The Type is always resolved.
@@ -568,9 +341,9 @@ namespace CK.Setup
                         }
                     }
                     // Then registers the types from the assemblies.
-                    stObjC.RegisterAssemblyTypes( head.Assemblies );
+                    stObjC.RegisterAssemblyTypes( group.Configuration.Assemblies );
                     // Explicitly registers the non optional Types.
-                    if( !isUnifiedPure ) stObjC.RegisterTypes( head.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
+                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( group.Configuration.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
                     // Finally, registers the code based explicitly registered types.
                     foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( t );
 
@@ -587,6 +360,21 @@ namespace CK.Setup
                 }
             }
             return null;
+        }
+
+        bool UpdateGeneratedArtifacts( IEnumerable<RunningBinPathGroup> groups )
+        {
+            using( _monitor.OpenInfo( "Updating the generated artifacts to similar BinPaths if any." ) )
+            {
+                foreach( var g in groups )
+                {
+                    if( !g.IsUnifiedPure )
+                    {
+                        if( !g.UpdateSimilarArtifactsFromHead( _monitor ) ) return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>

@@ -26,7 +26,7 @@ namespace CK.Setup
     public interface IPocoBasePropertyInfo : IAnnotationSet
     {
         /// <summary>
-        /// Gets the index of this property in the <see cref="IPocoRootInfo.PropertyList"/> or <see cref="IPocoClassPropertyInfo.PropertyList"/>.
+        /// Gets the index of this property in the <see cref="IPocoRootInfo.PropertyList"/> or <see cref="IPocoClassInfo.PropertyList"/>.
         /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
         /// by index (MessagePack) rather than by name (Json).
         /// <para>
@@ -40,14 +40,14 @@ namespace CK.Setup
         /// <para>
         /// For <see cref="IPocoPropertyInfo"/>:
         /// <list type="bullet">
-        ///     <item>All the <see cref="DeclaredProperties"/> are also read only.</item>
+        ///     <item>All the <see cref="IPocoPropertyInfo.DeclaredProperties"/> are also read only.</item>
         ///     <item>This property is necessarily NOT nullable.</item>
         ///     <item><see cref="IsUnionType"/> is necessarily false.</item>
         ///     <item>Property's type is necessarily:
         ///         <list type="bullet">
         ///             <item>Another family of <see cref="IPoco"/>...</item>
-        ///             <item>...or a Poco-like object with a true <see cref="IPocoClassInfo.IsDefaultNewable"/>...</item>
-        ///             <item>...or a standard collection (HashSet&lt;&gt;, List&lt;&gt;, Dictionary&lt;,&gt; but it cannot be an array.</item>
+        ///             <item>...or a Poco class.</item>
+        ///             <item>...or a standard collection (HashSet&lt;&gt;, List&lt;&gt;, Dictionary&lt;,&gt;) but it cannot be an array.</item>
         ///         </list>
         ///     </item>
         /// </list>

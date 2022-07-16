@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void value_tuple_is_Poco_compliant()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IWithValueTuple ) );
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var p = s.GetRequiredService<IPocoFactory<IWithValueTuple>>().Create();
             p.Thing = (34, "Test");
             p.Thing.Count.Should().Be( 34 );

@@ -217,7 +217,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             oI.Sub = new List<SubObject>() { new SubObject() { Name = "S", X = 37, Y = 12 } };
 
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
-            var s = TestHelper.GetAutomaticServices( c ).Services;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<ITest>>();

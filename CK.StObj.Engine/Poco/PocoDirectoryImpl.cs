@@ -36,11 +36,15 @@ namespace CK.Setup
                  .Append( "Instance = this;" ).NewLine();
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
-                 .Append( "static readonly Dictionary<string,IPocoFactory> _factories = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()
-                 .Append( "public override IPocoFactory Find( string name ) => _factories.GetValueOrDefault( name );" ).NewLine()
+                 // The _factories field 
+                 .Append( "static readonly Dictionary<string,IPocoFactory> _factoriesN = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()
+                 .Append( "static readonly Dictionary<Type,IPocoFactory> _factoriesT = new Dictionary<Type,IPocoFactory>( " ).Append( r.AllInterfaces.Count ).Append( " );" ).NewLine()
+                 .Append( "public override IPocoFactory Find( string name ) => _factoriesN.GetValueOrDefault( name );" ).NewLine()
+                 .Append( "public override IPocoFactory Find( Type t ) => _factoriesT.GetValueOrDefault( t );" ).NewLine()
                  .Append( "internal static void Register( IPocoFactory f )" ).OpenBlock()
-                 .Append( "_factories.Add( f.Name, f );" ).NewLine()
-                 .Append( "foreach( var n in f.PreviousNames ) _factories.Add( n, f );" ).NewLine()
+                 .Append( "_factoriesN.Add( f.Name, f );" ).NewLine()
+                 .Append( "foreach( var n in f.PreviousNames ) _factoriesN.Add( n, f );" ).NewLine()
+                 .Append( "foreach( var i in f.Interfaces ) _factoriesT.Add( i, f );" ).NewLine()
                  .CloseBlock();
 
             if( r.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;
@@ -175,6 +179,9 @@ namespace CK.Setup
                    .NewLine();
 
                 tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( root.PreviousNames ).Append( ";" )
+                   .NewLine();
+
+                tFB.Append( "public IReadOnlyList<Type> Interfaces => " ).AppendArray( root.Interfaces.Select( i => i.PocoInterface ) ).Append( ";" )
                    .NewLine();
 
                 tFB.CreateFunction( "public " + factoryClassName + "()" )
