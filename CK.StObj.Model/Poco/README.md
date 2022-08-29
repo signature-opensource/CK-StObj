@@ -17,6 +17,57 @@ A property with the same name can be defined by more than one interface in a fam
 must be the same. If a [DefaultValue(...)] attribute is specified on one of the property, all other defined default values must
 be the same.
 
+### Generic IPoco
+
+A IPoco family cannot be defined by a generic interface. If this was possible different extensions could use
+different types for the same type parameter.
+
+This is forbidden:
+
+```c#
+public interface IAmAmbiguous<T> : IPoco
+{
+    T Value { get; set; }
+}
+
+public interface IWantAnInt : IAmAmbiguous<int>
+{
+}
+
+public interface IWantAnObject : IAmAmbiguous<object>
+{
+}
+```
+
+Using the `[CKTypeDefiner]` attribute enables a generic definition of a "family of family". This is how 
+Commands and their results are modeled by CRIS:
+
+```c#
+/// <summary>
+/// The base command interface marker is a simple <see cref="IPoco"/>.
+/// Any type that extends this interface defines a new command type.
+/// </summary>
+[CKTypeDefiner]
+public interface ICommand : IPoco
+{
+    /// <summary>
+    /// Gets the <see cref="ICommandModel"/> that describes this command.
+    /// This property is automatically implemented. 
+    /// </summary>
+    [AutoImplementationClaim]
+    ICommandModel CommandModel { get; }
+}
+
+/// <summary>
+/// Describes a type of command that expects a result.
+/// </summary>
+/// <typeparam name="TResult">Type of the expected result.</typeparam>
+[CKTypeDefiner]
+public interface ICommand<out TResult> : ICommand
+{
+}
+```
+
 ## [PocoClass] classes
 
 A class with a `[PocoClass]` attribute SHOULD behave just like a IPoco instance.

@@ -11,7 +11,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
     /// information.
     /// </summary>
     [ExternalName( "CrisResult" )]
-    public interface ICommandResult : IPoco
+    public interface ICrisResult : IPoco
     {
         /// <summary>
         /// Gets or sets the <see cref="VESACode"/>.

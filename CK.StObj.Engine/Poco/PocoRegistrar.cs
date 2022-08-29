@@ -201,7 +201,13 @@ namespace CK.Setup
         static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
         {
             // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
-            string pocoTypeName = assembly.GetAutoImplementedTypeName( interfaces[0] );
+            var primary = interfaces[0];
+            if( primary.IsGenericType )
+            {
+                monitor.Error( $"The IPoco interface '{primary}' cannot be a generic type (different extensions could use different types for the same type parameter). Use the [CKTypeDefiner] attribute to define a generic IPoco." );
+                return null;
+            }
+            string pocoTypeName = assembly.GetAutoImplementedTypeName( primary );
             var moduleB = assembly.StubModuleBuilder;
             var tB = moduleB.DefineType( pocoTypeName );
 

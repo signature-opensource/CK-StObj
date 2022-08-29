@@ -26,8 +26,8 @@ namespace CK.Setup
         /// <returns>The stub or generated type name.</returns>
         public static string GetAutoImplementedTypeName( this IDynamicAssembly @this, Type type )
         {
+            Throw.CheckNotNullOrEmptyArgument( type.FullName );
             var n = type.FullName;
-            if( String.IsNullOrEmpty( n ) ) throw new ArgumentException( $"Type '{type}' doesn't have a FullName." );
             n = n.Replace( '+', '_' );
             return n.EndsWith( "_CK", StringComparison.Ordinal ) ? n : n + "_CK";
         }
