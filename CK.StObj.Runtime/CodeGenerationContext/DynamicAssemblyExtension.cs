@@ -63,7 +63,7 @@ namespace CK.Setup
         /// <returns>Th generated class builder.</returns>
         public static ITypeScope FindOrCreateAutoImplementedClass( this IDynamicAssembly @this, IActivityMonitor monitor, Type type, out bool created )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            Throw.CheckNotNullArgument( type );
             Type? baseType;
             string name = type.Name;
             if( name.EndsWith( "_CK", StringComparison.Ordinal ) )

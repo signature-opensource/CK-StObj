@@ -84,7 +84,7 @@ namespace CK.Core
         /// <param name="options">The options.</param>
         public static void Write( this IPoco? o, Utf8JsonWriter writer, bool withType = true, PocoJsonSerializerOptions? options = null )
         {
-            if( writer == null ) throw new ArgumentNullException( nameof( writer ) );
+            Throw.CheckNotNullArgument( writer );
             if( o == null ) writer.WriteNullValue();
             else ((IWriter)o).Write( writer, withType, options );
         }
@@ -122,7 +122,7 @@ namespace CK.Core
         /// <returns>The Poco (can be null).</returns>
         public static T? Read<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
         {
-            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
+            Throw.CheckNotNullArgument( @this );
             if( CheckNullStart( ref reader, "expecting Json object, Json array or null value." ) ) return null;
             return ((IFactoryReader<T>)@this).Read( ref reader, options );
         }
@@ -174,7 +174,7 @@ namespace CK.Core
         /// <returns>The Poco (can be null).</returns>
         public static IPoco? Read( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null )
         {
-            if( @this == null ) throw new ArgumentNullException( nameof( @this ) );
+            Throw.CheckNotNullArgument( @this );
             if( CheckNullStart( ref reader, "expecting Json Poco array or null value." ) ) return null;
 
             if( reader.TokenType != JsonTokenType.StartArray ) throw new JsonException( "Expecting Json Poco array." );
@@ -216,8 +216,6 @@ namespace CK.Core
         {
             return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
         }
-
-
 
         static bool CheckNullStart( ref Utf8JsonReader reader, string error )
         {
