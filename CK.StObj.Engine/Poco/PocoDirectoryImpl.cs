@@ -26,6 +26,8 @@ namespace CK.Setup
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
             Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );
+            // Let the PocoDirectory_CK be sealed.
+            scope.Definition.Modifiers |= Modifiers.Sealed;
 
             IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
             Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof(IPocoSupportResult) ), "The PocoSupportResult is also available at the GeneratedBinPath." );
@@ -45,6 +47,8 @@ namespace CK.Setup
                  .Append( "_factoriesN.Add( f.Name, f );" ).NewLine()
                  .Append( "foreach( var n in f.PreviousNames ) _factoriesN.Add( n, f );" ).NewLine()
                  .Append( "foreach( var i in f.Interfaces ) _factoriesT.Add( i, f );" ).NewLine()
+                 .Append( "// The factory type itself is also registered. This enables to locate the Poco instance from its GetType()." ).NewLine()
+                 .Append( "_factoriesT.Add( f.PocoClassType, f );" ).NewLine()
                  .CloseBlock();
 
             if( r.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;

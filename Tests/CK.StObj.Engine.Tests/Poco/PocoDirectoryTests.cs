@@ -35,6 +35,16 @@ namespace CK.StObj.Engine.Tests.Poco
             f3.Should().NotBeNull().And.BeSameAs( f0 );
         }
 
+        [Test]
+        public void GeneratedPoco_factory_instance_can_be_found_by_its_type()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var p = d.Create<ICmdTest>();
+            d.Find( p.GetType() ).Should().NotBeNull().And.BeSameAs( ((IPocoGeneratedClass)p).Factory );
+        }
+
         [ExternalName( "Test", "Prev1", "Test" )]
         public interface ICmdBadName1 : IPoco { }
 
