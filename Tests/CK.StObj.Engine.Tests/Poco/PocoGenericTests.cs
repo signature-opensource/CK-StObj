@@ -36,5 +36,39 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c );
         }
 
+        [CKTypeDefiner]
+        public interface IGenericDefiner<T> : IPoco where T : class, IGenericItem
+        {
+            /// <summary>
+            /// Gets a mutable list of <see cref="IMissionLine"/>.
+            /// </summary>
+            List<T> Items { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IGenericItem : IPoco
+        {
+        }
+
+        [ExternalName("ConcretePoco")]
+        public interface IConcretePoco : IGenericDefiner<IConcreteItem>
+        {
+        }
+
+        public interface IConcreteItem : IGenericItem
+        {
+        }
+
+        [Test]
+        public void generic_IPoco_definer_is_possible()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IConcretePoco ), typeof( IConcreteItem ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var root = d.Create<IConcretePoco>();
+            var item = d.Create<IConcreteItem>();
+            root.Items.Add( item );
+        }
+
     }
 }
