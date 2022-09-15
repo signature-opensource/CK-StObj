@@ -209,10 +209,10 @@ namespace CK.Setup
             }
             string pocoTypeName = assembly.GetAutoImplementedTypeName( primary );
             var moduleB = assembly.StubModuleBuilder;
-            var tB = moduleB.DefineType( pocoTypeName );
+            var tB = moduleB.DefineType( pocoTypeName, TypeAttributes.Sealed );
 
             // The factory also ends with "_CK": it is a generated type.
-            var tBF = moduleB.DefineType( pocoTypeName + "Factory_CK" );
+            var tBF = moduleB.DefineType( pocoTypeName + "Factory_CK", TypeAttributes.Sealed );
 
             // The IPocoFactory base implementation.
             tBF.AddInterfaceImplementation( typeof( IPocoFactory ) );
@@ -255,6 +255,30 @@ namespace CK.Setup
                 g.Emit( OpCodes.Ldnull );
                 g.Emit( OpCodes.Ret );
                 var p = tBF.DefineProperty( nameof( IPocoFactory.Interfaces ), PropertyAttributes.None, typeof( IReadOnlyList<Type> ), null );
+                p.SetGetMethod( m );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_PrimaryInterface", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( Type ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.PrimaryInterface ), PropertyAttributes.None, typeof( Type ), null );
+                p.SetGetMethod( m );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_ClosureInterface", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( Type ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldnull );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.ClosureInterface ), PropertyAttributes.None, typeof( Type ), null );
+                p.SetGetMethod( m );
+            }
+            {
+                MethodBuilder m = tBF.DefineMethod( "get_IsClosedPoco", MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig | MethodAttributes.Final, typeof( bool ), Type.EmptyTypes );
+                ILGenerator g = m.GetILGenerator();
+                g.Emit( OpCodes.Ldc_I4_0 );
+                g.Emit( OpCodes.Ret );
+                var p = tBF.DefineProperty( nameof( IPocoFactory.IsClosedPoco ), PropertyAttributes.None, typeof( bool ), null );
                 p.SetGetMethod( m );
             }
             {
@@ -302,17 +326,23 @@ namespace CK.Setup
                     tBF.DefineMethodOverride( m, iCreate.GetMethod( nameof( IPocoFactory<IPoco>.Create ) )! );
                 }
             }
+            Debug.Assert( closure != null, "Since there is at least one interface." );
+
+            // Is the biggest interface the closure?
+            if( maxICount < expanded.Count - 1 )
+            {
+                closure = null;
+            }
             // If the IClosedPoco has been found, we ensure that a closure interface has been found.
             if( mustBeClosed )
             {
                 Debug.Assert( maxICount < expanded.Count );
-                if( maxICount < expanded.Count - 1 )
+                if( closure == null )
                 {
                     monitor.Error( $"Poco family '{interfaces.Select( b => b.ToCSharpName() ).Concatenate("', '")}' must be closed but none of these interfaces covers the other ones." );
                     return null;
                 }
-                Debug.Assert( closure != null, "Since there is at least one interface." );
-                monitor.Debug( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.ToCSharpName() ).Concatenate()}." );
+                monitor.Trace( $"{closure.FullName}: IClosedPoco for {interfaces.Select( b => b.ToCSharpName() ).Concatenate()}." );
             }
             // Supports the IPocoGeneratedClass interface.
             tB.AddInterfaceImplementation( typeof( IPocoGeneratedClass ) );

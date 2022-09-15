@@ -176,6 +176,15 @@ namespace CK.Setup
                 tFB.Append( "public Type PocoClassType => typeof(" ).Append( root.PocoClass.Name ).Append( ");" )
                    .NewLine();
 
+                tFB.Append( "public Type PrimaryInterface => " ).AppendTypeOf( root.PrimaryInterface ).Append( ";" )
+                   .NewLine();
+
+                tFB.Append( "public Type? ClosureInterface => " ).AppendTypeOf( root.ClosureInterface ).Append( ";" )
+                   .NewLine();
+
+                tFB.Append( "public bool IsClosedPoco => " ).Append( root.IsClosedPoco ).Append( ";" )
+                   .NewLine();
+
                 tFB.Append( "public IPoco Create() => new " ).Append( root.PocoClass.Name ).Append( "();" )
                    .NewLine();
 

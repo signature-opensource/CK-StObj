@@ -9,10 +9,10 @@ using Microsoft.Extensions.DependencyInjection;
 using static CK.Testing.StObjEngineTestHelper;
 using System.Diagnostics;
 
-namespace CK.StObj.Engine.Tests.Service
+namespace CK.StObj.Engine.Tests.Poco
 {
     [TestFixture]
-    public class PocoCloPocTests
+    public class ClosedPocoTests
     {
         [CKTypeDefiner]
         public interface ICloPoc : IClosedPoco
@@ -162,6 +162,60 @@ namespace CK.StObj.Engine.Tests.Service
             services.GetService<IPocoFactory<IOther2UserCloPoc>>().Should().BeSameAs( factoryCloPoc );
             services.GetService<IPocoFactory<IUserFinalCloPoc>>().Should().BeSameAs( factoryCloPoc );
         }
+
+        [Test]
+        public void IPocoFactory_exposes_the_IsClosedPoco_and_ClosureInterface_properties()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IUserFinalCloPoc ) );
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
+            var fUser = services.GetRequiredService<IPocoFactory<IUserCloPoc>>();
+            fUser.IsClosedPoco.Should().BeTrue();
+            fUser.ClosureInterface.Should().Be( typeof( IUserFinalCloPoc ) );
+        }
+
+        public interface INotClosedByDesign : IPoco
+        {
+            int A { get; set; }
+        }
+
+        public interface IExtendNotClosedByDesign : INotClosedByDesign
+        {
+            int B { get; set; }
+        }
+
+        public interface IAnotherExtendNotClosedByDesign : INotClosedByDesign
+        {
+            int C { get; set; }
+        }
+
+        [Test]
+        public void the_ClosureInterface_is_available_if_a_closure_interface_exists_even_if_the_Poco_is_not_a_IClosedPoco()
+        {
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( INotClosedByDesign ) );
+                using var services = TestHelper.CreateAutomaticServices( c ).Services;
+                var f = services.GetRequiredService<IPocoFactory<INotClosedByDesign>>();
+                f.IsClosedPoco.Should().BeFalse();
+                f.ClosureInterface.Should().Be( typeof( INotClosedByDesign ) );
+            }
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IExtendNotClosedByDesign ) );
+                using var services = TestHelper.CreateAutomaticServices( c ).Services;
+                var f = services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
+                f.IsClosedPoco.Should().BeFalse();
+                f.ClosureInterface.Should().Be( typeof( IExtendNotClosedByDesign ) );
+            }
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
+                using var services = TestHelper.CreateAutomaticServices( c ).Services;
+                var f = services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
+                f.Name.Should().Be( "CK.StObj.Engine.Tests.Poco.ClosedPocoTests+INotClosedByDesign" );
+                f.Interfaces.Should().HaveCount( 3 );
+                f.IsClosedPoco.Should().BeFalse();
+                f.ClosureInterface.Should().BeNull();
+            }
+        }
+
 
     }
 }
