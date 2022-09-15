@@ -39,7 +39,7 @@ namespace CK.Core
         {
             /// <summary>
             /// Non generic version of <see cref="IFactoryReader{T}.Read(ref Utf8JsonReader, PocoJsonSerializerOptions?)"/> method,
-            /// the type must be known an the data must not be <c>null</c>.
+            /// the type must be known and the data must not be <c>null</c>.
             /// <para>
             /// If the reader is <see cref="JsonTokenType.StartArray"/>, it must be a 2-cells array
             /// with this Poco's type that comes first (otherwise an exception is thrown).

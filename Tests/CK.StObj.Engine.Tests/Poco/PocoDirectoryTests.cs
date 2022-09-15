@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -33,6 +34,9 @@ namespace CK.StObj.Engine.Tests.Poco
             f0.Should().NotBeNull().And.BeSameAs( f1 ).And.BeSameAs( f2 );
             var f3 = d.Find( typeof( ICmdTest ) );
             f3.Should().NotBeNull().And.BeSameAs( f0 );
+
+            // Typed helper.
+            d.Find<ICmdTest>().Should().NotBeNull().And.BeSameAs( f0 );
         }
 
         [Test]

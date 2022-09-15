@@ -124,7 +124,7 @@ Actually, the returned type can formally be any Poco compliant type since these 
 > This approach seems the most interesting one because it can support a complete externalization of the code.
 
 A type `TPocoLike` is either:
-1.  a type that supports the [PocoLikeSupport] attribute and has `T ToPocoJon()` and `constructor( T )` 
+1.  a type that supports the [PocoLikeSupport] attribute and has `T ToPoco()` and `constructor( T )` 
   members (where T is a Poco compliant type);
 2. or a `IPocoConverter<TPocoLike> : ISingletonAutoService` exists that implements the conversion methods, ideally 
    without explicit type constraint (like above).
@@ -139,6 +139,17 @@ The n°1 can be implemented more easily than n°2. The latter would require to:
   - Discover: the `IPocoConverter<TPocoLike>` converters are discovered and analyzed early by the KindDetector and their 
     conversion target is registered as being "PocoLike" or "PocoConvertible".
 
-- Give the PocoDirectory (that is a IRealObject) the IServiceProvider to resolve the converters.
+- Give the PocoDirectory (that is a IRealObject) the IServiceProvider to resolve the converters... And this is not easy at all 
+(using AsyncLocal is NOT an option!). The only way seems that IPocoConverter must also be IRealObject. Something like:
+```csharp
+[CKTypeDefiner]
+abstract class PocoConverter<TPocoLike> : IRealObject
+{
+  public abstract IPoco ToPoco( in TPocoLike o );
+  public abstract TPocoLike FromPoco( IPoco o );
+}
+```
+Such converter can accept more than one IPoco type as an input and can create different type of IPoco on output. This makes sense.
+
 
 This has to be investigated.
