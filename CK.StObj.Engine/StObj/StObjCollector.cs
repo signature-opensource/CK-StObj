@@ -259,11 +259,8 @@ namespace CK.Setup
         /// <returns>The result.</returns>
         public StObjCollectorResult GetResult()
         {
-            if( _registerFatalOrErrorCount > 0 )
-            {
-                throw new InvalidOperationException( $"There are {_registerFatalOrErrorCount} registration errors." );
-            }
-            if( _computedResult ) throw new InvalidOperationException( "Must be called once and only once." );
+            Throw.CheckState( $"There are {_registerFatalOrErrorCount} registration errors.", _registerFatalOrErrorCount == 0 );
+            Throw.CheckState( "Must be called once and only once.", !_computedResult );
             _computedResult = true;
             try
             {

@@ -118,7 +118,26 @@ namespace CK.Setup.Json
         //         This is where the Poco's properties types are transitively allowed.
         CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
         {
-            using var g = monitor.OpenInfo( $"Generating C# Json serialization code." );
+            using var gLog = monitor.OpenInfo( $"Generating C# Json serialization code." );
+
+            {
+                var ns = c.Assembly.Code.Global.FindOrCreateNamespace( "CK.Core" );
+                ns.GeneratedByComment();
+                ns.Append( @"
+        static class JsonGeneratedHelperExtension
+        {
+            public static void ThrowJsonException( this ref System.Text.Json.Utf8JsonReader r, string m )
+            {
+                ThrowJsonException( m );
+            }
+
+            public static void ThrowJsonException( string m )
+            {
+                throw new System.Text.Json.JsonException( m );
+            }
+        }" ).NewLine();
+            }
+
 
             bool success = true;
             // Generates the factory and the Poco class code.
@@ -260,7 +279,7 @@ namespace CK.Setup.Json
             {
                 if( !isECMAScriptStandardCompliant )
                 {
-                    writeHeader.And( readHeader ).Append( "if( options != null && options.Mode == PocoJsonSerializerMode.ECMAScriptStandard ) throw new NotSupportedException( \"Poco '" )
+                    writeHeader.And( readHeader ).Append( "if( options != null && options.Mode == PocoJsonSerializerMode.ECMAScriptStandard ) Throw.NotSupportedException( \"Poco '" )
                                                     .Append( pocoInfo.Name )
                                                     .Append( "' is not compliant with the ECMAScripStandard mode.\" );" ).NewLine();
                 }
@@ -302,7 +321,7 @@ if( isDef )
     }
     r.Read();
 }
-if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) throw new System.Text.Json.JsonException( ""Expecting '{' to start a Poco."" );
+if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( ""Expecting '{' to start a Poco."" );
 r.Read();
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 {
@@ -316,17 +335,20 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
         default:
         {
             var t = r.TokenType; 
-            r.Skip();
-            if( t == System.Text.Json.JsonTokenType.StartArray || t == System.Text.Json.JsonTokenType.StartObject ) r.Read();
+            if( t == System.Text.Json.JsonTokenType.StartObject || t == System.Text.Json.JsonTokenType.StartArray )
+            {
+                r.Skip();
+            }
+            r.Read();
             break;
         }
     }
 }
-if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) throw new System.Text.Json.JsonException( ""Expecting '}' to end a Poco."" );
+if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) r.ThrowJsonException( ""Expecting '}' to end a Poco."" );
 r.Read();
 if( isDef )
 {
-    if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) throw new System.Text.Json.JsonException( ""Expecting ']' to end a Poco array."" );
+    if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) r.ThrowJsonException( ""Expecting ']' to end a Poco array."" );
     r.Read();
 }
 " ).CloseBlock();

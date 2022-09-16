@@ -276,13 +276,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( ITest ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
 
-            string missingValue = @"{""Hip"": ""Hop"", ""Stranger"": [0,1,[]]}";
+            string missingValue = @"{""Alien"":""...ignored..."", ""Hip"": ""Hop"", ""Stranger"": [0,1,[]]}";
             var noValue = JsonTestHelper.Deserialize<ITest>( s, missingValue );
             Debug.Assert( noValue != null );
             noValue.Hip.Should().Be( "Hop" );
             noValue.Power.Should().Be( 0 );
 
-            string missingHip = @"{""Power"": 871871, ""Another"": {""Nimp"": [87,54]}, ""Stranger"": []}";
+            string missingHip = @"{""Power"": 871871, ""Alien"":45, ""Another"": {""Nimp"": [87,54]}, ""Stranger"": []}";
             var noHip = JsonTestHelper.Deserialize<ITest>( s, missingHip );
             Debug.Assert( noHip != null );
             noHip.Hip.Should().Be( "Hello...", "This is the default Hip value." );
