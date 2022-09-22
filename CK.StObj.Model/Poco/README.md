@@ -17,6 +17,77 @@ A property with the same name can be defined by more than one interface in a fam
 must be the same. If a [DefaultValue(...)] attribute is specified on one of the property, all other defined default values must
 be the same.
 
+### Generic IPoco
+
+A IPoco family cannot be defined by a generic interface. If this was possible different extensions could use
+different types for the same type parameter.
+
+This is forbidden:
+
+```csharp
+public interface IAmAmbiguous<T> : IPoco
+{
+    T Value { get; set; }
+}
+
+public interface IWantAnInt : IAmAmbiguous<int>
+{
+}
+
+public interface IWantAnObject : IAmAmbiguous<object>
+{
+}
+```
+
+Using the `[CKTypeDefiner]` attribute enables a generic definition of a "family of family". This is how 
+Commands and their results are modeled by CRIS:
+
+```csharp
+/// <summary>
+/// The base command interface marker is a simple <see cref="IPoco"/>.
+/// Any type that extends this interface defines a new command type.
+/// </summary>
+[CKTypeDefiner]
+public interface ICommand : IPoco
+{
+    /// <summary>
+    /// Gets the <see cref="ICommandModel"/> that describes this command.
+    /// This property is automatically implemented. 
+    /// </summary>
+    [AutoImplementationClaim]
+    ICommandModel CommandModel { get; }
+}
+
+/// <summary>
+/// Describes a type of command that expects a result.
+/// </summary>
+/// <typeparam name="TResult">Type of the expected result.</typeparam>
+[CKTypeDefiner]
+public interface ICommand<out TResult> : ICommand
+{
+}
+```
+## Current limitations of the abstraction
+By using a `[CKTypeDefiner]` attribute on a `IPoco`, the interface becomes a kind of "abstract" definition.
+The definer is NOT a `IPoco`, doesn't define a "Poco family", only the interfaces that specialize it are `IPoco`
+and define a family.
+
+Unfortunately, the current implementation doesn't exploit this as much as it can (the "abstract" aspect has been
+overlooked). A definer SHOULD be able to carry abstractions like:
+
+  - An `object Identifier { get; }` that can be implemented (at the "concrete" `IPoco` level) by a 
+    `int Identifier {get ; set; }` for a family and by `string Identifier { get; set; } for another one.
+  - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `List<Y> Things { get; }` where X 
+    is assignable from Y.
+
+This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
+specification). Current implementation prohibits this.
+
+In the same spirit, Poco cannot currently support non `IPoco` interfaces. This limitation should be
+suppressed: such "external" interfaces should be allowed and treated just like poco definer: they are
+valid if they have no methods and events and all their properties are compatible (covariant) with
+the ones of the concrete pocos.
+
 ## [PocoClass] classes
 
 A class with a `[PocoClass]` attribute SHOULD behave just like a IPoco instance.
@@ -53,7 +124,7 @@ Actually, the returned type can formally be any Poco compliant type since these 
 > This approach seems the most interesting one because it can support a complete externalization of the code.
 
 A type `TPocoLike` is either:
-1.  a type that supports the [PocoLikeSupport] attribute and has `T ToPocoJon()` and `constructor( T )` 
+1.  a type that supports the [PocoLikeSupport] attribute and has `T ToPoco()` and `constructor( T )` 
   members (where T is a Poco compliant type);
 2. or a `IPocoConverter<TPocoLike> : ISingletonAutoService` exists that implements the conversion methods, ideally 
    without explicit type constraint (like above).
@@ -68,6 +139,17 @@ The n°1 can be implemented more easily than n°2. The latter would require to:
   - Discover: the `IPocoConverter<TPocoLike>` converters are discovered and analyzed early by the KindDetector and their 
     conversion target is registered as being "PocoLike" or "PocoConvertible".
 
-- Give the PocoDirectory (that is a IRealObject) the IServiceProvider to resolve the converters.
+- Give the PocoDirectory (that is a IRealObject) the IServiceProvider to resolve the converters... And this is not easy at all 
+(using AsyncLocal is NOT an option!). The only way seems that IPocoConverter must also be IRealObject. Something like:
+```csharp
+[CKTypeDefiner]
+abstract class PocoConverter<TPocoLike> : IRealObject
+{
+  public abstract IPoco ToPoco( in TPocoLike o );
+  public abstract TPocoLike FromPoco( IPoco o );
+}
+```
+Such converter can accept more than one IPoco type as an input and can create different type of IPoco on output. This makes sense.
+
 
 This has to be investigated.

@@ -96,7 +96,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             int Two { get; set; }
 
-            IList<int> List { get; }
+            List<int> List { get; }
         }
 
         public interface IOtherThingBuilder : IThingBuilder

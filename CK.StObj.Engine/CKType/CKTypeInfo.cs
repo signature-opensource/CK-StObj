@@ -74,7 +74,7 @@ namespace CK.Setup
         {
             get
             {
-                if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
+                if( IsSpecialized ) Throw.InvalidOperationException( $"Must be called on the most specialized type." );
                 return (IReadOnlyCollection<Type>?)_uniqueMappings ?? Type.EmptyTypes;
             }
         }

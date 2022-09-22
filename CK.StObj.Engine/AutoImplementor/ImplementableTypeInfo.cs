@@ -193,7 +193,7 @@ namespace CK.Setup
         /// <returns>The newly created type in the dynamic assembly. Null if an error occurred.</returns>
         public Type? CreateStubType( IActivityMonitor monitor, IDynamicAssembly assembly )
         {
-            if( _stubType != null ) throw new InvalidOperationException( "Must be called only if StubType is null." );
+            if( _stubType != null ) Throw.InvalidOperationException( "Must be called only if StubType is null." );
             try
             {
                 TypeAttributes tA = TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;

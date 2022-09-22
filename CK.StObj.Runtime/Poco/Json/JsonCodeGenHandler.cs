@@ -1,4 +1,5 @@
 using CK.CodeGen;
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -134,7 +135,7 @@ namespace CK.Setup.Json
         /// <param name="writeTypeName">True if type discriminator must be written.</param>
         public void DoGenerateWrite( ICodeWriter write, string variableName, bool handleNull, bool writeTypeName )
         {
-            if( TypeInfo.CodeWriter == null ) throw new InvalidOperationException( "CodeWriter has not been set." );
+            Throw.CheckState( TypeInfo.CodeWriter != null );
             bool variableCanBeNull = false;
             if( handleNull )
             {
@@ -147,7 +148,7 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-                    write.Append( "if( " ).Append( variableName ).Append( " == null ) throw new InvalidOperationException(\"A null value appear where it should not. Writing JSON is impossible.\");" ).NewLine();
+                    write.Append( "if( " ).Append( variableName ).Append( " == null ) Throw.InvalidOperationException(\"A null value appear where it should not. Writing JSON is impossible.\");" ).NewLine();
                 }
             }
             writeTypeName &= !TypeInfo.IsIntrinsic;
@@ -221,7 +222,7 @@ namespace CK.Setup.Json
                 }
                 else
                 {
-                    read.Append( " throw new System.Text.Json.JsonException( \"Unexpected null value.\");" ).NewLine();
+                    read.Append( " r.ThrowJsonException( \"Unexpected null value.\");" ).NewLine();
                 }
             }
             TypeInfo.CodeReader( read, variableName, assignOnly, IsNullable );

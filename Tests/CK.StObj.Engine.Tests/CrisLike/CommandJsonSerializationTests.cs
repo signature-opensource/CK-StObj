@@ -43,6 +43,12 @@ namespace CK.StObj.Engine.Tests.CrisLike
             string? SimpleValue { get; set; }
         }
 
+        [ExternalName( "FullAuthCommandWithResult" )]
+        public interface IFullAuthCommandWithResult : ICommand<int>, ICommandAuthDeviceId, ICommandAuthImpersonation, ICommandAuthCritical
+        {
+            string? SimpleValue { get; set; }
+        }
+
         [Test]
         public void command_json_roundtrip()
         {
@@ -52,7 +58,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
                                                      typeof( IAuthCommand ),
                                                      typeof( ICriticalCommand ),
                                                      typeof( IDeviceCommand ),
-                                                     typeof( IFullAuthCommand ) );
+                                                     typeof( IFullAuthCommand ),
+                                                     typeof( IFullAuthCommandWithResult ) );
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
             Debug.Assert( services != null );
 
@@ -61,6 +68,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
             TestRoundTrip<ICriticalCommand>( services );
             TestRoundTrip<IDeviceCommand>( services );
             TestRoundTrip<IFullAuthCommand>( services );
+            TestRoundTrip<IFullAuthCommandWithResult>( services );
 
             void TestRoundTrip<T>( IServiceProvider services ) where T : class, ICommand
             {

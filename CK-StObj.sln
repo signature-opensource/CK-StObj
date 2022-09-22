@@ -3,6 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.2.32616.157
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{6E913090-EA34-4A90-8DBB-1501F9981F53}"
+	ProjectSection(SolutionItems) = preProject
+		Tests\TestHelper.config = Tests\TestHelper.config
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9DEAD117-3101-4DED-9FCC-8AA28CF4F34C}"
 	ProjectSection(SolutionItems) = preProject
@@ -46,14 +49,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sample.Engine.Tests", "Test
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StObjSetupTesting", "StObjSetupTesting", "{C3D2F23D-B74E-4D10-A22E-D522623C968A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibWithSampleModel", "Tests\StObjSetupTesting\LibWithSampleModel\LibWithSampleModel.csproj", "{999346EF-E9B8-4C5B-851A-61E2C5F812FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibWithSampleModel", "Tests\StObjSetupTesting\LibWithSampleModel\LibWithSampleModel.csproj", "{999346EF-E9B8-4C5B-851A-61E2C5F812FC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FAEAD54B-C35E-4F3F-8284-BB35CF7244BD}"
 	ProjectSection(SolutionItems) = preProject
 		Tests\StObjSetupTesting\Tests\TestHelper.config = Tests\StObjSetupTesting\Tests\TestHelper.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LibWithSampleModel.Tests", "Tests\StObjSetupTesting\Tests\LibWithSampleModel.Tests\LibWithSampleModel.Tests.csproj", "{104904DA-469B-41EF-93E2-4C571AF95E29}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibWithSampleModel.Tests", "Tests\StObjSetupTesting\Tests\LibWithSampleModel.Tests\LibWithSampleModel.Tests.csproj", "{104904DA-469B-41EF-93E2-4C571AF95E29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

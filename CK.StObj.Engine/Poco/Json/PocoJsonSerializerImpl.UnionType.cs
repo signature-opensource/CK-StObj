@@ -108,14 +108,13 @@ namespace CK.Setup.Json
                          .Append( "case null: " );
                     if( info.PropertyInfo.IsNullable )
                     {
-                        write.Append( "w.WriteNullValue();" ).NewLine()
-                             .Append( "break;" );
+                        write.Append( "w.WriteNullValue();" ).NewLine();
                     }
                     else
                     {
-                        write.Append( @"throw new InvalidOperationException( ""A null value appear where it should not. Writing JSON is impossible."" );" );
+                        write.Append( @"Throw.InvalidOperationException( ""A null value appear where it should not. Writing JSON is impossible."" );" );
                     }
-                    write.NewLine();
+                    write.Append( "break;" ).NewLine();
                     bool hasDefaultObject = false;
                     foreach( var h in info.AllHandlers )
                     {
@@ -132,12 +131,13 @@ namespace CK.Setup.Json
                     if( hasDefaultObject )
                     {
                         mainHandler.ToNonNullHandler().GenerateWrite( write, fieldName );
-                        write.NewLine().Append( "break;" );
                     }
                     else
                     {
-                        write.Append( @"throw new InvalidOperationException( $""Unexpected type {" ).Append( fieldName ).Append( @".GetType()} in union " ).Append( info.PropertyInfo.ToString()! ).Append( @"."" );" );
+                        write.Append( @"Throw.InvalidOperationException( $""Unexpected type {" ).Append( fieldName ).Append( @".GetType()} in union " ).Append( info.PropertyInfo.ToString()! ).Append( @"."" );" )
+                             .NewLine();
                     }
+                    write.NewLine().Append( "break;" );
                     write.CloseBlock();
                 }
                 else

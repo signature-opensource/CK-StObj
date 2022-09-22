@@ -90,7 +90,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void poco_factory_exposes_the_final_type()
+        public void Engine_poco_factory_exposes_the_final_type_but_not_other_properties()
         {
             StObjCollectorResult result = BuildPocoSample();
             Debug.Assert( result.EngineMap != null, "No error." );
@@ -103,7 +103,12 @@ namespace CK.StObj.Engine.Tests.Poco
             Assert.That( typeof( IEBasicPoco ).IsAssignableFrom( pocoType ) );
             Assert.That( typeof( IECombineBasicPoco ).IsAssignableFrom( pocoType ) );
             Assert.That( typeof( IEIndependentBasicPoco ).IsAssignableFrom( pocoType ) );
-
+            // These are dumb emit implementations.
+            p.PrimaryInterface.Should().BeNull();
+            p.Interfaces.Should().BeNull();
+            p.Name.Should().BeNull();
+            p.PreviousNames.Should().BeNull();
+            p.ClosureInterface.Should().BeNull();
         }
 
         public interface IDefTest : IPoco

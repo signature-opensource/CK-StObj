@@ -173,7 +173,7 @@ namespace CK.Setup.Json
             // Since JsonTypeInfo.ObjectType is static, multiples runs (unit tests) register it multiple times. 
             if( i.TypeSpecOrder >= 0.0f && i != JsonTypeInfo.ObjectType )
             {
-                throw new InvalidOperationException( $"JsonTypeInfo '{i.GenCSharpName}' is already registered." );
+                Throw.InvalidOperationException( $"JsonTypeInfo '{i.GenCSharpName}' is already registered." );
             }
             i.TypeSpecOrder = 0.0f;
             _map.Add( i.NonNullHandler.Type, i.NonNullHandler );
@@ -486,20 +486,20 @@ namespace CK.Setup.Json
         /// </param>
         public void AllowTypeAlias( NullableTypeTree alias, JsonTypeInfo target, bool isMostAbstract = false )
         {
-            if( !alias.IsNormalNull ) throw new ArgumentException( "Must be a 'normalized null' type.", nameof( alias ) );
-            if( !(alias.Type.IsClass || alias.Type.IsSealed) && !alias.Type.IsInterface ) throw new ArgumentException( $"Must be a non sealed class or an interface. '{alias}' is not.", nameof( alias ) );
-            if( target == null ) throw new ArgumentNullException( nameof( target ) );
-            if( !alias.Type.IsAssignableFrom( target.Type.Type ) ) throw new ArgumentException( $"Type alias '{alias}' must be assignable to '{target.GenCSharpName}'.", nameof( alias ) );
+            Throw.CheckArgument( "Must be a 'normalized null' type.", alias.IsNormalNull );
+            Throw.CheckArgument( $"Must be a non sealed class or an interface. '{alias}' is not.", ( !alias.Type.IsClass && !alias.Type.IsSealed) || alias.Type.IsInterface );
+            Throw.CheckNotNullArgument( target );
+            Throw.CheckArgument( $"Type alias '{alias}' must be assignable to '{target.GenCSharpName}'.", alias.Type.IsAssignableFrom( target.Type.Type ) );
             var hNull = AllowMapping( alias, target.NullHandler );
             if( isMostAbstract )
             {
                 if( target.IsRegistered )
                 {
-                    throw new InvalidOperationException( $"AllowTypeAlias for alias {alias} must be called before the target '{target.GenCSharpName}' is registered (via AllowTypeInfo)." );
+                    Throw.InvalidOperationException( $"AllowTypeAlias for alias {alias} must be called before the target '{target.GenCSharpName}' is registered (via AllowTypeInfo)." );
                 }
                 if( target.MostAbstractMapping != null )
                 {
-                    throw new InvalidOperationException( $"Type alias '{alias}' cannot be defined as the MostAbstractType on '{target.GenCSharpName}' since it is already defined as '{target.MostAbstractMapping.GenCSharpName}'." );
+                    Throw.InvalidOperationException( $"Type alias '{alias}' cannot be defined as the MostAbstractType on '{target.GenCSharpName}' since it is already defined as '{target.MostAbstractMapping.GenCSharpName}'." );
                 }
                 target.MostAbstractMapping = hNull;
             }

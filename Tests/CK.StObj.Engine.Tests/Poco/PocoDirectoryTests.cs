@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -33,6 +34,19 @@ namespace CK.StObj.Engine.Tests.Poco
             f0.Should().NotBeNull().And.BeSameAs( f1 ).And.BeSameAs( f2 );
             var f3 = d.Find( typeof( ICmdTest ) );
             f3.Should().NotBeNull().And.BeSameAs( f0 );
+
+            // Typed helper.
+            d.Find<ICmdTest>().Should().NotBeNull().And.BeSameAs( f0 );
+        }
+
+        [Test]
+        public void GeneratedPoco_factory_instance_can_be_found_by_its_type()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ICmdTest ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var p = d.Create<ICmdTest>();
+            d.Find( p.GetType() ).Should().NotBeNull().And.BeSameAs( ((IPocoGeneratedClass)p).Factory );
         }
 
         [ExternalName( "Test", "Prev1", "Test" )]
