@@ -8,7 +8,7 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Describes a Poco property.
+    /// Describes a IPoco property.
     /// This handles potentially more than one <see cref="DeclaredProperties"/> that must be identical across the different interfaces.
     /// </summary>
     public interface IPocoPropertyInfo : IPocoBasePropertyInfo
@@ -31,7 +31,21 @@ namespace CK.Setup
         /// <summary>
         /// Gets the property declarations from the different <see cref="IPoco"/> interfaces (use <see cref="PropertyInfo.MemberType"/> to
         /// get the declaring interface).
+        /// <para>
+        /// During the discovery of all the IPoco interfaces of the family, this contains all the properties. The property type and read only analysis
+        /// is done after the discovery phase and valid "abstract read only properties" are moved to the <see cref="AbstractReadOnlyProperties"/>.
+        /// </para>
+        /// <para>
+        /// A valid IPoco eventually has an homogeneous set of properties in this list: they are either all readonly or not and their type
+        /// is compatible (see <see cref="IPocoBasePropertyInfo.IsReadOnly"/>).
+        /// </para>
         /// </summary>
         IReadOnlyList<PropertyInfo> DeclaredProperties { get; }
+
+        /// <summary>
+        /// Abstract readonly properties have a false <see cref="PropertyInfo.CanWrite"/> and a type that is compatible with (typically
+        /// assignable from) the final type of this <see cref="IPocoBasePropertyInfo"/>.
+        /// </summary>
+        IReadOnlyList<PropertyInfo> AbstractReadOnlyProperties { get; }
     }
 }

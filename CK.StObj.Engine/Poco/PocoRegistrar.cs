@@ -439,24 +439,17 @@ namespace CK.Setup
             // Same as the Poco-like: it's easier to consider them once IPoco analysis is done.
             // ClassInfo.CheckPropertiesVarianceAndUnionTypes checks the type and the nullability.
             bool success = true;
-            var isReadOnly = !p.CanWrite;
             if( properties.TryGetValue( p.Name, out var implP ) )
             {
                 // Already defined on a previously analyzed interface.
                 implP.DeclaredProperties.Add( p );
-                if( implP.IsReadOnly != isReadOnly )
-                {
-                    Type iW = implP.DeclaredProperties[0].DeclaringType!;
-                    Type iR = interfaceType;
-                    if( isReadOnly ) (iR, iW) = (iW, iR);
-                    monitor.Error( $"Interface '{iR.ToCSharpName()}' and '{iW.ToCSharpName()}' both declare property '{p.Name}' but the first is readonly and the latter is read/write. The same property must be readonly or read/write for all the interfaces that define it." );
-                    success = false;
-                }
+                // Before support of "AbstractReadOnlyProperties", we were rejecting here any difference of readonly.
+                // This is no more the case.
             }
             else
             {
                 // New property.
-
+                var isReadOnly = !p.CanWrite;
                 // We must always create it, even if an error is detected to let the dynamic generation
                 // of the runtime Poco class (with fake getters/setters) succeed.
                 if( !p.CanRead )
@@ -475,32 +468,35 @@ namespace CK.Setup
                 if( isReadOnly && success )
                 {
                     // Basic checks that don't require all IPoco to be discovered (kind of fail fast).
-                    if( nullTree.Kind.IsNullable() )
+                    //
+                    // Before support of "AbstractReadOnlyProperties", we were rejecting here:
+                    //  - Nullable property with error "Property type is nullable and readonly (it has no setter). This is forbidden since value will always be null".
+                    //  - isBasicProperty: with error "Property type is a readonly basic type (it has no setter). This is forbidden since totally useless".
+                    //  - isStandardCollection && !isReadonlyCompliantCollection (i.e an array) with error
+                    //    "a readonly array (it has no setter). This is forbidden since we could only generate an empty array".
+                    //
+                    // AbstractReadOnlyProperties handles this as long as a writable property eventually with a compatible type exists on at least one interface
+                    // of the IPoco.
+                    //
+                    //  - isStandardCollection && !isReadonlyCompliantCollection (i.e an array) with error
+                    //    "a readonly array (it has no setter). This is forbidden since we could only generate an empty array".
+                    //
+                    // We change the message here to be "is a readonly array but a readonly array doesn't prevent its content to be mutated and is unsafe regarding variance. Use a IReadOnlyList instead to express immutability.".
+                    //
+                    //  - typeof( IPoco ).IsAssignableFrom( p.PropertyType ) && expanded.Contains( p.PropertyType ) with error:
+                    //  "Poco Cyclic dependency error: readonly property references its own Poco type.".
+                    //
+                    // This last one is like the 2 first cases: as long as a writable property exists, this CAN work.
+                    if( isStandardCollection && !isReadonlyCompliantCollection )
                     {
-                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is nullable and readonly (it has no setter). This is forbidden since value will always be null." );
+                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is a readonly array but a readonly array doesn't prevent its content to be mutated and is unsafe regarding variance. Use a IReadOnlyList instead to express immutability." );
                         success = false;
-                    }
-                    else if( isBasicProperty )
-                    {
-                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is a readonly basic type (it has no setter). This is forbidden since totally useless." );
-                        success = false;
-                    }
-                    else if( isStandardCollection && !isReadonlyCompliantCollection )
-                    {
-                        monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{p.Name}' type is a readonly array (it has no setter). This is forbidden since we could only generate an empty array." );
-                        success = false;
-                    }
-                    else if( typeof( IPoco ).IsAssignableFrom( p.PropertyType ) && expanded.Contains( p.PropertyType ) )
-                    {
-                        monitor.Error( $"Poco Cyclic dependency error: readonly property '{interfaceType.FullName}.{p.Name}' references its own Poco type." );
-                        success = false;
-                        // Testing whether they are actual IPoco (ie. not excluded from Setup) and don't create
-                        // instantiation cycles is deferred when the global result is built.
                     }
                 }
                 implP = new PocoPropertyInfo( p, propertyList.Count, isReadOnly, nullabilityInfo, nullTree, isStandardCollection );
                 properties.Add( p.Name, implP );
                 propertyList.Add( implP );
+                // Basic type can be canceled by an existing UnionType.
                 implP.IsBasicPropertyType = isBasicProperty;
             }
             return success && HandleUnionTypesIfAny( monitor, ref unionTypesDef, interfaceType, p, implP );
@@ -511,10 +507,14 @@ namespace CK.Setup
             var uAttr = p.GetCustomAttributes<UnionTypeAttribute>().FirstOrDefault();
             if( uAttr != null )
             {
-                // A union type, it cannot be readonly. 
+                // A union type, it cannot currently be readonly.
+                // This may be supported once but would require to capture the union definition of this implP (or
+                // to recompute it) to be able to check that this definition is a satisfying covariant subset of the
+                // final set...
+                // For the moment, we don't support this.
                 if( implP.IsReadOnly )
                 {
-                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is forbidden. Allowed readonly property types are non nullable IPoco or List<>, Dictionary<,> or Set<>." );
+                    monitor.Error( $"Invalid readonly [UnionType] '{interfaceType.FullName}.{p.Name}' property: a readonly union is not supported." );
                     return false;
                 }
                 // A union type is not a basic property (fix the fact that typeof(object) is a basic property).

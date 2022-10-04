@@ -56,9 +56,20 @@ namespace CK.Setup
 
             public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes ?? Enumerable.Empty<NullableTypeTree>();
 
+            /// <summary>
+            /// When a PocoPropertyInfo already exists, the very first property is in this list and PropertyInfo
+            /// from the other interfaces are added to this list. See <see cref="IPocoPropertyInfo.DeclaredProperties"/>
+            /// </summary>
             public List<PropertyInfo> DeclaredProperties { get; }
 
             IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
+
+            /// <summary>
+            /// See <see cref="IPocoPropertyInfo.AbstractReadOnlyProperties"/>.
+            /// </summary>
+            public List<PropertyInfo> AbstractReadOnlyProperties { get; }
+
+            IReadOnlyList<PropertyInfo> IPocoPropertyInfo.AbstractReadOnlyProperties => AbstractReadOnlyProperties;
 
             // Stored to be compared to other property declarations nullabilities
             // without relying on useless recomputations (either of nullability info or nullable tree).
@@ -71,6 +82,7 @@ namespace CK.Setup
                                      NullableTypeTree nullTree,
                                      bool isStandardCollection )
             {
+                AbstractReadOnlyProperties = new List<PropertyInfo>();
                 DeclaredProperties = new List<PropertyInfo>() { first };
                 Index = initialIndex;
                 IsReadOnly = isReadOnly;
