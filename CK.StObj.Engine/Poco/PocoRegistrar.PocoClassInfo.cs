@@ -18,8 +18,6 @@ namespace CK.Setup
 
             public IReadOnlyList<string> PreviousNames { get; }
 
-            public bool IsDefaultNewable { get; }
-
             List<IPocoClassInfo>? _specializations;
             IReadOnlyList<IPocoClassInfo> IPocoClassInfo.Specializations => _specializations ?? (IReadOnlyList<IPocoClassInfo>)Array.Empty<IPocoClassInfo>();
 
@@ -27,23 +25,19 @@ namespace CK.Setup
             readonly IReadOnlyDictionary<string, IPocoClassPropertyInfo> _exposedProperties;
             IReadOnlyDictionary<string, IPocoClassPropertyInfo> IPocoClassInfo.Properties => _exposedProperties;
 
-            public IReadOnlyList<PocoClassPropertyInfo> PropertyList { get; }
+            public List<PocoClassPropertyInfo> PropertyList { get; }
             IReadOnlyList<IPocoClassPropertyInfo> IPocoClassInfo.PropertyList => PropertyList;
 
             public PocoClassInfo( Type t,
-                                 string name,
-                                 string[] previousNames,
-                                 bool isDefaultNewable,
-                                 Dictionary<string, PocoClassPropertyInfo> properties,
-                                 IReadOnlyList<PocoClassPropertyInfo> propertyList )
+                                  string name,
+                                  string[] previousNames )
             {
                 PocoType = t;
                 Name = name;
                 PreviousNames = previousNames;
-                IsDefaultNewable = isDefaultNewable;
-                Properties = properties;
+                Properties = new Dictionary<string, PocoClassPropertyInfo>();
                 _exposedProperties = Properties.AsIReadOnlyDictionary<string, PocoClassPropertyInfo, IPocoClassPropertyInfo>();
-                PropertyList = propertyList;
+                PropertyList = new List<PocoClassPropertyInfo>();
             }
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );

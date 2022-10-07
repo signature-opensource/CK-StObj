@@ -13,10 +13,11 @@ namespace CK.Setup
         sealed class PocoClassPropertyInfo : IPocoClassPropertyInfo
         {
             AnnotationSetImpl _annotations;
+            readonly NullableTypeTree _nullableTypeTree;
 
             public PropertyInfo PropertyInfo { get; }
 
-            public bool IsReadOnly { get; }
+            public bool IsReadOnly => false;
 
             public int Index { get; }
 
@@ -24,30 +25,23 @@ namespace CK.Setup
 
             public Type PropertyType => PropertyInfo.PropertyType;
 
-            public NullableTypeTree PropertyNullableTypeTree { get; }
+            public NullableTypeTree PropertyNullableTypeTree => _nullableTypeTree;
 
-            public bool HasDefaultValue { get; set; }
+            public PocoClassInfo? PocoClassType { get; set; }
 
-            public object? DefaultValue { get; set; }
-
-            public string? DefaultValueSource { get; set; }
-
-            public IPocoClassInfo? PocoClassType { get; set; }
+            IPocoClassInfo? IPocoBasePropertyInfo.PocoClassType => PocoClassType;
 
             public IPocoRootInfo? PocoType { get; set; }
 
-            public bool IsStandardCollectionType { get; }
-
-            public bool IsUnionType => false;
-
-            public bool IsBasicPropertyType { get; }
+            public PocoPropertyKind PocoPropertyKind { get; }
 
             public PocoClassPropertyInfo( PropertyInfo p, int index )
             {
                 Debug.Assert( p != null );
                 PropertyInfo = p;
                 Index = index;
-                PropertyNullableTypeTree = p.GetNullableTypeTree();
+                _nullableTypeTree = p.GetNullableTypeTree();
+                PocoPropertyKind = PocoSupportResultExtension.GetPocoPropertyKind( _nullableTypeTree, out var _ );
             }
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );

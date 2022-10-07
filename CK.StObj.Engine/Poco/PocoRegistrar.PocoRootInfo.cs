@@ -64,6 +64,19 @@ namespace CK.Setup
             }
 #pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
+
+            internal bool Conclude( IActivityMonitor monitor, Result root )
+            {
+                foreach( var p in PropertyList )
+                {
+                    if( !p.Conclude( monitor, root, this ) )
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
             /// <summary>
             /// Checks that for each property definition with the same name, the return type is
             /// either NOT co nor contravariant (general case), or BOTH co and contravariant (for
@@ -98,12 +111,6 @@ namespace CK.Setup
                             monitor.Error( $"Interface '{p.DeclaredProperties[0].DeclaringType}' and '{other.DeclaringType!.FullName}' both declare property '{p.PropertyName}' with the same type but their nullability differ ('{refType}' vs. '{other.PropertyType.GetNullableTypeTree( otherN )}')." );
                             return false;
                         }
-                    }
-                    if( p.PropertyUnionTypes.Any() )
-                    {
-                        if( !p.OptimizeUnionTypes( monitor ) ) return false;
-                        Debug.Assert( p.PropertyUnionTypes.Select( nt => nt.Type ).GroupBy( Util.FuncIdentity ).Count( g => g.Count() > 1 ) == 0,
-                                      "There must be NO actual type duplicates considering the Union optimization rules." );
                     }
                 }
                 return true;

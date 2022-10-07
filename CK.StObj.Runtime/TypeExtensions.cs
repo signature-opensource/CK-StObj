@@ -53,17 +53,17 @@ namespace CK.Setup
                 previousNames = ((IEnumerable<CustomAttributeTypedArgument>)args[1].Value!).Select( a => (string)a.Value! ).ToArray();
                 if( String.IsNullOrWhiteSpace( name ) )
                 {
-                    monitor.Error( $"Empty name in ExternalName attribute on '{t.FullName}'." );
+                    monitor.Error( $"Empty name in ExternalName attribute on '{t}'." );
                     return false;
                 }
                 if( previousNames.Any( n => String.IsNullOrWhiteSpace( n ) ) )
                 {
-                    monitor.Error( $"Empty previous name in ExternalName attribute on '{t.FullName}'." );
+                    monitor.Error( $"Empty previous name in ExternalName attribute on '{t}'." );
                     return false;
                 }
                 if( previousNames.Contains( name ) || previousNames.GroupBy( Util.FuncIdentity ).Any( g => g.Count() > 1 ) )
                 {
-                    monitor.Error( $"Duplicate ExternalName in attribute on '{t.FullName}'." );
+                    monitor.Error( $"Duplicate ExternalName in attribute on '{t}'." );
                     return false;
                 }
             }

@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
@@ -9,10 +8,20 @@ namespace CK.Setup
 {
     /// <summary>
     /// Describes a IPoco property.
-    /// This handles potentially more than one <see cref="DeclaredProperties"/> that must be identical across the different interfaces.
+    /// This is defined by at least one <see cref="DeclaredProperties"/>. When more than one exists, they must
+    /// be compatible across the different interfaces.
     /// </summary>
     public interface IPocoPropertyInfo : IPocoBasePropertyInfo
     {
+        /// <summary>
+        /// Gets the default value if at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
+        /// If this is true then <see cref="IPocoBasePropertyInfo.IsReadOnly"/> is necessarily false.
+        /// <para>
+        /// If the default value is defined by more than one interface, it is the same.
+        /// </para>
+        /// </summary>
+        IPocoPropertyDefaultValue? DefaultValue { get; }
+
         /// <summary>
         /// Gets the set of types that defines the union type in their non-nullable form.
         /// Empty when not applicable. When applicable the actual type of the property is necessarily compatible
@@ -23,7 +32,7 @@ namespace CK.Setup
         ///     <item>Only one instance of duplicated types is kept.</item>
         ///     <item>When a type and its specializations appear (IsAssginableFrom), only the most general one is kept.</item>
         /// </list>
-        /// These rules guaranty that there is no duplicated actual <see cref="NullableTypeTree.Type"/> in any Union .
+        /// These rules guaranty that there is no duplicated actual <see cref="NullableTypeTree.Type"/> in any Union.
         /// </para>
         /// </summary>
         IEnumerable<NullableTypeTree> PropertyUnionTypes { get; }
@@ -43,9 +52,8 @@ namespace CK.Setup
         IReadOnlyList<PropertyInfo> DeclaredProperties { get; }
 
         /// <summary>
-        /// Abstract readonly properties have a false <see cref="PropertyInfo.CanWrite"/> and a type that is compatible with (typically
-        /// assignable from) the final type of this <see cref="IPocoBasePropertyInfo"/>.
+        /// Gets all the property implementation across the different interfaces.
         /// </summary>
-        IReadOnlyList<PropertyInfo> AbstractReadOnlyProperties { get; }
+        IReadOnlyList<IPocoPropertyImpl> Implementations { get; }
     }
 }

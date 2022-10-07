@@ -28,6 +28,29 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Thing.Name.Should().Be( "Test" );
         }
 
+        public interface IValueTupleBase
+        {
+            (List<int>, Dictionary<string, HashSet<string>>) Thing { get; set; }
+        }
+
+        public interface IValueTupleCovariant
+        {
+            (IReadOnlyList<int>, IReadOnlyDictionary<string, IReadOnlySet<string>>) Thing { get; }
+
+        }
+
+        public class ValueTupleCovariantImplementation : IValueTupleBase, IValueTupleCovariant
+        {
+            public (List<int>, Dictionary<string, HashSet<string>>) Thing { get; set; }
+
+            (IReadOnlyList<int>, IReadOnlyDictionary<string, IReadOnlySet<string>>) IValueTupleCovariant.Thing
+            {
+                get
+                {
+                    return (Thing.Item1, Thing.Item2.AsIReadOnlyDictionary<string, HashSet<string>, IReadOnlySet<string>>());
+                }
+            }
+        }
 
     }
 }

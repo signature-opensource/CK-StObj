@@ -7,15 +7,12 @@ using System.Text;
 
 namespace CK.Setup
 {
+
     /// <summary>
-    /// Describes shared properties of <see cref="IPocoClassPropertyInfo"/> and <see cref="IPocoPropertyInfo"/>.
+    /// Describes properties of <see cref="IPocoClassPropertyInfo"/> and <see cref="IPocoPropertyInfo"/>.
     /// <para>
     /// Properties that describe the type have been designed as a union type: they are all mutually exclusive
-    /// and one of them is necessarily set.
-    /// </para>
-    /// <para>
-    /// For instance, when <see cref="IsBasicPropertyType"/> is true, then <see cref="IsStandardCollectionType"/>, <see cref="IsTupleType"/>,
-    /// <see cref="IsEnumType"/> and <see cref="IsUnionType"/> are all false and <see cref="PocoClassType"/> and <see cref="PocoType"/> are both null.
+    /// and one of them is necessarily set: see <see cref="PocoPropertyKind"/>.
     /// </para>
     /// <para>
     /// The <see cref="PocoClassType"/> acts as a fallback: a <see cref="IPocoClassInfo"/> is created for any type that is not a IPoco, a standard collection,
@@ -37,12 +34,13 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether this property is read only.
+        /// This applies only to IPoco (<see cref="IPocoPropertyInfo"/>), readonly properties are ignored on
+        /// PocoClass (<see cref="IPocoClassInfo"/>) this is always false.
         /// <para>
         /// For <see cref="IPocoPropertyInfo"/>:
         /// <list type="bullet">
-        ///     <item>All the <see cref="IPocoPropertyInfo.DeclaredProperties"/> are also read only.</item>
-        ///     <item>This property is necessarily NOT nullable.</item>
-        ///     <item><see cref="IsUnionType"/> is necessarily false.</item>
+        ///     <item>All the <see cref="IPocoPropertyInfo.Implementations"/> are read only.</item>
+        ///     <item>The property is necessarily NOT nullable.</item>
         ///     <item>Property's type is necessarily:
         ///         <list type="bullet">
         ///             <item>Another family of <see cref="IPoco"/>...</item>
@@ -50,11 +48,8 @@ namespace CK.Setup
         ///             <item>...or a standard collection (HashSet&lt;&gt;, List&lt;&gt;, Dictionary&lt;,&gt;) but it cannot be an array.</item>
         ///         </list>
         ///     </item>
+        ///     <item>The property must be instantiated by the constructor of the Poco.</item>
         /// </list>
-        /// </para>
-        /// <para>
-        /// For <see cref="IPocoClassPropertyInfo"/>, there is no such restriction but to make serialization/export/marshalling easy
-        /// (or even automatically doable), the property's type should be as simple as possible...
         /// </para>
         /// </summary>
         bool IsReadOnly { get; }
@@ -76,25 +71,9 @@ namespace CK.Setup
         NullableTypeTree PropertyNullableTypeTree { get; }
 
         /// <summary>
-        /// Gets whether at least one <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined.
-        /// If this is true then <see cref="IsReadOnly"/> is necessarily false.
-        /// <para>
-        /// Applies to <see cref="IPocoPropertyInfo"/>: if the default value is defined by more than one interface,
-        /// it must be the same (this is checked).
-        /// </para>
+        /// Gets the Poco property type of this property.
         /// </summary>
-        bool HasDefaultValue { get; }
-
-        /// <summary>
-        /// Gets the default value. This must be considered if and only if <see cref="HasDefaultValue"/> is true.
-        /// If this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/> (HasDefaultValue is false), this is null.
-        /// </summary>
-        object? DefaultValue { get; }
-
-        /// <summary>
-        /// Gets the default value as a source string or a null if this property has no <see cref="System.ComponentModel.DefaultValueAttribute"/>.
-        /// </summary>
-        string? DefaultValueSource { get; }
+        PocoPropertyKind PocoPropertyKind { get; }
 
         /// <summary>
         /// Gets the Poco-like information if this <see cref="PropertyType"/> is not one of the other
@@ -106,33 +85,6 @@ namespace CK.Setup
         /// Gets the Poco root information if this <see cref="PropertyType"/> is a <see cref="IPoco"/>.
         /// </summary>
         IPocoRootInfo? PocoType { get; }
-
-        /// <summary>
-        /// Gets whether this property is a standard collection: an array, HashSet&lt;&gt;,
-        /// List&lt;&gt;, or Dictionary&lt;,&gt;.
-        /// </summary>
-        bool IsStandardCollectionType { get; }
-
-        /// <summary>
-        /// Gets whether this property is a union type.
-        /// This is always false for <see cref="IPocoClassPropertyInfo"/>.
-        /// </summary>
-        bool IsUnionType { get; }
-
-        /// <summary>
-        /// Gets whether this property is a <see cref="ValueTuple"/>.
-        /// </summary>
-        public bool IsTupleType => PropertyNullableTypeTree.Kind.IsTupleType();
-
-        /// <summary>
-        /// Gets whether this property is an <see cref="Enum"/>.
-        /// </summary>
-        public bool IsEnumType => PropertyNullableTypeTree.Kind.IsValueType() && PropertyNullableTypeTree.Type.IsEnum;
-
-        /// <summary>
-        /// Gets whether this property is a basic property (see <see cref="PocoSupportResultExtension.IsBasicPropertyType(Type)"/>).
-        /// </summary>
-        bool IsBasicPropertyType { get; }
 
         /// <summary>
         /// Gets whether this property is nullable (simple relay to PropertyNullableTypeTree.Kind).

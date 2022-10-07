@@ -3,6 +3,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
@@ -16,12 +17,13 @@ namespace CK.Setup
     {
         sealed class Result : IPocoSupportResult
         {
-            readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedAllInterfaces;
             public readonly List<PocoRootInfo> Roots;
+            public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
-            public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
             public readonly PocoClassResult PocoClass;
+
+            readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedAllInterfaces;
 
             public Result()
             {
@@ -45,11 +47,81 @@ namespace CK.Setup
 
             IPocoClassSupportResult IPocoSupportResult.PocoClass => PocoClass;
 
+            public PocoRootInfo? TryResolveFamily( IActivityMonitor monitor, IEnumerable<(Type Type, string Name)> toCheck )
+            {
+                var families = toCheck.Select( i => (i.Type, i.Name, Family: AllInterfaces.GetValueOrDefault( i.Type )?.Root) )
+                                      .GroupBy( f => f.Family )
+                                      .ToList();
+                var gAbstracts = families.FirstOrDefault( g => g.Key == null );
+                if( gAbstracts != null ) families.Remove( gAbstracts );
+                if( families.Count == 0 )
+                {
+                    monitor.Error( @$"No IPoco family found (only ""abstract"" definers) for '{toCheck.Select( c => c.Name ).Concatenate( ", '" )}'." );
+                    return null;
+                }
+                if( families.Count > 1 )
+                {
+                    var culprits = families.Select( g => $"'{g.Key!.Name}' (for {g.Select( f => f.Name ).Concatenate()})" ).Concatenate( " and family " );
+                    monitor.Error( $"All IPoco must belong to the same IPoco family, found family {culprits}." );
+                    return null;
+                }
+                var f = families[0].Key;
+                Debug.Assert( f != null );
+                if( gAbstracts != null )
+                {
+                    if( !f.IsClosedPoco )
+                    {
+                        var closed = gAbstracts.FirstOrDefault( g => g.Type == typeof( IClosedPoco ) );
+                        if( closed.Type != null )
+                        {
+                            monitor.Error( $"'{closed.Name}' is IClosedPoco but '{f.Name}' is not a closed Poco." );
+                            return null;
+                        }
+                    }
+                    var abstracts = gAbstracts.Where( a => a.Type == typeof( IPoco ) || a.Type == typeof( IClosedPoco ) );
+                    var unimplemented = abstracts.Where( a => !f.OtherInterfaces.Contains( a.Type ) );
+                    if( unimplemented.Any() )
+                    {
+                        monitor.Error( $"Types '{unimplemented.Select( u => $"{u.Type} {u.Name}" ).Concatenate( "' ,'" )}' are not supported by '{f.Name}'." );
+                        return null;
+                    }
+                }
+                return f;
+            }
+
+            public bool Conclude( IActivityMonitor monitor )
+            {
+                List<PropertyInfo>? clashPath = null;
+                foreach( var c in Roots )
+                {
+                    if( !c.Conclude( monitor, this ) )
+                    {
+                        return false;
+                    }
+                    if( c.HasCycle( monitor, AllInterfaces, ref clashPath ) ) break;
+                }
+                if( clashPath != null )
+                {
+                    if( clashPath.Count > 0 )
+                    {
+                        clashPath.Reverse();
+                        monitor.Error( $"Poco readonly property cycle detected: '{clashPath.Select( p => $"{p.DeclaringType!.FullName}.{p.Name}" ).Concatenate( "' -> '" )}." );
+                    }
+                    return false;
+                }
+                return true;
+            }
+
             public bool CheckPropertiesVarianceAndInstantiationCycleError( IActivityMonitor monitor )
             {
                 List<PropertyInfo>? clashPath = null;
                 foreach( var c in Roots )
                 {
+                    if( !c.Conclude( monitor, this ) )
+                    {
+                        return false;
+                    }
+
                     if( !c.CheckPropertiesVarianceAndUnionTypes( monitor, AllInterfaces ) ) return false;
                     if( c.HasCycle( monitor, AllInterfaces, ref clashPath ) ) break;
                 }

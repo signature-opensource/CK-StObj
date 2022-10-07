@@ -104,17 +104,16 @@ namespace CK.Setup
                     var typeName = propType.ToCSharpName();
                     string fieldName = "_v" + p.Index;
                     tB.Append( typeName ).Space().Append( fieldName );
-                    if( p.DefaultValueSource == null ) tB.Append( ";" );
+                    if( p.DefaultValue == null ) tB.Append( ";" );
                     else
                     {
-                        tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" );
+                        tB.Append( " = " ).Append( p.DefaultValue.ValueCSharpSource ).Append( ";" );
                     }
                     tB.NewLine();
 
                     tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
-                    Debug.Assert( !p.IsReadOnly || p.DefaultValueSource == null, "Readonly with [DefaultValue] has already raised an error." );
                    
-                    if( p.IsReadOnly )
+                    if( p.IsReadOnly && p.DefaultValue == null )
                     {
                         // Generates in constructor.
                         r.GenerateAutoInstantiatedNewAssignation( ctorB, fieldName, p.PropertyType );

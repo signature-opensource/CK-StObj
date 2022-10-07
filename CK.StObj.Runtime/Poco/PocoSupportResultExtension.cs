@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 #nullable enable
 
@@ -42,10 +43,70 @@ namespace CK.Setup
         ///     int, long, short, byte, string, bool, double, float, object, DateTime, DateTimeOffset, TimeSpan,
         ///     Guid, decimal, System.Numerics.BigInteger, uint, ulong, ushort, sbyte. 
         /// </code>
+        /// Note that object is considered a basic type: it is eventually any type that belongs to the Poco types closure.
         /// </summary>
         /// <param name="t"></param>
         /// <returns></returns>
         public static bool IsBasicPropertyType( Type t ) => Array.IndexOf( _basicPropertyTypes, t ) >= 0;
+
+        /// <summary>
+        /// Gets the <see cref="PocoPropertyKind"/> from a type.
+        /// Union cannot be detected (they are defined by the <see cref="UnionTypeAttribute"/> on the property):
+        /// <see cref="PocoPropertyKind.PocoClass"/> is returned for them.
+        /// </summary>
+        /// <param name="type">The type to test.</param>
+        /// <param name="isAbstractCollection">
+        /// True if this is a supported abstraction of standard collections. See <see cref="IsAbstractStandardCollectionGenericDefinition(Type)"/>.
+        /// </param>
+        /// <returns>The kind.</returns>
+        public static PocoPropertyKind GetPocoPropertyKind( in NullableTypeTree type, out bool isAbstractCollection )
+        {
+            isAbstractCollection = false;
+            if( type.Kind.IsTupleType() ) return PocoPropertyKind.ValueTuple;
+            var t = type.Type;
+            if( t == typeof(object) ) return PocoPropertyKind.Any;
+            if( t.IsEnum ) return PocoPropertyKind.Enum;
+            if( IsBasicPropertyType( t ) ) return PocoPropertyKind.Basic;
+            if( type.Kind.IsReferenceType() )
+            {
+                if( t.IsInterface && typeof( IPoco ).IsAssignableFrom( t ) ) return PocoPropertyKind.IPoco;
+                if( t.IsGenericType )
+                {
+                    var tGen = t.GetGenericTypeDefinition();
+                    if( tGen == typeof( List<> ) || tGen == typeof( HashSet<> ) || tGen == typeof( Dictionary<,> ) )
+                    {
+                        return PocoPropertyKind.StandardCollection;
+                    }
+                    if( IsAbstractStandardCollectionGenericDefinition( tGen ) )
+                    {
+                        isAbstractCollection= true;
+                        return PocoPropertyKind.StandardCollection;
+                    }
+                }
+                if( t.IsClass )
+                {
+                    return PocoPropertyKind.PocoClass;
+                }
+            }
+            return PocoPropertyKind.None;
+        }
+
+        /// <summary>
+        /// Gets whether this type (that must be a <see cref="Type.IsGenericTypeDefinition"/>)
+        /// is a IList&lt;&gt;, ISet&lt;&gt;, IDictionary&lt;,&gt;,IReadOnlyList&lt;&gt;, IReadOnlySet&lt;&gt; or IReadOnlyDictionary&lt;,&gt;.
+        /// </summary>
+        /// <param name="genericDefinition">Type definition.</param>
+        /// <returns>True if this is an abstraction of the standard collections.</returns>
+        public static bool IsAbstractStandardCollectionGenericDefinition( Type genericDefinition )
+        {
+            Throw.CheckArgument( genericDefinition.IsGenericTypeDefinition );
+            return genericDefinition == typeof( IList<> )
+                    || genericDefinition == typeof( ISet<> )
+                    || genericDefinition == typeof( IDictionary<,> )
+                    || genericDefinition == typeof( IReadOnlyList<> )
+                    || genericDefinition == typeof( IReadOnlySet<> )
+                    || genericDefinition == typeof( IReadOnlyDictionary<,> );
+        }
 
         /// <summary>
         /// Generates <paramref name="variableName"/> = "new ..." assignation to the writer (typically in a constructor) for
