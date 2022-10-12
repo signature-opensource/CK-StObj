@@ -38,6 +38,8 @@ namespace CK.Setup
 
             public IReadOnlyList<PropertyInfo> ExternallyImplementedPropertyList { get; }
 
+            public IPocoInterfaceInfo PrimaryInterface => Interfaces[0];
+
             bool _instantiationCycleDone;
             bool _instantiationCycleFlag;
 

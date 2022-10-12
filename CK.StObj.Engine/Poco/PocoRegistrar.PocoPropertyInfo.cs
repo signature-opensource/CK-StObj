@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,9 +10,10 @@ using System.Reflection;
 
 namespace CK.Setup
 {
+
     partial class PocoRegistrar
     {
-        sealed class PocoPropertyInfo : IPocoPropertyInfo
+        sealed partial class PocoPropertyInfo : IPocoPropertyInfo
         {
             AnnotationSetImpl _annotations;
             PocoPropertyImpl? _best;
@@ -28,19 +30,16 @@ namespace CK.Setup
 
             public PocoPropertyKind PocoPropertyKind => _best?.PocoPropertyKind ?? PocoPropertyKind.None;
 
-            /// <summary>
-            /// Setting of this property (just like PocoType) is done when the global result is built.
-            /// </summary>
-            public PocoClassInfo? PocoClassType { get; set; }
+            public PocoConstructorAction ConstructorAction { get; private set; }
 
-            IPocoClassInfo? IPocoBasePropertyInfo.PocoClassType => PocoClassType;
+            public bool IsNullable => _best?.NullableTypeTree.Kind.IsNullable() ?? true;
 
             /// <summary>
-            /// Setting of this property (just like PocoClassType) is done when the global result is built.
+            /// Setting of this property is done once the global result is built.
             /// </summary>
             public PocoRootInfo? PocoType { get; set; }
 
-            IPocoRootInfo? IPocoBasePropertyInfo.PocoType => PocoType;
+            IPocoRootInfo? IPocoPropertyInfo.PocoType => PocoType;
 
             IPocoPropertyDefaultValue? IPocoPropertyInfo.DefaultValue { get; }
 
@@ -52,14 +51,6 @@ namespace CK.Setup
 
             public IEnumerable<NullableTypeTree> PropertyUnionTypes => _unionTypes?.Types ?? Enumerable.Empty<NullableTypeTree>();
 
-            /// <summary>
-            /// When a PocoPropertyInfo already exists, the very first property is in this list and PropertyInfo
-            /// from the other interfaces are added to this list. See <see cref="IPocoPropertyInfo.DeclaredProperties"/>
-            /// </summary>
-            public List<PropertyInfo> DeclaredProperties { get; }
-
-            IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
-
             public List<PocoPropertyImpl> Implementations { get; }
 
             IReadOnlyList<IPocoPropertyImpl> IPocoPropertyInfo.Implementations => Implementations;
@@ -67,7 +58,6 @@ namespace CK.Setup
             public PocoPropertyInfo( int initialIndex )
             {
                 Implementations = new List<PocoPropertyImpl>();
-                DeclaredProperties = new List<PropertyInfo>();
                 Index = initialIndex;
             }
 
@@ -78,21 +68,62 @@ namespace CK.Setup
                 var declaringType = info.DeclaringType;
                 var nullTree = propertyType.GetNullableTypeTree();
                 var isReadOnly = !info.CanWrite;
-                // We can bail early on this one.
-                if( isReadOnly && propertyType.IsArray )
+                // We can bail early on this one: there is no more support for array in Poco.
+                // This gives a more detailed message than the PocoPropertyKind.None.
+                if( propertyType.IsArray )
                 {
-                    monitor.Error( $"Poco property '{declaringType}.{info.Name}' type is a readonly array but a readonly array doesn't prevent its content to be mutated and is unsafe regarding variance. Use a IReadOnlyList instead to express immutability." );
+                    monitor.Error( $"Not supported array property '{declaringType}.{info.Name}'. Use a {(isReadOnly ? "IReadOnlyList" : "List")}<{propertyType.GetElementType()}> instead." );
                     return null;
                 }
                 if( !UnionType.TryCreate( monitor, info, ref cacheUnionTypesDef, nullTree.Kind.IsNullable(), out var unionType ) )
                 {
                     return null;
                 }
+                bool isAbstractCollection = false;
                 var kind = unionType != null
                             ? PocoPropertyKind.Union
-                            : PocoSupportResultExtension.GetPocoPropertyKind( nullTree, out var _ );
+                            : (PocoPropertyKind)PocoSupportResultExtension.GetPocoTypeKind( nullTree, out isAbstractCollection );
+                if( kind == PocoPropertyKind.None )
+                {
+                    monitor.Error( $"Disallowed Poco property type for '{nullTree} {declaringType}.{info.Name}'." );
+                    return null;
+                }
                 var result = new PocoPropertyImpl( this, info, isReadOnly, kind, nullTree, unionType );
 
+                if( isReadOnly && result.UnionTypes?.CanBeExtended == true )
+                {
+                    monitor.Error( $"Property '{result}' is read only: CanBeExtended cannot be true." );
+                    return null;
+                }
+                if( !isReadOnly && isAbstractCollection )
+                {
+                    monitor.Error( $"Property '{result}' is writable, its type '{nullTree}' must be a concrete collection (List<>, HashSet<> or Dictionary<,>)." );
+                    return null;
+                }
+                if( kind == PocoPropertyKind.StandardCollection )
+                {
+                    List<string>? errors = null;
+                    foreach( var sub in nullTree.GetAllSubTypes( false )
+                                                .Select( s =>
+                                                {
+                                                    var k = PocoSupportResultExtension.GetPocoTypeKind( s, out var isAbstractCollection );
+                                                    return (s,k,isAbstractCollection);
+                                                } ) )
+                    {
+                        if( sub.k == PocoTypeKind.None )
+                        {
+                            errors ??= new List<string>();
+                            errors.Add( $"the subordinated type '{sub}' is not an allowed Poco type." );
+                        }
+                        else if( sub.isAbstractCollection )
+                        {
+                            errors ??= new List<string>();
+                            errors.Add( $"the subordinated collection '{sub}' must be a concrete type (List<>, HashSet<> or Dictionary<,>)." );
+                        }
+                    }
+
+                    return null;
+                }
                 if( !TryHandleDefaultValue( monitor, result ) )
                 {
                     return null;
@@ -141,17 +172,18 @@ namespace CK.Setup
                             if( _best.IsReadOnly )
                             {
                                 // Switch the best so that it is not nullable if possible:
-                                // an eventually readonly PocoPropertyInfo (no writable) is:
-                                // - A CtorInstantiated IPoco, PocoClass or standard collection (but not an array).
-                                // - an error...
+                                // an eventually readonly PocoPropertyInfo (no writable) is either
+                                // a CtorInstantiated IPoco or standard collection (but not an array).
+                                // 
                                 // And a nullable readonly PocoPropertyInfo is an error since it makes no sense to
                                 // have a readonly forever null property.
                                 if( !result.NullableTypeTree.Kind.IsNullable() )
                                 {
                                     _best = result;
                                 }
+
                             }
-                            if( !CheckNewReadOnly( monitor, result ) )
+                            else if( !CheckNewReadOnly( monitor, result ) )
                             {
                                 return false;
                             }
@@ -168,6 +200,11 @@ namespace CK.Setup
                             Debug.Assert( result.PocoPropertyKind == PocoPropertyKind.Union );
                             if( result.UnionTypes.CanBeExtended )
                             {
+                                if( !result.IsNullable )
+                                {
+                                    monitor.Error( $"Invalid union definition for '{result}': a [Union( CanBeExtended = true )] must be nullable." );
+                                    return false;
+                                }
                                 _unionTypes = result.UnionTypes.Clone();
                             }
                             else
@@ -175,6 +212,9 @@ namespace CK.Setup
                                 _unionTypes = result.UnionTypes;
                             }
                         }
+                        // Writable properties are type and nullability invariant: we
+                        // can settle the property type.
+                        _propertyNullableTypeTree = result.NullableTypeTree;
                         Debug.Assert( Implementations.All( r => r.IsReadOnly ) );
                         foreach( var r in Implementations )
                         {
@@ -186,7 +226,6 @@ namespace CK.Setup
                         return true;
                     }
                 }
-
             }
 
             /// <summary>
@@ -197,13 +236,18 @@ namespace CK.Setup
             bool CheckNewWritable( IActivityMonitor monitor, PocoPropertyImpl result )
             {
                 Debug.Assert( _best != null && !_best.IsReadOnly && !result.IsReadOnly );
-                if( !CheckPropertyType( monitor, result, kindOnly: false ) )
+                // Check the property type equality except for IPoco.
+                if( _best.PocoPropertyKind != result.PocoPropertyKind
+                    || (_best.PocoPropertyKind != PocoPropertyKind.IPoco
+                        && _best.Info.PropertyType != result.Info.PropertyType) )
                 {
+                    monitor.Error( $"{_best} type '{_best.NullableTypeTree}' is not the same as {result} that is '{result.NullableTypeTree}'. Writable properties are type invariants (including nullability)." );
                     return false;
                 }
-                // Even in the case of IPoco, the nullability must be the same.
-                if( _best.NullableTypeTree.Kind.IsNullable() != result.NullableTypeTree.Kind.IsNullable()
-                    || _best.NullableTypeTree.SubTypes.SequenceEqual( result.NullableTypeTree.SubTypes ) )
+                // Even in the case of IPoco, the nullability must be the same
+                // (we skip the root type equality check here).
+                if( _best.IsNullable != result.IsNullable
+                    || !(_best.NullableTypeTree.SubTypes.SequenceEqual( result.NullableTypeTree.SubTypes ) ) )
                 {
                     monitor.Error( $"{_best} type '{_best.NullableTypeTree}' has not the same nullability as {result} that is '{result.NullableTypeTree}'. Writable properties are type invariants (including nullability)." );
                     return false;
@@ -228,30 +272,9 @@ namespace CK.Setup
                 return true;
             }
 
-            /// <summary>
-            /// Check Union and TEMPORARILY property type must exactly match.
-            /// </summary>
             bool CheckNewReadOnly( IActivityMonitor monitor, PocoPropertyImpl result )
             {
                 Debug.Assert( _best != null && !_best.IsReadOnly && result.IsReadOnly );
-
-                // Read only Union definitions cannot extend an Union!
-                if( result.PocoPropertyKind == PocoPropertyKind.Union )
-                {
-                    Debug.Assert( result.UnionTypes != null );
-                    if( result.UnionTypes.CanBeExtended )
-                    {
-                        monitor.Error( $"{result} is not writable, Union cannot be extended." );
-                        return false;
-                    }
-                    // For the moment, they must be exactly the same as the writable one.
-                    // (This may be changed once to allow a kind of covariance.)
-                    if( !CheckUnionTypeEquality( monitor, result ) )
-                    {
-                        return false;
-                    }
-                }
-
                 // We have the actual type given by (at least one) writable property: this is not a
                 // "CtorInstantiated" property. We may test the covariance match of the type here
                 // but we miss the IPoco family sets to be able to handle IPoco interface type equivalence.
@@ -263,33 +286,14 @@ namespace CK.Setup
                 // A similar adaptation that is for the same kind (ValueTuple): a readonly nullable tuple property can be a subset of the writable one.
                 //
                 // One may think that all of these adaptations can be handled by default interface methods by the developer, but it's not!
-                // Default interface methods require that the "backing field" exists where the adapter exists. Here we automatically
-                // implement the adapter based on a property that the primary interface is not aware of.
+                // Default interface methods require that the "backing property" exists (is reachable) where the adapter exists.
+                // Here we can automatically implement the adapter based on a property that the primary interface is not aware of.
                 //
-                // Temporary: type must fully match (just like writable).
-                if( !CheckPropertyType( monitor, result, kindOnly: false ) )
+                // So we check nothing here but nullability of the property itself: a read only property is allowed to be nullable
+                // even if its writable is not (the opposite is not true).
+                if( _best.IsNullable && !result.IsNullable )
                 {
-                    return false;
-                }
-                // Even in the case of IPoco, the nullability must be the same.
-                if( _best.NullableTypeTree.Kind.IsNullable() != result.NullableTypeTree.Kind.IsNullable()
-                    || _best.NullableTypeTree.SubTypes.SequenceEqual( result.NullableTypeTree.SubTypes ) )
-                {
-                    monitor.Error( $"{_best} type '{_best.NullableTypeTree}' has not the same nullability as {result} that is '{result.NullableTypeTree}'. Readable properties are TEMPORARILY type invariants (including nullability)." );
-                    return false;
-                }
-                return true;
-            }
-
-            bool CheckPropertyType( IActivityMonitor monitor, PocoPropertyImpl result, bool kindOnly )
-            {
-                Debug.Assert( _best != null );
-                if( _best.PocoPropertyKind != result.PocoPropertyKind
-                    || (!kindOnly
-                        && _best.PocoPropertyKind != PocoPropertyKind.IPoco
-                        && _best.Info.PropertyType != result.Info.PropertyType ) )
-                {
-                    monitor.Error( $"{_best} type '{_best.NullableTypeTree}' is not the same as {result} that is '{result.NullableTypeTree}'. Writable properties (and TEMPORARILY readable properties also) are type invariants (including nullability)." );
+                    monitor.Error( $"{_best} property is nullable, the read only property {result} must also be nullable." );
                     return false;
                 }
                 return true;
@@ -348,35 +352,110 @@ namespace CK.Setup
                         monitor.Error( $"Nullable read only property {ToString()}. It makes no sense to expose an immutable null property value." );
                         return false;
                     }
-                    // The types that we can instantiate in the constructor: IPoco, PocoClass and standard collections (but not array).
+                    // The types that we can instantiate in the constructor: IPoco and standard collections.
                     if( PocoPropertyKind == PocoPropertyKind.IPoco )
                     {
-                        PocoType = root.TryResolveFamily( monitor,
-                                                          Implementations.Select( i => (i.NullableTypeTree.Type, i.ToString()) ) ) );
-                        if( PocoType == null )
-                        {
-                            return false;
-                        }
-                        if( PocoType == pocoInfo )
-                        {
-                            monitor.Error( $"Recursive instantiation detected for property {ToString()}." );
-                            return false;
-                        }
+                        return HandleAutoInstantiatedPoco( monitor, root, pocoInfo );
                     }
-                    else if( PocoPropertyKind == PocoPropertyKind.PocoClass )
+                    if( PocoPropertyKind == PocoPropertyKind.StandardCollection )
                     {
-                        PocoClassType = root.PocoClass.TryResolveMostSpecified( monitor, Implementations.Select( i => (i.NullableTypeTree.Type, i.ToString()) ) );
-                        if( PocoClassType == null )
+                        return HandleAutoInstantiatedCollection( monitor, root, pocoInfo );
+                    }
+                    monitor.Error( $"Property {ToString()} cannot be instantiated in the constructor. Only IPoco and List<>, HashSet<> or Dictionary<,> can be." );
+                    return false;
+                }
+                Debug.Assert( !_best.IsReadOnly );
+                // A writable exists. All writable are already checked to be the same, except
+                // for IPoco where we had to wait for the resolution of the family: we must now
+                // find a single IPoco family for all implementations, read only or not.
+                // If the property is not nullable, we auto instantiate it.
+                if( _best.PocoPropertyKind == PocoPropertyKind.IPoco )
+                {
+                    if( !IsNullable )
+                    {
+                        if( !HandleAutoInstantiatedPoco( monitor, root, pocoInfo ) )
+                        {
+                            return false;
+                        }
+                        // We are done here because HandleAutoInstantiatedPoco has also checked all
+                        // read only property implementations.
+                        return true;
+                    }
+                    // Nullable property: just check the family.
+                    var family = root.TryResolveFamily( monitor,
+                                                        Implementations.Select( i => (i.Info.PropertyType, !i.IsReadOnly, i.ToString()) ) );
+                    if( family == null )
+                    {
+                        return false;
+                    }
+                    PocoType = family;
+                    // We are done here because TryResolveFamily has also checked all read only property implementations.
+                    return true;
+                }
+                if( _best.PocoPropertyKind == PocoPropertyKind.StandardCollection )
+                {
+                    if( !IsNullable )
+                    {
+                        if( !HandleAutoInstantiatedCollection( monitor, root, pocoInfo ) )
                         {
                             return false;
                         }
                     }
-
-
-                    // Type must be "concrete": only standard collection types
-                    // and any other foreign types are PocoClass.
-
+                    // Nullable property: we must check the covariance of the read only against the writable.
+                    // This is the same as for Basic, Union, ValueTuple, Enum and Any property kind: a CovariantAdapter
+                    // must be resolved (be it the Void one).
                 }
+                // We must validate the read only implementations by finding a CovariantAdpater for each of them.
+                foreach( var r in Implementations )
+                {
+                    if( r.IsReadOnly )
+                    {
+                        var adpater = TryFindAdapter( monitor, this, r );
+                        if( adpater == null )
+                        {
+                            monitor.Error( $"Unable to create a type adapter from {r} to {_best} for property {this}." );
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            private bool HandleAutoInstantiatedCollection( IActivityMonitor monitor, Result root, PocoRootInfo pocoInfo )
+            {
+                // We must resolve a concrete type that satisfies all the property read only types.
+                // If stupidities appear in the set of types like for instance that
+                // none of them expose a List<...> somewhere but only IReadOnlyList<...> are exposed,
+                // we consider them as errors.
+                var concrete = InferConcreteType( monitor, Implementations.Select( i => (i.NullableTypeTree, i.ToString()) ) );
+                if( concrete == null ) return false;
+                ConstructorAction = PocoConstructorAction.Instantiate;
+                _propertyNullableTypeTree = concrete.Value;
+                return true;
+            }
+
+            bool HandleAutoInstantiatedPoco( IActivityMonitor monitor, Result root, PocoRootInfo pocoInfo )
+            {
+                var family = root.TryResolveFamily( monitor,
+                                                    Implementations.Select( i => (i.Info.PropertyType, !i.IsReadOnly, i.ToString()) ) );
+                if( family == null ) return false;
+                if( family == pocoInfo )
+                {
+                    monitor.Error( $"Recursive required instantiation detected for {(IsReadOnly ? "read only" : "")}property {ToString()}." );
+                    return false;
+                }
+                PocoType = family;
+                ConstructorAction = PocoConstructorAction.Instantiate;
+                // Set the generated PocoClass as the non nullable actual type: this gives
+                // the type that must be instantiated by the constructor just like for standard collection.
+                _propertyNullableTypeTree = new NullableTypeTree( family.PocoClass,
+                                                                  NullabilityTypeKind.NonNullableReferenceType,
+                                                                  Array.Empty<NullableTypeTree>() );
+                return true;
+            }
+
+            NullableTypeTree? InferConcreteType( IActivityMonitor monitor, IEnumerable<(NullableTypeTree Type, string RefName)> covariants )
+            {
+                throw new NotImplementedException();
             }
 
             /// <summary>

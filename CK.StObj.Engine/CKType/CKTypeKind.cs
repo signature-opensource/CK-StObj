@@ -68,14 +68,9 @@ namespace CK.Setup
         IsPoco = 128,
 
         /// <summary>
-        /// A [PocoClass] class.
-        /// </summary>
-        IsPocoClass = 256,
-
-        /// <summary>
         /// A real object is a singleton. 
         /// </summary>
-        RealObject = IsSingleton | 512,
+        RealObject = IsSingleton | 256,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsFrontService"/> | <see cref="IsFrontProcessService"/>.
@@ -91,13 +86,13 @@ namespace CK.Setup
         /// Flags set when this type is excluded (by [ExcludeCKType] or type filtering function).
         /// This is also set when [StObjGen] attribute exists.
         /// </summary>
-        IsExcludedType = 1024,
+        IsExcludedType = 512,
 
         /// <summary>
         /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
         /// (that has been logged) returned an error.
         /// </summary>
-        HasCombinationError = 2048
+        HasCombinationError = 1024
     }
 
     /// <summary>
@@ -163,7 +158,6 @@ namespace CK.Setup
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
-            bool isPocoClass = (@this & CKTypeKind.IsPocoClass) != 0;
             bool isFrontEndPoint = (@this & CKTypeKind.IsFrontService) != 0;
             bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
@@ -187,10 +181,6 @@ namespace CK.Setup
                     if( conflict != null ) conflict += ", ";
                     conflict += "A class cannot be a IPoco";
                 }
-            }
-            else if( isPocoClass )
-            {
-                if( @this != CKTypeKind.IsPocoClass ) conflict = "[PocoClass] class cannot be combined with any other aspect";
             }
             else if( isRealObject )
             {
@@ -241,7 +231,6 @@ namespace CK.Setup
                                      "IsSingleton",
                                      "IsRealObject",
                                      "IsPoco",
-                                     "IsPocoClass",
                                      "IsFrontService",
                                      "IsFrontProcessService",
                                      "IsMarshallable",
@@ -254,13 +243,12 @@ namespace CK.Setup
                                              || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && (@this & CKTypeKind.IsPocoClass) != 0)
-                                             || (i == 6 && (@this & CKTypeKind.IsFrontService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
-                                             || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
-                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
-                                             || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
-                                             || (i == 11 && (@this & CKTypeKind.HasCombinationError) != 0) );
+                                             || (i == 5 && (@this & CKTypeKind.IsFrontService) != 0)
+                                             || (i == 6 && (@this & CKTypeKind.IsFrontProcessService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsMarshallable) != 0)
+                                             || (i == 8 && (@this & CKTypeKind.IsMultipleService) != 0)
+                                             || (i == 9 && (@this & CKTypeKind.IsExcludedType) != 0)
+                                             || (i == 10 && (@this & CKTypeKind.HasCombinationError) != 0) );
             return String.Join( "|", f );
         }
     }

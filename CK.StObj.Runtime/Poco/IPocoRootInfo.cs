@@ -44,7 +44,7 @@ namespace CK.Setup
         /// Gets the primary interface that defines the Poco: this
         /// is the first entry of the <see cref="Interfaces"/> list.
         /// </summary>
-        Type PrimaryInterface => Interfaces[0].PocoInterface;
+        IPocoInterfaceInfo PrimaryInterface { get; }
 
         /// <summary>
         /// Gets the IPoco interface that "closes" all these <see cref="Interfaces"/>: this interface "unifies"

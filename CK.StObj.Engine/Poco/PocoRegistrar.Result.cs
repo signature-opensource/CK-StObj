@@ -21,7 +21,6 @@ namespace CK.Setup
             public readonly Dictionary<string, IPocoRootInfo> NamedRoots;
             public readonly Dictionary<Type, InterfaceInfo> AllInterfaces;
             public readonly Dictionary<Type, IReadOnlyList<IPocoRootInfo>> OtherInterfaces;
-            public readonly PocoClassResult PocoClass;
 
             readonly IReadOnlyDictionary<Type, IPocoInterfaceInfo> _exportedAllInterfaces;
 
@@ -32,7 +31,6 @@ namespace CK.Setup
                 _exportedAllInterfaces = AllInterfaces.AsIReadOnlyDictionary<Type, InterfaceInfo, IPocoInterfaceInfo>();
                 OtherInterfaces = new Dictionary<Type, IReadOnlyList<IPocoRootInfo>>();
                 NamedRoots = new Dictionary<string, IPocoRootInfo>();
-                PocoClass = new PocoClassResult();
             }
 
             IReadOnlyList<IPocoRootInfo> IPocoSupportResult.Roots => Roots;
@@ -45,28 +43,37 @@ namespace CK.Setup
 
             IReadOnlyDictionary<Type, IReadOnlyList<IPocoRootInfo>> IPocoSupportResult.OtherInterfaces => OtherInterfaces;
 
-            IPocoClassSupportResult IPocoSupportResult.PocoClass => PocoClass;
-
-            public PocoRootInfo? TryResolveFamily( IActivityMonitor monitor, IEnumerable<(Type Type, string Name)> toCheck )
+            /// <summary>
+            /// Resolves a set of reference to IPoco to a single family, ensuring that definers or other interfaces
+            /// are supported by the family.
+            /// </summary>
+            /// <param name="monitor">The monitor to use.</param>
+            /// <param name="references">References to check.</param>
+            /// <returns>The family or null.</returns>
+            public PocoRootInfo? TryResolveFamily( IActivityMonitor monitor, IEnumerable<(Type Type, bool Writable, string RefName)> references )
             {
-                var families = toCheck.Select( i => (i.Type, i.Name, Family: AllInterfaces.GetValueOrDefault( i.Type )?.Root) )
-                                      .GroupBy( f => f.Family )
-                                      .ToList();
+                var families = references.Select( i => (i.Type, i.RefName, i.Writable, Family: AllInterfaces.GetValueOrDefault( i.Type )?.Root) )
+                                         .GroupBy( f => f.Family )
+                                         .ToList();
                 var gAbstracts = families.FirstOrDefault( g => g.Key == null );
-                if( gAbstracts != null ) families.Remove( gAbstracts );
+                if( gAbstracts != null )
+                {
+                    families.Remove( gAbstracts );
+                }
                 if( families.Count == 0 )
                 {
-                    monitor.Error( @$"No IPoco family found (only ""abstract"" definers) for '{toCheck.Select( c => c.Name ).Concatenate( ", '" )}'." );
+                    monitor.Error( @$"No IPoco family found (only ""abstract"" definers or object) for '{references.Select( c => c.RefName ).Concatenate( ", '" )}'." );
                     return null;
                 }
                 if( families.Count > 1 )
                 {
-                    var culprits = families.Select( g => $"'{g.Key!.Name}' (for {g.Select( f => f.Name ).Concatenate()})" ).Concatenate( " and family " );
+                    var culprits = families.Select( g => $"'{g.Key!.Name}' (for {g.Select( f => f.RefName ).Concatenate()})" ).Concatenate( " and family " );
                     monitor.Error( $"All IPoco must belong to the same IPoco family, found family {culprits}." );
                     return null;
                 }
                 var f = families[0].Key;
                 Debug.Assert( f != null );
+                bool success = true;
                 if( gAbstracts != null )
                 {
                     if( !f.IsClosedPoco )
@@ -74,19 +81,28 @@ namespace CK.Setup
                         var closed = gAbstracts.FirstOrDefault( g => g.Type == typeof( IClosedPoco ) );
                         if( closed.Type != null )
                         {
-                            monitor.Error( $"'{closed.Name}' is IClosedPoco but '{f.Name}' is not a closed Poco." );
-                            return null;
+                            monitor.Error( $"'{closed.RefName}' is IClosedPoco but '{f.Name}' is not a closed Poco." );
+                            success = false;
                         }
                     }
-                    var abstracts = gAbstracts.Where( a => a.Type == typeof( IPoco ) || a.Type == typeof( IClosedPoco ) );
+                    var disallowed = gAbstracts.Where( a => a.Writable );
+                    if( disallowed.Any() )
+                    {
+                        success = false;
+                        foreach( var d in disallowed )
+                        {
+                            monitor.Error( @$"Property '{d.Type} {d.RefName}' is writable, it must be one the '{f.Name}' interfaces: {f.Interfaces.Select( i => i.PocoInterface.ToCSharpName()).Concatenate()}." );
+                        }
+                    }
+                    var abstracts = gAbstracts.Where( a => a.Type != typeof( IPoco ) && a.Type != typeof(object) && a.Type != typeof( IClosedPoco ) );
                     var unimplemented = abstracts.Where( a => !f.OtherInterfaces.Contains( a.Type ) );
                     if( unimplemented.Any() )
                     {
-                        monitor.Error( $"Types '{unimplemented.Select( u => $"{u.Type} {u.Name}" ).Concatenate( "' ,'" )}' are not supported by '{f.Name}'." );
-                        return null;
+                        monitor.Error( $"Types '{unimplemented.Select( u => $"{u.Type} {u.RefName}" ).Concatenate( "' ,'" )}' are not supported by '{f.Name}'." );
+                        success = false;
                     }
                 }
-                return f;
+                return success ? f : null;
             }
 
             public bool Conclude( IActivityMonitor monitor )

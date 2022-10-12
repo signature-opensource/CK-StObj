@@ -1,56 +1,38 @@
+using CK.Core;
+
 namespace CK.Setup
 {
     /// <summary>
-    /// Mutually exclusive allowed types of poco property.
+    /// Extends the <see cref="PocoTypeKind"/> with <see cref="Union"/>.
     /// </summary>
     public enum PocoPropertyKind
     {
-        /// <summary>
-        /// Invalid or unknown type.
-        /// </summary>
-        None,
+        /// <inheritdoc cref="PocoTypeKind.None"/>
+        None = PocoTypeKind.None,
+
+        /// <inheritdoc cref="PocoTypeKind.IPoco"/>
+        IPoco = PocoTypeKind.IPoco,
+
+        /// <inheritdoc cref="PocoTypeKind.StandardCollection"/>
+        StandardCollection = PocoTypeKind.StandardCollection,
+
+        /// <inheritdoc cref="PocoTypeKind.Basic"/>
+        Basic = PocoTypeKind.Basic,
+
+        /// <inheritdoc cref="PocoTypeKind.Basic"/>
+        ValueTuple = PocoTypeKind.ValueTuple,
+
+        /// <inheritdoc cref="PocoTypeKind.Enum"/>
+        Enum,
+
+        /// <inheritdoc cref="PocoTypeKind.Any"/>
+        Any,
 
         /// <summary>
-        /// A basic property type: see <see cref="PocoSupportResultExtension.IsBasicPropertyType(Type)"/>.
-        /// </summary>
-        Basic,
-
-        /// <summary>
-        /// A IPoco interface.
-        /// </summary>
-        IPoco,
-
-        /// <summary>
-        /// A Poco-like class.
-        /// </summary>
-        PocoClass,
-
-        /// <summary>
-        /// Standard collection are an array, HashSet&lt;&gt;,
-        /// List&lt;&gt;, or Dictionary&lt;,&gt; of (potentially recursive) PocoPropertyType.
-        /// </summary>
-        StandardCollection,
-
-        /// <summary>
-        /// Union (algebraic type) of one (weird!) or more PocoPropertyType.
-        /// Such properties are only supported by IPoco, not PocoClass.
+        /// Union (algebraic type) of one or more (only one is weird!) Poco types.
+        /// Such type can be defined on IPoco properties thanks to the <see cref="UnionTypeAttribute"/>.
         /// </summary>
         Union,
 
-        /// <summary>
-        /// Tuple of PocoPropertyType.
-        /// </summary>
-        ValueTuple,
-
-        /// <summary>
-        /// Enumeration.
-        /// </summary>
-        Enum,
-
-        /// <summary>
-        /// Any object: this is the <see cref="object"/> type that generalizes
-        /// an Poco compliant types.
-        /// </summary>
-        Any
     }
 }

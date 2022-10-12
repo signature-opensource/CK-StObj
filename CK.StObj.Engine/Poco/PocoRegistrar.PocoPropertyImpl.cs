@@ -43,6 +43,8 @@ namespace CK.Setup
 
             public NullableTypeTree NullableTypeTree { get; }
 
+            public bool IsNullable => NullableTypeTree.Kind.IsNullable();
+
             IEnumerable<NullableTypeTree> IPocoPropertyImpl.UnionTypes => _unionType?.Types ?? (IEnumerable<NullableTypeTree>)Array.Empty<NullableTypeTree>();
 
             public UnionType? UnionTypes => _unionType;

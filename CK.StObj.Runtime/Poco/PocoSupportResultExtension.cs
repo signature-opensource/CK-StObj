@@ -37,8 +37,7 @@ namespace CK.Setup
         };
 
         /// <summary>
-        /// Gets whether the given type is a basic type that doesn't require a <see cref="IPocoClassInfo"/>.
-        /// It is one of these types:
+        /// Gets whether the given type is a basic type. It is one of these types:
         /// <code>
         ///     int, long, short, byte, string, bool, double, float, object, DateTime, DateTimeOffset, TimeSpan,
         ///     Guid, decimal, System.Numerics.BigInteger, uint, ulong, ushort, sbyte. 
@@ -50,59 +49,53 @@ namespace CK.Setup
         public static bool IsBasicPropertyType( Type t ) => Array.IndexOf( _basicPropertyTypes, t ) >= 0;
 
         /// <summary>
-        /// Gets the <see cref="PocoPropertyKind"/> from a type.
-        /// Union cannot be detected (they are defined by the <see cref="UnionTypeAttribute"/> on the property):
-        /// <see cref="PocoPropertyKind.PocoClass"/> is returned for them.
+        /// Gets the <see cref="PocoTypeKind"/> from a type.
         /// </summary>
         /// <param name="type">The type to test.</param>
         /// <param name="isAbstractCollection">
-        /// True if this is a supported abstraction of standard collections. See <see cref="IsAbstractStandardCollectionGenericDefinition(Type)"/>.
+        /// True if this is a supported abstraction of standard collections. See <see cref="IsAbstractCollectionGenericDefinition(Type)"/>.
         /// </param>
         /// <returns>The kind.</returns>
-        public static PocoPropertyKind GetPocoPropertyKind( in NullableTypeTree type, out bool isAbstractCollection )
+        public static PocoTypeKind GetPocoTypeKind( in NullableTypeTree type, out bool isAbstractCollection )
         {
             isAbstractCollection = false;
-            if( type.Kind.IsTupleType() ) return PocoPropertyKind.ValueTuple;
+            if( type.Kind.IsTupleType() ) return PocoTypeKind.ValueTuple;
             var t = type.Type;
-            if( t == typeof(object) ) return PocoPropertyKind.Any;
-            if( t.IsEnum ) return PocoPropertyKind.Enum;
-            if( IsBasicPropertyType( t ) ) return PocoPropertyKind.Basic;
+            if( t == typeof(object) ) return PocoTypeKind.Any;
+            if( t.IsEnum ) return PocoTypeKind.Enum;
+            if( IsBasicPropertyType( t ) ) return PocoTypeKind.Basic;
             if( type.Kind.IsReferenceType() )
             {
-                if( t.IsInterface && typeof( IPoco ).IsAssignableFrom( t ) ) return PocoPropertyKind.IPoco;
+                if( t.IsInterface && typeof( IPoco ).IsAssignableFrom( t ) ) return PocoTypeKind.IPoco;
                 if( t.IsGenericType )
                 {
                     var tGen = t.GetGenericTypeDefinition();
                     if( tGen == typeof( List<> ) || tGen == typeof( HashSet<> ) || tGen == typeof( Dictionary<,> ) )
                     {
-                        return PocoPropertyKind.StandardCollection;
+                        return PocoTypeKind.StandardCollection;
                     }
-                    if( IsAbstractStandardCollectionGenericDefinition( tGen ) )
+                    if( IsAbstractCollectionGenericDefinition( tGen ) )
                     {
                         isAbstractCollection= true;
-                        return PocoPropertyKind.StandardCollection;
+                        return PocoTypeKind.StandardCollection;
                     }
                 }
-                if( t.IsClass )
-                {
-                    return PocoPropertyKind.PocoClass;
-                }
             }
-            return PocoPropertyKind.None;
+            return PocoTypeKind.None;
         }
 
         /// <summary>
         /// Gets whether this type (that must be a <see cref="Type.IsGenericTypeDefinition"/>)
-        /// is a IList&lt;&gt;, ISet&lt;&gt;, IDictionary&lt;,&gt;,IReadOnlyList&lt;&gt;, IReadOnlySet&lt;&gt; or IReadOnlyDictionary&lt;,&gt;.
+        /// is a IReadOnlyList&lt;&gt;, IReadOnlySet&lt;&gt; IReadOnlyDictionary&lt;,&gt; IReadOnlyCollection&lt;&gt; or
+        /// IEnumerable&lt;&gt;.
         /// </summary>
         /// <param name="genericDefinition">Type definition.</param>
         /// <returns>True if this is an abstraction of the standard collections.</returns>
-        public static bool IsAbstractStandardCollectionGenericDefinition( Type genericDefinition )
+        public static bool IsAbstractCollectionGenericDefinition( Type genericDefinition )
         {
             Throw.CheckArgument( genericDefinition.IsGenericTypeDefinition );
-            return genericDefinition == typeof( IList<> )
-                    || genericDefinition == typeof( ISet<> )
-                    || genericDefinition == typeof( IDictionary<,> )
+            return genericDefinition == typeof( IReadOnlyCollection<> )
+                    || genericDefinition == typeof( IEnumerable<> )
                     || genericDefinition == typeof( IReadOnlyList<> )
                     || genericDefinition == typeof( IReadOnlySet<> )
                     || genericDefinition == typeof( IReadOnlyDictionary<,> );
@@ -129,11 +122,6 @@ namespace CK.Setup
                 writer.Append( "new " ).Append( info.Root.PocoClass.FullName! ).Append( "();" ).NewLine();
                 return;
             }
-            if( @this.PocoClass.ByType.ContainsKey( autoType ) )
-            {
-                writer.Append( "new " ).AppendCSharpName( autoType, true, true, true ).Append( "();" ).NewLine();
-                return;
-            }
             if( autoType.IsGenericType )
             {
                 Type genType = autoType.GetGenericTypeDefinition();
@@ -158,7 +146,7 @@ namespace CK.Setup
                     return;
                 }
             }
-            Throw.ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), Poco objects (marked with a [PocoClass] attribute), HashSet<>, List<>, or Dictionary<,>.", nameof( autoType ) );
+            Throw.ArgumentException( $"Invalid type '{autoType.FullName}': readonly properties can only be IPoco (that are not marked with [CKTypeDefiner] or [CKTypeSuperDefiner]), HashSet<>, List<>, or Dictionary<,>.", nameof( autoType ) );
         }
 
     }

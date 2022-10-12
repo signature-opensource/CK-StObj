@@ -116,30 +116,6 @@ namespace CK.Setup
             return SetLifetimeOrFrontType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
         }
 
-        /// <summary>
-        /// Tries to set the <see cref="CKTypeKind.IsPocoClass"/> flag for a type (that must be a class).
-        /// This fails if the type is already registered as another kind of type.
-        /// </summary>
-        /// <param name="m">The monitor to use.</param>
-        /// <param name="t">The type to configure.</param>
-        /// <returns>True on success, false on error.</returns>
-        internal bool SetPocoClass( IActivityMonitor m, Type t )
-        {
-            Debug.Assert( t.IsClass );
-            var exist = RawGet( m, t );
-            if( exist == CKTypeKind.None )
-            {
-                m.Trace( $"Type '{t}' is now defined as a PocoClass." );
-                _cache[t] = CKTypeKind.IsPocoClass;
-            }
-            else if( exist != CKTypeKind.IsPocoClass )
-            {
-                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as a PocoClass." );
-                return false;
-            }
-            return true;
-        }
-
         CKTypeKind? SetLifetimeOrFrontType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
@@ -253,13 +229,11 @@ namespace CK.Setup
                     Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                     Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                     Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                    Debug.Assert( typeof( PocoClassAttribute ).Name == "PocoClassAttribute" );
                     Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
                     bool hasSuperDefiner = false;
                     bool hasDefiner = false;
                     bool isMultipleInterface = false;
                     bool hasMarshallable = false;
-                    bool isPocoClass = false;
                     bool isExcludedType = false;
 
                     foreach( var a in t.GetCustomAttributesData() )
@@ -286,9 +260,6 @@ namespace CK.Setup
                                 break;
                             case "IsMarshallableAttribute":
                                 hasMarshallable = true;
-                                break;
-                            case "PocoClassAttribute":
-                                isPocoClass = true;
                                 break;
                             case "IsMultipleAttribute" when t.IsInterface:
                                 isMultipleInterface = true;
@@ -320,15 +291,9 @@ namespace CK.Setup
                             foreach( var i in allInterfaces )
                             {
                                 k |= RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | IsReasonMarker);
-                                Debug.Assert( (k & CKTypeKind.IsPocoClass) == 0, "PocoClass attribute can only be on class." );
                             }
                             k |= IsDefiner;
                             if( hasSuperDefiner ) k |= IsSuperDefiner;
-                            // PocoClass cannot be a definer or a super definer.
-                            if( isPocoClass )
-                            {
-                                m.Error( $"PocoClass '{t}' cannot be a [{(hasSuperDefiner ? "CKTypeSuperDefiner" : "CKTypeDefiner")}]." );
-                            }
                         }
                         else
                         {
@@ -336,9 +301,9 @@ namespace CK.Setup
                             // If the base type is a SuperDefiner, then this is a Definer.
                             if( baseType != null )
                             {
-                                // IsMarshallable and IsPocoClass is not propagated.
+                                // IsMarshallable is not propagated.
                                 // "Weak Exclusion": an excluded (or filtered) base type doesn't exclude it specializations.
-                                var kBase = RawGet( m, baseType ) & ~(CKTypeKind.IsMarshallable | CKTypeKind.IsPocoClass | CKTypeKind.IsExcludedType | IsReasonMarker) ;
+                                var kBase = RawGet( m, baseType ) & ~(CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType | IsReasonMarker) ;
                                 Debug.Assert( (kBase & CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
                                 if( (kBase & IsSuperDefiner) != 0 )
                                 {
@@ -390,7 +355,6 @@ namespace CK.Setup
                         k &= ~CKTypeKind.HasCombinationError;
                         if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                         if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
-                        if( isPocoClass ) k |= CKTypeKind.IsPocoClass;
                         if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
 
                         // Check for errors and handle IMarshaller<> only if the type is not excluded.

@@ -418,7 +418,7 @@ namespace CK.Setup
             // Handle stupidity early.
             if( !info.CanRead )
             {
-                monitor.Error( $"Poco property '{interfaceType.ToCSharpName()}.{info.Name}' cannot be read. This is forbidden." );
+                monitor.Error( $"Poco property '{interfaceType}.{info.Name}' cannot be read. This is forbidden." );
                 return false;
             }
             // Creates the PocoPropertyInfo if this is the first PocoPropertyImpl
