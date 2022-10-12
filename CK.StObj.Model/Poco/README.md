@@ -93,6 +93,12 @@ This is also used by CRIS to model common, reusable parts of commands:
 public interface ICommandPart : ICommand
 {
 }
+
+// This is a command part.
+public interface ICommandAuthUnsafe : ICommandPart
+{
+    int ActorId { get; set; }
+}
 ```
 
 ### The IClosedPoco
@@ -151,15 +157,146 @@ type or a construct is missing, it could be easily added).
 - We believe that the "Poco compliant types" we support are enough to model any "exchange data" notably with the
 support of the support of a union type (the `oneof`) for IPoco property.
 
-
-
 ## Poco compliant types
 
- - Basic types like `int`, `string`, `Guid`, `DateTime`, etc. The definition is [here](https://github.com/signature-opensource/CK-StObj/blob/master/CK.StObj.Runtime/Poco/PocoSupportResultExtension.cs#L48).
+The set of Poco compliant type is precisely defined:
+
+ - Basic types like `int`, `string`, `Guid`, `DateTime`, etc. The definition is [here](../../CK.StObj.Runtime/Poco/PocoSupportResultExtension.cs#L48).
  - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant Poco types.
- - `List<>`, `HashSet<>`, `Dictionary<,>` of Poco compliant objects.
+ - `List<>`, `HashSet<>`, `Dictionary<,>` and array of Poco compliant type.
  - Formally `object` is allowed provided that at runtime, the instance must be a Poco compliant type.
+
+### The ValueTuple
+A value tuple is like an anonymous type that locally defines a small structure. The following
+pattern is quite common:
+```csharp
+class AmIWrong
+{
+    public (int Power, string Name, List<int> Values) Simple { get; set; }
+}
+```
+However, there's something wrong here about nullability. Despites the non nullable string and list, `Name` and `Values` are
+null by default and absolutely no warning of any kind will help the developer see this.
+Another aspect that can be surprising is that a ValueTuple is a... value type. Its individual fields cannot be set independently: the whole tuple
+has to be reassigned to a new one. Car must be taken to copy the "previous" other field values from the original
+one.
+In a IPoco, value tuples must be `ref` properties:
+```csharp
+public interface IWithValueTuple : IPoco
+{
+    ref (int Power, string Name, List<int> Values) Thing { get; }
+}
+```
+Initial values are guaranteed to follow the nullability rules (here Name will the empty string and
+initial Values will be an empty list). The `ref` enables the individual fields to be set and the tuple
+then becomes a real "local" sub type. 
+
+#### Future support for record struct
+The `record struct` introduced in C#10 may be supported in the future: used with the positional
+parameters syntax they are quite isomorph to the ValueTuples since they are mutable value tuples
+with 2 added benefits:
+- the default parameter values naturally express the field default value;
+- as explicit types they have a name and then act as reusable definition of these small set of fields.
+
+The previous example can easily be rewritten with a reused `record struct` for 2 properties:
+```csharp
+record struct ThingDetail( int Power, List<int> Values, string Name = "Albert" );
+
+public interface IWithRecordStruct : IPoco
+{
+    ref ThingDetail Thing1 { get; }
+    ref ThingDetail Thing2 { get; }
+}
+```
+Note that even if `record struct` and value tuples are equivalent at this level, they are different. There
+are no field aliases `Item1`, `Item2`,... available in record struct, only the property names matter.
+Record struct can implement methods and mix the standard syntax property declaration with the positional parameters.
+
+A word about the `record class`: it is useless for us here since it is a reference type and immutable by default.
+To have it mutable, the standard syntax must be used: there is no real difference between defining a `IPoco` and
+a `record class` (and also no difference in the final implementation, it's a class with its backing field):
+```csharp
+public interface IPerson : IPoco
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+}
+public record Person
+{
+    public string FirstName { get; set; } = default!;
+    public string LastName { get; set; } = default!;
+}
+```
+Note the `default!` that explicitly breaks the "not nullable" contracts to avoid warnings... In the IPoco,
+since there is no `[DefaultValue]`, the empty string is used by default.
+
+### The "standard collections
+IPoco can expose `T[]`, `List<T>`, `HashSet<T>` and `Dictionary<TKey,TValue>` where `T`, `TKey`
+and `TValue` are Poco compliant types.
+A `List<(string Name, Dictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
+
+Note that only these 3 types are supported. Abstractions like `IReadOnlyList<T>` are not allowed to appear in
+any type definition.
+
+### IPoco properties
+
+A IPoco property can be writable `{get; set;}` or read only `{get;}` and can be nullable or not.
+
+Whether they are writable or read only, a non nullable property type requires an initial non null value
+(otherwise the newly created Poco will not be valid): only some properties can be not nullable.
+
+#### Non nullable properties: the initial value
+
+Nullable properties are the simple to handle: their initial value is always the `default` for
+the type and that is null for reference types.
+
+Non nullable properties MUST have an initial value. For value type, this is not an issue since here again
+the `default` for the type is the "natural", expected initial value.
+
+When a property type is a **not nullable reference type**, then the constructor MUST
+be able to assign a new instance to it, otherwise the newly created Poco will not be valid.
+
+The only true basic type that is a reference type is the `string`, the
+[`[DefaultValue]`](https://learn.microsoft.com/en-us/dotnet/api/system.componentmodel.defaultvalueattribute)
+attribute must then be used to provide a default value. The empty string being a quite natural "default" for a
+non nullable string, if no `[DefaultValue]` is defined on the property, it is automatically used.
+The other basic type that is a reference type is the object: there MUST be a `[DefaultValue]` attribute
+defined.
+
+For any other non nullable property types (value tuple, collection, IPoco) the constructor must be
+able to synthesize a default instance.
+- For IPoco, it must be a "concrete" interface, not an "abstract" one (that is a `[CKTypeDefiner]`).
+- For collections (`List<>`, `HashSet<>`, `Dictionary<,>` and arrays), the constructor creates an empty instance of 
+  the type (for arrays, the `Array.Empty<T>()` singleton is used). 
+- For a value tuple, it's a little bit more complex: one must find an initial value for all non nullable fields 
+  of the tuple (recursively) and without the help of the `[DefaultValue]` attribute.
+
+#### Writable & Read only properties: the "Abstract Read Only Properties"
+A read only property can appear on one or more IPoco interface of a family and also exists
+in a writable form on other interfaces. When this happens, the "writable wins": the Poco's
+property is actually writable. The read only definitions become "hidden" by the writable ones
+ans we call them "Abstract Read Only Properties".
+
+All writable definitions of the same property must be exactly the same: they are strictly type invariants
+(including nullability).
+
+A read only property that has a writable definition somewhere in the Poco family becomes "Abstract": its type
+doesn't need to be exactly the same as the writable type anymore, it can be any type that is "assignable from",
+"compliant with" the writable one.
+
+True "Abstract Read Only Properties" support is not currently implemented. As of today, their type must
+be exactly the same as the writable one except:
+- that their nullability can differ: a nullable read only is compliant with its not nullable writable (the revert is not true).
+- that their type can be object: this is the ultimate variance support and is currently the only supported one.
+
+When all definitions of a property are read only (no writable appears in the family), this property is either:
+  - Nullable... and it keeps its default null value forever. This is _stupid_. 
+  - Not nullable... and it keeps its initial value forever. This seems _stupid_ for basic types but it is not for collections,
+    IPoco or because of their mutability.
+The _stupid_ aspect is if we consider a given final System with a set of types. But if we consider those read only definitions
+from where they are designed, then they appear as "extension points" that may be supported or not. If we take this point of
+view, there is no reason to forbid these properties to exist.
 
 ## PocoConverter
 
@@ -178,7 +315,8 @@ public interface IPocoConverter<T> : IPocoConverter
 }
 ```
 
-Such converter can accept more than one IPoco type as an input and can create different type of IPoco on output. This makes sense.
+Such converter can accept more than one IPoco type as an input and can create different type of IPoco on output.
+This makes sense.
 
 The following central service can handle all the conversions:
 ```csharp
@@ -206,5 +344,6 @@ overlooked). A definer SHOULD be able to carry "abstract projections" by exposin
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
 specification). Current implementation prohibits this because it is not as easy as it seems to implement (for
 instance `IReadOnlyList<object>` on a `List<int>`: value types requires an adapter, a wrapper instance, even
-if `typeof(object).IsAssignableFrom( typeof(int) )`).
+if `typeof(object).IsAssignableFrom( typeof(int) )` is true,
+`typeof(IReadOnlyList<object>).IsAssignableFrom( typeof(IReadOnlyList<int>) )` is false).
 
