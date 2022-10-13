@@ -68,13 +68,6 @@ namespace CK.Setup
                 var declaringType = info.DeclaringType;
                 var nullTree = propertyType.GetNullableTypeTree();
                 var isReadOnly = !info.CanWrite;
-                // We can bail early on this one: there is no more support for array in Poco.
-                // This gives a more detailed message than the PocoPropertyKind.None.
-                if( propertyType.IsArray )
-                {
-                    monitor.Error( $"Not supported array property '{declaringType}.{info.Name}'. Use a {(isReadOnly ? "IReadOnlyList" : "List")}<{propertyType.GetElementType()}> instead." );
-                    return null;
-                }
                 if( !UnionType.TryCreate( monitor, info, ref cacheUnionTypesDef, nullTree.Kind.IsNullable(), out var unionType ) )
                 {
                     return null;
@@ -95,9 +88,9 @@ namespace CK.Setup
                     monitor.Error( $"Property '{result}' is read only: CanBeExtended cannot be true." );
                     return null;
                 }
-                if( !isReadOnly && isAbstractCollection )
+                if( isAbstractCollection )
                 {
-                    monitor.Error( $"Property '{result}' is writable, its type '{nullTree}' must be a concrete collection (List<>, HashSet<> or Dictionary<,>)." );
+                    monitor.Error( $"Property '{nullTree} {result}': abstract collection is not supported. It must be a List<>, HashSet<>, Dictionary<,> or array." );
                     return null;
                 }
                 if( kind == PocoPropertyKind.StandardCollection )
@@ -118,7 +111,7 @@ namespace CK.Setup
                         else if( sub.isAbstractCollection )
                         {
                             errors ??= new List<string>();
-                            errors.Add( $"the subordinated collection '{sub}' must be a concrete type (List<>, HashSet<> or Dictionary<,>)." );
+                            errors.Add( $"the subordinated collection '{sub}' must be a concrete type (List<>, HashSet<>, Dictionary<,> or array)." );
                         }
                     }
 

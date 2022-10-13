@@ -22,13 +22,8 @@ namespace CK.Setup
         IPoco,
 
         /// <summary>
-        /// Standard collection are HashSet&lt;&gt;,
-        /// List&lt;&gt;, or Dictionary&lt;,&gt; of (potentially recursive) Poco types.
-        /// <para>
-        /// Their read only interfaces IReadOnlySet&lt;&gt;,
-        /// IReadOnlyList&lt;&gt;, IReadOnlyDictionary&lt;,&gt; but also IReadOnlyCollection&lt;&gt; and
-        /// IEnumerable&lt;&gt; can be used in read only properties.
-        /// </para>
+        /// Standard collection are HashSet&lt;&gt;, List&lt;&gt;, Dictionary&lt;,&gt; or one dimensional zero based arrays
+        /// of (potentially recursive) Poco types.
         /// </summary>
         StandardCollection,
 

@@ -15,11 +15,11 @@ namespace CK.Setup
     {
         static readonly Type[] _basicPropertyTypes = new Type[]
         {
+            typeof( string ),
             typeof( int ),
             typeof( long ),
             typeof( short ),
             typeof( byte ),
-            typeof( string ),
             typeof( bool ),
             typeof( double ),
             typeof( float ),
@@ -42,11 +42,12 @@ namespace CK.Setup
         ///     int, long, short, byte, string, bool, double, float, object, DateTime, DateTimeOffset, TimeSpan,
         ///     Guid, decimal, System.Numerics.BigInteger, uint, ulong, ushort, sbyte. 
         /// </code>
-        /// Note that object is considered a basic type: it is eventually any type that belongs to the Poco types closure.
+        /// Note that object (<see cref="PocoTypeKind.Any"/>) is considered a basic type: it is
+        /// eventually any type that belongs to the Poco types closure.
         /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        public static bool IsBasicPropertyType( Type t ) => Array.IndexOf( _basicPropertyTypes, t ) >= 0;
+        /// <param name="t">The potential basic type.</param>
+        /// <returns>True if this is a basic Poco type (<see cref="PocoTypeKind.Basic"/> or <see cref="PocoTypeKind.Any"/>).</returns>
+        public static bool IsBasicPocoType( Type t ) => Array.IndexOf( _basicPropertyTypes, t ) >= 0;
 
         /// <summary>
         /// Gets the <see cref="PocoTypeKind"/> from a type.
@@ -63,9 +64,11 @@ namespace CK.Setup
             var t = type.Type;
             if( t == typeof(object) ) return PocoTypeKind.Any;
             if( t.IsEnum ) return PocoTypeKind.Enum;
-            if( IsBasicPropertyType( t ) ) return PocoTypeKind.Basic;
+            if( IsBasicPocoType( t ) ) return PocoTypeKind.Basic;
             if( type.Kind.IsReferenceType() )
             {
+                // Only one dimensional zero based array is currently supported.
+                if( t.IsSZArray ) return PocoTypeKind.StandardCollection;
                 if( t.IsInterface && typeof( IPoco ).IsAssignableFrom( t ) ) return PocoTypeKind.IPoco;
                 if( t.IsGenericType )
                 {

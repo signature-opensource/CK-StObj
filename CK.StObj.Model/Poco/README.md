@@ -178,8 +178,8 @@ class AmIWrong
 ```
 However, there's something wrong here about nullability. Despites the non nullable string and list, `Name` and `Values` are
 null by default and absolutely no warning of any kind will help the developer see this.
-Another aspect that can be surprising is that a ValueTuple is a... value type. Its individual fields cannot be set independently: the whole tuple
-has to be reassigned to a new one. Car must be taken to copy the "previous" other field values from the original
+Another aspect that can be surprising is that a ValueTuple is a... value type. Its individual fields cannot be set independently:
+the whole tuple has to be reassigned to a new one. Care must be taken to copy the "previous" other field values from the original
 one.
 In a IPoco, value tuples must be `ref` properties:
 ```csharp
@@ -189,8 +189,13 @@ public interface IWithValueTuple : IPoco
 }
 ```
 Initial values are guaranteed to follow the nullability rules (here Name will the empty string and
-initial Values will be an empty list). The `ref` enables the individual fields to be set and the tuple
-then becomes a real "local" sub type. 
+initial Values will be an empty list).
+
+> The `ref` enables the individual fields to be set and the tuple then becomes a real "local" sub type. 
+
+For more information on value tuple and more specifically their field names, please read this excellent
+analysis: http://mustoverride.com/tuples_names/. The Poco framework handles the field names so that
+they ca be exploited by de/serializers and importers/exporters if needed.
 
 #### Future support for record struct
 The `record struct` introduced in C#10 may be supported in the future: used with the positional
@@ -210,12 +215,14 @@ public interface IWithRecordStruct : IPoco
 }
 ```
 Note that even if `record struct` and value tuples are equivalent at this level, they are different. There
-are no field aliases `Item1`, `Item2`,... available in record struct, only the property names matter.
-Record struct can implement methods and mix the standard syntax property declaration with the positional parameters.
+are no field aliases `Item1`, `Item2`,... available in record struct, only the property names matter (this is
+somehow the reverse as how the Value Tuples work).
+Record struct can implement methods and mix the standard syntax property declaration with the positional parameters:
+this should be avoided as much as possible and a check may be implemented for this potentially "deviant" structures.
 
 A word about the `record class`: it is useless for us here since it is a reference type and immutable by default.
 To have it mutable, the standard syntax must be used: there is no real difference between defining a `IPoco` and
-a `record class` (and also no difference in the final implementation, it's a class with its backing field):
+a `record class` (and also no difference in the final implementation: it's a class with its backing field):
 ```csharp
 public interface IPerson : IPoco
 {
@@ -293,10 +300,11 @@ be exactly the same as the writable one except:
 When all definitions of a property are read only (no writable appears in the family), this property is either:
   - Nullable... and it keeps its default null value forever. This is _stupid_. 
   - Not nullable... and it keeps its initial value forever. This seems _stupid_ for basic types but it is not for collections,
-    IPoco or because of their mutability.
-The _stupid_ aspect is if we consider a given final System with a set of types. But if we consider those read only definitions
-from where they are designed, then they appear as "extension points" that may be supported or not. If we take this point of
-view, there is no reason to forbid these properties to exist.
+    IPoco or because of their mutability, except for the array where it also seems _stupid_ since an empty array is empty
+    forever.
+The _stupid_ aspect is if we consider a given final System with a set of concrete, final types. But if we consider those
+read only definitions from where they are designed, then they appear as "extension points" that may be supported or not.
+If we take this point of view, there is no reason to forbid these properties to exist.
 
 ## PocoConverter
 
