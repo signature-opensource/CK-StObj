@@ -17,7 +17,7 @@ namespace CK.Setup
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
         internal CKTypeCollectorResult( ISet<Assembly> assemblies,
-                                        IPocoSupportResult? pocoSupport,
+                                        IPocoDirectory? pocoSupport,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
                                         IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
@@ -35,7 +35,7 @@ namespace CK.Setup
         /// Gets all the registered Poco information.
         /// Null if an error occurred while computing it.
         /// </summary>
-        public IPocoSupportResult? PocoSupport { get; }
+        public IPocoDirectory? PocoSupport { get; }
 
         /// <summary>
         /// Gets the set of assemblies for which at least one type has been registered.

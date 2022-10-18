@@ -74,7 +74,7 @@ namespace CK.StObj.Engine.Tests.Poco
             {
                 var pocoSupportResult = all.CollectorResult.CKTypeResult.PocoSupport;
                 Debug.Assert( pocoSupportResult != null );
-                pocoSupportResult.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoSupportResult() );
+                pocoSupportResult.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoDirectory() );
                 var services = all.Services;
 
                 var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();

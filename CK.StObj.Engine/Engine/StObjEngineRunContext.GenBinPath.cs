@@ -23,7 +23,7 @@ namespace CK.Setup
                 ConfigurationGroup = group;
                 Memory = new Dictionary<object, object?>();
                 ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
-                ServiceContainer.Add( result.DynamicAssembly.GetPocoSupportResult() );
+                ServiceContainer.Add( result.DynamicAssembly.GetPocoDirectory() );
             }
 
             public readonly StObjCollectorResult Result;

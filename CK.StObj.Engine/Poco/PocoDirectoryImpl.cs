@@ -29,8 +29,10 @@ namespace CK.Setup
             // Let the PocoDirectory_CK be sealed.
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            IPocoSupportResult r = c.Assembly.GetPocoSupportResult();
-            Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof(IPocoSupportResult) ), "The PocoSupportResult is also available at the GeneratedBinPath." );
+            IPocoDirectory r = c.Assembly.GetPocoDirectory();
+            IPocoTypeSystem s = c.Assembly.GetPocoTypeSystem();
+            Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoDirectory ) ), "The IPocoDirectory is also available at the GeneratedBinPath." );
+            Debug.Assert( s == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
 
             // PocoDirectory_CK class.
             scope.GeneratedByComment().NewLine()
@@ -39,7 +41,7 @@ namespace CK.Setup
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
                  // The _factories field 
-                 .Append( "static readonly Dictionary<string,IPocoFactory> _factoriesN = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedRoots.Count ).Append( " );" ).NewLine()
+                 .Append( "static readonly Dictionary<string,IPocoFactory> _factoriesN = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedFamilies.Count ).Append( " );" ).NewLine()
                  .Append( "static readonly Dictionary<Type,IPocoFactory> _factoriesT = new Dictionary<Type,IPocoFactory>( " ).Append( r.AllInterfaces.Count ).Append( " );" ).NewLine()
                  .Append( "public override IPocoFactory Find( string name ) => _factoriesN.GetValueOrDefault( name );" ).NewLine()
                  .Append( "public override IPocoFactory Find( Type t ) => _factoriesT.GetValueOrDefault( t );" ).NewLine()
@@ -53,15 +55,15 @@ namespace CK.Setup
 
             if( r.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;
 
-            foreach( var root in r.Roots )
+            foreach( var family in r.Families )
             {
                 // PocoFactory class.
-                var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+                var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, family.PocoFactoryClass );
                 tFB.Definition.Modifiers |= Modifiers.Sealed;
                 string factoryClassName = tFB.Definition.Name.Name;
 
                 // Poco class.
-                var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+                var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, family.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
@@ -92,11 +94,30 @@ namespace CK.Setup
                 // We support the interfaces here: if other participants have already created this type, it is
                 // up to us, here, to handle the "exact" type definition.
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
-                tB.Definition.BaseTypes.AddRange( root.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
+                tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                IFunctionScope ctorB = tB.CreateFunction( $"public {root.PocoClass.Name}()" );
+                var pocoType = s.GetConcretePocoType( family.PrimaryInterface.PocoInterface );
+                Debug.Assert( pocoType != null );
 
-                foreach( var p in root.PropertyList )
+                IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );
+                foreach( var f in pocoType.Fields )
+                {
+                    tB.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName );
+                    if( f.DefaultValue == null ) tB.Append( ";" );
+                    else
+                    {
+                        tB.Append( " = " ).Append( f.DefaultValue.ValueCSharpSource ).Append( ";" );
+                    }
+                    tB.NewLine();
+                    if( f.IsCtorInstantiated )
+                    {
+
+                    }
+                    tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
+
+                }
+
+                foreach( var p in family.PropertyList )
                 {
                     Type propType = p.PropertyType;
                     bool isUnionType = p.PropertyUnionTypes.Any();
@@ -172,41 +193,41 @@ namespace CK.Setup
 
                 tFB.Append( "PocoDirectory IPocoFactory.PocoDirectory => PocoDirectory_CK.Instance;" ).NewLine();
 
-                tFB.Append( "public Type PocoClassType => typeof(" ).Append( root.PocoClass.Name ).Append( ");" )
+                tFB.Append( "public Type PocoClassType => typeof(" ).Append( family.PocoClass.Name ).Append( ");" )
                    .NewLine();
 
-                tFB.Append( "public Type PrimaryInterface => " ).AppendTypeOf( root.PrimaryInterface ).Append( ";" )
+                tFB.Append( "public Type PrimaryInterface => " ).AppendTypeOf( family.PrimaryInterface.PocoInterface ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "public Type? ClosureInterface => " ).AppendTypeOf( root.ClosureInterface ).Append( ";" )
+                tFB.Append( "public Type? ClosureInterface => " ).AppendTypeOf( family.ClosureInterface ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "public bool IsClosedPoco => " ).Append( root.IsClosedPoco ).Append( ";" )
+                tFB.Append( "public bool IsClosedPoco => " ).Append( family.IsClosedPoco ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "public IPoco Create() => new " ).Append( root.PocoClass.Name ).Append( "();" )
+                tFB.Append( "public IPoco Create() => new " ).Append( family.PocoClass.Name ).Append( "();" )
                    .NewLine();
 
-                tFB.Append( "public string Name => " ).AppendSourceString( root.Name ).Append( ";" )
+                tFB.Append( "public string Name => " ).AppendSourceString( family.Name ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( root.PreviousNames ).Append( ";" )
+                tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( family.PreviousNames ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "public IReadOnlyList<Type> Interfaces => " ).AppendArray( root.Interfaces.Select( i => i.PocoInterface ) ).Append( ";" )
+                tFB.Append( "public IReadOnlyList<Type> Interfaces => " ).AppendArray( family.Interfaces.Select( i => i.PocoInterface ) ).Append( ";" )
                    .NewLine();
 
                 tFB.CreateFunction( "public " + factoryClassName + "()" )
                     .Append( "PocoDirectory_CK.Register( this );" ).NewLine()
                     .Append( tB.Name ).Append( "._factory = this;" );
 
-                foreach( var i in root.Interfaces )
+                foreach( var i in family.Interfaces )
                 {
                     tFB.Definition.BaseTypes.Add( new ExtendedTypeName( i.PocoFactoryInterface.ToCSharpName() ) );
                     tFB.AppendCSharpName( i.PocoInterface, true, true, true )
                        .Space()
                        .AppendCSharpName( i.PocoFactoryInterface, true, true, true )
-                       .Append( ".Create() => new " ).AppendCSharpName( i.Root.PocoClass, true, true, true ).Append( "();" )
+                       .Append( ".Create() => new " ).AppendCSharpName( i.Family.PocoClass, true, true, true ).Append( "();" )
                        .NewLine();
                 }
             }

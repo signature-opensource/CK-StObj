@@ -302,7 +302,7 @@ namespace CK.Setup
                         typeResult.LogErrorAndWarnings( _monitor );
                     }
                     if( error || typeResult.HasFatalError ) return (typeResult, null, null);
-                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
+                    Debug.Assert( _tempAssembly.GetPocoDirectory() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
                     using( _monitor.OpenInfo( "Creating final objects and configuring items." ) )
                     {
                         int nbItems = ConfigureMutableItems( typeResult.RealObjects );

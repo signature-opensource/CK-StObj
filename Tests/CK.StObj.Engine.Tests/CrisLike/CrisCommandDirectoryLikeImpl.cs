@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
                                             Type classType,
                                             ICSCodeGenerationContext c,
                                             ITypeScope scope,
-                                            IPocoSupportResult poco,
+                                            IPocoDirectory poco,
                                             Setup.Json.JsonSerializationCodeGen? json = null )
         {
             if( classType != typeof( CrisCommandDirectoryLike ) ) throw new InvalidOperationException( "Applies only to the CrisCommandDirectoryLike class." );
@@ -30,9 +30,9 @@ namespace CK.StObj.Engine.Tests.CrisLike
             // In real Cris, there is a CommandRegistry that registers the commands/handlers/service etc. into an intermediate Entry descriptor
             // with the final (most specific) TResult.
             // Here we shortcut the process and work with the basic IPocoRootInfo:
-            if( !poco.OtherInterfaces.TryGetValue( typeof( ICommand ), out IReadOnlyList<IPocoRootInfo>? commandPocos ) )
+            if( !poco.OtherInterfaces.TryGetValue( typeof( ICommand ), out IReadOnlyList<IPocoFamilyInfo>? commandPocos ) )
             {
-                commandPocos = Array.Empty<IPocoRootInfo>();
+                commandPocos = Array.Empty<IPocoFamilyInfo>();
             }
 
             CodeWriterExtensions.Append( scope, "public " ).Append( scope.Name ).Append( "() : base( CreateCommands() ) {}" ).NewLine();

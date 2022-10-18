@@ -48,4 +48,5 @@ namespace CK.Core
         /// </summary>
         public bool CanBeExtended { get; set; }
     }
+
 }

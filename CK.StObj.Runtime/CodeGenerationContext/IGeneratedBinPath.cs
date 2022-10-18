@@ -30,7 +30,7 @@ namespace CK.Setup
         /// <see cref="ICSCodeGenerator.Implement"/> and <see cref="IAutoImplementor{T}.Implement"/> typically registers services
         /// inside this container so that deferred implementors (<see cref="CSCodeGenerationResult.ImplementorType"/>) can depend on them.
         /// <para>
-        /// It contains the <see cref="IPocoSupportResult"/> for this path.
+        /// It contains the <see cref="IPocoDirectory"/> for this path.
         /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }

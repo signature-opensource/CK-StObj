@@ -19,7 +19,7 @@ namespace CK.Setup
         readonly IActivityMonitor _monitor;
         readonly IDynamicAssembly _tempAssembly;
         readonly IServiceProvider _serviceProvider;
-        readonly PocoRegistrar _pocoRegistrar;
+        readonly PocoDirectoryBuilder _pocoBuilder;
         readonly HashSet<Assembly> _assemblies;
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
         readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
@@ -57,7 +57,7 @@ namespace CK.Setup
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
             KindDetector = new CKTypeKindDetector( typeFilter );
-            _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _pocoBuilder = new PocoDirectoryBuilder( ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
@@ -102,7 +102,7 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoRegistrar.RegisterInterface( _monitor, type ) )
+                    if( _pocoBuilder.RegisterInterface( _monitor, type ) )
                     {
                         RegisterAssembly( type );
                     }
@@ -225,22 +225,33 @@ namespace CK.Setup
         {
             using( _monitor.OpenInfo( "Static Type analysis." ) )
             {
-                IPocoSupportResult? pocoSupport;
+                IPocoDirectory? pocoDirectory;
+                PocoTypeSystem? pocoTypeSystem;
                 using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
-                    pocoSupport = _pocoRegistrar.Finalize( _tempAssembly, _monitor );
-                    if( pocoSupport != null )
+                    pocoDirectory = _pocoBuilder.Build( _tempAssembly, _monitor );
+                    if( pocoDirectory != null )
                     {
-                        _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
+                        _tempAssembly.Memory.Add( typeof( IPocoDirectory ), pocoDirectory );
                         RegisterClass( typeof( PocoDirectory ) );
-                        foreach( var c in pocoSupport.Roots ) RegisterClass( c.PocoFactoryClass );
+                        foreach( var c in pocoDirectory.Families ) RegisterClass( c.PocoFactoryClass );
                     }
                     else
                     {
                         // On error, we register the Empty result.
-                        _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport = EmptyPocoSupportResult.Default );
+                        _tempAssembly.Memory.Add( typeof( IPocoDirectory ), pocoDirectory = EmptyPocoDirectory.Default );
                     }
-                    Debug.Assert( _tempAssembly.GetPocoSupportResult() == pocoSupport, "The extension method GetPocoSupportResult() provides it." );
+                    Debug.Assert( _tempAssembly.GetPocoDirectory() == pocoDirectory, "The extension method GetPocoDirectory() provides it." );
+                }
+                using( _monitor.OpenInfo( "Initializing Poco Type System." ) )
+                {
+                    pocoTypeSystem = new PocoTypeSystem();
+                    if( !pocoTypeSystem.Initialize( pocoDirectory, _monitor ) )
+                    {
+                        _monitor.CloseGroup( "Failed" );
+                    }
+                    _tempAssembly.Memory.Add( typeof( IPocoTypeSystem ), pocoTypeSystem );
+                    Debug.Assert( _tempAssembly.GetPocoTypeSystem() == pocoTypeSystem, "The extension method GetPocoTypeSystem() provides it." );
                 }
                 RealObjectCollectorResult contracts;
                 using( _monitor.OpenInfo( "Real objects handling." ) )
@@ -253,7 +264,7 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( contracts );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoDirectory, contracts, services, _regularTypeCollector, this );
             }
         }
 

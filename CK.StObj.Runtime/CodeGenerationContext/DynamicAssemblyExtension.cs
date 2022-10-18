@@ -101,14 +101,21 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets all information related to Poco support.
-        /// This is never null: if an error occurred, <see cref="EmptyPocoSupportResult.Default"/> is used.
+        /// Gets the Poco directory.
+        /// This is never null: if an error occurred, <see cref="EmptyPocoDirectory.Default"/> is used.
         /// Note that if no error but no Poco have been found, an empty result is produced that will not be
-        /// the <see cref="EmptyPocoSupportResult.Default"/> instance.
+        /// the <see cref="EmptyPocoDirectory.Default"/> instance.
         /// </summary>
         /// <param name="this">This Dynamic assembly.</param>
-        /// <returns>The Poco information.</returns>
-        public static IPocoSupportResult GetPocoSupportResult( this IDynamicAssembly @this ) => (IPocoSupportResult)@this.Memory[typeof( IPocoSupportResult )]!;
+        /// <returns>The Poco directory.</returns>
+        public static IPocoDirectory GetPocoDirectory( this IDynamicAssembly @this ) => (IPocoDirectory)@this.Memory[typeof( IPocoDirectory )]!;
+
+        /// <summary>
+        /// Gets the Poco type system.
+        /// </summary>
+        /// <param name="this">This Dynamic assembly.</param>
+        /// <returns>The Poco type system.</returns>
+        public static IPocoTypeSystem GetPocoTypeSystem( this IDynamicAssembly @this ) => (IPocoTypeSystem)@this.Memory[typeof( IPocoTypeSystem )]!;
 
     }
 }

@@ -75,9 +75,9 @@ namespace CK.StObj.Engine.Tests.Poco
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var poco = collector.GetResult().CKTypeResult.PocoSupport;
             Debug.Assert( poco != null, "Since there has been no error." );
-            poco.Roots.Should().HaveCount( 1 );
+            poco.Families.Should().HaveCount( 1 );
 
-            var TF = poco.Roots[0].PocoFactoryClass;
+            var TF = poco.Families[0].PocoFactoryClass;
             var F = Activator.CreateInstance( TF );
             Debug.Assert( F != null );
             var FP = (IPocoFactory)F;
