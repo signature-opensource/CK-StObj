@@ -18,18 +18,20 @@ namespace CK.Setup
             IPocoPropertyInfo? _prop;
             PropertyInfo? _best;
             IPocoType? _finalType;
-            PocoFieldDefaultValue? _defaultValue;
+            MemberInfo? _defaultValueSource;
+            FieldDefaultValue? _defaultValue;
 
             public PocoPropertyBuilder( PocoTypeSystem system )
             {
                 _system = system;
             }
 
-            public ConcretePocoField? TryCreate( IActivityMonitor monitor, IPocoPropertyInfo prop )
+            public ConcretePocoField? Build( IActivityMonitor monitor, IPocoPropertyInfo prop )
             {
                 _prop = prop;
                 _best = null;
                 _finalType = null;
+                _defaultValueSource = null;
                 _defaultValue = null;
                 if( !TryFindWritableAndCheckReadOnlys( monitor ) )
                 {
@@ -45,8 +47,14 @@ namespace CK.Setup
                         return null;
                     }
                 }
-                Debug.Assert( _finalType != null );
-                return new ConcretePocoField( prop, _finalType, isReadOnly, _defaultValue );
+                Debug.Assert( _finalType != null && _best != null );
+                if( _defaultValue != null
+                    && !_finalType.Type.IsAssignableFrom( _defaultValue.Value.GetType() ) )
+                {
+                    monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_finalType}'." );
+                    return null;
+                }
+                return new ConcretePocoField( prop, _finalType, isReadOnly, _best.PropertyType.IsByRef, _defaultValue );
             }
 
             /// <summary>
@@ -65,14 +73,13 @@ namespace CK.Setup
                     }
                     if( _defaultValue == null )
                     {
-                        if( !PocoFieldDefaultValue.TryCreate( monitor, _system._codeWriter, p, out _defaultValue ) )
-                        {
-                            return false;
-                        }
+                        _defaultValue = FieldDefaultValue.CreateFromAttribute( monitor, _system._sharedWriter, p );
+                        if( _defaultValue != null ) _defaultValueSource = p;
                     }
                     else
                     {
-                        if( !_defaultValue.CheckSameOrNone( monitor, _system._codeWriter, p ) )
+                        Debug.Assert( _defaultValueSource != null );
+                        if( !_defaultValue.CheckSameOrNone( monitor, _defaultValueSource, _system._sharedWriter, p ) )
                         {
                             return false;
                         }
@@ -100,7 +107,7 @@ namespace CK.Setup
                     // If we can't find a concrete, we don't care: the error will
                     // be handled while checking the read only properties.
                     var t = TryFindConcreteOrPossible( monitor, p.PropertyType, p );
-                    if( t == null ) return false;
+                    if( t == null ) continue;
 
                     if( t != typeof(object) && _finalType == null )
                     {
@@ -112,17 +119,19 @@ namespace CK.Setup
                 }
                 if( _finalType != null )
                 {
+                    Debug.Assert( _best != null );
                     if( isNotNull ) _finalType = _finalType.NonNullable;
-                    using( monitor.OpenTrace( $"Inferred type '{_finalType.CSharpName}' for {_prop}." ) )
+                    if( _best.PropertyType != _finalType.Type )
                     {
-                        idx = 0;
-                        foreach( var p in _prop.DeclaredProperties )
+                        monitor.Trace( $"Inferred type '{_finalType.CSharpName}' for {_prop}." );
+                    }
+                    idx = 0;
+                    foreach( var p in _prop.DeclaredProperties )
+                    {
+                        if( p == _best ) continue;
+                        if( !CheckNewReadOnly( monitor, p, cache[idx++] ) )
                         {
-                            if( p == _best ) continue;
-                            if( !CheckNewReadOnly( monitor, p, cache[idx++] ) )
-                            {
-                                return false;
-                            }
+                            return false;
                         }
                     }
                 }
@@ -130,7 +139,7 @@ namespace CK.Setup
                 {
                     if( isNotNull && _defaultValue == null )
                     {
-                        monitor.Error( $"{_prop} is a non writable and non nullable object without any default value. It cannot be resolved." );
+                        monitor.Error( $"{_prop} has no writable property, no default value and a concrete instantiable type cannot be inferred. It cannot be resolved." );
                         return false;
                     }
                     _finalType = _system._objectType;
@@ -225,7 +234,7 @@ namespace CK.Setup
             bool CheckNewWritable( IActivityMonitor monitor, PropertyInfo p )
             {
                 Debug.Assert( _best != null && _finalType != null );
-                if( p.PropertyType == _best.PropertyType )
+                if( _finalType.IsWritableType( p.PropertyType ) )
                 {
                     var nInfo = _system._nullContext.Create( p );
                     var culprit = FindNullabilityViolation( _finalType, nInfo, strict: true );
@@ -254,16 +263,16 @@ namespace CK.Setup
                 // If the read only property cannot be assigned to the write one, this is an error.
                 // We are bound to the C# limitations here and don't try to workaround this: we
                 // currently don't implement or support adapters.
-                //  - IReadOnlyList/Set is covariant without adapters.
-                //  - IReadOnlyDictionary requires an adapter to be covariant on TValue. This alone (as
-                //    a root property type) is fine but as soon as the type appear in a array, list or set, 
-                //    a type must be generated with inner instances wrappers... 
-                if( !p.PropertyType.IsAssignableFrom( p.PropertyType ) )
+                //  - IReadOnlyList is covariant without adapters.
+                //  - IReadOnlyDictionary and IReadOnlySet require an adapter to be covariant on TValue (resp. T).
+                //    This alone (as a root property type is easy) but as soon as the type appear in a array, list or set, 
+                //    a type must be generated with inner converters/wrappers... 
+                if( !_finalType.IsReadableType( p.PropertyType ) )
                 {
-                    monitor.Error( $"Read only property '{p.DeclaringType!.ToCSharpName()}.{p.Name}': Type is not compatible with '{_finalType.CSharpName} {_best.DeclaringType}.{_best.Name}'." );
+                    monitor.Error( $"Read only property '{p.DeclaringType}.{p.Name}': Type is not compatible with '{_finalType.CSharpName} {_best.DeclaringType}.{_best.Name}'." );
                     return false;
                 }
-                // But IsAssignableFrom (and even type equality) is not enough because of reference types.
+                // But IsReadableType (and even type equality) is not enough because of reference types.
                 // We prevent any nullable to non nullable mapping.
                 knownInfo ??= _system._nullContext.Create( p );
                 var culprit = FindNullabilityViolation( _finalType, knownInfo, strict: false );
@@ -283,19 +292,38 @@ namespace CK.Setup
 
             static IPocoType? FindNullabilityViolation( IPocoType w, NullabilityInfo r, bool strict )
             {
-                Debug.Assert( r.Type.IsAssignableFrom( w.Type ) );
                 bool rIsNullable = r.ReadState == NullabilityState.Nullable || r.ReadState == NullabilityState.Unknown;
                 if( (!rIsNullable && w.IsNullable) || (strict && rIsNullable != w.IsNullable) )
                 {
                     return w;
                 }
-                if( w is ICollectionPocoType wC )
+                if( r.Type != typeof( object ) )
                 {
-                    Debug.Assert( r.Type.IsArray || r.Type.IsGenericType );
-                    for( int i = 0; i < wC.ItemTypes.Count; i++ )
+                    if( w is ICollectionPocoType wC )
                     {
-                        var culprit = FindNullabilityViolation( wC.ItemTypes[i], r.ElementType ?? r.GenericTypeArguments[i], strict );
-                        if( culprit != null ) return culprit;
+                        Debug.Assert( r.Type.IsArray || (r.Type.IsGenericType && r.GenericTypeArguments.Length == wC.ItemTypes.Count) );
+
+                        // We don't have (yet) the AbstractCollectionType : PocoType since we only handle the single IReadOnlyList
+                        // covariant type.
+                        // Even in non strict mode, collection items cannot be allowed be nullable
+                        // if the "source" item is not nullable.
+                        // Currently, IReadOnlyList is the only exception.
+                        // Before thinking to implement a "better covariance" and AbstractCollectionType, the first step
+                        // is to transfer this code to IPocoType.IsWritable( NullabilityInfo t ) and IPocoType.IsReadable( NullabilityInfo t )
+                        // that will centralize the nullable stuff. 
+                        if( r.Type.IsGenericType && r.Type.GetGenericTypeDefinition() == typeof( IReadOnlyList<> ) )
+                        {
+                            strict = false;
+                        }
+                        else
+                        {
+                            strict = true;
+                        }
+                        for( int i = 0; i < wC.ItemTypes.Count; i++ )
+                        {
+                            var culprit = FindNullabilityViolation( wC.ItemTypes[i], r.ElementType ?? r.GenericTypeArguments[i], strict );
+                            if( culprit != null ) return culprit;
+                        }
                     }
                 }
                 return null;

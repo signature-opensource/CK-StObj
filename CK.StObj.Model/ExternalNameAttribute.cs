@@ -9,10 +9,14 @@ namespace CK.Core
     /// <summary>
     /// Decorates an interface, a class or an enum with its name and optional previous names.
     /// <para>
-    /// Without this attribute, the type name is the <see cref="Type.FullName"/>, an external name must "look like" a
-    /// .Net full type name (optional namespace and type name). Open generics should expose their generic parameter
-    /// type names between parentheses - like <c>MyClass(T)</c> or <c>BiList(T1,T2)</c> - rather than just the 'count.
-    /// Using parentheses rather than angle brackets like <c>BiList&lt;T1,T2&gt;</c> makes this name "more easily exportable".
+    /// Without this attribute, the type name is the <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
+    /// with the default true parameters: withNamespace, typeDeclaration and useValueTupleParentheses.
+    /// </para>
+    /// <para>
+    /// An external name must "look like" a .Net C# name (optional namespace and type name). Open generics should
+    /// expose their generic parameter type names between parentheses - like <c>MyClass(T)</c> or <c>BiList(T1,T2)</c> -
+    /// rather than just the 'count. Using parentheses rather than angle brackets like <c>BiList&lt;T1,T2&gt;</c> makes
+    /// this name "more easily exportable".
     /// For example, in JSON, &lt;&gt; are - by default - encoded as "\u003C\u003E". And  &lt; or &gt; are forbidden in
     /// file names.
     /// </para>

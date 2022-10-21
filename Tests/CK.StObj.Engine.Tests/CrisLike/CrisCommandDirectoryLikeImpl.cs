@@ -14,7 +14,8 @@ namespace CK.StObj.Engine.Tests.CrisLike
     {
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
-            // We need the IJsonSerializationCodeGen service to register command result type (for real Cris, here we don't handle results).
+            // IRL we may need some services (here we don't handle results) but we keep the relay that allows services
+            // to be available.
             return new CSCodeGenerationResult( nameof( DoImplement ) );
         }
 
@@ -22,8 +23,10 @@ namespace CK.StObj.Engine.Tests.CrisLike
                                             Type classType,
                                             ICSCodeGenerationContext c,
                                             ITypeScope scope,
-                                            IPocoDirectory poco,
-                                            Setup.Json.JsonSerializationCodeGen? json = null )
+                                            IPocoDirectory poco
+                                            // This is where other required services can come...
+                                            //  Setup.Json.JsonSerializationCodeGen? json = null
+                                            )
         {
             if( classType != typeof( CrisCommandDirectoryLike ) ) throw new InvalidOperationException( "Applies only to the CrisCommandDirectoryLike class." );
 

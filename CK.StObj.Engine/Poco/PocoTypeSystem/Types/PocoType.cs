@@ -1,21 +1,28 @@
+using CK.CodeGen;
 using CK.Core;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Operations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
+
+
     partial class PocoType : IPocoType
     {
         AnnotationSetImpl _annotations;
         readonly IPocoType _nullable;
 
-        class NullBasicRelay : IPocoType
+        class NullReferenceType : IPocoType
         {
             AnnotationSetImpl _annotations;
 
-            public NullBasicRelay( IPocoType notNullable )
+            public NullReferenceType( IPocoType notNullable )
             {
+                Debug.Assert( !notNullable.Type.IsValueType );
                 NonNullable = notNullable;
                 CSharpName = notNullable.CSharpName + '?';
             }
@@ -26,6 +33,8 @@ namespace CK.Setup
 
             public string CSharpName { get; }
 
+            public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
+
             public Type Type => NonNullable.Type;
 
             public PocoTypeKind Kind => NonNullable.Kind;
@@ -33,6 +42,10 @@ namespace CK.Setup
             public IPocoType Nullable => this;
 
             public IPocoType NonNullable { get; }
+
+            public bool IsReadableType( Type type ) => NonNullable.IsReadableType( type );
+
+            public bool IsWritableType( Type type ) => NonNullable.IsWritableType( type );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -50,12 +63,17 @@ namespace CK.Setup
 
         }
 
-        class NullBasicWithType : IPocoType
+        class NullValueType : IPocoType
         {
             AnnotationSetImpl _annotations;
 
-            public NullBasicWithType( IPocoType notNullable, Type type )
+            public NullValueType( IPocoType notNullable, Type type )
             {
+                Debug.Assert( notNullable.Type.IsValueType
+                              && notNullable.Type != type
+                              && !notNullable.Type.IsAssignableFrom( type )
+                              && type.IsAssignableFrom( notNullable.Type ) );
+
                 NonNullable = notNullable;
                 Type = type;
                 CSharpName = notNullable.CSharpName + '?';
@@ -67,6 +85,8 @@ namespace CK.Setup
 
             public string CSharpName { get; }
 
+            public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
+
             public Type Type { get; }
 
             public PocoTypeKind Kind => NonNullable.Kind;
@@ -74,6 +94,10 @@ namespace CK.Setup
             public IPocoType Nullable => this;
 
             public IPocoType NonNullable { get; }
+
+            public bool IsReadableType( Type type ) => type == typeof( object ) || type == Type || type == NonNullable.Type;
+
+            public bool IsWritableType( Type type ) => type == Type;
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -97,29 +121,13 @@ namespace CK.Setup
                             PocoTypeKind kind,
                             Func<PocoType,IPocoType> nullFactory )
         {
-            Index = s.AllTypes.Count;
+            Debug.Assert( !notNullable.IsValueType || System.Nullable.GetUnderlyingType( notNullable ) == null );
+            Debug.Assert( !csharpName.EndsWith( '?' ) );
+            Index = s.AllTypes.Count << 1;
             Type = notNullable;
             CSharpName = csharpName;
             Kind = kind;
             _nullable = nullFactory( this );
-        }
-
-        internal static PocoType CreateBasicRef( PocoTypeSystem s,
-                                                 Type type,
-                                                 string csharpName,
-                                                 PocoTypeKind kind )
-        {
-            Debug.Assert( !type.IsValueType );
-            return new PocoType( s, type, csharpName, kind, t => new NullBasicRelay( t ) );
-        }
-
-        internal static PocoType CreateBasicValue( PocoTypeSystem s,
-                                                   Type notNullable,
-                                                   Type nullable,
-                                                   string csharpName )
-        {
-            Debug.Assert( notNullable.IsValueType );
-            return new PocoType( s, notNullable, csharpName, PocoTypeKind.Basic, t => new NullBasicWithType( t, nullable ) );
         }
 
         public int Index { get; }
@@ -128,15 +136,36 @@ namespace CK.Setup
 
         public PocoTypeKind Kind { get; }
 
-        public IPocoFamilyInfo? PocoFamily { get; }
-
         public bool IsNullable => false;
 
         public string CSharpName { get; }
 
+        /// <summary>
+        /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
+        /// overrides this).
+        /// The only case where we disallow is object and AbstractIPoco.
+        /// </summary>
+        public virtual DefaultValueInfo DefaultValueInfo
+        {
+            get
+            {
+                Debug.Assert( Kind == PocoTypeKind.Any
+                              || (Kind == PocoTypeKind.Basic && !(Type == typeof(string) || Type == typeof(DateTime)))
+                              || Kind == PocoTypeKind.AbstractIPoco, "All other PocoType override this." );
+
+                return Kind == PocoTypeKind.Basic ? DefaultValueInfo.Allowed : DefaultValueInfo.Disallowed;
+            }
+        }
+        
         public IPocoType Nullable => _nullable;
 
         public IPocoType NonNullable => this;
+
+        public virtual bool IsWritableType( Type type ) => Type.IsAssignableFrom( type );
+
+        public virtual bool IsReadableType( Type type ) => type.IsAssignableFrom( Type );
+
+        public override string ToString() => $"[{Kind}]{CSharpName}";
 
         public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

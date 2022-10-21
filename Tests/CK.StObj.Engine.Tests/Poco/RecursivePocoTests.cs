@@ -18,21 +18,10 @@ namespace CK.StObj.Engine.Tests.Poco
             IDirectError Pouf { get; }
         }
 
-        public interface IIndirectError1 : IPoco
-        {
-            IIndirectErrorConsumer Pouf { get; }
-        }
-
-        public interface IIndirectErrorConsumer : IPoco
-        {
-            IIndirectError1 Pouf { get; }
-        }
-
         [Test]
         public void Direct_recursion_is_detected()
         {
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDirectError ) ) );
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IIndirectError1 ), typeof( IIndirectErrorConsumer ) ) );
         }
 
         public interface ICycleError : IPoco
@@ -42,7 +31,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface ICycleError1 : IPoco
         {
-            ICycleError Pouf2 { get; }
+            ICycleError Pouf { get; }
         }
 
         [Test]
@@ -92,9 +81,28 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var types = new[] { typeof( ICycleErrorConsumer ), typeof( ICycleErrorConsumerIntermediate ), typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) };
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ) );
-            Array.Reverse( types);
+            Array.Reverse( types );
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ) );
         }
+
+        public interface IHolder : IPoco
+        {
+            ref (int A, ((IOther IAmHere, int B) Inside, int C) DeepInside) Pof { get; }
+
+        }
+
+        public interface IOther : IPoco
+        {
+            ref (int A, (IHolder IAmHere, int B) Inside) Pof { get; }
+        }
+
+        [Test]
+        public void recursion_through_record_fields_is_detected()
+        {
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IHolder ), typeof( IOther ) ) );
+        }
+
+
 
     }
 }

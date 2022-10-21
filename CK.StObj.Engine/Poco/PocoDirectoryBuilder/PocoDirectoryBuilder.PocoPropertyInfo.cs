@@ -38,7 +38,7 @@ namespace CK.Setup
             /// Returns "'Name' on Poco interfaces: 'IPocoOne', 'IPocoTwo'"
             /// </summary>
             /// <returns></returns>
-            public override string ToString() => $"Property '{Name}' on Poco interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.GetExternalNameOrFullName() ).Concatenate( "', '" )}'.";
+            public override string ToString() => $"Property '{Name}' on Poco interfaces: '{DeclaredProperties.Select( p => p.DeclaringType!.GetExternalNameOrCSharpName() ).Concatenate( "', '" )}'";
         
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

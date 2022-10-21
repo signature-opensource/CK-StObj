@@ -1,6 +1,8 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace CK.Setup
@@ -14,9 +16,7 @@ namespace CK.Setup
 
         internal sealed class ConcretePocoType : PocoType, IConcretePocoType
         {
-            private readonly IConcretePocoType _primary;
-
-            sealed class Null : NullBasicRelay, IConcretePocoType
+            sealed class Null : NullReferenceType, IConcretePocoType
             {
                 public Null( IPocoType notNullable )
                     : base( notNullable )
@@ -25,9 +25,9 @@ namespace CK.Setup
 
                 new ConcretePocoType NonNullable => Unsafe.As<ConcretePocoType>( base.NonNullable );
 
-                public IPocoFamilyInfo Family => NonNullable.Family;
+                public IPocoFamilyInfo FamilyInfo => NonNullable.FamilyInfo;
 
-                public IConcretePocoType PrimaryInterface => NonNullable._primary.Nullable;
+                public IPrimaryPocoType PrimaryInterface => NonNullable.PrimaryInterface.Nullable;
 
                 IConcretePocoType IConcretePocoType.Nullable => this;
                 IConcretePocoType IConcretePocoType.NonNullable => NonNullable;
@@ -39,11 +39,13 @@ namespace CK.Setup
                 ICompositePocoType ICompositePocoType.Nullable => this;
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
 
-                public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable._primary.Nullable.AllowedTypes;
+                public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable.PrimaryInterface.Nullable.AllowedTypes;
 
                 IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => this;
                 IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => NonNullable;
             }
+
+            readonly PrimaryPocoType _primary;
 
             public ConcretePocoType( PocoTypeSystem s,
                                      PrimaryPocoType primary,
@@ -53,11 +55,17 @@ namespace CK.Setup
                 _primary = primary;
             }
 
+            public override DefaultValueInfo DefaultValueInfo => _primary.DefaultValueInfo;
+
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
 
-            public IPocoFamilyInfo Family => _primary.Family;
+            public IPocoFamilyInfo FamilyInfo => _primary.FamilyInfo;
 
-            public IConcretePocoType PrimaryInterface => _primary;
+            public IPrimaryPocoType PrimaryInterface => _primary;
+
+            public override bool IsWritableType( Type type ) => _primary.IsWritableType( type );
+
+            public override bool IsReadableType( Type type ) => _primary.IsReadableType( type );
 
             public IReadOnlyList<IConcretePocoField> Fields => _primary.Fields;
 

@@ -29,10 +29,10 @@ namespace CK.Setup
             // Let the PocoDirectory_CK be sealed.
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            IPocoDirectory r = c.Assembly.GetPocoDirectory();
-            IPocoTypeSystem s = c.Assembly.GetPocoTypeSystem();
-            Debug.Assert( r == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoDirectory ) ), "The IPocoDirectory is also available at the GeneratedBinPath." );
-            Debug.Assert( s == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
+            IPocoDirectory pocoDirectory = c.Assembly.GetPocoDirectory();
+            IPocoTypeSystem pocoTypeSystem = c.Assembly.GetPocoTypeSystem();
+            Debug.Assert( pocoDirectory == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoDirectory ) ), "The IPocoDirectory is also available at the GeneratedBinPath." );
+            Debug.Assert( pocoTypeSystem == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
 
             // PocoDirectory_CK class.
             scope.GeneratedByComment().NewLine()
@@ -41,8 +41,8 @@ namespace CK.Setup
 
             scope.Append( "internal static PocoDirectory_CK Instance;" ).NewLine()
                  // The _factories field 
-                 .Append( "static readonly Dictionary<string,IPocoFactory> _factoriesN = new Dictionary<string,IPocoFactory>( " ).Append( r.NamedFamilies.Count ).Append( " );" ).NewLine()
-                 .Append( "static readonly Dictionary<Type,IPocoFactory> _factoriesT = new Dictionary<Type,IPocoFactory>( " ).Append( r.AllInterfaces.Count ).Append( " );" ).NewLine()
+                 .Append( "static readonly Dictionary<string,IPocoFactory> _factoriesN = new Dictionary<string,IPocoFactory>( " ).Append( pocoDirectory.NamedFamilies.Count ).Append( " );" ).NewLine()
+                 .Append( "static readonly Dictionary<Type,IPocoFactory> _factoriesT = new Dictionary<Type,IPocoFactory>( " ).Append( pocoDirectory.AllInterfaces.Count ).Append( " );" ).NewLine()
                  .Append( "public override IPocoFactory Find( string name ) => _factoriesN.GetValueOrDefault( name );" ).NewLine()
                  .Append( "public override IPocoFactory Find( Type t ) => _factoriesT.GetValueOrDefault( t );" ).NewLine()
                  .Append( "internal static void Register( IPocoFactory f )" ).OpenBlock()
@@ -53,9 +53,9 @@ namespace CK.Setup
                  .Append( "_factoriesT.Add( f.PocoClassType, f );" ).NewLine()
                  .CloseBlock();
 
-            if( r.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;
+            if( pocoDirectory.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;
 
-            foreach( var family in r.Families )
+            foreach( var family in pocoDirectory.Families )
             {
                 // PocoFactory class.
                 var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, family.PocoFactoryClass );
@@ -96,97 +96,65 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
                 tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                var pocoType = s.GetConcretePocoType( family.PrimaryInterface.PocoInterface );
+                var pocoType = pocoTypeSystem.GetPrimaryPocoType( family.PrimaryInterface.PocoInterface );
                 Debug.Assert( pocoType != null );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );
+                ctorB.Append( pocoType.CSharpBodyConstructorSourceCode );
+
                 foreach( var f in pocoType.Fields )
                 {
-                    tB.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName );
-                    if( f.DefaultValue == null ) tB.Append( ";" );
+                    // Creates the backing field.
+                    tB.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName ).Append(";").NewLine();
+                    // Creates the property.
+                    if( f.IsByRef )
+                    {
+                        tB.Append( "public ref " ).Append( f.Type.CSharpName ).Space().Append( f.Name )
+                          .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+                    }
                     else
                     {
-                        tB.Append( " = " ).Append( f.DefaultValue.ValueCSharpSource ).Append( ";" );
-                    }
-                    tB.NewLine();
-                    if( f.IsCtorInstantiated )
-                    {
-
-                    }
-                    tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
-
-                }
-
-                foreach( var p in family.PropertyList )
-                {
-                    Type propType = p.PropertyType;
-                    bool isUnionType = p.PropertyUnionTypes.Any();
-
-                    var typeName = propType.ToCSharpName();
-                    string fieldName = "_v" + p.Index;
-                    tB.Append( typeName ).Space().Append( fieldName );
-                    if( p.DefaultValue == null ) tB.Append( ";" );
-                    else
-                    {
-                        tB.Append( " = " ).Append( p.DefaultValue.ValueCSharpSource ).Append( ";" );
-                    }
-                    tB.NewLine();
-
-                    tB.Append( "public " ).Append( typeName ).Space().Append( p.PropertyName );
-                   
-                    if( p.IsReadOnly && p.DefaultValue == null )
-                    {
-                        // Generates in constructor.
-                        r.GenerateAutoInstantiatedNewAssignation( ctorB, fieldName, p.PropertyType );
-                    }
-
-                    tB.OpenBlock()
-                      .Append( "get => " ).Append( fieldName ).Append( ";" ).NewLine();
-
-                    if( !p.IsReadOnly )
-                    {
-                        tB.Append( "set" )
-                          .OpenBlock();
-
-                        bool isTechnicallyNullable = p.PropertyNullableTypeTree.Kind.IsTechnicallyNullable();
-                        bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
-
-                        if( isTechnicallyNullable && !isNullable )
+                        tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
+                        if( f.IsReadOnly )
                         {
-                            tB.Append( "if( value == null ) throw new ArgumentNullException();" ).NewLine();
+                            tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                         }
-
-                        if( isUnionType )
+                        else
                         {
-                            if( isNullable )
+                            tB.OpenBlock()
+                              .Append( "get => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine()
+                              .Append( "set" )
+                                .OpenBlock();
+                            if( !f.Type.IsNullable && !f.Type.Type.IsValueType )
                             {
-                                tB.Append( "if( value != null )" )
-                                  .OpenBlock();
+                                tB.Append( "Throw.CheckNotNullArgument( value );" ).NewLine();
                             }
-                            tB.Append( "Type tV = value.GetType();" ).NewLine()
-                                .Append( "if( !_c" ).Append( fieldName )
-                                .Append( ".Any( t => t.IsAssignableFrom( tV ) ))" )
-                                .OpenBlock()
-                                .Append( "throw new ArgumentException( $\"Unexpected Type '{tV}' in UnionType. Allowed types are: " )
-                                .Append( p.PropertyUnionTypes.Select( tU => tU.ToString() ).Concatenate() )
-                                .Append( ".\");" )
-                                .CloseBlock();
-                            if( isNullable )
+                            tB.Append( f.PrivateFieldName ).Append( " = value;" )
+                                .CloseBlock()
+                              .CloseBlock();
+                        }
+                    }
+                    //
+                    foreach( var prop in family.PropertyList[f.Index].DeclaredProperties )
+                    {
+                        if( prop.PropertyType != f.Type.Type )
+                        {
+                            if( prop.PropertyType.IsByRef )
                             {
-                                tB.CloseBlock();
+                                var pType = prop.PropertyType.GetElementType()!;
+                                tB.Append( "ref " ).Append( pType.ToCSharpName() ).Space()
+                                  .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
+                                  .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+                            }
+                            else
+                            {
+                                tB.Append( prop.PropertyType.ToCSharpName() ).Space()
+                                  .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
+                                  .Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+
                             }
                         }
-                        tB.Append( fieldName ).Append( " = value;" )
-                          .CloseBlock();
                     }
-                    tB.CloseBlock();
-
-                    if( isUnionType )
-                    {
-                        tB.Append( "static readonly Type[] _c" ).Append( fieldName ).Append( "=" ).AppendArray( p.PropertyUnionTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
-                    }
-
-
                 }
 
                 // PocoFactory class.

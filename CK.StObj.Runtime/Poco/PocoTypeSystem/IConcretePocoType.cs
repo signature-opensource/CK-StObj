@@ -9,15 +9,15 @@ namespace CK.Setup
     public interface IConcretePocoType : ICompositePocoType, IUnionPocoType<IConcretePocoType>
     {
         /// <summary>
-        /// Gets the poco family.
+        /// Gets the poco family information from the <see cref="IPocoDirectory"/>.
         /// </summary>
-        IPocoFamilyInfo Family { get; }
+        IPocoFamilyInfo FamilyInfo { get; }
 
         /// <summary>
         /// Gets the primary interface.
         /// Can be this poco type.
         /// </summary>
-        IConcretePocoType PrimaryInterface { get; }
+        IPrimaryPocoType PrimaryInterface { get; }
 
         /// <inheritdoc cref="ICompositePocoType.Fields" />
         new IReadOnlyList<IConcretePocoField> Fields { get; }

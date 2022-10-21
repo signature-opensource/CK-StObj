@@ -25,6 +25,13 @@ namespace CK.Setup
         IConcretePocoType? GetConcretePocoType( Type pocoInterface );
 
         /// <summary>
+        /// Gets the primary poco type from its interface.
+        /// </summary>
+        /// <param name="primaryInterface">The IPoco primary interface.</param>
+        /// <returns>The primary poco type or null.</returns>
+        IPrimaryPocoType? GetPrimaryPocoType( Type primaryInterface );
+
+        /// <summary>
         /// Tries to register a new type through a PropertyInfo (this is required for
         /// nullability analysis).
         /// </summary>

@@ -8,6 +8,11 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
     <LangVersion>9.0</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Poco\Json\**" />
+    <EmbeddedResource Remove="Poco\Json\**" />
+    <None Remove="Poco\Json\**" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
     <PackageReference Include="CK.CodeGen.Roslyn" Version="5.0.0" />
     <PackageReference Include="CK.Core" Version="16.0.0" />

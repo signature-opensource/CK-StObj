@@ -16,7 +16,7 @@ namespace CK.StObj.Engine.Tests.Poco.Sample
 
     public interface IEBasicPocoWithReadOnly : IEBasicPoco
     {
-        IList<int> ReadOnlyProperty { get; }
+        List<int> ReadOnlyProperty { get; }
     }
 
     public interface IEAlternateBasicPoco : IBasicPoco

@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
@@ -14,9 +15,10 @@ namespace CK.Setup
             return new PrimaryPocoType( s, family, family.PrimaryInterface.PocoInterface );
         }
 
-        internal sealed class PrimaryPocoType : PocoType, IConcretePocoType
+        internal sealed class PrimaryPocoType : PocoType, IPrimaryPocoType
         {
-            sealed class Null : NullBasicRelay, IConcretePocoType
+
+            sealed class Null : NullReferenceType, IPrimaryPocoType
             {
                 public Null( IPocoType notNullable )
                     : base( notNullable )
@@ -25,63 +27,98 @@ namespace CK.Setup
 
                 new PrimaryPocoType NonNullable => Unsafe.As<PrimaryPocoType>( base.NonNullable );
 
-                public IPocoFamilyInfo Family => NonNullable.Family;
+                public IPocoFamilyInfo FamilyInfo => NonNullable.FamilyInfo;
 
-                public IConcretePocoType PrimaryInterface => NonNullable.PrimaryInterface.Nullable;
+                public IPrimaryPocoType PrimaryInterface => this;
+
+                IConcretePocoType IConcretePocoType.Nullable => this;
+                IConcretePocoType IConcretePocoType.NonNullable => NonNullable;
 
                 public IReadOnlyList<IConcretePocoField> Fields => NonNullable.Fields;
 
-                public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable.AllowedTypes
-                                                                        .Concat( NonNullable.AllowedTypes.Select( t => t.Nullable ) );
-
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
-                IConcretePocoType IConcretePocoType.Nullable => this;
-
-                IConcretePocoType IConcretePocoType.NonNullable => NonNullable;
-
                 ICompositePocoType ICompositePocoType.Nullable => this;
-
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
 
-                IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => this;
+                public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable.PrimaryInterface.Nullable.AllowedTypes;
 
+                IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => this;
                 IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => NonNullable;
+
+                public string CSharpBodyConstructorSourceCode => NonNullable.CSharpBodyConstructorSourceCode;
+
+                IPrimaryPocoType IPrimaryPocoType.Nullable => this;
+
+                IPrimaryPocoType IPrimaryPocoType.NonNullable => NonNullable;
             }
+
+            readonly IPocoFieldDefaultValue _def;
+            [AllowNull]
+            ConcretePocoField[] _fields;
+            [AllowNull]
+            string _ctorCode;
 
             public PrimaryPocoType( PocoTypeSystem s,
-                                     IPocoFamilyInfo family,
-                                     Type primaryInterface )
+                                    IPocoFamilyInfo family,
+                                    Type primaryInterface )
                 : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.IPoco, t => new Null( t ) )
             {
-                Family = family;
+                FamilyInfo = family;
+                _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {CSharpName}()" );
             }
 
-            new Null Nullable => Unsafe.As<Null>( base.Nullable );
+            public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
 
-            public IPocoFamilyInfo Family { get; }
+            new IPrimaryPocoType Nullable => Unsafe.As<IPrimaryPocoType>( base.Nullable );
 
-            public IConcretePocoType PrimaryInterface => this;
+            public IPocoFamilyInfo FamilyInfo { get; }
+
+            public IPrimaryPocoType PrimaryInterface => this;
 
             IConcretePocoType IConcretePocoType.Nullable => Nullable;
 
             IConcretePocoType IConcretePocoType.NonNullable => this;
 
-            [AllowNull]
-            public IReadOnlyList<IConcretePocoField> Fields { get; internal set; }
+            public string CSharpBodyConstructorSourceCode => _ctorCode;
 
-            IReadOnlyList<IPocoField> ICompositePocoType.Fields => Fields;
+            public IReadOnlyList<IConcretePocoField> Fields => _fields;
+
+            internal bool SetFields( IActivityMonitor monitor,
+                                     StringCodeWriter sharedWriter,
+                                     ConcretePocoField[] fields )
+            {
+                _fields = fields;
+                var d = CompositeHelper.CreateDefaultValueInfo( monitor, sharedWriter, this );
+                if( d.IsDisallowed )
+                {
+                    monitor.Error( $"Unable to create '{CSharpName}' constructor code. See previous errors." );
+                    return false;
+                }
+                _ctorCode = d.RequiresInit ? d.DefaultValue.ValueCSharpSource : String.Empty;
+                return true;
+            }
+
+            IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
+
+            public override bool IsWritableType( Type type ) => FamilyInfo.Interfaces.Any( i => i.PocoInterface == type );
+
+            public override bool IsReadableType( Type type ) => IsWritableType( type ) || FamilyInfo.OtherInterfaces.Any( i => i == type );
+
+            [AllowNull]
+            public IEnumerable<IConcretePocoType> AllowedTypes { get; internal set; }
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
 
             ICompositePocoType ICompositePocoType.NonNullable => this;
 
-            [AllowNull]
-            public IEnumerable<IConcretePocoType> AllowedTypes { get; internal set; }
-
             IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => Nullable;
 
             IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => this;
+
+            IPrimaryPocoType IPrimaryPocoType.Nullable => Nullable;
+
+            IPrimaryPocoType IPrimaryPocoType.NonNullable => this;
         }
     }
 

@@ -7,6 +7,7 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 
 using NullabilityInfo = System.Reflection.TEMPNullabilityInfo;
@@ -27,7 +28,7 @@ namespace CK.Setup
         readonly Dictionary<object, PocoType> _cache;
         readonly PocoType _objectType;
         readonly PocoType _stringType;
-        readonly StringCodeWriter _codeWriter;
+        readonly StringCodeWriter _sharedWriter;
         readonly List<PocoType> _allTypes;
         readonly HalfTypeList _exposedAllTypes;
 
@@ -60,19 +61,21 @@ namespace CK.Setup
             };
             _cache.Add( "object", _objectType = PocoType.CreateBasicRef( this, typeof( object ), "object", PocoTypeKind.Any ) );
             _cache.Add( "string", _stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", PocoTypeKind.Basic ) );
-            _codeWriter = new StringCodeWriter();
+            _sharedWriter = new StringCodeWriter();
         }
 
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
 
         public IConcretePocoType? GetConcretePocoType( Type pocoInterface )
         {
-            if( _cache.TryGetValue(pocoInterface, out var result ) )
+            if( _cache.TryGetValue( pocoInterface, out var result ) )
             {
                 return result as IConcretePocoType;
             }
             return null;
         }
+
+        public IPrimaryPocoType? GetPrimaryPocoType( Type primaryInterface ) => GetConcretePocoType( primaryInterface ) as IPrimaryPocoType;
 
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p )
         {
@@ -138,18 +141,6 @@ namespace CK.Setup
             return isNullable ? result.Nullable : result;
         }
 
-        IPocoType? TryRegisterRecordField( IActivityMonitor monitor, MemberContext ctx, NullabilityInfo sub, string fieldName )
-        {
-            var type = TryRegister( monitor, sub, ctx );
-            if( type == null ) return null;
-            if( type.Kind == PocoTypeKind.AnonymousRecord || type.Kind == PocoTypeKind.Record )
-            {
-                monitor.Error( $"Invalid recursive record usage for field {fieldName}. '{type.CSharpName}' cannot appear in a value tuple or record struct. Use intermediate IPoco types to model the data." );
-                return null;
-            }
-            return type;
-        }
-
         PocoType? OnReferenceType( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx )
         {
             Type t = nInfo.Type;
@@ -165,10 +156,16 @@ namespace CK.Setup
             }
             if( typeof( IPoco ).IsAssignableFrom( t ) )
             {
-                monitor.Warn( $"IPoco '{t}' has been excluded." );
-                return null;
+                if( !_cache.TryGetValue( t, out var result ) )
+                {
+                    monitor.Error( $"IPoco '{t}' has been excluded." );
+                }
+                return result;
             }
-            monitor.Error( $"Unsupported Poco type: '{t}'." );
+            else
+            {
+                monitor.Error( $"Unsupported Poco type: '{t}'." );
+            }
             return null;
         }
 
@@ -240,8 +237,13 @@ namespace CK.Setup
             if( nInfo.ReadState == NullabilityState.Nullable )
             {
                 tNull = t;
-                nInfo = nInfo.GenericTypeArguments[0];
-                tNotNull = t;
+                tNotNull = Nullable.GetUnderlyingType( t )!;
+                Debug.Assert( tNotNull != null );
+                // Unfortunately, the NullabityInfo model is not like ours: there is no GenericTypeArguments
+                // for Nullable<>.
+                Debug.Assert( nInfo.GenericTypeArguments.Length == 0 && nInfo.ElementType == null );
+                // This trick is required...
+                nInfo = _nullContext.Create( tNull.GetProperty("Value")! );
             }
             else
             {
@@ -267,7 +269,7 @@ namespace CK.Setup
                 {
                     // New Enum (basic type).
                     // There is necessary the underlying integral type.
-                    result = PocoType.CreateEnum( this, tNotNull, tNull, _cache[tNotNull.GetEnumUnderlyingType()] );
+                    result = PocoType.CreateEnum( monitor, this, tNotNull, tNull, _cache[tNotNull.GetEnumUnderlyingType()] );
                     _cache.Add( tNotNull, result );
                 }
                 else
@@ -287,26 +289,26 @@ namespace CK.Setup
         {
             var subInfos = FlattenValueTuple( nInfo ).ToList();
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
-            var b = _codeWriter.StringBuilder;
-            Debug.Assert( b.Length == 0 );
+            var b = _sharedWriter.StringBuilder;
+            if( b.Length > 0 ) b = new StringBuilder();
             b.Append( '(' );
             int idx = 0;
             foreach( var sub in subInfos )
             {
-                var f = fields[idx];
-                IPocoType? type = TryRegisterRecordField( monitor, ctx, sub, f.Name );
+                var f = fields[idx++];
+                IPocoType? type = TryRegister( monitor, sub, ctx );
                 if( type == null ) return null;
-                if( b.Length == 1 ) b.Append( ',' );
+                if( b.Length != 1 ) b.Append( ',' );
                 b.Append( type.CSharpName );
                 if( !f.IsUnnamed ) b.Append( ' ' ).Append( f.Name );
-                f.Type = type;
+                f.SetType( type );
             }
             b.Append( ')' );
             var typeName = b.ToString();
             b.Clear();
             if( !_cache.TryGetValue( typeName, out var exists ) )
             {
-                exists = PocoType.CreateRecord( this, tNotNull, tNull, typeName, true, fields );
+                exists = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, typeName, true, fields );
                 _cache.Add( typeName, exists );
             }
             return exists;

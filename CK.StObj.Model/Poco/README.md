@@ -161,11 +161,12 @@ support of the support of a union type (the `oneof`) for IPoco property.
 
 The set of Poco compliant type is precisely defined:
 
- - Basic types like `int`, `string`, `Guid`, `DateTime`, etc. The definition is [here](../../CK.StObj.Runtime/Poco/PocoSupportResultExtension.cs#L48).
+ - Basic types: `int`, `long`, `short`, `byte`, `string`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`, `TimeSpan,
+   Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte`. 
+ - Formally `object` is a basic type provided that at runtime, the instance must be a Poco compliant type.
  - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant Poco types.
  - `List<>`, `HashSet<>`, `Dictionary<,>` and array of Poco compliant type.
- - Formally `object` is allowed provided that at runtime, the instance must be a Poco compliant type.
 
 ### The PocoRecord
 
@@ -204,7 +205,7 @@ value tuples cannot be nested. The following is an error:
 ```csharp
 public interface INVALID : IPoco
 {
-    ref (int Power, (string Name, List<int> Values) Rest) Thing { get; }
+    ref (int A, (string Name, List<int> Values) B) Thing { get; }
 }
 ```
 

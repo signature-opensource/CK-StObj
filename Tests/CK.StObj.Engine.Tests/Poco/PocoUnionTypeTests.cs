@@ -200,7 +200,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_when_not_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ), typeof( PocoJsonSerializer ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType )/*, typeof( PocoJsonSerializer )*/ );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -218,8 +218,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // AnotherThing must not be null.
             p.AnotherThing = 3;
-            var p2 = JsonTestHelper.Roundtrip( directory, p );
-            p.Should().BeEquivalentTo( p2 );
+            //var p2 = JsonTestHelper.Roundtrip( directory, p );
+            //p.Should().BeEquivalentTo( p2 );
         }
 
         public class Person { }
@@ -360,7 +360,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_value_types_are_different()
+        public void List_Set_or_Dictionary_of_nullable_and_not_nullable_value_types_are_different()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -384,7 +384,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void IList_ISet_or_IDictionary_of_nullable_and_not_nullable_reference_types_are_considered_different()
+        public void List_Set_or_Dictionary_of_nullable_and_not_nullable_reference_types_are_considered_different()
         {
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
@@ -411,7 +411,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_if_none_of_the_variant_is_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ), typeof( PocoJsonSerializer ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable )/*, typeof( PocoJsonSerializer )*/ );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -425,8 +425,8 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
 
-            var p2 = JsonTestHelper.Roundtrip( directory, p );
-            p.Should().BeEquivalentTo( p2 );
+            //var p2 = JsonTestHelper.Roundtrip( directory, p );
+            //p.Should().BeEquivalentTo( p2 );
         }
 
     }

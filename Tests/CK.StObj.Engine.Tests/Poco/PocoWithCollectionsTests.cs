@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -36,43 +37,35 @@ namespace CK.StObj.Engine.Tests.Poco
             p.GetType().GetProperty( nameof( p.DistinctValues ) ).Should().NotBeWritable();
         }
 
-        public interface IWithListString : IPoco
+        public interface IWithArray : IPoco
         {
-            List<string> L { get; }
+            int[] Array { get; }
         }
 
-        public interface IWithListNullableString : IWithListString
+        public interface IWithArraySetter : IWithArray
         {
-            new List<string?> L { get; }
-        }
-
-        public interface IWithNullableListString : IWithListString
-        {
-            new List<string>? L { get; }
+            new int[] Array { get; set; }
         }
 
         [Test]
-        public void NRT_must_be_the_same_across_Poco_family()
+        public void non_null_Array_property_are_initialized_to_the_Array_Empty()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithListString ), typeof( IWithListNullableString ) );
-            TestHelper.GetFailedResult( c );
-            c = TestHelper.CreateStObjCollector( typeof( IWithListString ), typeof( IWithNullableListString ) );
-            TestHelper.GetFailedResult( c );
-        }
-
-
-        public interface IArrayMustHaveSetter : IPoco
-        {
-            int[] A { get; }
+            var c = TestHelper.CreateStObjCollector( typeof( IWithArray ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var f = s.GetRequiredService<IPocoFactory<IWithArray>>();
+            var p = f.Create();
+            p.Array.Should().BeSameAs( Array.Empty<int>() );
         }
 
         [Test]
-        public void Array_property_cannot_be_auto_instantiated()
+        public void read_only_Array_property_are_definitely_empty()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IArrayMustHaveSetter ) );
-            TestHelper.GetFailedResult( c );
+            var c = TestHelper.CreateStObjCollector( typeof( IWithArray ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var f = s.GetRequiredService<IPocoFactory<IWithArray>>();
+            var p = f.Create();
+            p.Array.Should().BeSameAs( Array.Empty<int>() );
         }
-
 
     }
 }

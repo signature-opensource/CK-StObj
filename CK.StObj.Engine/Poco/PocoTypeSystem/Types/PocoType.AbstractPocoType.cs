@@ -1,3 +1,4 @@
+using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections;
@@ -28,7 +29,7 @@ namespace CK.Setup
             return new AbstractPocoType2( s, tAbstract, abstracts, primaries );
         }
 
-        sealed class NullAbstractPoco : NullBasicRelay, IAbstractPocoType
+        sealed class NullAbstractPoco : NullReferenceType, IAbstractPocoType
         {
             public NullAbstractPoco( IPocoType notNullable )
                 : base( notNullable )
@@ -58,9 +59,9 @@ namespace CK.Setup
             readonly int _abstractCount;
 
             public AbstractPocoType1( PocoTypeSystem s,
-                                     Type tAbstract,
-                                     int abstractCount,
-                                     IReadOnlyList<IPocoType> abstractAndPrimary )
+                                      Type tAbstract,
+                                      int abstractCount,
+                                      IReadOnlyList<IPocoType> abstractAndPrimary )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractIPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstractAndPrimary = abstractAndPrimary;
@@ -82,6 +83,9 @@ namespace CK.Setup
                                                             .Concat( _abstractAndPrimary
                                                                         .Skip( _abstractCount )
                                                                         .SelectMany( p => Unsafe.As<PrimaryPocoType>( p ).AllowedTypes ) );
+
+            public override bool IsWritableType( Type type ) => _abstractAndPrimary.Take( _abstractCount ).Any( a => a.Type == type )
+                                                                || _abstractAndPrimary.Skip(_abstractCount).Any( t => t.IsWritableType( type ) );
 
             IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.Nullable => Nullable;
 
@@ -115,6 +119,10 @@ namespace CK.Setup
 
             public IEnumerable<IPocoType> AllowedTypes => ((IEnumerable<IPocoType>)_abstracts)
                                                             .Concat( _primaries.SelectMany( p => Unsafe.As<PrimaryPocoType>( p ).AllowedTypes ) );
+
+            public override bool IsWritableType( Type type ) => _abstracts.Any( a => a.Type == type )
+                                                                || _primaries.Any( t => t.IsWritableType( type ) );
+
 
             IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.Nullable => Nullable;
 

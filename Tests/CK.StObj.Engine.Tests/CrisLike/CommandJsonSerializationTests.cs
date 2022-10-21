@@ -49,67 +49,67 @@ namespace CK.StObj.Engine.Tests.CrisLike
             string? SimpleValue { get; set; }
         }
 
-        [Test]
-        public void command_json_roundtrip()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ),
-                                                     typeof( CrisCommandDirectoryLike ),
-                                                     typeof( ISimpleCommand ),
-                                                     typeof( IAuthCommand ),
-                                                     typeof( ICriticalCommand ),
-                                                     typeof( IDeviceCommand ),
-                                                     typeof( IFullAuthCommand ),
-                                                     typeof( IFullAuthCommandWithResult ) );
-            using var services = TestHelper.CreateAutomaticServices( c ).Services;
-            Debug.Assert( services != null );
+        //[Test]
+        //public void command_json_roundtrip()
+        //{
+        //    var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ),
+        //                                             typeof( CrisCommandDirectoryLike ),
+        //                                             typeof( ISimpleCommand ),
+        //                                             typeof( IAuthCommand ),
+        //                                             typeof( ICriticalCommand ),
+        //                                             typeof( IDeviceCommand ),
+        //                                             typeof( IFullAuthCommand ),
+        //                                             typeof( IFullAuthCommandWithResult ) );
+        //    using var services = TestHelper.CreateAutomaticServices( c ).Services;
+        //    Debug.Assert( services != null );
 
-            TestRoundTrip<ISimpleCommand>( services );
-            TestRoundTrip<IAuthCommand>( services );
-            TestRoundTrip<ICriticalCommand>( services );
-            TestRoundTrip<IDeviceCommand>( services );
-            TestRoundTrip<IFullAuthCommand>( services );
-            TestRoundTrip<IFullAuthCommandWithResult>( services );
+        //    TestRoundTrip<ISimpleCommand>( services );
+        //    TestRoundTrip<IAuthCommand>( services );
+        //    TestRoundTrip<ICriticalCommand>( services );
+        //    TestRoundTrip<IDeviceCommand>( services );
+        //    TestRoundTrip<IFullAuthCommand>( services );
+        //    TestRoundTrip<IFullAuthCommandWithResult>( services );
 
-            void TestRoundTrip<T>( IServiceProvider services ) where T : class, ICommand
-            {
-                var factory = services.GetRequiredService<IPocoFactory<T>>();
-                var directory = services.GetRequiredService<PocoDirectory>();
+        //    void TestRoundTrip<T>( IServiceProvider services ) where T : class, ICommand
+        //    {
+        //        var factory = services.GetRequiredService<IPocoFactory<T>>();
+        //        var directory = services.GetRequiredService<PocoDirectory>();
 
-                Debug.Assert( factory != null );
+        //        Debug.Assert( factory != null );
 
-                var cmd = factory.Create();
-                // We don't want a common part for this field: use reflection.
-                cmd.GetType().GetProperty( "SimpleValue" )!.SetValue( cmd, "Tested Value" );
-                if( cmd is ICommandAuthUnsafe auth )
-                {
-                    auth.ActorId = 3712;
-                }
-                if( cmd is ICommandAuthDeviceId dev )
-                {
-                    dev.DeviceId = "The device identifier...";
-                }
-                if( cmd is ICommandAuthImpersonation imp )
-                {
-                    imp.ActualActorId = 37123712;
-                }
+        //        var cmd = factory.Create();
+        //        // We don't want a common part for this field: use reflection.
+        //        cmd.GetType().GetProperty( "SimpleValue" )!.SetValue( cmd, "Tested Value" );
+        //        if( cmd is ICommandAuthUnsafe auth )
+        //        {
+        //            auth.ActorId = 3712;
+        //        }
+        //        if( cmd is ICommandAuthDeviceId dev )
+        //        {
+        //            dev.DeviceId = "The device identifier...";
+        //        }
+        //        if( cmd is ICommandAuthImpersonation imp )
+        //        {
+        //            imp.ActualActorId = 37123712;
+        //        }
 
-                var cmd2 = JsonTestHelper.Roundtrip( directory, cmd );
-                Debug.Assert( cmd2 != null );
+        //        var cmd2 = JsonTestHelper.Roundtrip( directory, cmd );
+        //        Debug.Assert( cmd2 != null );
 
-                cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );
-                if( cmd is ICommandAuthUnsafe )
-                {
-                    ((ICommandAuthUnsafe)cmd2).ActorId.Should().Be( 3712 );
-                }
-                if( cmd is ICommandAuthDeviceId )
-                {
-                    ((ICommandAuthDeviceId)cmd2).DeviceId.Should().Be( "The device identifier..." );
-                }
-                if( cmd is ICommandAuthImpersonation )
-                {
-                    ((ICommandAuthImpersonation)cmd2).ActualActorId.Should().Be( 37123712 );
-                }
-            }
-        }
+        //        cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );
+        //        if( cmd is ICommandAuthUnsafe )
+        //        {
+        //            ((ICommandAuthUnsafe)cmd2).ActorId.Should().Be( 3712 );
+        //        }
+        //        if( cmd is ICommandAuthDeviceId )
+        //        {
+        //            ((ICommandAuthDeviceId)cmd2).DeviceId.Should().Be( "The device identifier..." );
+        //        }
+        //        if( cmd is ICommandAuthImpersonation )
+        //        {
+        //            ((ICommandAuthImpersonation)cmd2).ActualActorId.Should().Be( 37123712 );
+        //        }
+        //    }
+        //}
     }
 }

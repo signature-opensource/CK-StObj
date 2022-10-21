@@ -9,7 +9,7 @@ using static CK.Testing.StObjEngineTestHelper;
 namespace CK.StObj.Engine.Tests.Poco
 {
     [TestFixture]
-    public class PocoMaskingPropertiesTests
+    public class PocoCovariantPropertyTests
     {
         [CKTypeDefiner]
         public interface IRootDefiner : IPoco
@@ -32,16 +32,15 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void masking_properties_from_definer_is_NOT_CURRENTLY_possible()
+        public void intrinsic_from_List_to_IReadOnlyList()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IActualRootA ), typeof( IActualSubA ) );
-            TestHelper.GetFailedResult( c );
-            //using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            //var d = s.GetRequiredService<PocoDirectory>();
-            //var fA = d.Find( "CK.StObj.Engine.Tests.Poco.IActualRootA" );
-            //Debug.Assert( fA != null ); 
-            //var a = (IActualRootA)fA.Create();
-            //a.Lines.Should().BeOfType<IActualSubA>();
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var fA = d.Find( "CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IActualRootA" );
+            Debug.Assert( fA != null );
+            var a = (IActualRootA)fA.Create();
+            a.Lines.Should().BeOfType<List<IActualSubA>>();
         }
 
     }

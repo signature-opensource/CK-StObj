@@ -8,6 +8,11 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
     <LangVersion>9</LangVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Poco\Json\**" />
+    <EmbeddedResource Remove="Poco\Json\**" />
+    <None Remove="Poco\Json\**" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
     <PackageReference Include="CK.CodeGen" Version="5.0.0" />
     <PackageReference Include="CK.Reflection" Version="9.0.2" />

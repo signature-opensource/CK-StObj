@@ -4,28 +4,21 @@ namespace CK.Setup
     {
         readonly IPocoPropertyInfo _p;
         readonly IPocoType _type;
-        readonly IPocoFieldDefaultValue? _defaultValue;
+        readonly DefaultValueInfo _defInfo;
 
-        public ConcretePocoField( IPocoPropertyInfo p, IPocoType type, bool readOnly, IPocoFieldDefaultValue? defaultValue )
+        public ConcretePocoField( IPocoPropertyInfo p, IPocoType type, bool readOnly, bool byRef, IPocoFieldDefaultValue? defaultValue )
         {
             _p = p;
             _type = type;
-            // If we have no default and the type is a non nullable string, we
-            // set the empty string as the default.
-            if( (_defaultValue = defaultValue) == null
-                && !type.IsNullable && type.Kind == PocoTypeKind.Basic && type.Type == typeof( string ) )
-            {
-                _defaultValue = PocoFieldDefaultValue.StringDefault;
-            }
+            _defInfo = defaultValue != null ? new DefaultValueInfo(defaultValue) : type.DefaultValueInfo;
             PrivateFieldName = $"_v{Index}";
-            IsCtorInstantiated = readOnly && defaultValue == null;
+            IsReadOnly = readOnly;
+            IsByRef = byRef;
         }
 
         public int Index => _p.Index;
 
         public string Name => _p.Name;  
-
-        public IPocoFieldDefaultValue? DefaultValue => _defaultValue;
 
         public IPocoPropertyInfo Property => _p;
 
@@ -33,6 +26,10 @@ namespace CK.Setup
 
         public IPocoType Type => _type;
 
-        public bool IsCtorInstantiated { get; }
+        public DefaultValueInfo DefaultValueInfo => _defInfo;
+
+        public bool IsReadOnly { get; }
+
+        public bool IsByRef { get; }
     }
 }

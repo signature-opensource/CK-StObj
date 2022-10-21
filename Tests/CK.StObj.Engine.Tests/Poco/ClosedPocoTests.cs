@@ -96,7 +96,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
                 pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
                     .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface ).Should().BeEquivalentTo(
+                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface.PocoInterface ).Should().BeEquivalentTo(
                     new[] { typeof( IDocumentCloPoc ), typeof( IUserCloPoc ) } );
 
                 pocoSupportResult.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
@@ -209,7 +209,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 var c = TestHelper.CreateStObjCollector( typeof( IExtendNotClosedByDesign ), typeof( IAnotherExtendNotClosedByDesign ) );
                 using var services = TestHelper.CreateAutomaticServices( c ).Services;
                 var f = services.GetRequiredService<IPocoFactory<IExtendNotClosedByDesign>>();
-                f.Name.Should().Be( "CK.StObj.Engine.Tests.Poco.ClosedPocoTests+INotClosedByDesign" );
+                f.Name.Should().Be( "CK.StObj.Engine.Tests.Poco.ClosedPocoTests.INotClosedByDesign" );
                 f.Interfaces.Should().HaveCount( 3 );
                 f.IsClosedPoco.Should().BeFalse();
                 f.ClosureInterface.Should().BeNull();

@@ -47,7 +47,7 @@ namespace CK.Setup
         IPocoInterfaceInfo PrimaryInterface { get; }
 
         /// <summary>
-        /// Gets the IPoco interface that "closes" all these <see cref="Interfaces"/>: this interface "unifies"
+        /// Gets the IPoco interface type that "closes" all these <see cref="Interfaces"/>: this type "unifies"
         /// all the other ones.
         /// If <see cref="IsClosedPoco"/> is true, then this is necessarily not null.
         /// </summary>

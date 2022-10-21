@@ -67,21 +67,42 @@ namespace CK.Setup
             _cache.Add( typeof( IPoco ), all );
             var allClosed = PocoType.CreateAbstractPoco( this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
             _cache.Add( typeof( IClosedPoco ), allClosed );
-            // Now that all IPoco are known, we can analyze their properties.
+            // Now that all IPoco are known, we can set their fields.
             var builder = new PocoPropertyBuilder( this );
+            bool success = true;
             foreach( var p in allPrimaries )
             {
-                Debug.Assert( p.PocoFamily != null );
-                ConcretePocoField[] fields = new ConcretePocoField[p.PocoFamily.Properties.Count];
-                foreach( var prop in p.PocoFamily.Properties.Values )
+                Debug.Assert( p.FamilyInfo != null );
+                ConcretePocoField[] fields = new ConcretePocoField[p.FamilyInfo.Properties.Count];
+                foreach( var prop in p.FamilyInfo.Properties.Values )
                 {
-                    var f = builder.TryCreate( monitor, prop );
+                    var f = builder.Build( monitor, prop );
                     if( f == null ) return false;
                     fields[prop.Index] = f;
                 }
-                p.Fields = fields;
+                success &= p.SetFields( monitor, _sharedWriter, fields );
             }
-            return true;
+            // If no error occurred, we can now detect any instantiation cycle error.
+            // We handle only IPoco since collection items are not instantiated
+            // and records are struct: a cycle in struct is not possible.
+            // If we support mutable classes as "class records", then this will have
+            // to be revisited.
+            if( success )
+            {
+                var detector = new PocoType.InstantiationCycleVisitor();
+                foreach( var p in allPrimaries )
+                {
+                    detector.VisitRoot( monitor, p );
+                    if( detector.Cycle.Count > 0 )
+                    {
+                        var cycle = detector.Cycle.Select( c => $"{Environment.NewLine}'{c.Typed}', field: {c.FieldPath.Select( f => f.Name ).Concatenate( "." )} => " );
+                        monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'{p.CSharpName}'." );
+                        success = false;
+                        break;
+                    }
+                }
+            }
+            return success;
         }
 
         PocoType EnsureAbstract( IPocoDirectory poco,

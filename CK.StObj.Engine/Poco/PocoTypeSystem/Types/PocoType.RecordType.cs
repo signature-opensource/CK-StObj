@@ -1,5 +1,8 @@
+using CK.CodeGen;
+using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -8,26 +11,21 @@ namespace CK.Setup
     partial class PocoType
     {
 
-        internal static RecordType CreateRecord( PocoTypeSystem s,
+        internal static RecordType CreateRecord( IActivityMonitor monitor,
+                                                 PocoTypeSystem s,
+                                                 StringCodeWriter sharedWriter,
                                                  Type tNotNull,
                                                  Type tNull,
                                                  string typeName,
                                                  bool isAnonymous,
                                                  RecordField[] fields )
         {
-            return new RecordType( s, tNotNull, tNull, typeName, isAnonymous ? PocoTypeKind.AnonymousRecord : PocoTypeKind.Record, fields );
+            return new RecordType( monitor, s, sharedWriter, tNotNull, tNull, typeName, isAnonymous, fields );
         }
 
         internal sealed class RecordType : PocoType, IRecordPocoType
         {
-            public RecordType( PocoTypeSystem s, Type tNotNull, Type tNull, string typeName, PocoTypeKind typeKind, RecordField[] fields )
-                : base( s, tNotNull, typeName, typeKind, t => new Null( t, tNull ) )
-            {
-                Fields = fields;
-                RequiresInit = fields.Any( f => f.DefaultValue != null || (f.Type.Kind != PocoTypeKind.Basic && !f.Type.IsNullable) );
-            }
-
-            sealed class Null : NullBasicWithType, IRecordPocoType
+            sealed class Null : NullValueType, IRecordPocoType
             {
                 public Null( IPocoType notNullable, Type tNull )
                     : base( notNullable, tNull )
@@ -53,11 +51,34 @@ namespace CK.Setup
                 public bool RequiresInit => false;
             }
 
+            readonly RecordField[] _fields;
+            readonly DefaultValueInfo _defInfo;
+
+            public RecordType( IActivityMonitor monitor,
+                               PocoTypeSystem s,
+                               StringCodeWriter sharedWriter,
+                               Type tNotNull,
+                               Type tNull,
+                               string typeName,
+                               bool isAnonymous,
+                               RecordField[] fields )
+                : base( s,
+                        tNotNull,
+                        typeName,
+                        isAnonymous ? PocoTypeKind.AnonymousRecord : PocoTypeKind.Record,
+                        t => new Null( t, tNull ) )
+            {
+                _fields = fields;
+                _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, sharedWriter, this );
+            }
+
+            public override DefaultValueInfo DefaultValueInfo => _defInfo;
+
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
 
-            public IReadOnlyList<IRecordPocoField> Fields { get; }
+            public IReadOnlyList<IRecordPocoField> Fields => _fields;
 
-            IReadOnlyList<IPocoField> ICompositePocoType.Fields => Fields;
+            IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
 
@@ -65,11 +86,10 @@ namespace CK.Setup
 
             public bool IsAnonymous => Kind == PocoTypeKind.AnonymousRecord;
 
-            public bool RequiresInit { get; }
-
             IRecordPocoType IRecordPocoType.Nullable => Nullable;
 
             IRecordPocoType IRecordPocoType.NonNullable => this;
         }
+
     }
 }

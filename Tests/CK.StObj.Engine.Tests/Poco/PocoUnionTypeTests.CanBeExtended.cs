@@ -145,7 +145,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_types_can_be_extendable_as_long_as_CanBeExtended_is_specified()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis ), typeof( PocoJsonSerializer ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IPoco1 ), typeof( IPoco2 ), typeof( IPoco2Bis )/*, typeof( PocoJsonSerializer )*/ );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -162,8 +162,8 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>( "Null is forbidden." );
             p.Invoking( x => x.Thing = new Dictionary<string,object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
 
-            var p2 = JsonTestHelper.Roundtrip( directory, p, text: t => TestHelper.Monitor.Info( t ) );
-            p.Should().BeEquivalentTo( p2 );
+            //var p2 = JsonTestHelper.Roundtrip( directory, p, text: t => TestHelper.Monitor.Info( t ) );
+            //p.Should().BeEquivalentTo( p2 );
 
             // AnotherThing allows int, double?, string? and List<string?>?
             p.AnotherThing = 34;
@@ -175,8 +175,8 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Invoking( x => x.AnotherThing = (Decimal)555 ).Should().Throw<ArgumentException>( "Not an allowed type." );
             p.Invoking( x => x.AnotherThing = new Dictionary<string, object>() ).Should().Throw<ArgumentException>( "Not an allowed type." );
 
-            var p3 = JsonTestHelper.Roundtrip( directory, p );
-            p.Should().BeEquivalentTo( p3 );
+            //var p3 = JsonTestHelper.Roundtrip( directory, p );
+            //p.Should().BeEquivalentTo( p3 );
         }
 
 

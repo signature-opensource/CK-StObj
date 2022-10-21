@@ -12,6 +12,18 @@ namespace CK.StObj.Engine.Tests.Poco
     [TestFixture]
     public class PocoValueTupleTests
     {
+        public interface IInvalidValueTupleSetter : IPoco
+        {
+            (int Count, string Name) Thing { get; set; }
+        }
+
+        [Test]
+        public void anonymous_record_must_be_a_ref_property()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalidValueTupleSetter ) );
+            TestHelper.GetFailedResult( c );
+        }
+
         public interface IWithValueTuple : IPoco
         {
             (int Count, string Name) Thing { get; set; }

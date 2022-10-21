@@ -4,6 +4,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Common type of <see cref="IConcretePocoType"/> and <see cref="IRecordPocoType"/>.
+    /// A composite has one or more <see cref="IPocoField"/> named and indexed fields.
     /// </summary>
     public interface ICompositePocoType : IPocoType
     {

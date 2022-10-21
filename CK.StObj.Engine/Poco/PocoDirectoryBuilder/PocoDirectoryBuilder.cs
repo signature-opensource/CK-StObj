@@ -25,21 +25,21 @@ namespace CK.Setup
         sealed class InterfaceEntry
         {
             public readonly Type Type;
-            public readonly InterfaceEntry Root;
+            public readonly InterfaceEntry Primary;
             public readonly List<Type>? RootCollector;
 
-            public InterfaceEntry( Type type, InterfaceEntry? root )
+            public InterfaceEntry( Type type, InterfaceEntry? primary )
             {
                 Type = type;
-                if( root != null )
+                if( primary != null )
                 {
-                    Debug.Assert( root.RootCollector != null, "The root centralizes the collector." );
-                    Root = root;
-                    root.RootCollector.Add( type );
+                    Debug.Assert( primary.RootCollector != null, "The root centralizes the collector." );
+                    Primary = primary;
+                    primary.RootCollector.Add( type );
                 }
                 else
                 {
-                    Root = this;
+                    Primary = this;
                     RootCollector = new List<Type>() { type };
                 }
             }
@@ -94,7 +94,7 @@ namespace CK.Setup
             {
                 p = TryCreateInterfaceEntry( monitor, t );
                 _all.Add( t, p );
-                if( p != null && p.Root == p ) _result.Add( p.RootCollector! );
+                if( p != null && p.Primary == p ) _result.Add( p.RootCollector! );
             }
             return p;
         }
@@ -106,7 +106,7 @@ namespace CK.Setup
                 monitor.Warn( $"Poco interface '{t.AssemblyQualifiedName}' is excluded." );
                 return null;
             }
-            InterfaceEntry? theOnlyRoot = null;
+            InterfaceEntry? singlePrimary = null;
             foreach( Type b in t.GetInterfaces() )
             {
                 if( b == typeof( IPoco ) || b == typeof( IClosedPoco ) ) continue;
@@ -126,18 +126,18 @@ namespace CK.Setup
                     // Errors are detected by a collector on the monitor anyway.
                     if( baseType == null ) continue;
                     // Detect multiple root Poco.
-                    if( theOnlyRoot != null )
+                    if( singlePrimary != null )
                     {
-                        if( theOnlyRoot != baseType.Root )
+                        if( singlePrimary != baseType.Primary )
                         {
-                            monitor.Fatal( $"Poco interface '{t.AssemblyQualifiedName}' extends both '{theOnlyRoot.Type.Name}' and '{baseType.Root.Type.Name}' (via '{baseType.Type.Name}')." );
+                            monitor.Fatal( $"Poco interface '{t.AssemblyQualifiedName}' extends both '{singlePrimary.Type.Name}' and '{baseType.Primary.Type.Name}' (via '{baseType.Type.Name}')." );
                             return null;
                         }
                     }
-                    else theOnlyRoot = baseType.Root;
+                    else singlePrimary = baseType.Primary;
                 }
             }
-            return new InterfaceEntry( t, theOnlyRoot );
+            return new InterfaceEntry( t, singlePrimary );
         }
 
         /// <summary>
@@ -281,6 +281,7 @@ namespace CK.Setup
             var properties = new Dictionary<string, PocoPropertyInfo>();
             var propertyList = new List<PocoPropertyInfo>();
             List<PropertyInfo>? externallyImplementedPropertyList = null;
+            List<string>? dimPropertyNames = null;
 
             // This is required to handle "abstract" IPoco (CKTypeDefiner "base type"): interfaces list
             // contains only actual IPoco, the expanded set contains the closure of all the interfaces.
@@ -347,39 +348,81 @@ namespace CK.Setup
             // For each expanded interfaces (all of them: the Interfaces and the OtherInterfaces):
             // - Implements the interface on the PocoClass (tB).
             // - Registers the properties and creates the PocoPropertyInfo.
-            bool hasPropertyError = false;
+            bool success = true;
+            int uniquePropertyIndex = 0;
             foreach( var i in expanded )
             {
                 tB.AddInterfaceImplementation( i );
 
-                foreach( var p in i.GetProperties() )
+                var propertyInfos = i.GetProperties();
+                foreach( var p in propertyInfos )
                 {
-                    // As soon as a property claims to be implemented, we remove it from the PocoProperties.
-                    if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
+                    // Handle stupidity early.
+                    if( !p.CanRead )
                     {
-                        externallyImplementedPropertyList ??= new List<PropertyInfo>();
-                        externallyImplementedPropertyList.Add( p );
-                        if( properties.TryGetValue( p.Name, out var implP ) )
-                        {
-                            propertyList.RemoveAt( implP.Index );
-                            for( int idx = implP.Index; idx < propertyList.Count; ++idx )
-                            {
-                                --propertyList[idx].Index;
-                            }
-                        }
+                        monitor.Error( $"Poco property '{i}.{p.Name}' cannot be read. This is forbidden." );
+                        success = false;
                     }
                     else
                     {
-                        hasPropertyError &= HandlePocoProperty( monitor, properties, propertyList, i, p );
-                    }
-                    if( !hasPropertyError )
-                    {
-                        // Always implement the stub as long as there is no error.
-                        EmitHelper.ImplementStubProperty( tB, p, isVirtual: false, alwaysImplementSetter: false );
+                        Debug.Assert( p.GetMethod != null );
+                        // As soon as a property claims to be implemented, we remove it from the PocoProperties.
+                        //
+                        // C#8 introduced Default Implementation Methods (DIM). It MUST be an "AutoImplementationClaim":
+                        // they don't appear as Poco properties. This perfectly fits the DIM design: they can be called only
+                        // through the interface, not from the implementing class nor from other interfaces.
+                        //
+                        // One could be tempted here to support some automatic (intelligent?) support for this like for
+                        // instance a [SharedImplementation] attributes that will make the DIM visible (and relayed to the DIM
+                        // implementation) from the other Poco interfaces. This is not really difficult and de facto implement
+                        // a multiple inheritance capability... However, I'm a bit reluctant to do this since this would transform
+                        // IPoco from a DTO structure to an Object beast. Such IPoco become far less "exchangeable" with the external
+                        // world since they would lost their behavior. The funny Paradox here is that this would not be a real issue
+                        // with "real" Methods that do things: nobody will be surprised to have "lost" these methods in Type Script,
+                        // but for DIM properties (typically computed values) this will definitely be surprising. In practice, the
+                        // code would often has to be transfered "on the other side", with the data...
+                        //
+                        // Choosing here to NOT play the multiple inheritance game is clearly the best choice (at least for me :)).
+                        //
+
+                        if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
+                        {
+                            bool isDIM = (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0;
+                            if( isDIM )
+                            {
+                                monitor.Info( $"Property '{i}.{p.Name}' is a valid Default Implemented Method (DIM) with a [AutoImplementationClaim] attribute." );
+                                dimPropertyNames ??= new List<string>();
+                                dimPropertyNames.Add( p.Name );
+
+                            }
+                            else
+                            {
+                                monitor.Info( $"Property '{i}.{p.Name}' has a [AutoImplementationClaim] attribute. The property implementation won't be automatically generated." );
+                            }
+                            externallyImplementedPropertyList ??= new List<PropertyInfo>();
+                            externallyImplementedPropertyList.Add( p );
+                            if( properties.TryGetValue( p.Name, out var implP ) )
+                            {
+                                propertyList.RemoveAt( implP.Index );
+                                for( int idx = implP.Index; idx < propertyList.Count; ++idx )
+                                {
+                                    --propertyList[idx].Index;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            success &= HandlePocoProperty( monitor, properties, propertyList, ref dimPropertyNames, i, p );
+                        }
+                        if( success )
+                        {
+                            // Always implement the stub as long as there is no error.
+                            ImplementInterfaceProperty( tB, p, uniquePropertyIndex++ );
+                        }
                     }
                 }
             }
-            if( hasPropertyError ) return null;
+            if( !success ) return null;
 
             var tPoCo = tB.CreateType();
             Debug.Assert( tPoCo != null );
@@ -393,27 +436,78 @@ namespace CK.Setup
         static bool HandlePocoProperty( IActivityMonitor monitor,
                                         Dictionary<string, PocoPropertyInfo> properties,
                                         List<PocoPropertyInfo> propertyList,
-                                        Type interfaceType,
-                                        PropertyInfo info )
+                                        ref List<string>? dimPropertyNames,
+                                        Type tInterface,
+                                        PropertyInfo p )
         {
-            Debug.Assert( info.DeclaringType == interfaceType );
-            // Handle stupidity early.
-            if( !info.CanRead )
+            Debug.Assert( p.DeclaringType == tInterface && p.GetMethod != null );
+
+            if( (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0 )
             {
-                monitor.Error( $"Poco property '{interfaceType}.{info.Name}' cannot be read. This is forbidden." );
+                monitor.Error( $"Property '{tInterface}.{p.Name}' is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
+                dimPropertyNames ??= new List<string>();
+                dimPropertyNames.Add( p.Name );
+                if( properties.TryGetValue( p.Name, out var implP ) )
+                {
+                    monitor.Error( $"{implP}: all '{implP.Name}' properties must all be DIM and use the [AutoImplementationClaim] attribute." );
+                    return false;
+                }
+            }
+
+            if( dimPropertyNames != null && dimPropertyNames.Any( dim => dim == p.Name ) )
+            {
+                monitor.Error( $"Property {tInterface}.{p.Name} has a Default Implementation Method (DIM). To be supported, all '{p.Name}' properties must be DIM and use the [AutoImplementationClaim] attribute." );
                 return false;
             }
+
             // Creates the PocoPropertyInfo if this is the first PocoPropertyImpl
-            if( !properties.TryGetValue( info.Name, out var pocoProperty ) )
+            if( !properties.TryGetValue( p.Name, out var pocoProperty ) )
             {
                 // New property.
-                pocoProperty = new PocoPropertyInfo( propertyList.Count, info.Name );
-                properties.Add( info.Name, pocoProperty );
+                pocoProperty = new PocoPropertyInfo( propertyList.Count, p.Name );
+                properties.Add( p.Name, pocoProperty );
                 propertyList.Add( pocoProperty );
             }
-            pocoProperty.DeclaredProperties.Add( info );
+            pocoProperty.DeclaredProperties.Add( p );
             return true;
         }
 
+
+        static PropertyBuilder ImplementInterfaceProperty( TypeBuilder tB, PropertyInfo property, int uid )
+        {
+            var pType = property.PropertyType.IsByRef
+                            ? property.PropertyType.GetElementType()!
+                            : property.PropertyType;
+            FieldBuilder backField = tB.DefineField( "_" + property.Name + uid, pType, FieldAttributes.Private );
+
+            MethodInfo? getMethod = property.GetMethod;
+            MethodBuilder? mGet = null;
+            if( getMethod != null )
+            {
+                MethodAttributes mA = getMethod.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.VtableLayoutMask);
+                mGet = tB.DefineMethod( getMethod.Name, mA, property.PropertyType, Type.EmptyTypes );
+                ILGenerator g = mGet.GetILGenerator();
+                g.LdArg( 0 );
+                g.Emit( OpCodes.Ldfld, backField );
+                g.Emit( OpCodes.Ret );
+            }
+            MethodInfo? setMethod = property.SetMethod;
+            MethodBuilder? mSet = null;
+            if( setMethod != null )
+            {
+                MethodAttributes mA = setMethod.Attributes & ~(MethodAttributes.Abstract | MethodAttributes.VtableLayoutMask);
+                mSet = tB.DefineMethod( setMethod.Name, mA, typeof( void ), new[] { property.PropertyType } );
+                ILGenerator g = mSet.GetILGenerator();
+                g.LdArg( 0 );
+                g.LdArg( 1 );
+                g.Emit( OpCodes.Stfld, backField );
+                g.Emit( OpCodes.Ret );
+            }
+
+            PropertyBuilder p = tB.DefineProperty( property.Name, property.Attributes, property.PropertyType, Type.EmptyTypes );
+            if( mGet != null ) p.SetGetMethod( mGet );
+            if( mSet != null ) p.SetSetMethod( mSet );
+            return p;
+        }
     }
 }

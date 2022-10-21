@@ -18,7 +18,6 @@ namespace CK.StObj.Engine.Tests.Poco
     [TestFixture]
     public class PocoTests
     {
-
         [StObj( ItemKind = DependentItemKindSpec.Container )]
         public class PackageWithBasicPoco : IRealObject
         {
@@ -146,13 +145,12 @@ namespace CK.StObj.Engine.Tests.Poco
             float? PDef { get; set; }
         }
 
-        [Test]
-        public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same()
+        [TestCase( typeof( IDefPropInt ), typeof( IDefPropFloat ) )]
+        [TestCase( typeof( IDefPropNullableFloat ), typeof( IDefPropFloat ) )]
+        public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same( Type t1, Type t2 )
         {
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDefPropInt ), typeof( IDefPropFloat ) ) );
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDefPropNullableFloat ), typeof( IDefPropFloat ) ) );
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( t1, t2 ) );
         }
-
 
         public interface IDefTestMaskedBaseProperties : IDefTest
         {
@@ -199,17 +197,42 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c );
         }
 
-        public interface IInvalidNoDefaultValue : IPoco
+        public interface IInvalidDefaultValue1 : IPoco
         {
             [DefaultValue( "bug" )]
             IDef1 Auto { get; }
         }
 
-        [Test]
-        public void DefaultValueAttribute_must_not_exist_on_AutoInstantiated_properties()
+        public interface IInvalidDefaultValue2 : IPoco
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IInvalidNoDefaultValue ), typeof( IDef1 ) );
-            TestHelper.GetFailedResult( c );
+            [DefaultValue( 3712 )]
+            string Auto { get; }
+        }
+
+        public interface IInvalidDefaultValue3 : IPoco
+        {
+            [DefaultValue( "" )]
+            int Auto { get; }
+        }
+
+        public interface IInvalidDefaultValue4 : IPoco
+        {
+            [DefaultValue( typeof(DateTime), "2021-01-31" )]
+            int Auto { get; }
+        }
+
+        [TestCase( typeof( IInvalidDefaultValue1 ) )]
+        [TestCase( typeof( IInvalidDefaultValue2 ) )]
+        [TestCase( typeof( IInvalidDefaultValue3 ) )]
+        [TestCase( typeof( IInvalidDefaultValue4 ) )]
+        public void DefaultValueAttribute_and_property_type_must_match( Type t )
+        {
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Error ) )
+            {
+                var c = TestHelper.CreateStObjCollector( t, typeof( IDef1 ) );
+                TestHelper.GetFailedResult( c );
+                logs.Select( e => e.Text ).Should().Contain(  t => t.StartsWith( "Invalid DefaultValue attribute" ) );
+            }
         }
 
         public interface IRootTest : IPoco

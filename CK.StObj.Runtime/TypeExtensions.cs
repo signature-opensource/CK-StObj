@@ -25,18 +25,20 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the <see cref="ExternalNameAttribute.Name"/> if it exists or the <see cref="Type.FullName"/>.
+        /// Gets the <see cref="ExternalNameAttribute.Name"/> if it exists or this <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
+        /// with the default true parameters: withNamespace, typeDeclaration and useValueTupleParentheses.
         /// </summary>
         /// <param name="t">This type.</param>
         /// <returns>The name to use to identify the type.</returns>
-        public static string GetExternalNameOrFullName( this Type t )
+        public static string GetExternalNameOrCSharpName( this Type t )
         {
-            return (string?)GetAttributeData( t )?.ConstructorArguments[0].Value ?? t.FullName!;
+            return (string?)GetAttributeData( t )?.ConstructorArguments[0].Value ?? t.ToCSharpName();
         }
 
         /// <summary>
-        /// Gets the <see cref="ExternalNameAttribute"/> names or this <see cref="Type.FullName"/>.
-        /// Emits a warning if the full name is used, and errors if the name exists and is invalid.
+        /// Gets the <see cref="ExternalNameAttribute"/> names or this <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
+        /// with the default true parameters: withNamespace, typeDeclaration and useValueTupleParentheses.
+        /// Emits a warning if the C# name is used, and errors if the name exists and is invalid.
         /// </summary>
         /// <param name="t">This type.</param>
         /// <param name="monitor">The monitor to use.</param>
@@ -69,9 +71,9 @@ namespace CK.Setup
             }
             else
             {
-                name = t.FullName!;
+                name = t.ToCSharpName();
                 previousNames = Array.Empty<string>();
-                monitor.Warn( $"Type '{name}' use its full name as its name since no [ExternalName] attribute is defined." );
+                monitor.Warn( $"Type '{name}' use its full CSharpName as its name since no [ExternalName] attribute is defined." );
             }
             return true;
         }

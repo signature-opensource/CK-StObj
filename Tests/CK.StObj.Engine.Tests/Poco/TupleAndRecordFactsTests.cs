@@ -61,8 +61,8 @@ namespace CK.StObj.Engine.Tests.Poco
             //    Error CS1612  Cannot modify the return value of 'Class1.RefTupleSample.ByValTuple' because it is not a variable.
             //  - Tuple as a whole can be set: respect of the nullability rules
             //    are under caller responsibility.
-            Debug.Assert( t.ByValTuple.Values == null );
-            //t.CopyTuple.Name = "Hello!";
+            Debug.Assert( t.ByValTuple.Values != null );
+            // t.CopyTuple.Name = "Hello!";
             t.ByValTuple = (5, "Five", new List<int>());
             Debug.Assert( t.ByValTuple.Name == "Five" );
             // Setting "Hello", preserving the other fields requires to 
@@ -96,3 +96,4 @@ namespace CK.StObj.Engine.Tests.Poco
             c = c with { Name = "Pouet" };
         }
     }
+}

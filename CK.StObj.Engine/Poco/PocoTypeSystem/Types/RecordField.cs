@@ -1,50 +1,55 @@
+using CK.CodeGen;
+using CK.Core;
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
-    public sealed class RecordField : IRecordPocoField
+    sealed class RecordField : IRecordPocoField
     {
         [AllowNull]
         IPocoType _type;
+        DefaultValueInfo _defInfo;
 
-        public RecordField( int index, string? rawName, IPocoFieldDefaultValue? defaultValue = null )
+        public RecordField( int index, string? name, IPocoFieldDefaultValue? defaultValue = null )
         {
             Index = index;
-            if( rawName == null )
+            if( name == null )
             {
                 Name = $"Item{index + 1}";
                 IsUnnamed = true;
             }
             else
             {
-                Name = rawName;
+                Name = name;
             }
-            DefaultValue = defaultValue;
+            if( defaultValue != null )
+            {
+                _defInfo = new DefaultValueInfo( defaultValue );
+            }
         }
 
         public int Index { get; }
 
         public string Name { get; }
 
-        public IPocoFieldDefaultValue? DefaultValue { get; private set; }
-
         public bool IsUnnamed { get; }
 
-        public IPocoType Type
+        public IPocoType Type => _type;
+
+        public DefaultValueInfo DefaultValueInfo => _defInfo;
+
+        internal void SetType( IPocoType t )
         {
-            get => _type;
-            internal set
+            Debug.Assert( _type == null && t != null );
+            _type = t;
+            if( _defInfo.IsDisallowed )
             {
-                Debug.Assert( _type == null && value != null );
-                _type = value;
-                // If we have no default and the type is a non nullable string, we
-                // set the empty string as the default.
-                if( DefaultValue == null && !value.IsNullable && value.Kind == PocoTypeKind.Basic && value.Type == typeof( string ) )
-                {
-                    DefaultValue = PocoFieldDefaultValue.StringDefault;
-                }
+                _defInfo = _type.DefaultValueInfo;
             }
         }
+
+        public override string ToString() => $"{(_type == null ? "(no type)" : _type)} {Name}";
     }
 }

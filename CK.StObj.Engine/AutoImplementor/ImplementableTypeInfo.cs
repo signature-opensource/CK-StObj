@@ -97,10 +97,10 @@ namespace CK.Setup
                        || m.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) );
             }
 
-            if( monitor == null ) throw new ArgumentNullException( nameof( monitor ) );
-            if( abstractType == null ) throw new ArgumentNullException( nameof( abstractType ) );
-            if( !abstractType.IsClass || !abstractType.IsAbstract ) throw new ArgumentException( "Type must be an abstract class.", nameof( abstractType ) );
-            if( attributeProvider == null ) throw new ArgumentNullException( nameof( attributeProvider ) );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckNotNullArgument( abstractType );
+            Throw.CheckArgument( abstractType.IsClass && abstractType.IsAbstract );
+            Throw.CheckNotNullArgument( attributeProvider );
 
             if( abstractType.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( PreventAutoImplementationAttribute ) ) )
             {

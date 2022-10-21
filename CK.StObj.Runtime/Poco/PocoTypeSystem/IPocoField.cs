@@ -26,12 +26,9 @@ namespace CK.Setup
         IPocoType Type { get; }
 
         /// <summary>
-        /// Gets the default value if a <see cref="System.ComponentModel.DefaultValueAttribute"/> is defined
-        /// or if a positional parameter of a record struct has a default value.
-        /// <para>
-        /// For IPoco, when the default value is defined by more than one IPoco interface, it must be the same.
-        /// </para>
+        /// Gets whether this field is disallowed in a owner, always allowed or
+        /// allowed but requires the <see cref="DefaultValueInfo.DefaultValue"/> to be set.
         /// </summary>
-        IPocoFieldDefaultValue? DefaultValue { get; }
+        DefaultValueInfo DefaultValueInfo { get; }
     }
 }
