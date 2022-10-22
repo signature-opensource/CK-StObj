@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using CommunityToolkit.HighPerformance.Helpers;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
@@ -22,8 +23,9 @@ namespace CK.Setup
     {
         readonly NullabilityInfoContext _nullContext;
         // Indexed by:
-        //  - Type: for value types (non nullable type only, basic types and record struct) and IPoco (the interface types).
-        //  - CSharpName: for anonymous records (Value Tuples) and reference types (because of nullabilities:
+        //  - Type: for value types (non nullable types only), record struct, IPoco (the interface types)
+        //          and non generic and non collection types.
+        //  - CSharpName: for anonymous records (Value Tuples) and collection types (because of nullabilities:
         //                the ? marker does the job).
         readonly Dictionary<object, PocoType> _cache;
         readonly PocoType _objectType;
@@ -60,11 +62,28 @@ namespace CK.Setup
                 { typeof(sbyte), PocoType.CreateBasicValue(this, typeof(sbyte), typeof(sbyte?), "sbyte") }
             };
             _cache.Add( "object", _objectType = PocoType.CreateBasicRef( this, typeof( object ), "object", PocoTypeKind.Any ) );
+            _cache.Add( _objectType.Type, _objectType );
             _cache.Add( "string", _stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", PocoTypeKind.Basic ) );
+            _cache.Add( _stringType.Type, _stringType );
             _sharedWriter = new StringCodeWriter();
         }
 
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
+
+        public IReadOnlyList<IPocoType> AllNonNullableTypes => _allTypes;
+
+        public IPocoType? FindByType( Type type )
+        {
+            if( type.IsValueType )
+            {
+                var tNotNull = Nullable.GetUnderlyingType( type );
+                if( tNotNull != null )
+                {
+                    return _cache.GetValueOrDefault( tNotNull )?.Nullable;
+                }
+            }
+            return _cache.GetValueOrDefault( type );
+        }
 
         public IConcretePocoType? GetConcretePocoType( Type pocoInterface )
         {
@@ -111,11 +130,6 @@ namespace CK.Setup
                 Debug.Assert( nullabilityInfo.WriteState == NullabilityState.Unknown );
                 var result = OnValueType( monitor, t, nullabilityInfo, root );
                 if( result == null ) return null;
-                if( result.Kind != PocoTypeKind.AnonymousRecord && result.Kind != PocoTypeKind.Record )
-                {
-                    monitor.Error( $"Invalid '{root}': ref properties must be used only for record. '{result.CSharpName}' is not a Value Tuple nor a record struct." );
-                    return null;
-                }
                 return nullabilityInfo.ReadState == NullabilityState.NotNull ? result : result.Nullable;
             }
             return TryRegister( monitor, nullabilityInfo, root );
@@ -144,8 +158,6 @@ namespace CK.Setup
         PocoType? OnReferenceType( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx )
         {
             Type t = nInfo.Type;
-            if( t == typeof( object ) ) return _objectType;
-            if( t == typeof( string ) ) return _stringType;
             if( t.IsSZArray )
             {
                 return OnArray( monitor, t, nInfo, ctx );
@@ -154,13 +166,13 @@ namespace CK.Setup
             {
                 return OnGenericType( monitor, t, nInfo, ctx );
             }
+            if( _cache.TryGetValue( t, out var result ) )
+            {
+                return result;
+            }
             if( typeof( IPoco ).IsAssignableFrom( t ) )
             {
-                if( !_cache.TryGetValue( t, out var result ) )
-                {
-                    monitor.Error( $"IPoco '{t}' has been excluded." );
-                }
-                return result;
+                monitor.Error( $"IPoco '{t}' has been excluded." );
             }
             else
             {
@@ -277,9 +289,7 @@ namespace CK.Setup
                 else
                 {
                     // May be a new "record struct".
-                    // Lifts the nInfo if required.
-                    if( t == tNull ) nInfo = _nullContext.Create( tNull.GetProperty( "Value" )! );
-                    result = OnValueTypeRecordStruct( monitor, nInfo, ctx, tNull, tNotNull );
+                    result = OnValueTypeRecordStruct( monitor, ctx, tNull, tNotNull );
                     if( result == null )
                     {
                         monitor.Error( $"Unsupported Poco value type: '{tNotNull}'." );
@@ -335,14 +345,67 @@ namespace CK.Setup
             }
         }
 
-        PocoType? OnValueTypeRecordStruct( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx, Type tNull, Type tNotNull )
+        PocoType? OnValueTypeRecordStruct( IActivityMonitor monitor, MemberContext ctx, Type tNull, Type tNotNull )
         {
             // Record struct are not decorated by any special attribute.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
-            monitor.Error( $"Record struct (fully mutable value type) are not yet supported: {ctx}." );
-            return null;
+            Debug.Assert( tNotNull.IsValueType );
+            // The struct has properties. It may be a C#10 record struct with positional parameters syntax:
+            // the parameters can define the default value.
+            var ctors = tNotNull.GetConstructors();
+            if( ctors.Length > 1 )
+            {
+                monitor.Error( $"More than one constructor found for record struct '{tNotNull}': at most one constructor must be specified for record struct." );
+                return null;
+            }
+            var ctorParams = ctors.Length == 1 ? ctors[0].GetParameters() : null;
+
+            var propertyInfos = tNotNull.GetProperties();
+            var fieldInfos = tNotNull.GetFields();
+            var fields = new RecordField[propertyInfos.Length + fieldInfos.Length];
+            for( int i = 0; i < propertyInfos.Length; i++ )
+            {
+                var pInfo = propertyInfos[i];
+                if( !pInfo.CanWrite && !pInfo.PropertyType.IsByRef )
+                {
+                    monitor.Error( $"Property '{pInfo.DeclaringType}.{pInfo.Name}' is readonly. A record struct must be fully mutable." );
+                    return null;
+                }
+                var f = CreateField( monitor, i, Register( monitor, pInfo ), pInfo, ctorParams );
+                if( f == null ) return null;
+                fields[i] = f;
+            }
+            int idx = propertyInfos.Length;
+            for( int i = 0; i < fieldInfos.Length; i++ )
+            {
+                var fInfo = fieldInfos[i];
+                if( fInfo.IsInitOnly )
+                {
+                    monitor.Error( $"Field '{fInfo.DeclaringType}.{fInfo.Name}' is readonly. A record struct must be fully mutable." );
+                    return null;
+                }
+                var f = CreateField( monitor, idx, Register( monitor, fInfo ), fInfo, ctorParams );
+                if( f == null ) return null;
+                fields[idx++] = f;
+            }
+            var r = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, tNotNull.ToCSharpName(), false, fields );
+            _cache.Add( tNotNull, r );
+            return r;
         }
 
+        RecordField? CreateField( IActivityMonitor monitor, int idx, IPocoType? type, MemberInfo fInfo, ParameterInfo[]? ctorParams )
+        {
+            if( type == null ) return null;
+            var defValue = FieldDefaultValue.CreateFromAttribute( monitor, _sharedWriter, fInfo );
+            if( defValue == null && ctorParams != null )
+            {
+                var p = ctorParams.FirstOrDefault( p => p.Name == fInfo.Name );
+                if( p != null ) defValue = FieldDefaultValue.CreateFromParameter( monitor, _sharedWriter, p );
+            }
+            var field = new RecordField( idx, fInfo.Name, defValue );
+            field.SetType( type );
+            return field;
+        }
     }
 
 }

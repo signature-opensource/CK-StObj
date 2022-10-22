@@ -27,23 +27,23 @@ namespace CK.Setup
 
         static string WriteSourceValue( object value, StringCodeWriter w )
         {
-            Debug.Assert( w.StringBuilder.Length == 0 );
+            if( w.StringBuilder.Length != 0 ) w = new StringCodeWriter();
             var source = w.Append( value ).ToString();
             w.StringBuilder.Clear();
             return source;
         }
 
-        public static bool TryCreate( IActivityMonitor monitor, StringCodeWriter codeWriter, ParameterInfo definer, out FieldDefaultValue? defaultValue )
+        public static FieldDefaultValue? CreateFromParameter( IActivityMonitor monitor,
+                                                              StringCodeWriter codeWriter,
+                                                              ParameterInfo definer )
         {
-            defaultValue = null;
-            if( !definer.HasDefaultValue || definer.DefaultValue == null ) return true;
-            defaultValue = new FieldDefaultValue( definer.DefaultValue, codeWriter );
-            return true;
+            if( !definer.HasDefaultValue || definer.DefaultValue == null ) return null;
+            return new FieldDefaultValue( definer.DefaultValue, codeWriter );
         }
 
         public static FieldDefaultValue? CreateFromAttribute( IActivityMonitor monitor,
-                                                                  StringCodeWriter sharedCodeWriter,
-                                                                  MemberInfo definer )
+                                                              StringCodeWriter sharedCodeWriter,
+                                                              MemberInfo definer )
         {
             // Use the conversion from the constructor for the value.
             var a = definer.GetCustomAttribute<DefaultValueAttribute>();

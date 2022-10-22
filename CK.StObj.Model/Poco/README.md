@@ -172,7 +172,7 @@ The set of Poco compliant type is precisely defined:
 
 A PocoRecord is a mutable struct. It aims to capture "micro local types". They are detailed below.
 
-#### ValueTuple
+#### ValueTuple: the AnonymousRecord
 
 A value tuple is like an anonymous type that locally defines a small structure. The following
 pattern is quite common:
@@ -186,8 +186,7 @@ However, there's something wrong here about nullability. Despites the non nullab
 null by default and absolutely no warning of any kind will help the developer see this.
 Another aspect that can be surprising is that a ValueTuple is a... value type. Its individual fields cannot be set independently:
 the whole tuple has to be reassigned to a new one. Care must be taken to copy the "previous" other field values from the original
-one.
-In a IPoco, value tuples must be `ref` properties:
+one. To solve this value tuples and mutable structs must be `ref` properties in a `IPoco`:
 ```csharp
 public interface IWithValueTuple : IPoco
 {
@@ -200,20 +199,20 @@ initial Values will be a ready-to-use empty list).
 > The `ref` enables the individual fields to be set and the tuple then becomes a "local" sub type, an
 > "anonymous record". 
 
-To unify the "data shape" (with the `ref`) and preserve the semantics of the "initial value for non nullable fields",
-value tuples cannot be nested. The following is an error:
+Value tuples can be nested:
 ```csharp
 public interface INVALID : IPoco
 {
     ref (int A, (string Name, List<int> Values) B) Thing { get; }
 }
 ```
+Here again, the non nullable `Name` will be the empty string and the `Values` will be iniitalized to an empty list.
 
 For more information on value tuple and more specifically their field names, please read this excellent
 analysis: http://mustoverride.com/tuples_names/. The Poco framework handles the field names so that
 they can be exploited by de/serializers and importers/exporters if needed.
 
-#### The "record struct"
+#### Mutable structs: the "Record"
 The `record struct` introduced in C#10 used with the positional parameters syntax is quite isomorph to a
 ValueTuple since they are mutable value types with 2 added benefits:
 - the default parameter values naturally express the field default value;
@@ -255,24 +254,63 @@ public record Person
 Note the `default!` that explicitly breaks the "not nullable" contracts to avoid warnings... In the IPoco,
 since there is no `[DefaultValue]`, the empty string is used by default.
 
-#### "record struct" and Value Tuples are "PocoRecord"
+#### Fully mutable structs are "Record"
 Value Tuples and `record struct` are finally the same for the Poco framework: they are value types that
 share the same restrictions:
 - Must be fully mutable.
 - Must be exposed by `ref` properties on `IPoco`.
-- Must contain only Poco compliant field types except other Records.
+- Must contain only Poco compliant field types.
 
-They can appear in collections.
+A simple struct is valid under conditions:
+- Readonly field or properties are forbidden.
+- There must be at most one constructor. Their default parameter value if any is used as the default 
+  corresponding field or property value.  
 
-> Composing PocoRecord requires intermediate `IPoco` types.
+These are valid Poco record definitions:
+```csharp
+public record struct ThingDetail( int Power, List<int> Values, string Name = "Albert" );
+
+public struct DetailWithFields
+{
+    [DefaultValue( 42 )]
+    public int Power;
+
+    public List<int> Values;
+
+    [DefaultValue( "Hip!" )]
+    public string Name;
+}
+
+public struct DetailWithProperties
+{
+    [DefaultValue( 3712 )]
+    public int Power { get; set; }
+
+    public List<int> Values { get; set; }
+
+    [DefaultValue( "Hop!" )]
+    public string Name { get; set; }
+}
+```
+Nesting has no limit... except the readability. The following Poco is valid and note that all the
+non null defaults are correctly initialized:
+```csharp
+public interface IWithComplexRecords : IPoco
+{
+    public record struct Funny( DetailWithProperties FP, (string S, (DetailWithProperties P, DetailWithFields F) Inner ) A );
+
+    ref (DetailWithFields F, DetailWithProperties P) A { get; }
+
+    ref (Funny Funny, IWithComplexRecords? Next) B { get; }
+}
+```
 
 ### The "standard collections
 IPoco can expose `T[]`, `List<T>`, `HashSet<T>` and `Dictionary<TKey,TValue>` where `T`, `TKey`
 and `TValue` are Poco compliant types.
 A `List<(string Name, Dictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
 
-Note that only these 3 types are supported. Abstractions like `IReadOnlyList<T>` are not allowed to appear in
-any type definition.
+Note that only these 4 concrete types are supported.
 
 ### IPoco properties
 
@@ -283,7 +321,7 @@ Whether they are writable or read only, a non nullable property type requires an
 
 #### Non nullable properties: the initial value
 
-Nullable properties are the simple to handle: their initial value is always the `default` for
+Nullable properties are easy: their initial value is always the `default` for
 the type and that is null for reference types.
 
 Non nullable properties MUST have an initial value. For value type, this is not an issue since here again
@@ -296,8 +334,8 @@ The only true basic type that is a reference type is the `string`, the
 [`[DefaultValue]`](https://learn.microsoft.com/en-us/dotnet/api/system.componentmodel.defaultvalueattribute)
 attribute must then be used to provide a default value. The empty string being a quite natural "default" for a
 non nullable string, if no `[DefaultValue]` exists, the empty string is automatically used.
-The other basic type that is a reference type is the `object`: there MUST be a `[DefaultValue]` attribute
-defined for all non nullable `object`.
+The other basic type that is a reference type is the `object`: if it's not an "Abstract Read Only Property" (see below)
+there MUST be a `[DefaultValue]` attribute defined for all non nullable `object` properties.
 
 For any other non nullable property types (records, collection, IPoco) the constructor must be
 able to synthesize a default instance.
@@ -315,7 +353,7 @@ in a writable form on other interfaces. When this happens, the "writable wins": 
 property is actually writable. The read only definitions become "hidden" by the writable ones
 ans we call them "Abstract Read Only Properties".
 
-All writable definitions of the same property must be exactly the same: they are strictly type invariants
+**All writable definitions of the same property must be exactly the same**: they are strictly type invariants
 (including nullability).
 
 A read only property that has a writable definition somewhere in the Poco family becomes "Abstract": its type
@@ -329,22 +367,19 @@ by exposing read only properties:
     `int Identifier {get ; set; }` for a family and by `string Identifier { get; set; } for another one
     (this is supported).
   - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `List<Y> Things { get; }` where X 
-    is assignable from Y (this is NOT supported).
+    is assignable from Y (this is supported but only when Y and X a reference types).
 
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
-specification). Current implementation prohibits this because it is not as easy as it seems to implement (for
-instance `IReadOnlyList<object>` on a `List<int>`: value types requires an adapter, a wrapper instance, even
+specification). Current implementation allows only these 2 cases, because it is not as easy as it seems to implement, for
+instance:
+- `IReadOnlyList<object>` on a `List<int>`: value types requires an adapter, a wrapper instance, even
 if `typeof(object).IsAssignableFrom( typeof(int) )` is true,
 `typeof(IReadOnlyList<object>).IsAssignableFrom( typeof(IReadOnlyList<int>) )` is false).
+- `IReadOnlySet<T>` and `IDictionary<TKey,TValue>` are not covariant on `T` or `TValue`. Here again adapters
+are required. 
 
-
-True "Abstract Read Only Properties" support is not currently implemented. As of today, their type must
-be exactly the same as the writable one except:
-- that their nullability can differ: a nullable read only is compliant with its not nullable writable (the revert is not true).
-- that their type can be object: this is the ultimate variance support and is currently the only supported one.
-
-> Abstract readonly property MAY be supported for records: these properties would have to be regular properties
-> (not `ref` properties) and may contain a subset of the writable fields.
+> Abstract readonly property MAY be supported for records in the future: these properties would have to be regular properties
+> (not `ref` properties otherwise they would be writable properties) and may contain a subset of the writable fields.
 
 When all definitions of a property are read only (no writable appears in the family), this property is either:
   - Nullable... and it keeps its default null value forever. This is _stupid_. 

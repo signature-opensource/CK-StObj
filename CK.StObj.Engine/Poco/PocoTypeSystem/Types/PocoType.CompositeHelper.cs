@@ -86,7 +86,7 @@ namespace CK.Setup
                         if( fInfo.IsDisallowed ) return OnDisallowed( monitor, type, f );
                         Debug.Assert( fInfo.RequiresInit );
                         // Configure the default instance.
-                        if( !TrySetFieldOnDefaultValueInstance( monitor, type, oValue, f, fInfo.DefaultValue ) )
+                        if( !TrySetFieldOnDefaultValueInstance( monitor, type, oValue, f, fInfo.DefaultValue.Value ) )
                         {
                             return DefaultValueInfo.Disallowed;
                         }
@@ -97,7 +97,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            w.OpenBlock();
+                            w.Append( "new()" ).OpenBlock();
                             atLeasOne = true;
                         }
                         w.Append( f.Name ).Append( " = " ).Append( fInfo.DefaultValue.ValueCSharpSource );
@@ -170,9 +170,9 @@ namespace CK.Setup
                                                                    StringCodeWriter sharedWriter,
                                                                    IConcretePocoType type )
             {
-                Debug.Assert( sharedWriter.StringBuilder.Length == 0 );
-                var r = DoCreateDefaultValueInfo( monitor, sharedWriter, type );
-                sharedWriter.StringBuilder.Clear();
+                var w = sharedWriter.StringBuilder.Length == 0 ? sharedWriter : new StringCodeWriter();
+                var r = DoCreateDefaultValueInfo( monitor, w, type );
+                w.StringBuilder.Clear();
                 return r;
 
                 static DefaultValueInfo DoCreateDefaultValueInfo( IActivityMonitor monitor,

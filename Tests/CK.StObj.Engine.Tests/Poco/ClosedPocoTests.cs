@@ -72,7 +72,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var all = TestHelper.CreateAutomaticServices( c );
             try
             {
-                var pocoSupportResult = all.CollectorResult.CKTypeResult.PocoSupport;
+                var pocoSupportResult = all.CollectorResult.CKTypeResult.PocoDirectory;
                 Debug.Assert( pocoSupportResult != null );
                 pocoSupportResult.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoDirectory() );
                 var services = all.Services;

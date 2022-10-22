@@ -226,7 +226,7 @@ namespace CK.Setup
             using( _monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoDirectory? pocoDirectory;
-                PocoTypeSystem? pocoTypeSystem;
+                PocoTypeSystem pocoTypeSystem = new PocoTypeSystem(); 
                 using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
                     pocoDirectory = _pocoBuilder.Build( _tempAssembly, _monitor );
@@ -245,7 +245,6 @@ namespace CK.Setup
                 }
                 using( _monitor.OpenInfo( "Initializing Poco Type System." ) )
                 {
-                    pocoTypeSystem = new PocoTypeSystem();
                     if( !pocoTypeSystem.Initialize( pocoDirectory, _monitor ) )
                     {
                         _monitor.CloseGroup( "Failed" );
@@ -264,7 +263,7 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( contracts );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoDirectory, contracts, services, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoDirectory, pocoTypeSystem, contracts, services, _regularTypeCollector, this );
             }
         }
 

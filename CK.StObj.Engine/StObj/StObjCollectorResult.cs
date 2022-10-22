@@ -38,6 +38,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the result of the types discovery and analysis.
+        /// This exposes the <see cref="CKTypeCollectorResult.PocoDirectory"/> and <see cref="CKTypeCollectorResult.PocoTypeSystem"/>.
         /// </summary>
         public CKTypeCollectorResult CKTypeResult { get; }
 

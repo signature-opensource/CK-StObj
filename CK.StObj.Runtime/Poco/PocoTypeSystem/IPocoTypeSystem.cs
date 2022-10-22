@@ -13,10 +13,26 @@ namespace CK.Setup
     public interface IPocoTypeSystem
     {
         /// <summary>
-        /// Gets all the registered non nullable types by their <see cref="IPocoType.Index"/>.
+        /// Gets all the registered types by their <see cref="IPocoType.Index"/>.
+        /// This contains both nullable and non nullable types.
         /// </summary>
         IReadOnlyList<IPocoType> AllTypes { get; }
 
+        /// <summary>
+        /// Gets all the registered non nullable types.
+        /// </summary>
+        IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
+
+        /// <summary>
+        /// Tries to find a Poco type from an actual type.
+        /// Anonymous <see cref="IRecordPocoType"/> cannot be found by this method.
+        /// When the <paramref name="type"/> is a reference type, its non nullable
+        /// Poco type is returned.
+        /// </summary>
+        /// <param name="type">The type to find.</param>
+        /// <returns>The Poco type or null.</returns>
+        IPocoType? FindByType( Type type );
+        
         /// <summary>
         /// Gets the concrete poco type from one of its interfaces.
         /// </summary>

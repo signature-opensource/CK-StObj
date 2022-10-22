@@ -72,7 +72,7 @@ namespace CK.StObj.Engine.Tests.Poco
             StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
             collector.RegisterType( typeof( IThing ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
-            var poco = collector.GetResult().CKTypeResult.PocoSupport;
+            var poco = collector.GetResult().CKTypeResult.PocoDirectory;
             Debug.Assert( poco != null, "Since there has been no error." );
             poco.Families.Should().HaveCount( 1 );
 
