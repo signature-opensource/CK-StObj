@@ -197,14 +197,7 @@ namespace CK.Setup
             bool Add( IActivityMonitor monitor, PropertyInfo p )
             {
                 Debug.Assert( _prop != null );
-                if( !p.CanWrite && !p.PropertyType.IsByRef )
-                {
-                    if( _best != null && !CheckNewReadOnly( monitor, p, null ) )
-                    {
-                        return false;
-                    }
-                }
-                else
+                if( p.CanWrite || p.PropertyType.IsByRef )
                 {
                     if( _best == null )
                     {
@@ -227,8 +220,34 @@ namespace CK.Setup
                             return false;
                         }
                     }
+                    // On success, always check that a record must be a ref property and that
+                    // any other type must be a regular property.
+                    Debug.Assert( _finalType != null );
+                    Debug.Assert( _finalType is not IRecordPocoType || _finalType.Type.IsValueType, "IRecordPocoType => ValueType." );
+                    if( _finalType is IRecordPocoType )
+                    {
+                        if( !p.PropertyType.IsByRef )
+                        {
+                            monitor.Error( $"Property '{p.DeclaringType}.{p.Name}' must be a ref property: 'ref {_finalType.CSharpName} {p.Name} {{ get; }}'." );
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        if( p.PropertyType.IsByRef )
+                        {
+                            monitor.Error( $"Property '{p.DeclaringType}.{p.Name}' is not a record, it must be a regular property with a setter: '{_finalType.CSharpName} {p.Name} {{ get; set; }}'." );
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                if( _best != null && !CheckNewReadOnly( monitor, p, null ) )
+                {
+                    return false;
                 }
                 return true;
+
             }
 
             bool CheckNewWritable( IActivityMonitor monitor, PropertyInfo p )

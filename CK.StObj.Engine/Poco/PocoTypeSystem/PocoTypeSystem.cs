@@ -239,11 +239,10 @@ namespace CK.Setup
                 tNull = t;
                 tNotNull = Nullable.GetUnderlyingType( t )!;
                 Debug.Assert( tNotNull != null );
-                // Unfortunately, the NullabityInfo model is not like ours: there is no GenericTypeArguments
-                // for Nullable<>.
-                Debug.Assert( nInfo.GenericTypeArguments.Length == 0 && nInfo.ElementType == null );
-                // This trick is required...
-                nInfo = _nullContext.Create( tNull.GetProperty("Value")! );
+                // The NullabityInfo model is not like ours: there is no GenericTypeArguments
+                // for Nullable<T> when T is not a generic type.
+                // If nInfo must be used below it has to be lifted with the following trick:
+                // if( t == tNull ) nInfo = _nullContext.Create( tNull.GetProperty("Value")! );
             }
             else
             {
@@ -254,6 +253,8 @@ namespace CK.Setup
             // For other value types, the key is the (non null) type.
             if( tNotNull.IsValueTuple() )
             {
+                Debug.Assert( tNotNull.GetGenericArguments().Length == nInfo.GenericTypeArguments.Length );
+                if( t == tNull ) nInfo = _nullContext.Create( tNull.GetProperty( "Value" )! );
                 // Anonymous record: the CSharpName is the key and it can
                 // be found in the cache or a new one is created.
                 return OnValueTypeAnonymousRecord( monitor, nInfo, ctx, tNull, tNotNull );
@@ -263,6 +264,7 @@ namespace CK.Setup
                 // No known generic value type is supported.
                 if( tNotNull.IsGenericType )
                 {
+                    Debug.Assert( tNotNull.GetGenericArguments().Length == nInfo.GenericTypeArguments.Length );
                     monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
                 }
                 else if( tNotNull.IsEnum )
@@ -275,6 +277,8 @@ namespace CK.Setup
                 else
                 {
                     // May be a new "record struct".
+                    // Lifts the nInfo if required.
+                    if( t == tNull ) nInfo = _nullContext.Create( tNull.GetProperty( "Value" )! );
                     result = OnValueTypeRecordStruct( monitor, nInfo, ctx, tNull, tNotNull );
                     if( result == null )
                     {

@@ -1,22 +1,15 @@
-using System.Collections.Generic;
-
-namespace CK.Setup
+﻿namespace CK.Setup
 {
     /// <summary>
-    /// Union type of a given <typeparamref name="T"/> Poco type.
+    /// Union type of Poco types.
     /// </summary>
-    public interface IUnionPocoType<out T> : IPocoType where T : IPocoType
+    public interface IUnionPocoType : IUnionPocoType<IPocoType>
     {
-        /// <summary>
-        /// Gets the set of allowed types.
-        /// </summary>
-        IEnumerable<T> AllowedTypes { get; }
-
         /// <inheritdoc cref="IPocoType.Nullable" />
-        new IUnionPocoType<T> Nullable { get; }
+        new IUnionPocoType Nullable { get; }
 
         /// <inheritdoc cref="IPocoType.NonNullable" />
-        new IUnionPocoType<T> NonNullable { get; }
+        new IUnionPocoType NonNullable { get; }
     }
 
 }
