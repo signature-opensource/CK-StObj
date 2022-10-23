@@ -26,11 +26,9 @@ namespace CK.Setup
                 _path = new List<List<IPocoField>>();
             }
 
-            public IReadOnlyList<IReadOnlyList<IPocoField>> Cycle => _path;
-
             public bool CheckValid( IActivityMonitor monitor )
             {
-                if( Cycle.Count > 0 )
+                if( _typedPathCount > 0 )
                 {
                     var cycle = _path.Select( c => $"{Environment.NewLine}'{c[0].Owner}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' => " );
                     monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'{_path[0][0].Owner}'." );
@@ -38,6 +36,7 @@ namespace CK.Setup
                 }
                 return true;
             }
+
             protected override void OnStartVisit( IActivityMonitor monitor, IPocoType root )
             {
                 // Reuse the allocated lists as much as possible.
@@ -84,15 +83,16 @@ namespace CK.Setup
 
             void PopPath( bool isAnonymous )
             {
-                Debug.Assert( _path.Count > 0 );
+                Debug.Assert( _typedPathCount > 0 && _path.Count >= _typedPathCount );
                 if( isAnonymous )
                 {
-                    var p = _path[_path.Count - 1];
+                    var p = _path[_typedPathCount - 1];
                     p.RemoveAt( p.Count - 1 );
                 }
                 else
                 {
-                    Debug.Assert( _path[_typedPathCount].Count == 0 );
+                    Debug.Assert( _path[_typedPathCount - 1].Count == 1 );
+                    _path[_typedPathCount - 1].Clear();
                     --_typedPathCount;
                 }
             }
@@ -102,12 +102,12 @@ namespace CK.Setup
                 bool isAnonymous = field.Owner is IRecordPocoType r && r.IsAnonymous;
                 if( isAnonymous )
                 {
-                    Debug.Assert( _path.Count > 0 );
-                    _path[_path.Count - 1].Add( field );
+                    Debug.Assert( _typedPathCount > 0 );
+                    _path[_typedPathCount - 1].Add( field );
                 }
                 else
                 {
-                    if( _typedPathCount++ == _path.Count )
+                    if( _typedPathCount == _path.Count )
                     {
                         _path.Add( new List<IPocoField> { field } );
                     }
@@ -116,6 +116,7 @@ namespace CK.Setup
                         Debug.Assert( _path[_typedPathCount].Count == 0 );
                         _path[_typedPathCount].Add( field ); 
                     }
+                    _typedPathCount++;
                 }
                 return isAnonymous;
             }
