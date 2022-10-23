@@ -1,9 +1,9 @@
-﻿namespace CK.Setup
+namespace CK.Setup
 {
     /// <summary>
-    /// Union type of Poco types.
+    /// Union type of Poco types. In .Net this is a simple <c>object</c>.
     /// </summary>
-    public interface IUnionPocoType : IUnionPocoType<IPocoType>
+    public interface IUnionPocoType : IAnyOfPocoType<IPocoType>
     {
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IUnionPocoType Nullable { get; }

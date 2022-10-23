@@ -16,6 +16,5 @@ namespace CK.Setup
 
         /// <inheritdoc cref="IPocoType.NonNullable" />
         new IEnumPocoType NonNullable { get; }
-
     }
 }

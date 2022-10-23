@@ -9,8 +9,9 @@ namespace CK.Setup
     /// <summary>
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
     /// are available in <see cref="LastVisited"/>.
-    /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/> and
-    /// <see cref="IConcretePocoType.PrimaryInterface"/> are followed.
+    /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/>,
+    /// <see cref="IConcretePocoType.PrimaryInterface"/> and <see cref="IUnionPocoType"/>'s
+    /// <see cref="IAnyOfPocoType{T}.AllowedTypes"/> are followed.
     /// </summary>
     public class PocoTypeVisitor
     {
@@ -26,7 +27,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the types that have been visited once during the current
-        /// or last <see cref="VisitRoot(IPocoType)"/>.
+        /// or last <see cref="VisitRoot(IActivityMonitor, IPocoType)"/>.
         /// </summary>
         public IReadOnlySet<IPocoType> LastVisited => _visited;
 
@@ -78,6 +79,7 @@ namespace CK.Setup
                 case IAbstractPocoType abstractPoco: VisitAbstractPoco( monitor, abstractPoco ); break;
                 case ICollectionPocoType collection: VisitCollection( monitor, collection ); break;
                 case IRecordPocoType record: VisitRecord( monitor, record ); break;
+                case IUnionPocoType union: VisitUnion( monitor, union ); break;
                 default:
                     Debug.Assert( t.GetType().Name == "PocoType" || t.GetType().Name == "BasicTypeWithDefaultValue" );
                     VisitBasic( monitor, t );
@@ -99,22 +101,21 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="IConcretePocoField.Fields"/>, calling <see cref="VisitField(IActivityMonitor, ICompositePocoType, IPocoField)"/>.
+        /// Visits the <see cref="ICompositePocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="primary">A primary poco type.</param>
         protected virtual void VisitPrimaryPoco( IActivityMonitor monitor, IPrimaryPocoType primary )
         {
-            foreach( var f in primary.Fields ) VisitField( monitor, primary, f );
+            foreach( var f in primary.Fields ) VisitField( monitor, f );
         }
 
         /// <summary>
         /// Visits the <see cref="IPocoField.Type"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="field">The field's owner.</param>
         /// <param name="field">The record or poco field.</param>
-        protected virtual void VisitField( IActivityMonitor monitor, ICompositePocoType owner, IPocoField field )
+        protected virtual void VisitField( IActivityMonitor monitor, IPocoField field )
         {
             Visit( monitor, field.Type );
         }
@@ -146,17 +147,27 @@ namespace CK.Setup
         /// <param name="collection"></param>
         protected virtual void VisitCollection( IActivityMonitor monitor, ICollectionPocoType collection )
         {
-            foreach( var itemType in collection.ItemTypes ) Visit( monitor, itemType);
+            foreach( var itemType in collection.ItemTypes ) Visit( monitor, itemType );
         }
 
         /// <summary>
-        /// Visits the <see cref="IRecordPocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, ICompositePocoType, IPocoField)"/>.
+        /// Visits the <see cref="IAnyOfPocoType{T}.AllowedTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="union"></param>
+        protected virtual void VisitUnion( IActivityMonitor monitor, IUnionPocoType union )
+        {
+            foreach( var itemType in union.AllowedTypes ) Visit( monitor, itemType );
+        }
+
+        /// <summary>
+        /// Visits the <see cref="IRecordPocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="record">A record type.</param>
         protected virtual void VisitRecord( IActivityMonitor monitor, IRecordPocoType record)
         {
-            foreach( var f in record.Fields ) VisitField( monitor, record, f );
+            foreach( var f in record.Fields ) VisitField( monitor, f );
         }
 
         /// <summary>

@@ -168,7 +168,7 @@ namespace CK.Setup
             /// </summary>
             public static DefaultValueInfo CreateDefaultValueInfo( IActivityMonitor monitor,
                                                                    StringCodeWriter sharedWriter,
-                                                                   IConcretePocoType type )
+                                                                   IPrimaryPocoType type )
             {
                 var w = sharedWriter.StringBuilder.Length == 0 ? sharedWriter : new StringCodeWriter();
                 var r = DoCreateDefaultValueInfo( monitor, w, type );
@@ -177,7 +177,7 @@ namespace CK.Setup
 
                 static DefaultValueInfo DoCreateDefaultValueInfo( IActivityMonitor monitor,
                                                                   StringCodeWriter w,
-                                                                  IConcretePocoType type )
+                                                                  IPrimaryPocoType type )
                 {
                     bool atLeasOne = false;
                     foreach( var f in type.Fields )

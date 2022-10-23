@@ -1,6 +1,5 @@
 namespace CK.Setup
 {
-
     /// <summary>
     /// A field of a <see cref="IRecordPocoType"/> can have no name
     /// when its owner's <see cref="IRecordPocoType.IsAnonymous"/> is true.

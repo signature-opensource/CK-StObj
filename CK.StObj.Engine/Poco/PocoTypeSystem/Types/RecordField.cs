@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -10,6 +11,8 @@ namespace CK.Setup
     {
         [AllowNull]
         IPocoType _type;
+        [AllowNull]
+        PocoType.RecordType _owner;
         DefaultValueInfo _defInfo;
 
         public RecordField( int index, string? name, IPocoFieldDefaultValue? defaultValue = null )
@@ -40,6 +43,8 @@ namespace CK.Setup
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
+        public ICompositePocoType Owner => _owner;
+
         internal void SetType( IPocoType t )
         {
             Debug.Assert( _type == null && t != null );
@@ -50,6 +55,12 @@ namespace CK.Setup
             }
         }
 
+        internal void SetOwner( PocoType.RecordType record )
+        {
+            _owner = record;
+        }
+
         public override string ToString() => $"{(_type == null ? "(no type)" : _type)} {Name}";
+
     }
 }

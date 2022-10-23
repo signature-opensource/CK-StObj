@@ -32,17 +32,12 @@ namespace CK.Setup
                 IConcretePocoType IConcretePocoType.Nullable => this;
                 IConcretePocoType IConcretePocoType.NonNullable => NonNullable;
 
-                public IReadOnlyList<IConcretePocoField> Fields => NonNullable.Fields;
-
-                IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
-
-                ICompositePocoType ICompositePocoType.Nullable => this;
-                ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
+                public IReadOnlyList<IPrimaryPocoField> Fields => NonNullable.Fields;
 
                 public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable.PrimaryInterface.Nullable.AllowedTypes;
 
-                IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => this;
-                IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => NonNullable;
+                IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.Nullable => this;
+                IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.NonNullable => NonNullable;
             }
 
             readonly PrimaryPocoType _primary;
@@ -67,23 +62,17 @@ namespace CK.Setup
 
             public override bool IsReadableType( Type type ) => _primary.IsReadableType( type );
 
-            public IReadOnlyList<IConcretePocoField> Fields => _primary.Fields;
-
-            IReadOnlyList<IPocoField> ICompositePocoType.Fields => _primary.Fields;
+            public IReadOnlyList<IPrimaryPocoField> Fields => _primary.Fields;
 
             IConcretePocoType IConcretePocoType.Nullable => Nullable;
 
             IConcretePocoType IConcretePocoType.NonNullable => this;
 
-            ICompositePocoType ICompositePocoType.Nullable => Nullable;
-
-            ICompositePocoType ICompositePocoType.NonNullable => this;
-
             public IEnumerable<IConcretePocoType> AllowedTypes => _primary.AllowedTypes;
 
-            IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => Nullable;
+            IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.Nullable => Nullable;
 
-            IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => this;
+            IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.NonNullable => this;
         }
 
     }

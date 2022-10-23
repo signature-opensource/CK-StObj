@@ -53,14 +53,14 @@ namespace CK.Setup
         public bool IsDisallowed => !RequiresInit && !IsAllowed;
 
         /// <summary>
-        /// The type can be used as a <see cref="IConcretePocoField"/> or <see cref="IRecordPocoType"/>
+        /// The type can be used as a <see cref="IPrimaryPocoField"/> or <see cref="IRecordPocoType"/>
         /// field without any initialization.
         /// All nullable types are "Allowed", they will be initialized to null.
         /// </summary>
         public bool IsAllowed => _allowed;
 
         /// <summary>
-        /// The type can be used as a <see cref="IConcretePocoField"/> or <see cref="IRecordPocoType"/>
+        /// The type can be used as a <see cref="IPrimaryPocoField"/> or <see cref="IRecordPocoType"/>
         /// field. The type is not nullable and requires an initialization: the <see cref="DefaultValue"/>
         /// must be used.
         /// </summary>

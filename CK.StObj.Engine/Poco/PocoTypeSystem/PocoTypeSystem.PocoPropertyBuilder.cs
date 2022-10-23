@@ -26,7 +26,7 @@ namespace CK.Setup
                 _system = system;
             }
 
-            public ConcretePocoField? Build( IActivityMonitor monitor, IPocoPropertyInfo prop )
+            public PrimaryPocoField? Build( IActivityMonitor monitor, PocoType.PrimaryPocoType p, IPocoPropertyInfo prop )
             {
                 _prop = prop;
                 _best = null;
@@ -54,7 +54,7 @@ namespace CK.Setup
                     monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_finalType}'." );
                     return null;
                 }
-                return new ConcretePocoField( prop, _finalType, isReadOnly, _best.PropertyType.IsByRef, _defaultValue );
+                return new PrimaryPocoField( prop, _finalType, isReadOnly, p, _best.PropertyType.IsByRef, _defaultValue );
             }
 
             /// <summary>

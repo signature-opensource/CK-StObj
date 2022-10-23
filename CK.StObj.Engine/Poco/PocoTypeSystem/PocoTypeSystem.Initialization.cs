@@ -73,10 +73,10 @@ namespace CK.Setup
             foreach( var p in allPrimaries )
             {
                 Debug.Assert( p.FamilyInfo != null );
-                ConcretePocoField[] fields = new ConcretePocoField[p.FamilyInfo.Properties.Count];
+                PrimaryPocoField[] fields = new PrimaryPocoField[p.FamilyInfo.Properties.Count];
                 foreach( var prop in p.FamilyInfo.Properties.Values )
                 {
-                    var f = builder.Build( monitor, prop );
+                    var f = builder.Build( monitor, p, prop );
                     if( f == null ) return false;
                     fields[prop.Index] = f;
                 }
@@ -93,10 +93,8 @@ namespace CK.Setup
                 foreach( var p in allPrimaries )
                 {
                     detector.VisitRoot( monitor, p );
-                    if( detector.Cycle.Count > 0 )
+                    if( !detector.CheckValid( monitor ) )
                     {
-                        var cycle = detector.Cycle.Select( c => $"{Environment.NewLine}'{c.Typed}', field: {c.FieldPath.Select( f => f.Name ).Concatenate( "." )} => " );
-                        monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'{p.CSharpName}'." );
                         success = false;
                         break;
                     }

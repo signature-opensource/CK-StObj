@@ -69,6 +69,7 @@ namespace CK.Setup
                         t => new Null( t, tNull ) )
             {
                 _fields = fields;
+                foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, sharedWriter, this );
             }
 

@@ -161,8 +161,8 @@ support of the support of a union type (the `oneof`) for IPoco property.
 
 The set of Poco compliant type is precisely defined:
 
- - Basic types: `int`, `long`, `short`, `byte`, `string`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`, `TimeSpan,
-   Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte`. 
+ - Basic types: `int`, `long`, `short`, `byte`, `string`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`, `TimeSpan`,
+   `Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte`. 
  - Formally `object` is a basic type provided that at runtime, the instance must be a Poco compliant type.
  - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant Poco types.

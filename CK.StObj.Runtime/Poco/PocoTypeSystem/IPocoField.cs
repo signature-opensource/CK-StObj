@@ -1,12 +1,17 @@
 namespace CK.Setup
 {
     /// <summary>
-    /// Common type for <see cref="IConcretePocoField"/> and <see cref="IRecordPocoField"/>.
+    /// Common field attributes for <see cref="IPrimaryPocoField"/> and <see cref="IRecordPocoField"/>.
     /// </summary>
     public interface IPocoField
     {
         /// <summary>
-        /// Gets the index of this field or property in the <see cref="IPocoType.Fields"/>.
+        /// Gets the owner of this field.
+        /// </summary>
+        ICompositePocoType Owner { get; }
+        
+        /// <summary>
+        /// Gets the index of this field or property in the <see cref="ICompositePocoType.Fields"/>.
         /// Indexes starts at 0 and are compact: this can be used to handle optimized serialization
         /// by index (MessagePack) rather than by name (Json).
         /// <para>

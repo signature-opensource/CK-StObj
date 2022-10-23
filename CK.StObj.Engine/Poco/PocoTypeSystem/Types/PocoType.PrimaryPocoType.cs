@@ -34,7 +34,7 @@ namespace CK.Setup
                 IConcretePocoType IConcretePocoType.Nullable => this;
                 IConcretePocoType IConcretePocoType.NonNullable => NonNullable;
 
-                public IReadOnlyList<IConcretePocoField> Fields => NonNullable.Fields;
+                public IReadOnlyList<IPrimaryPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
@@ -43,8 +43,8 @@ namespace CK.Setup
 
                 public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable.PrimaryInterface.Nullable.AllowedTypes;
 
-                IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => this;
-                IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => NonNullable;
+                IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.Nullable => this;
+                IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.NonNullable => NonNullable;
 
                 public string CSharpBodyConstructorSourceCode => NonNullable.CSharpBodyConstructorSourceCode;
 
@@ -55,7 +55,7 @@ namespace CK.Setup
 
             readonly IPocoFieldDefaultValue _def;
             [AllowNull]
-            ConcretePocoField[] _fields;
+            PrimaryPocoField[] _fields;
             [AllowNull]
             string _ctorCode;
 
@@ -82,11 +82,11 @@ namespace CK.Setup
 
             public string CSharpBodyConstructorSourceCode => _ctorCode;
 
-            public IReadOnlyList<IConcretePocoField> Fields => _fields;
+            public IReadOnlyList<IPrimaryPocoField> Fields => _fields;
 
             internal bool SetFields( IActivityMonitor monitor,
                                      StringCodeWriter sharedWriter,
-                                     ConcretePocoField[] fields )
+                                     PrimaryPocoField[] fields )
             {
                 _fields = fields;
                 var d = CompositeHelper.CreateDefaultValueInfo( monitor, sharedWriter, this );
@@ -112,9 +112,9 @@ namespace CK.Setup
 
             ICompositePocoType ICompositePocoType.NonNullable => this;
 
-            IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.Nullable => Nullable;
+            IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.Nullable => Nullable;
 
-            IUnionPocoType<IConcretePocoType> IUnionPocoType<IConcretePocoType>.NonNullable => this;
+            IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.NonNullable => this;
 
             IPrimaryPocoType IPrimaryPocoType.Nullable => Nullable;
 

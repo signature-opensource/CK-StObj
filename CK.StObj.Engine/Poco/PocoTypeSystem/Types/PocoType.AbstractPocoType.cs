@@ -48,9 +48,9 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => NonNullable;
 
-            IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.Nullable => this;
+            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => this;
 
-            IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.NonNullable => NonNullable;
+            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => NonNullable;
         }
 
         internal sealed class AbstractPocoType1 : PocoType, IAbstractPocoType
@@ -87,9 +87,9 @@ namespace CK.Setup
             public override bool IsWritableType( Type type ) => _abstractAndPrimary.Take( _abstractCount ).Any( a => a.Type == type )
                                                                 || _abstractAndPrimary.Skip(_abstractCount).Any( t => t.IsWritableType( type ) );
 
-            IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.Nullable => Nullable;
+            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
 
-            IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.NonNullable => this;
+            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => this;
         }
 
         internal sealed class AbstractPocoType2 : PocoType, IAbstractPocoType
@@ -124,9 +124,9 @@ namespace CK.Setup
                                                                 || _primaries.Any( t => t.IsWritableType( type ) );
 
 
-            IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.Nullable => Nullable;
+            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
 
-            IUnionPocoType<IPocoType> IUnionPocoType<IPocoType>.NonNullable => this;
+            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => this;
         }
 
     }

@@ -5,7 +5,7 @@ namespace CK.Setup
     /// <summary>
     /// An abstract <see cref="IPoco"/>. See <see cref="IPocoDirectory.OtherInterfaces"/>.
     /// </summary>
-    public interface IAbstractPocoType : IUnionPocoType<IPocoType>
+    public interface IAbstractPocoType : IAnyOfPocoType<IPocoType>
     {
         /// <summary>
         /// Gets the set of other abstract IPoco types that are

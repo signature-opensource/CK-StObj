@@ -1,6 +1,8 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace CK.Setup
 {
@@ -8,19 +10,39 @@ namespace CK.Setup
     {
         internal sealed class InstantiationCycleVisitor : PocoTypeVisitor
         {
-            List<(ICompositePocoType Typed, LinkedList<IPocoField> FieldPath)> _path;
+            // Used to compute a readable path for anonymous types. This displays detected cycles like this:
+            //
+            // Detected an instantiation cycle in Poco: 
+            // '[IPoco]RecursivePocoTests.IHolder', field: 'Pof.DeepInside.Inside.IAmHere' => 
+            // '[IPoco]RecursivePocoTests.IOther', field: 'Pof.Inside.IAmHere' => 'RecursivePocoTests.IHolder'.
+            //
+            List<List<IPocoField>> _path;
+            int _typedPathCount;
+            // Will stop the 
             bool _cycleFound;
 
             public InstantiationCycleVisitor()
             {
-                _path = new List<(ICompositePocoType, LinkedList<IPocoField>)>();
+                _path = new List<List<IPocoField>>();
             }
 
-            public IReadOnlyList<(ICompositePocoType Typed, LinkedList<IPocoField> FieldPath)> Cycle => _path;
+            public IReadOnlyList<IReadOnlyList<IPocoField>> Cycle => _path;
 
+            public bool CheckValid( IActivityMonitor monitor )
+            {
+                if( Cycle.Count > 0 )
+                {
+                    var cycle = _path.Select( c => $"{Environment.NewLine}'{c[0].Owner}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' => " );
+                    monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'{_path[0][0].Owner}'." );
+                    return false;
+                }
+                return true;
+            }
             protected override void OnStartVisit( IActivityMonitor monitor, IPocoType root )
             {
-                _path.Clear();
+                // Reuse the allocated lists as much as possible.
+                for( int i = 0; i < _typedPathCount; i++ ) _path[i].Clear();
+                _typedPathCount = 0;
                 _cycleFound = false;
             }
 
@@ -42,45 +64,59 @@ namespace CK.Setup
                 // is under the responsibility of the user code.
             }
 
-            protected override void VisitField( IActivityMonitor monitor, ICompositePocoType owner, IPocoField field )
+            protected override void VisitUnion( IActivityMonitor monitor, IUnionPocoType union )
+            {
+                // We are not interested in union type variants since we don't have a [UnionTypeDefault(...)]
+                // or a [UnionType<T>( IsDefault = true)] (yet?).
+            }
+
+            protected override void VisitField( IActivityMonitor monitor, IPocoField field )
             {
                 // It's only if the field requires an initialization that we
                 // should follow the path.
                 if( field.DefaultValueInfo.RequiresInit )
                 {
-                    bool isAnonymous = PushPath( owner, field );
-                    base.VisitField( monitor, owner, field );
+                    bool isAnonymous = PushPath( field );
+                    base.VisitField( monitor, field );
                     if( !_cycleFound ) PopPath( isAnonymous );
                 }
             }
 
             void PopPath( bool isAnonymous )
             {
+                Debug.Assert( _path.Count > 0 );
                 if( isAnonymous )
                 {
-                    _path[^1].FieldPath.RemoveLast();
+                    var p = _path[_path.Count - 1];
+                    p.RemoveAt( p.Count - 1 );
                 }
                 else
                 {
-                    _path.RemoveAt( _path.Count - 1 );
+                    Debug.Assert( _path[_typedPathCount].Count == 0 );
+                    --_typedPathCount;
                 }
             }
 
-            bool PushPath( ICompositePocoType owner, IPocoField field )
+            bool PushPath( IPocoField field )
             {
-                bool isAnonymous = owner is IRecordPocoType r && r.IsAnonymous;
+                bool isAnonymous = field.Owner is IRecordPocoType r && r.IsAnonymous;
                 if( isAnonymous )
                 {
                     Debug.Assert( _path.Count > 0 );
-                    _path[^1].FieldPath.AddLast( field );
+                    _path[_path.Count - 1].Add( field );
                 }
                 else
                 {
-                    var fieldPath = new LinkedList<IPocoField>();
-                    fieldPath.AddFirst( field );
-                    _path.Add( (owner, fieldPath) );
+                    if( _typedPathCount++ == _path.Count )
+                    {
+                        _path.Add( new List<IPocoField> { field } );
+                    }
+                    else
+                    {
+                        Debug.Assert( _path[_typedPathCount].Count == 0 );
+                        _path[_typedPathCount].Add( field ); 
+                    }
                 }
-
                 return isAnonymous;
             }
         }

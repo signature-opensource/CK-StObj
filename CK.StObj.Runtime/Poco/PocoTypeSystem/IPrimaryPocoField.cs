@@ -1,12 +1,15 @@
 namespace CK.Setup
 {
     /// <summary>
-    /// Field of <see cref="IConcretePocoType"/>.
+    /// Field of <see cref="IPrimaryPocoType"/>.
     /// Note that when this <see cref="IPocoField.Type"/> is a <see cref="PocoTypeKind.AnonymousRecord"/>
     /// or a <see cref="PocoTypeKind.Record"/> this is a ref property.
     /// </summary>
-    public interface IConcretePocoField : IPocoField
+    public interface IPrimaryPocoField : IPocoField
     {
+        /// <inheritdoc cref="IPocoField.Owner"/>
+        new IPrimaryPocoType Owner { get; }
+
         /// <summary>
         /// Gets the property info (with all its <see cref="IPocoPropertyInfo.DeclaredProperties"/>).
         /// </summary>

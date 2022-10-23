@@ -7,9 +7,8 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-
     /// <summary>
-    /// Discovers available structure objects and instantiates them. 
+    /// Discovers <see cref="IRealObject"/> . 
     /// Once Types are registered, the <see cref="GetResult"/> method initializes the full object graph.
     /// </summary>
     public partial class StObjCollector
@@ -80,8 +79,8 @@ namespace CK.Setup
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( Type type, AutoServiceKind kind )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
-            if( kind == AutoServiceKind.None ) throw new ArgumentOutOfRangeException( nameof( kind ) );
+            Throw.CheckNotNullArgument( type );
+            Throw.CheckArgument( kind != AutoServiceKind.None );
             if( _cc.RegisteredTypeCount > 0 )
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
@@ -105,7 +104,7 @@ namespace CK.Setup
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( string typeName, AutoServiceKind kind, bool isOptional )
         {
-            if( String.IsNullOrWhiteSpace( typeName ) ) throw new ArgumentNullException( nameof( typeName ) );
+            Throw.CheckNotNullOrEmptyArgument( typeName );
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
             if( t != null )
             {
@@ -132,7 +131,7 @@ namespace CK.Setup
         /// <returns>The number of new discovered classes.</returns>
         public int RegisterAssemblyTypes( IReadOnlyCollection<string> assemblyNames )
         {
-            if( assemblyNames == null ) throw new ArgumentNullException( nameof( assemblyNames ) );
+            Throw.CheckNotNullArgument( assemblyNames );
             int totalRegistered = 0;
             using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
             using( _monitor.OpenTrace( $"Registering {assemblyNames.Count} assemblies." ) )
@@ -191,7 +190,7 @@ namespace CK.Setup
         /// <param name="types">Types to register.</param>
         public void RegisterTypes( IReadOnlyCollection<Type> types )
         {
-            if( types == null ) throw new ArgumentNullException( nameof( types ) );
+            Throw.CheckNotNullArgument( types );
             DoRegisterTypes( types, types.Count );
         }
 
@@ -203,7 +202,7 @@ namespace CK.Setup
         /// <param name="typeNames">Assembly qualified names of the types to register.</param>
         public void RegisterTypes( IReadOnlyCollection<string> typeNames )
         {
-            if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
+            Throw.CheckNotNullArgument( typeNames );
             DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ), typeNames.Count );
         }
 

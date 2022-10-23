@@ -17,7 +17,8 @@ namespace CK.Setup
         Any,
 
         /// <summary>
-        /// Basic types are defined by <see cref="PocoSupportResultExtension.IsBasicPropertyType(Type)"/>.
+        /// Basic types are int, long, short, byte, string, bool, double, float, DateTime, DateTimeOffset, TimeSpan,
+        /// Guid, decimal, BigInteger, uint, ulong, ushort, sbyte.
         /// </summary>
         Basic,
 
@@ -52,18 +53,23 @@ namespace CK.Setup
         Array,
 
         /// <summary>
-        /// A <c>List<></c> of Poco type (<see cref="ICollectionPocoType"/>).
+        /// A <c>List&lt;&gt;</c> of Poco type (<see cref="ICollectionPocoType"/>).
         /// </summary>
         List,
 
         /// <summary>
-        /// A <c>HashSet<></c> of Poco type (<see cref="ICollectionPocoType"/>).
+        /// A <c>HashSet&lt;&gt;</c> of Poco type (<see cref="ICollectionPocoType"/>).
         /// </summary>
         HashSet,
 
         /// <summary>
-        /// A <c>Dictionary<,></c> of Poco type (<see cref="ICollectionPocoType"/>).
+        /// A <c>Dictionary&lt;,&gt;</c> of Poco type (<see cref="ICollectionPocoType"/>).
         /// </summary>
-        Dictionary
+        Dictionary,
+
+        /// <summary>
+        /// An <c>object</c> constrained to a set of allowed types (<see cref="IUnionPocoType"/>).
+        /// </summary>
+        UnionType
     }
 }
