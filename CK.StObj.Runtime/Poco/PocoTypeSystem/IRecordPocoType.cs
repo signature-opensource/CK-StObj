@@ -12,9 +12,7 @@ namespace CK.Setup
         /// </summary>
         bool IsAnonymous { get; }
 
-        /// <summary>
-        /// Gets the list of fields.
-        /// </summary>
+        /// <inheritdoc cref="ICompositePocoType.Fields"/>
         new IReadOnlyList<IRecordPocoField> Fields { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />

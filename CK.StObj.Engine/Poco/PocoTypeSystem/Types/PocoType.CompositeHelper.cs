@@ -4,11 +4,20 @@ using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Linq;
 
 namespace CK.Setup
 {
+
     partial class PocoType
     {
+        /// <summary>
+        /// The comma string must be the same across any default values.
+        /// </summary>
+        public const string Comma = ", ";
+
         static class CompositeHelper
         {
             /// <summary>
@@ -18,20 +27,19 @@ namespace CK.Setup
             /// the no code is required (<see cref="DefaultValueInfo.DefaultValue"/> is null).
             /// </summary>
             public static DefaultValueInfo CreateDefaultValueInfo( IActivityMonitor monitor,
-                                                                   StringCodeWriter sharedWriter,
+                                                                   StringBuilder sharedBuilder,
                                                                    IRecordPocoType type )
             {
                 if( !TryInstantiateValue( monitor, type, out var oValue ) )
                 {
                     return DefaultValueInfo.Disallowed;
                 }
-                var w = sharedWriter.StringBuilder.Length == 0 ? sharedWriter : new StringCodeWriter();
+                var b = sharedBuilder.Length == 0 ? sharedBuilder : new StringBuilder();
                 var r = type.IsAnonymous
-                            ? ForAnonymousRecord( monitor, w, type, oValue )
-                            : ForRecord( monitor, w, type, oValue );
-                w.StringBuilder.Clear();
+                            ? ForAnonymousRecord( monitor, b, type, oValue )
+                            : ForRecord( monitor, b, type, oValue );
+                b.Clear();
                 return r;
-
 
                 static bool TryInstantiateValue( IActivityMonitor monitor, ICompositePocoType type, out object oValue )
                 {
@@ -50,31 +58,39 @@ namespace CK.Setup
                     return false;
                 }
 
-                static DefaultValueInfo ForAnonymousRecord( IActivityMonitor monitor, StringCodeWriter w, IRecordPocoType type, object oValue )
+                static DefaultValueInfo ForAnonymousRecord( IActivityMonitor monitor, StringBuilder b, IRecordPocoType type, object oValue )
                 {
                     var fieldInfos = type.Type.GetFields();
-                    w.Append( "(" );
+                    // We always build the default value string because we need
+                    // positional values with 'default'. If it's all 'default', we forget the string
+                    // and returns Allowed. This may be not optimal if a lot of Allowed occur but this
+                    // is simpler and there should not be a lot of pure default values.
+                    bool requiresInit = false;
+                    b.Append( '(' );
                     foreach( var f in type.Fields )
                     {
                         var fInfo = f.DefaultValueInfo;
                         if( fInfo.IsDisallowed ) return OnDisallowed( monitor, type, f );
-                        if( f.Index > 0 ) w.Append( ", " );
+                        if( f.Index > 0 ) b.Append( Comma );
                         if( fInfo.RequiresInit )
                         {
-                            w.Append( fInfo.DefaultValue.ValueCSharpSource );
+                            requiresInit = true;
+                            b.Append( fInfo.DefaultValue.ValueCSharpSource );
                             fieldInfos[f.Index].SetValue( oValue, fInfo.DefaultValue.Value );
                         }
                         else
                         {
-                            w.Append( "default" );
+                            b.Append( "default" );
                         }
                     }
-                    w.Append( ")" );
-                    return new DefaultValueInfo( new FieldDefaultValue( oValue, w.ToString() ) );
+                    b.Append( ')' );
+                    return requiresInit
+                            ? new DefaultValueInfo( new FieldDefaultValue( oValue, b.ToString() ) )
+                            : DefaultValueInfo.Allowed;
                 }
 
                 static DefaultValueInfo ForRecord( IActivityMonitor monitor,
-                                                   StringCodeWriter w,
+                                                   StringBuilder b,
                                                    IRecordPocoType type,
                                                    object oValue )
                 {
@@ -93,19 +109,19 @@ namespace CK.Setup
                         // Generate the source code for the initialization.
                         if( atLeasOne )
                         {
-                            w.Append( "," ).NewLine();
+                            b.Append( Comma );
                         }
                         else
                         {
-                            w.Append( "new()" ).OpenBlock();
+                            b.Append( "new(){" );
                             atLeasOne = true;
                         }
-                        w.Append( f.Name ).Append( " = " ).Append( fInfo.DefaultValue.ValueCSharpSource );
+                        b.Append( f.Name ).Append( " = " ).Append( fInfo.DefaultValue.ValueCSharpSource );
                     }
                     if( atLeasOne )
                     {
-                        w.CloseBlock();
-                        return new DefaultValueInfo( new FieldDefaultValue( oValue, w.ToString() ) );
+                        b.Append( '}' );
+                        return new DefaultValueInfo( new FieldDefaultValue( oValue, b.ToString() ) );
                     }
                     return DefaultValueInfo.Allowed;
 
@@ -167,16 +183,16 @@ namespace CK.Setup
             /// then no code is required (<see cref="DefaultValueInfo.DefaultValue"/> is null).
             /// </summary>
             public static DefaultValueInfo CreateDefaultValueInfo( IActivityMonitor monitor,
-                                                                   StringCodeWriter sharedWriter,
+                                                                   StringBuilder sharedBuilder,
                                                                    IPrimaryPocoType type )
             {
-                var w = sharedWriter.StringBuilder.Length == 0 ? sharedWriter : new StringCodeWriter();
-                var r = DoCreateDefaultValueInfo( monitor, w, type );
-                w.StringBuilder.Clear();
+                var b = sharedBuilder.Length == 0 ? sharedBuilder : new StringBuilder();
+                var r = DoCreateDefaultValueInfo( monitor, b, type );
+                b.Clear();
                 return r;
 
                 static DefaultValueInfo DoCreateDefaultValueInfo( IActivityMonitor monitor,
-                                                                  StringCodeWriter w,
+                                                                  StringBuilder b,
                                                                   IPrimaryPocoType type )
                 {
                     bool atLeasOne = false;
@@ -194,20 +210,20 @@ namespace CK.Setup
                         // Generate the source code for the initialization.
                         if( atLeasOne )
                         {
-                            w.Append( ";" ).NewLine();
+                            b.Append( ';' ).Append( Environment.NewLine );
                         }
                         else
                         {
                             atLeasOne = true;
                         }
-                        w.Append( f.PrivateFieldName ).Append( " = " ).Append( fInfo.DefaultValue.ValueCSharpSource );
+                        b.Append( f.PrivateFieldName ).Append( " = " ).Append( fInfo.DefaultValue.ValueCSharpSource );
                     }
                     // Success: if no field have been initialized, the default value is useless => Allowed.
                     if( atLeasOne )
                     {
-                        w.Append( ";" );
-                        // Use the text for the default value instance (unused when generation Poco constructor).
-                        var text = w.ToString();
+                        b.Append( ';' );
+                        // Use the text for the default value instance (unused when generating Poco constructor).
+                        var text = b.ToString();
                         return new DefaultValueInfo( new FieldDefaultValue( text, text ) );
                     }
                     return DefaultValueInfo.Allowed;

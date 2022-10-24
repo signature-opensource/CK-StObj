@@ -18,7 +18,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void anonymous_record_must_be_a_ref_property()
+        public void writable_anonymous_record_must_be_a_ref_property()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidValueTupleSetter ) );
             TestHelper.GetFailedResult( c );

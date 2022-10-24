@@ -15,7 +15,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the primary interface.
-        /// Can be this poco type.
+        /// Can be this poco type if this is a primary interface.
         /// </summary>
         IPrimaryPocoType PrimaryInterface { get; }
 

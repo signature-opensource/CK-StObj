@@ -15,12 +15,19 @@ namespace CK.Setup
         PocoType.RecordType _owner;
         DefaultValueInfo _defInfo;
 
+        static readonly List<string> _itemNames = new List<string>();
+        static string GetItemName( int index )
+        {
+            while( index >= _itemNames.Count ) _itemNames.Add( $"Item{_itemNames.Count + 1}" );
+            return _itemNames[index];
+        }
+
         public RecordField( int index, string? name, IPocoFieldDefaultValue? defaultValue = null )
         {
             Index = index;
             if( name == null )
             {
-                Name = $"Item{index + 1}";
+                Name = GetItemName( index );
                 IsUnnamed = true;
             }
             else
@@ -31,6 +38,19 @@ namespace CK.Setup
             {
                 _defInfo = new DefaultValueInfo( defaultValue );
             }
+        }
+
+        /// <summary>
+        /// Initializes an unnamed field.
+        /// </summary>
+        /// <param name="existing">The existing field.</param>
+        public RecordField( IPocoField existing )
+        {
+            Index = existing.Index;
+            Name = GetItemName( Index );
+            IsUnnamed = true;
+            _defInfo = existing.DefaultValueInfo;
+            _type = existing.Type;
         }
 
         public int Index { get; }
@@ -55,10 +75,7 @@ namespace CK.Setup
             }
         }
 
-        internal void SetOwner( PocoType.RecordType record )
-        {
-            _owner = record;
-        }
+        internal void SetOwner( PocoType.RecordType record ) => _owner = record;
 
         public override string ToString() => $"{(_type == null ? "(no type)" : _type)} {Name}";
 

@@ -27,6 +27,7 @@ namespace CK.Setup
         //          and non generic and non collection types.
         //  - CSharpName: for anonymous records (Value Tuples) and collection types (because of nullabilities:
         //                the ? marker does the job).
+        //  - NakedRecordSignature: for naked anonymous records.
         readonly Dictionary<object, PocoType> _cache;
         readonly PocoType _objectType;
         readonly PocoType _stringType;
@@ -289,7 +290,7 @@ namespace CK.Setup
                 else
                 {
                     // May be a new "record struct".
-                    result = OnValueTypeRecordStruct( monitor, ctx, tNull, tNotNull );
+                    result = OnTypedRecord( monitor, ctx, tNull, tNotNull );
                     if( result == null )
                     {
                         monitor.Error( $"Unsupported Poco value type: '{tNotNull}'." );
@@ -322,8 +323,18 @@ namespace CK.Setup
             b.Clear();
             if( !_cache.TryGetValue( typeName, out var exists ) )
             {
-                exists = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, typeName, true, fields );
-                _cache.Add( typeName, exists );
+                var r = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, typeName, true, fields );
+                _cache.Add( typeName, exists = r );
+                var (signature, isNaked) = NakedRecordSignature.FromRecord( r );
+                if( isNaked )
+                {
+                    _cache.Add( signature, r );
+                    r.SetNakedRecord( r );
+                }
+                else
+                {
+                    r.SetNakedRecord( FindOrCreateNakedRecord( monitor, signature, r, tNotNull, tNull ) );
+                }
             }
             return exists;
 
@@ -345,13 +356,28 @@ namespace CK.Setup
             }
         }
 
-        PocoType? OnValueTypeRecordStruct( IActivityMonitor monitor, MemberContext ctx, Type tNull, Type tNotNull )
+        IRecordPocoType FindOrCreateNakedRecord( IActivityMonitor monitor,
+                                                 NakedRecordSignature signature,
+                                                 ICompositePocoType c,
+                                                 Type? tNotNull,
+                                                 Type? tNull)
         {
-            // Record struct are not decorated by any special attribute.
+            if( !_cache.TryGetValue( signature, out var nakedType ) )
+            {
+                nakedType = PocoType.CreateNakedRecord( monitor, this, c, tNotNull, tNull );
+                _cache.Add( signature, nakedType );
+            }
+            Debug.Assert( nakedType is IRecordPocoType nR && nR.IsAnonymous && nR.NakedRecord == nR );
+            return (IRecordPocoType)nakedType;
+        }
+
+        PocoType? OnTypedRecord( IActivityMonitor monitor, MemberContext ctx, Type tNull, Type tNotNull )
+        {
+            // C#10 record struct are not decorated by any special attribute: we treat them like any other struct.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
             Debug.Assert( tNotNull.IsValueType );
-            // The struct has properties. It may be a C#10 record struct with positional parameters syntax:
-            // the parameters can define the default value.
+            // Currently allows only a single constructor. This is not good: we should allow deserialization constructor...
+            // We should try to consider a constructor whose parameter names are the fields/property names only (and only them).
             var ctors = tNotNull.GetConstructors();
             if( ctors.Length > 1 )
             {
@@ -390,6 +416,9 @@ namespace CK.Setup
             }
             var r = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, tNotNull.ToCSharpName(), false, fields );
             _cache.Add( tNotNull, r );
+            var (signature, isNaked) = NakedRecordSignature.FromRecord( r );
+            Debug.Assert( isNaked is false );
+            r.SetNakedRecord( FindOrCreateNakedRecord( monitor, signature, r, null, null ) );
             return r;
         }
 

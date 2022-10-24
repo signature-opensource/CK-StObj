@@ -57,6 +57,11 @@ namespace CK.Setup
                 _cycleFound |= t.Kind == PocoTypeKind.IPoco;
             }
 
+            protected override void VisitNakedRecord( IActivityMonitor monitor, ICompositePocoType referencer, IRecordPocoType nakedRecord )
+            {
+                // We don't want to visit the naked records of our composites here.
+            }
+
             protected override void VisitCollection( IActivityMonitor monitor, ICollectionPocoType collection )
             {
                 // We are not interested in collection items: their initialization
