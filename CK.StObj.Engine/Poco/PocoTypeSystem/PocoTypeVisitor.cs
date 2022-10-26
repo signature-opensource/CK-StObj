@@ -10,9 +10,8 @@ namespace CK.Setup
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
     /// are available in <see cref="LastVisited"/>.
     /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/>,
-    /// <see cref="IConcretePocoType.PrimaryInterface"/>, <see cref="IUnionPocoType"/>'s
-    /// <see cref="IAnyOfPocoType{T}.AllowedTypes"/> and <see cref="ICompositePocoType.NakedRecord"/>
-    /// are followed.
+    /// <see cref="IConcretePocoType.PrimaryInterface"/> and <see cref="IUnionPocoType"/>'s
+    /// <see cref="IAnyOfPocoType{T}.AllowedTypes"/> are followed.
     /// </summary>
     public class PocoTypeVisitor
     {
@@ -102,14 +101,12 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="ICompositePocoType.NakedRecord"/>, calling <see cref="VisitNakedRecord(IActivityMonitor, ICompositePocoType, IRecordPocoType)"/>
-        /// and visits the <see cref="ICompositePocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
+        /// Visits the <see cref="ICompositePocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="primary">A primary poco type.</param>
         protected virtual void VisitPrimaryPoco( IActivityMonitor monitor, IPrimaryPocoType primary )
         {
-            VisitNakedRecord( monitor, primary, primary.NakedRecord );
             foreach( var f in primary.Fields ) VisitField( monitor, f );
         }
 
@@ -164,28 +161,13 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="ICompositePocoType.NakedRecord"/> if this is not the naked record itself,
-        /// calling <see cref="VisitNakedRecord(IActivityMonitor, ICompositePocoType, IRecordPocoType)"/>
-        /// and visits the <see cref="IRecordPocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
+        /// Visits the <see cref="IRecordPocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="record">A record type.</param>
         protected virtual void VisitRecord( IActivityMonitor monitor, IRecordPocoType record )
         {
-            if( record.NakedRecord != record ) VisitNakedRecord( monitor, record, record.NakedRecord );
             foreach( var f in record.Fields ) VisitField( monitor, f );
-        }
-
-        /// <summary>
-        /// Visits the <paramref name="nakedRecord"/>, calling <see cref="VisitRecord(IActivityMonitor, IRecordPocoType)"/>
-        /// on the naked record.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="referencer">The record or primary Poco type.</param>
-        /// <param name="nakedRecord">The naked record.</param>
-        protected virtual void VisitNakedRecord( IActivityMonitor monitor, ICompositePocoType referencer, IRecordPocoType nakedRecord )
-        {
-            VisitRecord( monitor, nakedRecord );
         }
 
         /// <summary>

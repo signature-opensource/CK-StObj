@@ -107,7 +107,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Poco_OtherInterfaces_MUST_be_IPoco()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICannotBe ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "'CK.StObj.Engine.Tests.Poco.PocoInterfacesAndOtherInterfacesTests.ICannotBe' extends 'IAlien'. 'IAlien' must be marked with CK.Core.IPoco interface." );
         }
 
     }

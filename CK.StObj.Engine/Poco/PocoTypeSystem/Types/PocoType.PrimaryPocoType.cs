@@ -38,8 +38,6 @@ namespace CK.Setup
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
-                public IRecordPocoType NakedRecord => NonNullable._naked.Nullable;
-
                 ICompositePocoType ICompositePocoType.Nullable => this;
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
 
@@ -60,8 +58,6 @@ namespace CK.Setup
             PrimaryPocoField[] _fields;
             [AllowNull]
             string _ctorCode;
-            [AllowNull]
-            IRecordPocoType _naked;
 
             public PrimaryPocoType( PocoTypeSystem s,
                                     IPocoFamilyInfo family,
@@ -89,11 +85,11 @@ namespace CK.Setup
             public IReadOnlyList<IPrimaryPocoField> Fields => _fields;
 
             internal bool SetFields( IActivityMonitor monitor,
-                                     StringCodeWriter sharedWriter,
+                                     PocoTypeSystem.IStringBuilderPool sbPool,
                                      PrimaryPocoField[] fields )
             {
                 _fields = fields;
-                var d = CompositeHelper.CreateDefaultValueInfo( monitor, sharedWriter.StringBuilder, this );
+                var d = CompositeHelper.CreateDefaultValueInfo( monitor, sbPool, this );
                 if( d.IsDisallowed )
                 {
                     monitor.Error( $"Unable to create '{CSharpName}' constructor code. See previous errors." );
@@ -104,13 +100,6 @@ namespace CK.Setup
             }
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
-
-            public IRecordPocoType NakedRecord => _naked;
-
-            internal void SetNakedRecord( IRecordPocoType r )
-            {
-                _naked = r;
-            }
 
             public override bool IsWritableType( Type type ) => FamilyInfo.Interfaces.Any( i => i.PocoInterface == type );
 

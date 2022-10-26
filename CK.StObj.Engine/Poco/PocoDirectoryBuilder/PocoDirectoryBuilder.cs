@@ -12,6 +12,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using static CK.Setup.PocoType;
 
 #nullable enable
 
@@ -115,7 +116,7 @@ namespace CK.Setup
                 // the whole system.
                 if( !typeof( IPoco ).IsAssignableFrom( b ) )
                 {
-                    monitor.Fatal( $"Poco interface '{t.AssemblyQualifiedName}' extends '{b.Name}'. '{b.Name}' must be marked with CK.Core.IPoco interface." );
+                    monitor.Fatal( $"Poco interface '{t.ToCSharpName()}' extends '{b.Name}'. '{b.Name}' must be marked with CK.Core.IPoco interface." );
                     return null;
                 }
                 // Attempts to register the base if and only if it is not a "definer".
@@ -354,6 +355,8 @@ namespace CK.Setup
             {
                 tB.AddInterfaceImplementation( i );
 
+                // Caches the "class UnionType" properties.
+                PropertyInfo[]? cacheUnionTypesDef = null;
                 var propertyInfos = i.GetProperties();
                 foreach( var p in propertyInfos )
                 {
@@ -384,8 +387,8 @@ namespace CK.Setup
                         //
                         // Choosing here to NOT play the multiple inheritance game is clearly the best choice (at least for me :)).
                         //
-
-                        if( p.GetCustomAttributesData().Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
+                        var customAttributesData = p.GetCustomAttributesData();
+                        if( customAttributesData.Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
                         {
                             bool isDIM = (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0;
                             if( isDIM )
@@ -412,7 +415,20 @@ namespace CK.Setup
                         }
                         else
                         {
-                            success &= HandlePocoProperty( monitor, properties, propertyList, ref dimPropertyNames, i, p );
+                            // Quick check of UnionType attribute existence.
+                            bool hasUnionType = customAttributesData.Any( a => a.AttributeType == typeof(UnionTypeAttribute) );
+                            if( hasUnionType && cacheUnionTypesDef == null )
+                            {
+                                Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
+                                if( u == null )
+                                {
+                                    monitor.Error( $"[UnionType] attribute on '{i.ToCSharpName()}.{p.Name}' requires a nested 'class UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
+                                    success = false;
+                                    cacheUnionTypesDef = Array.Empty<PropertyInfo>();
+                                }
+                                else cacheUnionTypesDef = u.GetProperties();
+                            }
+                            success &= HandlePocoProperty( monitor, properties, propertyList, ref dimPropertyNames, i, p, hasUnionType ? cacheUnionTypesDef : null );
                         }
                         if( success )
                         {
@@ -438,7 +454,8 @@ namespace CK.Setup
                                         List<PocoPropertyInfo> propertyList,
                                         ref List<string>? dimPropertyNames,
                                         Type tInterface,
-                                        PropertyInfo p )
+                                        PropertyInfo p,
+                                        PropertyInfo[]? unionTypesDef )
         {
             Debug.Assert( p.DeclaringType == tInterface && p.GetMethod != null );
 
@@ -469,9 +486,33 @@ namespace CK.Setup
                 propertyList.Add( pocoProperty );
             }
             pocoProperty.DeclaredProperties.Add( p );
+            if( unionTypesDef != null )
+            {
+                var propDef = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
+                if( propDef == null )
+                {
+                    monitor.Error( $"The nested class UnionTypes requires a public value tuple '{p.Name}' property." );
+                    return false;
+                }
+                // The lookup in custom attributes data guaranties that the attribute exists.
+                var attr = p.GetCustomAttributes<UnionTypeAttribute>().First();
+                if( pocoProperty.UnionTypeDefinition == null )
+                {
+                    pocoProperty.UnionTypeDefinition = new UnionTypeCollector( attr.CanBeExtended, propDef );
+                }
+                else
+                {
+                    bool canBeExtended = pocoProperty.UnionTypeDefinition.CanBeExtended;
+                    if( canBeExtended != attr.CanBeExtended )
+                    {
+                        monitor.Error( $"{pocoProperty} is a UnionType that can{(canBeExtended ? "" : "not")} be extended but '{p.DeclaringType}.{p.Name}' can{(canBeExtended ? "not" : "")} be extended. All property definitions of a IPoco family must agree on this." );
+                        return false;
+                    }
+                    pocoProperty.UnionTypeDefinition.Types.Add( propDef );
+                }
+            }
             return true;
         }
-
 
         static PropertyBuilder ImplementInterfaceProperty( TypeBuilder tB, PropertyInfo property, int uid )
         {

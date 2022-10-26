@@ -23,8 +23,8 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( FrontService1 ), AutoServiceKind.IsScoped );
-            collector.RegisterType( typeof( FrontService1 ) );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( FrontService1 ), AutoServiceKind.IsScoped );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -47,14 +47,12 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_FrontOnly_services()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
+                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a front service for class '" );
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( Impossible1 ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );
+                TestHelper.GetFailedResult( collector, "Invalid CK type combination: RealObject cannot be a front service" );
             }
         }
 
@@ -66,9 +64,9 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_defined_as_FrontOnly_services()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsFrontProcessService );
-            collector.RegisterType( typeof( RealObjectAndAutoService ) );
-            TestHelper.GetFailedResult( collector );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsFrontProcessService );
+            collector.RegisterType( TestHelper.Monitor, typeof( RealObjectAndAutoService ) );
+            TestHelper.GetFailedResult( collector, "is already registered as a 'IsAutoService|IsSingleton|IsRealObject [IsMarkerInterface]'. It can not be defined as IsFrontProcessService [FrontType:External]." );
         }
 
         public class FrontDependentService1 : IAutoService
@@ -81,9 +79,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_impl_that_depends_on_a_front_service_is_a_Front_service()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontService1 ) );
-            collector.RegisterType( typeof( FrontDependentService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontService1 ), typeof( FrontDependentService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -106,10 +102,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Front_services_are_transitively_propagated_through_the_constructors()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontDependentService2 ) );
-            collector.RegisterType( typeof( FrontDependentService1 ) );
-            collector.RegisterType( typeof( FrontService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontDependentService2 ), typeof( FrontDependentService1 ), typeof( FrontService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -132,8 +125,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Marshallers_are_not_AutoServices()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( MService1NoAutoService ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( MService1NoAutoService ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -147,9 +139,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void registering_a_Frontservice_with_its_AutoService_Marshaller_makes_it_marshallable()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontService1 ), typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -162,9 +152,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void registered_AutoService_Marshaller_is_mapped_by_the_class_type_and_its_interfaces()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontService1 ), typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -180,9 +168,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void registered_AutoService_Marshaller_handles_only_the_exact_type()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontService1 ), typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -197,18 +183,17 @@ namespace CK.StObj.Engine.Tests.Service
             dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
             dMClass.Should().BeSameAs( dM );
             map.Services.SimpleMappings.ContainsKey( typeof( Model.IMarshaller<IFrontService1> ) )
-                .Should().BeFalse( "Mashalling the IService MUST be explicitly supported by the marshaller implementation." );
+                .Should().BeFalse( "Marshalling the IService MUST be explicitly supported by the marshaller implementation." );
         }
 
 
         [Test]
         public void Marshallable_Front_services_are_no_more_propagated()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontDependentService2 ) );
-            collector.RegisterType( typeof( FrontDependentService1 ) );
-            collector.RegisterType( typeof( FrontService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontDependentService2 ),
+                                                             typeof( FrontDependentService1 ),
+                                                             typeof( FrontService1 ),
+                                                             typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -237,9 +222,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_mere_service_does_not_become_AutoService_because_a_Marshaller_exists()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( MarshalAnyway ) );
-            collector.RegisterType( typeof( NotAutoService ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( MarshalAnyway ), typeof( NotAutoService ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -269,21 +252,14 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void propagation_through_an_intermediate_service_1()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknwon ) );
-            collector.RegisterType( typeof( OneSingleton ) );
-
-            TestHelper.GetFailedResult( collector );
+            var collector = TestHelper.CreateStObjCollector( typeof( Scoped ), typeof( Unknwon ), typeof( OneSingleton ) );
+            TestHelper.GetFailedResult( collector, "is marked as IsSingleton but parameter 'dep' of type 'IUnknwon' in constructor is Scoped." );
         }
 
         [Test]
         public void propagation_through_an_intermediate_service_2()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknwon ) );
-            collector.RegisterType( typeof( ServiceFreeLifetime ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( Scoped ), typeof( Unknwon ), typeof( ServiceFreeLifetime ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );

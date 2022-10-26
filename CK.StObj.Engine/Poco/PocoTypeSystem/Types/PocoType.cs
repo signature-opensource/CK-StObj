@@ -123,11 +123,14 @@ namespace CK.Setup
         {
             Debug.Assert( !notNullable.IsValueType || System.Nullable.GetUnderlyingType( notNullable ) == null );
             Debug.Assert( !csharpName.EndsWith( '?' ) );
-            Index = s.AllTypes.Count << 1;
+            // We register in the AllTypes list only: key for cache is much more complex
+            // and is managed externally.
+            Index = s.AllTypes.Count;
             Type = notNullable;
             CSharpName = csharpName;
             Kind = kind;
             _nullable = nullFactory( this );
+            s.AddNew( this );
         }
 
         public int Index { get; }

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 using CK.Core;
@@ -42,38 +44,54 @@ namespace CK.Testing
 
         StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
         {
-            return new StObjCollector( _monitor.Monitor,
-                                       new SimpleServiceContainer(),
+            return new StObjCollector( new SimpleServiceContainer(),
                                        typeFilter: typeFilter != null ? new TypeFilter( typeFilter ) : null );
         }
 
         StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( params Type[] types )
         {
             var c = DoCreateStObjCollector( null );
-            c.RegisterTypes( types );
+            c.RegisterTypes( _monitor.Monitor, types );
             return c;
         }
 
-        StObjCollectorResult IStObjEngineTestHelperCore.GetSuccessfulResult( StObjCollector c ) => DoGetSuccessfulResult( c );
+        StObjCollectorResult IStObjEngineTestHelperCore.GetSuccessfulResult( StObjCollector c ) => DoGetSuccessfulResult( _monitor.Monitor, c );
 
-        static StObjCollectorResult DoGetSuccessfulResult( StObjCollector c )
+        static StObjCollectorResult DoGetSuccessfulResult( IActivityMonitor monitor, StObjCollector c )
         {
-            c.RegisteringFatalOrErrorCount.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
-            StObjCollectorResult? r = c.GetResult();
+            c.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = c.GetResult( monitor );
             r.HasFatalError.Should().Be( false, "There must be no error." );
             return r;
         }
 
-        StObjCollectorResult? IStObjEngineTestHelperCore.GetFailedResult( StObjCollector c )
+        StObjCollectorResult? IStObjEngineTestHelperCore.GetFailedResult( StObjCollector c, string message, params string[] otherMessages )
         {
-            if( c.RegisteringFatalOrErrorCount != 0 )
+            if( c.FatalOrErrors.Count != 0 )
             {
-                TestHelper.Monitor.Error( $"GetFailedResult: {c.RegisteringFatalOrErrorCount} fatal or error during StObjCollector registration. (Everything is fine since an error was expected.)" );
+                TestHelper.Monitor.Error( $"GetFailedResult: {c.FatalOrErrors.Count} fatal or error during StObjCollector registration." );
+                CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
                 return null;
             }
-            var r = c.GetResult();
+            var r = c.GetResult( _monitor.Monitor );
             r.HasFatalError.Should().Be( true, "GetFailedResult: StObjCollector.GetResult() must have failed with at least one fatal error." );
+            CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
             return r;
+
+            static void CheckExpectedMessages( IReadOnlyList<ActivityMonitorSimpleCollector.Entry> fatalOrErrors, string message, string[] otherMessages )
+            {
+                CheckMessage( fatalOrErrors, message );
+                foreach( var m in otherMessages ) CheckMessage( fatalOrErrors, m );
+
+                static void CheckMessage( IReadOnlyList<ActivityMonitorSimpleCollector.Entry> fatalOrErrors, string m )
+                {
+                    if( !String.IsNullOrEmpty( m ) )
+                    {
+                        fatalOrErrors.Any( e => e.Text.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
+                            .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{fatalOrErrors.Select( e => e.Text ).Concatenate( Environment.NewLine )}" );
+                    }
+                }
+            }
         }
 
         GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollector c,

@@ -286,9 +286,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void code_generation_is_so_easy_on_real_objects()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
@@ -319,8 +317,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void code_generation_is_also_easy_on_services()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceCanTalk ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ServiceCanTalk ) );
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
             {
@@ -335,11 +332,9 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void startup_services_registration_on_real_objects()
         {
-            // Succesful run: TotallyExternalStartupService is available.
+            // Successful run: TotallyExternalStartupService is available.
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( A ) );
-                collector.RegisterType( typeof( B ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
                 var startupServices = new SimpleServiceContainer();
                 startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
@@ -363,9 +358,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
             // Failed (while Configuring Services): TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem is missing.
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( A ) );
-                collector.RegisterType( typeof( B ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
                 TestHelper.GetFailedAutomaticServicesConfiguration( collector );
             }
         }
@@ -373,10 +366,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Service_implemented_by_a_real_object_can_be_overridden()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ScopedImplementation ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -404,10 +394,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Initially_registered_StartupServices_may_be_used_as_configurator_or_options()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ScopedImplementation ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ScopedImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
@@ -430,10 +417,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void superseding_a_IRealObject_implemented_service_by_a_wrapper()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SingletonImplementation ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SingletonImplementation ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -455,10 +439,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void superseding_a_IRealObject_implemented_service_by_another_IAmbient_Object()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( BDependency ) );
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( BDependency ), typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
@@ -481,9 +462,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
 
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
@@ -520,8 +499,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void ValueType_ctor_parameters_without_default_value_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithValueTypeCtorParameters ) );
 
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -533,8 +511,7 @@ namespace CK.StObj.Engine.Tests.Service
                                             && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithValueTypeCtorParameters ) );
 
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -570,8 +547,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void varying_params_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithVaryingParams ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithVaryingParams ) );
 
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -581,8 +557,7 @@ namespace CK.StObj.Engine.Tests.Service
                 }
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ServiceWithVaryingParams ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithVaryingParams ) );
 
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -602,8 +577,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void ValueType_ctor_parameters_with_default_value_are_ignored()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
 
             IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
             using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -637,8 +611,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void internal_interfaces_are_ignored()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( TheService ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( TheService ) );
             TestHelper.GetSuccessfulResult( collector );
         }
 

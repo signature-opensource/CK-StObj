@@ -38,10 +38,17 @@ namespace CK.Testing.StObjEngine
         /// <summary>
         /// Ensures that there are registration errors or a fatal error during the creation of the <see cref="StObjCollectorResult"/>
         /// and returns it if it has been created on error.
+        /// <para>
+        /// This methods expects at least a substring that must appear in a Error or Fatal emitted log. Testing a failure
+        /// should always challenge that the failure cause is what it should be.
+        /// To disable this (but this is NOT recommended), <paramref name="message"/> may be set to the empty string.
+        /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
+        /// <param name="otherMessages">Optional fatal messages substring that must be emitted.</param>
         /// <returns>The failed collector result or null if the error prevented its creation.</returns>
-        StObjCollectorResult? GetFailedResult( StObjCollector c );
+        StObjCollectorResult? GetFailedResult( StObjCollector c, string message, params string[] otherMessages );
 
         /// <summary>
         /// Runs the <see cref="StObjEngine"/> on a <see cref="GetSuccessfulResult(StObjCollector)"/>.

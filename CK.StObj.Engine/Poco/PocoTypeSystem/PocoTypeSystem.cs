@@ -27,19 +27,19 @@ namespace CK.Setup
         //          and non generic and non collection types.
         //  - CSharpName: for anonymous records (Value Tuples) and collection types (because of nullabilities:
         //                the ? marker does the job).
-        //  - NakedRecordSignature: for naked anonymous records.
         readonly Dictionary<object, PocoType> _cache;
         readonly PocoType _objectType;
         readonly PocoType _stringType;
-        readonly StringCodeWriter _sharedWriter;
         readonly List<PocoType> _allTypes;
         readonly HalfTypeList _exposedAllTypes;
+        readonly Stack<StringBuilder> _stringBuilderPool;
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
         /// </summary>
         public PocoTypeSystem()
         {
+            _stringBuilderPool = new Stack<StringBuilder>();
             _nullContext = new NullabilityInfoContext();
             _allTypes = new List<PocoType>( 8192 );
             _exposedAllTypes = new HalfTypeList( _allTypes );
@@ -66,12 +66,17 @@ namespace CK.Setup
             _cache.Add( _objectType.Type, _objectType );
             _cache.Add( "string", _stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", PocoTypeKind.Basic ) );
             _cache.Add( _stringType.Type, _stringType );
-            _sharedWriter = new StringCodeWriter();
         }
 
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
 
         public IReadOnlyList<IPocoType> AllNonNullableTypes => _allTypes;
+
+        internal void AddNew( PocoType t )
+        {
+            Debug.Assert( t.Index == _allTypes.Count * 2 );
+            _allTypes.Add( t );
+        }
 
         public IPocoType? FindByType( Type type )
         {
@@ -304,8 +309,7 @@ namespace CK.Setup
         {
             var subInfos = FlattenValueTuple( nInfo ).ToList();
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
-            var b = _sharedWriter.StringBuilder;
-            if( b.Length > 0 ) b = new StringBuilder();
+            var b = StringBuilderPool.Get();
             b.Append( '(' );
             int idx = 0;
             foreach( var sub in subInfos )
@@ -319,22 +323,11 @@ namespace CK.Setup
                 f.SetType( type );
             }
             b.Append( ')' );
-            var typeName = b.ToString();
-            b.Clear();
+            var typeName = StringBuilderPool.GetStringAndReturn( b );
             if( !_cache.TryGetValue( typeName, out var exists ) )
             {
-                var r = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, typeName, true, fields );
+                var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, true, fields );
                 _cache.Add( typeName, exists = r );
-                var (signature, isNaked) = NakedRecordSignature.FromRecord( r );
-                if( isNaked )
-                {
-                    _cache.Add( signature, r );
-                    r.SetNakedRecord( r );
-                }
-                else
-                {
-                    r.SetNakedRecord( FindOrCreateNakedRecord( monitor, signature, r, tNotNull, tNull ) );
-                }
             }
             return exists;
 
@@ -354,21 +347,6 @@ namespace CK.Setup
                     yield return info;
                 }
             }
-        }
-
-        IRecordPocoType FindOrCreateNakedRecord( IActivityMonitor monitor,
-                                                 NakedRecordSignature signature,
-                                                 ICompositePocoType c,
-                                                 Type? tNotNull,
-                                                 Type? tNull)
-        {
-            if( !_cache.TryGetValue( signature, out var nakedType ) )
-            {
-                nakedType = PocoType.CreateNakedRecord( monitor, this, c, tNotNull, tNull );
-                _cache.Add( signature, nakedType );
-            }
-            Debug.Assert( nakedType is IRecordPocoType nR && nR.IsAnonymous && nR.NakedRecord == nR );
-            return (IRecordPocoType)nakedType;
         }
 
         PocoType? OnTypedRecord( IActivityMonitor monitor, MemberContext ctx, Type tNull, Type tNotNull )
@@ -414,22 +392,19 @@ namespace CK.Setup
                 if( f == null ) return null;
                 fields[idx++] = f;
             }
-            var r = PocoType.CreateRecord( monitor, this, _sharedWriter, tNotNull, tNull, tNotNull.ToCSharpName(), false, fields );
+            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, tNotNull.ToCSharpName(), false, fields );
             _cache.Add( tNotNull, r );
-            var (signature, isNaked) = NakedRecordSignature.FromRecord( r );
-            Debug.Assert( isNaked is false );
-            r.SetNakedRecord( FindOrCreateNakedRecord( monitor, signature, r, null, null ) );
             return r;
         }
 
         RecordField? CreateField( IActivityMonitor monitor, int idx, IPocoType? type, MemberInfo fInfo, ParameterInfo[]? ctorParams )
         {
             if( type == null ) return null;
-            var defValue = FieldDefaultValue.CreateFromAttribute( monitor, _sharedWriter, fInfo );
+            var defValue = FieldDefaultValue.CreateFromAttribute( monitor, StringBuilderPool, fInfo );
             if( defValue == null && ctorParams != null )
             {
                 var p = ctorParams.FirstOrDefault( p => p.Name == fInfo.Name );
-                if( p != null ) defValue = FieldDefaultValue.CreateFromParameter( monitor, _sharedWriter, p );
+                if( p != null ) defValue = FieldDefaultValue.CreateFromParameter( monitor, StringBuilderPool, p );
             }
             var field = new RecordField( idx, fInfo.Name, defValue );
             field.SetType( type );

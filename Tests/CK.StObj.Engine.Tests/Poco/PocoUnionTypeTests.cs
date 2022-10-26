@@ -55,11 +55,11 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_definition_must_be_public_properties_in_nested_class_UnionTypes()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissUnionTypes ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissFieldDefinition ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeInvalidFieldDefinition ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         // Error:
@@ -118,13 +118,13 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_types_must_all_be_assignable_to_the_union_property()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMismatch1 ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMismatch2 ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMismatch3 ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeObject ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         // Error:
@@ -157,9 +157,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Not_nullable_Union_property_requires_NOT_nullable_union_types()
         {
             var c = TestHelper.CreateStObjCollector( typeof( INotNullablePropertyConflict1 ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( INotNullablePropertyConflict2 ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         // Error:
@@ -179,7 +179,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Nullable_Union_property_expects_at_least_ONE_nullable_union_types()
         {
             var c = TestHelper.CreateStObjCollector( typeof( INullablePropertyConflict ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         public interface IPocoWithUnionType : IPoco
@@ -314,11 +314,11 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_types_must_be_HashSet_Dictionary_and_List_not_corresponding_interfaces()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithIListInUnion ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IPocoWithIDictionaryInUnion ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IPocoWithISetInUnion ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         [ExternalName( "I1" )]

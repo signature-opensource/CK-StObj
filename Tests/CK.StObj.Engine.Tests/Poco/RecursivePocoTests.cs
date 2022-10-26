@@ -21,7 +21,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Direct_recursion_is_detected()
         {
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IDirectError ) ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IDirectError ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICycleError : IPoco
@@ -37,7 +38,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Indirect_one_level_recursion_is_detected()
         {
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( ICycleError ), typeof( ICycleError1 ) ) );
+            var c = TestHelper.CreateStObjCollector( typeof( ICycleError ), typeof( ICycleError1 ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICycleErrorA : IPoco
@@ -63,7 +65,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Indirect_multiple_level_recursion_is_detected()
         {
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) ) );
+            var c = TestHelper.CreateStObjCollector( typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
         public interface ICycleErrorConsumerIntermediate : IPoco
@@ -80,9 +83,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void cycle_detection_is_independent_of_registration_order()
         {
             var types = new[] { typeof( ICycleErrorConsumer ), typeof( ICycleErrorConsumerIntermediate ), typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) };
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ) );
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
             Array.Reverse( types );
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ) );
+            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
         }
 
         public interface IHolder : IPoco
@@ -99,7 +102,8 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void recursion_through_record_fields_is_detected()
         {
-            TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( typeof( IHolder ), typeof( IOther ) ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IHolder ), typeof( IOther ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco: " );
         }
 
 

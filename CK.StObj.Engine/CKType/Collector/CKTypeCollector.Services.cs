@@ -5,6 +5,7 @@ using System.Diagnostics;
 using CK.Setup;
 using CK.Core;
 using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 
 #nullable enable
 
@@ -20,12 +21,12 @@ namespace CK.Setup
         int _serviceInterfaceCount;
         int _serviceRootInterfaceCount;
 
-        AutoServiceClassInfo RegisterServiceClassInfo( Type t, bool isExcluded, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
+        AutoServiceClassInfo RegisterServiceClassInfo( IActivityMonitor monitor, Type t, bool isExcluded, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
         {
-            var serviceInfo = new AutoServiceClassInfo( _monitor, _serviceProvider, parent, t, isExcluded, objectInfo );
+            var serviceInfo = new AutoServiceClassInfo( monitor, _serviceProvider, parent, t, isExcluded, objectInfo );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
-                RegisterAssembly( t );
+                RegisterAssembly( monitor, t );
                 if( serviceInfo.Generalization == null ) _serviceRoots.Add( serviceInfo );
             }
             _serviceCollector.Add( t, serviceInfo );
@@ -33,18 +34,18 @@ namespace CK.Setup
         }
 
 
-        bool IsAutoService( Type t ) => (KindDetector.GetRawKind( _monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( IActivityMonitor monitor, Type t ) => (KindDetector.GetRawKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
-        internal AutoServiceClassInfo? FindServiceClassInfo( Type t )
+        internal AutoServiceClassInfo? FindServiceClassInfo( IActivityMonitor monitor, Type t )
         {
-            Debug.Assert( IsAutoService( t ) && t.IsClass );
+            Debug.Assert( IsAutoService( monitor, t ) && t.IsClass );
             _serviceCollector.TryGetValue( t, out var info );
             return info;
         }
 
-        internal AutoServiceInterfaceInfo? FindServiceInterfaceInfo( Type t )
+        internal AutoServiceInterfaceInfo? FindServiceInterfaceInfo( IActivityMonitor monitor, Type t )
         {
-            Debug.Assert( IsAutoService( t ) && t.IsInterface );
+            Debug.Assert( IsAutoService( monitor, t ) && t.IsInterface );
             _serviceInterfaces.TryGetValue( t, out var info );
             return info;
         }
@@ -53,9 +54,9 @@ namespace CK.Setup
         /// Returns null if and only if the interface type is excluded.
         /// This is only called by RegisterServiceInterfaces below (and recursively calls it).
         /// </summary>
-        AutoServiceInterfaceInfo? RegisterServiceInterface( Type t, CKTypeKind lt )
+        AutoServiceInterfaceInfo? RegisterServiceInterface( IActivityMonitor monitor, Type t, CKTypeKind lt )
         {
-            Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( _monitor, t ) );
+            Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( monitor, t ) );
             // Front service constraint is managed dynamically.
             lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
@@ -66,8 +67,8 @@ namespace CK.Setup
                                     || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
                                     || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
 
-                    var attr = new TypeAttributesCache( _monitor, t, _serviceProvider, false );
-                    info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( t.GetInterfaces() ) );
+                    var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false );
+                    info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( monitor, t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;
                     if( info.Interfaces.Count == 0 ) ++_serviceRootInterfaceCount;
                 }
@@ -77,31 +78,33 @@ namespace CK.Setup
             return info;
         }
 
-        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces, Action<Type,CKTypeKind,CKTypeCollector>? multipleImplementation = null )
+        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IActivityMonitor monitor,
+                                                                                  IEnumerable<Type> interfaces,
+                                                                                  Action<IActivityMonitor,Type,CKTypeKind,CKTypeCollector>? multipleImplementation = null )
         {
             foreach( var iT in interfaces )
             {
-                CKTypeKind k = KindDetector.GetRawKind( _monitor, iT );
+                CKTypeKind k = KindDetector.GetRawKind( monitor, iT );
                 if( (k & CKTypeKind.HasCombinationError) == 0 )
                 {
                     if( (k & CKTypeKind.IsMultipleService) != 0 )
                     {
-                        multipleImplementation?.Invoke( iT, k, this );
+                        multipleImplementation?.Invoke( monitor, iT, k, this );
                     }
                     else if( (k & CKTypeKind.IsAutoService) != 0 )
                     {
-                        var r = RegisterServiceInterface( iT, k );
+                        var r = RegisterServiceInterface( monitor, iT, k );
                         if( r != null ) yield return r;
                     }
                 }
             }
         }
 
-        AutoServiceCollectorResult GetAutoServiceResult( RealObjectCollectorResult contracts )
+        AutoServiceCollectorResult GetAutoServiceResult( IActivityMonitor monitor, RealObjectCollectorResult contracts )
         {
             bool success = true;
             List<Type>? abstractTails = null;
-            success &= InitializeRootServices( contracts.EngineMap, out var classAmbiguities, ref abstractTails );
+            success &= InitializeRootServices( monitor, contracts.EngineMap, out var classAmbiguities, ref abstractTails );
             List<AutoServiceClassInfo> subGraphs = new List<AutoServiceClassInfo>();
             if( success && classAmbiguities == null )
             {
@@ -129,7 +132,7 @@ namespace CK.Setup
             }
             Debug.Assert( idxAll == allInterfaces.Length );
             Debug.Assert( idxRoot == rootInterfaces.Length );
-            _monitor.Info( $"{allInterfaces.Length} Service interfaces with {rootInterfaces.Length} roots and {leafInterfaces.Count} interface leaves." );
+            monitor.Info( $"{allInterfaces.Length} Service interfaces with {rootInterfaces.Length} roots and {leafInterfaces.Count} interface leaves." );
             return new AutoServiceCollectorResult(
                 success,
                 allInterfaces,
@@ -141,12 +144,12 @@ namespace CK.Setup
                 subGraphs );
         }
 
-        bool InitializeRootServices(
-            StObjObjectEngineMap engineMap,
-            out IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
-            ref List<Type>? abstractTails )
+        bool InitializeRootServices( IActivityMonitor monitor,
+                                     StObjObjectEngineMap engineMap,
+                                     out IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
+                                     ref List<Type>? abstractTails )
         {
-            using( _monitor.OpenInfo( $"Analysing {_serviceRoots.Count} Service class hierarchies." ) )
+            using( monitor.OpenInfo( $"Analyzing {_serviceRoots.Count} Service class hierarchies." ) )
             {
                 bool error = false;
                 var deepestConcretes = new List<AutoServiceClassInfo>();
@@ -159,9 +162,9 @@ namespace CK.Setup
                 {
                     var c = _serviceRoots[i];
                     deepestConcretes.Clear();
-                    if( !c.InitializePath( _monitor, this, _tempAssembly, deepestConcretes, ref abstractTails ) )
+                    if( !c.InitializePath( monitor, this, _tempAssembly, deepestConcretes, ref abstractTails ) )
                     {
-                        _monitor.Warn( $"Service '{c.ClassType}' is abstract. It is ignored." );
+                        monitor.Warn( $"Service '{c.ClassType}' is abstract. It is ignored." );
                         _serviceRoots.RemoveAt( i-- );
                         continue;
                     }
@@ -178,7 +181,7 @@ namespace CK.Setup
                         ambiguities.Add( (c, deepestConcretes.ToArray()) );
                     }
                 }
-                _monitor.Trace( $"Found {_serviceRoots.Count} unambiguous paths." );
+                monitor.Trace( $"Found {_serviceRoots.Count} unambiguous paths." );
                 // Initializes all non ambiguous paths.
                 for( int i = 0; i < _serviceRoots.Count; ++i )
                 {
@@ -187,8 +190,8 @@ namespace CK.Setup
                     {
                         // Here, calling leaf.EnsureCtorBinding() would be enough but Service Resolution requires
                         // the closure on all leaves. GetCtorParametersClassClosure calls EnsureCtorBinding.
-                        leaf.GetCtorParametersClassClosure( _monitor, this, ref error );
-                        error |= !_serviceRoots[i].SetMostSpecialized( _monitor, engineMap, leaf );
+                        leaf.GetCtorParametersClassClosure( monitor, this, ref error );
+                        error |= !_serviceRoots[i].SetMostSpecialized( monitor, engineMap, leaf );
                     }
                 }
                 // Every non ambiguous paths have been initialized.
@@ -196,23 +199,23 @@ namespace CK.Setup
                 List<IReadOnlyList<AutoServiceClassInfo>>? remainingAmbiguities = null;
                 if( !error && ambiguities != null )
                 {
-                    using( _monitor.OpenInfo( $"Trying to resolve {ambiguities.Count} ambiguities." ) )
+                    using( monitor.OpenInfo( $"Trying to resolve {ambiguities.Count} ambiguities." ) )
                     {
-                        var resolver = new ClassAmbiguityResolver( _monitor, this, engineMap );
+                        var resolver = new ClassAmbiguityResolver( monitor, this, engineMap );
                         foreach( var a in ambiguities )
                         {
-                            using( _monitor.OpenTrace( $"Trying to resolve class ambiguities for {a.Root.ClassType}." ) )
+                            using( monitor.OpenTrace( $"Trying to resolve class ambiguities for {a.Root.ClassType}." ) )
                             {
                                 var (success, initError) = resolver.TryClassUnification( a.Root, a.Leaves );
                                 error |= initError;
                                 if( success )
                                 {
                                     Debug.Assert( a.Root.MostSpecialized != null, "This is null only on error." );
-                                    _monitor.CloseGroup( "Succeeds, resolved to: " + a.Root.MostSpecialized.ClassType );
+                                    monitor.CloseGroup( "Succeeds, resolved to: " + a.Root.MostSpecialized.ClassType );
                                 }
                                 else
                                 {
-                                    _monitor.CloseGroup( "Failed." );
+                                    monitor.CloseGroup( "Failed." );
                                     if( remainingAmbiguities == null ) remainingAmbiguities = new List<IReadOnlyList<AutoServiceClassInfo>>();
                                     resolver.CollectRemainingAmbiguities( remainingAmbiguities );
                                 }

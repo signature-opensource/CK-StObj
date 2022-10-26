@@ -1,6 +1,7 @@
 using FluentAssertions;
 using NUnit.Framework;
 using System.Diagnostics;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Service.TypeCollector
 {
@@ -34,10 +35,10 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
             var r = CheckSuccess( c =>
             {
-                c.RegisterType( typeof( ServiceRegisteredImpl ) );
+                c.RegisterType( TestHelper.Monitor, typeof( ServiceRegisteredImpl ) );
                 if( mode == "ExcludingSpecializedType" )
                 {
-                    c.RegisterType( typeof( ServiceNotRegisteredImpl ) );
+                    c.RegisterType( TestHelper.Monitor, typeof( ServiceNotRegisteredImpl ) );
                 }
             }, mode == "ExcludingSpecializedType"
                             ? CreateCKTypeCollector( t => t != typeof( ServiceNotRegisteredImpl ) )
@@ -58,7 +59,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         [Test]
         public void registering_service_registers_specialized_interfaces_and_base_impl_but_mask_them()
         {
-            var r = CheckSuccess( collector => collector.RegisterType( typeof( ServiceNotRegisteredImpl ) ) );
+            var r = CheckSuccess( collector => collector.RegisterType( TestHelper.Monitor, typeof( ServiceNotRegisteredImpl ) ) );
             var interfaces = r.AutoServices.LeafInterfaces;
             interfaces.Should().HaveCount( 1 );
             var iSpec = interfaces[0];

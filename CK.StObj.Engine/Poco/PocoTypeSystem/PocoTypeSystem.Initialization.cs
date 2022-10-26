@@ -80,7 +80,7 @@ namespace CK.Setup
                     if( f == null ) return false;
                     fields[prop.Index] = f;
                 }
-                success &= p.SetFields( monitor, _sharedWriter, fields );
+                success &= p.SetFields( monitor, StringBuilderPool, fields );
             }
             // If no error occurred, we can now detect any instantiation cycle error.
             // We handle only IPoco since collection items are not instantiated
@@ -95,6 +95,8 @@ namespace CK.Setup
                     detector.VisitRoot( monitor, p );
                     if( !detector.CheckValid( monitor ) )
                     {
+                        // As soon as one cycle is detected, we stop: this avoids
+                        // any dependency on the cycle to be (stupidly) detected.
                         success = false;
                         break;
                     }

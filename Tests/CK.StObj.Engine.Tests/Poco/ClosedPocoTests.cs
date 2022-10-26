@@ -59,15 +59,15 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( "AllBaseUserAndDocumentCloPocs" )]
         public void closed_poco_and_CKTypeDefiner_and_CKTypeSuperDefiner_is_the_basis_of_the_Cris_ICommand( string mode )
         {
-            var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+            var c = new StObjCollector( new SimpleServiceContainer() );
             if( mode == "AllBaseUserAndDocumentCloPocs" )
             {
-                c.RegisterTypes( BaseUserAndDocumentCloPocs );
+                c.RegisterTypes( TestHelper.Monitor, BaseUserAndDocumentCloPocs );
             }
             else
             {
-                c.RegisterType( typeof( IDocumentCloPoc ) );
-                c.RegisterType( typeof( ICultureUserCloPoc ) );
+                c.RegisterType( TestHelper.Monitor, typeof( IDocumentCloPoc ) );
+                c.RegisterType( TestHelper.Monitor, typeof( ICultureUserCloPoc ) );
             }
             var all = TestHelper.CreateAutomaticServices( c );
             try
@@ -132,27 +132,27 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void not_closed_poco_commmand_are_detected()
         {
-            var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-            c.RegisterType( typeof( IOther1UserCloPoc ) );
-            c.RegisterType( typeof( IOther2UserCloPoc ) );
-            TestHelper.GetFailedResult( c );
+            var c = new StObjCollector( new SimpleServiceContainer() );
+            c.RegisterType( TestHelper.Monitor, typeof( IOther1UserCloPoc ) );
+            c.RegisterType( TestHelper.Monitor, typeof( IOther2UserCloPoc ) );
+            TestHelper.GetFailedResult( c, "must be closed but none of these interfaces covers the other ones" );
         }
 
         [TestCase( "IUserFinalCloPoc only" )]
         [TestCase( "All commands" )]
         public void a_closed_poco_commmand_works_fine( string mode )
         {
-            var c = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
+            var c = new StObjCollector( new SimpleServiceContainer() );
             if( mode == "All commands")
             {
-                c.RegisterTypes( BaseUserAndDocumentCloPocs );
-                c.RegisterType( typeof( IOther1UserCloPoc ) );
-                c.RegisterType( typeof( IOther2UserCloPoc ) );
-                c.RegisterType( typeof( IUserFinalCloPoc ) );
+                c.RegisterTypes( TestHelper.Monitor, BaseUserAndDocumentCloPocs );
+                c.RegisterType( TestHelper.Monitor, typeof( IOther1UserCloPoc ) );
+                c.RegisterType( TestHelper.Monitor, typeof( IOther2UserCloPoc ) );
+                c.RegisterType( TestHelper.Monitor, typeof( IUserFinalCloPoc ) );
             }
             else
             {
-                c.RegisterType( typeof( IUserFinalCloPoc ) );
+                c.RegisterType( TestHelper.Monitor, typeof( IUserFinalCloPoc ) );
             }
 
             using var services = TestHelper.CreateAutomaticServices( c ).Services;

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
+using static CK.Setup.PocoType;
 
 namespace CK.Setup
 {
@@ -26,6 +27,10 @@ namespace CK.Setup
             public List<PropertyInfo> DeclaredProperties { get; }
 
             IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
+
+            public UnionTypeCollector? UnionTypeDefinition { get; set; }
+
+            IReadOnlyList<PropertyInfo> IPocoPropertyInfo.UnionTypeDefinition => (IReadOnlyList<PropertyInfo>?)UnionTypeDefinition?.Types ?? Array.Empty<PropertyInfo>();
 
             public PocoPropertyInfo( int initialIndex, string name )
             {

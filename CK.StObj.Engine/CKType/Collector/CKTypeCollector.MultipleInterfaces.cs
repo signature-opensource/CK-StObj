@@ -238,7 +238,7 @@ namespace CK.Setup
 
         MultipleImpl? IAutoServiceKindComputeFacade.GetMultipleInterfaceDescriptor( Type enumeratedType ) => _multipleMappings.GetValueOrDefault( enumeratedType );
 
-        internal void RegisterMultipleInterfaces( Type tI, CKTypeKind enumeratedKind, CKTypeInfo final )
+        internal void RegisterMultipleInterfaces( IActivityMonitor monitor, Type tI, CKTypeKind enumeratedKind, CKTypeInfo final )
         {
             if( !_multipleMappings.TryGetValue( tI, out var multiple ) )
             {
@@ -250,7 +250,7 @@ namespace CK.Setup
                 if( (enumeratedKind & (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable)) == (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
                 {
                     // Only if the T interface is a IFrontService (and hence a Scoped) and is marked with IsMarshallable attribute
-                    // can we avoid the implementations analyzis. Even if a IFrontService interface marked with IsMarshallable attribute should be rare,
+                    // can we avoid the implementations analysis. Even if a IFrontService interface marked with IsMarshallable attribute should be rare,
                     // we can benefit here from this minor (but logical) optimization.
                     _multipleMappings.Add( tI, new MultipleImpl( tEnumerable, tI ) );
                 }
@@ -259,7 +259,7 @@ namespace CK.Setup
                     // The IEnumerable itself may have been explicitly registered via SetAutoServiceKind.
                     // We check its compatibility with its enumerated interface (there may be incoherences) later in the DoComputeFinalTypeKind.
                     // Here we just check the "worst case":
-                    CKTypeKind enumKind = KindDetector.GetValidKind( _monitor, tEnumerable );
+                    CKTypeKind enumKind = KindDetector.GetValidKind( monitor, tEnumerable );
                     Debug.Assert( enumKind.GetCombinationError( false ) == null );
                     if( (enumKind & (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable)) == (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
                     {

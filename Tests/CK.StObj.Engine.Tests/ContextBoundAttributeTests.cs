@@ -204,8 +204,8 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests.
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S4 ) );
+            var c = new StObjCollector( aspectProvidedServices );
+            c.RegisterType( TestHelper.Monitor, typeof( S4 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
             Debug.Assert( r.EngineMap != null );
@@ -269,9 +269,9 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests.
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S5 ) );
-            c.RegisterType( typeof( S4 ) );
+            var c = new StObjCollector( aspectProvidedServices );
+            c.RegisterType( TestHelper.Monitor, typeof( S5 ) );
+            c.RegisterType( TestHelper.Monitor, typeof( S4 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
             Debug.Assert( r.EngineMap != null );
@@ -307,8 +307,8 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S6 ) );
+            var c = new StObjCollector( aspectProvidedServices );
+            c.RegisterType( TestHelper.Monitor, typeof( S6 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
             Debug.Assert( r.EngineMap != null );
@@ -354,8 +354,7 @@ namespace CK.StObj.Engine.Tests
             var aspectProvidedServices = new SimpleServiceContainer();
             // Registers this AttributeTests (required by the OneCtorAttributeImpl constructor).
             aspectProvidedServices.Add( this );
-            var c = new StObjCollector( TestHelper.Monitor, aspectProvidedServices );
-            c.RegisterType( typeof( S7 ) );
+            var c = TestHelper.CreateStObjCollector( typeof( S7 ) );
 
             var r = TestHelper.GetSuccessfulResult( c );
             Debug.Assert( r.EngineMap != null );

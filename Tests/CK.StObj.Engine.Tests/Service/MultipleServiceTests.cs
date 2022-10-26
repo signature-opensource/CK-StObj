@@ -23,9 +23,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void simple_Multiple_services_discovery()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( S1 ) );
-            collector.RegisterType( typeof( S2 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
 
             var result = TestHelper.CreateAutomaticServices( collector );
             try
@@ -71,23 +69,17 @@ namespace CK.StObj.Engine.Tests.Service
         public void AutoService_cannot_depend_on_IEnumerable_of_any_kind_of_class()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( WontWork1 ) );
-                // Registering it: Its CKTypeKind is None.
-                collector.RegisterType( typeof( TotallyExternalClass ) );
-                TestHelper.GetFailedResult( collector );
+                // Registering TotallyExternalClass: Its CKTypeKind is None.
+                var collector = TestHelper.CreateStObjCollector( typeof( WontWork1 ), typeof( TotallyExternalClass ) );
+                TestHelper.GetFailedResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( WontWork2 ) );
-                collector.RegisterType( typeof( AutoServiceImpl ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( WontWork2 ), typeof( AutoServiceImpl ) );
+                TestHelper.GetFailedResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( WontWork3 ) );
-                collector.RegisterType( typeof( S2 ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( WontWork3 ), typeof( S2 ) );
+                TestHelper.GetFailedResult( collector, "IEnumerable<T> requires that T is a [IsMultiple] interface. In no way can T be a class." );
             }
         }
 
@@ -104,8 +96,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void AutoService_can_depend_on_IEnumerable_of_struct_and_this_requires_an_explicit_registration_in_the_DI_container_at_runtime()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( MayWork ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( MayWork ) );
 
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -118,8 +109,7 @@ namespace CK.StObj.Engine.Tests.Service
                                             && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( MayWork ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( MayWork ) );
 
                 IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
                 using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
@@ -167,18 +157,14 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_can_support_IsMultiple_interfaces_but_interfaces_cannot_be_IRealObjects_and_IsMultiple()
         {
             {
-                var c = TestHelper.CreateStObjCollector();
-                c.RegisterType( typeof( ThatIsNotPossible ) );
-                TestHelper.GetFailedResult( c );
+                var c = TestHelper.CreateStObjCollector( typeof( ThatIsNotPossible ) );
+                TestHelper.GetFailedResult( c, "IRealObject interface cannot be marked as a Multiple service" );
 
-                var c2 = TestHelper.CreateStObjCollector();
-                c2.RegisterType( typeof( ThatIsNotPossible2 ) );
-                TestHelper.GetFailedResult( c2 );
+                var c2 = TestHelper.CreateStObjCollector( typeof( ThatIsNotPossible2 ) );
+                TestHelper.GetFailedResult( c2, "IRealObject interface cannot be marked as a Multiple service" );
             }
 
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( UserGoogle ) );
-            collector.RegisterType( typeof( UserOffice ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( UserGoogle ), typeof( UserOffice ) );
 
             var result = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( result.CollectorResult.EngineMap != null, "No initialization error." );
@@ -219,10 +205,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void IAutoServices_can_depend_on_IEnumerable_of_IsMultiple_interfaces_on_RealObjects_and_is_Singleton()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( UserGoogle ) );
-            collector.RegisterType( typeof( UserOffice ) );
-            collector.RegisterType( typeof( MulipleConsumer ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( UserGoogle ), typeof( UserOffice ), typeof( MulipleConsumer ) );
 
             var result = TestHelper.CreateAutomaticServices( collector );
             try
@@ -257,10 +240,10 @@ namespace CK.StObj.Engine.Tests.Service
             // Here class HNot is a IOfficialHostedService but not an IAutoService and not explicitly registered: it is not automatically registered.
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
-                collector.RegisterType( typeof( H1 ) );
-                collector.RegisterType( typeof( H2 ) );
-                collector.RegisterType( typeof( HNot ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
+                collector.RegisterType( TestHelper.Monitor, typeof( H1 ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( H2 ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( HNot ) );
 
                 var result = TestHelper.CreateAutomaticServices( collector );
                 try
@@ -288,9 +271,9 @@ namespace CK.StObj.Engine.Tests.Service
             // Of course, in this case, no lifetime analysis can be done.
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
-                collector.RegisterType( typeof( H1 ) );
-                collector.RegisterType( typeof( H2 ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );
+                collector.RegisterType( TestHelper.Monitor, typeof( H1 ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( H2 ) );
 
                 var result = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
                 {
@@ -328,8 +311,8 @@ namespace CK.StObj.Engine.Tests.Service
             // Success: H1 is singleton.
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
-                collector.RegisterType( typeof( H1 ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
+                collector.RegisterType( TestHelper.Monitor, typeof( H1 ) );
                 var result = TestHelper.CreateAutomaticServices( collector );
                 try
                 {
@@ -343,9 +326,9 @@ namespace CK.StObj.Engine.Tests.Service
             // Failure: H2 is IScopedAutoService.
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
-                collector.RegisterType( typeof( H2 ) );
-                TestHelper.GetFailedResult( collector );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService | AutoServiceKind.IsSingleton );
+                collector.RegisterType( TestHelper.Monitor, typeof( H2 ) );
+                TestHelper.GetFailedResult( collector, "An interface or an implementation cannot be both Scoped and Singleton" );
             }
         }
 
@@ -370,10 +353,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void IEnumerable_resolves_implementations_lifetimes_by_considering_final_implementations()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ManyAuto ) );
-                collector.RegisterType( typeof( ManySingleton ) );
-                collector.RegisterType( typeof( ManyConsumer ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ), typeof( ManySingleton ), typeof( ManyConsumer ) );
                 var result = TestHelper.CreateAutomaticServices( collector );
                 try
                 {
@@ -388,10 +368,7 @@ namespace CK.StObj.Engine.Tests.Service
                 }
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ManyAuto ) );
-                collector.RegisterType( typeof( ManyScoped ) );
-                collector.RegisterType( typeof( ManyConsumer ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManyConsumer ) );
                 var result = TestHelper.CreateAutomaticServices( collector );
                 try
                 {
@@ -406,11 +383,7 @@ namespace CK.StObj.Engine.Tests.Service
                 }
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ManyAuto ) );
-                collector.RegisterType( typeof( ManyScoped ) );
-                collector.RegisterType( typeof( ManySingleton ) );
-                collector.RegisterType( typeof( ManyConsumer ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( ManyAuto ), typeof( ManyScoped ), typeof( ManySingleton ), typeof( ManyConsumer ) );
                 var result = TestHelper.CreateAutomaticServices( collector );
                 try
                 {
@@ -434,10 +407,10 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped );
-                collector.RegisterType( typeof( ManyAuto ) );
-                collector.RegisterType( typeof( ManySingleton ) );
-                collector.RegisterType( typeof( ManyConsumer ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IEnumerable<IMany> ), AutoServiceKind.IsScoped );
+                collector.RegisterType( TestHelper.Monitor, typeof( ManyAuto ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( ManySingleton ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( ManyConsumer ) );
                 var result = TestHelper.CreateAutomaticServices( collector );
                 try
                 {
@@ -457,12 +430,12 @@ namespace CK.StObj.Engine.Tests.Service
         public void IEnumerable_cannot_be_SetAutoServiceKind_Singleton_if_the_enumerated_interface_is_Scoped()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton );
-            collector.SetAutoServiceKind( typeof( IMany ), AutoServiceKind.IsScoped );
-            collector.RegisterType( typeof( ManyAuto ) );
-            collector.RegisterType( typeof( ManySingleton ) );
-            collector.RegisterType( typeof( ManyConsumer ) );
-            TestHelper.GetFailedResult( collector );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IEnumerable<IMany> ), AutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IMany ), AutoServiceKind.IsScoped );
+            collector.RegisterType( TestHelper.Monitor, typeof( ManyAuto ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( ManySingleton ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( ManyConsumer ) );
+            TestHelper.GetFailedResult( collector, "An interface or an implementation cannot be both Scoped and Singleton" );
         }
 
     }

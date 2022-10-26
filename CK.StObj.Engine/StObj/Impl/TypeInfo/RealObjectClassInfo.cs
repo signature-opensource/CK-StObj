@@ -159,13 +159,12 @@ namespace CK.Setup
             /// <summary>
             /// Recursive function to collect/merge Ambient Properties, InjectObject and StObj Properties on base (non IRealObject) types.
             /// </summary>
-            static void CreateAllAmbientPropertyList(
-                IActivityMonitor monitor,
-                Type type,
-                int specializationLevel,
-                List<StObjPropertyInfo> stObjProperties,
-                out IReadOnlyList<AmbientPropertyInfo> apListResult,
-                out IReadOnlyList<InjectObjectInfo> acListResult )
+            static void CreateAllAmbientPropertyList( IActivityMonitor monitor,
+                                                      Type type,
+                                                      int specializationLevel,
+                                                      List<StObjPropertyInfo> stObjProperties,
+                                                      out IReadOnlyList<AmbientPropertyInfo> apListResult,
+                                                      out IReadOnlyList<InjectObjectInfo> acListResult )
             {
                 if( type == typeof( object ) )
                 {
@@ -539,7 +538,7 @@ namespace CK.Setup
             }
         }
 
-        internal void InitializeInterfaces( IActivityMonitor m, CKTypeCollector collector )
+        internal void InitializeInterfaces( IActivityMonitor monitor, CKTypeCollector collector )
         {
             // If there is a path ambiguity we'll reach an already initialized parent set of interfaces.
             if( _realObjectInterfaces == null )
@@ -547,7 +546,7 @@ namespace CK.Setup
                 List<Type> all = null;
                 foreach( Type tI in Interfaces )
                 {
-                    var k = collector.KindDetector.GetValidKind( m, tI );
+                    var k = collector.KindDetector.GetValidKind( monitor, tI );
                     if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                     {
                         if( all == null ) all = new List<Type>();
@@ -555,11 +554,11 @@ namespace CK.Setup
                     }
                     else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
                     {
-                        AddMultipleMapping( tI, k, collector );
+                        AddMultipleMapping( monitor, tI, k, collector );
                     }
                 }
                 _realObjectInterfaces = (IReadOnlyList<Type>?)all ?? Type.EmptyTypes;
-                Generalization?.InitializeInterfaces( m, collector );
+                Generalization?.InitializeInterfaces( monitor, collector );
             }
         }
 

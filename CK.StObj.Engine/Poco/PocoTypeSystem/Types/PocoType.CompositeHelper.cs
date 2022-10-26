@@ -27,18 +27,18 @@ namespace CK.Setup
             /// the no code is required (<see cref="DefaultValueInfo.DefaultValue"/> is null).
             /// </summary>
             public static DefaultValueInfo CreateDefaultValueInfo( IActivityMonitor monitor,
-                                                                   StringBuilder sharedBuilder,
+                                                                   PocoTypeSystem.IStringBuilderPool sbPool,
                                                                    IRecordPocoType type )
             {
                 if( !TryInstantiateValue( monitor, type, out var oValue ) )
                 {
                     return DefaultValueInfo.Disallowed;
                 }
-                var b = sharedBuilder.Length == 0 ? sharedBuilder : new StringBuilder();
+                var b = sbPool.Get();
                 var r = type.IsAnonymous
                             ? ForAnonymousRecord( monitor, b, type, oValue )
                             : ForRecord( monitor, b, type, oValue );
-                b.Clear();
+                sbPool.Return( b );
                 return r;
 
                 static bool TryInstantiateValue( IActivityMonitor monitor, ICompositePocoType type, out object oValue )
@@ -183,12 +183,12 @@ namespace CK.Setup
             /// then no code is required (<see cref="DefaultValueInfo.DefaultValue"/> is null).
             /// </summary>
             public static DefaultValueInfo CreateDefaultValueInfo( IActivityMonitor monitor,
-                                                                   StringBuilder sharedBuilder,
+                                                                   PocoTypeSystem.IStringBuilderPool sbPool,
                                                                    IPrimaryPocoType type )
             {
-                var b = sharedBuilder.Length == 0 ? sharedBuilder : new StringBuilder();
+                var b = sbPool.Get();
                 var r = DoCreateDefaultValueInfo( monitor, b, type );
-                b.Clear();
+                sbPool.Return( b );
                 return r;
 
                 static DefaultValueInfo DoCreateDefaultValueInfo( IActivityMonitor monitor,

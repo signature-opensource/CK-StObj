@@ -53,9 +53,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_types_cannot_be_extended_by_default()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendable ), typeof( IPocoNonExtendableSpecializedMore ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendable ), typeof( IPocoNonExtendableSpecializedLess ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         public interface IPocoNonExtendableIndependent : IPoco
@@ -99,9 +99,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_types_cannot_be_extended_by_default_accross_independent_interfaces()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentLess ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
             c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentMore ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "BLAH" );
         }
 
         public interface IPoco1 : IPoco

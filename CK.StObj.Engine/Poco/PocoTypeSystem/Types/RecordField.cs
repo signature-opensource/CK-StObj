@@ -40,19 +40,6 @@ namespace CK.Setup
             }
         }
 
-        /// <summary>
-        /// Initializes an unnamed field.
-        /// </summary>
-        /// <param name="existing">The existing field.</param>
-        public RecordField( IPocoField existing )
-        {
-            Index = existing.Index;
-            Name = GetItemName( Index );
-            IsUnnamed = true;
-            _defInfo = existing.DefaultValueInfo;
-            _type = existing.Type;
-        }
-
         public int Index { get; }
 
         public string Name { get; }

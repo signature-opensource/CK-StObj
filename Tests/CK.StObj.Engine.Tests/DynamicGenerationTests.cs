@@ -72,9 +72,9 @@ namespace CK.StObj.Engine.Tests
             public static void DoTest()
             {
                 using var container = new SimpleServiceContainer();
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, container, configurator: new StObjPropertyConfigurator() );
-                collector.RegisterType( typeof( B ) );
-                collector.RegisterType( typeof( ASpec ) );
+                StObjCollector collector = new StObjCollector( container, configurator: new StObjPropertyConfigurator() );
+                collector.RegisterType( TestHelper.Monitor, typeof( B ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
@@ -199,9 +199,9 @@ namespace CK.StObj.Engine.Tests
 
             public void DoTest()
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new StObjPropertyConfigurator() );
-                collector.RegisterType( typeof( BSpec ) );
-                collector.RegisterType( typeof( ASpec ) );
+                StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new StObjPropertyConfigurator() );
+                collector.RegisterType( TestHelper.Monitor, typeof( BSpec ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
 
@@ -352,9 +352,7 @@ namespace CK.StObj.Engine.Tests
 
             public void DoTest()
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( AutomaticallyImplemented ) );
-
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( AutomaticallyImplemented ) );
                 var map = TestHelper.CompileAndLoadStObjMap( collector ).Map;
                 Debug.Assert( map != null );
 
@@ -397,10 +395,9 @@ namespace CK.StObj.Engine.Tests
                 var extraServices = new SimpleServiceContainer();
                 extraServices.Add<Func<string>>( () => "Hello World!" );
 
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, extraServices );
-                collector.RegisterType( typeof( JustForTheAttribute ) );
-                var r = collector.GetResult();
-                Assert.That( r.HasFatalError, Is.False );
+                StObjCollector collector = new StObjCollector( extraServices );
+                collector.RegisterType( TestHelper.Monitor, typeof( JustForTheAttribute ) );
+                TestHelper.GetSuccessfulResult( collector );
             }
 
         }

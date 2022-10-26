@@ -101,7 +101,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void homonym_properties_must_all_be_Default_Implementation_Method_or_not_in_a_Family1()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IActualRoot ), typeof( IOnActual ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "has a Default Implementation Method (DIM). To be supported, all 'RowCount' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
         public interface IFaultyRoot : IPoco
@@ -114,7 +114,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void a_Default_Implementation_Method_must_use_AutoImplementationClaim_Attribute()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IFaultyRoot ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
         }
 
         public interface IEmptyRoot : IPoco { }
@@ -135,7 +135,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void homonym_properties_must_all_be_Default_Implementation_Method_or_not_in_a_Family2()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyRoot ), typeof( IOther ), typeof( IAnother ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "has a Default Implementation Method (DIM). To be supported, all 'ValidDIM' properties must be DIM and use the [AutoImplementationClaim] attribute." );
         }
 
 

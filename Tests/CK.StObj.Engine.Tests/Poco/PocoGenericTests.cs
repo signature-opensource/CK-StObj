@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void generic_IPoco_is_forbidden()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IWantAnInt ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "Use the [CKTypeDefiner] attribute to define a generic IPoco." );
         }
 
         [CKTypeDefiner]

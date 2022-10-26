@@ -301,12 +301,11 @@ namespace CK.Setup
         /// for instance).
         /// This is simpler here since there is no split in type info (no MutableItem layer).
         /// </summary>
-        internal bool InitializePath(
-                        IActivityMonitor monitor,
-                        CKTypeCollector collector,
-                        IDynamicAssembly tempAssembly,
-                        List<AutoServiceClassInfo> lastConcretes,
-                        ref List<Type>? abstractTails )
+        internal bool InitializePath( IActivityMonitor monitor,
+                                      CKTypeCollector collector,
+                                      IDynamicAssembly tempAssembly,
+                                      List<AutoServiceClassInfo> lastConcretes,
+                                      ref List<Type>? abstractTails )
         {
             Debug.Assert( tempAssembly != null );
             Debug.Assert( !TypeInfo.IsExcluded );
@@ -343,7 +342,7 @@ namespace CK.Setup
                 // An unused Auto Service interface (i.e. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
-                Interfaces = collector.RegisterServiceInterfaces( TypeInfo.Interfaces, IsRealObject ? (Action<Type,CKTypeKind,CKTypeCollector>?)null : TypeInfo.AddMultipleMapping ).ToArray();
+                Interfaces = collector.RegisterServiceInterfaces( monitor, TypeInfo.Interfaces, IsRealObject ? (Action<IActivityMonitor,Type,CKTypeKind,CKTypeCollector>?)null : TypeInfo.AddMultipleMapping ).ToArray();
             }
             return isConcretePath;
         }
@@ -689,7 +688,7 @@ namespace CK.Setup
             return _ctorParmetersClosure;
         }
 
-        IEnumerable<AutoServiceClassInfo> GetReplacedTargetsFromReplaceServiceAttribute( IActivityMonitor m, CKTypeCollector collector )
+        IEnumerable<AutoServiceClassInfo> GetReplacedTargetsFromReplaceServiceAttribute( IActivityMonitor monitor, CKTypeCollector collector )
         {
             foreach( var p in ClassType.GetCustomAttributesData()
                                   .Where( a => a.AttributeType.Name == nameof( ReplaceAutoServiceAttribute ) )
@@ -701,7 +700,7 @@ namespace CK.Setup
                     replaced = SimpleTypeFinder.WeakResolver( s, false );
                     if( replaced == null )
                     {
-                        m.Warn( $"[ReplaceAutoService] on type '{ClassType}': the assembly qualified name '{s}' cannot be resolved. It is ignored." );
+                        monitor.Warn( $"[ReplaceAutoService] on type '{ClassType}': the assembly qualified name '{s}' cannot be resolved. It is ignored." );
                         continue;
                     }
                 }
@@ -710,14 +709,14 @@ namespace CK.Setup
                     replaced = p.Value as Type;
                     if( replaced == null )
                     {
-                        m.Warn( $"[ReplaceAutoService] on type '{ClassType}': the parameter '{p.Value}' is not a Type. It is ignored." );
+                        monitor.Warn( $"[ReplaceAutoService] on type '{ClassType}': the parameter '{p.Value}' is not a Type. It is ignored." );
                         continue;
                     }
                 }
-                var target = collector.FindServiceClassInfo( replaced );
+                var target = collector.FindServiceClassInfo( monitor, replaced );
                 if( target == null )
                 {
-                    m.Warn( $"[ReplaceAutoService({replaced.Name})] on type '{ClassType}': the Type to replace is not an Auto Service class implementation. It is ignored." );
+                    monitor.Warn( $"[ReplaceAutoService({replaced.Name})] on type '{ClassType}': the Type to replace is not an Auto Service class implementation. It is ignored." );
                 }
                 else
                 {
@@ -799,7 +798,7 @@ namespace CK.Setup
             }
         }
 
-        CtorParameterData CreateCtorParameterData( IActivityMonitor m,
+        CtorParameterData CreateCtorParameterData( IActivityMonitor monitor,
                                                    CKTypeCollector collector,
                                                    ParameterInfo p )
         {
@@ -815,14 +814,14 @@ namespace CK.Setup
                 }
                 else 
                 {
-                    var genKind = collector.KindDetector.GetValidKind( m, tGen );
+                    var genKind = collector.KindDetector.GetValidKind( monitor, tGen );
                     if( genKind != CKTypeKind.None )
                     {
                         return new CtorParameterData( true, null, null, false, genKind, tParam );
                     }
                 }
             }
-            var kind = collector.KindDetector.GetRawKind( m, tParam );
+            var kind = collector.KindDetector.GetRawKind( monitor, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
             var conflictMsg = (kind & CKTypeKind.HasCombinationError) != 0 ? kind.GetCombinationError( tParam.IsClass ) : null;
@@ -866,16 +865,16 @@ namespace CK.Setup
             Debug.Assert( p.Member.DeclaringType != null );
             if( conflictMsg != null )
             {
-                m.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor: {conflictMsg}" );
+                monitor.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor: {conflictMsg}" );
                 return new CtorParameterData( false, null, null, false, kind, tParam );
             }
             Debug.Assert( conflictMsg == null && (kind & CKTypeKind.IsAutoService) != 0 );
             if( tParam.IsClass )
             {
-                var sClass = collector.FindServiceClassInfo( tParam );
+                var sClass = collector.FindServiceClassInfo( monitor, tParam );
                 if( sClass == null )
                 {
-                    m.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor." );
+                    monitor.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 if( !sClass.IsIncluded )
@@ -886,27 +885,27 @@ namespace CK.Setup
                     var prefix = $"Service type '{tParam}' is {reason}. Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
                     if( !p.HasDefaultValue )
                     {
-                        m.Error( prefix + "can not be resolved." );
+                        monitor.Error( prefix + "can not be resolved." );
                         return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                     }
-                    m.Info( prefix + "will use its default value." );
+                    monitor.Info( prefix + "will use its default value." );
                     sClass = null;
                 }
                 else if( TypeInfo.IsAssignableFrom( sClass.TypeInfo ) )
                 {
                     var prefix = $"Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
-                    m.Error( prefix + "cannot be this class or one of its specializations." );
+                    monitor.Error( prefix + "cannot be this class or one of its specializations." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 else if( sClass.TypeInfo.IsAssignableFrom( TypeInfo ) )
                 {
                     var prefix = $"Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
-                    m.Error( prefix + "cannot be one of its base class." );
+                    monitor.Error( prefix + "cannot be one of its base class." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 return new CtorParameterData( true, sClass, null, isEnumerable, kind, tParam );
             }
-            return new CtorParameterData( true, null, collector.FindServiceInterfaceInfo( tParam ), isEnumerable, kind, tParam );
+            return new CtorParameterData( true, null, collector.FindServiceInterfaceInfo( monitor, tParam ), isEnumerable, kind, tParam );
         }
 
         /// <summary>

@@ -299,20 +299,20 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public void LayeredArchitecture_and_SqlDatabase_configurations( string mode )
         {
             var configurator = new ConfiguratorByStObjConstruct( mode );
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: configurator );
-            collector.RegisterType( typeof( BasicPackage ) );
-            collector.RegisterType( typeof( BasicActor ) );
-            collector.RegisterType( typeof( BasicUser ) );
-            collector.RegisterType( typeof( BasicGroup ) );
-            collector.RegisterType( typeof( ZonePackage ) );
-            collector.RegisterType( typeof( ZoneGroup ) );
-            collector.RegisterType( typeof( SecurityZone ) );
-            collector.RegisterType( typeof( AuthenticationPackage ) );
-            collector.RegisterType( typeof( AuthenticationUser ) );
-            collector.RegisterType( typeof( AuthenticationDetail ) );
-            collector.RegisterType( typeof( SqlDefaultDatabase ) );
-            collector.RegisterType( typeof( SqlHistoDatabase ) );
-            collector.RegisterType( typeof( SqlAlienDatabase ) );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: configurator );
+            collector.RegisterTypes( TestHelper.Monitor, new[] { typeof( BasicPackage ),
+                                                                 typeof( BasicActor ),
+                                                                 typeof( BasicUser ),
+                                                                 typeof( BasicGroup ),
+                                                                 typeof( ZonePackage ),
+                                                                 typeof( ZoneGroup ),
+                                                                 typeof( SecurityZone ),
+                                                                 typeof( AuthenticationPackage ),
+                                                                 typeof( AuthenticationUser ),
+                                                                 typeof( AuthenticationDetail ),
+                                                                 typeof( SqlDefaultDatabase ),
+                                                                 typeof( SqlHistoDatabase ),
+                                                                 typeof( SqlAlienDatabase ) } );
 
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );

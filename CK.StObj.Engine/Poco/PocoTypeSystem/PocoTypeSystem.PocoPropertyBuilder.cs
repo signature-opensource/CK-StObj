@@ -73,13 +73,13 @@ namespace CK.Setup
                     }
                     if( _defaultValue == null )
                     {
-                        _defaultValue = FieldDefaultValue.CreateFromAttribute( monitor, _system._sharedWriter, p );
+                        _defaultValue = FieldDefaultValue.CreateFromAttribute( monitor, _system.StringBuilderPool, p );
                         if( _defaultValue != null ) _defaultValueSource = p;
                     }
                     else
                     {
                         Debug.Assert( _defaultValueSource != null );
-                        if( !_defaultValue.CheckSameOrNone( monitor, _defaultValueSource, _system._sharedWriter, p ) )
+                        if( !_defaultValue.CheckSameOrNone( monitor, _defaultValueSource, _system.StringBuilderPool, p ) )
                         {
                             return false;
                         }

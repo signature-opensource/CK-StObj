@@ -20,29 +20,29 @@ namespace CK.Setup
             ValueCSharpSource = source;
         }
 
-        public FieldDefaultValue( object value, StringCodeWriter sharedCodeWriter )
-            : this( value, WriteSourceValue( value, sharedCodeWriter ) )
+        public FieldDefaultValue( object value, PocoTypeSystem.IStringBuilderPool sbPool )
+            : this( value, WriteSourceValue( value, sbPool ) )
         {
         }
 
-        static string WriteSourceValue( object value, StringCodeWriter w )
+        static string WriteSourceValue( object value, PocoTypeSystem.IStringBuilderPool sbPool )
         {
-            if( w.StringBuilder.Length != 0 ) w = new StringCodeWriter();
+            var w = new StringCodeWriter( sbPool.Get() );
             var source = w.Append( value ).ToString();
-            w.StringBuilder.Clear();
+            sbPool.GetStringAndReturn( w.StringBuilder );
             return source;
         }
 
         public static FieldDefaultValue? CreateFromParameter( IActivityMonitor monitor,
-                                                              StringCodeWriter codeWriter,
+                                                              PocoTypeSystem.IStringBuilderPool sbPool,
                                                               ParameterInfo definer )
         {
             if( !definer.HasDefaultValue || definer.DefaultValue == null ) return null;
-            return new FieldDefaultValue( definer.DefaultValue, codeWriter );
+            return new FieldDefaultValue( definer.DefaultValue, sbPool );
         }
 
         public static FieldDefaultValue? CreateFromAttribute( IActivityMonitor monitor,
-                                                              StringCodeWriter sharedCodeWriter,
+                                                              PocoTypeSystem.IStringBuilderPool sbPool,
                                                               MemberInfo definer )
         {
             // Use the conversion from the constructor for the value.
@@ -51,14 +51,14 @@ namespace CK.Setup
             var value = a.Value;
             if( value == null ) return null;
             if( ReferenceEquals( value, String.Empty ) ) return StringDefault; 
-            return new FieldDefaultValue( value, WriteSourceValue( value, sharedCodeWriter ) );
+            return new FieldDefaultValue( value, WriteSourceValue( value, sbPool ) );
         }
 
-        public bool CheckSameOrNone( IActivityMonitor monitor, MemberInfo defaultValueSource, StringCodeWriter codeWriter, MemberInfo other )
+        public bool CheckSameOrNone( IActivityMonitor monitor, MemberInfo defaultValueSource, PocoTypeSystem.IStringBuilderPool sbPool, MemberInfo other )
         {
             var a = other.GetCustomAttribute<DefaultValueAttribute>();
             if( a?.Value == null || a.Value == Value ) return true;
-            var source = WriteSourceValue( a.Value, codeWriter );
+            var source = WriteSourceValue( a.Value, sbPool );
             if( source != ValueCSharpSource )
             {
                 monitor.Error( $"Default values difference between '{defaultValueSource.DeclaringType}.{defaultValueSource.Name}' = '{ValueCSharpSource}' and '{other.DeclaringType}.{other.Name}' = '{source}'." );

@@ -21,7 +21,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void writable_anonymous_record_must_be_a_ref_property()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidValueTupleSetter ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "' must be a ref property: 'ref (int Count,string Name) Thing { get; }'." );
         }
 
         public interface IWithValueTuple : IPoco
@@ -74,7 +74,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void nullability_incoherence_is_checked()
         {
             var c = TestHelper.CreateStObjCollector( typeof( INullabilityError ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,System.Collections.Generic.List<string?>? B,System.Collections.Generic.List<System.Collections.Generic.List<string?>?>? C)?' since " );
         }
     }
 }

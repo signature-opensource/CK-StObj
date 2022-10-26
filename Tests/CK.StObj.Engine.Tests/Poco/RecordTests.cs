@@ -1,10 +1,12 @@
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
@@ -113,7 +115,7 @@ namespace CK.StObj.Engine.Tests.Poco
             p.B.Funny.A.Inner.F.Name.Should().Be( "Hip!" );
         }
 
-        // To be investigated... Tis is doable but honestly, do we need this?
+        // To be investigated... This is doable but honestly, do we need this?
         public interface IWithGenericRecordStruct : IPoco
         {
             public record struct ThingDetail<T>( int Power, T X, List<int> Values, string Name = "Albert" );
@@ -126,7 +128,64 @@ namespace CK.StObj.Engine.Tests.Poco
         public void generic_record_is_not_supported()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IWithGenericRecordStruct ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "Generic value type cannot be a Poco type" );
         }
+
+        // Error CS8170  Struct members cannot return 'this' or other instance members by reference.
+        //public struct ThisMayBetterButImossible
+        //{
+        //    DetailWithFields _v;
+
+        //    public ref DetailWithFields Thing => ref _v;
+        //}
+
+        // We cannot forbid this without preventing record struct positional parameter syntax
+        // to work.
+        public struct ValidSetterButNotIdeal
+        {
+            public DetailWithFields Thing { get; set; }
+        }
+
+        public ValidSetterButNotIdeal GetValidSetterButNotIdeal => default;
+
+        // It's unfortunate that record struct positional parameter syntax generates
+        // properties instead of fields. Simple fields (like in ValueTuple) are easier to use
+        // with composite struct fields.
+        public struct Simple
+        {
+            public DetailWithFields Thing;
+        }
+
+        public Simple GetSimple => default;
+
+        [Test]
+        public void ref_property_or_field_thats_the_question()
+        {
+            var ts = new PocoTypeSystem();
+            var t1 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetValidSetterButNotIdeal ) )! );
+            Debug.Assert( t1 != null );
+            var t2 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSimple ) )! );
+            Debug.Assert( t2 != null );
+
+            // TBI: Why is Simple usable without initialization but ValidSetterButNotIdeal is not? (new() is required...)
+            Simple sField;
+            ValidSetterButNotIdeal sProp = new();
+
+            sField.Thing.Power = 45;
+            // You cannot do this.
+            // sProp.Thing.Power = 45;
+            Debug.Assert( sProp.Thing.Values == null, "It is the Poco framework that is able to correctly initialize properties." );
+
+            // Both Requires Initialization.
+            Debug.Assert( t1.DefaultValueInfo.RequiresInit );
+            Debug.Assert( t2.DefaultValueInfo.RequiresInit );
+
+            // The same initialization.
+            var defCode = t1.DefaultValueInfo.DefaultValue.ValueCSharpSource;
+            defCode.Should().Be( "new(){Thing = new(){Power = 42, Values = new System.Collections.Generic.List<int>(), Name = @\"Hip!\"}}" );
+            t2.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( defCode );
+        }
+
+
     }
 }

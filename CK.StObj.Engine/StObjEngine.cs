@@ -318,8 +318,7 @@ namespace CK.Setup
                 var configurator = _startContext.Configurator.FirstLayer;
                 // When head.IsUnifiedPure the type filter keeps only the IPoco and IRealObject.
                 var typeFilter = new TypeFilterFromConfiguration( group, configurator );
-                StObjCollector stObjC = new StObjCollector( _monitor,
-                                                            _startContext.ServiceContainer,
+                StObjCollector stObjC = new StObjCollector( _startContext.ServiceContainer,
                                                             _config.Configuration.TraceDependencySorterInput,
                                                             _config.Configuration.TraceDependencySorterOutput,
                                                             typeFilter,
@@ -337,23 +336,21 @@ namespace CK.Setup
                         {
                             // When c.Kind is None, !Optional is challenged.
                             // The Type is always resolved.
-                            stObjC.SetAutoServiceKind( c.Name, c.Kind, c.Optional );
+                            stObjC.SetAutoServiceKind( _monitor, c.Name, c.Kind, c.Optional );
                         }
                     }
                     // Then registers the types from the assemblies.
-                    stObjC.RegisterAssemblyTypes( group.Configuration.Assemblies );
+                    stObjC.RegisterAssemblyTypes( _monitor, group.Configuration.Assemblies );
                     // Explicitly registers the non optional Types.
-                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( group.Configuration.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
+                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( _monitor, group.Configuration.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
                     // Finally, registers the code based explicitly registered types.
-                    foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( t );
-
-                    Debug.Assert( stObjC.RegisteringFatalOrErrorCount == 0 || hasError, "stObjC.RegisteringFatalOrErrorCount > 0 ==> An error has been logged." );
+                    foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( _monitor, t );
                 }
-                if( stObjC.RegisteringFatalOrErrorCount == 0 )
+                if( stObjC.FatalOrErrors.Count == 0 )
                 {
                     using( _monitor.OpenInfo( "Resolving Real Objects & AutoService dependency graph." ) )
                     {
-                        result = stObjC.GetResult();
+                        result = stObjC.GetResult( _monitor );
                         Debug.Assert( !result.HasFatalError || hasError, "result.HasFatalError ==> An error has been logged." );
                     }
                     if( !result.HasFatalError ) return result;

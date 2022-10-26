@@ -103,8 +103,8 @@ namespace CK.StObj.Engine.Tests.Service
             // ISBase is no more considered a IScopedAutoService.
             {
                 var collector = TestHelper.CreateStObjCollector( t => t != typeof( ISBase ) );
-                collector.RegisterType( typeof( ServiceS1Impl ) );
-                collector.RegisterType( typeof( ServiceS2Impl ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( ServiceS1Impl ) );
+                collector.RegisterType( TestHelper.Monitor, typeof( ServiceS2Impl ) );
                 var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
 
@@ -123,8 +123,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_with_single_implementation()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceS1S2Impl ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ServiceS1S2Impl ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.SimpleMappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( ServiceS1S2Impl ) );
@@ -144,8 +143,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_interfaces_unification_works()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceUnifiedImpl ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ServiceUnifiedImpl ) );
             var r = TestHelper.GetSuccessfulResult( collector );
             var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
             interfaces.Should().HaveCount( 1 );
@@ -203,10 +201,8 @@ namespace CK.StObj.Engine.Tests.Service
         {
             bool solved = mode == "With Service Chaining";
 
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ServiceImpl1 ) );
-            collector.RegisterType( typeof( ServiceImpl3 ) );
-            if( solved ) collector.RegisterType( typeof( ResolveByClassUnification ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ServiceImpl1 ), typeof( ServiceImpl3 ) );
+            if( solved ) collector.RegisterType( TestHelper.Monitor, typeof( ResolveByClassUnification ) );
 
             if( solved )
             {
@@ -223,7 +219,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
             else
             {
-                var r = TestHelper.GetFailedResult( collector );
+                var r = TestHelper.GetFailedResult( collector, "cannot be unified by any of this candidates: " );
                 Debug.Assert( r != null, "We have a (failed) result." );
 
                 var interfaces = r.CKTypeResult.AutoServices.LeafInterfaces;
@@ -265,11 +261,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void simple_linked_list_of_service_classes()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( S1 ) );
-            collector.RegisterType( typeof( S2 ) );
-            collector.RegisterType( typeof( S3 ) );
-            collector.RegisterType( typeof( S4 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ), typeof( S3 ), typeof( S4 ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.SimpleMappings[typeof( ISBase )].ClassType.Should().BeSameAs( typeof( S1 ) );
@@ -303,10 +295,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Linked_list_of_service_abstract_classes()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( AbstractS1 ) );
-            collector.RegisterType( typeof( AbstractS2 ) );
-            collector.RegisterType( typeof( AbstractS3 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( AbstractS1 ), typeof( AbstractS2 ), typeof( AbstractS3 ) );
 
             var (r, map) = TestHelper.CompileAndLoadStObjMap( collector );
 
