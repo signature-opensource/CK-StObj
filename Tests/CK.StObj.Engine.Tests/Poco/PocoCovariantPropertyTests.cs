@@ -1,13 +1,21 @@
 using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Serialization;
 using NUnit.Framework;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
+
+
     [TestFixture]
     public class PocoCovariantPropertyTests
     {

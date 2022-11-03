@@ -20,7 +20,7 @@ namespace CK.Setup
         /// Use <see cref="IUnionPocoType.AllowedTypes"/> for the full set of compatible types.
         /// </para>
         /// </summary>
-        IEnumerable<IConcretePocoType> PrimaryPocoTypes { get; }
+        IEnumerable<IPrimaryPocoType> PrimaryPocoTypes { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IAbstractPocoType Nullable { get; }

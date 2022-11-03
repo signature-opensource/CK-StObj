@@ -25,7 +25,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Poco name.
         /// When no [<see cref="ExternalNameAttribute"/>] is defined, this name defaults
-        /// to the <see cref="Type.FullName"/> of the <see cref="PrimaryInterface"/>.
+        /// to the <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
+        /// of the <see cref="PrimaryInterface"/>.
         /// </summary>
         string Name { get; }
 

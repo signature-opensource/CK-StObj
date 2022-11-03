@@ -53,7 +53,9 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes().Where( t => t != typeof( ICannotBe ) );
+        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests )
+                                                                    .GetNestedTypes()
+                                                                    .Where( t => t != typeof( ICannotBe ) );
 
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()

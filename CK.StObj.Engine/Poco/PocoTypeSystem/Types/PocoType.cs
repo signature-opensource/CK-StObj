@@ -1,16 +1,10 @@
-using CK.CodeGen;
 using CK.Core;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Operations;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
-
-
     partial class PocoType : IPocoType
     {
         AnnotationSetImpl _annotations;
@@ -46,6 +40,8 @@ namespace CK.Setup
             public bool IsReadableType( Type type ) => NonNullable.IsReadableType( type );
 
             public bool IsWritableType( Type type ) => NonNullable.IsWritableType( type );
+
+            public override string ToString() => $"[{Kind}]{CSharpName}";
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -98,6 +94,8 @@ namespace CK.Setup
             public bool IsReadableType( Type type ) => type == typeof( object ) || type == Type || type == NonNullable.Type;
 
             public bool IsWritableType( Type type ) => type == Type;
+
+            public override string ToString() => $"[{Kind}]{CSharpName}";
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

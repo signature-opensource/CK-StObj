@@ -53,9 +53,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_types_cannot_be_extended_by_default()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendable ), typeof( IPocoNonExtendableSpecializedMore ) );
-            TestHelper.GetFailedResult( c, "BLAH" );
+            TestHelper.GetFailedResult( c, "Property 'Thing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendable', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableSpecializedMore' is a UnionType that cannot be extended." );
             c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendable ), typeof( IPocoNonExtendableSpecializedLess ) );
-            TestHelper.GetFailedResult( c, "BLAH" );
+            TestHelper.GetFailedResult( c, "Property 'Thing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendable', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableSpecializedLess' is a UnionType that cannot be extended." );
         }
 
         public interface IPocoNonExtendableIndependent : IPoco
@@ -69,7 +69,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (string[]?, string?, List<string>?) AnotherThing { get; }
+                public (string[], string, List<string>) AnotherThing { get; }
             }
         }
 
@@ -80,7 +80,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (string[]?, string?) AnotherThing { get; }
+                public (string[], string) AnotherThing { get; }
             }
         }
 
@@ -91,7 +91,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             class UnionTypes
             {
-                public (string[]?, string?, IList<string>?, ISet<string>?) AnotherThing { get; }
+                public (string[], string, IList<string>, ISet<string>) AnotherThing { get; }
             }
         }
 
@@ -99,9 +99,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_property_types_cannot_be_extended_by_default_accross_independent_interfaces()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentLess ) );
-            TestHelper.GetFailedResult( c, "BLAH" );
+            TestHelper.GetFailedResult( c, "Property 'AnotherThing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentProperty', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentLess' is a UnionType that cannot be extended." );
             c = TestHelper.CreateStObjCollector( typeof( IPocoNonExtendableIndependent ), typeof( IPocoNonExtendableIndependentProperty ), typeof( IPocoNonExtendableIndependentMore ) );
-            TestHelper.GetFailedResult( c, "BLAH" );
+            TestHelper.GetFailedResult( c, "Property 'AnotherThing' on Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentProperty', 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPocoNonExtendableIndependentMore' is a UnionType that cannot be extended." );
         }
 
         public interface IPoco1 : IPoco
@@ -127,7 +127,7 @@ namespace CK.StObj.Engine.Tests.Poco
             {
                 public (string, List<string>) Thing { get; }
 
-                public (int, double)? AnotherThing { get; }
+                public (int, double) AnotherThing { get; }
             }
         }
 
@@ -138,7 +138,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             new class UnionTypes
             {
-                public (string,List<string?>)? AnotherThing { get; }
+                public (string,List<string?>) AnotherThing { get; }
             }
         }
 

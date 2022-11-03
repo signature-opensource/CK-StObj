@@ -78,17 +78,17 @@ namespace CK.Testing
             CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
             return r;
 
-            static void CheckExpectedMessages( IReadOnlyList<ActivityMonitorSimpleCollector.Entry> fatalOrErrors, string message, string[] otherMessages )
+            static void CheckExpectedMessages( IReadOnlyList<string> fatalOrErrors, string message, string[] otherMessages )
             {
                 CheckMessage( fatalOrErrors, message );
                 foreach( var m in otherMessages ) CheckMessage( fatalOrErrors, m );
 
-                static void CheckMessage( IReadOnlyList<ActivityMonitorSimpleCollector.Entry> fatalOrErrors, string m )
+                static void CheckMessage( IReadOnlyList<string> fatalOrErrors, string m )
                 {
                     if( !String.IsNullOrEmpty( m ) )
                     {
-                        fatalOrErrors.Any( e => e.Text.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
-                            .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{fatalOrErrors.Select( e => e.Text ).Concatenate( Environment.NewLine )}" );
+                        fatalOrErrors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
+                            .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{fatalOrErrors.Concatenate( Environment.NewLine )}" );
                     }
                 }
             }

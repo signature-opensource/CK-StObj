@@ -39,7 +39,7 @@ namespace CK.Core
             foreach( var n in previousNames ) CheckName( n );
             if( previousNames.Contains( name ) || previousNames.GroupBy( Util.FuncIdentity ).Count() > 1 )
             {
-                throw new ArgumentException( "Duplicate names in attribute.", nameof( previousNames ) );
+                Throw.ArgumentException( "Duplicate names in attribute.", nameof( previousNames ) );
             }
             Name = name;
             PreviousNames = previousNames;
@@ -47,14 +47,10 @@ namespace CK.Core
 
         static void CheckName( string name )
         {
-            if( String.IsNullOrWhiteSpace( name ) )
-            {
-                if( name == null ) throw new ArgumentNullException( nameof( name ) );
-                throw new ArgumentException( $"External name must not be empty or whitespace.", nameof( name ) );
-            }
+            Throw.CheckNotNullOrWhiteSpaceArgument( name );
             if( name.StartsWith( '!' ) )
             {
-                throw new ArgumentException( $"External name must not start with a '!': '{name}'.", nameof( name ) );
+                Throw.ArgumentException( nameof( name ), $"External name must not start with a '!': '{name}'." );
             }
         }
 

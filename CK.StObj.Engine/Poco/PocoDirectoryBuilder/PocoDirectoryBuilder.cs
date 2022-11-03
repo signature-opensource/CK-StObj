@@ -12,7 +12,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using static CK.Setup.PocoType;
 
 #nullable enable
 
@@ -422,7 +421,7 @@ namespace CK.Setup
                                 Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
                                 if( u == null )
                                 {
-                                    monitor.Error( $"[UnionType] attribute on '{i.ToCSharpName()}.{p.Name}' requires a nested 'class UnionTypes {{ public (int?,string) {p.Name} {{ get; }} }}' with the types (here, (int?,string) is just an example of course)." );
+                                    monitor.Error( $"[UnionType] attribute on '{i.ToCSharpName()}.{p.Name}' requires a nested 'class UnionTypes {{ public (int,string) {p.Name} {{ get; }} }}' with the types (here, (int,string) is just an example of course)." );
                                     success = false;
                                     cacheUnionTypesDef = Array.Empty<PropertyInfo>();
                                 }
@@ -486,8 +485,14 @@ namespace CK.Setup
                 propertyList.Add( pocoProperty );
             }
             pocoProperty.DeclaredProperties.Add( p );
+            // Handles UnionType definition.
             if( unionTypesDef != null )
             {
+                if( p.PropertyType != typeof(object) )
+                {
+                    monitor.Error( $"{pocoProperty} is a UnionType: its type can only be 'object' or 'object?'." );
+                    return false;
+                }
                 var propDef = unionTypesDef.FirstOrDefault( f => f.Name == p.Name );
                 if( propDef == null )
                 {
@@ -505,7 +510,12 @@ namespace CK.Setup
                     bool canBeExtended = pocoProperty.UnionTypeDefinition.CanBeExtended;
                     if( canBeExtended != attr.CanBeExtended )
                     {
-                        monitor.Error( $"{pocoProperty} is a UnionType that can{(canBeExtended ? "" : "not")} be extended but '{p.DeclaringType}.{p.Name}' can{(canBeExtended ? "not" : "")} be extended. All property definitions of a IPoco family must agree on this." );
+                        monitor.Error( $"{pocoProperty} is a UnionType that can{(canBeExtended ? "" : "not")} be extended but '{p.DeclaringType.ToCSharpName(false)}.{p.Name}' can{(canBeExtended ? "not" : "")} be extended. All property definitions of a IPoco family must agree on this." );
+                        return false;
+                    }
+                    if( !canBeExtended )
+                    {
+                        monitor.Error( $"{pocoProperty} is a UnionType that cannot be extended." );
                         return false;
                     }
                     pocoProperty.UnionTypeDefinition.Types.Add( propDef );

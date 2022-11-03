@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using Microsoft.CodeAnalysis.Operations;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,7 +12,29 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        internal static UnionType CreateUnion( IActivityMonitor monitor, PocoTypeSystem s, IReadOnlyList<IPocoType> allowedTypes )
+        internal sealed class KeyUnionTypes : IEquatable<KeyUnionTypes>
+        {
+            readonly IPocoType[] _types;
+            readonly int _hash;
+
+            public KeyUnionTypes( IPocoType[] types )
+            {
+                _types = types;
+                var h = new HashCode();
+                foreach( var t in types ) h.Add( t );
+                _hash = h.ToHashCode();
+            }
+
+            public bool Equals( KeyUnionTypes? other ) => other != null ? _types.SequenceEqual( other._types ) : false;
+
+            public override bool Equals( object? obj ) => Equals( obj as KeyUnionTypes );
+
+            public override int GetHashCode() => _hash;
+        }
+
+        internal static UnionType CreateUnion( IActivityMonitor monitor,
+                                               PocoTypeSystem s,
+                                               IPocoType[] allowedTypes )
         {
             return new UnionType( s, allowedTypes );
         }
@@ -38,7 +61,7 @@ namespace CK.Setup
             IReadOnlyList<IPocoType> _allowedTypes;
             DefaultValueInfo _defInfo;
 
-            public UnionType( PocoTypeSystem s, IReadOnlyList<IPocoType> allowedTypes )
+            public UnionType( PocoTypeSystem s, IPocoType[] allowedTypes )
                 : base( s,
                         typeof(object),
                         "object",
@@ -46,6 +69,8 @@ namespace CK.Setup
                         t => new Null( t ) )
             {
                 _allowedTypes = allowedTypes;
+                // Finds the first type that has a non-disallowed default.
+                _defInfo = _allowedTypes.Select( t => t.DefaultValueInfo ).FirstOrDefault( d => !d.IsDisallowed );
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );

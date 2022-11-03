@@ -1,7 +1,7 @@
 namespace CK.Setup
 {
     /// <summary>
-    /// Union type of Poco types. In .Net this is a simple <c>object</c>.
+    /// Union type of Poco compliant types. In .Net this is a simple <c>object</c>.
     /// </summary>
     public interface IUnionPocoType : IAnyOfPocoType<IPocoType>
     {

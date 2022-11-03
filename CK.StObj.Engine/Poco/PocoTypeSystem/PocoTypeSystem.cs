@@ -229,7 +229,7 @@ namespace CK.Setup
                 }
                 return result;
             }
-            monitor.Error( $"Unsupported Poco generic type: '{t}'." );
+            monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t.ToCSharpName(false)}'." );
             return null;
         }
 
@@ -410,6 +410,17 @@ namespace CK.Setup
             field.SetType( type );
             return field;
         }
+
+        IUnionPocoType? RegisterUnionType( IActivityMonitor monitor, List<IPocoType> types )
+        {
+            var a = types.ToArray();
+            var k = new PocoType.KeyUnionTypes( a );
+            if( _cache.TryGetValue( k, out var result ) ) return (IUnionPocoType)result;
+            var t = PocoType.CreateUnion( monitor, this, a );
+            _cache.Add( k, t );
+            return t;
+        }
+
     }
 
 }

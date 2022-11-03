@@ -17,14 +17,14 @@ namespace CK.Setup
                                                               IReadOnlyList<IPocoType> abstractAndPrimary )
         {
             Debug.Assert( abstractAndPrimary.Take(abstractCount).All( t => t is IAbstractPocoType ) );
-            Debug.Assert( abstractAndPrimary.Skip(abstractCount).All( t => t is IConcretePocoType ) );
+            Debug.Assert( abstractAndPrimary.Skip(abstractCount).All( t => t is IPrimaryPocoType ) );
             return new AbstractPocoType1( s, tAbstract, abstractCount, abstractAndPrimary );
         }
 
         internal static AbstractPocoType2 CreateAbstractPoco( PocoTypeSystem s,
                                                               Type tAbstract,
                                                               IReadOnlyList<IAbstractPocoType> abstracts,
-                                                              IReadOnlyList<IConcretePocoType> primaries )
+                                                              IReadOnlyList<IPrimaryPocoType> primaries )
         {
             return new AbstractPocoType2( s, tAbstract, abstracts, primaries );
         }
@@ -40,7 +40,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> OtherAbstractTypes => NonNullable.OtherAbstractTypes.Select( a => a.Nullable );
 
-            public IEnumerable<IConcretePocoType> PrimaryPocoTypes => NonNullable.PrimaryPocoTypes.Select( a => a.Nullable );
+            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => NonNullable.PrimaryPocoTypes.Select( a => a.Nullable );
 
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
@@ -72,7 +72,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> OtherAbstractTypes => _abstractAndPrimary.Take( _abstractCount ).Cast<IAbstractPocoType>();
 
-            public IEnumerable<IConcretePocoType> PrimaryPocoTypes => _abstractAndPrimary.Skip( _abstractCount ).Cast<IConcretePocoType>();
+            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _abstractAndPrimary.Skip( _abstractCount ).Cast<IPrimaryPocoType>();
 
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 
@@ -95,12 +95,12 @@ namespace CK.Setup
         internal sealed class AbstractPocoType2 : PocoType, IAbstractPocoType
         {
             readonly IReadOnlyList<IAbstractPocoType> _abstracts;
-            readonly IReadOnlyList<IConcretePocoType> _primaries;
+            readonly IReadOnlyList<IPrimaryPocoType> _primaries;
 
             public AbstractPocoType2( PocoTypeSystem s,
                                          Type tAbstract,
                                          IReadOnlyList<IAbstractPocoType> abstracts,
-                                         IReadOnlyList<IConcretePocoType> primaries )
+                                         IReadOnlyList<IPrimaryPocoType> primaries )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractIPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstracts = abstracts;
@@ -111,7 +111,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> OtherAbstractTypes => _abstracts;
 
-            public IEnumerable<IConcretePocoType> PrimaryPocoTypes => _primaries;
+            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 

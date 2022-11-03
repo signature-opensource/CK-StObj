@@ -10,5 +10,9 @@
     <PackageReference Include="CK.Testing.Monitoring" Version="5.0.0" />
     <!-- This implements concrete ServiceCollection and DI engine itself. -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+
+    <!-- Temporary transitive dependency. -->
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0011-develop" />
+
   </ItemGroup>
 </Project>

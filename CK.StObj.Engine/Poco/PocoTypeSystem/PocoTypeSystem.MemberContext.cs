@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -32,6 +33,8 @@ namespace CK.Setup
                 _tupleNames = root.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames ?? Array.Empty<string>();
             }
 
+            public bool UsePrimaryPocoMapping { get; init; }
+
             public RecordField[] GetTupleNamedFields( int count )
             {
                 var fields = new RecordField[count];
@@ -47,10 +50,10 @@ namespace CK.Setup
                 if( _member != null )
                 {
                     var type = _member is PropertyInfo ? "Property" : "Field";
-                    return $"{type} '{_member.DeclaringType}.{_member.Name}'";
+                    return $"{type} '{_member.DeclaringType.ToCSharpName()}.{_member.Name}'";
                 }
                 Debug.Assert( _parameter != null );
-                return $"Parameter '{_parameter.Name}' of method '{_parameter.Member.DeclaringType}.{_parameter.Member.Name}'";
+                return $"Parameter '{_parameter.Name}' of method '{_parameter.Member.DeclaringType.ToCSharpName(false)}.{_parameter.Member.Name}'";
             }
 
         }

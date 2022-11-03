@@ -80,11 +80,13 @@ namespace CK.StObj.Engine.Tests.Poco
         public void when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
-            using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
-                                            .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
-                                                                     && x.Text.StartsWith( $"Poco '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) ) ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
                 TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
+                entries.Where( x => x.MaskedLevel == LogLevel.Warn )
+                       .Select( x => x.Text )
+                       .Should()
+                       .Contain( $"Type '{typeof( ICmdNoName ).ToCSharpName()}' use its full CSharpName as its name since no [ExternalName] attribute is defined." );
             }
         }
 

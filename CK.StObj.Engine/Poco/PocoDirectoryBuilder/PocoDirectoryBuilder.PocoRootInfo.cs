@@ -63,7 +63,7 @@ namespace CK.Setup
             }
 #pragma warning restore CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
 
-            public override string ToString() => $"Poco: {PrimaryInterface.PocoInterface.FullName} ({Interfaces.Count} interfaces)";
+            public override string ToString() => $"Poco: {PrimaryInterface.PocoInterface.ToCSharpName()} ({Interfaces.Count} interfaces)";
 
             public bool InitializeNames( IActivityMonitor monitor )
             {

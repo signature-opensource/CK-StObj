@@ -65,7 +65,7 @@ namespace CK.Setup
                 : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.IPoco, t => new Null( t ) )
             {
                 FamilyInfo = family;
-                _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {CSharpName}()" );
+                _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {family.PocoClass.Name}()" );
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );

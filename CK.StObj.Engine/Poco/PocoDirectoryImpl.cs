@@ -66,6 +66,8 @@ namespace CK.Setup
                 var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, family.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
+                var fieldPart = tB.CreatePart();
+
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
                 // can refer to the _factory to access the factory extended code without cast.
                 //
@@ -85,10 +87,10 @@ namespace CK.Setup
                 // one static (the first one) and the instance will be replaced by the subsequent assemblies? In all cases,
                 // diamond problem will have to be ultimately resolved at the final leaf... Just like we do!
                 // 
-                tB.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;")
-                  .NewLine();
+                fieldPart.Append( "internal static " ).Append( tFB.Name ).Append( " _factory;" ).NewLine();
+
                 tB.Append( "IPocoFactory IPocoGeneratedClass.Factory => _factory;" ).NewLine();
-                
+
                 // Always create the constructor so that other code generators
                 // can always find it.
                 // We support the interfaces here: if other participants have already created this type, it is
@@ -105,29 +107,57 @@ namespace CK.Setup
                 foreach( var f in pocoType.Fields )
                 {
                     // Creates the backing field.
-                    tB.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName ).Append(";").NewLine();
+                    fieldPart.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                     // Creates the property.
                     if( f.IsByRef )
                     {
+                        // A ref property is only the return of the ref backing field.
                         tB.Append( "public ref " ).Append( f.Type.CSharpName ).Space().Append( f.Name )
                           .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                     }
                     else
                     {
+                        // The getter is always the same.
                         tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
                         if( f.IsReadOnly )
                         {
+                            // Readonly doesn't require the "get".
                             tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                         }
                         else
                         {
+                            // For writable properties we need the get/set. 
                             tB.OpenBlock()
-                              .Append( "get => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine()
-                              .Append( "set" )
+                              .Append( "get => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+
+                            tB.Append( "set" )
                                 .OpenBlock();
+                            // Always generate the null check.
                             if( !f.Type.IsNullable && !f.Type.Type.IsValueType )
                             {
                                 tB.Append( "Throw.CheckNotNullArgument( value );" ).NewLine();
+                            }
+                            // UnionType: check against the allowed types.
+                            if( f.Type is IUnionPocoType uT )
+                            {
+                                Debug.Assert( f.Type.Kind == PocoTypeKind.UnionType );
+                                // Generates the "static Type[] _vXXXAllowed" array.
+                                fieldPart.Append( "static readonly Type[] " ).Append( f.PrivateFieldName ).Append( "Allowed = " )
+                                         .AppendArray( uT.AllowedTypes.Select( u => u.Type ) ).Append( ";" ).NewLine();
+
+                                if( f.Type.IsNullable ) tB.Append( "if( value != null )" ).OpenBlock();
+
+                                // Generates the check.
+                                tB.Append( "Type tV = value.GetType();" ).NewLine()
+                                  .Append( "if( !" ).Append( f.PrivateFieldName ).Append( "Allowed" )
+                                  .Append( ".Any( t => t.IsAssignableFrom( tV ) ) )" )
+                                    .OpenBlock()
+                                    .Append( "Throw.ArgumentException( $\"Unexpected Type '{tV.ToCSharpName()}' in UnionType. Allowed types are: '" )
+                                    .Append( uT.AllowedTypes.Select( tU => tU.CSharpName ).Concatenate( "', '" ) )
+                                    .Append( "'.\");" )
+                                    .CloseBlock();
+
+                                if( f.Type.IsNullable ) tB.CloseBlock();
                             }
                             tB.Append( f.PrivateFieldName ).Append( " = value;" )
                                 .CloseBlock()

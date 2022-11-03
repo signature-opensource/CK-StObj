@@ -42,7 +42,7 @@ namespace CK.Setup
         bool IsNullable { get; }
 
         /// <summary>
-        /// Gets the full C# name of this type.
+        /// Gets the C# name with namespaces and nullabilities of this type.
         /// </summary>
         string CSharpName { get; }
 

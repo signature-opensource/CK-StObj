@@ -503,14 +503,13 @@ namespace CK.StObj.Engine.Tests
 
             public static void DoTest()
             {
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
                     TestHelper.CompileAndLoadStObjMap( collector ).Map.Should().NotBeNull();
+                    entries.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
+                    entries.Should().NotContain( e => e.Text.Contains( "Because nobody added me", StringComparison.Ordinal ) );
                 }
-                logs.Should().Contain( e => e.Text == "ActualImpl1: I'm great!, I'm SOOOO great!." );
-                logs.Should().NotContain( e => e.Text.Contains( "Because nobody added me", StringComparison.Ordinal ) );
             }
 
         }
@@ -576,14 +575,14 @@ namespace CK.StObj.Engine.Tests
 
             public void DoTest()
             {
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     StObjCollector collector = TestHelper.CreateStObjCollector( typeof( S1 ), typeof( S2 ) );
                     TestHelper.CompileAndLoadStObjMap( collector ).Map.Should().NotBeNull();
+
+                    entries.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
+                                    .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
                 }
-                logs.Should().Contain( e => e.Text == "AutoImpl2: I'm great!." )
-                             .And.Contain( e => e.Text == "AutoImpl in another pass: I'm great!." );
             }
 
         }
