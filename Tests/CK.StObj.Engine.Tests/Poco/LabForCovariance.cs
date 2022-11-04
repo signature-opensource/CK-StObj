@@ -1,13 +1,12 @@
 using CK.Core;
+using FluentAssertions;
+using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using NUnit.Framework;
-using FluentAssertions;
 using System.Runtime.CompilerServices;
-using System.Collections.ObjectModel;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -286,49 +285,72 @@ namespace CK.StObj.Engine.Tests.Poco
             nSet.SetEquals( set ).Should().BeTrue();
             nSet.SetEquals( empty ).Should().BeFalse();
             nSet.SetEquals( set2 ).Should().BeTrue();
+            nSet.SetEquals( set2.Concat( set2 ) ).Should().BeTrue();
             nSet.SetEquals( superSet2 ).Should().BeFalse();
+            nSet.SetEquals( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.SetEquals( subSet2 ).Should().BeFalse();
+            nSet.SetEquals( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.SetEquals( otherSet ).Should().BeFalse();
+            nSet.SetEquals( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsProperSubsetOf( set ).Should().BeFalse();
             nSet.IsProperSubsetOf( empty ).Should().BeFalse();
             nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
+            nSet.IsProperSubsetOf( set2.Concat( set2 ) ).Should().BeFalse();
             nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue();
+            nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue();
             nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
+            nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
+            nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsSubsetOf( set ).Should().BeTrue();
             nSet.IsSubsetOf( empty ).Should().BeFalse();
             nSet.IsSubsetOf( set2 ).Should().BeTrue();
+            nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeTrue();
             nSet.IsSubsetOf( superSet2 ).Should().BeTrue();
+            nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue();
             nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
+            nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsSubsetOf( otherSet ).Should().BeFalse();
+            nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsProperSupersetOf( set ).Should().BeFalse();
             nSet.IsProperSupersetOf( empty ).Should().BeTrue();
             nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
+            nSet.IsProperSupersetOf( set2.Concat( set2 ) ).Should().BeFalse();
             nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
+            nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue();
+            nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue();
             nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
+            nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsSupersetOf( set ).Should().BeTrue();
             nSet.IsSupersetOf( empty ).Should().BeTrue();
             nSet.IsSupersetOf( set2 ).Should().BeTrue();
+            nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeTrue();
             nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
+            nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.IsSupersetOf( subSet2 ).Should().BeTrue();
+            nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue();
             nSet.IsSupersetOf( otherSet ).Should().BeFalse();
+            nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.Overlaps( set ).Should().BeTrue();
             nSet.Overlaps( empty ).Should().BeFalse();
             nSet.Overlaps( set2 ).Should().BeTrue();
+            nSet.Overlaps( set2.Concat( set2 ) ).Should().BeTrue();
             nSet.Overlaps( superSet2 ).Should().BeTrue();
+            nSet.Overlaps( superSet2.Concat( superSet2 ) ).Should().BeTrue();
             nSet.Overlaps( subSet2 ).Should().BeTrue();
+            nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
             nSet.Overlaps( otherSet ).Should().BeFalse();
+            nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
         }
 
-
         [Test]
-        public void CovPocoHashSet_CANNOT_be_used_for_Nullable()
+        public void CovPocoHashSet_CANNOT_be_used_when_set_CAN_contain_null()
         {
             var t1 = new Thing_CK() { Power = 1 };
             var t2 = new Thing_CK() { Power = 2 };
@@ -348,44 +370,68 @@ namespace CK.StObj.Engine.Tests.Poco
             nSet.SetEquals( set ).Should().BeTrue();
             nSet.SetEquals( empty ).Should().BeFalse();
             nSet.SetEquals( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.SetEquals( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.SetEquals( superSet2 ).Should().BeFalse();
+            nSet.SetEquals( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.SetEquals( subSet2 ).Should().BeFalse();
+            nSet.SetEquals( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.SetEquals( otherSet ).Should().BeFalse();
+            nSet.SetEquals( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsProperSubsetOf( set ).Should().BeFalse();
             nSet.IsProperSubsetOf( empty ).Should().BeFalse();
             nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
+            nSet.IsProperSubsetOf( set2.Concat( set2 ) ).Should().BeFalse();
             nSet.IsProperSubsetOf( superSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
+            nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
+            nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsSubsetOf( set ).Should().BeTrue();
             nSet.IsSubsetOf( empty ).Should().BeFalse();
             nSet.IsSubsetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSubsetOf( superSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSubsetOf( superSet2.Concat(  superSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
+            nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsSubsetOf( otherSet ).Should().BeFalse();
+            nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsProperSupersetOf( set ).Should().BeFalse();
             nSet.IsProperSupersetOf( empty ).Should().BeTrue();
             nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
+            nSet.IsProperSupersetOf( set2.Concat( set2 ) ).Should().BeFalse();
             nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
+            nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.IsProperSupersetOf( subSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
+            nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsSupersetOf( set ).Should().BeTrue();
             nSet.IsSupersetOf( empty ).Should().BeTrue();
             nSet.IsSupersetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
+            nSet.IsSupersetOf( superSet2.Concat(superSet2) ).Should().BeFalse();
             nSet.IsSupersetOf( subSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSupersetOf( otherSet ).Should().BeFalse();
+            nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.Overlaps( set ).Should().BeTrue();
             nSet.Overlaps( empty ).Should().BeFalse();
             nSet.Overlaps( set2 ).Should().BeTrue();
+            nSet.Overlaps( set2.Concat( set2 ) ).Should().BeTrue();
             nSet.Overlaps( superSet2 ).Should().BeTrue();
+            nSet.Overlaps( superSet2.Concat( superSet2 ) ).Should().BeTrue();
             nSet.Overlaps( subSet2 ).Should().BeTrue();
+            nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
             nSet.Overlaps( otherSet ).Should().BeFalse();
+            nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
         }
 
         public sealed class CovPocoNullableHashSet_CK<TImpl> : HashSet<TImpl?>,
@@ -440,11 +486,11 @@ namespace CK.StObj.Engine.Tests.Poco
 
             bool IReadOnlySet<object?>.IsSubsetOf( IEnumerable<object?> other ) => CovariantHelpers.NullableIsSubsetOf( this, other );
 
-            bool IReadOnlySet<object?>.IsSupersetOf( IEnumerable<object?> other ) => CovariantHelpers.IsSupersetOf( this, other );
+            bool IReadOnlySet<object?>.IsSupersetOf( IEnumerable<object?> other ) => CovariantHelpers.NullableIsSupersetOf( this, other );
 
-            bool IReadOnlySet<object?>.Overlaps( IEnumerable<object?> other ) => CovariantHelpers.Overlaps( this, other );
+            bool IReadOnlySet<object?>.Overlaps( IEnumerable<object?> other ) => CovariantHelpers.NullableOverlaps( this, other );
 
-            bool IReadOnlySet<object?>.SetEquals( IEnumerable<object?> other ) => CovariantHelpers.SetEquals( this, other );
+            bool IReadOnlySet<object?>.SetEquals( IEnumerable<object?> other ) => CovariantHelpers.NullableSetEquals( this, other );
 
             IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => GetEnumerator();
 
@@ -457,11 +503,11 @@ namespace CK.StObj.Engine.Tests.Poco
 
             bool IReadOnlySet<ICommand?>.IsSubsetOf( IEnumerable<ICommand?> other ) => CovariantHelpers.NullableIsSubsetOf( this, other );
 
-            bool IReadOnlySet<ICommand?>.IsSupersetOf( IEnumerable<ICommand?> other ) => CovariantHelpers.IsSupersetOf( this, other );
+            bool IReadOnlySet<ICommand?>.IsSupersetOf( IEnumerable<ICommand?> other ) => CovariantHelpers.NullableIsSupersetOf( this, other );
 
-            bool IReadOnlySet<ICommand?>.Overlaps( IEnumerable<ICommand?> other ) => CovariantHelpers.Overlaps( this, other );
+            bool IReadOnlySet<ICommand?>.Overlaps( IEnumerable<ICommand?> other ) => CovariantHelpers.NullableOverlaps( this, other );
 
-            bool IReadOnlySet<ICommand?>.SetEquals( IEnumerable<ICommand?> other ) => CovariantHelpers.SetEquals( this, other );
+            bool IReadOnlySet<ICommand?>.SetEquals( IEnumerable<ICommand?> other ) => CovariantHelpers.NullableSetEquals( this, other );
 
             IEnumerator<ICommand?> IEnumerable<ICommand?>.GetEnumerator() => GetEnumerator();
             #endregion
@@ -487,48 +533,70 @@ namespace CK.StObj.Engine.Tests.Poco
 
             nSet.SetEquals( set ).Should().BeTrue();
             nSet.SetEquals( empty ).Should().BeFalse();
-            nSet.SetEquals( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.SetEquals( set2 ).Should().BeTrue( "Fixed." );
+            nSet.SetEquals( set2.Concat( set2 ) ).Should().BeTrue( "Fixed." );
             nSet.SetEquals( superSet2 ).Should().BeFalse();
+            nSet.SetEquals( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.SetEquals( subSet2 ).Should().BeFalse();
+            nSet.SetEquals( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.SetEquals( otherSet ).Should().BeFalse();
+            nSet.SetEquals( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsProperSubsetOf( set ).Should().BeFalse();
             nSet.IsProperSubsetOf( empty ).Should().BeFalse();
             nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
+            nSet.IsProperSubsetOf( set2.Concat( set2 ) ).Should().BeFalse();
             nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue( "Fixed." );
+            nSet.IsProperSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue( "Fixed." );
             nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
+            nSet.IsProperSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
+            nSet.IsProperSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsSubsetOf( set ).Should().BeTrue();
             nSet.IsSubsetOf( empty ).Should().BeFalse();
             nSet.IsSubsetOf( set2 ).Should().BeTrue( "Fixed." );
+            nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeTrue( "Fixed." );
             nSet.IsSubsetOf( superSet2 ).Should().BeTrue( "Fixed." );
+            nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeTrue( "Fixed." );
             nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
+            nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsSubsetOf( otherSet ).Should().BeFalse();
+            nSet.IsSubsetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsProperSupersetOf( set ).Should().BeFalse();
             nSet.IsProperSupersetOf( empty ).Should().BeTrue();
             nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
+            nSet.IsProperSupersetOf( set2.Concat( set2 ) ).Should().BeFalse();
             nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
+            nSet.IsProperSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue( "Fixed." );
+            nSet.IsProperSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue( "Fixed." );
             nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
+            nSet.IsProperSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.IsSupersetOf( set ).Should().BeTrue();
             nSet.IsSupersetOf( empty ).Should().BeTrue();
-            nSet.IsSupersetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSupersetOf( set2 ).Should().BeTrue( "Fixed." );
+            nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeTrue( "Fixed." );
             nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-            nSet.IsSupersetOf( subSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
+            nSet.IsSupersetOf( subSet2 ).Should().BeTrue( "Fixed." );
+            nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeTrue( "Fixed." );
             nSet.IsSupersetOf( otherSet ).Should().BeFalse();
+            nSet.IsSupersetOf( otherSet.Concat( otherSet ) ).Should().BeFalse();
 
             nSet.Overlaps( set ).Should().BeTrue();
             nSet.Overlaps( empty ).Should().BeFalse();
             nSet.Overlaps( set2 ).Should().BeTrue();
+            nSet.Overlaps( set2.Concat( set2 ) ).Should().BeTrue();
             nSet.Overlaps( superSet2 ).Should().BeTrue();
+            nSet.Overlaps( superSet2.Concat( superSet2 ) ).Should().BeTrue();
             nSet.Overlaps( subSet2 ).Should().BeTrue();
+            nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
             nSet.Overlaps( otherSet ).Should().BeFalse();
+            nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
         }
-
-
 
         public sealed class CovPocoDictionary_CK<TKey, TImpl> : Dictionary<TKey, TImpl>,
                                                                 IReadOnlyDictionary<TKey, object>,
@@ -659,587 +727,6 @@ namespace CK.StObj.Engine.Tests.Poco
             dThing.CopyTo( target, 10 );
             target.Should().OnlyContain( x => x.Value != null && dThing.Contains( x ) );
         }
-
-        public sealed class CovNotNullValueList<T> : List<T>, IReadOnlyList<T?>, IReadOnlyList<object> where T : struct
-        {
-            public CovNotNullValueList() { }
-
-            public CovNotNullValueList( IEnumerable<T> collection ) : base( collection ) { }
-
-            public CovNotNullValueList( int capacity ) : base( capacity ) { }
-
-            object IReadOnlyList<object>.this[int index] => this[index];
-
-            T? IReadOnlyList<T?>.this[int index] => this[index];
-
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() => this.Cast<object>().GetEnumerator();
-
-            IEnumerator<T?> IEnumerable<T?>.GetEnumerator() => this.Cast<T?>().GetEnumerator();
-        }
-
-        public sealed class CovNullableValueList<T> : List<T?>, IReadOnlyList<object?> where T : struct
-        {
-            public CovNullableValueList() { }
-
-            public CovNullableValueList( IEnumerable<T?> collection ) : base( collection ) { }
-
-            public CovNullableValueList( int capacity ) : base( capacity ) { }
-
-            object? IReadOnlyList<object?>.this[int index] => this[index];
-
-            IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this.Cast<object?>().GetEnumerator();
-        }
-
-        public sealed class CovNotNullValueHashSet<T> : HashSet<T>, IReadOnlySet<T?>, IReadOnlySet<object> where T : struct
-        {
-            public CovNotNullValueHashSet() { }
-
-            public CovNotNullValueHashSet( IEnumerable<T> collection ) : base( collection ) { }
-
-            public CovNotNullValueHashSet( IEqualityComparer<T>? comparer ) : base( comparer ) { }
-
-            public CovNotNullValueHashSet( int capacity ) : base( capacity ) { }
-
-            public CovNotNullValueHashSet( IEnumerable<T> collection, IEqualityComparer<T>? comparer ) : base( collection, comparer ) { }
-
-            public CovNotNullValueHashSet( int capacity, IEqualityComparer<T>? comparer ) : base( capacity, comparer ) { }
-
-            bool IReadOnlySet<object>.Contains( object item ) => item is T v && Contains( v );
-
-            bool IReadOnlySet<object>.IsProperSubsetOf( IEnumerable<object> other ) => CovariantHelpers.IsProperSubsetOf( this, other );
-
-            bool IReadOnlySet<object>.IsSubsetOf( IEnumerable<object> other ) => CovariantHelpers.IsSubsetOf( this, other );
-
-            bool IReadOnlySet<object>.IsProperSupersetOf( IEnumerable<object> other ) => CovariantHelpers.IsProperSupersetOf( this, other );
-
-            bool IReadOnlySet<object>.IsSupersetOf( IEnumerable<object> other ) => CovariantHelpers.IsSupersetOf( this, other );
-
-            bool IReadOnlySet<object>.Overlaps( IEnumerable<object> other ) => CovariantHelpers.Overlaps( this, other );
-
-            bool IReadOnlySet<object>.SetEquals( IEnumerable<object> other ) => CovariantHelpers.SetEquals( this, other );
-
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() => this.Cast<object>().GetEnumerator();
-
-            #region Nullable item support.
-
-            bool IReadOnlySet<T?>.Contains( T? item ) => item.HasValue && base.Contains( item.Value );
-
-            bool IReadOnlySet<T?>.IsProperSubsetOf( IEnumerable<T?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( other == this ) return false;
-                int otherCount = 0;
-                // We use a HashSet here (we could have used a List instead). There is
-                // no absolute better choice, this depends on the content.
-                HashSet<T>? typed = null;
-                foreach( var e in other )
-                {
-                    // The empty set is a proper subset of anything but the empty set.
-                    if( Count == 0 ) return true;
-                    ++otherCount;
-                    if( !e.HasValue ) continue;
-                    typed ??= new HashSet<T>( Comparer );
-                    typed.Add( e.Value );
-                }
-                // No set is a proper subset of an empty set.
-                if( otherCount == 0 ) return false;
-                Debug.Assert( Count > 0 );
-                if( typed == null ) return false;
-                Debug.Assert( typed.Count <= otherCount );
-                return otherCount > typed.Count
-                        ? IsSubsetOf( typed )
-                        : IsProperSubsetOf( typed );
-            }
-
-            bool IReadOnlySet<T?>.IsProperSupersetOf( IEnumerable<T?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                // The empty set isn't a proper superset of any set, and a set is never a strict superset of itself.
-                if( Count == 0 || other == this ) return false;
-                HashSet<T>? unique = null;
-                foreach( var e in other )
-                {
-                    if( !e.HasValue || !Contains( e.Value ) ) return false;
-                    unique ??= new HashSet<T>();
-                    unique.Add( e.Value );
-                }
-                return unique == null || unique.Count < Count;
-            }
-
-            bool IReadOnlySet<T?>.IsSubsetOf( IEnumerable<T?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                // The empty set is a subset of any set, and a set is a subset of itself.
-                if( other == this || Count == 0 ) return true;
-                HashSet<T>? typed = null;
-                foreach( var e in other )
-                {
-                    if( !e.HasValue ) continue;
-                    typed ??= new HashSet<T>( Comparer );
-                    typed.Add( e.Value );
-                }
-                return typed != null && typed.Count >= Count && IsSubsetOf( typed );
-            }
-
-            bool IReadOnlySet<T?>.IsSupersetOf( IEnumerable<T?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( other == this ) return true;
-                foreach( var e in other )
-                {
-                    if( !e.HasValue || !Contains( e.Value ) ) return false;
-                }
-                return true;
-            }
-
-            bool IReadOnlySet<T?>.Overlaps( IEnumerable<T?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( Count == 0 ) return false;
-                if( other == this ) return true;
-                foreach( var e in other )
-                {
-                    if( e.HasValue && Contains( e.Value ) ) return true;
-                }
-                return false;
-            }
-
-            bool IReadOnlySet<T?>.SetEquals( IEnumerable<T?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( other == this ) return true;
-                int count = 0;
-                foreach( var e in other )
-                {
-                    if( !e.HasValue || !Contains( e.Value ) ) return false;
-                    ++count;
-                }
-                return count == Count;
-            }
-
-            sealed class NullEnumerator : IEnumerator<T?>
-            {
-                readonly IEnumerator<T> _inner;
-
-                public NullEnumerator( IEnumerator<T> inner )
-                {
-                    _inner = inner;
-                }
-
-                public T? Current => _inner.Current;
-
-                object IEnumerator.Current => _inner.Current;
-
-                public void Dispose() => _inner.Dispose();
-
-                public bool MoveNext() => _inner.MoveNext();
-
-                public void Reset() => _inner.Reset();
-            }
-
-            IEnumerator<T?> IEnumerable<T?>.GetEnumerator() => new NullEnumerator( GetEnumerator() );
-
-            #endregion
-        }
-
-        [Test]
-        public void CovNotNullValueHashSet_T_is_IReadOnlySet_object()
-        {
-            var set = new CovNotNullValueHashSet<int>() { 1, 2, 3 };
-            IReadOnlySet<object> nSet = set;
-
-            var empty = new object[] {};
-            var set2 = new object[] { 1, 2, 3 };
-            var superSet2 = new object[] { 1, 2, 3, this };
-            var subSet2 = new object[] { 1, 2 };
-            var otherSet = new object[] { 0 };
-
-            nSet.Contains( this ).Should().BeFalse();
-
-            nSet.SetEquals( set ).Should().BeTrue();
-            nSet.SetEquals( empty ).Should().BeFalse();
-            nSet.SetEquals( set2 ).Should().BeTrue();
-            nSet.SetEquals( superSet2 ).Should().BeFalse();
-            nSet.SetEquals( subSet2 ).Should().BeFalse();
-            nSet.SetEquals( otherSet ).Should().BeFalse();
-
-            nSet.IsProperSubsetOf( set ).Should().BeFalse();
-            nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-            nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-            nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue();
-            nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-            nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-
-            nSet.IsSubsetOf( set ).Should().BeTrue();
-            nSet.IsSubsetOf( empty ).Should().BeFalse();
-            nSet.IsSubsetOf( set2 ).Should().BeTrue();
-            nSet.IsSubsetOf( superSet2 ).Should().BeTrue();
-            nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-            nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-
-            nSet.IsProperSupersetOf( set ).Should().BeFalse();
-            nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-            nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-            nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-            nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue();
-            nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-
-            nSet.IsSupersetOf( set ).Should().BeTrue();
-            nSet.IsSupersetOf( empty ).Should().BeTrue();
-            nSet.IsSupersetOf( set2 ).Should().BeTrue();
-            nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-            nSet.IsSupersetOf( subSet2 ).Should().BeTrue();
-            nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-
-            nSet.Overlaps( set ).Should().BeTrue();
-            nSet.Overlaps( empty ).Should().BeFalse();
-            nSet.Overlaps( set2 ).Should().BeTrue();
-            nSet.Overlaps( superSet2 ).Should().BeTrue();
-            nSet.Overlaps( subSet2 ).Should().BeTrue();
-            nSet.Overlaps( otherSet ).Should().BeFalse();
-        }
-
-        [Test]
-        public void CovNotNullValueHashSet_T_is_IReadOnlySet_T_Nullable()
-        {
-            var set = new CovNotNullValueHashSet<int>() { 1, 2, 3 };
-            IReadOnlySet<int?> nSet = set;
-
-            var empty = new int?[] {};
-            var set2 = new int?[] { 1, 2, 3 };
-            var superSet2 = new int?[] { 1, 2, 3, null };
-            var subSet2 = new int?[] { 1, 2 };
-            var otherSet = new int?[] { 0 };
-
-            nSet.Contains( null ).Should().BeFalse();
-
-            nSet.SetEquals( set ).Should().BeTrue();
-            nSet.SetEquals( empty ).Should().BeFalse();
-            nSet.SetEquals( set2 ).Should().BeTrue();
-            nSet.SetEquals( superSet2 ).Should().BeFalse();
-            nSet.SetEquals( subSet2 ).Should().BeFalse();
-            nSet.SetEquals( otherSet ).Should().BeFalse();
-
-            nSet.IsProperSubsetOf( set ).Should().BeFalse();
-            nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-            nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-            nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue();
-            nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-            nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-
-            nSet.IsSubsetOf( set ).Should().BeTrue();
-            nSet.IsSubsetOf( empty ).Should().BeFalse();
-            nSet.IsSubsetOf( set2 ).Should().BeTrue();
-            nSet.IsSubsetOf( superSet2 ).Should().BeTrue();
-            nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-            nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-
-            nSet.IsProperSupersetOf( set ).Should().BeFalse();
-            nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-            nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-            nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-            nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue();
-            nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-
-            nSet.IsSupersetOf( set ).Should().BeTrue();
-            nSet.IsSupersetOf( empty ).Should().BeTrue();
-            nSet.IsSupersetOf( set2 ).Should().BeTrue();
-            nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-            nSet.IsSupersetOf( subSet2 ).Should().BeTrue();
-            nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-
-            nSet.Overlaps( set ).Should().BeTrue();
-            nSet.Overlaps( empty ).Should().BeFalse();
-            nSet.Overlaps( set2 ).Should().BeTrue();
-            nSet.Overlaps( superSet2 ).Should().BeTrue();
-            nSet.Overlaps( subSet2 ).Should().BeTrue();
-            nSet.Overlaps( otherSet ).Should().BeFalse();
-        }
-
-        public sealed class CovNullableValueHashSet<T> : HashSet<T?>, IReadOnlySet<object?> where T : struct
-        {
-            public CovNullableValueHashSet() { }
-
-            public CovNullableValueHashSet( IEnumerable<T?> collection ) : base( collection ) { }
-
-            public CovNullableValueHashSet( IEqualityComparer<T?>? comparer ) : base( comparer ) { }
-
-            public CovNullableValueHashSet( int capacity ) : base( capacity ) { }
-
-            public CovNullableValueHashSet( IEnumerable<T?> collection, IEqualityComparer<T?>? comparer ) : base( collection, comparer ) { }
-
-            public CovNullableValueHashSet( int capacity, IEqualityComparer<T?>? comparer ) : base( capacity, comparer ) { }
-
-            bool IReadOnlySet<object?>.Contains( object? item ) => (item is T e && Contains( e )) || (item == null && Contains( default ));
-
-            bool IReadOnlySet<object?>.IsProperSubsetOf( IEnumerable<object?> other ) => CovariantHelpers.NullableIsProperSubsetOf( this, other );
-
-            bool IReadOnlySet<object?>.IsProperSupersetOf( IEnumerable<object?> other ) => CovariantHelpers.NullableIsProperSupersetOf( this, other );
-
-            bool IReadOnlySet<object?>.IsSubsetOf( IEnumerable<object?> other ) => CovariantHelpers.NullableIsSubsetOf( this, other );
-
-
-            bool IReadOnlySet<object?>.IsSupersetOf( IEnumerable<object?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( other == this ) return true;
-                if( other is IEnumerable<T?> same ) return IsSupersetOf( same );
-                foreach( var e in other )
-                {
-                    bool found = (e is T item && Contains( item )) || (e == null && Contains( default ));
-                    if( !found ) return false;
-                }
-                return true;
-            }
-
-            bool IReadOnlySet<object?>.Overlaps( IEnumerable<object?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( Count == 0 ) return false;
-                if( other == this ) return true;
-                if( other is IEnumerable<T?> same ) return Overlaps( same );
-                foreach( var e in other )
-                {
-                    if( (e is T item && Contains( item )) || (e == null && Contains( default )) ) return true;
-                }
-                return false;
-            }
-
-            bool IReadOnlySet<object?>.SetEquals( IEnumerable<object?> other )
-            {
-                Throw.CheckNotNullArgument( other );
-                if( other == this ) return true;
-                if( other is IEnumerable<T?> same ) return SetEquals( same );
-                int count = 0;
-                foreach( var e in other )
-                {
-                    bool found = (e is T item && Contains( item )) || (e == null && Contains( default ));
-                    if( !found ) return false;
-                    ++count;
-                }
-                return count == Count;
-            }
-
-            IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this.Cast<object?>().GetEnumerator();
-        }
-
-        [Test]
-        public void CovNullableValueHashSet_T_is_IReadOnlySet_object_Nullable()
-        {
-            {
-                var set = new CovNullableValueHashSet<int>() { 1, 2, 3 };
-                IReadOnlySet<object?> nSet = set;
-
-                var empty = new object?[] { };
-                var set2 = new object?[] { 1, 2, 3 };
-                var superSet2 = new object?[] { 1, 2, 3, this };
-                var subSet2 = new object?[] { 1, 2 };
-                var otherSet = new object?[] { 0 };
-
-                nSet.Contains( null ).Should().BeFalse();
-
-                nSet.SetEquals( set ).Should().BeTrue();
-                nSet.SetEquals( empty ).Should().BeFalse();
-                nSet.SetEquals( set2 ).Should().BeTrue();
-                nSet.SetEquals( superSet2 ).Should().BeFalse();
-                nSet.SetEquals( subSet2 ).Should().BeFalse();
-                nSet.SetEquals( otherSet ).Should().BeFalse();
-
-                nSet.IsProperSubsetOf( set ).Should().BeFalse();
-                nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-                nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-                nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue();
-                nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-                nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-
-                nSet.IsSubsetOf( set ).Should().BeTrue();
-                nSet.IsSubsetOf( empty ).Should().BeFalse();
-                nSet.IsSubsetOf( set2 ).Should().BeTrue();
-                nSet.IsSubsetOf( superSet2 ).Should().BeTrue();
-                nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-                nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-
-                nSet.IsProperSupersetOf( set ).Should().BeFalse();
-                nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-                nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-                nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-                nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue();
-                nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-
-                nSet.IsSupersetOf( set ).Should().BeTrue();
-                nSet.IsSupersetOf( empty ).Should().BeTrue();
-                nSet.IsSupersetOf( set2 ).Should().BeTrue();
-                nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-                nSet.IsSupersetOf( subSet2 ).Should().BeTrue();
-                nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-
-                nSet.Overlaps( set ).Should().BeTrue();
-                nSet.Overlaps( empty ).Should().BeFalse();
-                nSet.Overlaps( set2 ).Should().BeTrue();
-                nSet.Overlaps( superSet2 ).Should().BeTrue();
-                nSet.Overlaps( subSet2 ).Should().BeTrue();
-                nSet.Overlaps( otherSet ).Should().BeFalse();
-            }
-            {
-                var set = new CovNullableValueHashSet<int>() { 1, null, 3 };
-                IReadOnlySet<object?> nSet = set;
-
-                var empty = new object?[] { };
-                var set2 = new object?[] { 1, null, 3 };
-                var superSet2 = new object?[] { 1, null, 3, this };
-                var subSet2 = new object?[] { 1, null };
-                var otherSet = new object?[] { 0 };
-
-                nSet.Contains( 2 ).Should().BeFalse();
-
-                nSet.SetEquals( set ).Should().BeTrue();
-                nSet.SetEquals( empty ).Should().BeFalse();
-                nSet.SetEquals( set2 ).Should().BeTrue();
-                nSet.SetEquals( superSet2 ).Should().BeFalse();
-                nSet.SetEquals( subSet2 ).Should().BeFalse();
-                nSet.SetEquals( otherSet ).Should().BeFalse();
-
-                nSet.IsProperSubsetOf( set ).Should().BeFalse();
-                nSet.IsProperSubsetOf( empty ).Should().BeFalse();
-                nSet.IsProperSubsetOf( set2 ).Should().BeFalse();
-                nSet.IsProperSubsetOf( superSet2 ).Should().BeTrue();
-                nSet.IsProperSubsetOf( subSet2 ).Should().BeFalse();
-                nSet.IsProperSubsetOf( otherSet ).Should().BeFalse();
-
-                nSet.IsSubsetOf( set ).Should().BeTrue();
-                nSet.IsSubsetOf( empty ).Should().BeFalse();
-                nSet.IsSubsetOf( set2 ).Should().BeTrue();
-                nSet.IsSubsetOf( superSet2 ).Should().BeTrue();
-                nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
-                nSet.IsSubsetOf( otherSet ).Should().BeFalse();
-
-                nSet.IsProperSupersetOf( set ).Should().BeFalse();
-                nSet.IsProperSupersetOf( empty ).Should().BeTrue();
-                nSet.IsProperSupersetOf( set2 ).Should().BeFalse();
-                nSet.IsProperSupersetOf( superSet2 ).Should().BeFalse();
-                nSet.IsProperSupersetOf( subSet2 ).Should().BeTrue();
-                nSet.IsProperSupersetOf( otherSet ).Should().BeFalse();
-
-                nSet.IsSupersetOf( set ).Should().BeTrue();
-                nSet.IsSupersetOf( empty ).Should().BeTrue();
-                nSet.IsSupersetOf( set2 ).Should().BeTrue();
-                nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-                nSet.IsSupersetOf( subSet2 ).Should().BeTrue();
-                nSet.IsSupersetOf( otherSet ).Should().BeFalse();
-
-                nSet.Overlaps( set ).Should().BeTrue();
-                nSet.Overlaps( empty ).Should().BeFalse();
-                nSet.Overlaps( set2 ).Should().BeTrue();
-                nSet.Overlaps( superSet2 ).Should().BeTrue();
-                nSet.Overlaps( subSet2 ).Should().BeTrue();
-                nSet.Overlaps( otherSet ).Should().BeFalse();
-            }
-        }
-
-        public sealed class CovNotNullValueDictionary<TKey, TValue> : Dictionary<TKey, TValue>,
-                                                                      IReadOnlyDictionary<TKey, object>,
-                                                                      IReadOnlyDictionary<TKey, TValue?>
-            where TKey : notnull
-            where TValue : struct
-        {
-            object IReadOnlyDictionary<TKey, object>.this[TKey key] => this[key];
-
-            IEnumerable<object> IReadOnlyDictionary<TKey, object>.Values => Values.Cast<object>();
-
-            IEnumerable<TKey> IReadOnlyDictionary<TKey, object>.Keys => Keys;
-
-            bool IReadOnlyDictionary<TKey, object>.TryGetValue( TKey key, out object value )
-            {
-                if( base.TryGetValue( key, out var v ) )
-                {
-                    value = v;
-                    return true;
-                }
-                value = null!;
-                return false;
-            }
-
-            IEnumerator<KeyValuePair<TKey, object>> IEnumerable<KeyValuePair<TKey, object>>.GetEnumerator()
-            {
-                return ((IEnumerable<KeyValuePair<TKey, TValue>>)this).Select( kv => KeyValuePair.Create( kv.Key, (object)kv.Value ) ).GetEnumerator();
-            }
-
-            TValue? IReadOnlyDictionary<TKey, TValue?>.this[TKey key] => this[key];
-
-            IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue?>.Keys => Keys;
-
-            IEnumerable<TValue?> IReadOnlyDictionary<TKey, TValue?>.Values => Values.Cast<TValue?>();
-
-            public bool TryGetValue( TKey key, [MaybeNullWhen( false )] out TValue? value ) => TryGetValue( key, out value );
-
-            IEnumerator<KeyValuePair<TKey, TValue?>> IEnumerable<KeyValuePair<TKey, TValue?>>.GetEnumerator()
-            {
-                return ((IEnumerable<KeyValuePair<TKey, TValue>>)this).Select( kv => KeyValuePair.Create( kv.Key, (TValue?)kv.Value ) ).GetEnumerator();
-            }
-        }
-
-        [Test]
-        public void CovNotNullValueDictionary_TValue_is_IReadOnlyDictionary_T_Nullable()
-        {
-            var d = new CovNotNullValueDictionary<int, byte>() { { 0, 1 } };
-            IReadOnlyDictionary<int, byte?> dN = d;
-            dN[0].Should().Be( 1 );
-            dN.Values.Should().ContainSingle().And.OnlyContain( b => b == 1 );
-            dN.Contains( new KeyValuePair<int, byte?>( 0, null ) ).Should().BeFalse();
-            dN.Contains( new KeyValuePair<int, byte?>( 0, 1 ) ).Should().BeTrue();
-        }
-
-        [Test]
-        public void CovNotNullValueDictionary_TValue_is_IReadOnlyDictionary_object()
-        {
-            var d = new CovNotNullValueDictionary<int, byte>() { { 0, 1 } };
-            IReadOnlyDictionary<int, object> dN = d;
-            dN[0].Should().Be( 1 );
-            dN.Values.Should().ContainSingle().And.OnlyContain( b => b.Equals( (byte)1 ) );
-            dN.Contains( new KeyValuePair<int, object>( 0, this ) ).Should().BeFalse();
-            dN.Contains( new KeyValuePair<int, object>( 0, (byte)1 ) ).Should().BeTrue();
-        }
-
-        public sealed class CovNullableValueDictionary<TKey, TValue> : Dictionary<TKey, TValue?>,
-                                                                       IReadOnlyDictionary<TKey, object?>
-            where TKey : notnull
-            where TValue : struct
-        {
-            object? IReadOnlyDictionary<TKey, object?>.this[TKey key] => this[key];
-
-            IEnumerable<object?> IReadOnlyDictionary<TKey, object?>.Values => Values.Cast<object>();
-
-            IEnumerable<TKey> IReadOnlyDictionary<TKey, object?>.Keys => Keys;
-
-            bool IReadOnlyDictionary<TKey, object?>.TryGetValue( TKey key, out object? value )
-            {
-                if( TryGetValue( key, out var v ) )
-                {
-                    value = v;
-                    return true;
-                }
-                value = null;
-                return false;
-            }
-
-            IEnumerator<KeyValuePair<TKey, object?>> IEnumerable<KeyValuePair<TKey, object?>>.GetEnumerator()
-            {
-                return ((IEnumerable<KeyValuePair<TKey, TValue?>>)this).Select( kv => KeyValuePair.Create( kv.Key, (object?)kv.Value ) ).GetEnumerator();
-            }
-        }
-
-        [Test]
-        public void CovNullableValueDictionary_TValue_is_IReadOnlyDictionary_object_nullable()
-        {
-            var d = new CovNullableValueDictionary<int, byte>() { { 0, 1 }, { 1, null } };
-            IReadOnlyDictionary<int, object?> dN = d;
-            dN[0].Should().Be( 1 );
-            dN.Values.Should().HaveCount( 2 ).And.OnlyContain( b => b == null || b.Equals( (byte)1 ) );
-            dN.Contains( new KeyValuePair<int, object?>( 0, this ) ).Should().BeFalse();
-            dN.Contains( new KeyValuePair<int, object?>( 0, (byte)1 ) ).Should().BeTrue();
-            dN.Contains( new KeyValuePair<int, object?>( 1, null ) ).Should().BeTrue();
-        }
-
 
     }
 }
