@@ -33,6 +33,7 @@ namespace CK.Setup
         readonly List<PocoType> _allTypes;
         readonly HalfTypeList _exposedAllTypes;
         readonly Stack<StringBuilder> _stringBuilderPool;
+        readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
@@ -43,6 +44,7 @@ namespace CK.Setup
             _nullContext = new NullabilityInfoContext();
             _allTypes = new List<PocoType>( 8192 );
             _exposedAllTypes = new HalfTypeList( _allTypes );
+            _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
             _cache = new Dictionary<object, PocoType>()
             {
                 { typeof(int), PocoType.CreateBasicValue(this, typeof(int), typeof(int?), "int") },
@@ -71,6 +73,8 @@ namespace CK.Setup
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
 
         public IReadOnlyList<IPocoType> AllNonNullableTypes => _allTypes;
+
+        public IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes => _requiredSupportTypes.Values;
 
         internal void AddNew( PocoType t )
         {
@@ -118,6 +122,17 @@ namespace CK.Setup
         {
             var nullabilityInfo = _nullContext.Create( p );
             return RegisterRoot( monitor, new MemberContext( p ), nullabilityInfo );
+        }
+
+        internal IPocoType? RegisterWritableCollection( IActivityMonitor monitor, PropertyInfo p, out bool error )
+        {
+            var nullabilityInfo = _nullContext.Create( p );
+            Debug.Assert( !nullabilityInfo.Type.IsByRef );
+            Debug.Assert( !nullabilityInfo.Type.IsValueType );
+            Debug.Assert( nullabilityInfo.Type.IsGenericType );
+            var r = TryHandleCollectionType( monitor, nullabilityInfo.Type, nullabilityInfo, new MemberContext( p ) );
+            error = !r.Success;
+            return r.Type;
         }
 
         IPocoType? RegisterRoot( IActivityMonitor monitor, MemberContext root, NullabilityInfo nullabilityInfo )
@@ -170,7 +185,12 @@ namespace CK.Setup
             }
             if( t.IsGenericType )
             {
-                return OnGenericType( monitor, t, nInfo, ctx );
+                var r = TryHandleCollectionType( monitor, t, nInfo, ctx );
+                if( r.Type == null )
+                {
+                    monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t.ToCSharpName( false )}'." );
+                }
+                return r.Type;
             }
             if( _cache.TryGetValue( t, out var result ) )
             {
@@ -187,50 +207,151 @@ namespace CK.Setup
             return null;
         }
 
-        PocoType? OnGenericType( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
+        (bool Success, PocoType? Type) TryHandleCollectionType( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
         {
-            // Unwrap the nullable value type (or wrap): we reason only on non nullable types.
             var tGen = t.GetGenericTypeDefinition();
-            if( tGen == typeof( List<> ) )
+            if( tGen == typeof( IList<> ) )
             {
                 var tI = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
-                if( tI == null ) return null;
-                var typeName = $"System.Collections.Generic.List<{tI.CSharpName}>";
+                if( tI == null ) return default;
+                string typeName;
+                if( tI.Type.IsValueType )
+                {
+                    if( tI.IsNullable )
+                    {
+                        typeName = $"CK.Core.CovariantHelpers.CovNullableValueList<{tI.NonNullable.CSharpName}>";
+                    }
+                    else
+                    {
+                        typeName = $"CK.Core.CovariantHelpers.CovNotNullValueList<{tI.CSharpName}>";
+                    }
+                }
+                else
+                {
+                    if( tI.Kind == PocoTypeKind.IPoco )
+                    {
+                        var cType = EnsurePocoListType( monitor, ((IConcretePocoType)tI).PrimaryInterface );
+                        if( cType == null ) return default;
+                        typeName = cType;
+                    }
+                    else
+                    {
+                        typeName = $"System.Collections.Generic.List<{tI.CSharpName}>";
+                    }
+                }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
                     result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.List, tI );
                     _cache.Add( typeName, result );
                 }
-                return result;
+                return (true, result);
             }
-            if( tGen == typeof( HashSet<> ) )
+            if( tGen == typeof( ISet<> ) )
             {
                 var tI = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
-                if( tI == null ) return null;
-                var typeName = $"System.Collections.Generic.HashSet<{tI.CSharpName}>";
+                if( tI == null ) return default;
+                string typeName;
+                if( tI.Type.IsValueType )
+                {
+                    if( tI.IsNullable )
+                    {
+                        typeName = $"CK.Core.CovariantHelpers.CovNullableValueHashSet<{tI.NonNullable.CSharpName}>";
+                    }
+                    else
+                    {
+                        typeName = $"CK.Core.CovariantHelpers.CovNotNullValueHashSet<{tI.CSharpName}>";
+                    }
+                }
+                else
+                {
+                    if( tI.Kind == PocoTypeKind.IPoco )
+                    {
+                        var cType = EnsurePocoHashSetType( monitor, ((IConcretePocoType)tI).PrimaryInterface );
+                        if( cType == null ) return default;
+                        typeName = cType;
+                    }
+                    else
+                    {
+                        typeName = $"System.Collections.Generic.HashSet<{tI.CSharpName}>";
+                    }
+                }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
                     result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.HashSet, tI );
                     _cache.Add( typeName, result );
                 }
-                return result;
+                return (true, result);
             }
-            if( tGen == typeof( Dictionary<,> ) )
+            if( tGen == typeof( IDictionary<,> ) )
             {
                 var tK = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
-                if( tK == null ) return null;
+                if( tK == null ) return default;
                 var tV = TryRegister( monitor, nInfo.GenericTypeArguments[1], ctx );
-                if( tV == null ) return null;
-                var typeName = $"System.Collections.Generic.Dictionary<{tK.CSharpName},{tV.CSharpName}>";
+                if( tV == null ) return default;
+                string typeName;
+                if( tV.Type.IsValueType )
+                {
+                    if( tV.IsNullable )
+                    {
+                        typeName = $"CK.Core.CovariantHelpers.CovNullableValueDictionary<{tK.CSharpName},{tV.NonNullable.CSharpName}>";
+                    }
+                    else
+                    {
+                        typeName = $"CK.Core.CovariantHelpers.CovNotNullValueDictionary<{tK.CSharpName},{tV.CSharpName}>";
+                    }
+                }
+                else
+                {
+                    if( tV.Kind == PocoTypeKind.IPoco )
+                    {
+                        var cType = EnsurePocoDictionaryType( monitor, tK, ((IConcretePocoType)tV).PrimaryInterface );
+                        if( cType == null ) return default;
+                        typeName = cType;
+                    }
+                    else
+                    {
+                        typeName = $"System.Collections.Generic.Dictionary<{tK.CSharpName},{tV.CSharpName}>";
+                    }
+                }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
                     result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.Dictionary, tK, tV );
                     _cache.Add( typeName, result );
                 }
-                return result;
+                return (true, result);
             }
-            monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t.ToCSharpName(false)}'." );
-            return null;
+            return (true, null);
+
+            string? EnsurePocoListType( IActivityMonitor monitor, IPrimaryPocoType tI )
+            {
+                var genTypeName = $"PocoList_{tI.Index}_CK";
+                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
+                {
+                    _requiredSupportTypes.Add( genTypeName, g = new PocoListRequiredSupport( tI, genTypeName ) );
+                }
+                return g.FullName;
+            }
+
+            string? EnsurePocoHashSetType( IActivityMonitor monitor, IPrimaryPocoType tI )
+            {
+                var genTypeName = $"PocoHashSet_{tI.Index}_CK";
+                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
+                {
+                    _requiredSupportTypes.Add( genTypeName, g = new PocoHashSetRequiredSupport( tI, genTypeName ) );
+                }
+                return g.FullName;
+            }
+
+            string? EnsurePocoDictionaryType( IActivityMonitor monitor, IPocoType key, IPrimaryPocoType tI )
+            {
+                var genTypeName = $"PocoDicitionary_{key.Index}_{tI.Index}_CK";
+                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
+                {
+                    _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryRequiredSupport( key, tI, genTypeName ) );
+                }
+                return g.FullName;
+            }
+
         }
 
         PocoType? OnArray( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )

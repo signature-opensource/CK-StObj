@@ -317,20 +317,53 @@ namespace CK.Setup
             bool Add( IActivityMonitor monitor, PropertyInfo p )
             {
                 Debug.Assert( _prop != null );
-                if( p.CanWrite || p.PropertyType.IsByRef )
+                bool isWritable = p.CanWrite || p.PropertyType.IsByRef;
+                if( !isWritable && !p.PropertyType.IsValueType && p.PropertyType.IsGenericType )
+                {
+                    // The property is not directly writable.
+                    // If it's a IList<>, ISet<> or IDictionary<> then it also is
+                    // a "writable" property.
+                    var fT = _system.RegisterWritableCollection( monitor, p, out var error );
+                    if( error ) return false;
+                    if( fT != null )
+                    {
+                        // It's a concrete collection.
+                        if( _best == null )
+                        {
+                            _best = p;
+                            _finalType = fT;
+                            if( !CheckExistingReadOnlyProperties( monitor, p ) )
+                            {
+                                return false;
+                            }
+                        }
+                        else
+                        {
+                            // If a writable has been previously found, we must
+                            // be on the same type.
+                            Debug.Assert( _finalType != null );
+                            if( _finalType != fT )
+                            {
+                                monitor.Error( $"Property '{p.DeclaringType.ToCSharpName()}.{p.Name}': Type must be exactly '{_finalType.CSharpName}' since '{_best.DeclaringType.ToCSharpName()}.{_best.Name}' defines it." );
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                    // It's not a concrete collection.
+                    // Let the following code do its job (CheckNewReadOnly if there is a best) since
+                    // isWritable is false.
+                }
+                if( isWritable )
                 {
                     if( _best == null )
                     {
                         _best = p;
                         _finalType = _system.Register( monitor, p );
                         if( _finalType == null ) return false;
-                        foreach( var pRead in _prop.DeclaredProperties )
+                        if( !CheckExistingReadOnlyProperties( monitor, p ) )
                         {
-                            if( pRead == p ) break;
-                            if( !CheckNewReadOnly( monitor, pRead, null ) )
-                            {
-                                return false;
-                            }
+                            return false;
                         }
                     }
                     else
@@ -340,8 +373,8 @@ namespace CK.Setup
                             return false;
                         }
                     }
-                    // On success, always check that a record must be a ref property and that
-                    // any other type must be a regular property.
+                    // On success, always check that a record must be a ref property, that a collection must not
+                    // have a setter and that any other type must be a regular property.
                     Debug.Assert( _finalType != null );
                     Debug.Assert( _finalType is not IRecordPocoType || _finalType.Type.IsValueType, "IRecordPocoType => ValueType." );
                     if( _finalType is IRecordPocoType )
@@ -354,6 +387,11 @@ namespace CK.Setup
                     }
                     else
                     {
+                        if( _finalType is ICollectionPocoType )
+                        {
+                            monitor.Error( $"Property '{p.DeclaringType}.{p.Name}' is a {_finalType.Kind}, it must be a read only property: '{_finalType.CSharpName} {p.Name} {{ get; }}'." );
+                            return false;
+                        }
                         if( p.PropertyType.IsByRef )
                         {
                             monitor.Error( $"Property '{p.DeclaringType}.{p.Name}' is not a record, it must be a regular property with a setter: '{_finalType.CSharpName} {p.Name} {{ get; set; }}'." );
@@ -368,6 +406,18 @@ namespace CK.Setup
                 }
                 return true;
 
+                bool CheckExistingReadOnlyProperties( IActivityMonitor monitor, PropertyInfo p )
+                {
+                    foreach( var pRead in _prop.DeclaredProperties )
+                    {
+                        if( pRead == p ) break;
+                        if( !CheckNewReadOnly( monitor, pRead, null ) )
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
             }
 
             bool CheckNewWritable( IActivityMonitor monitor, PropertyInfo p )

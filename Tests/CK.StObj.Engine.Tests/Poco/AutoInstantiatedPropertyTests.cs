@@ -24,20 +24,20 @@ namespace CK.StObj.Engine.Tests.Poco
         #region Reference type (List)
         public interface IAutoListPrimary1 : IPoco, IHaveAutoProperty
         {
-            new List<string> Auto { get; }
+            new IList<string> Auto { get; }
         }
         public interface IAutoListExtension1 : IAutoListPrimary1
         {
-            new List<string>? Auto { get; }
+            new IList<string>? Auto { get; }
         }
 
         public interface IAutoListPrimary2 : IPoco, IHaveAutoProperty
         {
-            new List<string>? Auto { get; }
+            new IList<string>? Auto { get; }
         }
         public interface IAutoListExtension2 : IAutoListPrimary2
         {
-            new List<string> Auto { get; }
+            new IList<string> Auto { get; }
         }
         #endregion
 
@@ -81,8 +81,8 @@ namespace CK.StObj.Engine.Tests.Poco
         }
         #endregion
 
-        [TestCase( typeof( List<string> ), typeof( IAutoListPrimary1 ), typeof( IAutoListExtension1 ) )]
-        [TestCase( typeof( List<string> ), typeof( IAutoListPrimary2 ), typeof( IAutoListExtension2 ) )]
+        [TestCase( typeof( IList<string> ), typeof( IAutoListPrimary1 ), typeof( IAutoListExtension1 ) )]
+        [TestCase( typeof( IList<string> ), typeof( IAutoListPrimary2 ), typeof( IAutoListExtension2 ) )]
         [TestCase( typeof( int ), typeof( IAutoIntPrimary1 ), typeof( IAutoIntExtension1 ) )]
         [TestCase( typeof( int ), typeof( IAutoIntPrimary2 ), typeof( IAutoIntExtension2 ) )]
         [TestCase( typeof( (int,string) ), typeof( IAutoAnonymousRecordPrimary1 ), typeof( IAutoAnonymousRecordExtension1 ) )]

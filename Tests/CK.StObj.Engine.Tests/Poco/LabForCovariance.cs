@@ -37,8 +37,9 @@ namespace CK.StObj.Engine.Tests.Poco
             public int OtherPower { get; set; }
         }
 
+        // Sample
         public sealed class CovPocoList_CK<TImpl> : List<TImpl>, IList<IThing>, IList<IOther>, IList<IMoreOther>
-            where TImpl : class, IThing, IOther, IMoreOther, ICommand
+            where TImpl : class, IThing, IOther, IMoreOther
         {
             public bool IsReadOnly => false;
 
@@ -96,6 +97,56 @@ namespace CK.StObj.Engine.Tests.Poco
             IEnumerator<IMoreOther> IEnumerable<IMoreOther>.GetEnumerator() => GetEnumerator();
             #endregion
         }
+
+        // Using a single generics (based on the number of supported interfaces) to support
+        // once for all more than one Poco list is not possible:
+        //
+        // Error CS0695	'LabForCovariance.MultiVariantList<TImpl, T1, T2>' cannot implement both 'IList<T1>' and 'IList<T2>' because they may unify for some type parameter substitutions.
+        //
+        // We are condemned to generate a list implementation per Poco family like the Sample above.
+        //
+        //public sealed class MultiVariantList<TImpl, T1, T2> : List<TImpl>, IList<T1>, IList<T2>
+        //    where TImpl : class, T1, T2
+        //{
+        //    public bool IsReadOnly => false;
+
+        //    #region Repeat for each concrete interface (T1).
+        //    T1 IList<T1>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
+
+        //    void ICollection<T1>.Add( T1 item ) => Add( (TImpl)item );
+
+        //    bool ICollection<T1>.Contains( T1 item ) => Contains( (TImpl)item );
+
+        //    void ICollection<T1>.CopyTo( T1[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
+
+        //    int IList<T1>.IndexOf( T1 item ) => IndexOf( (TImpl)item );
+
+        //    void IList<T1>.Insert( int index, T1 item ) => Insert( index, (TImpl)item );
+
+        //    bool ICollection<T1>.Remove( T1 item ) => Remove( (TImpl)item );
+
+        //    IEnumerator<T1> IEnumerable<T1>.GetEnumerator() => GetEnumerator();
+        //    #endregion
+
+        //    #region Repeat for each concrete interface (T2).
+        //    T2 IList<T2>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
+
+        //    void ICollection<T2>.Add( T2 item ) => Add( (TImpl)item );
+
+        //    bool ICollection<T2>.Contains( T2 item ) => Contains( (TImpl)item );
+
+        //    void ICollection<T2>.CopyTo( T2[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
+
+        //    int IList<T2>.IndexOf( T2 item ) => IndexOf( (TImpl)item );
+
+        //    void IList<T2>.Insert( int index, T2 item ) => Insert( index, (TImpl)item );
+
+        //    bool ICollection<T2>.Remove( T2 item ) => Remove( (TImpl)item );
+
+        //    IEnumerator<T2> IEnumerable<T2>.GetEnumerator() => GetEnumerator();
+        //    #endregion
+        //}
+
 
         [Test]
         public void readonly_list_interfaces_for_abstractions_are_not_required_on_list()

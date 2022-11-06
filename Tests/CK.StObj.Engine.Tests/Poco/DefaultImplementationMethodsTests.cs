@@ -36,7 +36,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [CKTypeDefiner]
         public interface IRootDefiner : IPoco
         {
-            List<string> Lines { get; }
+            IList<string> Lines { get; }
 
             [AutoImplementationClaim]
             int LineCount => Lines.Count;
@@ -44,14 +44,16 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IActualRoot : IRootDefiner
         {
-            List<string> Rows { get; }
+            IList<string> Rows { get; }
 
             [AutoImplementationClaim]
             int RowCount
             {
                 get => Rows.Count;
-                set => Rows.RemoveRange( value, Rows.Count - value );
-
+                set
+                {
+                    while( Rows.Count > value ) Rows.RemoveAt( Rows.Count - 1 );
+                }
             }
 
             [AutoImplementationClaim]

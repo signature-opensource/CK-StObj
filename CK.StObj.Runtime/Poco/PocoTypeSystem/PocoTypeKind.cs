@@ -33,7 +33,8 @@ namespace CK.Setup
         Record,
 
         /// <summary>
-        /// A concrete <see cref="IPoco"/> (<see cref="IConcretePocoType"/>).
+        /// A concrete <see cref="IPoco"/> (<see cref="IConcretePocoType"/> that can be the <see cref="IPrimaryPocoType"/>
+        /// of the family).
         /// </summary>
         IPoco,
 

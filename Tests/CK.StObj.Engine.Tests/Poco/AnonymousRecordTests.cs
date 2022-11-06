@@ -50,19 +50,19 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IWithN : IPoco
         {
-            ref (string? A, List<string>? B, List<List<string>?> C)? Thing { get; }
+            ref (string? A, IList<string>? B, IList<IList<string>?> C)? Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart : IPoco
         {
-            ref (string? A, List<string>? B, List<List<string>?> C) Thing { get; }
+            ref (string? A, IList<string>? B, IList<IList<string>?> C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNPart : IPoco
         {
-            ref (string? A, List<string>? B, List<List<string>?> C)? Thing { get; }
+            ref (string? A, IList<string>? B, IList<IList<string>?> C)? Thing { get; }
         }
 
         public interface INullabilityError : IWithN, IWithNotNPart

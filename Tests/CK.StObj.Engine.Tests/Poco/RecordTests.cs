@@ -182,7 +182,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // The same initialization.
             var defCode = t1.DefaultValueInfo.DefaultValue.ValueCSharpSource;
-            defCode.Should().Be( "new(){Thing = new(){Power = 42, Values = new System.Collections.Generic.List<int>(), Name = @\"Hip!\"}}" );
+            defCode.Should().Be( "new(){Thing = new(){Power = 42, Values = new CK.Core.CovariantHelpers.CovNotNullValueList<int>(), Name = @\"Hip!\"}}" );
             t2.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( defCode );
         }
 

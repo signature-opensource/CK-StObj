@@ -24,6 +24,11 @@ namespace CK.Setup
         IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
 
         /// <summary>
+        /// Gets the set of types that must be generated to support this type system.
+        /// </summary>
+        IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
+
+        /// <summary>
         /// Tries to find a Poco type from an actual type.
         /// Anonymous <see cref="IRecordPocoType"/> cannot be found by this method.
         /// When the <paramref name="type"/> is a reference type, its non nullable
@@ -46,6 +51,7 @@ namespace CK.Setup
         /// <param name="primaryInterface">The IPoco primary interface.</param>
         /// <returns>The primary poco type or null.</returns>
         IPrimaryPocoType? GetPrimaryPocoType( Type primaryInterface );
+
 
         /// <summary>
         /// Tries to register a new type through a PropertyInfo (this is required for

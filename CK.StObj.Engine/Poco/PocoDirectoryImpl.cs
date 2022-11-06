@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using CK.Core;
 using System.Diagnostics;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.Setup
 {
@@ -33,6 +34,8 @@ namespace CK.Setup
             IPocoTypeSystem pocoTypeSystem = c.Assembly.GetPocoTypeSystem();
             Debug.Assert( pocoDirectory == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoDirectory ) ), "The IPocoDirectory is also available at the GeneratedBinPath." );
             Debug.Assert( pocoTypeSystem == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
+
+            ImplementPocoRequiredSupport( monitor, pocoTypeSystem, scope.Workspace );
 
             // PocoDirectory_CK class.
             scope.GeneratedByComment().NewLine()
@@ -232,5 +235,47 @@ namespace CK.Setup
             return CSCodeGenerationResult.Success;
         }
 
+        void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem, ICodeWorkspace workspace )
+        {
+            var ns = workspace.Global.FindOrCreateNamespace( PocoRequiredSupportType.Namespace );
+            ns.GeneratedByComment();
+            foreach( var t in pocoTypeSystem.RequiredSupportTypes )
+            {
+                switch( t )
+                {
+                    case PocoListRequiredSupport list: GeneratePocoList( monitor, ns, list ); break;
+                    default: throw new NotSupportedException();
+                }
+            }
+        }
+
+        void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListRequiredSupport list )
+        {
+            var pocoClassName = list.Type.FamilyInfo.PocoClass.FullName;
+            var t = ns.CreateType( $"sealed class {list.TypeName} : List<{pocoClassName}>" );
+            t.Append( "public bool IsReadOnly => false;" ).NewLine();
+            foreach( var tA in list.Type.AllowedTypes )
+            {
+                t.Definition.BaseTypes.Add( new ExtendedTypeName( $"IList<{tA.CSharpName}>" ) );
+
+                t.Append( tA.CSharpName ).Append( " IList<" ).Append( tA.CSharpName ).Append( ">.this[int index] {" )
+                    .Append( "get => this[index]; set => this[index] = (" ).Append( pocoClassName ).Append( ")value; }" ).NewLine()
+                 .Append( "void ICollection<" ).Append( tA.CSharpName ).Append( ">.Add( " ).Append( tA.CSharpName )
+                    .Append( " item ) => Add( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                 .Append( "bool ICollection<" ).Append( tA.CSharpName ).Append( ">.Contains( " ).Append( tA.CSharpName )
+                    .Append( " item ) => Contains( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                 .Append( "void ICollection<" ).Append( tA.CSharpName ).Append( ">.CopyTo( " )
+                    .Append( tA.CSharpName ).Append( "[] array, int arrayIndex ) => CopyTo( (" ).Append( pocoClassName ).Append( "[])array, arrayIndex );" ).NewLine()
+                .Append( "int IList<" ).Append( tA.CSharpName ).Append( ">.IndexOf( " ).Append( tA.CSharpName )
+                    .Append( " item ) => IndexOf( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                .Append( "void IList<" ).Append( tA.CSharpName ).Append( ">.Insert( int index, " ).Append( tA.CSharpName )
+                    .Append( " item ) => Insert( index, (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                .Append( "bool ICollection<" ).Append( tA.CSharpName ).Append( ">.Remove( " ).Append( tA.CSharpName )
+                    .Append( " item ) => Remove( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                .Append( "IEnumerator<" ).Append( tA.CSharpName ).Append( "> IEnumerable<" ).Append( tA.CSharpName ).Append( ">.GetEnumerator() => GetEnumerator();" )
+                .NewLine();
+            }
+
+        }
     }
 }
