@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -18,7 +19,8 @@ namespace CK.Setup
         internal sealed class PrimaryPocoType : PocoType, IPrimaryPocoType
         {
 
-            sealed class Null : NullReferenceType, IPrimaryPocoType
+            // Auto implementation of IReadOnlyList<IAbstractPocoType> AbstractTypes.
+            sealed class Null : NullReferenceType, IPrimaryPocoType, IReadOnlyList<IAbstractPocoType>
             {
                 public Null( IPocoType notNullable )
                     : base( notNullable )
@@ -51,6 +53,16 @@ namespace CK.Setup
                 IPrimaryPocoType IPrimaryPocoType.Nullable => this;
 
                 IPrimaryPocoType IPrimaryPocoType.NonNullable => NonNullable;
+
+                public IReadOnlyList<IAbstractPocoType> AbstractTypes => this;
+
+                int IReadOnlyCollection<IAbstractPocoType>.Count => NonNullable.AbstractTypes.Count;
+
+                IAbstractPocoType IReadOnlyList<IAbstractPocoType>.this[int index] => NonNullable.AbstractTypes[index].Nullable;
+
+                IEnumerator<IAbstractPocoType> IEnumerable<IAbstractPocoType>.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();   
+
+                IEnumerator IEnumerable.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();
             }
 
             readonly IPocoFieldDefaultValue _def;
@@ -107,6 +119,9 @@ namespace CK.Setup
 
             [AllowNull]
             public IEnumerable<IConcretePocoType> AllowedTypes { get; internal set; }
+
+            [AllowNull]
+            public IReadOnlyList<IAbstractPocoType> AbstractTypes { get; internal set; }
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
 

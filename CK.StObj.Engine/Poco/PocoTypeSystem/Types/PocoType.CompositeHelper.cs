@@ -30,35 +30,14 @@ namespace CK.Setup
                                                                    PocoTypeSystem.IStringBuilderPool sbPool,
                                                                    IRecordPocoType type )
             {
-                if( !TryInstantiateValue( monitor, type, out var oValue ) )
-                {
-                    return DefaultValueInfo.Disallowed;
-                }
                 var b = sbPool.Get();
                 var r = type.IsAnonymous
-                            ? ForAnonymousRecord( monitor, b, type, oValue )
-                            : ForRecord( monitor, b, type, oValue );
+                            ? ForAnonymousRecord( monitor, b, type )
+                            : ForRecord( monitor, b, type );
                 sbPool.Return( b );
                 return r;
 
-                static bool TryInstantiateValue( IActivityMonitor monitor, ICompositePocoType type, out object oValue )
-                {
-                    oValue = null!;
-                    Exception? error = null;
-                    try
-                    {
-                        oValue = Activator.CreateInstance( type.Type )!;
-                        if( oValue != null ) return true;
-                    }
-                    catch( Exception ex )
-                    {
-                        error = ex;
-                    }
-                    monitor.Fatal( $"Unable to instantiate a default value instance for record '{type.CSharpName}'.", error );
-                    return false;
-                }
-
-                static DefaultValueInfo ForAnonymousRecord( IActivityMonitor monitor, StringBuilder b, IRecordPocoType type, object oValue )
+                static DefaultValueInfo ForAnonymousRecord( IActivityMonitor monitor, StringBuilder b, IRecordPocoType type )
                 {
                     var fieldInfos = type.Type.GetFields();
                     // We always build the default value string because we need
@@ -76,7 +55,6 @@ namespace CK.Setup
                         {
                             requiresInit = true;
                             b.Append( fInfo.DefaultValue.ValueCSharpSource );
-                            fieldInfos[f.Index].SetValue( oValue, fInfo.DefaultValue.Value );
                         }
                         else
                         {
@@ -85,14 +63,13 @@ namespace CK.Setup
                     }
                     b.Append( ')' );
                     return requiresInit
-                            ? new DefaultValueInfo( new FieldDefaultValue( oValue, b.ToString() ) )
+                            ? new DefaultValueInfo( new FieldDefaultValue( b.ToString() ) )
                             : DefaultValueInfo.Allowed;
                 }
 
                 static DefaultValueInfo ForRecord( IActivityMonitor monitor,
                                                    StringBuilder b,
-                                                   IRecordPocoType type,
-                                                   object oValue )
+                                                   IRecordPocoType type )
                 {
                     bool atLeasOne = false;
                     foreach( var f in type.Fields )
@@ -101,11 +78,6 @@ namespace CK.Setup
                         if( fInfo.IsAllowed ) continue;
                         if( fInfo.IsDisallowed ) return OnDisallowed( monitor, type, f );
                         Debug.Assert( fInfo.RequiresInit );
-                        // Configure the default instance.
-                        if( !TrySetFieldOnDefaultValueInstance( monitor, type, oValue, f, fInfo.DefaultValue.Value ) )
-                        {
-                            return DefaultValueInfo.Disallowed;
-                        }
                         // Generate the source code for the initialization.
                         if( atLeasOne )
                         {
@@ -121,51 +93,9 @@ namespace CK.Setup
                     if( atLeasOne )
                     {
                         b.Append( '}' );
-                        return new DefaultValueInfo( new FieldDefaultValue( oValue, b.ToString() ) );
+                        return new DefaultValueInfo( new FieldDefaultValue( b.ToString() ) );
                     }
                     return DefaultValueInfo.Allowed;
-
-                    static bool TrySetFieldOnDefaultValueInstance( IActivityMonitor monitor,
-                                                                   IRecordPocoType type,
-                                                                   object oValue,
-                                                                   IRecordPocoField field,
-                                                                   object? value )
-                    {
-                        try
-                        {
-                            if( type.IsAnonymous )
-                            {
-                                var fields = type.Type.GetFields();
-                            }
-                            else
-                            {
-                                var p = type.Type.GetProperty( field.Name );
-                                if( p != null )
-                                {
-                                    p.SetValue( oValue, value );
-                                }
-                                else
-                                {
-                                    var f = type.Type.GetField( field.Name );
-                                    if( f != null )
-                                    {
-                                        f.SetValue( oValue, value );
-                                    }
-                                    else
-                                    {
-                                        monitor.Error( $"Unable to get a FieldInfo or PropertyInfo for field '{field}' in record '{type.CSharpName}' to configure default instance." );
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-                        catch( Exception ex )
-                        {
-                            monitor.Error( $"Unable to configure default instance for field '{field}' in record '{type.CSharpName}'.", ex );
-                            return false;
-                        }
-                        return true;
-                    }
                 }
 
 
@@ -222,9 +152,8 @@ namespace CK.Setup
                     if( atLeasOne )
                     {
                         b.Append( ';' );
-                        // Use the text for the default value instance (unused when generating Poco constructor).
                         var text = b.ToString();
-                        return new DefaultValueInfo( new FieldDefaultValue( text, text ) );
+                        return new DefaultValueInfo( new FieldDefaultValue( text ) );
                     }
                     return DefaultValueInfo.Allowed;
                 }

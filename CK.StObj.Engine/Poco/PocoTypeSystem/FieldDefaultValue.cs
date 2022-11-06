@@ -10,19 +10,25 @@ namespace CK.Setup
 {
     sealed class FieldDefaultValue : IPocoFieldDefaultValue
     {
-        public static readonly FieldDefaultValue Invalid = new FieldDefaultValue( String.Empty, String.Empty );
+        public static readonly FieldDefaultValue Invalid = new FieldDefaultValue( String.Empty );
         public static readonly FieldDefaultValue StringDefault = new FieldDefaultValue( String.Empty, "\"\"" );
         public static readonly FieldDefaultValue DateTimeDefault = new FieldDefaultValue( Util.UtcMinValue, "CK.Core.Util.UtcMinValue" );
 
-        public FieldDefaultValue( object value, string source )
+        public FieldDefaultValue( object? simpleValue, string source )
         {
-            Value = value;
+            SimpleValue = simpleValue;
             ValueCSharpSource = source;
         }
 
-        public FieldDefaultValue( object value, PocoTypeSystem.IStringBuilderPool sbPool )
-            : this( value, WriteSourceValue( value, sbPool ) )
+        public FieldDefaultValue( string source )
         {
+            ValueCSharpSource = source;
+        }
+
+        public FieldDefaultValue( object simpleValue, PocoTypeSystem.IStringBuilderPool sbPool )
+            : this( WriteSourceValue( simpleValue, sbPool ) )
+        {
+            SimpleValue = simpleValue;
         }
 
         static string WriteSourceValue( object value, PocoTypeSystem.IStringBuilderPool sbPool )
@@ -57,7 +63,7 @@ namespace CK.Setup
         public bool CheckSameOrNone( IActivityMonitor monitor, MemberInfo defaultValueSource, PocoTypeSystem.IStringBuilderPool sbPool, MemberInfo other )
         {
             var a = other.GetCustomAttribute<DefaultValueAttribute>();
-            if( a?.Value == null || a.Value == Value ) return true;
+            if( a?.Value == null || a.Value == SimpleValue ) return true;
             var source = WriteSourceValue( a.Value, sbPool );
             if( source != ValueCSharpSource )
             {
@@ -67,14 +73,10 @@ namespace CK.Setup
             return true;
         }
 
-        /// <summary>
-        /// Gets the default value.
-        /// </summary>
-        public object Value { get; }
+        /// <inheritdoc />
+        public object? SimpleValue { get; }
 
-        /// <summary>
-        /// Gets the default value in C# source code.
-        /// </summary>
+        /// <inheritdoc />
         public string ValueCSharpSource { get; }
 
         public override string ToString() => ValueCSharpSource;

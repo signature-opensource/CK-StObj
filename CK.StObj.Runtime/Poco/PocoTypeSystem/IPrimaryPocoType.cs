@@ -12,6 +12,13 @@ namespace CK.Setup
         new IReadOnlyList<IPrimaryPocoField> Fields { get; }
 
         /// <summary>
+        /// Gets the <see cref="IAbstractPocoType"/> that this Poco supports,
+        /// excluding the <see cref="CK.Core.IPoco"/> and the <see cref="CK.Core.IClosedPoco"/>.
+        /// This is the projection of the <see cref="IPocoFamilyInfo.OtherInterfaces"/>.
+        /// </summary>
+        IReadOnlyList<IAbstractPocoType> AbstractTypes { get; }
+
+        /// <summary>
         /// Gets the constructor source code.
         /// </summary>
         string CSharpBodyConstructorSourceCode { get; }

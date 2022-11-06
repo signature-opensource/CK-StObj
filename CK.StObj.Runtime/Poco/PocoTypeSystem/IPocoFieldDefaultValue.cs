@@ -10,13 +10,15 @@ namespace CK.Setup
     public interface IPocoFieldDefaultValue
     {
         /// <summary>
-        /// Gets the default value.
-        /// This is necessarily not null: a null default value is ignored.
+        /// Gets the default value when field's type is a simple, basic, type.
+        /// For complex type, this is null: the default value is typically obtained
+        /// by creating a default instance of the type.
         /// </summary>
-        object Value { get; }
+        object? SimpleValue { get; }
 
         /// <summary>
         /// Gets the default value in C# source code.
+        /// For complex type, this is typically a "new XXX()" expression.
         /// </summary>
         string ValueCSharpSource { get; }
     }

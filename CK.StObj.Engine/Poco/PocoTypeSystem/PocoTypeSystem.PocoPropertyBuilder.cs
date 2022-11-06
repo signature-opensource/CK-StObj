@@ -50,7 +50,8 @@ namespace CK.Setup
                 }
                 Debug.Assert( _finalType != null && _best != null );
                 if( _defaultValue != null
-                    && !_finalType.Type.IsAssignableFrom( _defaultValue.Value.GetType() ) )
+                    && _defaultValue.SimpleValue != null
+                    && !_finalType.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) )
                 {
                     monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_finalType}'." );
                     return null;

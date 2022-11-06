@@ -62,8 +62,8 @@ namespace CK.Setup
             {
                 _itemType = itemType;
                 _def = tCollection.IsArray
-                        ? new FieldDefaultValue( _arrayEmpty.MakeGenericMethod( itemType.Type ).Invoke( null, Type.EmptyTypes )!, $"System.Array.Empty<{itemType.CSharpName}>()" )
-                        : new FieldDefaultValue( Activator.CreateInstance( tCollection )!, $"new {CSharpName}()" );
+                        ? new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" )
+                        : new FieldDefaultValue( $"new {CSharpName}()" );
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( base.Nullable );
@@ -107,7 +107,7 @@ namespace CK.Setup
                 : base( s, tCollection, typeName, kind, t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { itemType1, itemType2 };
-                _def = new FieldDefaultValue( Activator.CreateInstance( tCollection )!, $"new {CSharpName}()" );
+                _def = new FieldDefaultValue( $"new {CSharpName}()" );
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );

@@ -67,6 +67,25 @@ namespace CK.Setup
             _cache.Add( typeof( IPoco ), all );
             var allClosed = PocoType.CreateAbstractPoco( this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
             _cache.Add( typeof( IClosedPoco ), allClosed );
+            // Fourth, initializes the PrimaryPocoType.AbstractTypes.
+            foreach( var p in allPrimaries )
+            {
+                int nbAbstracts = p.FamilyInfo.OtherInterfaces.Count;
+                if( nbAbstracts > 0 )
+                {
+                    var abstracts = new IAbstractPocoType[nbAbstracts];
+                    int idx = 0;
+                    foreach( var a in p.FamilyInfo.OtherInterfaces )
+                    {
+                        abstracts[idx++] = (IAbstractPocoType)_cache[a];
+                    }
+                    p.AbstractTypes = abstracts;
+                }
+                else
+                {
+                    p.AbstractTypes = Array.Empty<IAbstractPocoType>();
+                }
+            }
             // Now that all IPoco are known, we can set their fields.
             var builder = new PocoPropertyBuilder( this );
             bool success = true;
