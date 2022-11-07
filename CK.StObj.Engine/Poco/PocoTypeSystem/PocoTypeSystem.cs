@@ -1,21 +1,19 @@
 using CK.CodeGen;
 using CK.Core;
-using CommunityToolkit.HighPerformance.Helpers;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 
 using NullabilityInfo = System.Reflection.TEMPNullabilityInfo;
 using NullabilityInfoContext = System.Reflection.TEMPNullabilityInfoContext;
 
 namespace CK.Setup
 {
+    using RegisterResult = IPocoTypeSystem.RegisterResult;
+
     /// <summary>
     /// Implementation of <see cref="IPocoTypeSystem"/>.
     /// </summary>
@@ -27,7 +25,7 @@ namespace CK.Setup
         //          and non generic and non collection types.
         //  - CSharpName: for anonymous records (Value Tuples) and collection types (because of nullabilities:
         //                the ? marker does the job).
-        readonly Dictionary<object, PocoType> _cache;
+        readonly Dictionary<object, IPocoType> _cache;
         readonly PocoType _objectType;
         readonly PocoType _stringType;
         readonly List<PocoType> _allTypes;
@@ -45,7 +43,7 @@ namespace CK.Setup
             _allTypes = new List<PocoType>( 8192 );
             _exposedAllTypes = new HalfTypeList( _allTypes );
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
-            _cache = new Dictionary<object, PocoType>()
+            _cache = new Dictionary<object, IPocoType>()
             {
                 { typeof(int), PocoType.CreateBasicValue(this, typeof(int), typeof(int?), "int") },
                 { typeof(long), PocoType.CreateBasicValue(this, typeof(long), typeof(long?), "long") },
@@ -95,47 +93,45 @@ namespace CK.Setup
             return _cache.GetValueOrDefault( type );
         }
 
-        public IConcretePocoType? GetConcretePocoType( Type pocoInterface )
+        public IPrimaryPocoType? GetPrimaryPocoType( Type i )
         {
-            if( _cache.TryGetValue( pocoInterface, out var result ) )
+            if( _cache.TryGetValue( i, out var result ) )
             {
-                return result as IConcretePocoType;
+                return result as IPrimaryPocoType;
             }
             return null;
         }
 
-        public IPrimaryPocoType? GetPrimaryPocoType( Type primaryInterface ) => GetConcretePocoType( primaryInterface ) as IPrimaryPocoType;
-
-        public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p )
+        public RegisterResult? Register( IActivityMonitor monitor, PropertyInfo p )
         {
             var nullabilityInfo = _nullContext.Create( p );
             return RegisterRoot( monitor, new MemberContext( p ), nullabilityInfo );
         }
 
-        public IPocoType? Register( IActivityMonitor monitor, FieldInfo f )
+        public RegisterResult? Register( IActivityMonitor monitor, FieldInfo f )
         {
             var nullabilityInfo = _nullContext.Create( f );
             return RegisterRoot( monitor, new MemberContext( f ), nullabilityInfo );
         }
 
-        public IPocoType? Register( IActivityMonitor monitor, ParameterInfo p )
+        public RegisterResult? Register( IActivityMonitor monitor, ParameterInfo p )
         {
             var nullabilityInfo = _nullContext.Create( p );
             return RegisterRoot( monitor, new MemberContext( p ), nullabilityInfo );
         }
 
-        internal IPocoType? RegisterWritableCollection( IActivityMonitor monitor, PropertyInfo p, out bool error )
+        internal RegisterResult? TryRegisterCollection( IActivityMonitor monitor, PropertyInfo p, out bool error )
         {
             var nullabilityInfo = _nullContext.Create( p );
             Debug.Assert( !nullabilityInfo.Type.IsByRef );
             Debug.Assert( !nullabilityInfo.Type.IsValueType );
             Debug.Assert( nullabilityInfo.Type.IsGenericType );
-            var r = TryHandleCollectionType( monitor, nullabilityInfo.Type, nullabilityInfo, new MemberContext( p ) );
-            error = !r.Success;
-            return r.Type;
+            var r = TryHandleCollectionType( monitor, nullabilityInfo.Type, nullabilityInfo, new MemberContext( p ), out var isCollection );
+            error = r == null && isCollection;
+            return r;
         }
 
-        IPocoType? RegisterRoot( IActivityMonitor monitor, MemberContext root, NullabilityInfo nullabilityInfo )
+        RegisterResult? RegisterRoot( IActivityMonitor monitor, MemberContext root, NullabilityInfo nullabilityInfo )
         {
             if( nullabilityInfo.Type.IsByRef )
             {
@@ -151,14 +147,14 @@ namespace CK.Setup
                 Debug.Assert( nullabilityInfo.WriteState == NullabilityState.Unknown );
                 var result = OnValueType( monitor, t, nullabilityInfo, root );
                 if( result == null ) return null;
-                return nullabilityInfo.ReadState == NullabilityState.NotNull ? result : result.Nullable;
+                return nullabilityInfo.ReadState == NullabilityState.NotNull ? result : result.Value.Nullable;
             }
             return TryRegister( monitor, nullabilityInfo, root );
         }
 
-        IPocoType? TryRegister( IActivityMonitor monitor,
-                                NullabilityInfo nInfo,
-                                MemberContext ctx )
+        RegisterResult? TryRegister( IActivityMonitor monitor,
+                                     NullabilityInfo nInfo,
+                                     MemberContext ctx )
         {
             Debug.Assert( !nInfo.Type.IsByRef );
             // First, reject any difference between Read and Write state.
@@ -167,16 +163,16 @@ namespace CK.Setup
                 monitor.Error( $"Read/Write nullability differ for {ctx}. No [AllowNull], [DisallowNull] or other nullability attributes should be used." );
                 return null;
             }
-            PocoType? result = nInfo.Type.IsValueType
+            var result = nInfo.Type.IsValueType
                                   ? OnValueType( monitor, nInfo.Type, nInfo, ctx )
                                   : OnReferenceType( monitor, nInfo, ctx );
             if( result == null ) return null;
             // Consider Unknown as being nullable (oblivious context).
             bool isNullable = nInfo.ReadState != NullabilityState.NotNull;
-            return isNullable ? result.Nullable : result;
+            return isNullable ? result.Value.Nullable : result;
         }
 
-        PocoType? OnReferenceType( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx )
+        RegisterResult? OnReferenceType( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx )
         {
             Type t = nInfo.Type;
             if( t.IsSZArray )
@@ -185,16 +181,24 @@ namespace CK.Setup
             }
             if( t.IsGenericType )
             {
-                var r = TryHandleCollectionType( monitor, t, nInfo, ctx );
-                if( r.Type == null )
+                var r = TryHandleCollectionType( monitor, t, nInfo, ctx, out var isCollection );
+                if( r == null )
                 {
-                    monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t.ToCSharpName( false )}'." );
+                    if( !isCollection )
+                    {
+                        monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t.ToCSharpName( false )}'." );
+                    }
+                    return null;
                 }
-                return r.Type;
+                return r;
             }
             if( _cache.TryGetValue( t, out var result ) )
             {
-                return result;
+                Debug.Assert( result.Kind == PocoTypeKind.Any
+                              || result.Type == typeof( string )
+                              || result.Kind == PocoTypeKind.IPoco
+                              || result.Kind == PocoTypeKind.AbstractIPoco );
+                return new RegisterResult( result, null, false );
             }
             if( typeof( IPoco ).IsAssignableFrom( t ) )
             {
@@ -207,13 +211,19 @@ namespace CK.Setup
             return null;
         }
 
-        (bool Success, PocoType? Type) TryHandleCollectionType( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
+        RegisterResult? TryHandleCollectionType( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx, out bool isCollection )
         {
+            isCollection = true;
             var tGen = t.GetGenericTypeDefinition();
-            if( tGen == typeof( IList<> ) )
+            bool isReadOnly = tGen == typeof( IReadOnlyList<> );
+            if( isReadOnly || tGen == typeof( IList<> ) )
             {
-                var tI = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
-                if( tI == null ) return default;
+                var rtI = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
+                if( rtI == null ) return null;
+                var regTypeName = isReadOnly
+                                    ? $"System.Collections.Generic.IReadOnlyList<{rtI.Value.RegCSharpName}>"
+                                    : $"System.Collections.Generic.IList<{rtI.Value.RegCSharpName}>";
+                var tI = rtI.Value.PocoType;
                 string typeName;
                 if( tI.Type.IsValueType )
                 {
@@ -230,7 +240,7 @@ namespace CK.Setup
                 {
                     if( tI.Kind == PocoTypeKind.IPoco )
                     {
-                        var cType = EnsurePocoListType( monitor, ((IConcretePocoType)tI).PrimaryInterface );
+                        var cType = EnsurePocoListType( monitor, (IPrimaryPocoType)tI );
                         if( cType == null ) return default;
                         typeName = cType;
                     }
@@ -244,12 +254,17 @@ namespace CK.Setup
                     result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.List, tI );
                     _cache.Add( typeName, result );
                 }
-                return (true, result);
+                return new RegisterResult( result, regTypeName, isReadOnly || rtI.Value.HasReadOnlyCollection );
             }
-            if( tGen == typeof( ISet<> ) )
+            isReadOnly = tGen == typeof( IReadOnlySet<> );
+            if( isReadOnly || tGen == typeof( ISet<> ) )
             {
-                var tI = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
-                if( tI == null ) return default;
+                var rtI = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
+                if( rtI == null ) return null;
+                var regTypeName = isReadOnly
+                                    ? $"System.Collections.Generic.IReadOnlySet<{rtI.Value.RegCSharpName}>"
+                                    : $"System.Collections.Generic.ISet<{rtI.Value.RegCSharpName}>";
+                var tI = rtI.Value.PocoType;
                 string typeName;
                 if( tI.Type.IsValueType )
                 {
@@ -266,7 +281,7 @@ namespace CK.Setup
                 {
                     if( tI.Kind == PocoTypeKind.IPoco )
                     {
-                        var cType = EnsurePocoHashSetType( monitor, ((IConcretePocoType)tI).PrimaryInterface );
+                        var cType = EnsurePocoHashSetType( monitor, (IPrimaryPocoType)tI );
                         if( cType == null ) return default;
                         typeName = cType;
                     }
@@ -280,14 +295,25 @@ namespace CK.Setup
                     result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.HashSet, tI );
                     _cache.Add( typeName, result );
                 }
-                return (true, result);
+                return new RegisterResult( result, regTypeName, isReadOnly || rtI.Value.HasReadOnlyCollection );
             }
-            if( tGen == typeof( IDictionary<,> ) )
+            isReadOnly = tGen == typeof( IReadOnlyDictionary<,> );
+            if( isReadOnly || tGen == typeof( IDictionary<,> ) )
             {
-                var tK = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
-                if( tK == null ) return default;
-                var tV = TryRegister( monitor, nInfo.GenericTypeArguments[1], ctx );
-                if( tV == null ) return default;
+                var rtK = TryRegister( monitor, nInfo.GenericTypeArguments[0], ctx );
+                if( rtK == null ) return null;
+                if( rtK.Value.PocoType == null )
+                {
+                    monitor.Error( $"{ctx}: Dictionary key cannot be \"abstract\" type. Type '{rtK.Value.RegCSharpName}' is not supported." );
+                    return null;
+                }
+                var tK = rtK.Value.PocoType;
+                var rtV = TryRegister( monitor, nInfo.GenericTypeArguments[1], ctx );
+                if( rtV == null ) return null;
+                var regTypeName = isReadOnly
+                    ? $"System.Collections.Generic.IReadOnlyDictionary<{rtK.Value.RegCSharpName},{rtV.Value.RegCSharpName}>"
+                    : $"System.Collections.Generic.IDictionary<{rtK.Value.RegCSharpName},{rtV.Value.RegCSharpName}>";
+                var tV = rtV.Value.PocoType;
                 string typeName;
                 if( tV.Type.IsValueType )
                 {
@@ -304,7 +330,7 @@ namespace CK.Setup
                 {
                     if( tV.Kind == PocoTypeKind.IPoco )
                     {
-                        var cType = EnsurePocoDictionaryType( monitor, tK, ((IConcretePocoType)tV).PrimaryInterface );
+                        var cType = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV );
                         if( cType == null ) return default;
                         typeName = cType;
                     }
@@ -315,12 +341,13 @@ namespace CK.Setup
                 }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
-                    result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.Dictionary, tK, tV );
+                    result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.Dictionary, rtK.Value.PocoType, tV );
                     _cache.Add( typeName, result );
                 }
-                return (true, result);
+                return new RegisterResult( result, regTypeName, isReadOnly || rtV.Value.HasReadOnlyCollection );
             }
-            return (true, null);
+            isCollection = false;
+            return null;
 
             string? EnsurePocoListType( IActivityMonitor monitor, IPrimaryPocoType tI )
             {
@@ -354,21 +381,23 @@ namespace CK.Setup
 
         }
 
-        PocoType? OnArray( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
+        RegisterResult? OnArray( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
         {
             Debug.Assert( nInfo.ElementType != null );
-            var tE = TryRegister( monitor, nInfo.ElementType, ctx );
-            if( tE == null ) return null;
+            var rtE = TryRegister( monitor, nInfo.ElementType, ctx );
+            if( rtE == null ) return null;
+            var tE = rtE.Value.PocoType;
             var typeName = tE.CSharpName + "[]";
             if( !_cache.TryGetValue( typeName, out var result ) )
             {
                 result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.Array, tE );
                 _cache.Add( typeName, result );
             }
-            return result;
+            var regTypeName = rtE.Value.HasRegCSharpName ? rtE.Value.RegCSharpName + "[]" : null;
+            return new RegisterResult( result, regTypeName, rtE.Value.HasReadOnlyCollection );
         }
 
-        PocoType? OnValueType( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
+        RegisterResult? OnValueType( IActivityMonitor monitor, Type t, NullabilityInfo nInfo, MemberContext ctx )
         {
             // Unwrap the nullable value type (or wrap): we reason only on non nullable types.
             Type tNull;
@@ -398,50 +427,48 @@ namespace CK.Setup
                 // be found in the cache or a new one is created.
                 return OnValueTypeAnonymousRecord( monitor, nInfo, ctx, tNull, tNotNull );
             }
-            if( !_cache.TryGetValue( tNotNull, out var result ) )
+            if( _cache.TryGetValue( tNotNull, out var existing ) )
             {
-                // No known generic value type is supported.
-                if( tNotNull.IsGenericType )
-                {
-                    Debug.Assert( tNotNull.GetGenericArguments().Length == nInfo.GenericTypeArguments.Length );
-                    monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
-                }
-                else if( tNotNull.IsEnum )
-                {
-                    // New Enum (basic type).
-                    // There is necessary the underlying integral type.
-                    result = PocoType.CreateEnum( monitor, this, tNotNull, tNull, _cache[tNotNull.GetEnumUnderlyingType()] );
-                    _cache.Add( tNotNull, result );
-                }
-                else
-                {
-                    // May be a new "record struct".
-                    result = OnTypedRecord( monitor, ctx, tNull, tNotNull );
-                    if( result == null )
-                    {
-                        monitor.Error( $"Unsupported Poco value type: '{tNotNull}'." );
-                    }
-                }
+                return new RegisterResult( existing, null, false );
             }
-            return result;
+            if( tNotNull.IsEnum )
+            {
+                // New Enum (basic type).
+                // There is necessary the underlying integral type.
+                existing = PocoType.CreateEnum( monitor, this, tNotNull, tNull, _cache[tNotNull.GetEnumUnderlyingType()] );
+                _cache.Add( tNotNull, existing );
+                return new RegisterResult( existing, null, false );
+            }
+            // Generic value type is not supported.
+            if( tNotNull.IsGenericType )
+            {
+                Debug.Assert( tNotNull.GetGenericArguments().Length == nInfo.GenericTypeArguments.Length );
+                monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
+                return null;
+            }
+            // Last chance: may be a new "record struct".
+            return OnTypedRecord( monitor, ctx, tNull, tNotNull );
         }
 
-        PocoType? OnValueTypeAnonymousRecord( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx, Type tNull, Type tNotNull )
+        RegisterResult? OnValueTypeAnonymousRecord( IActivityMonitor monitor, NullabilityInfo nInfo, MemberContext ctx, Type tNull, Type tNotNull )
         {
             var subInfos = FlattenValueTuple( nInfo ).ToList();
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
+            // The typeName of an anonymous record uses the
+            // registered type names of its fields since a field exposes its
+            // FieldTypeCSharpName that is the registered type name.
             var b = StringBuilderPool.Get();
             b.Append( '(' );
             int idx = 0;
             foreach( var sub in subInfos )
             {
                 var f = fields[idx++];
-                IPocoType? type = TryRegister( monitor, sub, ctx );
-                if( type == null ) return null;
+                var rType = TryRegister( monitor, sub, ctx );
+                if( rType == null ) return null;
                 if( b.Length != 1 ) b.Append( ',' );
-                b.Append( type.CSharpName );
+                b.Append( rType.Value.RegCSharpName );
                 if( !f.IsUnnamed ) b.Append( ' ' ).Append( f.Name );
-                f.SetType( type );
+                f.SetType( rType.Value.PocoType, rType.Value.RegCSharpName );
             }
             b.Append( ')' );
             var typeName = StringBuilderPool.GetStringAndReturn( b );
@@ -450,7 +477,7 @@ namespace CK.Setup
                 var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, true, fields );
                 _cache.Add( typeName, exists = r );
             }
-            return exists;
+            return new RegisterResult( exists, typeName, false );
 
             static IEnumerable<NullabilityInfo> FlattenValueTuple( NullabilityInfo nInfo )
             {
@@ -470,7 +497,7 @@ namespace CK.Setup
             }
         }
 
-        PocoType? OnTypedRecord( IActivityMonitor monitor, MemberContext ctx, Type tNull, Type tNotNull )
+        RegisterResult? OnTypedRecord( IActivityMonitor monitor, MemberContext ctx, Type tNull, Type tNotNull )
         {
             // C#10 record struct are not decorated by any special attribute: we treat them like any other struct.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
@@ -513,14 +540,15 @@ namespace CK.Setup
                 if( f == null ) return null;
                 fields[idx++] = f;
             }
-            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, tNotNull.ToCSharpName(), false, fields );
+            var typeName = tNotNull.ToCSharpName();
+            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, false, fields );
             _cache.Add( tNotNull, r );
-            return r;
+            return new RegisterResult( r, typeName, false );
         }
 
-        RecordField? CreateField( IActivityMonitor monitor, int idx, IPocoType? type, MemberInfo fInfo, ParameterInfo[]? ctorParams )
+        RecordField? CreateField( IActivityMonitor monitor, int idx, RegisterResult? rField, MemberInfo fInfo, ParameterInfo[]? ctorParams )
         {
-            if( type == null ) return null;
+            if( rField == null ) return null;
             var defValue = FieldDefaultValue.CreateFromAttribute( monitor, StringBuilderPool, fInfo );
             if( defValue == null && ctorParams != null )
             {
@@ -528,7 +556,7 @@ namespace CK.Setup
                 if( p != null ) defValue = FieldDefaultValue.CreateFromParameter( monitor, StringBuilderPool, p );
             }
             var field = new RecordField( idx, fInfo.Name, defValue );
-            field.SetType( type );
+            field.SetType( rField.Value.PocoType, rField.Value.RegCSharpName );
             return field;
         }
 

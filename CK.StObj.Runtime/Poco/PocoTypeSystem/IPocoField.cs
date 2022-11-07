@@ -26,6 +26,11 @@ namespace CK.Setup
         string Name { get; }
 
         /// <summary>
+        /// Gets the field type name. It may not be the actual field type.
+        /// </summary>
+        string FieldTypeCSharpName { get; }
+
+        /// <summary>
         /// Gets the field type.
         /// </summary>
         IPocoType Type { get; }

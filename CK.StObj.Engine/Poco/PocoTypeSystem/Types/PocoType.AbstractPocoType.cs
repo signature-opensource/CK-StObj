@@ -78,13 +78,9 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary
-                                                                .Take( _abstractCount )
-                                                            .Concat( _abstractAndPrimary
-                                                                        .Skip( _abstractCount )
-                                                                        .SelectMany( p => Unsafe.As<PrimaryPocoType>( p ).AllowedTypes ) );
+            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary.Skip( _abstractCount ).Append( this );
 
-            public override bool IsWritableType( Type type ) => _abstractAndPrimary.Take( _abstractCount ).Any( a => a.Type == type )
+            public override bool IsWritableType( Type type ) => Type.IsAssignableFrom( type )
                                                                 || _abstractAndPrimary.Skip(_abstractCount).Any( t => t.IsWritableType( type ) );
 
             IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
@@ -98,9 +94,9 @@ namespace CK.Setup
             readonly IReadOnlyList<IPrimaryPocoType> _primaries;
 
             public AbstractPocoType2( PocoTypeSystem s,
-                                         Type tAbstract,
-                                         IReadOnlyList<IAbstractPocoType> abstracts,
-                                         IReadOnlyList<IPrimaryPocoType> primaries )
+                                      Type tAbstract,
+                                      IReadOnlyList<IAbstractPocoType> abstracts,
+                                      IReadOnlyList<IPrimaryPocoType> primaries )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractIPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstracts = abstracts;
@@ -117,12 +113,10 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => ((IEnumerable<IPocoType>)_abstracts)
-                                                            .Concat( _primaries.SelectMany( p => Unsafe.As<PrimaryPocoType>( p ).AllowedTypes ) );
+            public IEnumerable<IPocoType> AllowedTypes => _primaries;
 
-            public override bool IsWritableType( Type type ) => _abstracts.Any( a => a.Type == type )
+            public override bool IsWritableType( Type type ) => Type.IsAssignableFrom( type )
                                                                 || _primaries.Any( t => t.IsWritableType( type ) );
-
 
             IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
 

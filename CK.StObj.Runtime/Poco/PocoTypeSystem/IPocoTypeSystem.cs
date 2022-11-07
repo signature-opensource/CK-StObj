@@ -39,19 +39,48 @@ namespace CK.Setup
         IPocoType? FindByType( Type type );
         
         /// <summary>
-        /// Gets the concrete poco type from one of its interfaces.
+        /// Gets the primary poco type from any of its interface.
         /// </summary>
-        /// <param name="pocoInterface">The IPoco interface type.</param>
-        /// <returns>The concrete poco type or null.</returns>
-        IConcretePocoType? GetConcretePocoType( Type pocoInterface );
+        /// <param name="i">The IPoco interface.</param>
+        /// <returns>The primary poco type or null.</returns>
+        IPrimaryPocoType? GetPrimaryPocoType( Type i );
 
         /// <summary>
-        /// Gets the primary poco type from its interface.
+        /// Captures a registration result.
         /// </summary>
-        /// <param name="primaryInterface">The IPoco primary interface.</param>
-        /// <returns>The primary poco type or null.</returns>
-        IPrimaryPocoType? GetPrimaryPocoType( Type primaryInterface );
+        public readonly struct RegisterResult
+        {
+            readonly string? _regCSharpName;
 
+            /// <summary>
+            /// The registered poco type.
+            /// </summary>
+            public readonly IPocoType PocoType;
+
+            /// <summary>
+            /// Gets the registered type name.
+            /// </summary>
+            public string RegCSharpName => _regCSharpName ?? PocoType.CSharpName;
+
+            /// <summary>
+            /// Gets whether the registered type name is not the same as <see cref="IPocoType.CSharpName"/>.
+            /// </summary>
+            public bool HasRegCSharpName => _regCSharpName != null;
+
+            /// <summary>
+            /// Gets whether at least one read only collection appears in this type.
+            /// </summary>
+            public readonly bool HasReadOnlyCollection;
+
+            public RegisterResult( IPocoType pocoType, string? registeredTypeName, bool hasReadOnlyCollection )
+            {
+                PocoType = pocoType;
+                _regCSharpName = registeredTypeName;
+                HasReadOnlyCollection = hasReadOnlyCollection;
+            }
+
+            public RegisterResult Nullable => new RegisterResult( PocoType.Nullable, HasRegCSharpName ? RegCSharpName + "?" : null, HasReadOnlyCollection );
+        }
 
         /// <summary>
         /// Tries to register a new type through a PropertyInfo (this is required for
@@ -60,7 +89,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="p">The PropertyInfo whose <see cref="PropertyInfo.PropertyType"/> must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
-        IPocoType? Register( IActivityMonitor monitor, PropertyInfo p );
+        RegisterResult? Register( IActivityMonitor monitor, PropertyInfo p );
 
         /// <summary>
         /// Tries to register a new type through a FieldInfo (this is required for
@@ -69,7 +98,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="f">The FieldInfo whose <see cref="FieldInfo.FieldType"/> must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
-        IPocoType? Register( IActivityMonitor monitor, FieldInfo f );
+        RegisterResult? Register( IActivityMonitor monitor, FieldInfo f );
 
         /// <summary>
         /// Tries to register a new type through a ParameterInfo (this is required for
@@ -78,7 +107,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="f">The ParameterInfo whose <see cref="ParameterInfo.ParameterType"/> must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
-        IPocoType? Register( IActivityMonitor monitor, ParameterInfo f );
+        RegisterResult? Register( IActivityMonitor monitor, ParameterInfo f );
 
     }
 

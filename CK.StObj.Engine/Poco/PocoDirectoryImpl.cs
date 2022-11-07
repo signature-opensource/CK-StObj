@@ -254,7 +254,7 @@ namespace CK.Setup
             var pocoClassName = list.Type.FamilyInfo.PocoClass.FullName;
             var t = ns.CreateType( $"sealed class {list.TypeName} : List<{pocoClassName}>" );
             t.Append( "public bool IsReadOnly => false;" ).NewLine();
-            foreach( var tA in list.Type.AllowedTypes )
+            foreach( var tA in list.Type.FamilyInfo.Interfaces )
             {
                 t.Definition.BaseTypes.Add( new ExtendedTypeName( $"IList<{tA.CSharpName}>" ) );
 

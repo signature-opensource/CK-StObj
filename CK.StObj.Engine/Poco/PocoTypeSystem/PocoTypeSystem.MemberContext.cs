@@ -33,8 +33,6 @@ namespace CK.Setup
                 _tupleNames = root.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames ?? Array.Empty<string>();
             }
 
-            public bool UsePrimaryPocoMapping { get; init; }
-
             public RecordField[] GetTupleNamedFields( int count )
             {
                 var fields = new RecordField[count];

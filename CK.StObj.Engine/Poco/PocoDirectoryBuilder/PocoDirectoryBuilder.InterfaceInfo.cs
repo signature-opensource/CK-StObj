@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 using System.Collections.Generic;
 
@@ -13,6 +13,7 @@ namespace CK.Setup
             public readonly PocoRootInfo Root;
             public Type PocoInterface { get; }
             public Type PocoFactoryInterface { get; }
+            public string CSharpName { get; }
 
             AnnotationSetImpl _annotations;
 
@@ -23,6 +24,7 @@ namespace CK.Setup
                 Root = root;
                 PocoInterface = pocoInterface;
                 PocoFactoryInterface = pocoFactoryInterface;
+                CSharpName = pocoInterface.ToCSharpName();
             }
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
