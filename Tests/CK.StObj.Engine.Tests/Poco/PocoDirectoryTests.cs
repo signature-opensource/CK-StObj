@@ -60,21 +60,19 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             {
                 var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName1 ) );
-                using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
-                                                .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) ) ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries ) )
                 {
                     TestHelper.GetFailedResult( c );
-                }
+                    entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
+                                                             && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) );                }
             }
             {
                 var c = TestHelper.CreateStObjCollector( typeof( ICmdBadName2 ) );
-                using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
-                                                .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                         && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) ) ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries ) )
                 {
                     TestHelper.GetFailedResult( c );
-                }
+                    entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
+                                                             && x.Text.StartsWith( "Duplicate ExternalName in attribute on ", StringComparison.Ordinal ) ) );                }
             }
         }
 
@@ -90,11 +88,11 @@ namespace CK.StObj.Engine.Tests.Poco
         public void when_no_PocoName_is_defined_the_Poco_uses_its_PrimaryInterface_FullName()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdNoName ), typeof( ICmdNoNameA ), typeof( ICmdNoNameB ), typeof( ICmdNoNameC ) );
-            using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
-                                            .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
-                                                                     && x.Text.StartsWith( $"Poco '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) ) ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
                 TestHelper.CompileAndLoadStObjMap( c ).Map.Should().NotBeNull();
+                entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Warn
+                                                    && x.Text.StartsWith( $"Type '{typeof( ICmdNoName ).FullName}' use its full name ", StringComparison.Ordinal ) ) );
             }
         }
 
@@ -107,11 +105,11 @@ namespace CK.StObj.Engine.Tests.Poco
         public void PocoName_attribute_must_be_on_the_primary_interface()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdSecondary ) );
-            using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
-                                            .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                     && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName( true, true, true )}'.", StringComparison.Ordinal ) ) ) ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries ) )
             {
                 TestHelper.GetFailedResult( c );
+                entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
+                                                         && x.Text.StartsWith( $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName( true, true, true )}'.", StringComparison.Ordinal ) ) );
             }
         }
 
@@ -129,11 +127,12 @@ namespace CK.StObj.Engine.Tests.Poco
         public void PocoName_must_be_unique()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmd1 ), typeof( ICmd1Bis ) );
-            using( TestHelper.Monitor.CollectEntries( entries => entries.Should()
-                                            .Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
-                                                                     && x.Text.StartsWith( "The Poco name 'Cmd1' clashes: both '", StringComparison.Ordinal ) ) ) ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries ) )
             {
                 TestHelper.GetFailedResult( c );
+
+                entries.Should().Match( e => e.Any( x => x.MaskedLevel == LogLevel.Error
+                                                         && x.Text.StartsWith( "The Poco name 'Cmd1' clashes: both '", StringComparison.Ordinal ) ) );
             }
         }
     }

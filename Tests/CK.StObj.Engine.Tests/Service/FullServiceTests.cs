@@ -291,8 +291,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( B ) );
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
             {
                 using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
                 sp.GetRequiredService<IB>()
@@ -302,8 +301,9 @@ namespace CK.StObj.Engine.Tests.Service
                 sp.GetRequiredService<IB>()
                     .Should().BeSameAs( sp.GetRequiredService<B>() )
                     .And.BeSameAs( sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
+
+                logs.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
             }
-            logs.Should().Contain( e => e.Text == "This is from generated code: Magic!" );
         }
 
         public abstract class ServiceCanTalk : IAutoService
@@ -321,15 +321,15 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ServiceCanTalk ) );
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
                 using var sp = TestHelper.CreateAutomaticServices( collector ).Services;
                 sp.GetRequiredService<ServiceCanTalk>()
                     .CodeCanBeInTheAttribute( TestHelper.Monitor, "Magic! (Again)" )
                     .Should().Be( 3172 );
+
+                entries.Should().Contain( e => e.Text == "This is from generated code: Magic! (Again)" );
             }
-            logs.Should().Contain( e => e.Text == "This is from generated code: Magic! (Again)" );
         }
 
         [Test]
@@ -343,8 +343,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var startupServices = new SimpleServiceContainer();
                 startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
                 {
                     using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
                     sp.GetRequiredService<IA1>().Should().BeSameAs( sp.GetRequiredService<A>() );
@@ -356,10 +355,11 @@ namespace CK.StObj.Engine.Tests.Service
                     }
                     // We are using here the default B's implementation.
                     sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
+
+                    logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                    logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                    logs.Should().Contain( e => e.Text == "I'm doing something from B." );
                 }
-                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-                logs.Should().Contain( e => e.Text == "I'm doing something from B." );
             }
             // Failed (while Configuring Services): TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem is missing.
             {
@@ -381,8 +381,7 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
             {
                 using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
                 // We are using here the ScopedImplementation.
@@ -393,12 +392,12 @@ namespace CK.StObj.Engine.Tests.Service
                 {
                     scoped.ServiceProvider.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().Should().NotBeSameAs( s );
                 }
+                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                logs.Should().NotContain( e => e.Text == "I'm doing something from B." );
+                logs.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Alice'.'."
+                                            || e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Bob'.'." );
             }
-            logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            logs.Should().NotContain( e => e.Text == "I'm doing something from B." );
-            logs.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Alice'.'."
-                                        || e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is 'Bob'.'." );
         }
 
         [Test]
@@ -412,19 +411,19 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { AlwaysUseAlice = true } );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
             {
                 using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
                 // We are using here the ScopedImplementation.
                 var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.Should().BeOfType<ScopedImplementation>();
                 s.DoSometing( TestHelper.Monitor );
+
+                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                logs.Should().NotContain( e => e.Text == "I'm doing something from B." );
+                logs.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is ALWAYS 'Alice'.'." );
             }
-            logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            logs.Should().NotContain( e => e.Text == "I'm doing something from B." );
-            logs.Should().Contain( e => e.Text == "Based on IAliceOrBobProvider: I'm working with 'This is ALWAYS 'Alice'.'." );
         }
 
         [Test]
@@ -438,18 +437,18 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
                 using var sp = r.ServiceRegister.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
                 r.ServiceRegister.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
+
+                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                logs.Should().Contain( e => e.Text == "I'm wrapping the default B's implementation." );
+                logs.Should().Contain( e => e.Text == "I'm doing something from B." );
             }
-            logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            logs.Should().Contain( e => e.Text == "I'm wrapping the default B's implementation." );
-            logs.Should().Contain( e => e.Text == "I'm doing something from B." );
         }
 
         [Test]
@@ -463,17 +462,17 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
             {
                 var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
                 using var sp = r.ServiceRegister.Services.BuildServiceProvider();
                 sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
+
+                logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
+                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                logs.Should().Contain( e => e.Text == "B is no more doing something." )
+                             .And.NotContain( e => e.Text == "I'm doing something from B." );
             }
-            logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
-            logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            logs.Should().Contain( e => e.Text == "B is no more doing something." )
-                         .And.NotContain( e => e.Text == "I'm doing something from B." );
         }
 
 
@@ -488,14 +487,14 @@ namespace CK.StObj.Engine.Tests.Service
             var startupServices = new SimpleServiceContainer();
             startupServices.Add( new TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem() { EmitErrorLogSoThatConfigureServicesFails = true } );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+            using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
             {
                 TestHelper.GetFailedAutomaticServicesConfiguration( collector, null, startupServices );
+
+                logs.Should().Contain( e => e.MaskedLevel >= LogLevel.Error );
+                logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
+                logs.Should().Contain( e => e.Text == "But SuperStartupService has been told to fail miserably." );
             }
-            logs.Should().Contain( e => e.MaskedLevel >= LogLevel.Error );
-            logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
-            logs.Should().Contain( e => e.Text == "But SuperStartupService has been told to fail miserably." );
         }
 
 
@@ -523,21 +522,20 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
                 {
                     using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
                     services.Invoking( sp => sp.GetService<ServiceWithValueTypeCtorParameters>() ).Should().Throw<InvalidOperationException>();
+
+                    logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                                && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
                 }
-                logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( ServiceWithValueTypeCtorParameters ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
                 {
                     using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
                     {
@@ -547,9 +545,9 @@ namespace CK.StObj.Engine.Tests.Service
                     var resolved = s.GetRequiredService<ServiceWithValueTypeCtorParameters>();
                     resolved.RequiredValueType.Should().BeTrue();
 
+                    logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                                && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.OrdinalIgnoreCase ) );
                 }
-                logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.OrdinalIgnoreCase ) );
             }
 
         }
@@ -573,28 +571,20 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( ServiceWithVaryingParams ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
-                {
-                    using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                    services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
-                }
+                using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
+                services.Invoking( sp => sp.GetService<ServiceWithVaryingParams>() ).Should().Throw<InvalidOperationException>();
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( ServiceWithVaryingParams ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
                 {
-                    using var s = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
-                    {
-                        services.Services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
+                    services.Services.AddSingleton( typeof( int[] ), new int[] { 1, 2, 3 } );
 
-                    } ).Services;
-                    var resolved = s.GetRequiredService<ServiceWithVaryingParams>();
-                    resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
-                }
+                } ).Services;
+                var resolved = s.GetRequiredService<ServiceWithVaryingParams>();
+                resolved.Things.Should().BeEquivalentTo( new[] { 1, 2, 3 } );
             }
 
         }
@@ -605,12 +595,8 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( ServiceWithOptionalValueTypeCtorParameters ) );
 
-            IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-            using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
-            {
-                using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
-                services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
-            }
+            using var services = TestHelper.CreateAutomaticServices( collector, null ).Services;
+            services.GetService<ServiceWithOptionalValueTypeCtorParameters>().Should().NotBeNull();
         }
 
         public interface IPublicService : IAutoService
