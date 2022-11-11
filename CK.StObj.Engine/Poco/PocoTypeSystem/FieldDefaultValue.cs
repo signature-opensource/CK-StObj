@@ -49,10 +49,10 @@ namespace CK.Setup
 
         public static FieldDefaultValue? CreateFromAttribute( IActivityMonitor monitor,
                                                               PocoTypeSystem.IStringBuilderPool sbPool,
-                                                              MemberInfo definer )
+                                                              IExtMemberInfo definer )
         {
             // Use the conversion from the constructor for the value.
-            var a = definer.GetCustomAttribute<DefaultValueAttribute>();
+            var a = definer.GetCustomAttributes<DefaultValueAttribute>().FirstOrDefault();
             if( a == null ) return null;
             var value = a.Value;
             if( value == null ) return null;
@@ -60,9 +60,9 @@ namespace CK.Setup
             return new FieldDefaultValue( value, WriteSourceValue( value, sbPool ) );
         }
 
-        public bool CheckSameOrNone( IActivityMonitor monitor, MemberInfo defaultValueSource, PocoTypeSystem.IStringBuilderPool sbPool, MemberInfo other )
+        public bool CheckSameOrNone( IActivityMonitor monitor, IExtMemberInfo defaultValueSource, PocoTypeSystem.IStringBuilderPool sbPool, IExtMemberInfo other )
         {
-            var a = other.GetCustomAttribute<DefaultValueAttribute>();
+            var a = other.GetCustomAttributes<DefaultValueAttribute>().FirstOrDefault();
             if( a?.Value == null || a.Value == SimpleValue ) return true;
             var source = WriteSourceValue( a.Value, sbPool );
             if( source != ValueCSharpSource )

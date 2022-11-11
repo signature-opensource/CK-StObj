@@ -5,7 +5,6 @@ using System.Diagnostics;
 
 namespace System.Reflection
 {
-
     /// <summary>
     /// Waiting for .Net7...
     /// A class that represents nullability info

@@ -72,6 +72,8 @@ By using a `[CKTypeDefiner]` attribute on a `IPoco`, the interface becomes a kin
 The definer is NOT a `IPoco`, doesn't define a "Poco family", only the interfaces that specialize it are `IPoco`
 and define a family.
 
+__Note:__ `[AutoImplementationClaim]` is an "advanced" attribute that states that this member is not a
+regular property, it will be automatically implemented by some aspects of the framework.
 
 #### The [CKTypeSuperDefiner] defines abstract IPoco
 Using the `[CKTypeSuperDefiner]` makes direct extensions on the interface an abstraction rather
@@ -166,7 +168,8 @@ The set of Poco compliant type is precisely defined:
  - Formally `object` is a basic type provided that at runtime, the instance must be a Poco compliant type.
  - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant Poco types.
- - `List<>`, `HashSet<>`, `Dictionary<,>` and array of Poco compliant type.
+ - `List<>`, `IList<>`, `HashSet<>`, `IHashSet<>`, `Dictionary<,>` `IDictionary<,>` and array 
+   of Poco compliant type.
 
 ### The PocoRecord
 
@@ -206,7 +209,8 @@ public interface INVALID : IPoco
     ref (int A, (string Name, List<int> Values) B) Thing { get; }
 }
 ```
-Here again, the non nullable `Name` will be the empty string and the `Values` will be iniitalized to an empty list.
+Here again, the non nullable `Name` will be the empty string and the `Values` will be initialized to
+an empty list.
 
 For more information on value tuple and more specifically their field names, please read this excellent
 analysis: http://mustoverride.com/tuples_names/. The Poco framework handles the field names so that
@@ -262,7 +266,7 @@ share the same restrictions:
 - Must contain only Poco compliant field types.
 
 A simple struct is valid under conditions:
-- Readonly field or properties are forbidden.
+- `readonly` field or read only property are forbidden.
 - There must be at most one constructor. Their default parameter value if any is used as the default 
   corresponding field or property value.  
 
@@ -275,7 +279,7 @@ public struct DetailWithFields
     [DefaultValue( 42 )]
     public int Power;
 
-    public List<int> Values;
+    public IList<int> Values;
 
     [DefaultValue( "Hip!" )]
     public string Name;
@@ -286,7 +290,7 @@ public struct DetailWithProperties
     [DefaultValue( 3712 )]
     public int Power { get; set; }
 
-    public List<int> Values { get; set; }
+    public IList<int> Values { get; set; }
 
     [DefaultValue( "Hop!" )]
     public string Name { get; set; }
@@ -306,9 +310,9 @@ public interface IWithComplexRecords : IPoco
 ```
 
 ### The "standard collections
-IPoco can expose `T[]`, `List<T>`, `HashSet<T>` and `Dictionary<TKey,TValue>` where `T`, `TKey`
-and `TValue` are Poco compliant types.
-A `List<(string Name, Dictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
+IPoco can expose `T[]`, `List<T>`, `IList<T>`, `HashSet<T>`, `ISet<T>`, `Dictionary<TKey,TValue>` and
+`IDictionary<TKey,TValue>` where `T`, `TKey` and `TValue` are Poco compliant types.
+A `List<(string Name, IDictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
 
 Note that only these 4 concrete types are supported.
 

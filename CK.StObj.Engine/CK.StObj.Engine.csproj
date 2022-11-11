@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Engine for StObj implementation and Automatic DI resolution and Source Code generation.
@@ -14,9 +14,9 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="5.0.0" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="5.0.1--0004-develop" />
     <!-- Temporary transitive dependency. -->
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0011-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0013-develop" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

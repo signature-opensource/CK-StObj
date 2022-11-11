@@ -81,8 +81,8 @@ namespace CK.StObj.Engine.Tests.Poco
         }
         #endregion
 
-        [TestCase( typeof( IList<string> ), typeof( IAutoListPrimary1 ), typeof( IAutoListExtension1 ) )]
-        [TestCase( typeof( IList<string> ), typeof( IAutoListPrimary2 ), typeof( IAutoListExtension2 ) )]
+        [TestCase( typeof( List<string> ), typeof( IAutoListPrimary1 ), typeof( IAutoListExtension1 ) )]
+        [TestCase( typeof( List<string> ), typeof( IAutoListPrimary2 ), typeof( IAutoListExtension2 ) )]
         [TestCase( typeof( int ), typeof( IAutoIntPrimary1 ), typeof( IAutoIntExtension1 ) )]
         [TestCase( typeof( int ), typeof( IAutoIntPrimary2 ), typeof( IAutoIntExtension2 ) )]
         [TestCase( typeof( (int,string) ), typeof( IAutoAnonymousRecordPrimary1 ), typeof( IAutoAnonymousRecordExtension1 ) )]

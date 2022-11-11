@@ -13,7 +13,7 @@ namespace CK.Setup
         public PrimaryPocoField( IPocoPropertyInfo p,
                                  IPocoType type,
                                  string fieldTypeName,
-                                 bool readOnly,
+                                 bool hasSetter,
                                  PocoType.PrimaryPocoType owner,
                                  bool isByRef,
                                  IPocoFieldDefaultValue? defaultValue )
@@ -22,7 +22,7 @@ namespace CK.Setup
             _type = type;
             _defInfo = defaultValue != null ? new DefaultValueInfo(defaultValue) : type.DefaultValueInfo;
             PrivateFieldName = $"_v{Index}";
-            IsReadOnly = readOnly;
+            HasSetter = hasSetter;
             FieldTypeCSharpName = fieldTypeName;
             _owner = owner;
             IsByRef = isByRef;
@@ -44,7 +44,7 @@ namespace CK.Setup
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
-        public bool IsReadOnly { get; }
+        public bool HasSetter { get; }
 
         public bool IsByRef { get; }
 

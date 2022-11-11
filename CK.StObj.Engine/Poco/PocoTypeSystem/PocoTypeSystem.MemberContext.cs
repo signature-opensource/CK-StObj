@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -15,22 +16,43 @@ namespace CK.Setup
         sealed class MemberContext
         {
             readonly IList<string?>? _tupleNames;
-            MemberInfo? _member;
-            ParameterInfo? _parameter;
+            IExtMemberInfo _root;
             int _tupleIndex;
+            bool? _readOnlyStatus;
 
-            public MemberContext( MemberInfo root )
+            public MemberContext( IExtMemberInfo root, bool? readOnlyStatus = null )
             {
-                _member = root;
+                _root = root;
+                _readOnlyStatus = readOnlyStatus;
                 _tupleIndex = 0;
-                _tupleNames = root.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames ?? Array.Empty<string>();
+                _tupleNames = root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();
             }
 
-            public MemberContext( ParameterInfo root )
+            /// <summary>
+            /// Poco compliant types are either fully mutable or fully read only.
+            /// </summary>
+            public bool? ReadOnlyStatus => _readOnlyStatus;
+
+            public bool CheckReadOnlyStatus( IActivityMonitor monitor, bool isReadOnly, Type t )
             {
-                _parameter = root;
-                _tupleIndex = 0;
-                _tupleNames = root.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames ?? Array.Empty<string>();
+                if( _readOnlyStatus.HasValue )
+                {
+                    if( _readOnlyStatus.Value != isReadOnly )
+                    {
+                        if( isReadOnly )
+                        {
+                            monitor.Error( $"{ToString()}: Invalid readonly '{t.ToCSharpName()}'. Only mutable types are allowed here." );
+                        }
+                        else 
+                        {
+                            monitor.Error( $"{ToString()}: Invalid mutable '{t.ToCSharpName()}'. Only read only types are allowed here." );
+                        }
+                        return false;
+                    }
+                    return true;
+                }
+                _readOnlyStatus = isReadOnly;
+                return true;
             }
 
             public RecordField[] GetTupleNamedFields( int count )
@@ -43,16 +65,7 @@ namespace CK.Setup
                 return fields;
             }
 
-            public override string ToString()
-            {
-                if( _member != null )
-                {
-                    var type = _member is PropertyInfo ? "Property" : "Field";
-                    return $"{type} '{_member.DeclaringType.ToCSharpName()}.{_member.Name}'";
-                }
-                Debug.Assert( _parameter != null );
-                return $"Parameter '{_parameter.Name}' of method '{_parameter.Member.DeclaringType.ToCSharpName(false)}.{_parameter.Member.Name}'";
-            }
+            public override string ToString() => _root.ToString()!;
 
         }
 

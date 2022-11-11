@@ -19,15 +19,15 @@ namespace CK.Setup
     /// </summary>
     sealed class UnionTypeCollector
     {
-        readonly List<PropertyInfo> _types;
+        readonly List<IExtPropertyInfo> _types;
 
-        public UnionTypeCollector( bool canBeExtended, PropertyInfo firstDef )
+        public UnionTypeCollector( bool canBeExtended, IExtPropertyInfo firstDef )
         {
-            _types = new List<PropertyInfo> { firstDef };
+            _types = new List<IExtPropertyInfo> { firstDef };
             CanBeExtended = canBeExtended;
         }
 
-        public List<PropertyInfo> Types => _types;
+        public List<IExtPropertyInfo> Types => _types;
 
         public bool CanBeExtended { get; }
 

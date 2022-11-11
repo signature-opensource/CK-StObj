@@ -80,8 +80,11 @@ namespace CK.Setup
 
             public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary.Skip( _abstractCount ).Append( this );
 
-            public override bool IsWritableType( Type type ) => Type.IsAssignableFrom( type )
-                                                                || _abstractAndPrimary.Skip(_abstractCount).Any( t => t.IsWritableType( type ) );
+            public override bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return !type.IsNullable
+                        && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
+            }
 
             IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
 
@@ -115,8 +118,11 @@ namespace CK.Setup
 
             public IEnumerable<IPocoType> AllowedTypes => _primaries;
 
-            public override bool IsWritableType( Type type ) => Type.IsAssignableFrom( type )
-                                                                || _primaries.Any( t => t.IsWritableType( type ) );
+            public override bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return !type.IsNullable
+                       && (Type.IsAssignableFrom( type.Type ) || _primaries.Any( t => t.IsWritableType( type ) ));
+            }
 
             IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
 

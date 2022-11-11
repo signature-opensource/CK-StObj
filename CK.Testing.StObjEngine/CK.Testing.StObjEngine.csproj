@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Extends CK.Testing.Monitoring TestHelper with methods that supports direct use of the StObjEngine (without the out-of-process CKSetup). This is the one to use when testing code generation since the whole setup phase runs in-process.</Description>
@@ -7,12 +7,12 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Engine\CK.StObj.Engine.csproj" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="5.0.0" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="5.0.1--0003-develop" />
     <!-- This implements concrete ServiceCollection and DI engine itself. -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
 
     <!-- Temporary transitive dependency. -->
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0011-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0013-develop" />
 
   </ItemGroup>
 </Project>

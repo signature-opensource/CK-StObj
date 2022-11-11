@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Facade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
@@ -14,11 +14,11 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="5.0.0" />
-    <PackageReference Include="CK.Reflection" Version="9.0.2" />
-    <PackageReference Include="CK.Setup.Dependency" Version="13.0.0" />
+    <PackageReference Include="CK.CodeGen" Version="5.0.1--0004-develop" />
+    <PackageReference Include="CK.Reflection" Version="9.0.3--0031-develop" />
+    <PackageReference Include="CK.Setup.Dependency" Version="13.0.1--0003-develop" />
     <!-- Temporary transitive dependency. -->
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0011-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="16.0.1--0013-develop" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

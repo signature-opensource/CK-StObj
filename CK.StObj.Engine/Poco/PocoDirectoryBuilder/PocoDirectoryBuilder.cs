@@ -49,23 +49,28 @@ namespace CK.Setup
         readonly List<List<Type>> _result;
         readonly string _namespace;
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
+        readonly IExtMemberInfoFactory _memberInfoFactory;
         readonly Func<IActivityMonitor, Type, bool> _actualPocoPredicate;
 
         /// <summary>
         /// Initializes a new <see cref="PocoDirectoryBuilder"/>.
         /// </summary>
+        /// <param name="memberInfoFactory">The member info factory.</param>
         /// <param name="actualPocoPredicate">
         /// This must be true for actual IPoco interfaces: when false, "base interface" are not directly registered.
         /// This implements the <see cref="CKTypeDefinerAttribute"/> behavior.
         /// </param>
         /// <param name="namespace">Namespace into which dynamic types will be created.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        public PocoDirectoryBuilder( Func<IActivityMonitor, Type, bool> actualPocoPredicate,
+        public PocoDirectoryBuilder( IExtMemberInfoFactory memberInfoFactory,
+                                     Func<IActivityMonitor, Type, bool> actualPocoPredicate,
                                      string @namespace = "CK.GPoco",
                                      Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
+            Throw.CheckNotNullArgument( memberInfoFactory );
             Throw.CheckNotNullArgument( actualPocoPredicate );
             Throw.CheckNotNullArgument( @namespace );
+            _memberInfoFactory = memberInfoFactory;
             _actualPocoPredicate = actualPocoPredicate;
             _namespace = @namespace;
             _all = new Dictionary<Type, InterfaceEntry?>();
@@ -154,7 +159,7 @@ namespace CK.Setup
             bool hasNameError = false;
             foreach( var signature in _result )
             {
-                var cInfo = CreateClassInfo( assembly, monitor, signature );
+                var cInfo = CreateClassInfo( assembly, _memberInfoFactory, monitor, signature );
                 if( cInfo == null ) return null;
                 r.Roots.Add( cInfo );
 
@@ -187,7 +192,10 @@ namespace CK.Setup
 
         static readonly MethodInfo _typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
 
-        static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly,
+                                              IExtMemberInfoFactory memberInfoFactory,
+                                              IActivityMonitor monitor,
+                                              IReadOnlyList<Type> interfaces )
         {
             // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
             var primary = interfaces[0];
@@ -427,7 +435,7 @@ namespace CK.Setup
                                 }
                                 else cacheUnionTypesDef = u.GetProperties();
                             }
-                            success &= HandlePocoProperty( monitor, properties, propertyList, ref dimPropertyNames, i, p, hasUnionType ? cacheUnionTypesDef : null );
+                            success &= HandlePocoProperty( monitor, memberInfoFactory, properties, propertyList, ref dimPropertyNames, i, p, hasUnionType ? cacheUnionTypesDef : null );
                         }
                         if( success )
                         {
@@ -449,6 +457,7 @@ namespace CK.Setup
         }
 
         static bool HandlePocoProperty( IActivityMonitor monitor,
+                                        IExtMemberInfoFactory memberInfoFactory,
                                         Dictionary<string, PocoPropertyInfo> properties,
                                         List<PocoPropertyInfo> propertyList,
                                         ref List<string>? dimPropertyNames,
@@ -484,7 +493,7 @@ namespace CK.Setup
                 properties.Add( p.Name, pocoProperty );
                 propertyList.Add( pocoProperty );
             }
-            pocoProperty.DeclaredProperties.Add( p );
+            pocoProperty.DeclaredProperties.Add( memberInfoFactory.Create( p ) );
             // Handles UnionType definition.
             if( unionTypesDef != null )
             {
@@ -503,7 +512,7 @@ namespace CK.Setup
                 var attr = p.GetCustomAttributes<UnionTypeAttribute>().First();
                 if( pocoProperty.UnionTypeDefinition == null )
                 {
-                    pocoProperty.UnionTypeDefinition = new UnionTypeCollector( attr.CanBeExtended, propDef );
+                    pocoProperty.UnionTypeDefinition = new UnionTypeCollector( attr.CanBeExtended, memberInfoFactory.Create( propDef ) );
                 }
                 else
                 {
@@ -518,7 +527,7 @@ namespace CK.Setup
                         monitor.Error( $"{pocoProperty} is a UnionType that cannot be extended." );
                         return false;
                     }
-                    pocoProperty.UnionTypeDefinition.Types.Add( propDef );
+                    pocoProperty.UnionTypeDefinition.Types.Add( memberInfoFactory.Create( propDef ) );
                 }
             }
             return true;

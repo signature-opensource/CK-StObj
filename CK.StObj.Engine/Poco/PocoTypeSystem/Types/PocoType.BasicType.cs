@@ -13,8 +13,7 @@ namespace CK.Setup
             Debug.Assert( !type.IsValueType );
             Debug.Assert( type == typeof( string ) || type == typeof( object ) );
             Debug.Assert( kind == PocoTypeKind.Any || kind == PocoTypeKind.Basic );
-            // A string field is actually allowed (RequiresInit) since, by default, string
-            // fields use the PocoFieldDefaultValue.StringDefault.
+            // A string field is allowed (RequiresInit) since, by default, string fields use the FieldDefaultValue.StringDefault.
             return type == typeof( string )
                     ? new BasicTypeWithDefaultValue( s, type, csharpName, kind, FieldDefaultValue.StringDefault, t => new NullReferenceType( t ) )
                     : new PocoType( s, type, csharpName, kind, t => new NullReferenceType( t ) );

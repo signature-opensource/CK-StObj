@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace CK.Setup
 {
@@ -37,9 +38,25 @@ namespace CK.Setup
 
             public IPocoType NonNullable { get; }
 
-            public bool IsReadableType( Type type ) => NonNullable.IsReadableType( type );
+            public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
-            public bool IsWritableType( Type type ) => NonNullable.IsWritableType( type );
+            public bool IsAbstract => NonNullable.IsAbstract;
+
+            public bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            {
+                if( !ignoreIsNullable && !type.IsNullable ) return false;
+                return NonNullable.IsSameType( type, true );
+            }
+
+            public bool IsReadableType( IExtNullabilityInfo type )
+            {
+                return NonNullable.IsReadableType( type );
+            }
+
+            public bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return NonNullable.IsWritableType( type.ToNonNullable() );
+            }
 
             public override string ToString() => $"[{Kind}]{CSharpName}";
 
@@ -91,9 +108,19 @@ namespace CK.Setup
 
             public IPocoType NonNullable { get; }
 
-            public bool IsReadableType( Type type ) => type == typeof( object ) || type == Type || type == NonNullable.Type;
+            public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
-            public bool IsWritableType( Type type ) => type == Type;
+            public bool IsAbstract => NonNullable.IsAbstract;
+
+            public bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            {
+                if( !ignoreIsNullable && !type.IsNullable ) return false;
+                return NonNullable.IsSameType( type, true );
+            }
+
+            public bool IsReadableType( IExtNullabilityInfo type ) => type.Type == typeof( object ) || type.Type == Type || type.Type == NonNullable.Type;
+
+            public bool IsWritableType( IExtNullabilityInfo type ) => type.Type == Type;
 
             public override string ToString() => $"[{Kind}]{CSharpName}";
 
@@ -141,6 +168,8 @@ namespace CK.Setup
 
         public string CSharpName { get; }
 
+        public bool IsPurelyGeneratedType => Type == IDynamicAssembly.PurelyGeneratedType;
+
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
         /// overrides this).
@@ -162,9 +191,32 @@ namespace CK.Setup
 
         public IPocoType NonNullable => this;
 
-        public virtual bool IsWritableType( Type type ) => Type.IsAssignableFrom( type );
+        public virtual bool IsAbstract => Kind == PocoTypeKind.Any || Kind == PocoTypeKind.AbstractIPoco;
 
-        public virtual bool IsReadableType( Type type ) => type.IsAssignableFrom( Type );
+        public virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+        {
+            Debug.Assert( !IsNullable, "Null implementations override this." );
+            if( !ignoreIsNullable && type.IsNullable ) return false;
+            Debug.Assert( !IsPurelyGeneratedType, "Collections override this." );
+            Debug.Assert( Kind != PocoTypeKind.IPoco, "PrimaryPocoType override this." );
+            return Type == type.Type;
+        }
+
+        public virtual bool IsWritableType( IExtNullabilityInfo type )
+        {
+            Debug.Assert( !IsNullable, "Null implementations override this." );
+            return !type.IsNullable && Type.IsAssignableFrom( type.Type );
+        }
+
+        /// <summary>
+        /// Simply calls <c>type.Type.IsAssignableFrom( Type )</c> at this level.
+        /// </summary>
+        public virtual bool IsReadableType( IExtNullabilityInfo type )
+        {
+            Debug.Assert( !IsNullable, "Null implementations override this." );
+            Debug.Assert( typeof( int? ).IsAssignableFrom( typeof( int ) ), "Value Type nullable <: not nullable is handled by .Net." );
+            return type.Type.IsAssignableFrom( Type );
+        }
 
         public override string ToString() => $"[{Kind}]{CSharpName}";
 

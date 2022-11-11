@@ -34,12 +34,12 @@ namespace CK.Setup
         /// <summary>
         /// Gets all the property implementation across the different interfaces.
         /// </summary>
-        IReadOnlyList<PropertyInfo> DeclaredProperties { get; }
+        IReadOnlyList<IExtPropertyInfo> DeclaredProperties { get; }
 
         /// <summary>
         /// Gets a non empty list of types if this property is a Union type.
         /// </summary>
-        IReadOnlyList<PropertyInfo> UnionTypeDefinition { get; }
+        IReadOnlyList<IExtPropertyInfo> UnionTypeDefinition { get; }
 
     }
 }

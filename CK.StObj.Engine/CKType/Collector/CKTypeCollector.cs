@@ -18,6 +18,7 @@ namespace CK.Setup
     {
         readonly IDynamicAssembly _tempAssembly;
         readonly IServiceProvider _serviceProvider;
+        readonly ExtMemberInfoFactory _memberInfoFactory;
         readonly PocoDirectoryBuilder _pocoBuilder;
         readonly HashSet<Assembly> _assemblies;
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
@@ -53,7 +54,8 @@ namespace CK.Setup
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
             KindDetector = new CKTypeKindDetector( typeFilter );
-            _pocoBuilder = new PocoDirectoryBuilder( ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _memberInfoFactory = new ExtMemberInfoFactory();
+            _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
@@ -225,7 +227,7 @@ namespace CK.Setup
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoDirectory? pocoDirectory;
-                PocoTypeSystem pocoTypeSystem = new PocoTypeSystem(); 
+                PocoTypeSystem pocoTypeSystem = new PocoTypeSystem( _memberInfoFactory ); 
                 using( monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
                     pocoDirectory = _pocoBuilder.Build( _tempAssembly, monitor );

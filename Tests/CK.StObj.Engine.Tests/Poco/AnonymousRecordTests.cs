@@ -74,7 +74,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void nullability_incoherence_is_checked()
         {
             var c = TestHelper.CreateStObjCollector( typeof( INullabilityError ) );
-            TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,System.Collections.Generic.List<string?>? B,System.Collections.Generic.List<System.Collections.Generic.List<string?>?>? C)?' since " );
+            TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,System.Collections.Generic.IList<string?>? B,System.Collections.Generic.IList<System.Collections.Generic.IList<string?>?>? C)?' since " );
         }
     }
 }

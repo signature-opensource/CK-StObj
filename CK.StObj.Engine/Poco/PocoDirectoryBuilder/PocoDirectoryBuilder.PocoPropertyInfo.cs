@@ -24,17 +24,17 @@ namespace CK.Setup
 
             public string Name { get; }
 
-            public List<PropertyInfo> DeclaredProperties { get; }
+            public List<IExtPropertyInfo> DeclaredProperties { get; }
 
-            IReadOnlyList<PropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
+            IReadOnlyList<IExtPropertyInfo> IPocoPropertyInfo.DeclaredProperties => DeclaredProperties;
 
             public UnionTypeCollector? UnionTypeDefinition { get; set; }
 
-            IReadOnlyList<PropertyInfo> IPocoPropertyInfo.UnionTypeDefinition => (IReadOnlyList<PropertyInfo>?)UnionTypeDefinition?.Types ?? Array.Empty<PropertyInfo>();
+            IReadOnlyList<IExtPropertyInfo> IPocoPropertyInfo.UnionTypeDefinition => (IReadOnlyList<IExtPropertyInfo>?)UnionTypeDefinition?.Types ?? Array.Empty<IExtPropertyInfo>();
 
             public PocoPropertyInfo( int initialIndex, string name )
             {
-                DeclaredProperties = new List<PropertyInfo>();
+                DeclaredProperties = new List<IExtPropertyInfo>();
                 Index = initialIndex;
                 Name = name;
             }

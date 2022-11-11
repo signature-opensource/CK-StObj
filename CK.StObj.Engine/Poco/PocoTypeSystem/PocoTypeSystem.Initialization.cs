@@ -126,11 +126,11 @@ namespace CK.Setup
             return success;
         }
 
-        PocoType EnsureAbstract( IPocoDirectory poco,
-                                 IEnumerable<Type> abstractTypes,
-                                 Type tAbstract,
-                                 List<IAbstractPocoType> allAbstracts,
-                                 List<IAbstractPocoType> closedAbstracts )
+        IPocoType EnsureAbstract( IPocoDirectory poco,
+                                  IEnumerable<Type> abstractTypes,
+                                  Type tAbstract,
+                                  List<IAbstractPocoType> allAbstracts,
+                                  List<IAbstractPocoType> closedAbstracts )
         {
             if( !_cache.TryGetValue( tAbstract, out var result ) )
             {

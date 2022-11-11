@@ -101,13 +101,26 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            public override bool IsWritableType( Type type ) => FamilyInfo.Interfaces.Any( i => i.PocoInterface == type );
+            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            {
+                if( !ignoreIsNullable && type.IsNullable ) return false;
+                return FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
+            }
 
-            public override bool IsReadableType( Type type ) => type == typeof(object)
-                                                                || type == typeof( IPoco )
-                                                                || (FamilyInfo.IsClosedPoco && type == typeof(IClosedPoco))
-                                                                || IsWritableType( type )
-                                                                || FamilyInfo.OtherInterfaces.Any( i => i == type );
+            public override bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return !type.IsNullable && FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
+            }
+
+            public override bool IsReadableType( IExtNullabilityInfo type )
+            {
+                var t = type.Type;
+                return t == typeof( object )
+                       || t == typeof( IPoco )
+                       || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
+                       || FamilyInfo.Interfaces.Any( i => i.PocoInterface == t )
+                       || FamilyInfo.OtherInterfaces.Any( i => i == t );
+            }
 
             [AllowNull]
             public IReadOnlyList<IAbstractPocoType> AbstractTypes { get; internal set; }

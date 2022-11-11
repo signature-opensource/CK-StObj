@@ -32,7 +32,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IActualRootA : IRootDefiner
         {
-            new List<IActualSubA> Lines { get; }
+            new IList<IActualSubA> Lines { get; }
         }
 
         public interface IActualSubA : ISubDefiner
@@ -40,7 +40,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void intrinsic_from_List_to_IReadOnlyList()
+        public void intrinsic_from_IList_to_IReadOnlyList()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IActualRootA ), typeof( IActualSubA ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
@@ -48,7 +48,10 @@ namespace CK.StObj.Engine.Tests.Poco
             var fA = d.Find( "CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IActualRootA" );
             Debug.Assert( fA != null );
             var a = (IActualRootA)fA.Create();
-            a.Lines.Should().BeOfType<List<IActualSubA>>();
+            a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
+            a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
+            a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
+            a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
         }
 
     }
