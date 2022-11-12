@@ -212,15 +212,15 @@ namespace CK.Setup
             {
                 if( String.IsNullOrWhiteSpace( p.PropertyName ) )
                 {
-                    monitor.Error( $"Unnamed or whitespace StObj property on '{t.FullName}'. Attribute must be configured with a valid PropertyName." );
+                    monitor.Error( $"Unnamed or whitespace StObj property on '{t:N}'. Attribute must be configured with a valid PropertyName." );
                 }
                 else if( p.PropertyType == null )
                 {
-                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t.FullName}' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
+                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t:N}' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
                 }
                 else if( stObjProperties.Find( sP => sP.Name == p.PropertyName ) != null )
                 {
-                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t.FullName}' is defined more than once. It should be declared only once." );
+                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t:N}' is defined more than once. It should be declared only once." );
                 }
                 else
                 {
