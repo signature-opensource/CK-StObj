@@ -66,7 +66,7 @@ namespace CK.Setup
                     Type tP = stObjAttr.PropertyType == null ? p.PropertyType : stObjAttr.PropertyType;
                     if( stObjProperties.Find( sp => sp.Name == nP ) != null )
                     {
-                        monitor.Error( $"StObj property named '{p.Name}' for '{p.DeclaringType}' is defined more than once. It should be declared only once." );
+                        monitor.Error( $"StObj property named '{p.Name}' for '{p.DeclaringType!:N}' is defined more than once. It should be declared only once." );
                         continue;
                     }
                     stObjProperties.Add( new StObjPropertyInfo( t, stObjAttr.ResolutionSource, nP, tP, p ) );

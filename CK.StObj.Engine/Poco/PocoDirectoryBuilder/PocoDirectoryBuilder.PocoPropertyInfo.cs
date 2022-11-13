@@ -30,7 +30,7 @@ namespace CK.Setup
 
             public UnionTypeCollector? UnionTypeDefinition { get; set; }
 
-            IReadOnlyList<IExtPropertyInfo> IPocoPropertyInfo.UnionTypeDefinition => (IReadOnlyList<IExtPropertyInfo>?)UnionTypeDefinition?.Types ?? Array.Empty<IExtPropertyInfo>();
+            IUnionTypeCollector? IPocoPropertyInfo.UnionTypeDefinition => UnionTypeDefinition;
 
             public PocoPropertyInfo( int initialIndex, string name )
             {

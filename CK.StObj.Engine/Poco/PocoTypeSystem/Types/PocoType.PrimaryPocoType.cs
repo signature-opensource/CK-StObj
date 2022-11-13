@@ -101,9 +101,9 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
-                if( !ignoreIsNullable && type.IsNullable ) return false;
+                if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
                 return FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
             }
 

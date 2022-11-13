@@ -77,15 +77,15 @@ namespace CK.StObj.Engine.Tests
         {
             {
                 StObjCollector collector = TestHelper.CreateStObjCollector( typeof( MissingStObjPropertyType ) );
-                TestHelper.GetFailedResult( collector, "StObj property named 'AProperty' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties+MissingStObjPropertyType' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
+                TestHelper.GetFailedResult( collector, "StObj property named 'AProperty' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyType' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
             }
             {
                 StObjCollector collector = TestHelper.CreateStObjCollector( typeof( MissingStObjPropertyName ) );
-                TestHelper.GetFailedResult( collector, "Unnamed or whitespace StObj property on 'CK.StObj.Engine.Tests.DifferentKindOfProperties+MissingStObjPropertyName'. Attribute must be configured with a valid PropertyName." );
+                TestHelper.GetFailedResult( collector, "Unnamed or whitespace StObj property on 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyName'. Attribute must be configured with a valid PropertyName." );
             }
             {
                 StObjCollector collector = TestHelper.CreateStObjCollector( typeof( DuplicateStObjProperty ) );
-                TestHelper.GetFailedResult( collector, "StObj property named 'Albert' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties+DuplicateStObjProperty' is defined more than once. It should be declared only once." );
+                TestHelper.GetFailedResult( collector, "StObj property named 'Albert' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.DuplicateStObjProperty' is defined more than once. It should be declared only once." );
             }
         }
 

@@ -1,8 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Extends CK.Testing.Monitoring TestHelper with methods that supports direct use of the StObjEngine (without the out-of-process CKSetup). This is the one to use when testing code generation since the whole setup phase runs in-process.</Description>
-    <LangVersion>9</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

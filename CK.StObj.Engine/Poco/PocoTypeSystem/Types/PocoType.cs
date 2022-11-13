@@ -42,9 +42,9 @@ namespace CK.Setup
 
             public bool IsAbstract => NonNullable.IsAbstract;
 
-            public bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
-                if( !ignoreIsNullable && !type.IsNullable ) return false;
+                if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
                 return NonNullable.IsSameType( type, true );
             }
 
@@ -112,9 +112,9 @@ namespace CK.Setup
 
             public bool IsAbstract => NonNullable.IsAbstract;
 
-            public bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
-                if( !ignoreIsNullable && !type.IsNullable ) return false;
+                if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
                 return NonNullable.IsSameType( type, true );
             }
 
@@ -193,10 +193,10 @@ namespace CK.Setup
 
         public virtual bool IsAbstract => Kind == PocoTypeKind.Any || Kind == PocoTypeKind.AbstractIPoco;
 
-        public virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+        public virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
-            if( !ignoreIsNullable && type.IsNullable ) return false;
+            if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
             Debug.Assert( !IsPurelyGeneratedType, "Collections override this." );
             Debug.Assert( Kind != PocoTypeKind.IPoco, "PrimaryPocoType override this." );
             return Type == type.Type;

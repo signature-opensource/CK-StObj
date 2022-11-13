@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -21,6 +22,22 @@ namespace CK.Setup
         IExtNullabilityInfo? _wNullabilityInfo;
         object[]? _customAttributes;
         CustomAttributeData[]? _customAttributesData;
+
+        internal ExtMemberInfo( PropertyInfo fake,
+                                IExtNullabilityInfo info,
+                                TupleElementNamesAttribute? longestTupleNamesAttribute )
+        {
+            _factory = null!;
+            _o = fake;
+            _name = fake.Name;
+            _type = info.Type;
+            _declaringType = fake.DeclaringType!;
+            Debug.Assert( info.IsHomogeneous );
+            _rNullabilityInfo = _wNullabilityInfo = info;
+            _customAttributes = longestTupleNamesAttribute != null
+                                  ? new object[] { longestTupleNamesAttribute }
+                                  : Array.Empty<object>();
+        }
 
         internal ExtMemberInfo( ExtMemberInfoFactory factory, ICustomAttributeProvider o )
         {

@@ -13,8 +13,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 
-#nullable enable
-
 namespace CK.Setup
 {
     /// <summary>
@@ -394,8 +392,8 @@ namespace CK.Setup
                         //
                         // Choosing here to NOT play the multiple inheritance game is clearly the best choice (at least for me :)).
                         //
-                        var customAttributesData = p.GetCustomAttributesData();
-                        if( customAttributesData.Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
+                        IExtPropertyInfo extP = memberInfoFactory.Create( p );
+                        if( extP.CustomAttributesData.Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
                         {
                             bool isDIM = (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0;
                             if( isDIM )
@@ -423,7 +421,7 @@ namespace CK.Setup
                         else
                         {
                             // Quick check of UnionType attribute existence.
-                            bool hasUnionType = customAttributesData.Any( a => a.AttributeType == typeof(UnionTypeAttribute) );
+                            bool hasUnionType = extP.CustomAttributesData.Any( a => a.AttributeType == typeof(UnionTypeAttribute) );
                             if( hasUnionType && cacheUnionTypesDef == null )
                             {
                                 Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
@@ -435,7 +433,14 @@ namespace CK.Setup
                                 }
                                 else cacheUnionTypesDef = u.GetProperties();
                             }
-                            success &= HandlePocoProperty( monitor, memberInfoFactory, properties, propertyList, ref dimPropertyNames, i, p, hasUnionType ? cacheUnionTypesDef : null );
+                            success &= HandlePocoProperty( monitor,
+                                                           memberInfoFactory,
+                                                           properties,
+                                                           propertyList,
+                                                           ref dimPropertyNames,
+                                                           i,
+                                                           extP,
+                                                           hasUnionType ? cacheUnionTypesDef : null );
                         }
                         if( success )
                         {
@@ -453,7 +458,14 @@ namespace CK.Setup
             var tPocoFactory = tBF.CreateType();
             Debug.Assert( tPocoFactory != null );
 
-            return new PocoRootInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList, externallyImplementedPropertyList );
+            return new PocoRootInfo( tPoCo,
+                                     tPocoFactory,
+                                     mustBeClosed,
+                                     closure,
+                                     expanded,
+                                     properties,
+                                     propertyList,
+                                     externallyImplementedPropertyList );
         }
 
         static bool HandlePocoProperty( IActivityMonitor monitor,
@@ -462,12 +474,12 @@ namespace CK.Setup
                                         List<PocoPropertyInfo> propertyList,
                                         ref List<string>? dimPropertyNames,
                                         Type tInterface,
-                                        PropertyInfo p,
+                                        IExtPropertyInfo p,
                                         PropertyInfo[]? unionTypesDef )
         {
-            Debug.Assert( p.DeclaringType == tInterface && p.GetMethod != null );
+            Debug.Assert( p.DeclaringType == tInterface && p.PropertyInfo.GetMethod != null );
 
-            if( (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0 )
+            if( (p.PropertyInfo.GetMethod.Attributes & MethodAttributes.Abstract) == 0 )
             {
                 monitor.Error( $"Property '{tInterface}.{p.Name}' is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
                 dimPropertyNames ??= new List<string>();
@@ -493,11 +505,17 @@ namespace CK.Setup
                 properties.Add( p.Name, pocoProperty );
                 propertyList.Add( pocoProperty );
             }
-            pocoProperty.DeclaredProperties.Add( memberInfoFactory.Create( p ) );
+            // We'll need all nullability info and don't allow heterogeneous ones for poco
+            // properties. Checks it once for all.
+            if( p.GetHomogeneousNullabilityInfo( monitor ) == null )
+            {
+                return false;
+            }
+            pocoProperty.DeclaredProperties.Add( p );
             // Handles UnionType definition.
             if( unionTypesDef != null )
             {
-                if( p.PropertyType != typeof(object) )
+                if( p.Type != typeof(object) )
                 {
                     monitor.Error( $"{pocoProperty} is a UnionType: its type can only be 'object' or 'object?'." );
                     return false;

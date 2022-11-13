@@ -57,5 +57,12 @@ namespace CK.Setup
         /// </summary>
         /// <returns>this or the non nullable nullability info for this type.</returns>
         IExtNullabilityInfo ToNullable();
+
+        /// <summary>
+        /// Gets quick description of this type with its nullabilities.
+        /// This is intended for debug, it is not a C# or Type compliant format. 
+        /// </summary>
+        /// <returns>A readable string.</returns>
+        string ToString();
     }
 }

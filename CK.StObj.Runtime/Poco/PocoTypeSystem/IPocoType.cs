@@ -77,9 +77,11 @@ namespace CK.Setup
         /// is a IPoco interface of the same family as this one.
         /// </summary>
         /// <param name="type">The type to check.</param>
-        /// <param name="ignoreIsNullable">True to skip <see cref="IsNullable"/> vs. <see cref="IExtNullabilityInfo.IsNullable"/> check.</param>
+        /// <param name="ignoreRootTypeIsNullable">
+        /// True to skip this <see cref="IsNullable"/> vs. <paramref name="type"/>'s <see cref="IExtNullabilityInfo.IsNullable"/> check.
+        /// </param>
         /// <returns>True if the type is the same, false otherwise.</returns>
-        bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false );
+        bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false );
 
         /// <summary>
         /// Gets whether the given type is contravariant with this one.

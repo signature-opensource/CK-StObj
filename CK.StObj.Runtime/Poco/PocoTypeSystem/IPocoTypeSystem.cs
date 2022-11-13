@@ -59,6 +59,9 @@ namespace CK.Setup
 
             /// <summary>
             /// Gets the registered type name.
+            /// When <see cref="HasRegCSharpName"/> is true, this name differs from the <see cref="IPocoType.CSharpName"/>
+            /// because the actual Poco type is an implementation type: <c>IList&lt;&gt;</c> of non nullable value types for
+            /// instance are mapped to <see cref="CovariantHelpers.CovNotNullValueList{T}"/>.
             /// </summary>
             public string RegCSharpName => _regCSharpName ?? PocoType.CSharpName;
 
@@ -68,35 +71,28 @@ namespace CK.Setup
             public bool HasRegCSharpName => _regCSharpName != null;
 
             /// <summary>
-            /// Gets whether the type is a read only, mutable or oblivious.
-            /// </summary>
-            public bool? ReadOnlyStatus { get; }
-
-            /// <summary>
             /// Initializes a new registration result.
             /// </summary>
             /// <param name="pocoType">The resulting Poco type.</param>
             /// <param name="registeredTypeName">The registered type name if it differs from the <see cref="IPocoType.CSharpName"/>.</param>
-            /// <param name="readOnlyStatus">The read only status of the type. See <see cref="ReadOnlyStatus"/>.</param>
-            public RegisterResult( IPocoType pocoType, string? registeredTypeName, bool? readOnlyStatus )
+            public RegisterResult( IPocoType pocoType, string? registeredTypeName )
             {
                 Throw.CheckNotNullArgument( pocoType );
+                Throw.CheckArgument( registeredTypeName == null || pocoType.IsNullable == (registeredTypeName[registeredTypeName.Length-1] == '?') );
                 PocoType = pocoType;
                 _regCSharpName = registeredTypeName;
-                ReadOnlyStatus = readOnlyStatus;
             }
 
             /// <summary>
             /// Gets the nullable associated registration.
             /// </summary>
-            public RegisterResult Nullable => new RegisterResult( PocoType.Nullable, HasRegCSharpName ? RegCSharpName + "?" : null, ReadOnlyStatus );
+            public RegisterResult Nullable => new RegisterResult( PocoType.Nullable, HasRegCSharpName ? RegCSharpName + "?" : null );
 
             /// <summary>
             /// Gets the non nullable associated registration.
             /// </summary>
             public RegisterResult NonNullable => new RegisterResult( PocoType.NonNullable,
-                                                                     _regCSharpName != null ? _regCSharpName.Substring( 0, _regCSharpName.Length - 1 ) : null,
-                                                                     ReadOnlyStatus );
+                                                                     _regCSharpName != null ? _regCSharpName.Substring( 0, _regCSharpName.Length - 1 ) : null );
         }
 
         /// <summary>

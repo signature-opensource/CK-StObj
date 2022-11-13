@@ -434,7 +434,8 @@ namespace CK.Setup
             {
                 var initial = kindComputeFacade.KindDetector.GetValidKind( m, ClassType ).ToAutoServiceKind();
                 var final = initial;
-                using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
+                Debug.Assert( ConstructorParameters != null );
+                using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
                     const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService;
                     const AutoServiceKind IsFrontMashallableMask = AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable;

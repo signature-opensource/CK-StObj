@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Description>Facade for the CK.StObj.Engine that handles StObj implementation, Automatic DI resolution and Source Code generation.
 This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>
-    <LangVersion>9</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Poco\Json\**" />

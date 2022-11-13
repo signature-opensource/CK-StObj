@@ -37,9 +37,9 @@ namespace CK.Setup
         IReadOnlyList<IExtPropertyInfo> DeclaredProperties { get; }
 
         /// <summary>
-        /// Gets a non empty list of types if this property is a Union type.
+        /// Gets the <see cref="IUnionTypeCollector"/> if this property is a Union type.
         /// </summary>
-        IReadOnlyList<IExtPropertyInfo> UnionTypeDefinition { get; }
+        IUnionTypeCollector? UnionTypeDefinition { get; }
 
     }
 }

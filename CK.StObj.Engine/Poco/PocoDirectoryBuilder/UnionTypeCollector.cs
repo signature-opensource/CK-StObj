@@ -11,13 +11,7 @@ using static CK.Setup.PocoType;
 
 namespace CK.Setup
 {
-    /// <summary>
-    /// Encapsulates a list of PropertyInfo that must be ValueTuples. Each of them defines
-    /// the possible types of the union type. No check is done at this level except the fact
-    /// that all [UnionType] attribute must CanBeExtended or not, it is the PocoTypeSystem
-    /// that checks the types and nullabilities.
-    /// </summary>
-    sealed class UnionTypeCollector
+    sealed class UnionTypeCollector : IUnionTypeCollector
     {
         readonly List<IExtPropertyInfo> _types;
 
@@ -31,9 +25,13 @@ namespace CK.Setup
 
         public bool CanBeExtended { get; }
 
+        IReadOnlyList<IExtPropertyInfo> IUnionTypeCollector.Types => Types;
+
         public override string ToString()
         {
-            return _types.Select( t => t.ToString() ).Concatenate();
+            return _types.Select( t => t.HomogeneousNullabilityInfo?.ToString()
+                                       ?? "[ReadState]" + t.ReadNullabilityInfo.ToString() )
+                         .Concatenate();
         }
 
     }

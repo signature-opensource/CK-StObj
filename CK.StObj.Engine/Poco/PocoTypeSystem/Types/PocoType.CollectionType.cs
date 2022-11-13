@@ -76,17 +76,21 @@ namespace CK.Setup
 
             int IReadOnlyCollection<IPocoType>.Count => 1;
 
-            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
-                if( !ignoreIsNullable && type.IsNullable ) return false;
+                if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
                 if( !IsPurelyGeneratedType )
                 {
                     if( Kind == PocoTypeKind.Array )
                     {
                         // Array is totally invariant in the poco world.
-                        return type.Type.IsSZArray && type.Type.GetElementType() == _itemType.Type;
+                        if( !type.Type.IsSZArray ) return false;
+                        Debug.Assert( type.ElementType != null );
+                        return _itemType.IsSameType( type.ElementType );
                     }
-                    return Type == type.Type;
+                    if( Type != type.Type ) return false;
+                    Debug.Assert( type.GenericTypeArguments.Count == 1 );
+                    return _itemType.IsSameType( type.GenericTypeArguments[0] );
                 }
                 // The purely generated type are currently only for Poco List, Set (and Dictionary).
                 Debug.Assert( _itemType.Kind == PocoTypeKind.IPoco );
@@ -116,7 +120,7 @@ namespace CK.Setup
                     // we forbid array of covariant types and IList<> or ICollection<> since checking the
                     // bool IsReadOnly is a barely known practice.
                     if( !type.Type.IsAssignableFrom( Type ) ) return false;
-                    if( type.Type.IsArray ) return type.Type == _itemType.Type;
+                    if( type.Type.IsArray ) return type.ElementType!.Type == _itemType.Type;
                     if( type.Type.IsGenericType )
                     {
                         var tGen = type.Type.GetGenericTypeDefinition();
@@ -155,7 +159,7 @@ namespace CK.Setup
                         {
                             // Since the item type is IPoco, we can use IsWritableType
                             // because no other variations can exist.
-                            return _itemType.IsSameType( type.GenericTypeArguments[0], ignoreIsNullable: true );
+                            return _itemType.IsSameType( type.GenericTypeArguments[0], ignoreRootTypeIsNullable: true );
                         }
                         if( tGen == typeof( List<> ) )
                         {
@@ -174,7 +178,7 @@ namespace CK.Setup
                         }
                         if( tGen == typeof( ISet<> ) )
                         {
-                            return _itemType.IsSameType( type.GenericTypeArguments[0], ignoreIsNullable: true );
+                            return _itemType.IsSameType( type.GenericTypeArguments[0], ignoreRootTypeIsNullable: true );
                         }
                         if( tGen == typeof( HashSet<> ) )
                         {
@@ -241,12 +245,15 @@ namespace CK.Setup
 
             ICollectionPocoType ICollectionPocoType.NonNullable => this;
 
-            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreIsNullable = false )
+            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
-                if( !ignoreIsNullable && type.IsNullable ) return false;
+                if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
                 if( !IsPurelyGeneratedType )
                 {
-                    return Type == type.Type;
+                    if( Type != type.Type ) return false;
+                    Debug.Assert( type.GenericTypeArguments.Count == 2 );
+                    // No need to check the key here since null is not allowed for it.
+                    return _itemTypes[1].IsSameType( type.GenericTypeArguments[1] );
                 }
                 // See CollectonType1 above.
                 Debug.Assert( _itemTypes[1].Kind == PocoTypeKind.IPoco );
