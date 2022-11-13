@@ -136,16 +136,7 @@ namespace CK.Setup
             }
             if( t.IsGenericType )
             {
-                var r = TryHandleCollectionType( monitor, nType, ctx, out var isCollection );
-                if( r == null )
-                {
-                    if( !isCollection )
-                    {
-                        monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t.ToCSharpName( false )}'." );
-                    }
-                    return null;
-                }
-                return r;
+                return OnCollection( monitor, nType, ctx );
             }
             if( _cache.TryGetValue( t, out var result ) )
             {
@@ -169,16 +160,30 @@ namespace CK.Setup
             return null;
         }
 
-        RegisterResult? TryHandleCollectionType( IActivityMonitor monitor,
-                                                 IExtNullabilityInfo nType,
-                                                 MemberContext ctx,
-                                                 out bool isCollection )
+        RegisterResult? OnCollection( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
         {
-            isCollection = true;
             var t = nType.Type;
             var tGen = t.GetGenericTypeDefinition();
             bool isRegular = tGen == typeof( List<> );
             if( isRegular || tGen == typeof( IList<> ) )
+            {
+                return RegisterList( monitor, nType, ctx, t, isRegular );
+            }
+            isRegular = tGen == typeof( HashSet<> );
+            if( isRegular || tGen == typeof( ISet<> ) )
+            {
+                return RegisterSet( monitor, nType, ctx, t, isRegular );
+            }
+            isRegular = tGen == typeof( Dictionary<,> );
+            if( isRegular || tGen == typeof( IDictionary<,> ) )
+            {
+                return RegisterDictionary( monitor, nType, ctx, t, isRegular );
+            }
+            // The end...
+            monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t:C}'." );
+            return null;
+
+            RegisterResult? RegisterList( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
             {
                 var rtI = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( rtI == null ) return null;
@@ -223,8 +228,8 @@ namespace CK.Setup
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
                                            nType.IsNullable ? regTypeName + "?" : regTypeName );
             }
-            isRegular = tGen == typeof( HashSet<> );
-            if( isRegular || tGen == typeof( ISet<> ) )
+
+            RegisterResult? RegisterSet( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
             {
                 var rtI = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( rtI == null ) return null;
@@ -269,8 +274,8 @@ namespace CK.Setup
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
                                            nType.IsNullable ? regTypeName + "?" : regTypeName );
             }
-            isRegular = tGen == typeof( Dictionary<,> );
-            if( isRegular || tGen == typeof( IDictionary<,> ) )
+
+            RegisterResult? RegisterDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
             {
                 var rtK = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( rtK == null ) return null;
@@ -323,8 +328,6 @@ namespace CK.Setup
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
                                            nType.IsNullable ? regTypeName + "?" : regTypeName );
             }
-            isCollection = false;
-            return null;
 
             string? EnsurePocoListType( IActivityMonitor monitor, IPrimaryPocoType tI )
             {
@@ -360,7 +363,6 @@ namespace CK.Setup
                 }
                 return g.FullName;
             }
-
         }
 
         RegisterResult? OnArray( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
