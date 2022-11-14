@@ -10,7 +10,7 @@ namespace CK.Setup
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
     /// are available in <see cref="LastVisited"/>.
     /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/> and <see cref="IUnionPocoType"/>'s
-    /// <see cref="IAnyOfPocoType{T}.AllowedTypes"/> are followed.
+    /// <see cref="IOneOfPocoType{T}.AllowedTypes"/> are followed.
     /// </summary>
     public class PocoTypeVisitor
     {
@@ -138,7 +138,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="IAnyOfPocoType{T}.AllowedTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
+        /// Visits the <see cref="IOneOfPocoType{T}.AllowedTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="union"></param>

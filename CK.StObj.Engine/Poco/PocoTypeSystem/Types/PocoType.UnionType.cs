@@ -52,10 +52,10 @@ namespace CK.Setup
 
                 public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
-                IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => NonNullable;
+                IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => NonNullable;
                 IUnionPocoType IUnionPocoType.NonNullable => NonNullable;
 
-                IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => this;
+                IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => this;
                 IUnionPocoType IUnionPocoType.Nullable => this;
             }
             IReadOnlyList<IPocoType> _allowedTypes;
@@ -82,12 +82,12 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoType> AllowedTypes => _allowedTypes;
 
-            IEnumerable<IPocoType> IAnyOfPocoType<IPocoType>.AllowedTypes => _allowedTypes;
+            IEnumerable<IPocoType> IOneOfPocoType<IPocoType>.AllowedTypes => _allowedTypes;
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => Nullable;
             IUnionPocoType IUnionPocoType.Nullable => Nullable;
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => this;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => this;
             IUnionPocoType IUnionPocoType.NonNullable => this;
 
 

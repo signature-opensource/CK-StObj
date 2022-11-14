@@ -6,7 +6,7 @@ namespace CK.Setup
     /// Union type of a given <typeparamref name="T"/> Poco type.
     /// This applies to <see cref="IAbstractPocoType"/> and <see cref="IUnionPocoType"/>.
     /// </summary>
-    public interface IAnyOfPocoType<out T> : IPocoType where T : IPocoType
+    public interface IOneOfPocoType<out T> : IPocoType where T : IPocoType
     {
         /// <summary>
         /// Gets the set of allowed types.
@@ -14,10 +14,10 @@ namespace CK.Setup
         IEnumerable<T> AllowedTypes { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
-        new IAnyOfPocoType<T> Nullable { get; }
+        new IOneOfPocoType<T> Nullable { get; }
 
         /// <inheritdoc cref="IPocoType.NonNullable" />
-        new IAnyOfPocoType<T> NonNullable { get; }
+        new IOneOfPocoType<T> NonNullable { get; }
     }
 
 }
