@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Reflection;
 using CK.Setup;
 using System;
 using System.Collections;

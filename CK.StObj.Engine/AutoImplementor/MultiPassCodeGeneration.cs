@@ -3,13 +3,10 @@ using CK.Core;
 using System.Reflection;
 using System.Linq;
 using System.Diagnostics;
-using CK.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using CK.CodeGen;
 using System.Collections.Generic;
-
-#nullable enable
 
 namespace CK.Setup
 {
