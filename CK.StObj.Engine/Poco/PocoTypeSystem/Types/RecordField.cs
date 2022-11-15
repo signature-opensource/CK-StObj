@@ -13,6 +13,8 @@ namespace CK.Setup
         IPocoType _type;
         [AllowNull]
         PocoType.RecordType _owner;
+        [AllowNull]
+        string _fieldTypeName;
         DefaultValueInfo _defInfo;
 
         static readonly List<string> _itemNames = new List<string>();
@@ -52,10 +54,13 @@ namespace CK.Setup
 
         public ICompositePocoType Owner => _owner;
 
-        internal void SetType( IPocoType t )
+        public string FieldTypeCSharpName => _fieldTypeName;
+
+        internal void SetType( IPocoType t, string fieldTypeName )
         {
             Debug.Assert( _type == null && t != null );
             _type = t;
+            _fieldTypeName = fieldTypeName;
             if( _defInfo.IsDisallowed )
             {
                 _defInfo = _type.DefaultValueInfo;

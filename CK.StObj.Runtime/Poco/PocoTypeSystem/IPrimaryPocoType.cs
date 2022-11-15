@@ -6,8 +6,13 @@ namespace CK.Setup
     /// <summary>
     /// Type for the primary interface of a <see cref="PocoTypeKind.IPoco"/> family.
     /// </summary>
-    public interface IPrimaryPocoType : IConcretePocoType, ICompositePocoType
+    public interface IPrimaryPocoType : ICompositePocoType
     {
+        /// <summary>
+        /// Gets the poco family information from the <see cref="IPocoDirectory"/>.
+        /// </summary>
+        IPocoFamilyInfo FamilyInfo { get; }
+
         /// <inheritdoc cref="ICompositePocoType.Fields"/>
         new IReadOnlyList<IPrimaryPocoField> Fields { get; }
 

@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Reflection;
 using CK.Setup;
 using System;
 using System.Collections;
@@ -12,8 +11,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-
-#nullable enable
 
 namespace CK.Setup
 {
@@ -49,23 +46,28 @@ namespace CK.Setup
         readonly List<List<Type>> _result;
         readonly string _namespace;
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
+        readonly IExtMemberInfoFactory _memberInfoFactory;
         readonly Func<IActivityMonitor, Type, bool> _actualPocoPredicate;
 
         /// <summary>
         /// Initializes a new <see cref="PocoDirectoryBuilder"/>.
         /// </summary>
+        /// <param name="memberInfoFactory">The member info factory.</param>
         /// <param name="actualPocoPredicate">
         /// This must be true for actual IPoco interfaces: when false, "base interface" are not directly registered.
         /// This implements the <see cref="CKTypeDefinerAttribute"/> behavior.
         /// </param>
         /// <param name="namespace">Namespace into which dynamic types will be created.</param>
         /// <param name="typeFilter">Optional type filter.</param>
-        public PocoDirectoryBuilder( Func<IActivityMonitor, Type, bool> actualPocoPredicate,
+        public PocoDirectoryBuilder( IExtMemberInfoFactory memberInfoFactory,
+                                     Func<IActivityMonitor, Type, bool> actualPocoPredicate,
                                      string @namespace = "CK.GPoco",
                                      Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
+            Throw.CheckNotNullArgument( memberInfoFactory );
             Throw.CheckNotNullArgument( actualPocoPredicate );
             Throw.CheckNotNullArgument( @namespace );
+            _memberInfoFactory = memberInfoFactory;
             _actualPocoPredicate = actualPocoPredicate;
             _namespace = @namespace;
             _all = new Dictionary<Type, InterfaceEntry?>();
@@ -154,7 +156,7 @@ namespace CK.Setup
             bool hasNameError = false;
             foreach( var signature in _result )
             {
-                var cInfo = CreateClassInfo( assembly, monitor, signature );
+                var cInfo = CreateClassInfo( assembly, _memberInfoFactory, monitor, signature );
                 if( cInfo == null ) return null;
                 r.Roots.Add( cInfo );
 
@@ -187,7 +189,10 @@ namespace CK.Setup
 
         static readonly MethodInfo _typeFromToken = typeof( Type ).GetMethod( nameof( Type.GetTypeFromHandle ), BindingFlags.Static | BindingFlags.Public )!;
 
-        static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly, IActivityMonitor monitor, IReadOnlyList<Type> interfaces )
+        static PocoRootInfo? CreateClassInfo( IDynamicAssembly assembly,
+                                              IExtMemberInfoFactory memberInfoFactory,
+                                              IActivityMonitor monitor,
+                                              IReadOnlyList<Type> interfaces )
         {
             // The first interface is the PrimartyInterface: we use its name to drive the implementation name.
             var primary = interfaces[0];
@@ -386,8 +391,8 @@ namespace CK.Setup
                         //
                         // Choosing here to NOT play the multiple inheritance game is clearly the best choice (at least for me :)).
                         //
-                        var customAttributesData = p.GetCustomAttributesData();
-                        if( customAttributesData.Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
+                        IExtPropertyInfo extP = memberInfoFactory.Create( p );
+                        if( extP.CustomAttributesData.Any( d => d.AttributeType.Name == nameof( AutoImplementationClaimAttribute ) ) )
                         {
                             bool isDIM = (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0;
                             if( isDIM )
@@ -415,7 +420,7 @@ namespace CK.Setup
                         else
                         {
                             // Quick check of UnionType attribute existence.
-                            bool hasUnionType = customAttributesData.Any( a => a.AttributeType == typeof(UnionTypeAttribute) );
+                            bool hasUnionType = extP.CustomAttributesData.Any( a => a.AttributeType == typeof(UnionTypeAttribute) );
                             if( hasUnionType && cacheUnionTypesDef == null )
                             {
                                 Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
@@ -427,7 +432,14 @@ namespace CK.Setup
                                 }
                                 else cacheUnionTypesDef = u.GetProperties();
                             }
-                            success &= HandlePocoProperty( monitor, properties, propertyList, ref dimPropertyNames, i, p, hasUnionType ? cacheUnionTypesDef : null );
+                            success &= HandlePocoProperty( monitor,
+                                                           memberInfoFactory,
+                                                           properties,
+                                                           propertyList,
+                                                           ref dimPropertyNames,
+                                                           i,
+                                                           extP,
+                                                           hasUnionType ? cacheUnionTypesDef : null );
                         }
                         if( success )
                         {
@@ -445,20 +457,28 @@ namespace CK.Setup
             var tPocoFactory = tBF.CreateType();
             Debug.Assert( tPocoFactory != null );
 
-            return new PocoRootInfo( tPoCo, tPocoFactory, mustBeClosed, closure, expanded, properties, propertyList, externallyImplementedPropertyList );
+            return new PocoRootInfo( tPoCo,
+                                     tPocoFactory,
+                                     mustBeClosed,
+                                     closure,
+                                     expanded,
+                                     properties,
+                                     propertyList,
+                                     externallyImplementedPropertyList );
         }
 
         static bool HandlePocoProperty( IActivityMonitor monitor,
+                                        IExtMemberInfoFactory memberInfoFactory,
                                         Dictionary<string, PocoPropertyInfo> properties,
                                         List<PocoPropertyInfo> propertyList,
                                         ref List<string>? dimPropertyNames,
                                         Type tInterface,
-                                        PropertyInfo p,
+                                        IExtPropertyInfo p,
                                         PropertyInfo[]? unionTypesDef )
         {
-            Debug.Assert( p.DeclaringType == tInterface && p.GetMethod != null );
+            Debug.Assert( p.DeclaringType == tInterface && p.PropertyInfo.GetMethod != null );
 
-            if( (p.GetMethod.Attributes & MethodAttributes.Abstract) == 0 )
+            if( (p.PropertyInfo.GetMethod.Attributes & MethodAttributes.Abstract) == 0 )
             {
                 monitor.Error( $"Property '{tInterface}.{p.Name}' is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );
                 dimPropertyNames ??= new List<string>();
@@ -484,11 +504,17 @@ namespace CK.Setup
                 properties.Add( p.Name, pocoProperty );
                 propertyList.Add( pocoProperty );
             }
+            // We'll need all nullability info and don't allow heterogeneous ones for poco
+            // properties. Checks it once for all.
+            if( p.GetHomogeneousNullabilityInfo( monitor ) == null )
+            {
+                return false;
+            }
             pocoProperty.DeclaredProperties.Add( p );
             // Handles UnionType definition.
             if( unionTypesDef != null )
             {
-                if( p.PropertyType != typeof(object) )
+                if( p.Type != typeof(object) )
                 {
                     monitor.Error( $"{pocoProperty} is a UnionType: its type can only be 'object' or 'object?'." );
                     return false;
@@ -503,7 +529,7 @@ namespace CK.Setup
                 var attr = p.GetCustomAttributes<UnionTypeAttribute>().First();
                 if( pocoProperty.UnionTypeDefinition == null )
                 {
-                    pocoProperty.UnionTypeDefinition = new UnionTypeCollector( attr.CanBeExtended, propDef );
+                    pocoProperty.UnionTypeDefinition = new UnionTypeCollector( attr.CanBeExtended, memberInfoFactory.Create( propDef ) );
                 }
                 else
                 {
@@ -518,7 +544,7 @@ namespace CK.Setup
                         monitor.Error( $"{pocoProperty} is a UnionType that cannot be extended." );
                         return false;
                     }
-                    pocoProperty.UnionTypeDefinition.Types.Add( propDef );
+                    pocoProperty.UnionTypeDefinition.Types.Add( memberInfoFactory.Create( propDef ) );
                 }
             }
             return true;

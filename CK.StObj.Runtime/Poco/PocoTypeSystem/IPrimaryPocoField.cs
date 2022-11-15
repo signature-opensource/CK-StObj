@@ -16,9 +16,9 @@ namespace CK.Setup
         IPocoPropertyInfo Property { get; }
 
         /// <summary>
-        /// Gets whether this field is read only.
+        /// Gets whether this field has a setter.
         /// </summary>
-        bool IsReadOnly { get; }
+        bool HasSetter { get; }
 
         /// <summary>
         /// Gets whether this is a ref property.

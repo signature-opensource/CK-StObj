@@ -10,7 +10,6 @@ The Poco framework has two primary goals:
 - Enables the definition and use of truly modular and extensible types across packages.
 - Be the "Lingua franca" of importable and exportable data that enter and leave a System.
 
-
 ## Modularity and extensibility: IPoco families
 
 IPoco aims to define truly modular types. Across independent packages, a common type (from a base package)
@@ -72,6 +71,8 @@ By using a `[CKTypeDefiner]` attribute on a `IPoco`, the interface becomes a kin
 The definer is NOT a `IPoco`, doesn't define a "Poco family", only the interfaces that specialize it are `IPoco`
 and define a family.
 
+__Note:__ `[AutoImplementationClaim]` is an "advanced" attribute that states that this member is not a
+regular property, it will be automatically implemented by some aspects of the framework.
 
 #### The [CKTypeSuperDefiner] defines abstract IPoco
 Using the `[CKTypeSuperDefiner]` makes direct extensions on the interface an abstraction rather
@@ -166,13 +167,14 @@ The set of Poco compliant type is precisely defined:
  - Formally `object` is a basic type provided that at runtime, the instance must be a Poco compliant type.
  - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant Poco types.
- - `List<>`, `HashSet<>`, `Dictionary<,>` and array of Poco compliant type.
+ - `List<>`, `IList<>`, `HashSet<>`, `IHashSet<>`, `Dictionary<,>` `IDictionary<,>` and array 
+   of Poco compliant type.
 
 ### The PocoRecord
 
 A PocoRecord is a mutable struct. It aims to capture "micro local types". They are detailed below.
 
-#### ValueTuple: the AnonymousRecord
+#### ValueTuple: the Anonymous Record
 
 A value tuple is like an anonymous type that locally defines a small structure. The following
 pattern is quite common:
@@ -194,7 +196,7 @@ public interface IWithValueTuple : IPoco
 }
 ```
 Initial values are guaranteed to follow the nullability rules (here Name will the empty string and
-initial Values will be a ready-to-use empty list).
+initial `Values` field will be a ready-to-use empty list).
 
 > The `ref` enables the individual fields to be set and the tuple then becomes a "local" sub type, an
 > "anonymous record". 
@@ -206,7 +208,8 @@ public interface INVALID : IPoco
     ref (int A, (string Name, List<int> Values) B) Thing { get; }
 }
 ```
-Here again, the non nullable `Name` will be the empty string and the `Values` will be iniitalized to an empty list.
+Here again, the non nullable `Name` will be the empty string and the `Values` will be initialized to
+an empty list.
 
 For more information on value tuple and more specifically their field names, please read this excellent
 analysis: http://mustoverride.com/tuples_names/. The Poco framework handles the field names so that
@@ -262,7 +265,7 @@ share the same restrictions:
 - Must contain only Poco compliant field types.
 
 A simple struct is valid under conditions:
-- Readonly field or properties are forbidden.
+- `readonly` field or read only property are forbidden.
 - There must be at most one constructor. Their default parameter value if any is used as the default 
   corresponding field or property value.  
 
@@ -275,7 +278,7 @@ public struct DetailWithFields
     [DefaultValue( 42 )]
     public int Power;
 
-    public List<int> Values;
+    public IList<int> Values;
 
     [DefaultValue( "Hip!" )]
     public string Name;
@@ -286,7 +289,7 @@ public struct DetailWithProperties
     [DefaultValue( 3712 )]
     public int Power { get; set; }
 
-    public List<int> Values { get; set; }
+    public IList<int> Values { get; set; }
 
     [DefaultValue( "Hop!" )]
     public string Name { get; set; }
@@ -306,23 +309,29 @@ public interface IWithComplexRecords : IPoco
 ```
 
 ### The "standard collections
-IPoco can expose `T[]`, `List<T>`, `HashSet<T>` and `Dictionary<TKey,TValue>` where `T`, `TKey`
-and `TValue` are Poco compliant types.
-A `List<(string Name, Dictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
+IPoco can expose `T[]`, `List<T>`, `IList<T>`, `HashSet<T>`, `ISet<T>`, `Dictionary<TKey,TValue>` and
+`IDictionary<TKey,TValue>` where `T`, `TKey` and `TValue` are Poco compliant types.
+A `List<(string Name, IDictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
 
-Note that only these 4 concrete types are supported.
+The 3 read only collections are supported: `IReadOnlyList<T>`, `IReadOnlySet<T>` and `IReadOnlyDictionary<TKey,TValue>`.
+This supports the "Abstract Read Only Properties" (see below).
+
+A collection defined on a IPoco must be either fully read only or fully mutable:
+- `IList<(IList<int>, HashSet<double>)>` is valid.
+- `IList<(IReadOnlyList<int>, HashSet<double>)>` is invalid.
+- `IReadOblyList<List<int>>` is invalid.
 
 ### IPoco properties
 
 A IPoco property can be writable `{get; set;}` or read only `{get;}` and can be nullable or not.
 
 Whether they are writable or read only, a non nullable property type requires an initial non null value
-(otherwise the newly created Poco will not be valid): only some properties can be not nullable.
+(otherwise the newly created Poco will not be valid).
 
 #### Non nullable properties: the initial value
 
 Nullable properties are easy: their initial value is always the `default` for
-the type and that is null for reference types.
+the type and that is null for reference and value types.
 
 Non nullable properties MUST have an initial value. For value type, this is not an issue since here again
 the `default` for the type is the "natural", expected initial value.
@@ -340,18 +349,18 @@ there MUST be a `[DefaultValue]` attribute defined for all non nullable `object`
 For any other non nullable property types (records, collection, IPoco) the constructor must be
 able to synthesize a default instance.
 - For `IPoco`, it must be a "concrete" interface, not an "abstract" one (that is a `[CKTypeDefiner]`).
-- For collections (`List<>`, `HashSet<>`, `Dictionary<,>` and arrays), the constructor creates an empty instance of 
-  the type (for arrays, the `Array.Empty<T>()` singleton is used). 
+- For collections (`IList<>`, `List<>`, `IHashSet<>`, `HashSet<>`, `IDictionary<,>` `Dictionary<,>` and arrays), the 
+  constructor creates an empty instance of the type (for arrays, the `Array.Empty<T>()` singleton is used). 
 - For record struct (with positional constructor syntax), the default is the default value parameter or a default
   must be resolved.
-- Value tuples are like record struct with no default value: we must be able find an initial value for 
-  all non nullable fields of the tuple (and without the help of the `[DefaultValue]` attribute).
+- Value tuples are like record struct with no default values expressed (no `[DefaultValue]` attribute): we must 
+  be able find an initial value for all non nullable fields of the tuple .
 
 #### Writable & Read only properties: the "Abstract Read Only Properties"
 A read only property can appear on one or more IPoco interface of a family and also exists
 in a writable form on other interfaces. When this happens, the "writable wins": the Poco's
 property is actually writable. The read only definitions become "hidden" by the writable ones
-ans we call them "Abstract Read Only Properties".
+and we call them "Abstract Read Only Properties".
 
 **All writable definitions of the same property must be exactly the same**: they are strictly type invariants
 (including nullability).
@@ -364,22 +373,29 @@ This concept may seem overkill (and it somehow is) but the goal is to exploit th
 attribute on a `IPoco` defines a kind of "abstract" definition. Such definer SHOULD be able to carry "abstract projections"
 by exposing read only properties:
   - An `object Identifier { get; }` that can be implemented (at the "concrete" `IPoco` level) by a 
-    `int Identifier {get ; set; }` for a family and by `string Identifier { get; set; } for another one
-    (this is supported).
-  - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `List<Y> Things { get; }` where X 
-    is assignable from Y (this is supported but only when Y and X a reference types).
+    `int Identifier {get ; set; }` for a family and by `string Identifier { get; set; } for another one.
+  - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `IList<Y> Things { get; }` where X 
+    is assignable from Y.
 
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
-specification). Current implementation allows only these 2 cases, because it is not as easy as it seems to implement, for
-instance:
-- `IReadOnlyList<object>` on a `List<int>`: value types requires an adapter, a wrapper instance, even
-if `typeof(object).IsAssignableFrom( typeof(int) )` is true,
-`typeof(IReadOnlyList<object>).IsAssignableFrom( typeof(IReadOnlyList<int>) )` is false).
-- `IReadOnlySet<T>` and `IDictionary<TKey,TValue>` are not covariant on `T` or `TValue`. Here again adapters
-are required. 
+specification). This relation between 2 types is written `<:`. Below is listed some expected covariances:
 
-> Abstract readonly property MAY be supported for records in the future: these properties would have to be regular properties
-> (not `ref` properties otherwise they would be writable properties) and may contain a subset of the writable fields.
+| Example  | .Net support | Remarks |
+|---|---|---|
+| `object` <: `IUser` | Yes  | Basic "object paradigm": everything is object.
+| `object` <: `int` | Yes  | Thanks to boxing.
+| `int?` <: `int` | Yes  | This is handled by the .Net runtime. |
+| `IReadOnlyList<object>` <: `List<IUser>`   |  Yes | Thanks to the **out** generic parameter. |
+| `IReadOnlyList<object>` <: `List<int>`   |  No | Unfortunately, boxing is not supported "out of the box"... |
+| `IReadOnlyList<object>` <: `IList<T>`  | No | The read only interface is not defined on the writable one. This also applies to `ISet<>` and `IDictionary<,>`  |
+| `IReadOnlyList<T?>` <: `IList<T>`  | Maybe | T must be a reference type for this to be possible... And this works because Reference Type Nullability is only based on attributes. For the runtime, every `object` is a `object?`. |
+| `ISet<T>` <: `HashSet<T>`  | No | Read only HashSet and Dictionaries are not covariant. |
+
+To overcome these limitations, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco collections,
+extended collection types are generated that automatically support all these expected covariance.
+
+Note that this "extended covariance" also supports nullability: `IReadOnlyList<T?>` <: `IList<T>` is supported.    
+
 
 When all definitions of a property are read only (no writable appears in the family), this property is either:
   - Nullable... and it keeps its default null value forever. This is _stupid_. 
@@ -389,6 +405,52 @@ When all definitions of a property are read only (no writable appears in the fam
 The _stupidity_ stands **if** we consider a given final System with a set of concrete, final types. But **if** we consider
 those read only definitions from where they are designed, then they appear as "extension points" that may be supported or not.
 If we choose this point of view, there is no reason to forbid these properties to exist.
+
+Non writable properties are ignored by "export protocols": they remain purely on the C# side with their default values.
+
+> Abstract Read Only Properties are for the C# side only, they don't appear when Poco are exchanged. Poco Export Protocols 
+> are unaware of these beasts.
+
+
+#### Current limitations of the "Abstract Read Only Properties"
+
+The "extended covariance" is currently limited:
+- Records, because they are mutable beasts, are not supported.
+- Recursive lists are supported thanks to the natural covariance support of `IReadOnlyList<out T>` but recursive
+  readonly sets and dictionaries are not.
+
+**Future**:
+Abstract readonly property MAY be supported for records in the future: these properties would have to be regular properties
+(not `ref` properties otherwise they would be writable properties) and may contain a subset of the writable fields. Value Tuples 
+should be wrapped in a `ReadOnly<,,,>` generic that will both signal the read only aspect and protects the fields, mutable 
+record should be disallowed (only read only types should be allowed).
+
+For recursive sets and dictionaries, this MAY be supported by using adapter instances (similar to https://github.com/Invenietis/CK-Core/blob/develop/CK.Core/Extension/DictionaryExtension.cs#L52).
+
+## Poco Import/Export
+Serialization and/or deserialization are typically implemented in independent packages (the "Package First" approach)
+but of course nothing prevents a direct implementation in a specific solution. Importers and Exporters are distinct
+singleton auto service:
+they may only share the same 
+
+
+
+### Poco Importer
+
+
+A Poco Export Protocol is a code extension ("Package First") that gives serialization/deserialization capabilities to IPoco.
+By installing a CK.Poco.PEP.XXX package in a project, at least the 3 following extension methods appear:
+- `IPoco.WriteXXX( ... )`
+- `T? IPocoFactory<T>.ReadXXX<T>( ... )`
+- `IPoco? PocoDirectory.ReadXXX( ... )`
+
+Actual parameters of these methods are Protocol dependent: for `CK.Poco.PEP.Json` for instance, this is:
+- `IPoco.WriteJson( Utf8JsonWriter writer, bool withType = true )`
+- `T? IPocoFactory<T>.ReadJson<T>( ref Utf8JsonReader reader )`
+- `IPoco? PocoDirectory.ReadJson( ref Utf8JsonReader reader )`
+
+This package offers more extension methods (helpers) to ease the use of the API like reading from a stream, a string, etc.,
+but these 3 methods are the core of the Export Protocol specification.
 
 ## PocoConverter
 
@@ -420,22 +482,4 @@ public class PocoConverter : ISingletonAutoService
   public T FromPoco<T>( IPoco o );
 }
 ```
-
-## Current limitations of the abstraction
-
-`[CKTypeDefiner]` attribute on a `IPoco`defines a kind of "abstract" definition.
-
-Unfortunately, the current implementation doesn't exploit this as much as it can (the "abstract" aspect has been
-overlooked). A definer SHOULD be able to carry "abstract projections" by exposing read only properties:
-
-  - An `object Identifier { get; }` that can be implemented (at the "concrete" `IPoco` level) by a 
-    `int Identifier {get ; set; }` for a family and by `string Identifier { get; set; } for another one.
-  - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `List<Y> Things { get; }` where X 
-    is assignable from Y.
-
-This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
-specification). Current implementation prohibits this because it is not as easy as it seems to implement (for
-instance `IReadOnlyList<object>` on a `List<int>`: value types requires an adapter, a wrapper instance, even
-if `typeof(object).IsAssignableFrom( typeof(int) )` is true,
-`typeof(IReadOnlyList<object>).IsAssignableFrom( typeof(IReadOnlyList<int>) )` is false).
 

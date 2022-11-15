@@ -48,9 +48,9 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => NonNullable;
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => this;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => this;
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => NonNullable;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => NonNullable;
         }
 
         internal sealed class AbstractPocoType1 : PocoType, IAbstractPocoType
@@ -78,18 +78,17 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary
-                                                                .Take( _abstractCount )
-                                                            .Concat( _abstractAndPrimary
-                                                                        .Skip( _abstractCount )
-                                                                        .SelectMany( p => Unsafe.As<PrimaryPocoType>( p ).AllowedTypes ) );
+            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary.Skip( _abstractCount ).Append( this );
 
-            public override bool IsWritableType( Type type ) => _abstractAndPrimary.Take( _abstractCount ).Any( a => a.Type == type )
-                                                                || _abstractAndPrimary.Skip(_abstractCount).Any( t => t.IsWritableType( type ) );
+            public override bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return !type.IsNullable
+                        && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
+            }
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => Nullable;
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => this;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => this;
         }
 
         internal sealed class AbstractPocoType2 : PocoType, IAbstractPocoType
@@ -98,9 +97,9 @@ namespace CK.Setup
             readonly IReadOnlyList<IPrimaryPocoType> _primaries;
 
             public AbstractPocoType2( PocoTypeSystem s,
-                                         Type tAbstract,
-                                         IReadOnlyList<IAbstractPocoType> abstracts,
-                                         IReadOnlyList<IPrimaryPocoType> primaries )
+                                      Type tAbstract,
+                                      IReadOnlyList<IAbstractPocoType> abstracts,
+                                      IReadOnlyList<IPrimaryPocoType> primaries )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractIPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstracts = abstracts;
@@ -117,16 +116,17 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => ((IEnumerable<IPocoType>)_abstracts)
-                                                            .Concat( _primaries.SelectMany( p => Unsafe.As<PrimaryPocoType>( p ).AllowedTypes ) );
+            public IEnumerable<IPocoType> AllowedTypes => _primaries;
 
-            public override bool IsWritableType( Type type ) => _abstracts.Any( a => a.Type == type )
-                                                                || _primaries.Any( t => t.IsWritableType( type ) );
+            public override bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return !type.IsNullable
+                       && (Type.IsAssignableFrom( type.Type ) || _primaries.Any( t => t.IsWritableType( type ) ));
+            }
 
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => Nullable;
 
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.Nullable => Nullable;
-
-            IAnyOfPocoType<IPocoType> IAnyOfPocoType<IPocoType>.NonNullable => this;
+            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => this;
         }
 
     }

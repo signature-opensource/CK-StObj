@@ -30,25 +30,27 @@ namespace CK.Setup
             int iClosedPrimary = 0;
             foreach( var family in poco.Families )
             {
-                // Primary index for the PocoType that will hold the
-                // fields is the PrimaryInterface. Other interface
-                // will be indexed with this PocoType as their first
-                // SubTypes.
+                // PrimaryPoco hold the fields and are the only registered type
+                // for a Poco family.
+                // Secondary Poco interfaces are simply erased at this level.
+                // We use the cache to handle once for all the mapping from the family
+                // interface types to the PrimaryPoco.
+                //
+                // Note: before 2022-11-06, a IConcretePoco was modeling these secondary
+                //       interfaces. Removing them is because we should consider the interfaces
+                //       that define a Poco family as an "implementation details": the final IPoco
+                //       is what matters. If, for any reason, these interfaces are needed, they are
+                //       captured at the PocoDirectory level and may be used to restore a detailed
+                //       "IPoco definition" knowledge.
+                //       
                 var primary = PocoType.CreatePrimaryPoco( this, family );
-                _cache.Add( primary.Type, primary );
+                Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
+                foreach( var i in family.Interfaces )
+                {
+                    _cache.Add( i.PocoInterface, primary );
+                }
                 allPrimaries[iPrimary++] = primary;
                 if( family.IsClosedPoco ) closedPrimaries[iClosedPrimary++] = primary;
-                Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
-                var fTypes = new IConcretePocoType[family.Interfaces.Count];
-                fTypes[0] = primary;
-                for( int i = 1; i < fTypes.Length; ++i )
-                {
-                    var t = family.Interfaces[i].PocoInterface;
-                    var c = PocoType.CreatePoco( this, primary, t );
-                    _cache.Add( t, c );
-                    fTypes[i - 1] = c;
-                }
-                primary.AllowedTypes = fTypes;
             }
             // Second, registers the "abstract" interfaces as union types.
             // An abstract interface can extend other extract interfaces, we
@@ -124,11 +126,11 @@ namespace CK.Setup
             return success;
         }
 
-        PocoType EnsureAbstract( IPocoDirectory poco,
-                                 IEnumerable<Type> abstractTypes,
-                                 Type tAbstract,
-                                 List<IAbstractPocoType> allAbstracts,
-                                 List<IAbstractPocoType> closedAbstracts )
+        IPocoType EnsureAbstract( IPocoDirectory poco,
+                                  IEnumerable<Type> abstractTypes,
+                                  Type tAbstract,
+                                  List<IAbstractPocoType> allAbstracts,
+                                  List<IAbstractPocoType> closedAbstracts )
         {
             if( !_cache.TryGetValue( tAbstract, out var result ) )
             {

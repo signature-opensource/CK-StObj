@@ -1,6 +1,7 @@
 using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -46,17 +47,21 @@ namespace CK.StObj.Engine.Tests.Poco
             #region Repeat for each concrete interface (IThing).
             IThing IList<IThing>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
 
-            void ICollection<IThing>.Add( IThing item ) => Add( (TImpl)item );
-
-            bool ICollection<IThing>.Contains( IThing item ) => Contains( (TImpl)item );
-
-            void ICollection<IThing>.CopyTo( IThing[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
-
             int IList<IThing>.IndexOf( IThing item ) => IndexOf( (TImpl)item );
 
             void IList<IThing>.Insert( int index, IThing item ) => Insert( index, (TImpl)item );
 
+
+            // Following methods are ICollection adapters. 
+
+            void ICollection<IThing>.Add( IThing item ) => Add( (TImpl)item );
+
+            void ICollection<IThing>.CopyTo( IThing[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
+
             bool ICollection<IThing>.Remove( IThing item ) => Remove( (TImpl)item );
+
+            // Public to be used by IX and IReadOnlyX (X is Set in practice).
+            public bool Contains( IThing item ) => Contains( (TImpl)item );
 
             IEnumerator<IThing> IEnumerable<IThing>.GetEnumerator() => GetEnumerator();
             #endregion
@@ -64,15 +69,15 @@ namespace CK.StObj.Engine.Tests.Poco
             #region Repeat for each concrete interface (IOther).
             IOther IList<IOther>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
 
-            void ICollection<IOther>.Add( IOther item ) => Add( (TImpl)item );
-
-            bool ICollection<IOther>.Contains( IOther item ) => Contains( (TImpl)item );
-
-            void ICollection<IOther>.CopyTo( IOther[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
-
             int IList<IOther>.IndexOf( IOther item ) => IndexOf( (TImpl)item );
 
             void IList<IOther>.Insert( int index, IOther item ) => Insert( index, (TImpl)item );
+
+            void ICollection<IOther>.Add( IOther item ) => Add( (TImpl)item );
+
+            public bool Contains( IOther item ) => Contains( (TImpl)item );
+
+            void ICollection<IOther>.CopyTo( IOther[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
 
             bool ICollection<IOther>.Remove( IOther item ) => Remove( (TImpl)item );
 
@@ -82,15 +87,15 @@ namespace CK.StObj.Engine.Tests.Poco
             #region Repeat for each concrete interface (IMoreOther).
             IMoreOther IList<IMoreOther>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
 
-            void ICollection<IMoreOther>.Add( IMoreOther item ) => Add( (TImpl)item );
-
-            bool ICollection<IMoreOther>.Contains( IMoreOther item ) => Contains( (TImpl)item );
-
-            void ICollection<IMoreOther>.CopyTo( IMoreOther[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
-
             int IList<IMoreOther>.IndexOf( IMoreOther item ) => IndexOf( (TImpl)item );
 
             void IList<IMoreOther>.Insert( int index, IMoreOther item ) => Insert( index, (TImpl)item );
+
+            void ICollection<IMoreOther>.Add( IMoreOther item ) => Add( (TImpl)item );
+
+            public bool Contains( IMoreOther item ) => Contains( (TImpl)item );
+
+            void ICollection<IMoreOther>.CopyTo( IMoreOther[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
 
             bool ICollection<IMoreOther>.Remove( IMoreOther item ) => Remove( (TImpl)item );
 
@@ -157,6 +162,7 @@ namespace CK.StObj.Engine.Tests.Poco
             IReadOnlyList<IThing> roThing = list;
             IReadOnlyList<ICommand> roCmd = list;
             IReadOnlyList<object> roObject = list;
+            IReadOnlyList<object?> ronObject = list;
             roThing.Where( t => t.Power == 0 ).Should().HaveCount( 1 );
             roThing.First( x => x.Power == 42 ).Should().BeSameAs( list[0] );
             roCmd.Where( x => x is IThing ).Should().HaveCount( 2 );
@@ -178,13 +184,17 @@ namespace CK.StObj.Engine.Tests.Poco
 
             #region Repeat for each concrete interface (IThing).
 
-            IEnumerator<IThing> IEnumerable<IThing>.GetEnumerator() => GetEnumerator();
-
+            #region Collection support (same as List).
             void ICollection<IThing>.Add( IThing item ) => Add( (TImpl)item );
 
             void ICollection<IThing>.CopyTo( IThing[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
 
             bool ICollection<IThing>.Remove( IThing item ) => Remove( (TImpl)item );
+
+            public bool Contains( IThing item ) => base.Contains( (TImpl)item );
+
+            IEnumerator<IThing> IEnumerable<IThing>.GetEnumerator() => GetEnumerator();
+            #endregion
 
             void ISet<IThing>.ExceptWith( IEnumerable<IThing> other ) => ExceptWith( (IEnumerable<TImpl>)other );
 
@@ -196,7 +206,6 @@ namespace CK.StObj.Engine.Tests.Poco
 
             void ISet<IThing>.UnionWith( IEnumerable<IThing> other ) => UnionWith( (IEnumerable<TImpl>)other );
 
-            public bool Contains( IThing item ) => base.Contains( (TImpl)item );
 
             public bool IsProperSubsetOf( IEnumerable<IThing> other ) => base.IsProperSubsetOf( (IEnumerable<TImpl>)other );
 
@@ -445,7 +454,7 @@ namespace CK.StObj.Engine.Tests.Poco
             nSet.IsSubsetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSubsetOf( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSubsetOf( superSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
-            nSet.IsSubsetOf( superSet2.Concat(  superSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
+            nSet.IsSubsetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSubsetOf( subSet2 ).Should().BeFalse();
             nSet.IsSubsetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse();
             nSet.IsSubsetOf( otherSet ).Should().BeFalse();
@@ -467,7 +476,7 @@ namespace CK.StObj.Engine.Tests.Poco
             nSet.IsSupersetOf( set2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSupersetOf( set2.Concat( set2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSupersetOf( superSet2 ).Should().BeFalse();
-            nSet.IsSupersetOf( superSet2.Concat(superSet2) ).Should().BeFalse();
+            nSet.IsSupersetOf( superSet2.Concat( superSet2 ) ).Should().BeFalse();
             nSet.IsSupersetOf( subSet2 ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSupersetOf( subSet2.Concat( subSet2 ) ).Should().BeFalse( "BUG! :( The null must be explicitly handled." );
             nSet.IsSupersetOf( otherSet ).Should().BeFalse();
@@ -657,6 +666,17 @@ namespace CK.StObj.Engine.Tests.Poco
             where TImpl : class, IThing, IOther, IMoreOther, ICommand
         {
 
+            bool TGV<TOut>( TKey key, out TOut? value ) where TOut : class
+            {
+                if( base.TryGetValue( key, out var v ) )
+                {
+                    value = Unsafe.As<TOut>( v );
+                    return true;
+                }
+                value = null;
+                return false;
+            }
+
             public bool IsReadOnly => false;
 
             object IReadOnlyDictionary<TKey, object>.this[TKey key] => this[key];
@@ -665,16 +685,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             IEnumerable<object> IReadOnlyDictionary<TKey, object>.Values => Values;
 
-            bool IReadOnlyDictionary<TKey, object>.TryGetValue( TKey key, [MaybeNullWhen(false)]out object value )
-            {
-                if( base.TryGetValue( key, out var v ) )
-                {
-                    value = v;
-                    return true;
-                }
-                value = null;
-                return false;
-            }
+            bool IReadOnlyDictionary<TKey, object>.TryGetValue( TKey key, [MaybeNullWhen( false )] out object value ) => TGV( key, out value );
 
             IEnumerator<KeyValuePair<TKey, object>> IEnumerable<KeyValuePair<TKey, object>>.GetEnumerator()
             {
@@ -688,21 +699,10 @@ namespace CK.StObj.Engine.Tests.Poco
 
             IEnumerable<IThing> IReadOnlyDictionary<TKey, IThing>.Values => Values;
 
-            public bool TryGetValue( TKey key, [MaybeNullWhen( false )] out IThing value )
-            {
-                if( base.TryGetValue( key, out var v ) )
-                {
-                    value = v;
-                    return true;
-                }
-                value = null;
-                return false;
-            }
+            public bool TryGetValue( TKey key, [MaybeNullWhen( false )] out IThing value ) => TGV( key, out value );
 
             IEnumerator<KeyValuePair<TKey, IThing>> IEnumerable<KeyValuePair<TKey, IThing>>.GetEnumerator()
-            {
-                return ((IEnumerable<KeyValuePair<TKey, TImpl>>)this).Select( kv => KeyValuePair.Create( kv.Key, (IThing)kv.Value ) ).GetEnumerator();
-            }
+                => ((IEnumerable<KeyValuePair<TKey, TImpl>>)this).Select( kv => KeyValuePair.Create( kv.Key, (IThing)kv.Value ) ).GetEnumerator();
 
             #endregion
 
@@ -739,31 +739,21 @@ namespace CK.StObj.Engine.Tests.Poco
 
             IEnumerable<ICommand> IReadOnlyDictionary<TKey, ICommand>.Values => Values;
 
-            public bool TryGetValue( TKey key, [MaybeNullWhen( false )] out ICommand value )
-            {
-                if( base.TryGetValue( key, out var v ) )
-                {
-                    value = v;
-                    return true;
-                }
-                value = null;
-                return false;
-            }
+            public bool TryGetValue( TKey key, [MaybeNullWhen( false )] out ICommand value ) => TGV( key, out value );
 
             IEnumerator<KeyValuePair<TKey, ICommand>> IEnumerable<KeyValuePair<TKey, ICommand>>.GetEnumerator()
             {
                 return ((IEnumerable<KeyValuePair<TKey, TImpl>>)this).Select( kv => KeyValuePair.Create( kv.Key, (ICommand)kv.Value ) ).GetEnumerator();
             }
 
-
         }
 
         [Test]
         public void Dictionary_support()
         {
-            var d = new CovPocoDictionary_CK<int,Thing_CK>();
-            IDictionary<int,IThing> dThing = d;
-            IReadOnlyDictionary<int,ICommand> dCmd = d;
+            var d = new CovPocoDictionary_CK<int, Thing_CK>();
+            IDictionary<int, IThing> dThing = d;
+            IReadOnlyDictionary<int, ICommand> dCmd = d;
             for( int i = 0; i < 10; ++i )
             {
                 dThing.Add( i, new Thing_CK() { Power = i } );
@@ -773,10 +763,40 @@ namespace CK.StObj.Engine.Tests.Poco
             // This uses an Unsafe.As<ICollection<IThing>>...
             dThing.Values.Should().OnlyContain( v => v.Power >= 0 && v.Power < 10 );
             // This uses an Unsafe.As<KeyValuePair<TKey, TImpl>[]> to adapt the target...
-            var target = new KeyValuePair<int,IThing>[20];
+            var target = new KeyValuePair<int, IThing>[20];
             dThing.CopyTo( target, 0 );
             dThing.CopyTo( target, 10 );
             target.Should().OnlyContain( x => x.Value != null && dThing.Contains( x ) );
+        }
+
+        class Animal { }
+        class Dog : Animal { }
+
+        [Test]
+        public void array_IsAssignableFrom_is_covariant_but_this_is_a_dangerous_lie()
+        {
+            // No support if boxing is required.
+            typeof( int[] ).IsAssignableFrom( typeof( object[] ) ).Should().BeFalse();
+            typeof( object[] ).IsAssignableFrom( typeof( int[] ) ).Should().BeFalse();
+
+            typeof( Animal[] ).IsAssignableFrom( typeof( object[] ) ).Should().BeFalse();
+            typeof( object[] ).IsAssignableFrom( typeof( Animal[] ) ).Should().BeTrue( "Dangerous!" );
+
+            var o = new object();
+            var cA = new Animal();
+            object[] asObjects = new Animal[] { cA };
+            FluentActions.Invoking( () => asObjects[0] = o ).Should().Throw<ArrayTypeMismatchException>();
+
+            typeof( Dog[] ).IsAssignableFrom( typeof( Animal[] ) ).Should().BeFalse();
+            typeof( Animal[] ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous!" );
+
+
+            typeof( IReadOnlyList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Safe." );
+            typeof( IReadOnlyList<object> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Safe." );
+            typeof( object ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Safe." );
+
+            typeof( IList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous (nobody checks the bool IsReadOnly)." );
+            typeof( IList<object> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous( nobody checks the bool IsReadOnly )." );
         }
 
     }

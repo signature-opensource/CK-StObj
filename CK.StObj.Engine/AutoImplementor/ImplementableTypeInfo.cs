@@ -1,9 +1,7 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using CK.Reflection;
 using CK.CodeGen;
 using System.Reflection.Emit;
 using CK.Core;
@@ -202,11 +200,11 @@ namespace CK.Setup
                 b.DefinePassThroughConstructors( c => c.Attributes | MethodAttributes.Public, null, (param,attributeData) => false );
                 foreach( var am in MethodsToImplement )
                 {
-                    CK.Reflection.EmitHelper.ImplementEmptyStubMethod( b, am.Method, false );
+                    b.ImplementEmptyStubMethod( am.Method, false );
                 }
                 foreach( var ap in PropertiesToImplement )
                 {
-                    CK.Reflection.EmitHelper.ImplementStubProperty( b, ap.Property, false );
+                    b.ImplementStubProperty( ap.Property, false );
                 }
                 return _stubType = b.CreateType();
             }

@@ -15,6 +15,11 @@ namespace CK.Setup
         Type PocoInterface { get; }
 
         /// <summary>
+        /// Gets the full C# name of this interface type.
+        /// </summary>
+        string CSharpName { get; }
+
+        /// <summary>
         /// Gets the concrete, final, unified Poco type information.
         /// </summary>
         IPocoFamilyInfo Family { get; }

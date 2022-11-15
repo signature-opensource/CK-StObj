@@ -342,7 +342,13 @@ namespace CK.Setup
                 // An unused Auto Service interface (i.e. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
-                Interfaces = collector.RegisterServiceInterfaces( monitor, TypeInfo.Interfaces, IsRealObject ? (Action<IActivityMonitor,Type,CKTypeKind,CKTypeCollector>?)null : TypeInfo.AddMultipleMapping ).ToArray();
+                Interfaces = collector.RegisterServiceInterfaces( monitor,
+                                                                    TypeInfo.Interfaces,
+                                                                    IsRealObject
+                                                                    ? (Action<IActivityMonitor, Type, CKTypeKind, CKTypeCollector>?)null
+                                                                    : !TypeInfo.IsSpecialized
+                                                                        ? TypeInfo.AddMultipleMapping
+                                                                        : null ).ToArray();
             }
             return isConcretePath;
         }
@@ -434,7 +440,8 @@ namespace CK.Setup
             {
                 var initial = kindComputeFacade.KindDetector.GetValidKind( m, ClassType ).ToAutoServiceKind();
                 var final = initial;
-                using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
+                Debug.Assert( ConstructorParameters != null );
+                using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
                     const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService;
                     const AutoServiceKind IsFrontMashallableMask = AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable;

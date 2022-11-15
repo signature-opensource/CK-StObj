@@ -50,31 +50,89 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IWithN : IPoco
         {
-            ref (string? A, IList<string>? B, IList<IList<string>?> C)? Thing { get; }
+            ref (string? A, IList<string?>? B, IList<IList<string?>?>? C)? Thing { get; }
         }
 
         [CKTypeDefiner]
-        public interface IWithNotNPart : IPoco
+        public interface IWithNotNPart0 : IPoco
         {
-            ref (string? A, IList<string>? B, IList<IList<string>?> C) Thing { get; }
+            ref (string? A, IList<string?>? B, IList<IList<string?>?>? C) Thing { get; }
         }
+
+        [CKTypeDefiner]
+        public interface IWithNotNPart1 : IPoco
+        {
+            ref (string? A, IList<string?>? B, IList<IList<string?>?> C)? Thing { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithNotNPart2 : IPoco
+        {
+            ref (string? A, IList<string?>? B, IList<IList<string?>>? C)? Thing { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithNotNPart3 : IPoco
+        {
+            ref (string? A, IList<string?>? B, IList<IList<string>?>? C)? Thing { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithNotNPart4 : IPoco
+        {
+            ref (string? A, IList<string?> B, IList<IList<string?>?>? C)? Thing { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithNotNPart5 : IPoco
+        {
+            ref (string? A, IList<string>? B, IList<IList<string?>?>? C)? Thing { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithNotNPart6 : IPoco
+        {
+            ref (string A, IList<string?>? B, IList<IList<string?>?>? C)? Thing { get; }
+        }
+
+        // Thing is writable: it must have the same nullability.
+        public interface INullabilityError0 : IWithN, IWithNotNPart0 { }
+        public interface INullabilityError1 : IWithN, IWithNotNPart1 { }
+        public interface INullabilityError2 : IWithN, IWithNotNPart2 { }
+        public interface INullabilityError3 : IWithN, IWithNotNPart3 { }
+        public interface INullabilityError4 : IWithN, IWithNotNPart4 { }
+        public interface INullabilityError5 : IWithN, IWithNotNPart5 { }
+        public interface INullabilityError6 : IWithN, IWithNotNPart6 { }
 
         [CKTypeDefiner]
         public interface IWithNPart : IPoco
         {
-            ref (string? A, IList<string>? B, IList<IList<string>?> C)? Thing { get; }
+            ref (string? A, IList<string?>? B, IList<IList<string?>?>? C)? Thing { get; }
         }
 
-        public interface INullabilityError : IWithN, IWithNotNPart
+        public interface INoError : IWithN, IWithNPart
         {
-            // Thing is writable: it must have the same nullability.
         }
 
         [Test]
         public void nullability_incoherence_is_checked()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( INullabilityError ) );
-            TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,System.Collections.Generic.List<string?>? B,System.Collections.Generic.List<System.Collections.Generic.List<string?>?>? C)?' since " );
+            var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
+            TestHelper.GetSuccessfulResult( c );
+
+            CheckError( typeof( INullabilityError0 ) );
+            CheckError( typeof( INullabilityError1 ) );
+            CheckError( typeof( INullabilityError2 ) );
+            CheckError( typeof( INullabilityError3 ) );
+            CheckError( typeof( INullabilityError4 ) );
+            CheckError( typeof( INullabilityError5 ) );
+            CheckError( typeof( INullabilityError6 ) );
+
+            static void CheckError( Type tError )
+            {
+                var c = TestHelper.CreateStObjCollector( tError );
+                TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,System.Collections.Generic.IList<string?>? B,System.Collections.Generic.IList<System.Collections.Generic.IList<string?>?>? C)?' since " );
+            }
         }
     }
 }

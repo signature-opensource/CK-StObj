@@ -9,9 +9,8 @@ namespace CK.Setup
     /// <summary>
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
     /// are available in <see cref="LastVisited"/>.
-    /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/>,
-    /// <see cref="IConcretePocoType.PrimaryInterface"/> and <see cref="IUnionPocoType"/>'s
-    /// <see cref="IAnyOfPocoType{T}.AllowedTypes"/> are followed.
+    /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/> and <see cref="IUnionPocoType"/>'s
+    /// <see cref="IOneOfPocoType{T}.AllowedTypes"/> are followed.
     /// </summary>
     public class PocoTypeVisitor
     {
@@ -75,7 +74,6 @@ namespace CK.Setup
             switch( t )
             {
                 case IPrimaryPocoType primary: VisitPrimaryPoco( monitor, primary ); break;
-                case IConcretePocoType poco: VisitConcretePoco( monitor, poco ); break;
                 case IAbstractPocoType abstractPoco: VisitAbstractPoco( monitor, abstractPoco ); break;
                 case ICollectionPocoType collection: VisitCollection( monitor, collection ); break;
                 case IRecordPocoType record: VisitRecord( monitor, record ); break;
@@ -121,17 +119,6 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="IConcretePocoType.PrimaryInterface"/>, calling <see cref="VisitPrimaryPoco(IActivityMonitor, IPrimaryPocoType)"/>
-        /// that visits the fields.
-        /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
-        /// <param name="poco">The poco concrete type.</param>
-        protected virtual void VisitConcretePoco( IActivityMonitor monitor, IConcretePocoType poco )
-        {
-            VisitPrimaryPoco( monitor, poco.PrimaryInterface );
-        }
-
-        /// <summary>
         /// Does nothing by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -151,7 +138,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="IAnyOfPocoType{T}.AllowedTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
+        /// Visits the <see cref="IOneOfPocoType{T}.AllowedTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="union"></param>

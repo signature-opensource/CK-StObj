@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -14,47 +15,28 @@ namespace CK.Setup
     {
         sealed class MemberContext
         {
-            readonly IList<string?>? _tupleNames;
-            MemberInfo? _member;
-            ParameterInfo? _parameter;
+            readonly IList<string?> _tupleNames;
+            IExtMemberInfo _root;
             int _tupleIndex;
 
-            public MemberContext( MemberInfo root )
+            public MemberContext( IExtMemberInfo root )
             {
-                _member = root;
+                _root = root;
                 _tupleIndex = 0;
-                _tupleNames = root.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames ?? Array.Empty<string>();
+                _tupleNames = root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();
             }
-
-            public MemberContext( ParameterInfo root )
-            {
-                _parameter = root;
-                _tupleIndex = 0;
-                _tupleNames = root.GetCustomAttribute<TupleElementNamesAttribute>()?.TransformNames ?? Array.Empty<string>();
-            }
-
-            public bool UsePrimaryPocoMapping { get; init; }
 
             public RecordField[] GetTupleNamedFields( int count )
             {
                 var fields = new RecordField[count];
                 for( int i = 0; i < fields.Length; ++i )
                 {
-                    fields[i] = new RecordField( i, _tupleNames?[_tupleIndex++] );
+                    fields[i] = new RecordField( i, _tupleNames.Count > _tupleIndex ? _tupleNames[_tupleIndex++] : null );
                 }
                 return fields;
             }
 
-            public override string ToString()
-            {
-                if( _member != null )
-                {
-                    var type = _member is PropertyInfo ? "Property" : "Field";
-                    return $"{type} '{_member.DeclaringType.ToCSharpName()}.{_member.Name}'";
-                }
-                Debug.Assert( _parameter != null );
-                return $"Parameter '{_parameter.Name}' of method '{_parameter.Member.DeclaringType.ToCSharpName(false)}.{_parameter.Member.Name}'";
-            }
+            public override string ToString() => _root.ToString()!;
 
         }
 

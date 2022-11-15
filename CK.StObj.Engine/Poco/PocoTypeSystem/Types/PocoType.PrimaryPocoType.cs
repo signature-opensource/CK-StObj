@@ -33,20 +33,12 @@ namespace CK.Setup
 
                 public IPrimaryPocoType PrimaryInterface => this;
 
-                IConcretePocoType IConcretePocoType.Nullable => this;
-                IConcretePocoType IConcretePocoType.NonNullable => NonNullable;
-
                 public IReadOnlyList<IPrimaryPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
                 ICompositePocoType ICompositePocoType.Nullable => this;
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
-
-                public IEnumerable<IConcretePocoType> AllowedTypes => NonNullable.PrimaryInterface.Nullable.AllowedTypes;
-
-                IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.Nullable => this;
-                IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.NonNullable => NonNullable;
 
                 public string CSharpBodyConstructorSourceCode => NonNullable.CSharpBodyConstructorSourceCode;
 
@@ -88,10 +80,6 @@ namespace CK.Setup
 
             public IPrimaryPocoType PrimaryInterface => this;
 
-            IConcretePocoType IConcretePocoType.Nullable => Nullable;
-
-            IConcretePocoType IConcretePocoType.NonNullable => this;
-
             public string CSharpBodyConstructorSourceCode => _ctorCode;
 
             public IReadOnlyList<IPrimaryPocoField> Fields => _fields;
@@ -113,12 +101,26 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            public override bool IsWritableType( Type type ) => FamilyInfo.Interfaces.Any( i => i.PocoInterface == type );
+            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
+            {
+                if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
+                return FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
+            }
 
-            public override bool IsReadableType( Type type ) => IsWritableType( type ) || FamilyInfo.OtherInterfaces.Any( i => i == type );
+            public override bool IsWritableType( IExtNullabilityInfo type )
+            {
+                return !type.IsNullable && FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
+            }
 
-            [AllowNull]
-            public IEnumerable<IConcretePocoType> AllowedTypes { get; internal set; }
+            public override bool IsReadableType( IExtNullabilityInfo type )
+            {
+                var t = type.Type;
+                return t == typeof( object )
+                       || t == typeof( IPoco )
+                       || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
+                       || FamilyInfo.Interfaces.Any( i => i.PocoInterface == t )
+                       || FamilyInfo.OtherInterfaces.Any( i => i == t );
+            }
 
             [AllowNull]
             public IReadOnlyList<IAbstractPocoType> AbstractTypes { get; internal set; }
@@ -126,10 +128,6 @@ namespace CK.Setup
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
 
             ICompositePocoType ICompositePocoType.NonNullable => this;
-
-            IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.Nullable => Nullable;
-
-            IAnyOfPocoType<IConcretePocoType> IAnyOfPocoType<IConcretePocoType>.NonNullable => this;
 
             IPrimaryPocoType IPrimaryPocoType.Nullable => Nullable;
 
