@@ -3,7 +3,6 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-
     /// <summary>
     /// Bound attributes, thanks to the cache, makes delegation for maximal decoupling easy. This base class can be used
     /// by attributes that must appear on runtime objects to split their implementation into assemblies that will 

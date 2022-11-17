@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// The Poco directory registers the <see cref="IPocoFactory"/> by their
     /// <see cref="IPocoFactory.Name"/> and <see cref="IPocoFactory.PreviousNames"/>.

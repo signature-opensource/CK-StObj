@@ -378,24 +378,28 @@ by exposing read only properties:
     is assignable from Y.
 
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
-specification). This relation between 2 types is written `<:`. Below is listed some expected covariances:
+specification). This relation between 2 types is written `<:`. Below is listed some expected covariances and the (sad)
+reality about them:
 
 | Example  | .Net support | Remarks |
 |---|---|---|
-| `object` <: `IUser` | Yes  | Basic "object paradigm": everything is object.
-| `object` <: `int` | Yes  | Thanks to boxing.
+| `object`&nbsp;<:&nbsp;`IUser` | Yes  | Basic "object paradigm": everything is object.
+| `object` <: `int` | Yes  | Thanks to boxing, the  "object paradigm" applies.
 | `int?` <: `int` | Yes  | This is handled by the .Net runtime. |
-| `IReadOnlyList<object>` <: `List<IUser>`   |  Yes | Thanks to the **out** generic parameter. |
+| `IReadOnlyList<object>`&nbsp;<:&nbsp;`List<IUser>`   |  Yes | Thanks to the **out** generic parameter. |
 | `IReadOnlyList<object>` <: `List<int>`   |  No | Unfortunately, boxing is not supported "out of the box"... |
 | `IReadOnlyList<object>` <: `IList<T>`  | No | The read only interface is not defined on the writable one. This also applies to `ISet<>` and `IDictionary<,>`  |
 | `IReadOnlyList<T?>` <: `IList<T>`  | Maybe | T must be a reference type for this to be possible... And this works because Reference Type Nullability is only based on attributes. For the runtime, every `object` is a `object?`. |
-| `ISet<T>` <: `HashSet<T>`  | No | Read only HashSet and Dictionaries are not covariant. |
+| `IReadOnlySet<object>` <: `HashSet<IUser>`  | No | Read only HashSet and Dictionaries are not covariant. |
+| `IReadOnlyDictionary<int,object>` <: `Dictionary<int,IUser>`  | No | Read only HashSet and Dictionaries are not covariant. |
 
-To overcome these limitations, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco collections,
+To overcome these limitations and unifies the API, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco collections,
 extended collection types are generated that automatically support all these expected covariance.
 
-Note that this "extended covariance" also supports nullability: `IReadOnlyList<T?>` <: `IList<T>` is supported.    
-
+Note that this "extended covariance":
+- Supports nullability (and enforces it!): `IReadOnlyList<object?>` <: `IList<IUser>` is allowed and supported BUT 
+  `IReadOnlyList<object>` <: `IList<IUser?>` is an error (even for reference types).
+- Considers dictionary key as being invariant. (Even if this can be done, the number of required adaptations to support this would explode.)
 
 When all definitions of a property are read only (no writable appears in the family), this property is either:
   - Nullable... and it keeps its default null value forever. This is _stupid_. 
@@ -406,11 +410,10 @@ The _stupidity_ stands **if** we consider a given final System with a set of con
 those read only definitions from where they are designed, then they appear as "extension points" that may be supported or not.
 If we choose this point of view, there is no reason to forbid these properties to exist.
 
-Non writable properties are ignored by "export protocols": they remain purely on the C# side with their default values.
+Non writable properties are ignored by serializers/deserializers: they remain purely on the C# side with their default values.
 
-> Abstract Read Only Properties are for the C# side only, they don't appear when Poco are exchanged. Poco Export Protocols 
+> Abstract Read Only Properties are for the C# side only, they don't appear when Poco are exchanged. [Poco Exchange](PocoExchange/README.md) 
 > are unaware of these beasts.
-
 
 #### Current limitations of the "Abstract Read Only Properties"
 
@@ -427,59 +430,4 @@ record should be disallowed (only read only types should be allowed).
 
 For recursive sets and dictionaries, this MAY be supported by using adapter instances (similar to https://github.com/Invenietis/CK-Core/blob/develop/CK.Core/Extension/DictionaryExtension.cs#L52).
 
-## Poco Import/Export
-Serialization and/or deserialization are typically implemented in independent packages (the "Package First" approach)
-but of course nothing prevents a direct implementation in a specific solution. Importers and Exporters are distinct
-singleton auto service:
-they may only share the same 
-
-
-
-### Poco Importer
-
-
-A Poco Export Protocol is a code extension ("Package First") that gives serialization/deserialization capabilities to IPoco.
-By installing a CK.Poco.PEP.XXX package in a project, at least the 3 following extension methods appear:
-- `IPoco.WriteXXX( ... )`
-- `T? IPocoFactory<T>.ReadXXX<T>( ... )`
-- `IPoco? PocoDirectory.ReadXXX( ... )`
-
-Actual parameters of these methods are Protocol dependent: for `CK.Poco.PEP.Json` for instance, this is:
-- `IPoco.WriteJson( Utf8JsonWriter writer, bool withType = true )`
-- `T? IPocoFactory<T>.ReadJson<T>( ref Utf8JsonReader reader )`
-- `IPoco? PocoDirectory.ReadJson( ref Utf8JsonReader reader )`
-
-This package offers more extension methods (helpers) to ease the use of the API like reading from a stream, a string, etc.,
-but these 3 methods are the core of the Export Protocol specification.
-
-## PocoConverter
-
-> Ideas. To be more precisely defined (monitoring, error management).
-
-```csharp
-[IsMultiple]
-public interface IPocoConverter : ISingletonAutoService
-{
-}
-
-public interface IPocoConverter<T> : IPocoConverter
-{
-  IPoco ToPoco( in T o );
-  T FromPoco( IPoco o );
-}
-```
-
-Such converter can accept more than one `IPoco` type as an input and can create different type of `IPoco` on output.
-This makes sense.
-
-The following central service can handle all the conversions:
-```csharp
-public class PocoConverter : ISingletonAutoService
-{
-  public PocoConverter( IEnumerable<IPocoConverter> converters );
-  public virtual IPoco ToPoco<T>( in T o );
-  public virtual object FromPoco( IPoco o );
-  public T FromPoco<T>( IPoco o );
-}
-```
 

@@ -1,0 +1,93 @@
+# Poco Exchange
+
+## Serializers and Deserializers
+Serialization and/or deserialization support are typically implemented in independent packages (the "Package First" approach)
+but of course nothing prevents a direct implementation in a specific solution.
+
+The 2 following core interfaces define the fundamental behavior:
+```csharp
+public interface IPocoSerializer
+{
+    void Write( IActivityMonitor monitor, Stream output, IPoco? data );
+    Task WriteAsync( IActivityMonitor monitor, Stream output, IPoco? data, CancellationToken cancel );
+}
+
+public interface IPocoDeserializer
+{
+    bool TryRead( IActivityMonitor monitor, Stream input, out IPoco? data );
+    Task<(bool Success, IPoco? Data)> TryReadAsync( IActivityMonitor monitor, Stream input, CancellationToken cancel );
+}
+```
+**Key points:**
+- Synchronous and asynchronous implementations must be provided even if the async is actually a "fake" async on sync implementation 
+  (the other way around, sync on async, is not a good idea).
+- A null Poco can always be read or written: `null` is a valid data. If it has to be considered invalid, this is up to the callers 
+  to handle this.
+
+## Importers and Exporters: the ProtocalName
+Extending these 2 interfaces, importers and exporters are singleton (multiple) auto services:
+
+```csharp
+[IsMultiple]
+public interface IPocoExporter : IPocoExporter, ISingletonAutoService
+{
+   string ProtocolName { get; }
+}
+
+[IsMultiple]
+public interface IPocoImporter : IPocoImporter, ISingletonAutoService
+{
+   string ProtocolName { get; }
+}
+```
+
+They can be implemented by 2 different services (that may even be in 2 different packages!) or be both
+implemented by the same class.
+
+**Key points:**
+- `ProtocolName` typically denotes a "ContentType" (IANA media types) but may denote a more complex protocol.
+- There is no Options nor Context of any kind: the `ProtocolName` fully describes what and how things are serialized and deserialized.
+
+Forcing these implementations to be singletons somehow extends the idea of the "There is No Options": imports
+and exports should always be as contextless as possible.
+
+The [`PocoExchangeRegistry`](PocoExchangeRegistry.cs) collects the available importers/exporters that can be resolved by their `ProtocolName`.
+
+Nothing prevents contextual serializes/deserializers to be implemented that more complex protocols. Specific
+stores of serializes/deserializers are bound to the target/receiver "Party" of the exchanged data, for instance: 
+- A protocol that supports a kind of Dictionary-based compression.
+- A protocol that can benefit or requires the knowledge of the model of the IPoco types before deserializing (optimized binary 
+  protocol).
+- A protocol that can adapt its behavior based on a "versioning schema" and is able serialize/deserialize based on "previous model"
+  of the data. 
+
+All these crazy things can be implemented by managing a store by "Party" that can memorize and use the required knowledge
+(and is able to talk to the Party).
+
+> Meaning that this is doable doesn't mean that this is done :).
+
+### Code Generated pattern
+
+Protocols can be implemented by generated code (following the "Package First" approach). When it's the case,
+the implementation should follow the following pattern:
+
+The first step it to give serialization/deserialization capabilities to IPoco itself through extension methods.
+By installing a CK.Poco.PE.XXX package in a project, at least the 3 following extension methods appear:
+- `IPoco.WriteXXX( ... )`
+- `T? IPocoFactory<T>.ReadXXX<T>( ... )`
+- `IPoco? PocoDirectory.ReadXXX( ... )`
+
+Actual parameters of these methods are Protocol dependent. `CK.Poco.PE.Json` for instance, brings these extensions:
+- `IPoco.WriteJson( Utf8JsonWriter writer, bool withType = true )`
+- `T? IPocoFactory<T>.ReadJson<T>( ref Utf8JsonReader reader )`
+- `IPoco? PocoDirectory.ReadJson( ref Utf8JsonReader reader )`
+
+This package offers more extension methods (helpers) to ease the use of the API like reading from a stream, a string, etc.,
+but these 3 methods are the core of the Exchange specification. This enables a lot of optimizations and versatility
+since any kind of parameters can be used.
+
+The second (optional) step is to implement one or more one `IPocoImporter` and `IPocoExporter` that are basically
+adapters from `Stream` to whatever is needed to serialize/deserialize the IPoco types.
+Their `ProtocolName` embeds/defines/summarizes/describes the "options" used to serialize/deserialize if any.
+
+
