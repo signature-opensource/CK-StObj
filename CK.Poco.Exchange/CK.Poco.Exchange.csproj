@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <Description>
-Offers Json serialization/deserialization support to IPoco.    
+      Defines the IPocoSerializer/IPocoDeserializer, IPocoImporter/IPocoExpporter interfaces and PocoExchangeRegistry auto service.
     </Description>
   </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
   </ItemGroup>
+
 </Project>
