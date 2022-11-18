@@ -26,7 +26,4 @@
       <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Poco\PocoExchange\" />
-  </ItemGroup>
 </Project>

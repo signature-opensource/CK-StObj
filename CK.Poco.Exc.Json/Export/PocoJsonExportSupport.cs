@@ -11,7 +11,7 @@ namespace CK.Core
     /// <summary>
     /// Supports Json serialization for <see cref="IPoco"/> types.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.Json.PocoJsonExportImpl, CK.Poco.Exc.Json.Engine" )]
+    [ContextBoundDelegation( "CK.Setup.PocoJson.PocoJsonExportImpl, CK.Poco.Exc.Json.Engine" )]
     public static class PocoJsonExportSupport
     {
         /// <summary>
