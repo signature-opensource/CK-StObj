@@ -76,7 +76,7 @@ namespace CK.Setup
         /// <param name="types">Set of types to register.</param>
         public void RegisterTypes( IActivityMonitor monitor, IEnumerable<Type> types )
         {
-            if( types == null ) throw new ArgumentNullException( "types" );
+            Throw.CheckNotNullArgument( types );
             foreach( var t in types )
             {
                 if( t != null && t != typeof( object ) ) RegisterType( monitor, t );
@@ -125,7 +125,7 @@ namespace CK.Setup
         public bool RegisterClass( IActivityMonitor monitor, Type c )
         {
             Throw.CheckArgument( c?.IsClass is true );
-            return c != typeof( object ) ? DoRegisterClass( monitor, c, out _, out _ ) : false;
+            return c != typeof( object ) && DoRegisterClass( monitor, c, out _, out _ );
         }
 
         bool DoRegisterClass( IActivityMonitor monitor, Type t, out RealObjectClassInfo? objectInfo, out AutoServiceClassInfo? serviceInfo )
@@ -306,7 +306,7 @@ namespace CK.Setup
                     List<Type> ambiguousPath = new List<Type>() { newOne.Type };
                     ambiguousPath.AddRange( deepestConcretes.Select( m => m.Item1.RealObjectType.Type ) );
 
-                    if( classAmbiguities == null ) classAmbiguities = new List<IReadOnlyList<Type>>();
+                    classAmbiguities ??= new List<IReadOnlyList<Type>>();
                     classAmbiguities.Add( ambiguousPath.ToArray() );
                 }
             }

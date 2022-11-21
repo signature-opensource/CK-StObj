@@ -31,14 +31,17 @@ namespace CK.Setup
         public IReadOnlySet<IPocoType> LastVisited => _visited;
 
         /// <summary>
-        /// Starts a visit from type. This resets the <see cref="LastVisited"/>.
+        /// Starts a visit from type. This resets the <see cref="LastVisited"/> by default.
         /// </summary>
         /// <param name="t">The type to visit.</param>
         /// <param name="monitor">The monitor to use.</param>
+        /// <param name="resetLastVisited">False to keep the current <see cref="LastVisited"/>.</param>
         /// <returns>The <see cref="LastVisited"/>.</returns>
-        public IReadOnlySet<IPocoType> VisitRoot( IActivityMonitor monitor, IPocoType t )
+        public IReadOnlySet<IPocoType> VisitRoot( IActivityMonitor monitor, IPocoType t, bool resetLastVisited = true )
         {
-            _visited.Clear();
+            if( resetLastVisited ) _visited.Clear();
+            else if( _visited.Contains( t ) ) return _visited;
+
             OnStartVisit( monitor, t );
             Visit( monitor, t );
             return _visited;

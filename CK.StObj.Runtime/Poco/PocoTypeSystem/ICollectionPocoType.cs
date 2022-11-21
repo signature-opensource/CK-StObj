@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using static CK.Setup.IPocoType;
 
 namespace CK.Setup
 {
@@ -9,7 +10,7 @@ namespace CK.Setup
     public interface ICollectionPocoType : IPocoType
     {
         /// <summary>
-        /// Gets the generic parameters or array element type.
+        /// Gets the generic parameters or the array element type.
         /// </summary>
         IReadOnlyList<IPocoType> ItemTypes { get; }
 

@@ -42,7 +42,7 @@ namespace CK.Testing
 
         StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( Func<Type, bool>? typeFilter ) => DoCreateStObjCollector( typeFilter );
 
-        StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
+        static StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
         {
             return new StObjCollector( new SimpleServiceContainer(),
                                        typeFilter: typeFilter != null ? new TypeFilter( typeFilter ) : null );

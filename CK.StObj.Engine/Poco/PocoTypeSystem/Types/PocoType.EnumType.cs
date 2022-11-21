@@ -16,7 +16,7 @@ namespace CK.Setup
             return new EnumType( monitor, s, tNotNull, tNull, underlyingType );
         }
 
-        internal sealed class EnumType : PocoType, IEnumPocoType
+        internal sealed class EnumType : PocoType, IEnumPocoType, IPocoType.ITypeRef
         {
             sealed class Null : NullValueType, IEnumPocoType
             {
@@ -33,7 +33,10 @@ namespace CK.Setup
 
                 IEnumPocoType IEnumPocoType.Nullable => this;
             }
-            DefaultValueInfo _defInfo;
+
+            readonly IPocoType _underlyingType;
+            IPocoType.ITypeRef? _nextRef;
+            readonly DefaultValueInfo _defInfo;
 
             public EnumType( IActivityMonitor monitor, PocoTypeSystem s, Type tNotNull, Type tNull, IPocoType underlyingType )
                 : base( s,
@@ -42,7 +45,9 @@ namespace CK.Setup
                         PocoTypeKind.Enum,
                         t => new Null( t, tNull ) )
             {
-                UnderlyingType = underlyingType;
+                _underlyingType = underlyingType;
+                Debug.Assert( underlyingType.Kind == PocoTypeKind.Basic );
+                _nextRef = ((PocoType)underlyingType.NonNullable).AddBackRef( this );
                 _defInfo = ComputeDefaultValueInfo( monitor, tNotNull );
             }
 
@@ -70,7 +75,18 @@ namespace CK.Setup
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
 
-            public IPocoType UnderlyingType { get; }
+            public IPocoType UnderlyingType => _underlyingType;
+
+            /// <summary>
+            /// At this type level, this is not because a basic type becomes (weirdly!) no more exchangeable
+            /// that an enumeration must no more be exchangeable.
+            /// It's up to exchangeable protocols to consider whether an enumeration must not be exchangeable
+            /// if its underlying type is not.
+            /// </summary>
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            {
+                Debug.Assert( r.Type == _underlyingType );
+            }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
 
@@ -78,6 +94,13 @@ namespace CK.Setup
 
             IEnumPocoType IEnumPocoType.NonNullable => this;
 
+            IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRef;
+
+            IPocoType IPocoType.ITypeRef.Owner => this;
+
+            IPocoType IPocoType.ITypeRef.Type => _underlyingType;
+
+            int IPocoType.ITypeRef.Index => 0;
         }
     }
 

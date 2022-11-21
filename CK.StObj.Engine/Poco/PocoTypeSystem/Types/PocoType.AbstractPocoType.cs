@@ -6,27 +6,30 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace CK.Setup
 {
     partial class PocoType
     {
-        internal static AbstractPocoType1 CreateAbstractPoco( PocoTypeSystem s,
+        internal static AbstractPocoType1 CreateAbstractPoco( IActivityMonitor monitor,
+                                                              PocoTypeSystem s,
                                                               Type tAbstract,
                                                               int abstractCount,
                                                               IReadOnlyList<IPocoType> abstractAndPrimary )
         {
             Debug.Assert( abstractAndPrimary.Take(abstractCount).All( t => t is IAbstractPocoType ) );
             Debug.Assert( abstractAndPrimary.Skip(abstractCount).All( t => t is IPrimaryPocoType ) );
-            return new AbstractPocoType1( s, tAbstract, abstractCount, abstractAndPrimary );
+            return new AbstractPocoType1( monitor, s, tAbstract, abstractCount, abstractAndPrimary );
         }
 
-        internal static AbstractPocoType2 CreateAbstractPoco( PocoTypeSystem s,
+        internal static AbstractPocoType2 CreateAbstractPoco( IActivityMonitor monitor,
+                                                              PocoTypeSystem s,
                                                               Type tAbstract,
                                                               IReadOnlyList<IAbstractPocoType> abstracts,
                                                               IReadOnlyList<IPrimaryPocoType> primaries )
         {
-            return new AbstractPocoType2( s, tAbstract, abstracts, primaries );
+            return new AbstractPocoType2( monitor, s, tAbstract, abstracts, primaries );
         }
 
         sealed class NullAbstractPoco : NullReferenceType, IAbstractPocoType
@@ -48,17 +51,19 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => NonNullable;
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => this;
+            IOneOfPocoType IOneOfPocoType.Nullable => this;
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => NonNullable;
+            IOneOfPocoType IOneOfPocoType.NonNullable => NonNullable;
         }
 
         internal sealed class AbstractPocoType1 : PocoType, IAbstractPocoType
         {
             readonly IReadOnlyList<IPocoType> _abstractAndPrimary;
             readonly int _abstractCount;
+            int _exchangeableCount;
 
-            public AbstractPocoType1( PocoTypeSystem s,
+            public AbstractPocoType1( IActivityMonitor monitor,
+                                      PocoTypeSystem s,
                                       Type tAbstract,
                                       int abstractCount,
                                       IReadOnlyList<IPocoType> abstractAndPrimary )
@@ -66,6 +71,29 @@ namespace CK.Setup
             {
                 _abstractAndPrimary = abstractAndPrimary;
                 _abstractCount = abstractCount;
+                int exchangeableCount = 0;
+                for( int i = 0; i < abstractAndPrimary.Count; i++ )
+                {
+                    IPocoType t = abstractAndPrimary[i];
+                    _ = new PocoTypeRef( this, t, i );
+                    if( t.IsExchangeable ) ++exchangeableCount;
+                }
+                if( (_exchangeableCount = exchangeableCount) == 0 )
+                {
+                    SetNotExchangeable( monitor, "no exchangeable Poco exist that implement it." );
+                }
+            }
+
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            {
+                if( IsExchangeable )
+                {
+                    Debug.Assert( r.Owner == this && _abstractAndPrimary.Contains( r.Type ) );
+                    if( --_exchangeableCount == 0 )
+                    {
+                        SetNotExchangeable( monitor, "no more exchangeable Poco implement it." );
+                    }
+                }
             }
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
@@ -78,7 +106,7 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary.Skip( _abstractCount ).Append( this );
+            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary;
 
             public override bool IsWritableType( IExtNullabilityInfo type )
             {
@@ -86,17 +114,19 @@ namespace CK.Setup
                         && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
             }
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => Nullable;
+            IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => this;
+            IOneOfPocoType IOneOfPocoType.NonNullable => this;
         }
 
         internal sealed class AbstractPocoType2 : PocoType, IAbstractPocoType
         {
             readonly IReadOnlyList<IAbstractPocoType> _abstracts;
             readonly IReadOnlyList<IPrimaryPocoType> _primaries;
+            int _exchangeableCount;
 
-            public AbstractPocoType2( PocoTypeSystem s,
+            public AbstractPocoType2( IActivityMonitor monitor,
+                                      PocoTypeSystem s,
                                       Type tAbstract,
                                       IReadOnlyList<IAbstractPocoType> abstracts,
                                       IReadOnlyList<IPrimaryPocoType> primaries )
@@ -104,6 +134,36 @@ namespace CK.Setup
             {
                 _abstracts = abstracts;
                 _primaries = primaries;
+                int exchanchableCount = 0;
+                int counAbstract = abstracts.Count;
+                for( int i = 0; i < counAbstract; i++ )
+                {
+                    IAbstractPocoType t = abstracts[i];
+                    _ = new PocoTypeRef( this, t, i );
+                    if( t.IsExchangeable ) ++exchanchableCount;
+                }
+                for( int i = 0; i < primaries.Count; i++ )
+                {
+                    IPrimaryPocoType t = primaries[i];
+                    _ = new PocoTypeRef( this, t, counAbstract + i );
+                    if( t.IsExchangeable ) ++exchanchableCount;
+                }
+                if( (_exchangeableCount = exchanchableCount) == 0 )
+                {
+                    SetNotExchangeable( monitor, "no exchangeable Poco implement it." );
+                }
+            }
+
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            {
+                if( IsExchangeable )
+                {
+                    Debug.Assert( r.Owner == this && _abstracts.Contains( r.Type ) || _primaries.Contains( r.Type ) );
+                    if( --_exchangeableCount == 0 )
+                    {
+                        SetNotExchangeable( monitor, "no more exchangeable Poco implement it." );
+                    }
+                }
             }
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
@@ -116,7 +176,7 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => _primaries;
+            public IEnumerable<IPocoType> AllowedTypes => ((IEnumerable<IPocoType>)_abstracts).Concat( _primaries );
 
             public override bool IsWritableType( IExtNullabilityInfo type )
             {
@@ -124,9 +184,9 @@ namespace CK.Setup
                        && (Type.IsAssignableFrom( type.Type ) || _primaries.Any( t => t.IsWritableType( type ) ));
             }
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => Nullable;
+            IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => this;
+            IOneOfPocoType IOneOfPocoType.NonNullable => this;
         }
 
     }

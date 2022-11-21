@@ -2,7 +2,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Field of <see cref="IPrimaryPocoType"/>.
-    /// Note that when this <see cref="IPocoField.Type"/> is a <see cref="PocoTypeKind.AnonymousRecord"/>
+    /// When this <see cref="IPocoType.ITypeRef.Type"/> is a <see cref="PocoTypeKind.AnonymousRecord"/>
     /// or a <see cref="PocoTypeKind.Record"/> this is a ref property.
     /// </summary>
     public interface IPrimaryPocoField : IPocoField

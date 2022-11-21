@@ -42,14 +42,6 @@ namespace CK.Setup
         IExtEventInfo Create( EventInfo eventInfo );
 
         /// <summary>
-        /// Creates a <see cref="IExtNullabilityInfo" /> for type that must be non generic type nor an array.
-        /// </summary>
-        /// <param name="nonGenericOrArrayType">The type.</param>
-        /// <param name="isNullable">True for a nullable information, false for a non null one.</param>
-        /// <returns>The nullability info.</returns>
-        IExtNullabilityInfo CreateSimpleNullabilityInfo( Type nonGenericOrArrayType, bool isNullable );
-
-        /// <summary>
         /// Obtains the <see cref="IExtNullabilityInfo" /> for the given <see cref="ParameterInfo" />.
         /// See <see cref="NullabilityInfoContext.Create(ParameterInfo)"/>.
         /// </summary>

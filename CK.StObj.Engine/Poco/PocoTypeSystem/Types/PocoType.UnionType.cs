@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using static CK.CodeGen.TupleTypeName;
+using System.Threading;
 
 namespace CK.Setup
 {
@@ -25,7 +27,7 @@ namespace CK.Setup
                 _hash = h.ToHashCode();
             }
 
-            public bool Equals( KeyUnionTypes? other ) => other != null ? _types.SequenceEqual( other._types ) : false;
+            public bool Equals( KeyUnionTypes? other ) => other != null && _types.SequenceEqual( other._types );
 
             public override bool Equals( object? obj ) => Equals( obj as KeyUnionTypes );
 
@@ -36,7 +38,7 @@ namespace CK.Setup
                                                PocoTypeSystem s,
                                                IPocoType[] allowedTypes )
         {
-            return new UnionType( s, allowedTypes );
+            return new UnionType( monitor, s, allowedTypes );
         }
 
         internal sealed class UnionType : PocoType, IUnionPocoType
@@ -52,16 +54,17 @@ namespace CK.Setup
 
                 public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
-                IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => NonNullable;
+                IOneOfPocoType IOneOfPocoType.NonNullable => NonNullable;
                 IUnionPocoType IUnionPocoType.NonNullable => NonNullable;
 
-                IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => this;
+                IOneOfPocoType IOneOfPocoType.Nullable => this;
                 IUnionPocoType IUnionPocoType.Nullable => this;
             }
-            IReadOnlyList<IPocoType> _allowedTypes;
-            DefaultValueInfo _defInfo;
 
-            public UnionType( PocoTypeSystem s, IPocoType[] allowedTypes )
+            readonly IReadOnlyList<IPocoType> _allowedTypes;
+            readonly DefaultValueInfo _defInfo;
+
+            public UnionType( IActivityMonitor monitor, PocoTypeSystem s, IPocoType[] allowedTypes )
                 : base( s,
                         typeof(object),
                         "object",
@@ -71,6 +74,27 @@ namespace CK.Setup
                 _allowedTypes = allowedTypes;
                 // Finds the first type that has a non-disallowed default.
                 _defInfo = _allowedTypes.Select( t => t.DefaultValueInfo ).FirstOrDefault( d => !d.IsDisallowed );
+                // Sets the initial IsExchangeable status.
+                bool initialIsExchangeable = false;
+                for( int i = 0; i < allowedTypes.Length; i++ )
+                {
+                    var t = allowedTypes[i];
+                    _ = new PocoTypeRef( this, t, i );
+                    initialIsExchangeable |= t.IsExchangeable;
+                }
+                // Sets the initial IsExchangeable status.
+                if( !initialIsExchangeable )
+                {
+                    SetNotExchangeable( monitor, "none of its types are exchangeable." );
+                }
+            }
+
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            {
+                if( IsExchangeable && !_allowedTypes.Any( t => t.IsExchangeable ) )
+                {
+                    SetNotExchangeable( monitor, $"its last type '{r.Type}' is not exchangeable." );
+                }
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
@@ -82,12 +106,12 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoType> AllowedTypes => _allowedTypes;
 
-            IEnumerable<IPocoType> IOneOfPocoType<IPocoType>.AllowedTypes => _allowedTypes;
+            IEnumerable<IPocoType> IOneOfPocoType.AllowedTypes => _allowedTypes;
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.Nullable => Nullable;
+            IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
             IUnionPocoType IUnionPocoType.Nullable => Nullable;
 
-            IOneOfPocoType<IPocoType> IOneOfPocoType<IPocoType>.NonNullable => this;
+            IOneOfPocoType IOneOfPocoType.NonNullable => this;
             IUnionPocoType IUnionPocoType.NonNullable => this;
 
 

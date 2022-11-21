@@ -3,6 +3,7 @@ using CK.Poco.Exc.Json.Export;
 using CK.Setup;
 using System;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Xml.Schema;
 
@@ -11,7 +12,7 @@ namespace CK.Core
     /// <summary>
     /// Supports Json serialization for <see cref="IPoco"/> types.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.PocoJson.PocoJsonExportImpl, CK.Poco.Exc.Json.Engine" )]
+    [ContextBoundDelegation( "CommonImpl, CK.Poco.Exc.Json.Engine" )]
     public static class PocoJsonExportSupport
     {
         /// <summary>
@@ -49,6 +50,17 @@ namespace CK.Core
             Throw.CheckNotNullArgument( writer );
             if( o == null ) writer.WriteNullValue();
             else ((IWriter)o).Write( writer, withType, options );
+        }
+
+        /// <summary>
+        /// Throws a <see cref="JsonException"/>.
+        /// </summary>
+        /// <param name="writer">This writer.</param>
+        /// <param name="message">The exception message.</param>
+        [DoesNotReturn]
+        public static void ThrowJsonException( this Utf8JsonWriter writer, string message )
+        {
+            throw new JsonException( $"{message} - {writer.BytesCommitted} committed bytes, current depth is {writer.CurrentDepth}." );
         }
     }
 }

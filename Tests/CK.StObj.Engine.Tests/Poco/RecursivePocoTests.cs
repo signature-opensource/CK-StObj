@@ -1,9 +1,11 @@
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
@@ -82,7 +84,12 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void cycle_detection_is_independent_of_registration_order()
         {
-            var types = new[] { typeof( ICycleErrorConsumer ), typeof( ICycleErrorConsumerIntermediate ), typeof( ICycleErrorA ), typeof( ICycleErrorB ), typeof( ICycleErrorC ), typeof( ICycleErrorD ) };
+            var types = new[] { typeof( ICycleErrorConsumer ),
+                                typeof( ICycleErrorConsumerIntermediate ),
+                                typeof( ICycleErrorA ),
+                                typeof( ICycleErrorB ),
+                                typeof( ICycleErrorC ),
+                                typeof( ICycleErrorD ) };
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
             Array.Reverse( types );
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
@@ -106,7 +113,24 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco: " );
         }
 
+        public interface IHoldRec : IPoco
+        {
+            public record struct Rec( IList<Rec> R, int A );
 
+            ref Rec P { get; }
+        }
+
+        [Test]
+        public void recursive_use_of_named_record_is_handled()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IHoldRec ) );
+            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var tRec = ts.FindByType( typeof( IHoldRec.Rec ) ) as IRecordPocoType;
+            Debug.Assert( tRec != null );
+            var list = tRec.Fields[0].Type as ICollectionPocoType;
+            Debug.Assert( list != null );
+            list.ItemTypes[0].Should().Be( tRec );
+        }
 
     }
 }

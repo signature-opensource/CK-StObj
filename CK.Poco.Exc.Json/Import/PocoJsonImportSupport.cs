@@ -11,7 +11,6 @@ namespace CK.Core
     /// <summary>
     /// Supports Json deserialization for <see cref="IPoco"/> types.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.PocoJson.PocoJsonImportImpl, CK.Poco.Exc.Json.Engine" )]
     public static class PocoJsonImportSupport
     {
         /// <summary>

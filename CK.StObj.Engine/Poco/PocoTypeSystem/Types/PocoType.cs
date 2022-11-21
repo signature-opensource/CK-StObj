@@ -3,30 +3,40 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Threading;
+using static CK.Setup.IPocoType;
 
 namespace CK.Setup
 {
     partial class PocoType : IPocoType
     {
-        AnnotationSetImpl _annotations;
         readonly IPocoType _nullable;
+        readonly Type _type;
+        readonly string _csharpName;
+        ITypeRef? _firstRef;
+        AnnotationSetImpl _annotations;
+        readonly int _index;
+        readonly PocoTypeKind _kind;
+        bool _isExchangeable;
 
         class NullReferenceType : IPocoType
         {
+            readonly IPocoType _nonNullable;
+            readonly string _csharpName;
             AnnotationSetImpl _annotations;
 
             public NullReferenceType( IPocoType notNullable )
             {
                 Debug.Assert( !notNullable.Type.IsValueType );
-                NonNullable = notNullable;
-                CSharpName = notNullable.CSharpName + '?';
+                _nonNullable = notNullable;
+                _csharpName = notNullable.CSharpName + '?';
             }
 
             public int Index => NonNullable.Index + 1;
 
             public bool IsNullable => true;
 
-            public string CSharpName { get; }
+            public string CSharpName => _csharpName;
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
@@ -36,11 +46,15 @@ namespace CK.Setup
 
             public IPocoType Nullable => this;
 
-            public IPocoType NonNullable { get; }
+            public IPocoType NonNullable => _nonNullable;
 
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
             public bool IsAbstract => NonNullable.IsAbstract;
+
+            public ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+
+            public bool IsExchangeable => NonNullable.IsExchangeable;
 
             public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
@@ -78,6 +92,9 @@ namespace CK.Setup
 
         class NullValueType : IPocoType
         {
+            readonly IPocoType _nonNullable;
+            readonly string _csharpName;
+            readonly Type _type;
             AnnotationSetImpl _annotations;
 
             public NullValueType( IPocoType notNullable, Type type )
@@ -87,30 +104,34 @@ namespace CK.Setup
                               && !notNullable.Type.IsAssignableFrom( type )
                               && type.IsAssignableFrom( notNullable.Type ) );
 
-                NonNullable = notNullable;
-                Type = type;
-                CSharpName = notNullable.CSharpName + '?';
+                _nonNullable = notNullable;
+                _type = type;
+                _csharpName = notNullable.CSharpName + '?';
             }
 
             public int Index => NonNullable.Index + 1;
 
             public bool IsNullable => true;
 
-            public string CSharpName { get; }
+            public string CSharpName => _csharpName;
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
-            public Type Type { get; }
+            public Type Type => _type;
 
             public PocoTypeKind Kind => NonNullable.Kind;
 
             public IPocoType Nullable => this;
 
-            public IPocoType NonNullable { get; }
+            public IPocoType NonNullable => _nonNullable;
 
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
             public bool IsAbstract => NonNullable.IsAbstract;
+
+            public ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+
+            public bool IsExchangeable => NonNullable.IsExchangeable;
 
             public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
@@ -144,29 +165,30 @@ namespace CK.Setup
                             Type notNullable,
                             string csharpName,
                             PocoTypeKind kind,
-                            Func<PocoType,IPocoType> nullFactory )
+                            Func<PocoType, IPocoType> nullFactory )
         {
             Debug.Assert( !notNullable.IsValueType || System.Nullable.GetUnderlyingType( notNullable ) == null );
             Debug.Assert( !csharpName.EndsWith( '?' ) );
             // We register in the AllTypes list only: key for cache is much more complex
             // and is managed externally.
-            Index = s.AllTypes.Count;
-            Type = notNullable;
-            CSharpName = csharpName;
-            Kind = kind;
+            _index = s.AllTypes.Count;
+            _type = notNullable;
+            _csharpName = csharpName;
+            _kind = kind;
+            _isExchangeable = true;
             _nullable = nullFactory( this );
             s.AddNew( this );
         }
 
-        public int Index { get; }
+        public int Index => _index;
 
-        public Type Type { get; }
+        public Type Type => _type;
 
-        public PocoTypeKind Kind { get; }
+        public PocoTypeKind Kind => _kind;
 
         public bool IsNullable => false;
 
-        public string CSharpName { get; }
+        public string CSharpName => _csharpName;
 
         public bool IsPurelyGeneratedType => Type == IDynamicAssembly.PurelyGeneratedType;
 
@@ -180,18 +202,61 @@ namespace CK.Setup
             get
             {
                 Debug.Assert( Kind == PocoTypeKind.Any
-                              || (Kind == PocoTypeKind.Basic && !(Type == typeof(string) || Type == typeof(DateTime)))
+                              || (Kind == PocoTypeKind.Basic && !(Type == typeof( string ) || Type == typeof( DateTime )))
                               || Kind == PocoTypeKind.AbstractIPoco, "All other PocoType override this." );
 
                 return Kind == PocoTypeKind.Basic ? DefaultValueInfo.Allowed : DefaultValueInfo.Disallowed;
             }
         }
-        
+
         public IPocoType Nullable => _nullable;
 
         public IPocoType NonNullable => this;
 
         public virtual bool IsAbstract => Kind == PocoTypeKind.Any || Kind == PocoTypeKind.AbstractIPoco;
+
+        public virtual bool IsExchangeable => _isExchangeable;
+
+        internal void SetNotExchangeable( IActivityMonitor monitor, string reason )
+        {
+            Debug.Assert( _isExchangeable );
+            using( monitor.OpenInfo( $"{ToString()} is not exchangeable: {reason}" ) )
+            {
+                _isExchangeable = false;
+                var r = _firstRef;
+                while( r != null )
+                {
+                    ((PocoType)r.Owner).OnNoMoreExchangeable( monitor, r );
+                    r = r.NextRef;
+                }
+            }
+        }
+
+        /// <summary>
+        /// By default propagates the Not Exchangeable to this type (this works for Collections).
+        /// This must obviously be specialized by types.
+        /// </summary>
+        protected virtual void OnNoMoreExchangeable( IActivityMonitor monitor, ITypeRef r )
+        {
+            Debug.Assert( _kind != PocoTypeKind.Any, "Object doesn't track its back references." );
+            Debug.Assert( _kind != PocoTypeKind.Basic, "Basic types have no back references." );
+            if( _isExchangeable )
+            {
+                SetNotExchangeable( monitor, $"'{r.Type}' is not exchangeable." );
+            }
+        }
+
+        public ITypeRef? FirstBackReference => _firstRef;
+
+        internal ITypeRef? AddBackRef( ITypeRef r )
+        {
+            Debug.Assert( r != null );
+            Debug.Assert( r.Type == null || r.Type.Kind != PocoTypeKind.Any,
+                "Type may not be set (for recursive named record), but if it is, it can't be the Any type." );
+            var f = _firstRef;
+            _firstRef = r;
+            return f;
+        }
 
         public virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
         {

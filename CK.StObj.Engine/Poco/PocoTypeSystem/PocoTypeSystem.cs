@@ -28,6 +28,7 @@ namespace CK.Setup
         readonly Dictionary<object, IPocoType> _cache;
         readonly PocoType _objectType;
         readonly PocoType _stringType;
+        // Contains the not nullable types (PocoType instances are the non nullable types).
         readonly List<PocoType> _allTypes;
         readonly HalfTypeList _exposedAllTypes;
         readonly Stack<StringBuilder> _stringBuilderPool;
@@ -68,6 +69,8 @@ namespace CK.Setup
             _cache.Add( _stringType.Type, _stringType );
         }
 
+        public IPocoType ObjectType => _objectType;
+
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
 
         public IReadOnlyList<IPocoType> AllNonNullableTypes => _allTypes;
@@ -100,6 +103,17 @@ namespace CK.Setup
                 return result as IPrimaryPocoType;
             }
             return null;
+        }
+
+        public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )
+        {
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckArgument( type != null && type.Index < _exposedAllTypes.Count && _exposedAllTypes[type.Index] == type );
+            var t = (PocoType)type.NonNullable;
+            if( t.IsExchangeable )
+            {
+                t.SetNotExchangeable( monitor, "TypeSystem external call." );
+            }
         }
 
         public RegisterResult? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo )
@@ -222,7 +236,7 @@ namespace CK.Setup
                 }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
-                    result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.List, tI );
+                    result = PocoType.CreateCollection( monitor, this, t, typeName, PocoTypeKind.List, tI );
                     _cache.Add( typeName, result );
                 }
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
@@ -268,7 +282,7 @@ namespace CK.Setup
                 }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
-                    result = PocoType.CreateCollection( this, t, typeName, PocoTypeKind.HashSet, tI );
+                    result = PocoType.CreateCollection( monitor, this, t, typeName, PocoTypeKind.HashSet, tI );
                     _cache.Add( typeName, result );
                 }
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
@@ -322,7 +336,7 @@ namespace CK.Setup
                 }
                 if( !_cache.TryGetValue( typeName, out var result ) )
                 {
-                    result = PocoType.CreateDictionary( this, t, typeName, rtK.Value.PocoType, tV );
+                    result = PocoType.CreateDictionary( monitor, this, t, typeName, rtK.Value.PocoType, tV );
                     _cache.Add( typeName, result );
                 }
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
@@ -373,12 +387,11 @@ namespace CK.Setup
 
             string? regTypeName;
             var tE = rtE.Value.PocoType;
-            Debug.Assert( tE != null, "Even when ReadOnlyAbstraction will be implemented, there will always be a PocoType here since any read only will have trigger an error." );
             var typeName = tE.CSharpName + "[]";
             regTypeName = rtE.Value.HasRegCSharpName ? rtE.Value.RegCSharpName + "[]" : null;
             if( !_cache.TryGetValue( typeName, out var result ) )
             {
-                result = PocoType.CreateCollection( this, nType.Type, typeName, PocoTypeKind.Array, tE );
+                result = PocoType.CreateCollection( monitor, this, nType.Type, typeName, PocoTypeKind.Array, tE );
                 _cache.Add( typeName, result );
             }
             return new RegisterResult( nType.IsNullable ? result.Nullable : result,
@@ -446,6 +459,10 @@ namespace CK.Setup
             // The typeName of an anonymous record uses the
             // registered type names of its fields since a field exposes its
             // FieldTypeCSharpName that is the registered type name.
+            //
+            // Here we can resolve the field types without fear of infinite recursion: value tuples
+            // cannot be recursive by design.
+            //
             var b = StringBuilderPool.Get();
             b.Append( '(' );
             int idx = 0;
@@ -468,7 +485,7 @@ namespace CK.Setup
             var typeName = StringBuilderPool.GetStringAndReturn( b );
             if( !_cache.TryGetValue( typeName, out var exists ) )
             {
-                var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, true, fields );
+                var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, fields );
                 _cache.Add( typeName, exists = r );
             }
             return new RegisterResult( nType.IsNullable ? exists.Nullable : exists,
@@ -497,6 +514,12 @@ namespace CK.Setup
             // C#10 record struct are not decorated by any special attribute: we treat them like any other struct.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
             Debug.Assert( tNotNull.IsValueType );
+
+            Debug.Assert( !_cache.ContainsKey( tNotNull ), "OnValueType found it." );
+
+            var typeName = tNotNull.ToCSharpName();
+            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, null );
+            _cache.Add( tNotNull, r );
 
             // Currently allows only a single constructor. This is not good: we should allow deserialization constructor...
             // We should try to consider a constructor whose parameter names are the fields/property names only (and only them).
@@ -536,9 +559,7 @@ namespace CK.Setup
                 if( f == null ) return null;
                 fields[idx++] = f;
             }
-            var typeName = tNotNull.ToCSharpName();
-            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, false, fields );
-            _cache.Add( tNotNull, r );
+            r.SetFields( monitor, this, fields );
             return new RegisterResult( nType.IsNullable ? r.Nullable : r,
                                        nType.IsNullable ? typeName + "?" : typeName );
         }

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup
 {
@@ -18,10 +19,9 @@ namespace CK.Setup
                                                  Type tNotNull,
                                                  Type tNull,
                                                  string typeName,
-                                                 bool isAnonymous,
-                                                 RecordField[] fields )
+                                                 RecordField[]? anonymousFields )
         {
-            return new RecordType( monitor, s, tNotNull, tNull, typeName, isAnonymous, fields );
+            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields );
         }
 
         internal sealed class RecordType : PocoType, IRecordPocoType
@@ -49,28 +49,36 @@ namespace CK.Setup
 
                 ICompositePocoType ICompositePocoType.Nullable => this;
 
-                public bool RequiresInit => false;
             }
 
-            readonly RecordField[] _fields;
-            readonly DefaultValueInfo _defInfo;
+            [AllowNull] RecordField[] _fields;
+            DefaultValueInfo _defInfo;
 
             public RecordType( IActivityMonitor monitor,
                                PocoTypeSystem s,
                                Type tNotNull,
                                Type tNull,
                                string typeName,
-                               bool isAnonymous,
-                               RecordField[] fields )
+                               RecordField[]? anonymousFields )
                 : base( s,
                         tNotNull,
                         typeName,
-                        isAnonymous ? PocoTypeKind.AnonymousRecord : PocoTypeKind.Record,
+                        anonymousFields != null ? PocoTypeKind.AnonymousRecord : PocoTypeKind.Record,
                         t => new Null( t, tNull ) )
+            {
+                if( anonymousFields != null ) SetFields( monitor, s, anonymousFields );
+            }
+
+            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields )
             {
                 _fields = fields;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
+                // Sets the initial IsExchangeable status.
+                if( !_fields.Any( f => f.IsExchangeable ) )
+                {
+                    SetNotExchangeable( monitor, $"none of its {_fields.Length} fields are exchangeable." );
+                }
             }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
@@ -91,6 +99,17 @@ namespace CK.Setup
 
             IRecordPocoType IRecordPocoType.NonNullable => this;
 
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            {
+                Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
+                if( IsExchangeable )
+                {
+                    if( !_fields.Any( f => f.IsExchangeable ) )
+                    {
+                        SetNotExchangeable( monitor, $"its last field type '{r.Type}' is not exchangeable." );
+                    }
+                }
+            }
         }
 
     }

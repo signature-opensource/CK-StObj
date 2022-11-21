@@ -3,6 +3,7 @@ using CK.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -84,6 +85,18 @@ namespace CK.Setup
 
             public IReadOnlyList<IPrimaryPocoField> Fields => _fields;
 
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            {
+                Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
+                if( IsExchangeable )
+                {
+                    if( !_fields.Any( f => f.IsExchangeable ) )
+                    {
+                        SetNotExchangeable( monitor, $"its last field type '{r.Type}' becomes not exchangeable." );
+                    }
+                }
+            }
+
             internal bool SetFields( IActivityMonitor monitor,
                                      PocoTypeSystem.IStringBuilderPool sbPool,
                                      PrimaryPocoField[] fields )
@@ -96,6 +109,11 @@ namespace CK.Setup
                     return false;
                 }
                 _ctorCode = d.RequiresInit ? d.DefaultValue.ValueCSharpSource : String.Empty;
+                // Sets the initial IsExchangeable status.
+                if( !_fields.Any( f => f.IsExchangeable ) )
+                {
+                    SetNotExchangeable( monitor, $"none of its {_fields.Length} fields are exchangeable." );
+                }
                 return true;
             }
 

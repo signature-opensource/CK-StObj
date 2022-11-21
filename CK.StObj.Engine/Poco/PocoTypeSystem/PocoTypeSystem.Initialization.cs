@@ -62,12 +62,12 @@ namespace CK.Setup
             var closedAbstracts = new List<IAbstractPocoType>();
             foreach( var tInterface in abstractTypes )
             {
-                EnsureAbstract( poco, abstractTypes, tInterface, allAbstracts, closedAbstracts );
+                EnsureAbstract( monitor, poco, abstractTypes, tInterface, allAbstracts, closedAbstracts );
             }
             // Third, registers the IPoco and IClosedPoco full sets.
-            var all = PocoType.CreateAbstractPoco( this, typeof( IPoco ), allAbstracts.ToArray(), allPrimaries );
+            var all = PocoType.CreateAbstractPoco( monitor, this, typeof( IPoco ), allAbstracts.ToArray(), allPrimaries );
             _cache.Add( typeof( IPoco ), all );
-            var allClosed = PocoType.CreateAbstractPoco( this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
+            var allClosed = PocoType.CreateAbstractPoco( monitor, this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
             _cache.Add( typeof( IClosedPoco ), allClosed );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
             foreach( var p in allPrimaries )
@@ -126,7 +126,8 @@ namespace CK.Setup
             return success;
         }
 
-        IPocoType EnsureAbstract( IPocoDirectory poco,
+        IPocoType EnsureAbstract( IActivityMonitor monitor,
+                                  IPocoDirectory poco,
                                   IEnumerable<Type> abstractTypes,
                                   Type tAbstract,
                                   List<IAbstractPocoType> allAbstracts,
@@ -140,13 +141,13 @@ namespace CK.Setup
                 int i = 0;
                 foreach( var other in abstractSubTypes )
                 {
-                    subTypes[i++] = EnsureAbstract( poco, abstractTypes, other, allAbstracts, closedAbstracts );
+                    subTypes[i++] = EnsureAbstract( monitor, poco, abstractTypes, other, allAbstracts, closedAbstracts );
                 }
                 foreach( var f in families )
                 {
                     subTypes[i++] = _cache[f.PrimaryInterface.PocoInterface];
                 }
-                var a = PocoType.CreateAbstractPoco( this, tAbstract, abstractSubTypes.Count, subTypes );
+                var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes );
                 _cache.Add( tAbstract, result = a );
                 allAbstracts.Add( a );
                 if( typeof( IClosedPoco ).IsAssignableFrom( tAbstract ) ) closedAbstracts.Add( a );

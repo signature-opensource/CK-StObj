@@ -288,8 +288,11 @@ namespace CK.Setup
                     {
                         if( best.PocoType is ICollectionPocoType )
                         {
-                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {best.PocoType.Kind}, it must be a read only property: '{best.RegCSharpName} {p.Name} {{ get; }}'." );
-                            return false;
+                            if( best.PocoType.Kind != PocoTypeKind.Array )
+                            {
+                                monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {best.PocoType.Kind}, it must be a read only property: '{best.RegCSharpName} {p.Name} {{ get; }}'." );
+                                return false;
+                            }
                         }
                         if( p.Type.IsByRef )
                         {
@@ -354,7 +357,12 @@ namespace CK.Setup
                 var bestType = p.PropertyInfo.CanWrite ? best.PocoType : best.PocoType.Nullable;
                 if( !bestType.IsReadableType( nInfo ) )
                 {
-                    monitor.Error( $"Read only {p}: Type is not compatible with '{best.RegCSharpName} {_bestProperty.DeclaringType:C}.{_bestProperty.Name}'." );
+                    using( monitor.OpenError( $"Read only {p} has incompatible types." ) )
+                    {
+                        monitor.Trace( $"Property type: {p.TypeCSharpName}" );
+                        monitor.Trace( $"Implemented type: {best.PocoType}" );
+                        monitor.Trace( $"Implementation decided by: {_bestProperty.DeclaringType:C}.{_bestProperty.Name}" );
+                    }
                     return false;
                 }
                 return true;

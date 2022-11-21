@@ -13,6 +13,11 @@ namespace CK.Setup
     public interface IPocoTypeSystem
     {
         /// <summary>
+        /// Gets the "object" (<see cref="PocoTypeKind.Any"/>) type.
+        /// </summary>
+        IPocoType ObjectType { get; }
+
+        /// <summary>
         /// Gets all the registered types by their <see cref="IPocoType.Index"/>.
         /// This contains both nullable and non nullable types.
         /// </summary>
@@ -44,6 +49,18 @@ namespace CK.Setup
         /// <param name="i">The IPoco interface.</param>
         /// <returns>The primary poco type or null.</returns>
         IPrimaryPocoType? GetPrimaryPocoType( Type i );
+
+        /// <summary>
+        /// Forbids a type to be <see cref="IPocoType.IsExchangeable"/>. This
+        /// condemns all fields that depend on it to be no more <see cref="IPocoField.IsExchangeable"/>
+        /// and can subsequently also condemn other types if all their fields become not exchangeable.
+        /// <para>
+        /// The "object" (<see cref="PocoTypeKind.Any"/>) is necessarily exchangeable. 
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="type">The type to condemn.</param>
+        void SetNotExchangeable( IActivityMonitor monitor, IPocoType type );
 
         /// <summary>
         /// Captures a type registration result.

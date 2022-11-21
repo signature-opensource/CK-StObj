@@ -44,7 +44,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         [TestCase( true )]
         [TestCase( false )]
-        public void all_basic_types_roundtrip( bool mapNumericsToNumberAndBigInt )
+        public void all_basic_types_roundtrip( bool useSimplifiedTypes )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IAllBasicTypes ) ); ;
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
@@ -86,7 +86,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMin.PTimeSpan = TimeSpan.MinValue;
             nMin.PGuid = Guid.Empty;
 
-            var options = new PocoJsonExportOptions { MapNumericsToNumberAndBigInt = mapNumericsToNumberAndBigInt };
+            var options = new PocoJsonExportOptions { UseSimplifiedTypes = useSimplifiedTypes };
 
             var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, options, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(max) serialization: " + t ) );
             nMax2.Should().BeEquivalentTo( nMax );
@@ -119,7 +119,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
         [TestCase( true )]
         [TestCase( false )]
-        public void all_nullable_basic_types_roundtrip( bool mapNumericsToNumberAndBigInt )
+        public void all_nullable_basic_types_roundtrip( bool useSimplifiedTypes )
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IAllNullableBasicTypes ) ); ;
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
@@ -163,7 +163,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMin.PTimeSpan = TimeSpan.MinValue;
             nMin.PGuid = Guid.Empty;
 
-            var options = new PocoJsonExportOptions { MapNumericsToNumberAndBigInt = mapNumericsToNumberAndBigInt };
+            var options = new PocoJsonExportOptions { UseSimplifiedTypes = useSimplifiedTypes };
 
             var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, options, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(null) serialization: " + t ) );
             nNull2.Should().BeEquivalentTo( nNull );

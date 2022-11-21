@@ -9,15 +9,17 @@ namespace CK.Setup
 {
     sealed class RecordField : IRecordPocoField
     {
-        [AllowNull]
-        IPocoType _type;
-        [AllowNull]
-        PocoType.RecordType _owner;
-        [AllowNull]
-        string _fieldTypeName;
-        DefaultValueInfo _defInfo;
+        readonly static List<string> _itemNames = new List<string>();
 
-        static readonly List<string> _itemNames = new List<string>();
+        [AllowNull] IPocoType _type;
+        [AllowNull] PocoType.RecordType _owner;
+        [AllowNull] string _fieldTypeName;
+        IPocoType.ITypeRef? _nextRef;
+        readonly string _name;
+        readonly int _index;
+        DefaultValueInfo _defInfo;
+        readonly bool _isUnnamed;
+
         static string GetItemName( int index )
         {
             while( index >= _itemNames.Count ) _itemNames.Add( $"Item{_itemNames.Count + 1}" );
@@ -26,15 +28,15 @@ namespace CK.Setup
 
         public RecordField( int index, string? name, IPocoFieldDefaultValue? defaultValue = null )
         {
-            Index = index;
+            _index = index;
             if( name == null )
             {
-                Name = GetItemName( index );
-                IsUnnamed = true;
+                _name = GetItemName( index );
+                _isUnnamed = true;
             }
             else
             {
-                Name = name;
+                _name = name;
             }
             if( defaultValue != null )
             {
@@ -42,23 +44,30 @@ namespace CK.Setup
             }
         }
 
-        public int Index { get; }
+        public int Index => _index;
 
-        public string Name { get; }
+        public string Name => _name;
 
-        public bool IsUnnamed { get; }
+        public bool IsUnnamed => _isUnnamed;
 
         public IPocoType Type => _type;
+
+        public bool IsExchangeable => _type.IsExchangeable;
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
         public ICompositePocoType Owner => _owner;
 
+        IPocoType IPocoType.ITypeRef.Owner => _owner;
+
         public string FieldTypeCSharpName => _fieldTypeName;
+
+        IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRef;
 
         internal void SetType( IPocoType t, string fieldTypeName )
         {
             Debug.Assert( _type == null && t != null );
+            _nextRef = ((PocoType)t.NonNullable).AddBackRef( this );
             _type = t;
             _fieldTypeName = fieldTypeName;
             if( _defInfo.IsDisallowed )

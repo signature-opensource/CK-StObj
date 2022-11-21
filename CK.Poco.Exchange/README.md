@@ -1,5 +1,8 @@
 # Poco Exchange
 
+This package defines abstractions related to serialization and deserialization of Poco. Poco are the **roots of serialization**,
+they bootstrap the serialization and deserialization process.
+
 ## Serializers and Deserializers
 Serialization and/or deserialization support are typically implemented in independent packages (the "Package First" approach)
 but of course nothing prevents a direct implementation in a specific solution.
@@ -93,10 +96,12 @@ Actual parameters of these methods are Protocol dependent. `CK.Poco.Exc.Json` fo
 - `T? IPocoFactory<T>.ReadJson<T>( ref Utf8JsonReader reader, PocoJsonImportOptions? options = null )`
 - `IPoco? PocoDirectory.ReadJson( ref Utf8JsonReader reader, PocoJsonImportOptions? options = null )`
 
-This package offers more extension methods (helpers) to ease the use of the API like reading from a stream, a string, etc.,
-but these 3 methods are the core of the Exchange specification. This enables a lot of optimizations and versatility
-since any kind of parameters can be used. For instance the CK.Poco.Exc.Json above is basically synchronous, no Read/WriteAsync
-are supported (because this is not easy to support), but it CAN be done.
+This package offers more extension methods (helpers) to ease the use of the API like reading from a `ReadOnlySpan<char>`,
+a `string`, etc., but these 3 methods are the core of the Exchange specification.
+
+This enables a lot of optimizations and versatility since any kind of parameters can be used.
+For instance the CK.Poco.Exc.Json above is basically synchronous, no Read/WriteAsync are supported (because this
+is not easy to support), but it CAN always be done.
 
 The second step is to implement one or more one `IPocoImporter` and `IPocoExporter` that are basically
 adapters from `Stream` to whatever is needed to serialize/deserialize the IPoco types.

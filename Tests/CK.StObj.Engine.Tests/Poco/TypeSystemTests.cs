@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Xml.Linq;
 using static CK.StObj.Engine.Tests.SimpleObjectsTests;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -289,4 +290,5 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
     }
+
 }

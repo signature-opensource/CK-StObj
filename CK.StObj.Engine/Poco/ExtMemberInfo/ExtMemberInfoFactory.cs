@@ -18,27 +18,26 @@ namespace CK.Setup
 
         public IExtParameterInfo Create( ParameterInfo parameterInfo )
         {
+            Throw.CheckNotNullArgument( parameterInfo );
             return new ExtMemberInfo( this, parameterInfo );
         }
 
         public IExtPropertyInfo Create( PropertyInfo propertyInfo )
         {
+            Throw.CheckNotNullArgument( propertyInfo );
             return new ExtMemberInfo( this, propertyInfo );
         }
 
         public IExtFieldInfo Create( FieldInfo fieldInfo )
         {
+            Throw.CheckNotNullArgument( fieldInfo );
             return new ExtMemberInfo( this, fieldInfo );
         }
 
         public IExtEventInfo Create( EventInfo eventInfo )
         {
+            Throw.CheckNotNullArgument( eventInfo );
             return new ExtMemberInfo( this, eventInfo );
-        }
-
-        public IExtNullabilityInfo CreateSimpleNullabilityInfo( Type nonGenericType, bool isNullable )
-        {
-            return new ExtNullabilityInfo( nonGenericType, isNullable );
         }
 
         public IExtNullabilityInfo CreateNullabilityInfo( ParameterInfo parameterInfo, bool useReadState = true )

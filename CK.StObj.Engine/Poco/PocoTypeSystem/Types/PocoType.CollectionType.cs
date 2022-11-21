@@ -7,27 +7,31 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace CK.Setup
 {
+
     partial class PocoType
     {
-        internal static CollectionType1 CreateCollection( PocoTypeSystem s,
+        internal static CollectionType1 CreateCollection( IActivityMonitor monitor,
+                                                          PocoTypeSystem s,
                                                           Type tCollection,
                                                           string typeName,
                                                           PocoTypeKind kind,
                                                           IPocoType itemType )
         {
-            return new CollectionType1( s, tCollection, typeName, kind, itemType );
+            return new CollectionType1( monitor, s, tCollection, typeName, kind, itemType );
         }
 
-        internal static DictionaryType CreateDictionary( PocoTypeSystem s,
-                                                          Type tCollection,
-                                                          string typeName,
-                                                          IPocoType itemType1,
-                                                          IPocoType itemType2 )
+        internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
+                                                         PocoTypeSystem s,
+                                                         Type tCollection,
+                                                         string typeName,
+                                                         IPocoType itemType1,
+                                                         IPocoType itemType2 )
         {
-            return new DictionaryType( s, tCollection, typeName, itemType1, itemType2 );
+            return new DictionaryType( monitor, s, tCollection, typeName, itemType1, itemType2 );
         }
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
@@ -47,12 +51,15 @@ namespace CK.Setup
         }
 
         // List, HashSet, Array.
-        internal sealed class CollectionType1 : PocoType, ICollectionPocoType, IReadOnlyList<IPocoType>
+        // This auto implements IReadOnlyList<IPocoType> and IPocoType.ITypeRef.
+        internal sealed class CollectionType1 : PocoType, ICollectionPocoType, IReadOnlyList<IPocoType>, IPocoType.ITypeRef
         {
             readonly IPocoType _itemType;
             readonly IPocoFieldDefaultValue _def;
+            readonly IPocoType.ITypeRef? _nextRef;
 
-            public CollectionType1( PocoTypeSystem s,
+            public CollectionType1( IActivityMonitor monitor,
+                                    PocoTypeSystem s,
                                     Type tCollection,
                                     string typeName,
                                     PocoTypeKind kind,
@@ -61,9 +68,15 @@ namespace CK.Setup
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
                 _itemType = itemType;
+                _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
                 _def = tCollection.IsArray
                         ? new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" )
                         : new FieldDefaultValue( $"new {CSharpName}()" );
+                // Sets the initial IsExchangeable status.
+                if( !itemType.IsExchangeable )
+                {
+                    SetNotExchangeable( monitor, $"since '{itemType}' is not." );
+                }
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( base.Nullable );
@@ -75,6 +88,17 @@ namespace CK.Setup
             ICollectionPocoType ICollectionPocoType.NonNullable => this;
 
             int IReadOnlyCollection<IPocoType>.Count => 1;
+
+            #region ITypeRef auto implementation
+            public IPocoType.ITypeRef? NextRef => _nextRef;
+
+            int IPocoType.ITypeRef.Index => 0;
+
+            IPocoType IPocoType.ITypeRef.Owner => this;
+
+            IPocoType IPocoType.ITypeRef.Type => _itemType;
+
+            #endregion
 
             public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
@@ -219,12 +243,15 @@ namespace CK.Setup
         }
 
         // Dictionary.
-        internal sealed class DictionaryType : PocoType, ICollectionPocoType
+        // Auto implements the IPocoType.ITypeRef for the Key. The Value uses a dedicated PocoTypeRef.
+        internal sealed class DictionaryType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
         {
             readonly IPocoType[] _itemTypes;
+            readonly IPocoType.ITypeRef? _nextRefKey;
             readonly IPocoFieldDefaultValue _def;
 
-            public DictionaryType( PocoTypeSystem s,
+            public DictionaryType( IActivityMonitor monitor,
+                                   PocoTypeSystem s,
                                    Type tCollection,
                                    string typeName,
                                    IPocoType keyType,
@@ -232,14 +259,35 @@ namespace CK.Setup
                 : base( s, tCollection, typeName, PocoTypeKind.Dictionary, t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
+                Debug.Assert( !keyType.IsNullable );
+                _nextRefKey = ((PocoType)keyType).AddBackRef( this );
+                var valueRef = new PocoTypeRef( this, valueType, 1 );
                 _def = new FieldDefaultValue( $"new {CSharpName}()" );
+                // Sets the initial IsExchangeable status.
+                if( !keyType.IsExchangeable ) OnNoMoreExchangeable( monitor, this );
+                else if( !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
             }
+
+            // Base OnNoMoreExchangeable method is fine here.
+            // protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( base.Nullable );
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
+
+            #region ITypeRef auto implementation for Key type.
+
+            IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRefKey;
+
+            int IPocoType.ITypeRef.Index => 0;
+
+            IPocoType IPocoType.ITypeRef.Owner => this;
+
+            IPocoType IPocoType.ITypeRef.Type => _itemTypes[0];
+            #endregion
+
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

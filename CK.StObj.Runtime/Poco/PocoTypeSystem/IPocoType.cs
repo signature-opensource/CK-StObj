@@ -1,4 +1,5 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
 
@@ -70,6 +71,64 @@ namespace CK.Setup
         /// or a <see cref="PocoTypeKind.UnionType"/> with only abstract variants.
         /// </summary>
         bool IsAbstract { get; }
+
+        /// <summary>
+        /// Captures a reference from a <see cref="Owner"/> to a <see cref="Type"/>
+        /// that is a linked node to another <see cref="NextRef"/> to the same type.
+        /// </summary>
+        public interface ITypeRef
+        {
+            /// <summary>
+            /// Next reference to the type.
+            /// </summary>
+            ITypeRef? NextRef { get; }
+
+            /// <summary>
+            /// Gets the owner of this type reference.
+            /// </summary>
+            IPocoType Owner { get; }
+
+            /// <summary>
+            /// Gets the referenced type.
+            /// </summary>
+            IPocoType Type { get; }
+
+            /// <summary>
+            /// Gets the index of this reference in the <see cref="Owner"/> dedicated list.
+            /// <list type="bullet">
+            ///     <item>
+            ///         For records and primary Poco, this is the <see cref="ICompositePocoType.Fields"/>.
+            ///         Indexes starts at 0 and are compact: this can be used to handle optimized serialization
+            ///         by index (MessagePack) rather than by name (Json).
+            ///         <para>
+            ///         The generated backing field is named <c>_v{Index}</c> in IPoco generated code.
+            ///         </para>
+            ///     </item>
+            ///     <item>
+            ///         For collections, this is the index in the <see cref="ICollectionPocoType.ItemTypes"/>.
+            ///     </item>
+            ///     <item>
+            ///         For union types, this is the index in the <see cref="IOneOfPocoType{T}.AllowedTypes"/>.
+            ///     </item>
+            /// </list>
+            /// </summary>
+            int Index { get; }
+        }
+
+        /// <summary>
+        /// Gets whether this type is exchangeable.
+        /// </summary>
+        bool IsExchangeable { get; }
+
+        /// <summary>
+        /// Gets the head of a linked list of the <see cref="IPocoField"/>, <see cref="ICollectionPocoType.IPocoTypeGenericArgument"/>
+        /// or <see cref="IOneOfPocoType{T}.AllowedTypes"/> that directly reference this type.
+        /// <para>
+        /// Nullability is erased, for types, only the non nullable form appears here (for fields, the <see cref="IPocoField.Type"/>
+        /// may of course be nullable).
+        /// </para>
+        /// </summary>
+        ITypeRef? FirstBackReference { get; }
 
         /// <summary>
         /// Gets whether the given type is the same as this one: either this <see cref="Type"/> and <see cref="IExtNullabilityInfo.Type"/> are

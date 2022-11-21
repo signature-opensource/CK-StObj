@@ -68,9 +68,9 @@ namespace CK.Setup
 
         ExtNullabilityInfo( Type t, IExtNullabilityInfo a, bool isNullable )
         {
-            Debug.Assert( !t.IsValueType && t.IsGenericType && t.GetGenericTypeDefinition().GenericTypeArguments.Length == 1 );
+            Debug.Assert( !t.IsValueType && t.IsGenericType && t.GenericTypeArguments.Length == 1 );
             _type = t;
-            _subTypes = a;
+            _subTypes = new[] { a };
             _isNullable = isNullable;
             _useReadState = true;
             _homogeneous = true;
@@ -165,7 +165,7 @@ namespace CK.Setup
             var t = e.Current.GetHomogeneousNullabilityInfo( monitor );
             if( t == null ) return null;
             longestTupleNames = e.Current.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault();
-            while( e.MoveNext() )
+            do
             {
                 var h = e.Current.GetHomogeneousNullabilityInfo( monitor );
                 if( h == null ) return null;
@@ -179,6 +179,7 @@ namespace CK.Setup
                 if( c == null ) return null;
                 t = c;
             }
+            while( e.MoveNext() );
             return t;
         }
 
