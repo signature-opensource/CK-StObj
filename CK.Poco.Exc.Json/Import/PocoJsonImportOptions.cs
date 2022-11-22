@@ -17,7 +17,7 @@ namespace CK.Poco.Exc.Json.Import
         ///     <item>The maximal Json depth is 64.</item>
         /// </list>
         /// </summary>
-        public readonly PocoJsonImportOptions Default = new PocoJsonImportOptions();
+        public static readonly PocoJsonImportOptions Default = new PocoJsonImportOptions();
 
         /// <summary>
         /// Initializes a new options.

@@ -8,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace CK.Setup.PocoJson
 {
-    public sealed class CommonImpl : CSCodeGeneratorType
+    public sealed class CommonImpl : ICSCodeGenerator
     {
         // We must give a chance to other generators to register new types (typically the result of Cris ICOmmand<TResult>).
         // We have to wait for all the PocoType to be registered, but how do we know that other generators are done with all
@@ -17,9 +17,9 @@ namespace CK.Setup.PocoJson
         // more new registrations are done.
         int _lastRegistrationCount;
 
-        public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
+        public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
         {
-            var typeSystem = c.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
+            var typeSystem = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
             _lastRegistrationCount = typeSystem.AllTypes.Count;
             monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );
             return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
@@ -40,14 +40,14 @@ namespace CK.Setup.PocoJson
 
         CSCodeGenerationResult GenerateAllCode( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystem typeSystem )
         {
-            var exchangedNames = new JsonTypeNameBuilder().Generate( monitor, typeSystem, false );
+            var nameMap = new JsonTypeNameBuilder().Generate( monitor, typeSystem, false );
 
             var pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
 
-            var export = new ExportCodeGenerator( pocoDirectory, typeSystem, c );
+            var export = new ExportCodeGenerator( pocoDirectory, nameMap, c );
             if( !export.Run( monitor ) ) return CSCodeGenerationResult.Failed;
 
-            var import = new ImportCodeGenerator( pocoDirectory, typeSystem, c );
+            var import = new ImportCodeGenerator( pocoDirectory, nameMap, c );
             if( !import.Run( monitor ) ) return CSCodeGenerationResult.Failed;
 
             return CSCodeGenerationResult.Success;

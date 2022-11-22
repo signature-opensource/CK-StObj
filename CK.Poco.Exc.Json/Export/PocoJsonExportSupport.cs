@@ -12,7 +12,7 @@ namespace CK.Core
     /// <summary>
     /// Supports Json serialization for <see cref="IPoco"/> types.
     /// </summary>
-    [ContextBoundDelegation( "CommonImpl, CK.Poco.Exc.Json.Engine" )]
+    [ContextBoundDelegation( "CK.Setup.PocoJson.CommonImpl, CK.Poco.Exc.Json.Engine" )]
     public static class PocoJsonExportSupport
     {
         /// <summary>
@@ -30,7 +30,14 @@ namespace CK.Core
             /// When false, the Poco's value object is directly written.
             /// </param>
             /// <param name="options">Optional export options.</param>
-            void Write( Utf8JsonWriter writer, bool withType, PocoJsonExportOptions? options = null );
+            void WriteJson( Utf8JsonWriter writer, bool withType, PocoJsonExportOptions? options = null );
+
+            /// <summary>
+            /// Writes this IPoco as Json without its type.
+            /// </summary>
+            /// <param name="writer">The Json writer.</param>
+            /// <param name="options">Optional export options.</param>
+            void WriteJson( Utf8JsonWriter writer, PocoJsonExportOptions? options = null );
         }
 
         /// <summary>
@@ -49,7 +56,7 @@ namespace CK.Core
         {
             Throw.CheckNotNullArgument( writer );
             if( o == null ) writer.WriteNullValue();
-            else ((IWriter)o).Write( writer, withType, options );
+            else ((IWriter)o).WriteJson( writer, withType, options );
         }
 
         /// <summary>

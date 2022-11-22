@@ -16,14 +16,9 @@ namespace CK.Setup
         IPocoPropertyInfo Property { get; }
 
         /// <summary>
-        /// Gets whether this field has a setter.
+        /// Gets the <see cref="PocoFieldAccessKind"/> for this field.
         /// </summary>
-        bool HasSetter { get; }
-
-        /// <summary>
-        /// Gets whether this is a ref property.
-        /// </summary>
-        bool IsByRef { get; }
+        PocoFieldAccessKind FieldAccess { get; }
 
         /// <summary>
         /// Gets the private generated field name: "_v{Index}".

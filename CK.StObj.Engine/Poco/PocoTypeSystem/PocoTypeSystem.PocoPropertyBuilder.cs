@@ -21,6 +21,7 @@ namespace CK.Setup
             readonly PocoTypeSystem _system;
             IPocoPropertyInfo? _prop;
             IExtPropertyInfo? _bestProperty;
+            PocoFieldAccessKind _fieldAccesskind;
             RegisterResult? _bestReg;
             IExtMemberInfo? _defaultValueSource;
             FieldDefaultValue? _defaultValue;
@@ -42,6 +43,7 @@ namespace CK.Setup
                 _bestReg = null;
                 _defaultValueSource = null;
                 _defaultValue = null;
+                _fieldAccesskind = PocoFieldAccessKind.ReadOnly;
                 if( !TryFindWritableAndCheckReadOnlys( monitor ) )
                 {
                     return null;
@@ -51,20 +53,22 @@ namespace CK.Setup
                 {
                     // No writable property defines the type.
                     // Trying to infer it and check this against all the real properties.
-                    var infered = ExtNullabilityInfo.ToConcrete( monitor, _system, prop.DeclaredProperties, out var longestTupleNamesAttribute );
-                    if( infered == null )
+                    var inferred = ConcreteTypeResolver.ToConcrete( monitor, _system, prop.DeclaredProperties );
+                    if( inferred == null )
                     {
                         var types = prop.DeclaredProperties.Select( p => p.TypeCSharpName ).Concatenate( Environment.NewLine );
                         monitor.Error( $"Failed to infer type from read only {prop} types:{Environment.NewLine}{types}" );
                         return null;
                     }
-                    monitor.Trace( $"Inferred type for {prop}: {infered.Type:C}" );
+                    isWritable = inferred.Value.IsWritableCollection;
+                    if( isWritable ) _fieldAccesskind = PocoFieldAccessKind.MutableCollection;
+                    monitor.Trace( $"Inferred {(isWritable ? "mutable collection" : "read only")} type for {prop}: {inferred.Value.Resolved.Type:C}" );
 
                     _inferredPropertyInfo ??= GetType().GetProperty( nameof( Inferred ) )!;
-                    var inferred = new ExtMemberInfo( _inferredPropertyInfo, infered, longestTupleNamesAttribute );
-                    _bestReg = _system.Register( monitor, inferred );
+                    var inferredMember = new ExtMemberInfo( _inferredPropertyInfo, inferred.Value.Resolved, inferred.Value.TupleNames );
+                    _bestReg = _system.Register( monitor, inferredMember );
                     if( _bestReg == null ) return null;
-                    _bestProperty = inferred;
+                    _bestProperty = inferredMember;
                     if( !CheckExistingReadOnlyProperties( monitor, null ) ) return null;
                 }
                 Debug.Assert( _bestReg != null && _bestProperty != null );
@@ -88,9 +92,8 @@ namespace CK.Setup
                 return new PrimaryPocoField( prop,
                                              finalType,
                                              best.RegCSharpName,
-                                             _bestProperty.PropertyInfo.CanWrite,
+                                             _fieldAccesskind,
                                              p,
-                                             _bestProperty.Type.IsByRef,
                                              _defaultValue );
             }
 
@@ -181,7 +184,6 @@ namespace CK.Setup
                             for( int i = 0; i < types.Count; ++i )
                             {
                                 var tE = types[i];
-                                var eeeeeeee = newInfo.ToString();
                                 if( tE.IsSameType( newInfo ) )
                                 {
                                     monitor.Warn( $"{prop}: UnionType '{rOneType.Value.RegCSharpName}' duplicated. Removing one." );
@@ -267,9 +269,9 @@ namespace CK.Setup
             {
                 Debug.Assert( _prop != null );
 
-                bool isWritable = p.PropertyInfo.CanWrite || p.Type.IsByRef;
-                if( isWritable )
+                if( p.PropertyInfo.CanWrite || p.Type.IsByRef )
                 {
+                    _fieldAccesskind = p.Type.IsByRef ? PocoFieldAccessKind.IsByRef : PocoFieldAccessKind.HasSetter;
                     if( !AddWritable( monitor, p, idxP ) ) return false;
                     // On success, always check that a record must be a ref property, that a collection must not
                     // have a setter and that any other type must be a regular property.

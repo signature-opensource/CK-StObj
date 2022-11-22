@@ -73,7 +73,6 @@ namespace CK.Setup
         public ExchangeableTypeName( string name )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( name );
-            Throw.CheckArgument( !name.EndsWith( '?' ) );
             SimplifiedName = Name = name;
         }
 
@@ -82,6 +81,17 @@ namespace CK.Setup
             Name = String.Empty;
             SimplifiedName = null!;
         }
+
+        /// <summary>
+        /// Overridden to return the <see cref="Name"/> or "Name / <see cref="SimplifiedName"/>",
+        /// "(not exchangeable)" or "(not initialized)".
+        /// </summary>
+        /// <returns>A readable string.</returns>
+        public override string ToString() => IsInitialized
+                                                ? (IsExchangeable
+                                                    ? (HasSimplifiedNames ? $"{Name} / {SimplifiedName}" : Name)
+                                                    : "(not exchangeable)")
+                                                : "(not initialized)";
     }
 
 }

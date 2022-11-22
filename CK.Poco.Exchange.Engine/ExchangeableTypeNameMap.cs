@@ -24,6 +24,7 @@ namespace CK.Setup
                                         int exchangeableCount )
         {
             _names = names;
+            TypeSystem = typeSystem;
             _exchangeables = new IPocoType[exchangeableCount];
             int idx = 0;
             foreach( var t in typeSystem.AllNonNullableTypes )
@@ -36,13 +37,18 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Gets the type system.
+        /// </summary>
+        public IPocoTypeSystem TypeSystem { get; }
+
+        /// <summary>
         /// Gets the non nullable types that are exchangeable.
         /// </summary>
         public IReadOnlyList<IPocoType> ExchangeableNonNullableTypes => _exchangeables;
 
         /// <summary>
         /// Gets the exchangeable type name (that may be not <see cref="ExchangeableTypeName.IsExchangeable"/>)
-        /// for a type.
+        /// for a type. This returns the nullable or non nullable names.
         /// </summary>
         /// <param name="t">The type to lookup.</param>
         /// <returns>The exchangeable name.</returns>

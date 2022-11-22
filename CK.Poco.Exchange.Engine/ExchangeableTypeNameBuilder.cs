@@ -24,6 +24,8 @@ namespace CK.Setup
         readonly StringBuilder _nBuilder = new StringBuilder();
         readonly StringBuilder _sBuilder = new StringBuilder();
         FullExchangeableTypeName _objectTypeName;
+        bool _condemnEnumFromUnderlyingType;
+        int _exchangeableCount;
 
         /// <summary>
         /// Generates an array of <see cref="FullExchangeableTypeName"/> for types that are
@@ -39,18 +41,20 @@ namespace CK.Setup
         /// False to keep them separate.
         /// </param>
         /// <param name="objectName">Name of the "object" (<see cref="PocoTypeKind.Any"/>).</param>
-        /// <returns>The resulting array.</returns>
-        public virtual FullExchangeableTypeName[] Generate( IActivityMonitor monitor,
-                                                            IPocoTypeSystem typeSystem,
-                                                            bool condemnEnumFromUnderlyingType,
-                                                            string objectName = "object" )
+        /// <returns>The resulting <see cref="ExchangeableTypeNameMap"/>.</returns>
+        public virtual ExchangeableTypeNameMap Generate( IActivityMonitor monitor,
+                                                         IPocoTypeSystem typeSystem,
+                                                         bool condemnEnumFromUnderlyingType,
+                                                         string objectName = "object" )
         {
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( typeSystem );
             Throw.CheckNotNullOrWhiteSpaceArgument( objectName );
 
-            var all = typeSystem.AllNonNullableTypes;
-            _result = new FullExchangeableTypeName[all.Count];
+            _condemnEnumFromUnderlyingType = condemnEnumFromUnderlyingType;
+
+            _exchangeableCount = typeSystem.AllNonNullableTypes.Count;
+            _result = new FullExchangeableTypeName[_exchangeableCount];
             _objectTypeName = _result[typeSystem.ObjectType.Index >> 1] = new FullExchangeableTypeName( objectName );
             foreach( var t in typeSystem.AllNonNullableTypes )
             {
@@ -65,6 +69,7 @@ namespace CK.Setup
                 }
                 else
                 {
+                    --_exchangeableCount;
                     n = FullExchangeableTypeName.Unexchangeable;
                 }
             }
@@ -103,13 +108,13 @@ namespace CK.Setup
                             break;
                         default: Throw.NotSupportedException( t.ToString() ); break;
                     }
-                    if( !n.IsInitialized || n.IsExchangeable )
+                    if( !n.IsInitialized || !n.IsExchangeable )
                     {
                         Throw.InvalidOperationException( $"Invalid name made for '{t}'." );
                     }
                 }
             }
-            return _result;
+            return new ExchangeableTypeNameMap( _result, typeSystem, _exchangeableCount );
         }
 
         FullExchangeableTypeName GetFieldTypeName( IPocoField f ) => _result![f.Type.Index >> 1];
@@ -121,6 +126,7 @@ namespace CK.Setup
             ref var n = ref _result[t.Index >> 1];
             if( !n.IsInitialized )
             {
+                --_exchangeableCount;
                 using( monitor.OpenInfo( $"{t.ToString()} is not exchangeable.{reason}" ) )
                 {
                     n = FullExchangeableTypeName.Unexchangeable;
@@ -157,14 +163,11 @@ namespace CK.Setup
                                         break;
                                     }
                                 case PocoTypeKind.Enum:
+                                    if( _condemnEnumFromUnderlyingType )
                                     {
-                                        var u = (IOneOfPocoType)t;
-                                        if( !u.AllowedTypes.Any( v => v.IsExchangeable && !_result[v.Index >> 1].IsInitialized ) )
-                                        {
-                                            SetNotExchangeable( monitor, backRef.Owner, $" No more allowed types are exchangeable." );
-                                        }
-                                        break;
+                                        SetNotExchangeable( monitor, backRef.Owner, $" The underlying type is not exchangeable." );
                                     }
+                                    break;
                                 default: Throw.NotSupportedException( backRef.Owner.ToString() ); break;
                             }
                         }

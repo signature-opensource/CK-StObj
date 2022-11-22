@@ -113,7 +113,7 @@ namespace CK.Setup
                     // Creates the backing field.
                     fieldPart.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                     // Creates the property.
-                    if( f.IsByRef )
+                    if( f.FieldAccess == PocoFieldAccessKind.IsByRef )
                     {
                         // A ref property is only the return of the ref backing field.
                         tB.Append( "public ref " ).Append( f.FieldTypeCSharpName ).Space().Append( f.Name )
@@ -123,7 +123,7 @@ namespace CK.Setup
                     {
                         // The getter is always the same.
                         tB.Append( "public " ).Append( f.FieldTypeCSharpName ).Space().Append( f.Name );
-                        if( !f.HasSetter )
+                        if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
                         {
                             // Readonly doesn't require the "get".
                             tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
@@ -239,7 +239,7 @@ namespace CK.Setup
             return CSCodeGenerationResult.Success;
         }
 
-        void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem, ICodeWorkspace workspace )
+        static void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem, ICodeWorkspace workspace )
         {
             var ns = workspace.Global.FindOrCreateNamespace( PocoRequiredSupportType.Namespace );
             ns.GeneratedByComment();
@@ -255,7 +255,7 @@ namespace CK.Setup
             }
         }
 
-        void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListRequiredSupport list )
+        static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListRequiredSupport list )
         {
             var pocoClassName = list.Type.FamilyInfo.PocoClass.FullName;
             Debug.Assert( pocoClassName != null );
@@ -277,7 +277,7 @@ namespace CK.Setup
 
         }
 
-        void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoHashSetRequiredSupport set )
+        static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoHashSetRequiredSupport set )
         {
             var t = set.Type;
             var pocoClassName = t.FamilyInfo.PocoClass.FullName;
@@ -384,7 +384,7 @@ namespace CK.Setup
            .NewLine();
         }
 
-        void GeneratePocoDictionary( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryRequiredSupport dic )
+        static void GeneratePocoDictionary( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryRequiredSupport dic )
         {
             var pocoClassName = dic.Type.FamilyInfo.PocoClass.FullName;
             Debug.Assert( pocoClassName != null );

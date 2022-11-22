@@ -67,7 +67,10 @@ namespace CK.Setup
         internal void SetType( IPocoType t, string fieldTypeName )
         {
             Debug.Assert( _type == null && t != null );
-            _nextRef = ((PocoType)t.NonNullable).AddBackRef( this );
+            if( t.Kind != PocoTypeKind.Any )
+            {
+                _nextRef = ((PocoType)t.NonNullable).AddBackRef( this );
+            }
             _type = t;
             _fieldTypeName = fieldTypeName;
             if( _defInfo.IsDisallowed )

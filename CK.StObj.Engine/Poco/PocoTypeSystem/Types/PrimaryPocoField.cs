@@ -12,26 +12,26 @@ namespace CK.Setup
         readonly string _privateFieldName;
 
         readonly DefaultValueInfo _defInfo;
-        readonly bool _hasSetter;
-        readonly bool _isByRef;
+        readonly PocoFieldAccessKind _fieldAccesskind;
 
         public PrimaryPocoField( IPocoPropertyInfo p,
                                  IPocoType type,
                                  string fieldTypeName,
-                                 bool hasSetter,
+                                 PocoFieldAccessKind fieldAccesskind,
                                  PocoType.PrimaryPocoType owner,
-                                 bool isByRef,
                                  IPocoFieldDefaultValue? defaultValue )
         {
             _p = p;
             _type = type;
             _defInfo = defaultValue != null ? new DefaultValueInfo( defaultValue ) : type.DefaultValueInfo;
             _privateFieldName = $"_v{Index}";
-            _hasSetter = hasSetter;
+            _fieldAccesskind = fieldAccesskind;
             FieldTypeCSharpName = fieldTypeName;
             _owner = owner;
-            _isByRef = isByRef;
-            _nextRef = ((PocoType)type.NonNullable).AddBackRef( this );
+            if( type.Kind != PocoTypeKind.Any )
+            {
+                _nextRef = ((PocoType)type.NonNullable).AddBackRef( this );
+            }
         }
 
         public IPrimaryPocoType Owner => _owner;
@@ -40,7 +40,7 @@ namespace CK.Setup
 
         IPocoType IPocoType.ITypeRef.Owner => _owner;
 
-        public bool IsExchangeable => (_hasSetter || _isByRef) && _type.IsExchangeable;
+        public bool IsExchangeable => _fieldAccesskind != PocoFieldAccessKind.ReadOnly && _type.IsExchangeable;
 
         public int Index => _p.Index;
 
@@ -54,9 +54,7 @@ namespace CK.Setup
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
-        public bool HasSetter => _hasSetter;
-
-        public bool IsByRef => _isByRef;
+        public PocoFieldAccessKind FieldAccess => _fieldAccesskind;
 
         public string FieldTypeCSharpName { get; }
 

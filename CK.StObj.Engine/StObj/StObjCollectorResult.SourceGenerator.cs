@@ -111,21 +111,43 @@ namespace CK.Setup
                     // Generates the StObjContextRoot implementation.
                     GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
-                    // Calls all ICSCodeGenerator items.
-                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
-                                               .Concat( aspectsGenerators ) )
+                    using( monitor.OpenTrace( "Calls all ICSCodeGenerator items." ) )
                     {
-                        var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
-                        if( second != null ) collector.Add( second );
+                        int count = 0;
+                        int count2ndPass = 0;
+                        foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
+                                                   .Concat( aspectsGenerators ) )
+                        {
+                            ++count;
+                            using( monitor.OpenTrace( $"ICSCodeGenerator n°{count} - {g.GetType():C}." ) )
+                            {
+                                var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                                if( second != null )
+                                {
+                                    ++count2ndPass;
+                                    collector.Add( second );
+                                }
+                            }
+                        }
+                        monitor.CloseGroup( $"{count} generator, {count2ndPass} second passes required." );
                     }
 
                     // Asks every ImplementableTypeInfo to generate their code. 
                     // This step MUST always be done, even if CompileOption is None and GenerateSourceFiles is false
                     // since during this step, side effects MAY occur (this is typically the case of the first run where
                     // the "reality cache" is created).
-                    foreach( var t in CKTypeResult.TypesToImplement )
+                    using( monitor.OpenTrace( "Calls all Type implementor items." ) )
                     {
-                        t.RunFirstPass( monitor, codeGenContext, collector );
+                        int count = 0;
+                        int count2ndPass = collector.Count;
+                        foreach( var t in CKTypeResult.TypesToImplement )
+                        {
+                            using( monitor.OpenTrace( $"Type implementor n°{count} - {t.GetType():C}." ) )
+                            {
+                                t.RunFirstPass( monitor, codeGenContext, collector );
+                            }
+                        }
+                        monitor.CloseGroup( $"{count} Type implementors, {collector.Count - count2ndPass} second passes required." );
                     }
                     if( entries.Count != 0 )
                     {

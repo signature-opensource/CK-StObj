@@ -86,6 +86,8 @@ namespace CK.Setup
             NonNullable = ExchangeableTypeName.Unexchangeable;
             Nullable = ExchangeableTypeName.Unexchangeable;
         }
+
+        public override string ToString() => NonNullable.ToString();
     }
 
 }

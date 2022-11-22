@@ -21,7 +21,7 @@ namespace CK.Poco.Exc.Json.Export
         ///     <item><see cref="JsonWriterOptions.SkipValidation"/> is true.</item>
         /// </list>
         /// </summary>
-        public readonly PocoJsonExportOptions Default = new PocoJsonExportOptions();
+        public static readonly PocoJsonExportOptions Default = new PocoJsonExportOptions();
 
         /// <summary>
         /// Initializes new options.
@@ -42,17 +42,14 @@ namespace CK.Poco.Exc.Json.Export
         public bool UseCamelCase { get; init; }
 
         /// <summary>
-        /// Gets or initializes whether numeric type names should keep their "real" types or be simplified as "Number" and "BigInt" and
-        /// whether List&lt;T&gt; is "T[]" rather than "L(T)".
+        /// Gets or initializes whether numeric type names should keep their "real" types or be simplified as "Number" and "BigInt".
         /// <para>
         /// When false (the default), float, single, small integers up to the Int32 are simply numbers but long (Int64), ulong (UInt64) and Decimal
-        /// are expressed as strings. Their type names are based on their C# actual type: "byte", "sbyte", "short", "ulong", etc. List&lt;T&gt; are
-        /// "L(T)".
+        /// are expressed as strings. Their type names are based on their C# actual type: "byte", "sbyte", "short", "ulong", etc.
         /// </para>
         /// <para>
         /// When true, two purely client types that are "Number" and "BigInt". The float, single, small integers up to the Int32 are 
         /// exported as "Number" and big integers (long, ulong, decimal, BigIntegers) are exported as "BigInt".
-        /// List&lt;T&gt; are "T[]".
         /// </para>
         /// </summary>
         public bool UseSimplifiedTypes { get; init; }

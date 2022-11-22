@@ -11,13 +11,13 @@ namespace CK.Setup.PocoJson
     class ImportCodeGenerator
     {
         readonly ITypeScope _pocoDirectory;
-        readonly IPocoTypeSystem _typeSystem;
+        readonly ExchangeableTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
 
-        public ImportCodeGenerator( ITypeScope pocoDirectory, IPocoTypeSystem typeSystem, ICSCodeGenerationContext generationContext )
+        public ImportCodeGenerator( ITypeScope pocoDirectory, ExchangeableTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
         {
             _pocoDirectory = pocoDirectory;
-            _typeSystem = typeSystem;
+            _nameMap = nameMap;
             _generationContext = generationContext;
         }
 
