@@ -3,7 +3,7 @@ namespace CK.Setup
     /// <summary>
     /// Type for <see cref="PocoTypeKind.Enum"/>.
     /// </summary>
-    public interface IEnumPocoType : IPocoType
+    public interface IEnumPocoType : IPocoType, INamedPocoType
     {
         /// <summary>
         /// Gets the underlying enumeration type.

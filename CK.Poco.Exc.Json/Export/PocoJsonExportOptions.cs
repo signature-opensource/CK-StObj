@@ -13,7 +13,7 @@ namespace CK.Poco.Exc.Json.Export
         /// <summary>
         /// Gets a singleton default option.
         /// <list type="bullet">
-        ///     <item>Property name are written in camelCase.</item>
+        ///     <item>Property name are written in camelCase (<see cref="UseCamelCase"/> is true).</item>
         ///     <item><see cref="UseSimplifiedTypes"/> is false.</item>
         ///     <item>Json is compact (<see cref="JsonWriterOptions.Indented"/> is false).</item>
         ///     <item>The maximal Json depth is 1000.</item>
@@ -22,6 +22,12 @@ namespace CK.Poco.Exc.Json.Export
         /// </list>
         /// </summary>
         public static readonly PocoJsonExportOptions Default = new PocoJsonExportOptions();
+
+        /// <summary>
+        /// Gets a singleton default option that is used by IPoco ToString implementation.
+        /// It is the same as <see cref="Default"/> except that names are written as-is (<see cref="UseCamelCase"/> is false).
+        /// </summary>
+        public static readonly PocoJsonExportOptions ToStringDefault = new PocoJsonExportOptions() { UseCamelCase = false };
 
         /// <summary>
         /// Initializes new options.

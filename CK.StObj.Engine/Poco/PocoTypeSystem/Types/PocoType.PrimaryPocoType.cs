@@ -51,25 +51,28 @@ namespace CK.Setup
 
                 int IReadOnlyCollection<IAbstractPocoType>.Count => NonNullable.AbstractTypes.Count;
 
+                public ExternalNameAttribute? ExternalName => NonNullable.ExternalName;
+
+                public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
+
                 IAbstractPocoType IReadOnlyList<IAbstractPocoType>.this[int index] => NonNullable.AbstractTypes[index].Nullable;
 
-                IEnumerator<IAbstractPocoType> IEnumerable<IAbstractPocoType>.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();   
+                IEnumerator<IAbstractPocoType> IEnumerable<IAbstractPocoType>.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();
 
                 IEnumerator IEnumerable.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();
             }
 
             readonly IPocoFieldDefaultValue _def;
-            [AllowNull]
-            PrimaryPocoField[] _fields;
-            [AllowNull]
-            string _ctorCode;
+            readonly IPocoFamilyInfo _familyInfo;
+            [AllowNull] PrimaryPocoField[] _fields;
+            [AllowNull] string _ctorCode;
 
             public PrimaryPocoType( PocoTypeSystem s,
                                     IPocoFamilyInfo family,
                                     Type primaryInterface )
                 : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.IPoco, t => new Null( t ) )
             {
-                FamilyInfo = family;
+                _familyInfo = family;
                 _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {family.PocoClass.Name}()" );
             }
 
@@ -77,7 +80,7 @@ namespace CK.Setup
 
             new IPrimaryPocoType Nullable => Unsafe.As<IPrimaryPocoType>( base.Nullable );
 
-            public IPocoFamilyInfo FamilyInfo { get; }
+            public IPocoFamilyInfo FamilyInfo => _familyInfo;
 
             public IPrimaryPocoType PrimaryInterface => this;
 
@@ -118,6 +121,10 @@ namespace CK.Setup
             }
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
+
+            public ExternalNameAttribute? ExternalName => _familyInfo.ExternalName;
+
+            public string ExternalOrCSharpName => _familyInfo.ExternalName?.Name ?? CSharpName;
 
             public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {

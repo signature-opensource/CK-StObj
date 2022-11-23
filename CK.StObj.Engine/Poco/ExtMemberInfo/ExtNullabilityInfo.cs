@@ -133,7 +133,7 @@ namespace CK.Setup
             else
             {
                 b.Append( _type.Name );
-                if( _subTypes is IExtNullabilityInfo[] a && a.Length > 0 )
+                if( !_type.IsValueType && _subTypes is IExtNullabilityInfo[] a && a.Length > 0 )
                 {
                     b.Append( '<' );
                     bool atLeastOne = false;

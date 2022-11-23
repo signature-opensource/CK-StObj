@@ -48,11 +48,13 @@ namespace CK.Setup
                 bool success = true;
                 foreach( var r in Roots )
                 {
-                    foreach( var name in r.PreviousNames.Append( r.Name ) )
+                    var extNames = r.ExternalName;
+                    if( extNames == null ) continue;
+                    foreach( var name in extNames.PreviousNames.Append( r.Name ) )
                     {
                         if( NamedRoots.TryGetValue( name, out var exists ) )
                         {
-                            monitor.Error( $"The Poco name '{name}' clashes: both '{r.Interfaces[0].PocoInterface.AssemblyQualifiedName}' and '{exists.Interfaces[0].PocoInterface.AssemblyQualifiedName}' share it." );
+                            monitor.Error( $"The Poco name '{name}' clashes: both '{r.Interfaces[0].PocoInterface:N}' and '{exists.Interfaces[0].PocoInterface:N}' share it." );
                             success = false;
                         }
                         else NamedRoots.Add( name, r );

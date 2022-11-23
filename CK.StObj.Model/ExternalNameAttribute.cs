@@ -9,7 +9,7 @@ namespace CK.Core
     /// <summary>
     /// Decorates an interface, a class or an enum with its name and optional previous names.
     /// <para>
-    /// Without this attribute, the type name is the <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
+    /// Without this attribute, the type name is the <see cref="TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
     /// with the default true parameters: withNamespace, typeDeclaration and useValueTupleParentheses.
     /// </para>
     /// <para>

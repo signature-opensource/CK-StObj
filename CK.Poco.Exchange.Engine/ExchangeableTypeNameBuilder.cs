@@ -219,14 +219,14 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns the <see cref="IPocoType.CSharpName"/> by default.
+        /// Returns the <see cref="INamedPocoType.ExternalOrCSharpName"/> by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="enumeration">The enumeration type.</param>
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakeEnumName( IActivityMonitor monitor, IEnumPocoType enumeration )
         {
-            return new FullExchangeableTypeName( enumeration.CSharpName );
+            return new FullExchangeableTypeName( enumeration.ExternalOrCSharpName );
         }
 
         /// <summary>
@@ -282,34 +282,34 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns <see cref="IPocoFamilyInfo.Name"/>.
+        /// Returns <see cref="INamedPocoType.ExternalOrCSharpName"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="primary">The primary Poco type.</param>
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakePrimaryPocoName( IActivityMonitor monitor, IPrimaryPocoType primary )
         {
-            return new FullExchangeableTypeName( primary.FamilyInfo.Name );
+            return new FullExchangeableTypeName( primary.ExternalOrCSharpName );
         }
 
         /// <summary>
-        /// Returns the <see cref="IPocoType.CSharpName"/> by default.
+        /// Returns the <see cref="INamedPocoType.ExternalOrCSharpName"/> by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="record">The enumeration type.</param>
+        /// <param name="record">The record type.</param>
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakeRecordName( IActivityMonitor monitor,
                                                                    IRecordPocoType record,
                                                                    Func<IPocoField, FullExchangeableTypeName> fieldTypeNames )
         {
-            return new FullExchangeableTypeName( record.CSharpName );
+            return new FullExchangeableTypeName( record.ExternalOrCSharpName );
         }
 
         /// <summary>
-        /// Returns "R(n1,n2,...)" type name: field names are erased by default.
+        /// Returns "R(t1,t2,...)" type name: field names are erased by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="record">The record.</param>
+        /// <param name="record">The record type.</param>
         /// <param name="fieldTypeNames">Fields type name provider.</param>
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakeAnonymousRecordName( IActivityMonitor monitor,

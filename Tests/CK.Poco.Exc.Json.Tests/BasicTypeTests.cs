@@ -1,22 +1,13 @@
-using CK.CodeGen;
 using CK.Core;
 using CK.Poco.Exc.Json.Export;
-using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-using System.Buffers;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.IO;
 using System.Numerics;
-using System.Text;
-using System.Text.Json;
 using static CK.Testing.StObjEngineTestHelper;
 
-namespace CK.StObj.Engine.Tests.PocoJson
+namespace CK.Poco.Exc.Json.Tests
 {
     [TestFixture]
     public partial class BasicTypeTests

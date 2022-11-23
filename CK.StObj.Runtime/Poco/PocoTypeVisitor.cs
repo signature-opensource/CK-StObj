@@ -81,6 +81,7 @@ namespace CK.Setup
                 case ICollectionPocoType collection: VisitCollection( monitor, collection ); break;
                 case IRecordPocoType record: VisitRecord( monitor, record ); break;
                 case IUnionPocoType union: VisitUnion( monitor, union ); break;
+                case IEnumPocoType e: VisitEnum( monitor, e ); break;
                 default:
                     Debug.Assert( t.GetType().Name == "PocoType" || t.GetType().Name == "BasicTypeWithDefaultValue" );
                     VisitBasic( monitor, t );
@@ -144,7 +145,7 @@ namespace CK.Setup
         /// Visits the <see cref="IOneOfPocoType{T}.AllowedTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="union"></param>
+        /// <param name="union">The union type.</param>
         protected virtual void VisitUnion( IActivityMonitor monitor, IUnionPocoType union )
         {
             foreach( var itemType in union.AllowedTypes ) Visit( monitor, itemType );
@@ -158,6 +159,15 @@ namespace CK.Setup
         protected virtual void VisitRecord( IActivityMonitor monitor, IRecordPocoType record )
         {
             foreach( var f in record.Fields ) VisitField( monitor, f );
+        }
+
+        /// <summary>
+        /// Does nothing by default (doesn't visit the <see cref="IEnumPocoType.UnderlyingType"/>).
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="e">The enumeration type.</param>
+        protected virtual void VisitEnum( IActivityMonitor monitor, IEnumPocoType e )
+        {
         }
 
         /// <summary>

@@ -2,16 +2,13 @@ using CK.Core;
 using CK.Poco.Exc.Json.Export;
 using CK.Poco.Exc.Json.Import;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json;
 
-namespace CK.StObj.Engine.Tests
+namespace CK.Poco.Exc.Json.Tests
 {
     public static class JsonTestHelper
     {

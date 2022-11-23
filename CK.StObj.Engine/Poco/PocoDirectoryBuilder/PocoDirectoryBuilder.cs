@@ -198,7 +198,7 @@ namespace CK.Setup
             var primary = interfaces[0];
             if( primary.IsGenericType )
             {
-                monitor.Error( $"The IPoco interface '{primary}' cannot be a generic type (different extensions could use different types for the same type parameter). Use the [CKTypeDefiner] attribute to define a generic IPoco." );
+                monitor.Error( $"The IPoco interface '{primary:N}' cannot be a generic type (different extensions could use different types for the same type parameter). Use the [CKTypeDefiner] attribute to define a generic IPoco." );
                 return null;
             }
             string pocoTypeName = assembly.GetAutoImplementedTypeName( primary );

@@ -68,7 +68,10 @@ namespace CK.Setup
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
                 _itemType = itemType;
-                _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
+                if( itemType.Kind != PocoTypeKind.Any )
+                {
+                    _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
+                }
                 _def = tCollection.IsArray
                         ? new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" )
                         : new FieldDefaultValue( $"new {CSharpName}()" );
@@ -260,12 +263,18 @@ namespace CK.Setup
             {
                 _itemTypes = new[] { keyType, valueType };
                 Debug.Assert( !keyType.IsNullable );
-                _nextRefKey = ((PocoType)keyType).AddBackRef( this );
-                var valueRef = new PocoTypeRef( this, valueType, 1 );
                 _def = new FieldDefaultValue( $"new {CSharpName}()" );
-                // Sets the initial IsExchangeable status.
-                if( !keyType.IsExchangeable ) OnNoMoreExchangeable( monitor, this );
-                else if( !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
+                // Register back references and sets the initial IsExchangeable status.
+                if( keyType.Kind != PocoTypeKind.Any )
+                {
+                    _nextRefKey = ((PocoType)keyType).AddBackRef( this );
+                    if( !keyType.IsExchangeable ) OnNoMoreExchangeable( monitor, this );
+                }
+                if( valueType.Kind != PocoTypeKind.Any )
+                {
+                    var valueRef = new PocoTypeRef( this, valueType, 1 );
+                    if( IsExchangeable && !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
+                }
             }
 
             // Base OnNoMoreExchangeable method is fine here.

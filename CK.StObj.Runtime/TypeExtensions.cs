@@ -14,15 +14,15 @@ namespace CK.Setup
     /// </summary>
     public static class TypeExtensions
     {
-        /// <summary>
-        /// Gets the <see cref="ExternalNameAttribute.Name"/> if it exists.
-        /// </summary>
-        /// <param name="t">This type.</param>
-        /// <returns>The name to use to identify the type or null.</returns>
-        public static string? GetExternalName( this Type t )
-        {
-            return (string?)GetAttributeData( t )?.ConstructorArguments[0].Value;
-        }
+        ///// <summary>
+        ///// Gets the <see cref="ExternalNameAttribute.Name"/> if it exists.
+        ///// </summary>
+        ///// <param name="t">This type.</param>
+        ///// <returns>The name to use to identify the type or null.</returns>
+        //public static string? GetExternalName( this Type t )
+        //{
+        //    return (string?)GetAttributeData( t )?.ConstructorArguments[0].Value;
+        //}
 
         /// <summary>
         /// Gets the <see cref="ExternalNameAttribute.Name"/> if it exists or this <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>

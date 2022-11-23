@@ -216,7 +216,7 @@ namespace CK.Setup
                 tFB.Append( "public string Name => " ).AppendSourceString( family.Name ).Append( ";" )
                    .NewLine();
 
-                tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( family.PreviousNames ).Append( ";" )
+                tFB.Append( "public IReadOnlyList<string> PreviousNames => " ).AppendArray( family.ExternalName?.PreviousNames ?? Array.Empty<string>() ).Append( ";" )
                    .NewLine();
 
                 tFB.Append( "public IReadOnlyList<Type> Interfaces => " ).AppendArray( family.Interfaces.Select( i => i.PocoInterface ) ).Append( ";" )

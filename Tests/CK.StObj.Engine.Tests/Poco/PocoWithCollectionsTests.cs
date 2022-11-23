@@ -67,5 +67,17 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Array.Should().BeSameAs( Array.Empty<int>() );
         }
 
+        public interface IInvalid : IPoco
+        {
+            IDictionary<string?, bool> Configurations { get; }
+        }
+
+        [Test]
+        public void IDictionary_key_cannot_be_nullable_even_if_no_constraint_prevent_it()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalid ) );
+            TestHelper.GetFailedResult( c, "IDictionary<string,bool>' key cannot be nullable. Nullable type 'string?' cannot be a key." );
+        }
+
     }
 }

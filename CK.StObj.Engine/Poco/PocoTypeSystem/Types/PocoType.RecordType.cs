@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using static CK.CodeGen.TupleTypeName;
@@ -49,9 +50,13 @@ namespace CK.Setup
 
                 ICompositePocoType ICompositePocoType.Nullable => this;
 
+                public ExternalNameAttribute? ExternalName => NonNullable.ExternalName;
+
+                public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
             }
 
             [AllowNull] RecordField[] _fields;
+            readonly ExternalNameAttribute? _externalName;
             DefaultValueInfo _defInfo;
 
             public RecordType( IActivityMonitor monitor,
@@ -67,6 +72,7 @@ namespace CK.Setup
                         t => new Null( t, tNull ) )
             {
                 if( anonymousFields != null ) SetFields( monitor, s, anonymousFields );
+                _externalName = tNotNull.GetCustomAttribute<ExternalNameAttribute>();
             }
 
             internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields )
@@ -84,6 +90,10 @@ namespace CK.Setup
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
+
+            public ExternalNameAttribute? ExternalName => _externalName;
+
+            public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 

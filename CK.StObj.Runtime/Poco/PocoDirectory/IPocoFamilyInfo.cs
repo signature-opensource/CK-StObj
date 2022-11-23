@@ -23,17 +23,17 @@ namespace CK.Setup
         Type PocoFactoryClass { get; }
 
         /// <summary>
+        /// Gets the [<see cref="ExternalNameAttribute"/>] of the primary interface if any.
+        /// </summary>
+        ExternalNameAttribute? ExternalName { get; }
+
+        /// <summary>
         /// Gets the Poco name.
         /// When no [<see cref="ExternalNameAttribute"/>] is defined, this name defaults
         /// to the <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
         /// of the <see cref="PrimaryInterface"/>.
         /// </summary>
         string Name { get; }
-
-        /// <summary>
-        /// Gets the Poco previous names if any.
-        /// </summary>
-        IReadOnlyList<string> PreviousNames { get; }
 
         /// <summary>
         /// Gets whether the <see cref="IClosedPoco"/> interface marker appear among the interfaces.

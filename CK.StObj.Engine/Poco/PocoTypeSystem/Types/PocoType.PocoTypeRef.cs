@@ -5,6 +5,9 @@ namespace CK.Setup
 
     partial class PocoType
     {
+        /// <summary>
+        /// Implements an autonomous <see cref="ITypeRef"/> node.
+        /// </summary>
         sealed class PocoTypeRef : ITypeRef
         {
             readonly IPocoType _owner;

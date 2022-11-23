@@ -15,7 +15,7 @@ namespace CK.Setup
     {
         sealed class MemberContext
         {
-            readonly IList<string?> _tupleNames;
+            IList<string?>? _tupleNames;
             IExtMemberInfo _root;
             int _tupleIndex;
 
@@ -23,11 +23,11 @@ namespace CK.Setup
             {
                 _root = root;
                 _tupleIndex = 0;
-                _tupleNames = root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();
             }
 
             public RecordField[] GetTupleNamedFields( int count )
             {
+                _tupleNames ??= _root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();
                 var fields = new RecordField[count];
                 for( int i = 0; i < fields.Length; ++i )
                 {

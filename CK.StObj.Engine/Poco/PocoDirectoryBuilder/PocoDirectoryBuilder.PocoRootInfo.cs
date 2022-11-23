@@ -19,7 +19,7 @@ namespace CK.Setup
             public Type PocoClass { get; }
             public Type PocoFactoryClass { get; }
             public string Name { get; set; }
-            public IReadOnlyList<string> PreviousNames { get; set; }
+            public ExternalNameAttribute? ExternalName { get; private set; }
             public Type? ClosureInterface { get; }
             public bool IsClosedPoco { get; }
             public readonly List<InterfaceInfo> Interfaces;
@@ -68,10 +68,7 @@ namespace CK.Setup
             public bool InitializeNames( IActivityMonitor monitor )
             {
                 Type primary = Interfaces[0].PocoInterface;
-                if( !primary.GetExternalNames( monitor, out string name, out string[] previousNames ) )
-                {
-                    return false;
-                }
+                ExternalName = primary.GetCustomAttribute<ExternalNameAttribute>();
                 var others = Interfaces.Where( i => i.PocoInterface != primary
                                                     && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( ExternalNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
                 if( others.Any() )
@@ -79,8 +76,7 @@ namespace CK.Setup
                     monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.ToCSharpName() ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.ToCSharpName()}') should define the Poco names." );
                     return false;
                 }
-                Name = name;
-                PreviousNames = previousNames;
+                Name = ExternalName?.Name ?? primary.ToCSharpName();
                 return true;
             }
 

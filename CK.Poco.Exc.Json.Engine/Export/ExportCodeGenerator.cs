@@ -55,8 +55,7 @@ namespace CK.Setup.PocoJson
                 if( !nonNullable.Type.IsValueType )
                 {
                     writer.Append( "if( " ).Append( variableName )
-                          .Append( " == null ) w.ThrowJsonException( \"Unexpected null for non nullable '" )
-                          .Append( nonNullable.ToString() ).Append( "'.\" );" )
+                          .Append( " == null ) w.ThrowJsonNullWriteException();" )
                           .NewLine();
                 }
                 DoGenerate( writer, nonNullable, variableName, withType );
@@ -65,15 +64,29 @@ namespace CK.Setup.PocoJson
             void GenerateNullableWrite( ICodeWriter writer, IPocoType nullable, string variableName, bool withType )
             {
                 Debug.Assert( nullable.IsNullable && (nullable.Index & 1) == 1 );
-                writer.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine();
-                DoGenerate( writer, nullable.NonNullable, variableName, withType );
+                writer.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
+                      .Append( "else" )
+                      .OpenBlock();
+                if( nullable.Type.IsValueType )
+                {
+                    DoGenerate( writer, nullable.NonNullable, $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})", withType );
+                }
+                else
+                {
+                    DoGenerate( writer, nullable.NonNullable, variableName, withType );
+                }
+                writer.CloseBlock();
             }
 
             void DoGenerate( ICodeWriter writer, IPocoType nonNullable, string variableName, bool withType )
             {
                 if( withType ) GenerateTypeHeader( writer, nonNullable );
                 _writers[nonNullable.Index >> 1].Invoke( writer, variableName );
-                if( withType ) GenerateTypeFooter( writer );
+                if( withType )
+                {
+                    writer.NewLine();
+                    GenerateTypeFooter( writer );
+                }
             }
         }
 
@@ -110,7 +123,6 @@ namespace CK.Setup.PocoJson
 
         public bool Run( IActivityMonitor monitor )
         {
-            int pocoCount = 0, recordCount = 0;
             using( monitor.OpenInfo( $"Generating {_nameMap.ExchangeableNonNullableTypes.Count} Json code writers." ) )
             {
                 foreach( var type in _nameMap.ExchangeableNonNullableTypes )
@@ -123,44 +135,54 @@ namespace CK.Setup.PocoJson
                             _writers[type.Index >> 1] = ObjectWriter;
                             break;
                         case PocoTypeKind.IPoco:
-                            ++pocoCount;
                             _writers[type.Index >> 1] = PocoWriter;
                             break;
+                        case PocoTypeKind.Basic:
+                            _writers[type.Index >> 1] = GenerateBasicTypeWriter( type );
+                            break;
+                        case PocoTypeKind.List:
+                        case PocoTypeKind.Array:
+                        case PocoTypeKind.HashSet:
+                        case PocoTypeKind.Dictionary:
+                        case PocoTypeKind.Record:
                         case PocoTypeKind.AnonymousRecord:
-                            ++recordCount;
                             _writers[type.Index >> 1] = ( writer, v ) => writer.Append( "PocoDirectory_CK.WriteJson_" )
                                                                                .Append( type.Index )
                                                                                .Append( "( w, ref " )
                                                                                .Append( v ).Append( ", options );" );
-                            ;
                             break;
                         case PocoTypeKind.Enum:
                             {
                                 var tE = (IEnumPocoType)type;
-                                _writers[type.Index >> 1] = ( writer, v ) => writer.Append( "w.WriteNumberValue( (" )
-                                                                                   .Append( tE.UnderlyingType.CSharpName )
-                                                                                   .Append( ')' ).Append( v ).Append( " );" );
+                                _writers[type.Index >> 1] = ( writer, v ) => GenerateWrite( writer, tE.UnderlyingType, $"(({tE.UnderlyingType.CSharpName}){v})" );
                                 break;
                             }
-                        case PocoTypeKind.Basic:
-                            _writers[type.Index >> 1] = GenerateBasicTypeWriter( type );
-                            break;
                     }
                 }
             }
-            using( monitor.OpenInfo( $"Generating {pocoCount} Poco and {recordCount} record write methods." ) )
+            foreach( var type in _nameMap.ExchangeableNonNullableTypes )
             {
-                foreach( var type in _nameMap.ExchangeableNonNullableTypes )
+                switch( type.Kind )
                 {
-                    switch( type.Kind )
-                    {
-                        case PocoTypeKind.IPoco:
-                            GeneratePocoWriteMethod( monitor, (IPrimaryPocoType)type );
-                            break;
-                        case PocoTypeKind.AnonymousRecord:
-                            GenerateAnonymousRecordWriteMethod( monitor, (IRecordPocoType)type );
-                            break;
-                    }
+                    case PocoTypeKind.IPoco:
+                        GeneratePocoWriteMethod( monitor, (IPrimaryPocoType)type );
+                        break;
+                    case PocoTypeKind.AnonymousRecord:
+                        GenerateAnonymousRecordWriteMethod( monitor, (IRecordPocoType)type );
+                        break;
+                    case PocoTypeKind.Record:
+                        GenerateNamedRecordWriteMethod( monitor, (IRecordPocoType)type );
+                        break;
+                    case PocoTypeKind.List:
+                    case PocoTypeKind.Array:
+                        GenerateListOrArrayWriteMethod( monitor, (ICollectionPocoType)type );
+                        break;
+                    case PocoTypeKind.HashSet:
+                        GenerateHashSetWriteMethod( monitor, (ICollectionPocoType)type );
+                        break;
+                    case PocoTypeKind.Dictionary:
+                        GenerateDictionaryWriteMethod( monitor, (ICollectionPocoType)type );
+                        break;
                 }
             }
             GenerateWriteAny();
@@ -240,19 +262,106 @@ namespace CK.Setup.PocoJson
             }
         }
 
-        void GenerateAnonymousRecordWriteMethod( IActivityMonitor monitor, IRecordPocoType type )
+        void GenerateWriteJsonMethodHeader( IActivityMonitor monitor, IPocoType type )
         {
             _pocoDirectory.Append( "internal static void WriteJson_" )
                           .Append( type.Index )
                           .Append( "( System.Text.Json.Utf8JsonWriter w, ref " )
-                          .Append( type.CSharpName ).Append( " v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )" )
-                          .OpenBlock();
+                          .Append( type.CSharpName ).Append( " v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )" );
+        }
+
+        void GenerateDictionaryWriteMethod( IActivityMonitor monitor, ICollectionPocoType type )
+        {
+            GenerateWriteJsonMethodHeader( monitor, type );
+            _pocoDirectory.OpenBlock();
+            if( type.ItemTypes[0].Type == typeof(string) )
+            {
+                _pocoDirectory.Append( "w.WriteStartObject();" ).NewLine()
+                              .Append( "foreach( var item in v )" )
+                              .OpenBlock()
+                              .Append( "w.WritePropertyName( item.Key );").NewLine()
+                              .Append( "var vLoc = item.Value;" ).NewLine()
+                              .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "vLoc" ) ).NewLine()
+                              .CloseBlock()
+                              .Append( "w.WriteEndObject();" );
+            }
+            else
+            {
+                _pocoDirectory.Append( "w.WriteStartArray();" ).NewLine()
+                              .Append( "foreach( var (k,e) in v )" )
+                              .OpenBlock()
+                              .Append( "w.WriteStartArray();" ).NewLine()
+                              .Append( "var tK = k;" ).NewLine()
+                              .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "tK" ) ).NewLine()
+                              .Append( "var tE = e;" ).NewLine()
+                              .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "tE" ) ).NewLine()
+                              .Append( "w.WriteEndArray();" ).NewLine()
+                              .CloseBlock()
+                              .Append( "w.WriteEndArray();" );
+            }
+            _pocoDirectory.CloseBlock();
+        }
+
+        void GenerateHashSetWriteMethod( IActivityMonitor monitor, ICollectionPocoType type )
+        {
+            GenerateWriteJsonMethodHeader( monitor, type );
+            _pocoDirectory.OpenBlock();
+            _pocoDirectory.Append( "w.WriteStartArray();" ).NewLine()
+                          .Append( "foreach( var item in v )" )
+                          .OpenBlock()
+                          .Append( "var loc = item;" ).NewLine()
+                          .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "loc" ) )
+                          .CloseBlock()
+                          .Append( "w.WriteEndArray();" ).NewLine()
+                          .CloseBlock();
+        }
+
+        void GenerateListOrArrayWriteMethod( IActivityMonitor monitor, ICollectionPocoType type )
+        {
+            GenerateWriteJsonMethodHeader( monitor, type );
+            _pocoDirectory.OpenBlock();
+            if( type.Kind == PocoTypeKind.Array )
+            {
+                _pocoDirectory.Append( "var a = v.AsSpan();" ).NewLine();
+            }
+            else
+            {
+                _pocoDirectory.Append( "var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );" ).NewLine();
+            }
+            _pocoDirectory.Append( "w.WriteStartArray();" ).NewLine()
+                          .Append( "for( int i = 0; i < a.Length; ++i )" )
+                          .OpenBlock()
+                          .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "a[i]" ) )
+                          .CloseBlock()
+                          .Append( "w.WriteEndArray();" ).NewLine()
+                          .CloseBlock();
+        }
+
+        void GenerateAnonymousRecordWriteMethod( IActivityMonitor monitor, IRecordPocoType type )
+        {
+            GenerateWriteJsonMethodHeader( monitor, type );
+            _pocoDirectory.OpenBlock()
+                          .Append( "w.WriteStartArray();" ).NewLine();
+            foreach( var f in type.Fields )
+            {
+                GenerateWrite( _pocoDirectory, f.Type, $"v.{f.Name}" );
+            }
+            _pocoDirectory.Append( "w.WriteEndArray();" ).NewLine()
+                          .CloseBlock();
+        }
+
+        void GenerateNamedRecordWriteMethod( IActivityMonitor monitor, IRecordPocoType type )
+        {
+            GenerateWriteJsonMethodHeader( monitor, type );
+            _pocoDirectory.OpenBlock()
+                          .Append( "w.WriteStartObject();" ).NewLine();
             foreach( var f in type.Fields )
             {
                 GenerateWritePropertyName( _pocoDirectory, f.Name );
-                GenerateWrite( _pocoDirectory, f.Type, "v" );
+                GenerateWrite( _pocoDirectory, f.Type, $"v.{f.Name}" );
             }
-            _pocoDirectory.CloseBlock();
+            _pocoDirectory.Append( "w.WriteEndObject();" ).NewLine()
+                          .CloseBlock();
         }
 
         void GeneratePocoWriteMethod( IActivityMonitor monitor, IPrimaryPocoType type )
@@ -302,7 +411,7 @@ namespace CK.Setup.PocoJson
                     .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
                     .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
                     .OpenBlock()
-                    .Append( "WriteJson( w, CK.Poco.Exc.Json.Export.PocoJsonExportOptions.Default );" ).NewLine()
+                    .Append( "WriteJson( w, CK.Poco.Exc.Json.Export.PocoJsonExportOptions.ToStringDefault );" ).NewLine()
                     .Append( "w.Flush();" ).NewLine()
                     .CloseBlock()
                     .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
@@ -324,13 +433,11 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
             {
                 if( t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.AbstractIPoco || t.Kind == PocoTypeKind.UnionType ) continue;
 
-                // Temp...
-                if( t.Kind == PocoTypeKind.Enum || t.Kind == PocoTypeKind.IPoco || t.Kind == PocoTypeKind.Basic )
-                    _pocoDirectory.Append( "case " ).Append( t.CSharpName ).Append( " v:" )
-                        .OpenBlock()
-                        .Append( writer => GenerateWrite( writer, t, "v", true ) ).NewLine()
-                        .Append( "break;" ).NewLine()
-                        .CloseBlock();
+                _pocoDirectory.Append( "case " ).Append( t.CSharpName ).Append( " v:" )
+                    .OpenBlock()
+                    .Append( writer => GenerateWrite( writer, t, "v", true ) ).NewLine()
+                    .Append( "break;" ).NewLine()
+                    .CloseBlock();
             }
             _pocoDirectory.Append( @"default: w.ThrowJsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" ); break;
     }

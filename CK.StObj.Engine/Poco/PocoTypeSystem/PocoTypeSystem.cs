@@ -46,6 +46,7 @@ namespace CK.Setup
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
             _cache = new Dictionary<object, IPocoType>()
             {
+                { typeof(bool), PocoType.CreateBasicValue(this, typeof(bool), typeof(bool?), "bool") },
                 { typeof(int), PocoType.CreateBasicValue(this, typeof(int), typeof(int?), "int") },
                 { typeof(long), PocoType.CreateBasicValue(this, typeof(long), typeof(long?), "long") },
                 { typeof(short), PocoType.CreateBasicValue(this, typeof(short), typeof(short?), "short") },
@@ -213,7 +214,7 @@ namespace CK.Setup
                         if( tI.IsNullable )
                         {
                             typeName = $"CK.Core.CovariantHelpers.CovNullableValueList<{tI.NonNullable.CSharpName}>";
-                            t = typeof( CovariantHelpers.CovNullableValueList<> ).MakeGenericType( tI.Type );
+                            t = typeof( CovariantHelpers.CovNullableValueList<> ).MakeGenericType( tI.NonNullable.Type );
                         }
                         else
                         {
@@ -259,7 +260,7 @@ namespace CK.Setup
                         if( tI.IsNullable )
                         {
                             typeName = $"CK.Core.CovariantHelpers.CovNullableValueHashSet<{tI.NonNullable.CSharpName}>";
-                            t = typeof( CovariantHelpers.CovNullableValueHashSet<> ).MakeGenericType( tI.Type );
+                            t = typeof( CovariantHelpers.CovNullableValueHashSet<> ).MakeGenericType( tI.NonNullable.Type );
                         }
                         else
                         {
@@ -293,9 +294,9 @@ namespace CK.Setup
             {
                 var rtK = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( rtK == null ) return null;
-                if( rtK.Value.PocoType == null )
+                if( rtK.Value.PocoType.IsNullable )
                 {
-                    monitor.Error( $"{ctx}: Dictionary key cannot be \"abstract\" type. Type '{rtK.Value.RegCSharpName}' is not supported." );
+                    monitor.Error( $"{ctx}: '{nType.Type:C}' key cannot be nullable. Nullable type '{rtK.Value.RegCSharpName}' cannot be a key." );
                     return null;
                 }
                 var tK = rtK.Value.PocoType;
@@ -313,7 +314,7 @@ namespace CK.Setup
                         if( tV.IsNullable )
                         {
                             typeName = $"CK.Core.CovariantHelpers.CovNullableValueDictionary<{tK.CSharpName},{tV.NonNullable.CSharpName}>";
-                            t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                            t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.NonNullable.Type );
                         }
                         else
                         {
@@ -436,7 +437,11 @@ namespace CK.Setup
                 // New Enum (basic type).
                 // There is necessary the underlying integral type.
                 tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
-                existing = PocoType.CreateEnum( monitor, this, tNotNull, tNull, _cache[tNotNull.GetEnumUnderlyingType()] );
+                existing = PocoType.CreateEnum( monitor,
+                                                this,
+                                                tNotNull,
+                                                tNull,
+                                                _cache[tNotNull.GetEnumUnderlyingType()] );
                 _cache.Add( tNotNull, existing );
                 return new RegisterResult( nType.IsNullable ? existing.Nullable : existing, null );
             }

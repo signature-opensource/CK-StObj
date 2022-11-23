@@ -6,7 +6,7 @@ namespace CK.Setup
     /// Common type of <see cref="IPrimaryPocoType"/> and <see cref="IRecordPocoType"/>.
     /// A composite has one or more <see cref="IPocoField"/> named and indexed fields.
     /// </summary>
-    public interface ICompositePocoType : IPocoType
+    public interface ICompositePocoType : IPocoType, INamedPocoType
     {
         /// <summary>
         /// Gets the list of fields.
