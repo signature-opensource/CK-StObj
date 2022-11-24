@@ -68,12 +68,15 @@ namespace CK.Setup
             public bool InitializeNames( IActivityMonitor monitor )
             {
                 Type primary = Interfaces[0].PocoInterface;
-                ExternalName = primary.GetCustomAttribute<ExternalNameAttribute>();
-                var others = Interfaces.Where( i => i.PocoInterface != primary
-                                                    && i.PocoInterface.GetCustomAttributesData().Any( x => typeof( ExternalNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
+                if( !TypeExtensions.TryGetExternalNames( monitor, primary, primary.GetCustomAttributesData(), out var externalName, warnOnCSharName: true ) )
+                {
+                    return false;
+                }
+                ExternalName = externalName;
+                var others = Interfaces.Skip( 1 ).Where( i => i.PocoInterface.GetCustomAttributesData().Any( x => typeof( ExternalNameAttribute ).IsAssignableFrom( x.AttributeType ) ) );
                 if( others.Any() )
                 {
-                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.ToCSharpName() ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary.ToCSharpName()}') should define the Poco names." );
+                    monitor.Error( $"ExternalName attribute appear on '{others.Select( i => i.PocoInterface.ToCSharpName( false ) ).Concatenate( "', '" )}'. Only the primary IPoco interface (i.e. '{primary:N}') should define the Poco names." );
                     return false;
                 }
                 Name = ExternalName?.Name ?? primary.ToCSharpName();

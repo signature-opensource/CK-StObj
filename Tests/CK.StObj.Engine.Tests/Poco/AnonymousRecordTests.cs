@@ -131,7 +131,7 @@ namespace CK.StObj.Engine.Tests.Poco
             static void CheckError( Type tError )
             {
                 var c = TestHelper.CreateStObjCollector( tError );
-                TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,System.Collections.Generic.IList<string?>? B,System.Collections.Generic.IList<System.Collections.Generic.IList<string?>?>? C)?' since " );
+                TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,IList<string?>? B,IList<IList<string?>?>? C)?' since " );
             }
         }
     }

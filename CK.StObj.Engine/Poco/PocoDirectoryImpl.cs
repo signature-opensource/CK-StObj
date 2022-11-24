@@ -111,7 +111,7 @@ namespace CK.Setup
                 foreach( var f in pocoType.Fields )
                 {
                     // Creates the backing field.
-                    fieldPart.Append( f.Type.CSharpName ).Space().Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+                    fieldPart.Append( f.Type.ImplTypeName ).Space().Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                     // Creates the property.
                     if( f.FieldAccess == PocoFieldAccessKind.IsByRef )
                     {
@@ -247,15 +247,17 @@ namespace CK.Setup
             {
                 switch( t )
                 {
-                    case PocoListRequiredSupport list: GeneratePocoList( monitor, ns, list ); break;
-                    case PocoHashSetRequiredSupport set: GeneratePocoHashSet( monitor, ns, set ); break;
+                    case PocoListOrHashSetRequiredSupport listOrSet:
+                        if( listOrSet.IsList ) GeneratePocoList( monitor, ns, listOrSet );
+                        else GeneratePocoHashSet( monitor, ns, listOrSet );
+                        break;
                     case PocoDictionaryRequiredSupport dic: GeneratePocoDictionary( monitor, ns, dic ); break;
                     default: throw new NotSupportedException();
                 }
             }
         }
 
-        static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListRequiredSupport list )
+        static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport list )
         {
             var pocoClassName = list.Type.FamilyInfo.PocoClass.FullName;
             Debug.Assert( pocoClassName != null );
@@ -277,7 +279,7 @@ namespace CK.Setup
 
         }
 
-        static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoHashSetRequiredSupport set )
+        static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport set )
         {
             var t = set.Type;
             var pocoClassName = t.FamilyInfo.PocoClass.FullName;

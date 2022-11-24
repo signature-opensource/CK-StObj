@@ -274,7 +274,7 @@ namespace CK.StObj.Engine.Tests.Poco
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
             {
                 var c = TestHelper.CreateStObjCollector( typeof( ICompositeOfNullableOrNotNullableRefTypes ) );
-                TestHelper.GetFailedResult( c, "Ambiguous UnionType 'System.Collections.Generic.List<string?>' is more general than 'System.Collections.Generic.List<string>'. Since CanBeExtended is false, types in the union must be unrelated." );
+                TestHelper.GetFailedResult( c, "Ambiguous UnionType 'List<string?>' is more general than 'List<string>'. Since CanBeExtended is false, types in the union must be unrelated." );
             }
         }
 

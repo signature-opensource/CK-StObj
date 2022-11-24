@@ -15,10 +15,11 @@ namespace CK.Setup
                                              PocoTypeSystem s,
                                              Type tNotNull,
                                              Type tNull,
-                                             IPocoType underlyingType )
+                                             IPocoType underlyingType,
+                                             ExternalNameAttribute? externalName )
         {
             Debug.Assert( tNotNull.IsEnum );
-            return new EnumType( monitor, s, tNotNull, tNull, underlyingType );
+            return new EnumType( monitor, s, tNotNull, tNull, underlyingType, externalName );
         }
 
         internal sealed class EnumType : PocoType, IEnumPocoType, IPocoType.ITypeRef
@@ -48,7 +49,12 @@ namespace CK.Setup
             readonly ExternalNameAttribute? _externalName;
             readonly DefaultValueInfo _defInfo;
 
-            public EnumType( IActivityMonitor monitor, PocoTypeSystem s, Type tNotNull, Type tNull, IPocoType underlyingType )
+            public EnumType( IActivityMonitor monitor,
+                             PocoTypeSystem s,
+                             Type tNotNull,
+                             Type tNull,
+                             IPocoType underlyingType,
+                             ExternalNameAttribute? externalName )
                 : base( s,
                         tNotNull,
                         tNotNull.ToCSharpName(),
@@ -57,7 +63,7 @@ namespace CK.Setup
             {
                 Debug.Assert( underlyingType.Kind == PocoTypeKind.Basic );
                 _underlyingType = underlyingType;
-                _externalName = tNotNull.GetCustomAttribute<ExternalNameAttribute>();
+                _externalName = externalName;
                 _nextRef = ((PocoType)underlyingType.NonNullable).AddBackRef( this );
                 _defInfo = ComputeDefaultValueInfo( monitor, tNotNull, out bool isEmpty );
                 if( isEmpty ) SetNotExchangeable( monitor, "Enumeration has no defined values." );

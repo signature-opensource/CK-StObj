@@ -20,9 +20,10 @@ namespace CK.Setup
                                                  Type tNotNull,
                                                  Type tNull,
                                                  string typeName,
-                                                 RecordField[]? anonymousFields )
+                                                 RecordField[]? anonymousFields,
+                                                 ExternalNameAttribute? externalName )
         {
-            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields );
+            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields, externalName );
         }
 
         internal sealed class RecordType : PocoType, IRecordPocoType
@@ -64,7 +65,8 @@ namespace CK.Setup
                                Type tNotNull,
                                Type tNull,
                                string typeName,
-                               RecordField[]? anonymousFields )
+                               RecordField[]? anonymousFields,
+                               ExternalNameAttribute? externalName )
                 : base( s,
                         tNotNull,
                         typeName,
@@ -72,7 +74,7 @@ namespace CK.Setup
                         t => new Null( t, tNull ) )
             {
                 if( anonymousFields != null ) SetFields( monitor, s, anonymousFields );
-                _externalName = tNotNull.GetCustomAttribute<ExternalNameAttribute>();
+                _externalName = externalName;
             }
 
             internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields )

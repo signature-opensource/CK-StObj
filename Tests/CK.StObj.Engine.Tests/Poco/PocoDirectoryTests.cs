@@ -94,7 +94,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void PocoName_attribute_must_be_on_the_primary_interface()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICmdSecondary ) );
-            TestHelper.GetFailedResult( c, $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName()}'." );
+            TestHelper.GetFailedResult( c, $"ExternalName attribute appear on '{typeof( ICmdSecondary ).ToCSharpName(false)}'." );
         }
 
         [ExternalName( "Cmd1" )]

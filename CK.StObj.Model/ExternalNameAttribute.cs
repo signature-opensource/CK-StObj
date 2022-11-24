@@ -35,19 +35,8 @@ namespace CK.Core
         /// <param name="previousNames">Any number of previous names.</param>
         public ExternalNameAttribute( string name, params string[] previousNames )
         {
-            CheckName( name );
-            foreach( var n in previousNames ) CheckName( n );
             Name = name;
             PreviousNames = previousNames;
-        }
-
-        static void CheckName( string name )
-        {
-            Throw.CheckNotNullOrWhiteSpaceArgument( name );
-            if( name.StartsWith( '!' ) )
-            {
-                Throw.ArgumentException( nameof( name ), $"External name must not start with a '!': '{name}'." );
-            }
         }
 
         /// <summary>
