@@ -58,6 +58,8 @@ namespace CK.Setup
 
             public bool IsExchangeable => NonNullable.IsExchangeable;
 
+            public IPocoType ImplNominalType => NonNullable.ImplNominalType;
+
             public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
                 if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
@@ -118,6 +120,8 @@ namespace CK.Setup
             public string CSharpName => _csharpName;
 
             public string ImplTypeName => _csharpName;
+
+            public IPocoType ImplNominalType => this;
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
@@ -200,6 +204,11 @@ namespace CK.Setup
         /// purely generated type name.
         /// </summary>
         public virtual string ImplTypeName => _csharpName;
+
+        /// <summary>
+        /// By default this: this works for basic types and for record.
+        /// </summary>
+        public virtual IPocoType ImplNominalType => this;
 
         public bool IsPurelyGeneratedType => Type == IDynamicAssembly.PurelyGeneratedType;
 

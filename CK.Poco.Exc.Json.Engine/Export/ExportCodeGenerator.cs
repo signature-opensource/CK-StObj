@@ -320,7 +320,7 @@ namespace CK.Setup.PocoJson
 
         void GeneratePocoWriteMethod( IActivityMonitor monitor, IPrimaryPocoType type )
         {
-            // Each Poco class is a IWriter.
+            // Each Poco class is a PocoJsonExportSupport.IWriter.
             var pocoClass = _generationContext.Assembly.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
             pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "PocoJsonExportSupport.IWriter" ) );
 
@@ -398,29 +398,109 @@ namespace CK.Setup.PocoJson
 internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
 {
     w.WriteStartArray();
-    switch( o )
-    {" )
-                .NewLine();
+    var t = o.GetType();
+    if( t.IsValueType )
+    {
+        if( t.IsEnum )
+        {
+            switch( o )
+            {
+                " ).CreatePart( out var enumCases ).Append( @"
+                default: w.ThrowJsonException( $""Unregistered enumeration type: {t}"" ); break;
+            }
+        }
+        else if( t.Name.StartsWith( ""ValueTuple`"", StringComparison.Ordinal ) && t.Namespace == ""System"" )
+        {
+            switch( o )
+            {
+                " ).CreatePart( out var valueTupleCases ).Append( @"
+                default: w.ThrowJsonException( $""Unregistered ValueTuple: {t}"" ); break;
+            }
+        }
+        else switch( o )
+        {
+            " ).CreatePart( out var basicValueTypeCases ).Append( @"
+            " ).CreatePart( out var namedRecordCases ).Append( @"
+            default: w.ThrowJsonException( $""Unregistered value type: {t}"" ); break;
+        }
+    }
+    else
+    {
+        switch( o )
+        {
+            " ).CreatePart( out var basicRefTypeCases ).Append( @"
+            case IPoco:
+            {
+                switch( o )
+                {
+                    " ).CreatePart( out var pocoCases ).Append( @"
+                }
+                break;
+            }
+            case Array:
+            {
+                " ).CreatePart( out var arrayMatch ).Append( @"
+                break;
+            }
+            " ).CreatePart( out var collectionCases ).Append( @"
+            default: w.ThrowJsonException( $""Unregistered type: {t}"" ); break;
+        }
+    }
+    w.WriteEndArray();
+}" );
             foreach( var t in _nameMap.ExchangeableNonNullableTypes )
             {
                 if( t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.AbstractIPoco || t.Kind == PocoTypeKind.UnionType ) continue;
 
-                _pocoDirectory.Append( "case " ).Append( t.CSharpName ).Append( " v:" )
-                    .OpenBlock()
-                    .Append( writer =>
-                    {
-                        GenerateTypeHeader( writer, t.NonNullable );
-                        GenerateWrite( writer, t, "v" );
-                    } )
-                    .NewLine()
-                    .Append( "break;" )
-                    .CloseBlock();
-            }
-            _pocoDirectory.Append( @"default: w.ThrowJsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" ); break;
-    }
-    w.WriteEndArray();
-}" );
-        }
+                switch( t.Kind )
+                {
+                    case PocoTypeKind.Basic:
+                        {
+                            var part = t.Type.IsValueType ? basicValueTypeCases : basicRefTypeCases;
+                            part.Append( "case " ).Append( t.ImplTypeName ).Append( " v:" )
+                                .OpenBlock()
+                                .Append( writer =>
+                                {
+                                    GenerateTypeHeader( writer, t );
+                                    GenerateWrite( writer, t, "v" );
+                                } )
+                                .NewLine()
+                                .Append( "break;" )
+                                .CloseBlock();
+                            break;
+                        }
 
+                    case PocoTypeKind.Enum:
+                        {
+                            enumCases.Append( "case " ).Append( t.ImplTypeName ).Append( " v:" )
+                                .OpenBlock()
+                                .Append( writer =>
+                                {
+                                    GenerateTypeHeader( writer, t );
+                                    GenerateWrite( writer, t, "v" );
+                                } )
+                                .NewLine()
+                                .Append( "break;" )
+                                .CloseBlock();
+                            break;
+                        }
+
+                    case PocoTypeKind.IPoco:
+                        {
+                            pocoCases.Append( "case " ).Append( t.ImplTypeName ).Append( " v:" )
+                                .OpenBlock()
+                                .Append( writer =>
+                                {
+                                    GenerateTypeHeader( writer, t );
+                                    GenerateWrite( writer, t, "v" );
+                                } )
+                                .NewLine()
+                                .Append( "break;" )
+                                .CloseBlock();
+                            break;
+                        }
+                }
+            }
+        }
     }
 }

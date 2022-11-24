@@ -1,10 +1,13 @@
 using CK.CodeGen;
 using CK.Core;
+using OneOf.Types;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using NullabilityInfo = System.Reflection.TEMPNullabilityInfo;
@@ -203,41 +206,97 @@ namespace CK.Setup
                 var csharpName = isRegular
                                     ? $"{listOrHashSet}<{tI.CSharpName}>"
                                     : $"{(isList ? "IList" : "ISet")}<{tI.CSharpName}>";
-                string? typeName = null;
-                if( !isRegular )
-                {
-                    if( tI.Type.IsValueType )
-                    {
-                        Debug.Assert( tI.NonNullable.CSharpName == tI.ImplTypeName );
-                        if( tI.IsNullable )
-                        {
-                            typeName = $"CovariantHelpers.CovNullableValue{listOrHashSet}<{tI.NonNullable.CSharpName}>";
-                            t = (isList ? typeof( CovariantHelpers.CovNullableValueList<> ) : typeof( CovariantHelpers.CovNullableValueHashSet<> ))
-                                .MakeGenericType( tI.NonNullable.Type );
-                        }
-                        else
-                        {
-                            typeName = $"CovariantHelpers.CovNotNullValue{listOrHashSet}<{tI.CSharpName}>";
-                            t = (isList ? typeof( CovariantHelpers.CovNotNullValueList<> ) : (typeof(CovariantHelpers.CovNotNullValueHashSet<>)))
-                                .MakeGenericType( tI.Type );
-                        }
-                    }
-                    else if( tI.Kind == PocoTypeKind.IPoco )
-                    {
-                        var cType = EnsurePocoListOrHashSetType( monitor, (IPrimaryPocoType)tI.NonNullable, isList, listOrHashSet );
-                        if( cType == null ) return default;
-                        typeName = cType;
-                        t = IDynamicAssembly.PurelyGeneratedType;
-                    }
-                }
-                if( typeName == null )
-                {
-                    typeName = isRegular ? csharpName : $"{listOrHashSet}<{tI.CSharpName}>";
-                    t = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                }
                 if( !_cache.TryGetValue( csharpName, out var result ) )
                 {
-                    result = PocoType.CreateCollection( monitor, this, t, csharpName, typeName, PocoTypeKind.List, tI );
+                    string? requiredNominalCSharpName = null;
+                    string? typeName = null;
+                    if( !isRegular )
+                    {
+                        // IList or ISet
+                        if( tI.Type.IsValueType )
+                        {
+                            // For value type item, use our covariant implementations.
+                            Debug.Assert( tI.CSharpName == tI.ImplTypeName );
+                            if( tI.IsNullable )
+                            {
+                                typeName = $"CovariantHelpers.CovNullableValue{listOrHashSet}<{tI.NonNullable.CSharpName}>";
+                                t = (isList ? typeof( CovariantHelpers.CovNullableValueList<> ) : typeof( CovariantHelpers.CovNullableValueHashSet<> ))
+                                    .MakeGenericType( tI.NonNullable.Type );
+                            }
+                            else
+                            {
+                                typeName = $"CovariantHelpers.CovNotNullValue{listOrHashSet}<{tI.CSharpName}>";
+                                t = (isList ? typeof( CovariantHelpers.CovNotNullValueList<> ) : (typeof( CovariantHelpers.CovNotNullValueHashSet<> )))
+                                    .MakeGenericType( tI.Type );
+                            }
+                            // These are the nominal implementations: we let the null requiredNominalCSharpName.
+                        }
+                        else if( tI.Kind == PocoTypeKind.IPoco )
+                        {
+                            // For IPoco, use generated covariant implementations.
+                            // We choose the nullable item type to follow the C# "oblivious nullable reference type". 
+                            var cType = EnsurePocoListOrHashSetType( monitor, (IPrimaryPocoType)tI.Nullable, isList, listOrHashSet );
+                            if( cType == null ) return default;
+                            typeName = cType;
+                            t = IDynamicAssembly.PurelyGeneratedType;
+                            // This implementation is the nominal one if the item type is nullable because of the C# "oblivious nullable reference type".
+                            // If once we generate implementations that guaranty non nullable items, them these will be both nominal.
+                            // By choosing the nullable here, we expose that it's a IList<IThing?> that actually is implemented and not a
+                            // (buggy) IList<IThing>.
+                            if( !tI.IsNullable )
+                            {
+                                requiredNominalCSharpName = $"{(isList ? "IList" : "ISet")}<{tI.Nullable.CSharpName}>";
+                            }
+                        }
+                    }
+                    if( typeName == null )
+                    {
+                        // It's not an abstraction for which we have a dedicated implementation or it's explicitly a regular List/HashSet.
+                        typeName = isRegular ? csharpName : $"{listOrHashSet}<{tI.CSharpName}>";
+                        t = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+                        // This is the nominal implementation if:
+                        //   - the regular type has been requested
+                        //   - AND
+                        //      - the item type is a value type (nullability is handled at the type level)
+                        //      - OR the item type is nullable.
+                        // Same as above here: we expose that it's a List<T?> that actually is implemented and not a
+                        // (buggy) IList<T>.
+                        if( !(isRegular && (tI.Type.IsValueType || tI.IsNullable)) )
+                        {
+                            requiredNominalCSharpName = $"{(isList ? "List" : "HashSet")}<{tI.Nullable.CSharpName}>";
+                        }
+                    }
+                    // Handle the nominal implementation: if are here with a null implNominalType then
+                    // the nominal type is about to be created.
+                    IPocoType? implNominalType = null;
+                    if( requiredNominalCSharpName != null )
+                    {
+                        // The type we are about to create is not the implementation nominal one.
+                        // However we have everything here to create it:
+                        // - It has the same t, typeName and kind.
+                        // - Its item type is tI.Nullable.
+                        // - We use the requiredNominalCSharpName != null as a flag.
+                        if( !_cache.TryGetValue( requiredNominalCSharpName, out implNominalType ) )
+                        {
+                            implNominalType = PocoType.CreateCollection( monitor,
+                                                                         this,
+                                                                         t,
+                                                                         requiredNominalCSharpName,
+                                                                         typeName,
+                                                                         isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
+                                                                         tI.Nullable,
+                                                                         null );
+                            _cache.Add( requiredNominalCSharpName, implNominalType );
+                        }
+                    }
+                    result = PocoType.CreateCollection( monitor,
+                                                        this,
+                                                        t,
+                                                        csharpName,
+                                                        typeName,
+                                                        isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
+                                                        tI,
+                                                        implNominalType );
                     _cache.Add( csharpName, result );
                 }
                 return nType.IsNullable ? result.Nullable : result;
@@ -257,38 +316,70 @@ namespace CK.Setup
                 var csharpName = isRegular
                                         ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
                                         : $"IDictionary<{tK.CSharpName},{tV.CSharpName}>";
-                string? typeName = null;
-                if( !isRegular )
+                if( !_cache.TryGetValue( csharpName, out var result ) )
                 {
-                    if( tV.Type.IsValueType )
+                    string? requiredNominalCSharpName = null;
+                    string? typeName = null;
+                    if( !isRegular )
                     {
-                        if( tV.IsNullable )
+                        if( tV.Type.IsValueType )
                         {
-                            typeName = $"CovariantHelpers.CovNullableValueDictionary<{tK.CSharpName},{tV.NonNullable.CSharpName}>";
-                            t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.NonNullable.Type );
+                            if( tV.IsNullable )
+                            {
+                                typeName = $"CovariantHelpers.CovNullableValueDictionary<{tK.CSharpName},{tV.NonNullable.CSharpName}>";
+                                t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.NonNullable.Type );
+                            }
+                            else
+                            {
+                                typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.CSharpName},{tV.CSharpName}>";
+                                t = typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                            }
                         }
-                        else
+                        else if( tV.Kind == PocoTypeKind.IPoco )
                         {
-                            typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.CSharpName},{tV.CSharpName}>";
-                            t = typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                            var cType = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV );
+                            if( cType == null ) return default;
+                            typeName = cType;
+                            t = IDynamicAssembly.PurelyGeneratedType;
+                            if( !tV.IsNullable )
+                            {
+                                requiredNominalCSharpName = $"IDictionary<{tV.Nullable.CSharpName}>";
+                            }
                         }
                     }
-                    else if( tV.Kind == PocoTypeKind.IPoco )
+                    if( typeName == null )
                     {
-                        var cType = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV );
-                        if( cType == null ) return default;
-                        typeName = cType;
-                        t = IDynamicAssembly.PurelyGeneratedType;
+                        typeName = isRegular ? csharpName : $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
+                        t = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                        if( !(isRegular && (tV.Type.IsValueType || tV.IsNullable)) )
+                        {
+                            requiredNominalCSharpName = $"Dictionary<{tV.Nullable.CSharpName}>";
+                        }
                     }
-                }
-                if( typeName == null )
-                {
-                    typeName = isRegular ? csharpName : $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
-                    t = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                }
-                if( !_cache.TryGetValue( typeName, out var result ) )
-                {
-                    result = PocoType.CreateDictionary( monitor, this, t, csharpName, typeName, tK, tV );
+                    IPocoType? implNominalType = null;
+                    if( requiredNominalCSharpName != null )
+                    {
+                        if( !_cache.TryGetValue( requiredNominalCSharpName, out implNominalType ) )
+                        {
+                            implNominalType = PocoType.CreateDictionary( monitor,
+                                                                         this,
+                                                                         t,
+                                                                         requiredNominalCSharpName,
+                                                                         typeName,
+                                                                         tK,
+                                                                         tV.Nullable,
+                                                                         null );
+                            _cache.Add( requiredNominalCSharpName, implNominalType );
+                        }
+                    }
+                    result = PocoType.CreateDictionary( monitor,
+                                                        this,
+                                                        t,
+                                                        csharpName,
+                                                        typeName,
+                                                        tK,
+                                                        tV,
+                                                        implNominalType );
                     _cache.Add( typeName, result );
                 }
                 return nType.IsNullable ? result.Nullable : result;
@@ -296,7 +387,7 @@ namespace CK.Setup
 
             string? EnsurePocoListOrHashSetType( IActivityMonitor monitor, IPrimaryPocoType tI, bool isList, string listOrHasSet )
             {
-                Debug.Assert( !tI.IsNullable );
+                Debug.Assert( tI.IsNullable );
                 var genTypeName = $"Poco{listOrHasSet}_{tI.Index}_CK";
                 if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
                 {
@@ -307,8 +398,7 @@ namespace CK.Setup
 
             string? EnsurePocoDictionaryType( IActivityMonitor monitor, IPocoType key, IPrimaryPocoType tI )
             {
-                // There is no difference between Dictionary of nullable and Dictionary of non nullable types for Dictionary.
-                tI = tI.NonNullable;
+                Debug.Assert( tI.IsNullable );
                 var genTypeName = $"PocoDictionary_{key.Index}_{tI.Index}_CK";
                 if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
                 {
@@ -327,7 +417,7 @@ namespace CK.Setup
             string? chsarpName = tE.CSharpName + "[]";
             if( !_cache.TryGetValue( chsarpName, out var result ) )
             {
-                result = PocoType.CreateCollection( monitor, this, nType.Type, chsarpName, chsarpName, PocoTypeKind.Array, tE );
+                result = PocoType.CreateCollection( monitor, this, nType.Type, chsarpName, chsarpName, PocoTypeKind.Array, tE, null );
                 _cache.Add( chsarpName, result );
             }
             return nType.IsNullable ? result.Nullable : result;
@@ -400,38 +490,61 @@ namespace CK.Setup
         {
             var subInfos = FlattenValueTuple( nType ).ToList();
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
-            // The typeName of an anonymous record uses the
-            // registered type names of its fields since a field exposes its
-            // FieldTypeCSharpName that is the registered type name.
-            //
             // Here we can resolve the field types without fear of infinite recursion: value tuples
             // cannot be recursive by design.
             //
             var b = StringBuilderPool.Get();
+            var bNominal = StringBuilderPool.Get();
             b.Append( '(' );
+            bNominal.Append( '(' );
             int idx = 0;
             foreach( var sub in subInfos )
             {
                 var f = fields[idx++];
                 var tF = Register( monitor, ctx, sub );
                 if( tF == null ) return null;
-                if( b.Length != 1 ) b.Append( ',' );
+                if( b.Length != 1 )
+                {
+                    b.Append( ',' );
+                    bNominal.Append( ',' );
+                }
                 // We use the CSharpName, not the PocoType's ImplTypeName.
                 // This enables the record's type name to be used as the implementation type name and we have not
                 // really the choice here: there is no way to generate an adapter that could handle for instance
                 // the support of IPoco interface family.
                 b.Append( tF.CSharpName );
+                bNominal.Append( tF.CSharpName );
                 if( !f.IsUnnamed ) b.Append( ' ' ).Append( f.Name );
                 f.SetType( tF );
             }
             b.Append( ')' );
-            var typeName = StringBuilderPool.GetStringAndReturn( b );
-            if( !_cache.TryGetValue( typeName, out var exists ) )
+            bNominal.Append( ')' );
+
+            var nominalTypeName = StringBuilderPool.GetStringAndReturn( bNominal );
+            if( !_cache.TryGetValue( nominalTypeName, out var implNominalType ) )
             {
-                var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, fields, null );
-                _cache.Add( typeName, exists = r );
+                RecordField[] nominalFields = new RecordField[fields.Length];
+                for( int i = 0; i < nominalFields.Length; i++ )
+                {
+                    var f  = new RecordField( i, null );
+                    f.SetType( fields[i].Type );
+                    nominalFields[i] = f;
+                }
+                implNominalType = PocoType.CreateRecord( monitor, this, tNotNull, tNull, nominalTypeName, nominalFields, null, null );
+                _cache.Add( nominalTypeName, implNominalType );
             }
-            return nType.IsNullable ? exists.Nullable : exists;
+
+            var typeName = StringBuilderPool.GetStringAndReturn( b );
+            var result = implNominalType;
+            if( typeName != nominalTypeName )
+            {
+                if( !_cache.TryGetValue( typeName, out result ) )
+                {
+                    result = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, fields, null, implNominalType );
+                    _cache.Add( typeName, result );
+                }
+            }
+            return nType.IsNullable ? result.Nullable : result;
 
             static IEnumerable<IExtNullabilityInfo> FlattenValueTuple( IExtNullabilityInfo nType )
             {
@@ -464,7 +577,7 @@ namespace CK.Setup
             }
 
             var typeName = tNotNull.ToCSharpName();
-            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, null, externalNames );
+            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, null, externalNames, null );
             _cache.Add( tNotNull, r );
 
             // Currently allows only a single constructor. This is not good: we should allow deserialization constructor...

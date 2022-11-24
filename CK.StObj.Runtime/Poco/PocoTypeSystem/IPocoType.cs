@@ -62,6 +62,11 @@ namespace CK.Setup
         string ImplTypeName { get; }
 
         /// <summary>
+        /// Gets the type that defines the nominal implementation of this type.
+        /// </summary>
+        IPocoType ImplNominalType { get; }
+
+        /// <summary>
         /// Gets the nullable associated type (this if <see cref="IsNullable"/> is true).
         /// </summary>
         IPocoType Nullable { get; }

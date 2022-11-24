@@ -55,7 +55,7 @@ namespace CK.StObj.Engine.Tests.Poco
             const int basicTypesCount = 19;
             const int pocoTypesCount = 4 + 2; // IPoco and IClosedPoco
             const int listTypesCount = 1;
-            const int anonymousTypesCount = 2; //(Count,Name) and (Count,Name,Inside)
+            const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective "naked" ImplNominalType.
 
             ts.AllTypes.Count.Should().Be( (basicTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 

@@ -14,15 +14,16 @@ namespace CK.Setup
 
     partial class PocoType
     {
-        internal static CollectionType1 CreateCollection( IActivityMonitor monitor,
+        internal static ListOrSetType CreateCollection( IActivityMonitor monitor,
                                                           PocoTypeSystem s,
                                                           Type tCollection,
                                                           string csharpName,
                                                           string implTypeName,
                                                           PocoTypeKind kind,
-                                                          IPocoType itemType )
+                                                          IPocoType itemType,
+                                                          IPocoType? implNominalType )
         {
-            return new CollectionType1( monitor, s, tCollection, csharpName, implTypeName, kind, itemType );
+            return new ListOrSetType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, implNominalType );
         }
 
         internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
@@ -31,9 +32,10 @@ namespace CK.Setup
                                                          string csharpName,
                                                          string implTypeName,
                                                          IPocoType itemType1,
-                                                         IPocoType itemType2 )
+                                                         IPocoType itemType2,
+                                                         IPocoType? implNominalType )
         {
-            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2 );
+            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, implNominalType );
         }
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
@@ -54,25 +56,28 @@ namespace CK.Setup
 
         // List, HashSet, Array.
         // This auto implements IReadOnlyList<IPocoType> and IPocoType.ITypeRef.
-        internal sealed class CollectionType1 : PocoType, ICollectionPocoType, IReadOnlyList<IPocoType>, IPocoType.ITypeRef
+        internal sealed class ListOrSetType : PocoType, ICollectionPocoType, IReadOnlyList<IPocoType>, IPocoType.ITypeRef
         {
             readonly IPocoType _itemType;
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
+            readonly IPocoType _implNominalType;
 
-            public CollectionType1( IActivityMonitor monitor,
-                                    PocoTypeSystem s,
-                                    Type tCollection,
-                                    string csharpName,
-                                    string implTypeName,
-                                    PocoTypeKind kind,
-                                    IPocoType itemType )
+            public ListOrSetType( IActivityMonitor monitor,
+                                  PocoTypeSystem s,
+                                  Type tCollection,
+                                  string csharpName,
+                                  string implTypeName,
+                                  PocoTypeKind kind,
+                                  IPocoType itemType,
+                                  IPocoType? implNominalType )
                 : base( s, tCollection, csharpName, kind, t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
                 _implTypeName = implTypeName;
                 _itemType = itemType;
+                _implNominalType = implNominalType ?? this;
                 if( itemType.Kind != PocoTypeKind.Any )
                 {
                     _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
@@ -90,6 +95,8 @@ namespace CK.Setup
             new NullCollection Nullable => Unsafe.As<NullCollection>( base.Nullable );
 
             public override string ImplTypeName => _implTypeName;
+
+            public override IPocoType ImplNominalType => _implNominalType;
 
             public IReadOnlyList<IPocoType> ItemTypes => this;
 
@@ -260,6 +267,7 @@ namespace CK.Setup
             readonly IPocoType.ITypeRef? _nextRefKey;
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
+            readonly IPocoType _implNominalType;
 
             public DictionaryType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -267,7 +275,8 @@ namespace CK.Setup
                                    string csharpName,
                                    string implTypeName,
                                    IPocoType keyType,
-                                   IPocoType valueType )
+                                   IPocoType valueType,
+                                   IPocoType? implNominalType )
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
@@ -285,6 +294,7 @@ namespace CK.Setup
                     if( IsExchangeable && !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
                 }
                 _implTypeName = implTypeName;
+                _implNominalType = implNominalType ?? this;
             }
 
             // Base OnNoMoreExchangeable method is fine here.
@@ -295,6 +305,8 @@ namespace CK.Setup
             new NullCollection Nullable => Unsafe.As<NullCollection>( base.Nullable );
 
             public override string ImplTypeName => _implTypeName;
+
+            public override IPocoType ImplNominalType => _implNominalType;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 

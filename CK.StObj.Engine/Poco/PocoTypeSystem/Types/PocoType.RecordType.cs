@@ -21,9 +21,10 @@ namespace CK.Setup
                                                  Type tNull,
                                                  string typeName,
                                                  RecordField[]? anonymousFields,
-                                                 ExternalNameAttribute? externalName )
+                                                 ExternalNameAttribute? externalName,
+                                                 IPocoType? implNominalType )
         {
-            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields, externalName );
+            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields, externalName, implNominalType );
         }
 
         internal sealed class RecordType : PocoType, IRecordPocoType
@@ -58,6 +59,7 @@ namespace CK.Setup
 
             [AllowNull] RecordField[] _fields;
             readonly ExternalNameAttribute? _externalName;
+            readonly IPocoType _implNominalType;
             DefaultValueInfo _defInfo;
 
             public RecordType( IActivityMonitor monitor,
@@ -66,7 +68,8 @@ namespace CK.Setup
                                Type tNull,
                                string typeName,
                                RecordField[]? anonymousFields,
-                               ExternalNameAttribute? externalName )
+                               ExternalNameAttribute? externalName,
+                               IPocoType? implNominalType )
                 : base( s,
                         tNotNull,
                         typeName,
@@ -75,6 +78,7 @@ namespace CK.Setup
             {
                 if( anonymousFields != null ) SetFields( monitor, s, anonymousFields );
                 _externalName = externalName;
+                _implNominalType = implNominalType ?? this;
             }
 
             internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields )
@@ -96,6 +100,8 @@ namespace CK.Setup
             public ExternalNameAttribute? ExternalName => _externalName;
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
+
+            public override IPocoType ImplNominalType => _implNominalType;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 
