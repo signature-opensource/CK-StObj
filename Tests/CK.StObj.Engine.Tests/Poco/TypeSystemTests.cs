@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var r = TestHelper.GetSuccessfulResult( c );
             var ts = r.CKTypeResult.PocoTypeSystem;
 
-            const int basicTypesCount = 18;
+            const int basicTypesCount = 19;
             const int pocoTypesCount = 4 + 2; // IPoco and IClosedPoco
             const int listTypesCount = 1;
             const int anonymousTypesCount = 2; //(Count,Name) and (Count,Name,Inside)

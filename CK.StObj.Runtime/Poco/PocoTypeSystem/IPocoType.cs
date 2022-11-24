@@ -57,6 +57,11 @@ namespace CK.Setup
         string CSharpName { get; }
 
         /// <summary>
+        /// Gets the implementation C# type name for this type.
+        /// </summary>
+        string ImplTypeName { get; }
+
+        /// <summary>
         /// Gets the nullable associated type (this if <see cref="IsNullable"/> is true).
         /// </summary>
         IPocoType Nullable { get; }

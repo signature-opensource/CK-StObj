@@ -38,6 +38,8 @@ namespace CK.Setup
 
             public string CSharpName => _csharpName;
 
+            public string ImplTypeName => NonNullable.ImplTypeName;
+
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
             public Type Type => NonNullable.Type;
@@ -115,6 +117,8 @@ namespace CK.Setup
 
             public string CSharpName => _csharpName;
 
+            public string ImplTypeName => _csharpName;
+
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
             public Type Type => _type;
@@ -189,6 +193,13 @@ namespace CK.Setup
         public bool IsNullable => false;
 
         public string CSharpName => _csharpName;
+
+        /// <summary>
+        /// This works for basic types and for record.
+        /// For collection, this can be the regular type, an adapter or a
+        /// purely generated type name.
+        /// </summary>
+        public virtual string ImplTypeName => _csharpName;
 
         public bool IsPurelyGeneratedType => Type == IDynamicAssembly.PurelyGeneratedType;
 

@@ -37,10 +37,6 @@ namespace CK.Core
         {
             CheckName( name );
             foreach( var n in previousNames ) CheckName( n );
-            if( previousNames.Contains( name ) || previousNames.GroupBy( Util.FuncIdentity ).Count() > 1 )
-            {
-                Throw.ArgumentException( "Duplicate names in attribute.", nameof( previousNames ) );
-            }
             Name = name;
             PreviousNames = previousNames;
         }

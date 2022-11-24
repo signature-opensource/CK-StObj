@@ -29,11 +29,14 @@ namespace CK.Setup
             int idx = 0;
             foreach( var t in typeSystem.AllNonNullableTypes )
             {
-                if( idx == exchangeableCount ) Throw.ArgumentNullException( nameof( exchangeableCount ) );
                 var n = _names[t.Index >> 1];
-                if( n.IsExchangeable ) _exchangeables[idx++] = t;
+                if( n.IsExchangeable )
+                {
+                    _exchangeables[idx] = t;
+                    if( ++idx > exchangeableCount ) break;
+                }
             }
-            if( idx < exchangeableCount ) Throw.ArgumentNullException( nameof( exchangeableCount ) );
+            Throw.CheckArgument( idx == exchangeableCount );
         }
 
         /// <summary>

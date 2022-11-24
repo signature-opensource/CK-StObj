@@ -160,8 +160,6 @@ namespace CK.Setup
                               || result.Type == typeof( string )
                               || result.Kind == PocoTypeKind.IPoco
                               || result.Kind == PocoTypeKind.AbstractIPoco );
-                // string and object are oblivious regarding readonly/mutable context.
-                // Poco are not read only.
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result, null );
             }
             if( typeof( IPoco ).IsAssignableFrom( t ) )
@@ -202,9 +200,9 @@ namespace CK.Setup
             {
                 var rtI = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( rtI == null ) return null;
-                var regTypeName = isRegular
-                                    ? $"System.Collections.Generic.List<{rtI.Value.RegCSharpName}>"
-                                    : $"System.Collections.Generic.IList<{rtI.Value.RegCSharpName}>";
+                var csharpName = isRegular
+                                    ? $"List<{rtI.Value.RegCSharpName}>"
+                                    : $"IList<{rtI.Value.RegCSharpName}>";
                 var tI = rtI.Value.PocoType;
                 string? typeName = null;
                 if( !isRegular )
@@ -241,7 +239,7 @@ namespace CK.Setup
                     _cache.Add( typeName, result );
                 }
                 return new RegisterResult( nType.IsNullable ? result.Nullable : result,
-                                           nType.IsNullable ? regTypeName + "?" : regTypeName );
+                                           nType.IsNullable ? csharpName + "?" : csharpName );
             }
 
             RegisterResult? RegisterSet( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
@@ -371,7 +369,7 @@ namespace CK.Setup
             {
                 // There is no difference between Dictionary of nullable and Dictionary of non nullable types for Dictionary.
                 tI = tI.NonNullable;
-                var genTypeName = $"PocoDicitionary_{key.Index}_{tI.Index}_CK";
+                var genTypeName = $"PocoDictionary_{key.Index}_{tI.Index}_CK";
                 if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
                 {
                     _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryRequiredSupport( key, tI, genTypeName ) );

@@ -34,21 +34,12 @@ namespace CK.Setup.PocoJson
             _writers = new CodeWriter[nameMap.TypeSystem.AllNonNullableTypes.Count];
         }
 
-        void GenerateWrite( ICodeWriter writer, IPocoType t, string variableName, bool? withType = null )
+        void GenerateWrite( ICodeWriter writer, IPocoType t, string variableName )
         {
-            if( withType.HasValue )
-            {
-                if( withType.Value && t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.AbstractIPoco || t.Kind == PocoTypeKind.UnionType )
-                {
-                    withType = false;
-                }
-            }
-            else withType = false;
+            if( t.IsNullable ) GenerateNullableWrite( writer, t, variableName );
+            else GenerateNonNullableWrite( writer, t, variableName );
 
-            if( t.IsNullable ) GenerateNullableWrite( writer, t, variableName, withType.Value );
-            else GenerateNonNullableWrite( writer, t, variableName, withType.Value );
-
-            void GenerateNonNullableWrite( ICodeWriter writer, IPocoType nonNullable, string variableName, bool withType )
+            void GenerateNonNullableWrite( ICodeWriter writer, IPocoType nonNullable, string variableName )
             {
                 Debug.Assert( _writers[nonNullable.Index >> 1] != null );
                 Debug.Assert( !nonNullable.IsNullable && (nonNullable.Index & 1) == 0 );
@@ -58,58 +49,21 @@ namespace CK.Setup.PocoJson
                           .Append( " == null ) w.ThrowJsonNullWriteException();" )
                           .NewLine();
                 }
-                DoGenerate( writer, nonNullable, variableName, withType );
+                _writers[nonNullable.Index >> 1].Invoke( writer, variableName );
             }
 
-            void GenerateNullableWrite( ICodeWriter writer, IPocoType nullable, string variableName, bool withType )
+            void GenerateNullableWrite( ICodeWriter writer, IPocoType nullable, string variableName )
             {
                 Debug.Assert( nullable.IsNullable && (nullable.Index & 1) == 1 );
                 writer.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
                       .Append( "else" )
                       .OpenBlock();
-                if( nullable.Type.IsValueType )
-                {
-                    DoGenerate( writer, nullable.NonNullable, $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})", withType );
-                }
-                else
-                {
-                    DoGenerate( writer, nullable.NonNullable, variableName, withType );
-                }
+                var v = nullable.Type.IsValueType
+                        ? $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})"
+                        : variableName;
+                _writers[nullable.Index >> 1].Invoke( writer, v );
                 writer.CloseBlock();
             }
-
-            void DoGenerate( ICodeWriter writer, IPocoType nonNullable, string variableName, bool withType )
-            {
-                if( withType ) GenerateTypeHeader( writer, nonNullable );
-                _writers[nonNullable.Index >> 1].Invoke( writer, variableName );
-                if( withType )
-                {
-                    writer.NewLine();
-                    GenerateTypeFooter( writer );
-                }
-            }
-        }
-
-        void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable )
-        {
-            var typeName = _nameMap.GetName( nonNullable );
-            writer.Append( "w.WriteStartArray();" ).NewLine();
-            if( typeName.HasSimplifiedNames )
-            {
-                writer.Append( "w.WriteStringValue( options.UseSimplifiedTypes ? " )
-                    .AppendSourceString( typeName.SimplifiedName )
-                    .Append( " : " ).AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
-            }
-            else
-            {
-                writer.Append( "w.WriteStringValue( " )
-                    .AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
-            }
-        }
-
-        void GenerateTypeFooter( ICodeWriter writer )
-        {
-            writer.Append( "w.WriteEndArray();" ).NewLine();
         }
 
         void GenerateWritePropertyName( ICodeWriter writer, string name )
@@ -377,12 +331,13 @@ namespace CK.Setup.PocoJson
                      .GeneratedByComment().NewLine()
                      .Append( "if( withType )" )
                      .OpenBlock()
+                     .Append( "w.WriteStartArray();" ).NewLine()
                      .Append( writer => GenerateTypeHeader( writer, type ) )
                      .CloseBlock()
                      .Append( "WriteJson( w, options );" ).NewLine()
                      .Append( "if( withType )" )
                      .OpenBlock()
-                     .Append( writer => GenerateTypeFooter( writer ) )
+                     .Append( "w.WriteEndArray();" ).NewLine()
                      .CloseBlock()
                      .CloseBlock();
 
@@ -419,6 +374,22 @@ namespace CK.Setup.PocoJson
 
         }
 
+        void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable )
+        {
+            var typeName = _nameMap.GetName( nonNullable );
+            if( typeName.HasSimplifiedNames )
+            {
+                writer.Append( "w.WriteStringValue( options.UseSimplifiedTypes ? " )
+                    .AppendSourceString( typeName.SimplifiedName )
+                    .Append( " : " ).AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
+            }
+            else
+            {
+                writer.Append( "w.WriteStringValue( " )
+                    .AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
+            }
+        }
+
         void GenerateWriteAny()
         {
             _pocoDirectory
@@ -426,6 +397,7 @@ namespace CK.Setup.PocoJson
                 .Append( @"
 internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
 {
+    w.WriteStartArray();
     switch( o )
     {" )
                 .NewLine();
@@ -435,12 +407,18 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
 
                 _pocoDirectory.Append( "case " ).Append( t.CSharpName ).Append( " v:" )
                     .OpenBlock()
-                    .Append( writer => GenerateWrite( writer, t, "v", true ) ).NewLine()
-                    .Append( "break;" ).NewLine()
+                    .Append( writer =>
+                    {
+                        GenerateTypeHeader( writer, t.NonNullable );
+                        GenerateWrite( writer, t, "v" );
+                    } )
+                    .NewLine()
+                    .Append( "break;" )
                     .CloseBlock();
             }
             _pocoDirectory.Append( @"default: w.ThrowJsonException( $""Unregistered type '{o.GetType().AssemblyQualifiedName}'."" ); break;
     }
+    w.WriteEndArray();
 }" );
         }
 
