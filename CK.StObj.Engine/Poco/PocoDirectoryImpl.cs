@@ -116,13 +116,13 @@ namespace CK.Setup
                     if( f.FieldAccess == PocoFieldAccessKind.IsByRef )
                     {
                         // A ref property is only the return of the ref backing field.
-                        tB.Append( "public ref " ).Append( f.FieldTypeCSharpName ).Space().Append( f.Name )
+                        tB.Append( "public ref " ).Append( f.Type.CSharpName ).Space().Append( f.Name )
                           .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                     }
                     else
                     {
                         // The getter is always the same.
-                        tB.Append( "public " ).Append( f.FieldTypeCSharpName ).Space().Append( f.Name );
+                        tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
                         if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
                         {
                             // Readonly doesn't require the "get".

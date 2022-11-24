@@ -162,10 +162,10 @@ namespace CK.StObj.Engine.Tests.Poco
         public void ref_property_or_field_thats_the_question()
         {
             var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
-            var rt1 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetValidSetterButNotIdeal ) )! );
-            Debug.Assert( rt1 != null );
-            var rt2 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSimple ) )! );
-            Debug.Assert( rt2 != null );
+            var t1 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetValidSetterButNotIdeal ) )! );
+            Debug.Assert( t1 != null );
+            var t2 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSimple ) )! );
+            Debug.Assert( t2 != null );
 
             // TBI: Why is Simple usable without initialization but ValidSetterButNotIdeal is not? (new() is required...)
             Simple sField;
@@ -177,13 +177,13 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( sProp.Thing.Values == null, "It is the Poco framework that is able to correctly initialize properties." );
 
             // Both Requires Initialization.
-            Debug.Assert( rt1.Value.PocoType.DefaultValueInfo.RequiresInit );
-            Debug.Assert( rt2.Value.PocoType.DefaultValueInfo.RequiresInit );
+            Debug.Assert( t1.DefaultValueInfo.RequiresInit );
+            Debug.Assert( t2.DefaultValueInfo.RequiresInit );
 
             // The same initialization.
-            var defCode = rt1.Value.PocoType.DefaultValueInfo.DefaultValue.ValueCSharpSource;
+            var defCode = t1.DefaultValueInfo.DefaultValue.ValueCSharpSource;
             defCode.Should().Be( "new(){Thing = new(){Power = 42, Values = new List<int>(), Name = @\"Hip!\"}}" );
-            rt2.Value.PocoType.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( defCode );
+            t2.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( defCode );
         }
 
 

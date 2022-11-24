@@ -16,11 +16,6 @@ namespace CK.Setup
         string Name { get; }
 
         /// <summary>
-        /// Gets the field type name. It may not be the actual field type.
-        /// </summary>
-        string FieldTypeCSharpName { get; }
-
-        /// <summary>
         /// Gets whether this field is disallowed in a owner, always allowed or
         /// allowed but requires the <see cref="DefaultValueInfo.DefaultValue"/> to be set.
         /// </summary>

@@ -16,7 +16,6 @@ namespace CK.Setup
 
         public PrimaryPocoField( IPocoPropertyInfo p,
                                  IPocoType type,
-                                 string fieldTypeName,
                                  PocoFieldAccessKind fieldAccesskind,
                                  PocoType.PrimaryPocoType owner,
                                  IPocoFieldDefaultValue? defaultValue )
@@ -26,7 +25,6 @@ namespace CK.Setup
             _defInfo = defaultValue != null ? new DefaultValueInfo( defaultValue ) : type.DefaultValueInfo;
             _privateFieldName = $"_v{Index}";
             _fieldAccesskind = fieldAccesskind;
-            FieldTypeCSharpName = fieldTypeName;
             _owner = owner;
             if( type.Kind != PocoTypeKind.Any )
             {
@@ -55,8 +53,6 @@ namespace CK.Setup
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
         public PocoFieldAccessKind FieldAccess => _fieldAccesskind;
-
-        public string FieldTypeCSharpName { get; }
 
         IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRef;
 

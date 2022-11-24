@@ -13,7 +13,6 @@ namespace CK.Setup
 
         [AllowNull] IPocoType _type;
         [AllowNull] PocoType.RecordType _owner;
-        [AllowNull] string _fieldTypeName;
         IPocoType.ITypeRef? _nextRef;
         readonly string _name;
         readonly int _index;
@@ -60,11 +59,9 @@ namespace CK.Setup
 
         IPocoType IPocoType.ITypeRef.Owner => _owner;
 
-        public string FieldTypeCSharpName => _fieldTypeName;
-
         IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRef;
 
-        internal void SetType( IPocoType t, string fieldTypeName )
+        internal void SetType( IPocoType t )
         {
             Debug.Assert( _type == null && t != null );
             if( t.Kind != PocoTypeKind.Any )
@@ -72,7 +69,6 @@ namespace CK.Setup
                 _nextRef = ((PocoType)t.NonNullable).AddBackRef( this );
             }
             _type = t;
-            _fieldTypeName = fieldTypeName;
             if( _defInfo.IsDisallowed )
             {
                 _defInfo = _type.DefaultValueInfo;

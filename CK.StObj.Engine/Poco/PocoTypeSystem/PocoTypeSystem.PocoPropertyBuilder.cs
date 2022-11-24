@@ -12,8 +12,6 @@ using NullabilityInfoContext = System.Reflection.TEMPNullabilityInfoContext;
 
 namespace CK.Setup
 {
-    using RegisterResult = IPocoTypeSystem.RegisterResult;
-
     public sealed partial class PocoTypeSystem
     {
         sealed class PocoPropertyBuilder
@@ -22,7 +20,7 @@ namespace CK.Setup
             IPocoPropertyInfo? _prop;
             IExtPropertyInfo? _bestProperty;
             PocoFieldAccessKind _fieldAccesskind;
-            RegisterResult? _bestReg;
+            IPocoType? _bestReg;
             IExtMemberInfo? _defaultValueSource;
             FieldDefaultValue? _defaultValue;
             // Used for the inferred type.
@@ -48,7 +46,7 @@ namespace CK.Setup
                 {
                     return null;
                 }
-                bool isWritable = _bestReg.HasValue;
+                bool isWritable = _bestReg != null;
                 if( !isWritable )
                 {
                     // No writable property defines the type.
@@ -72,26 +70,24 @@ namespace CK.Setup
                     if( !CheckExistingReadOnlyProperties( monitor, null ) ) return null;
                 }
                 Debug.Assert( _bestReg != null && _bestProperty != null );
-                ref var best = ref _bestReg.DangerousGetValueOrDefaultReference();
                 if( _defaultValue != null
                     && _defaultValue.SimpleValue != null
-                    && !best.PocoType.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) )
+                    && !_bestReg.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) )
                 {
-                    monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{best.RegCSharpName}'." );
+                    monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_bestReg.CSharpName}'." );
                     return null;
                 }
                 // Now that we know that there are no issues on the unified type across the property implementations
                 // we handle the potential UnionType actual type.
-                var finalType = best.PocoType;
+                var finalType = _bestReg;
                 if( prop.UnionTypeDefinition != null )
                 {
-                    Debug.Assert( best.PocoType.Kind == PocoTypeKind.Any, "Only 'object' property can be used for union types." );
+                    Debug.Assert( _bestReg.Kind == PocoTypeKind.Any, "Only 'object' property can be used for union types." );
                     finalType = HandleUnionTypeDefinition( monitor, prop );
                     if( finalType == null ) return null;
                 }
                 return new PrimaryPocoField( prop,
                                              finalType,
-                                             best.RegCSharpName,
                                              _fieldAccesskind,
                                              p,
                                              _defaultValue );
@@ -100,7 +96,7 @@ namespace CK.Setup
             IUnionPocoType? HandleUnionTypeDefinition( IActivityMonitor monitor, IPocoPropertyInfo prop )
             {
                 Debug.Assert( _bestReg != null && prop.UnionTypeDefinition != null );
-                var isNullable = _bestReg.Value.PocoType.IsNullable;
+                var isNullable = _bestReg.IsNullable;
                 bool success = true;
                 // The final list of Poco types to build.
                 List<IPocoType> types = new List<IPocoType>();
@@ -170,9 +166,8 @@ namespace CK.Setup
                             //  - When true, types can be widened.
                             //  - When false, types must be unrelated.
                             //
-                            var rOneType = _system.Register( monitor, new MemberContext( pU ), tInfo );
-                            if( rOneType == null ) return null;
-                            var oneType = rOneType.Value.PocoType;
+                            var oneType = _system.Register( monitor, new MemberContext( pU ), tInfo );
+                            if( oneType == null ) return null;
                             // If the value is nullable, we project the nullability on each type
                             // of the union.
                             var newInfo = tInfo;
@@ -181,24 +176,25 @@ namespace CK.Setup
                                 oneType = oneType.Nullable;
                                 newInfo = newInfo.ToNullable();
                             }
+                            var oneTypeToAdd = oneType;
                             for( int i = 0; i < types.Count; ++i )
                             {
                                 var tE = types[i];
                                 if( tE.IsSameType( newInfo ) )
                                 {
-                                    monitor.Warn( $"{prop}: UnionType '{rOneType.Value.RegCSharpName}' duplicated. Removing one." );
-                                    oneType = null;
+                                    monitor.Warn( $"{prop}: UnionType '{oneType.CSharpName}' duplicated. Removing one." );
+                                    oneTypeToAdd = null;
                                 }
                                 else if( tE.IsReadableType( newInfo ) )
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
-                                        monitor.Warn( $"{prop}: UnionType '{rOneType.Value.PocoType.CSharpName}' is more general than '{tE.CSharpName}'. Removing the second one." );
-                                        oneType = null;
+                                        monitor.Warn( $"{prop}: UnionType '{oneType.CSharpName}' is more general than '{tE.CSharpName}'. Removing the second one." );
+                                        oneTypeToAdd = null;
                                     }
                                     else
                                     {
-                                        monitor.Error( $"{prop}: Ambiguous UnionType '{rOneType.Value.PocoType.CSharpName}' is more general than '{tE.CSharpName}'. Since CanBeExtended is false, types in the union must be unrelated." );
+                                        monitor.Error( $"{prop}: Ambiguous UnionType '{oneType.CSharpName}' is more general than '{tE.CSharpName}'. Since CanBeExtended is false, types in the union must be unrelated." );
                                         success = false;
                                     }
                                 }
@@ -206,17 +202,17 @@ namespace CK.Setup
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
-                                        monitor.Warn( $"{prop}: UnionType '{tE.CSharpName}' is more general than '{rOneType.Value.PocoType.CSharpName}'. Removing the second one." );
+                                        monitor.Warn( $"{prop}: UnionType '{tE.CSharpName}' is more general than '{oneType.CSharpName}'. Removing the second one." );
                                         types.RemoveAt( i-- );
                                     }
                                     else
                                     {
-                                        monitor.Error( $"{prop}: Ambiguous UnionType '{tE.CSharpName}' is more general than '{rOneType.Value.PocoType.CSharpName}'. Since CanBeExtended is false, types in the union must be unrelated." );
+                                        monitor.Error( $"{prop}: Ambiguous UnionType '{tE.CSharpName}' is more general than '{oneType.CSharpName}'. Since CanBeExtended is false, types in the union must be unrelated." );
                                         success = false;
                                     }
                                 }
                             }
-                            if( success && oneType != null ) types.Add( oneType );
+                            if( success && oneTypeToAdd != null ) types.Add( oneType );
                         }
                     }
                 }
@@ -276,29 +272,28 @@ namespace CK.Setup
                     // On success, always check that a record must be a ref property, that a collection must not
                     // have a setter and that any other type must be a regular property.
                     Debug.Assert( _bestReg != null );
-                    ref var best = ref _bestReg.DangerousGetValueOrDefaultReference();
-                    Debug.Assert( best.PocoType is not IRecordPocoType || best.PocoType.Type.IsValueType, "IRecordPocoType => ValueType." );
-                    if( best.PocoType is IRecordPocoType )
+                    Debug.Assert( _bestReg is not IRecordPocoType || _bestReg.Type.IsValueType, "IRecordPocoType => ValueType." );
+                    if( _bestReg is IRecordPocoType )
                     {
                         if( !p.Type.IsByRef )
                         {
-                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' must be a ref property: 'ref {best.RegCSharpName} {p.Name} {{ get; }}'." );
+                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' must be a ref property: 'ref {_bestReg.CSharpName} {p.Name} {{ get; }}'." );
                             return false;
                         }
                     }
                     else
                     {
-                        if( best.PocoType is ICollectionPocoType )
+                        if( _bestReg is ICollectionPocoType )
                         {
-                            if( best.PocoType.Kind != PocoTypeKind.Array )
+                            if( _bestReg.Kind != PocoTypeKind.Array )
                             {
-                                monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {best.PocoType.Kind}, it must be a read only property: '{best.RegCSharpName} {p.Name} {{ get; }}'." );
+                                monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {_bestReg.Kind}, it must be a read only property: '{_bestReg.CSharpName} {p.Name} {{ get; }}'." );
                                 return false;
                             }
                         }
                         if( p.Type.IsByRef )
                         {
-                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is not a record nor a collection, it must be a regular property with a setter: '{best.RegCSharpName} {p.Name} {{ get; set; }}'." );
+                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is not a record nor a collection, it must be a regular property with a setter: '{_bestReg.CSharpName} {p.Name} {{ get; set; }}'." );
                             return false;
                         }
                     }
@@ -313,13 +308,13 @@ namespace CK.Setup
                 bool AddWritable( IActivityMonitor monitor, IExtPropertyInfo p, int idxP )
                 {
                     var reg = _system.Register( monitor, p );
-                    if( !reg.HasValue ) return false;
-                    if( _bestReg.HasValue )
+                    if( reg == null ) return false;
+                    if( _bestReg != null )
                     {
                         Debug.Assert( _bestProperty != null );
-                        if( reg.Value.PocoType != _bestReg.Value.PocoType )
+                        if( reg != _bestReg )
                         {
-                            monitor.Error( $"{p}: Type must be exactly '{_bestReg.Value.RegCSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
+                            monitor.Error( $"{p}: Type must be exactly '{_bestReg.CSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
                             return false;
                         }
                         return true;
@@ -347,22 +342,20 @@ namespace CK.Setup
             bool CheckNewReadOnly( IActivityMonitor monitor, IExtPropertyInfo p )
             {
                 Debug.Assert( _bestReg != null && _bestProperty != null );
-                ref var best = ref _bestReg.DangerousGetValueOrDefaultReference();
-
                 var nInfo = p.HomogeneousNullabilityInfo;
                 Debug.Assert( nInfo != null );
 
                 // If the property has no setter, then its type is allowed to be a nullable (since we have a writable,
                 // either the writable is nullable or the property will never be null).
-                // Note that if its a ref property then it is a writable one and we are not here.
+                // Note that if it is a ref property then it is a writable one and we are not here.
                 Debug.Assert( !p.PropertyInfo.PropertyType.IsByRef );
-                var bestType = p.PropertyInfo.CanWrite ? best.PocoType : best.PocoType.Nullable;
+                var bestType = p.PropertyInfo.CanWrite ? _bestReg : _bestReg.Nullable;
                 if( !bestType.IsReadableType( nInfo ) )
                 {
                     using( monitor.OpenError( $"Read only {p} has incompatible types." ) )
                     {
                         monitor.Trace( $"Property type: {p.TypeCSharpName}" );
-                        monitor.Trace( $"Implemented type: {best.PocoType}" );
+                        monitor.Trace( $"Implemented type: {_bestReg}" );
                         monitor.Trace( $"Implementation decided by: {_bestProperty.DeclaringType:C}.{_bestProperty.Name}" );
                     }
                     return false;

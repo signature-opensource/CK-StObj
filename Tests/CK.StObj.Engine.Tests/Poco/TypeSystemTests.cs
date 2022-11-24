@@ -60,10 +60,10 @@ namespace CK.StObj.Engine.Tests.Poco
             ts.AllTypes.Count.Should().Be( (basicTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
             int before = ts.AllTypes.Count;
-            var rtRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetRecAnonymous ) )! );
-            Debug.Assert( rtRec != null );
+            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetRecAnonymous ) )! );
+            Debug.Assert( tRec != null );
             ts.AllTypes.Count.Should().Be( before + 2 );
-            rtRec.Value.PocoType.Kind.Should().Be( PocoTypeKind.Record );
+            tRec.Kind.Should().Be( PocoTypeKind.Record );
 
             IPrimaryPocoType wA = ts.GetPrimaryPocoType( typeof( IPartWithAnonymous ) )!;
             IPocoType countAndName = wA.Fields[0].Type;
@@ -99,23 +99,23 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
 
-            var rtRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetRecAnonymous ) )! );
-            Debug.Assert( rtRec != null );
-            var rtSameAsRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSameNakedAsRecAnonymous ) )! );
-            Debug.Assert( rtSameAsRec != null );
+            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetRecAnonymous ) )! );
+            Debug.Assert( tRec != null );
+            var tSameAsRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSameNakedAsRecAnonymous ) )! );
+            Debug.Assert( tSameAsRec != null );
 
-            rtSameAsRec.Value.PocoType.Should().NotBeSameAs( rtRec.Value.PocoType );
+            tSameAsRec.Should().NotBeSameAs( tRec );
 
-            var tRecDef = rtRec.Value.PocoType.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
-            var tSameAsRecDef = rtSameAsRec.Value.PocoType.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
+            var tRecDef = tRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
+            var tSameAsRecDef = tSameAsRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 
             tSameAsRecDef.Should().Be( "new(){B = \"\", C = (default, \"\")}" );
             tRecDef.Should().Be( "new(){Name = \"\", Inside = (default, \"\")}" );
 
             var rtNotSameAsRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameNakedAsRecAnonymous ) )! );
             Debug.Assert( rtNotSameAsRec != null );
-            rtNotSameAsRec.Value.PocoType.Should().NotBeSameAs( rtRec.Value.PocoType );
-            var tNotSameAsRecDef = rtNotSameAsRec.Value.PocoType.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
+            rtNotSameAsRec.Should().NotBeSameAs( tRec );
+            var tNotSameAsRecDef = rtNotSameAsRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 
             tNotSameAsRecDef.Should().Be( "new(){B = @\"Not the default string.\", C = (default, \"\")}" );
         }
