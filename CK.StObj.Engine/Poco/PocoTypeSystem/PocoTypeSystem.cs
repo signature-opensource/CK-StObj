@@ -126,6 +126,8 @@ namespace CK.Setup
             return Register( monitor, new MemberContext( memberInfo ), nType );
         }
 
+        public IPocoType? Register( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.Create( t ) );
+
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
         public IPocoType? Register( IActivityMonitor monitor, FieldInfo f ) => Register( monitor, _memberInfoFactory.Create( f ) );
@@ -507,7 +509,6 @@ namespace CK.Setup
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
             // Here we can resolve the field types without fear of infinite recursion: value tuples
             // cannot be recursive by design.
-            //
             var b = StringBuilderPool.Get();
             var bNominal = StringBuilderPool.Get();
             b.Append( '(' );

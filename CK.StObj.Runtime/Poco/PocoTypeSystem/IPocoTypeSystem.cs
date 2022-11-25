@@ -97,6 +97,16 @@ namespace CK.Setup
         /// <returns>The poco type on success, null otherwise.</returns>
         IPocoType? Register( IActivityMonitor monitor, ParameterInfo f );
 
+        /// <summary>
+        /// Tries to register a new type. On success, the obtained type is the
+        /// non nullable one since this uses a trick to obtain the nullability info:
+        /// when used on a member info type, the looses the root nullability (and is less
+        /// efficient).
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="t">The type that must be registered.</param>
+        /// <returns>The poco type on success, null otherwise.</returns>
+        IPocoType? Register( IActivityMonitor monitor, Type t );
     }
 
 }

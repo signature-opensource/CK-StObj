@@ -9,10 +9,11 @@ using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
-    sealed class ExtMemberInfo : IExtMemberInfo, IExtPropertyInfo, IExtFieldInfo, IExtEventInfo, IExtParameterInfo
+
+    class ExtMemberInfoBase : IExtMemberInfo
     {
         readonly ExtMemberInfoFactory _factory;
-        readonly ICustomAttributeProvider _o;
+        internal readonly ICustomAttributeProvider _o;
         readonly string _name;
         readonly Type _type;
         readonly Type _declaringType;
@@ -23,23 +24,24 @@ namespace CK.Setup
         object[]? _customAttributes;
         CustomAttributeData[]? _customAttributesData;
 
-        internal ExtMemberInfo( PropertyInfo fake,
-                                IExtNullabilityInfo info,
-                                TupleElementNamesAttribute? longestTupleNamesAttribute )
+        protected ExtMemberInfoBase( ExtMemberInfoFactory factory,
+                                     PropertyInfo fake,
+                                     IExtNullabilityInfo info,
+                                     object[]? customAttributes,
+                                     CustomAttributeData[]? customAttributesData )
         {
-            _factory = null!;
+            _factory = factory;
             _o = fake;
             _name = fake.Name;
             _type = info.Type;
             _declaringType = fake.DeclaringType!;
             Debug.Assert( info.IsHomogeneous );
             _rNullabilityInfo = _wNullabilityInfo = info;
-            _customAttributes = longestTupleNamesAttribute != null
-                                  ? new object[] { longestTupleNamesAttribute }
-                                  : Array.Empty<object>();
+            _customAttributes = customAttributes ?? Array.Empty<object>();
+            _customAttributesData = customAttributesData ?? Array.Empty<CustomAttributeData>();
         }
 
-        internal ExtMemberInfo( ExtMemberInfoFactory factory, ICustomAttributeProvider o )
+        internal ExtMemberInfoBase( ExtMemberInfoFactory factory, ICustomAttributeProvider o )
         {
             _factory = factory;
             _o = o;
@@ -78,22 +80,6 @@ namespace CK.Setup
             }
         }
 
-        ParameterInfo IExtParameterInfo.ParameterInfo => (ParameterInfo)_o;
-
-        public IExtParameterInfo? AsParameterInfo => _o is ParameterInfo ? this : null;
-
-        PropertyInfo IExtPropertyInfo.PropertyInfo => (PropertyInfo)_o;
-
-        public IExtPropertyInfo? AsPropertyInfo => _o is PropertyInfo ? this : null;
-
-        FieldInfo IExtFieldInfo.FieldInfo => (FieldInfo)_o;
-
-        public IExtFieldInfo? AsFieldInfo => _o is FieldInfo ? this : null;
-
-        EventInfo IExtEventInfo.EventInfo => (EventInfo)_o;
-
-        public IExtEventInfo? AsEventInfo => _o is EventInfo ? this : null;
-
         public string Name => _name;
 
         public Type Type => _type;
@@ -113,25 +99,7 @@ namespace CK.Setup
             }
         }
 
-        public IReadOnlyList<object> CustomAttributes
-        {
-            get
-            {
-                return _customAttributes ??= _o.GetCustomAttributes( false );
-            }
-        }
-
-        public IEnumerable<T> GetCustomAttributes<T>() => CustomAttributes.OfType<T>();
-
-        public IExtNullabilityInfo? GetHomogeneousNullabilityInfo( IActivityMonitor monitor )
-        {
-            if( !ReadNullabilityInfo.IsHomogeneous )
-            {
-                monitor.Error( $"Read/Write nullabilities differ for {ToString()}. No [AllowNull], [DisallowNull] or other nullability attributes should be used." );
-                return null;
-            }
-            return _rNullabilityInfo;
-        }
+        public IReadOnlyList<object> CustomAttributes => _customAttributes ??= _o.GetCustomAttributes( false );
 
         public string TypeCSharpName => _typeName ??= _type.ToCSharpName();
 
@@ -143,7 +111,14 @@ namespace CK.Setup
             {
                 if( _rNullabilityInfo == null )
                 {
-                    _rNullabilityInfo = _factory.CreateNullabilityInfo( this, true );
+                    _rNullabilityInfo = _o switch
+                    {
+                        ParameterInfo p => _factory.CreateNullabilityInfo( p, true ),
+                        PropertyInfo p => _factory.CreateNullabilityInfo( p, true ),
+                        FieldInfo p => _factory.CreateNullabilityInfo( p, true ),
+                        EventInfo p => _factory.CreateNullabilityInfo( p ),
+                        _ => Throw.NotSupportedException<IExtNullabilityInfo>()
+                    };
                     if( _rNullabilityInfo.IsHomogeneous ) _wNullabilityInfo ??= _rNullabilityInfo;
                 }
                 return _rNullabilityInfo;
@@ -156,7 +131,14 @@ namespace CK.Setup
             {
                 if( _wNullabilityInfo == null )
                 {
-                    _wNullabilityInfo = _factory.CreateNullabilityInfo( this, false );
+                    _wNullabilityInfo = _o switch
+                    {
+                        ParameterInfo p => _factory.CreateNullabilityInfo( p, false ),
+                        PropertyInfo p => _factory.CreateNullabilityInfo( p, false ),
+                        FieldInfo p => _factory.CreateNullabilityInfo( p, false ),
+                        EventInfo p => ReadNullabilityInfo,
+                        _ => Throw.NotSupportedException<IExtNullabilityInfo>()
+                    };
                     if( _wNullabilityInfo.IsHomogeneous ) _rNullabilityInfo ??= _wNullabilityInfo;
                 }
                 return _wNullabilityInfo;

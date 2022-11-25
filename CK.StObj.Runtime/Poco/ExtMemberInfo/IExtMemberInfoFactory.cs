@@ -14,32 +14,52 @@ namespace CK.Setup
     public interface IExtMemberInfoFactory
     {
         /// <summary>
+        /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="Type" />.
+        /// </summary>
+        /// <param name="type">The type for which member info must be obtained.</param>
+        /// <returns>The <see cref="IExtTypeInfo"/>.</returns>
+        IExtTypeInfo Create( Type type );
+
+        /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="ParameterInfo" />.
         /// </summary>
         /// <param name="parameterInfo">The parameter for which member info must be obtained.</param>
-        /// <returns>The <see cref="IExtMemberInfo"/>.</returns>
+        /// <returns>The <see cref="IExtParameterInfo"/>.</returns>
         IExtParameterInfo Create( ParameterInfo parameterInfo );
 
         /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="PropertyInfo" />.
         /// </summary>
         /// <param name="propertyInfo">The property for which member info must be obtained.</param>
-        /// <returns>The <see cref="IExtMemberInfo"/>.</returns>
+        /// <returns>The <see cref="IExtPropertyInfo"/>.</returns>
         IExtPropertyInfo Create( PropertyInfo propertyInfo );
 
         /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="FieldInfo" />.
         /// </summary>
         /// <param name="fieldInfo">The field for which member info must be obtained.</param>
-        /// <returns>The <see cref="IExtMemberInfo"/>.</returns>
+        /// <returns>The <see cref="IExtFieldInfo"/>.</returns>
         IExtFieldInfo Create( FieldInfo fieldInfo );
 
         /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="EventInfo" />.
         /// </summary>
         /// <param name="eventInfo">The event for which member info must be obtained.</param>
-        /// <returns>The <see cref="IExtMemberInfo"/>.</returns>
+        /// <returns>The <see cref="IExtEventInfo"/>.</returns>
         IExtEventInfo Create( EventInfo eventInfo );
+
+        /// <summary>
+        /// Creates a fake property info based on a real one.
+        /// </summary>
+        /// <param name="p">The property info.</param>
+        /// <param name="homogeneousInfo">The nullability info. <see cref="IExtNullabilityInfo.IsHomogeneous"/> must be true.</param>
+        /// <param name="customAttributes">Any custom attributes.</param>
+        /// <param name="customAttributesData">Any custom attributes data.</param>
+        /// <returns></returns>
+        IExtPropertyInfo CreateFake( PropertyInfo p,
+                                     IExtNullabilityInfo homogeneousInfo,
+                                     object[]? customAttributes,
+                                     CustomAttributeData[]? customAttributesData );
 
         /// <summary>
         /// Obtains the <see cref="IExtNullabilityInfo" /> for the given <see cref="ParameterInfo" />.
@@ -75,5 +95,13 @@ namespace CK.Setup
         /// <param name="eventInfo">The event for which nullability info must be obtained.</param>
         /// <returns>The <see cref="IExtNullabilityInfo"/>.</returns>
         IExtNullabilityInfo CreateNullabilityInfo( EventInfo eventInfo );
+
+        /// <summary>
+        /// Obtains the <see cref="IExtNullabilityInfo" /> for a type, optionally the nullable one.
+        /// </summary>
+        /// <param name="type">The type for which nullability info must be obtained.</param>
+        /// <param name="toNullable">Optionally returns the <see cref="IExtNullabilityInfo.ToNullable()"/>.</param>
+        /// <returns>The <see cref="IExtNullabilityInfo"/>.</returns>
+        IExtNullabilityInfo CreateNullabilityInfo( Type type, bool toNullable = false );
     }
 }

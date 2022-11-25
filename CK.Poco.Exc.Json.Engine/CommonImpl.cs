@@ -4,12 +4,16 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
 
 namespace CK.Setup.PocoJson
 {
     public sealed class CommonImpl : ICSCodeGenerator
     {
+        // The byte array is specially handled.
+        IPocoType? _byteArray;
+
         // We must give a chance to other generators to register new types (typically the result of Cris ICOmmand<TResult>).
         // We have to wait for all the PocoType to be registered, but how do we know that other generators are done with all
         // their required registrations?
@@ -20,6 +24,14 @@ namespace CK.Setup.PocoJson
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
         {
             var typeSystem = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
+            // Ensures that the byte array is registered.
+             _byteArray = typeSystem.Register( monitor, typeof( byte[] ) );
+            if( _byteArray == null )
+            {
+                monitor.Error( "Unable to register the byte[] type." );
+                return CSCodeGenerationResult.Failed;
+            }
+            // Catches the current registration count.
             _lastRegistrationCount = typeSystem.AllTypes.Count;
             monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );
             return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );

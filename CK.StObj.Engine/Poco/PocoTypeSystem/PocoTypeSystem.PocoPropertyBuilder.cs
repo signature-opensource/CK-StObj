@@ -63,7 +63,8 @@ namespace CK.Setup
                     monitor.Trace( $"Inferred {(isWritable ? "mutable collection" : "read only")} type for {prop}: {inferred.Value.Resolved.Type:C}" );
 
                     _inferredPropertyInfo ??= GetType().GetProperty( nameof( Inferred ) )!;
-                    var inferredMember = new ExtMemberInfo( _inferredPropertyInfo, inferred.Value.Resolved, inferred.Value.TupleNames );
+                    var fakeAttributes = inferred.Value.TupleNames != null ? new object[] { inferred.Value.TupleNames } : null;
+                    var inferredMember = _system._memberInfoFactory.CreateFake( _inferredPropertyInfo, inferred.Value.Resolved, fakeAttributes, null );
                     _bestReg = _system.Register( monitor, inferredMember );
                     if( _bestReg == null ) return null;
                     _bestProperty = inferredMember;

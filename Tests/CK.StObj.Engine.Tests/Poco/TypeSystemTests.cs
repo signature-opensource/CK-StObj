@@ -125,11 +125,12 @@ namespace CK.StObj.Engine.Tests.Poco
         public AnEmptyOne GetAnEmptyOne => default;
 
         [Test]
-        public void an_empty_records_is_handled()
+        public void an_empty_records_is_handled_bu_is_not_exchangeable()
         {
             var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
             var tEmptyOne = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetAnEmptyOne ) )! );
             Debug.Assert( tEmptyOne != null );
+            tEmptyOne.IsExchangeable.Should().BeFalse();
         }
 
         public (int A, string? B)? GetNullableValueTuple => default;
@@ -288,6 +289,16 @@ namespace CK.StObj.Engine.Tests.Poco
             vNonNullInfoW.ReflectsReadState.Should().Be( true );
             vNonNullInfoW.ReflectsWriteState.Should().Be( true );
         }
+
+        [Test]
+        public void registering_type_without_member_info()
+        {
+            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var tByteArray = ts.Register( TestHelper.Monitor, typeof( byte[] ) );
+            Debug.Assert( tByteArray != null );
+            tByteArray.IsExchangeable.Should().BeTrue();
+        }
+
 
     }
 

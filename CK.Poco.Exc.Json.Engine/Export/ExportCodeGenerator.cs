@@ -101,7 +101,7 @@ namespace CK.Setup.PocoJson
                         case PocoTypeKind.Record:
                         case PocoTypeKind.AnonymousRecord:
                             _writers[type.Index >> 1] = ( writer, v ) => writer.Append( "PocoDirectory_CK.WriteJson_" )
-                                                                               .Append( type.Index )
+                                                                               .Append( type.ImplNominalType.Index )
                                                                                .Append( "( w, ref " )
                                                                                .Append( v ).Append( ", options );" );
                             break;
