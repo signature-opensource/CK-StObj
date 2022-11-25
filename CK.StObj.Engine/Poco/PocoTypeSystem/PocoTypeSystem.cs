@@ -411,13 +411,28 @@ namespace CK.Setup
         IPocoType? OnArray( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
         {
             Debug.Assert( nType.ElementType != null );
-            var tE = Register( monitor, ctx, nType.ElementType );
-            if( tE == null ) return null;
 
-            string? chsarpName = tE.CSharpName + "[]";
+            // The nominal array type is the array of its value type item
+            // or the array of its nullable reference type.
+            var tItem = Register( monitor, ctx, nType.ElementType );
+            if( tItem == null ) return null;
+            // If the item is a value type OR a nullable reference type then, it is the nominal.
+            bool isNominal = tItem.Type.IsValueType || tItem.IsNullable;
+
+            if( !_cache.TryGetValue( nType.Type, out var nominalType ) )
+            {
+                // The nominal array is not registered.
+                var tItemForNominal = isNominal ? tItem : tItem.Nullable;
+                var chsarpNameNominal = tItemForNominal.CSharpName + "[]";
+                nominalType = PocoType.CreateCollection( monitor, this, nType.Type, chsarpNameNominal, chsarpNameNominal, PocoTypeKind.Array, tItemForNominal, null );
+                _cache.Add( nType.Type, nominalType );
+            }
+            if( isNominal ) return nType.IsNullable ? nominalType.Nullable : nominalType;
+
+            var chsarpName = tItem.CSharpName + "[]";
             if( !_cache.TryGetValue( chsarpName, out var result ) )
             {
-                result = PocoType.CreateCollection( monitor, this, nType.Type, chsarpName, chsarpName, PocoTypeKind.Array, tE, null );
+                result = PocoType.CreateCollection( monitor, this, nType.Type, chsarpName, chsarpName, PocoTypeKind.Array, tItem, nominalType );
                 _cache.Add( chsarpName, result );
             }
             return nType.IsNullable ? result.Nullable : result;
