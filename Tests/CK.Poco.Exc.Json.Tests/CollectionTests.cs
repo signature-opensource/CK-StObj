@@ -71,6 +71,8 @@ namespace CK.Poco.Exc.Json.Tests
             IList<int> CovariantListImpl { get; }
 
             IList<int?> CovariantListNullableImpl { get; }
+
+            object? Result { get; set; }
         }
 
         [Test]
@@ -90,12 +92,19 @@ namespace CK.Poco.Exc.Json.Tests
                 o.CovariantListNullableImpl.Add( null );
                 o.CovariantListNullableImpl.Add( 0 );
                 o.CovariantListNullableImpl.Add( null );
+                o.Result = new object[] { o.ListOfList, o.CovariantListImpl, o.CovariantListNullableImpl };
             } );
             oD.ToString().Should().Be( @"
             {
-                ""ListOfList"":[[1,2],[3,4,5]],
-                ""CovariantListImpl"":[42,3712],
-                ""CovariantListNullableImpl"":[null,0,null]
+                ""ListOfList"": [[1,2],[3,4,5]],
+                ""CovariantListImpl"": [42,3712],
+                ""CovariantListNullableImpl"": [null,0,null],
+                ""Result"":
+                    [
+                       [[1,2],[3,4,5]],
+                       [42,3712],
+                       [null,0,null]
+                    ]
             }"
             .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
         }

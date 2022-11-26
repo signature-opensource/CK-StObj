@@ -259,7 +259,8 @@ namespace CK.Setup
 
         static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport list )
         {
-            var pocoClassName = list.Type.FamilyInfo.PocoClass.FullName;
+            Debug.Assert( list.Type.ImplTypeName == list.Type.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
+            var pocoClassName = list.Type.ImplTypeName;
             Debug.Assert( pocoClassName != null );
             var t = ns.CreateType( $"sealed class {list.TypeName} : List<{pocoClassName}>" );
             t.Append( "public bool IsReadOnly => false;" ).NewLine();
@@ -282,7 +283,7 @@ namespace CK.Setup
         static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport set )
         {
             var t = set.Type;
-            var pocoClassName = t.FamilyInfo.PocoClass.FullName;
+            var pocoClassName = t.ImplTypeName;
             Debug.Assert( pocoClassName != null );
             string? nonNullablePocoClassNameWhenNullable = null;
             bool isNullable = t.IsNullable;
@@ -388,8 +389,7 @@ namespace CK.Setup
 
         static void GeneratePocoDictionary( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryRequiredSupport dic )
         {
-            var pocoClassName = dic.Type.FamilyInfo.PocoClass.FullName;
-            Debug.Assert( pocoClassName != null );
+            var pocoClassName = dic.Type.ImplTypeName;
             var typeScope = ns.CreateType( $"sealed class {dic.TypeName} : Dictionary<{dic.Key.CSharpName},{pocoClassName}>" );
             typeScope.Append( @"
 bool TGV<TOut>( TKey key, out TOut? value ) where TOut : class

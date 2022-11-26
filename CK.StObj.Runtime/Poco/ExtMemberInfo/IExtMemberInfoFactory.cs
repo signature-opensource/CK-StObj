@@ -14,13 +14,6 @@ namespace CK.Setup
     public interface IExtMemberInfoFactory
     {
         /// <summary>
-        /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="Type" />.
-        /// </summary>
-        /// <param name="type">The type for which member info must be obtained.</param>
-        /// <returns>The <see cref="IExtTypeInfo"/>.</returns>
-        IExtTypeInfo Create( Type type );
-
-        /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="ParameterInfo" />.
         /// </summary>
         /// <param name="parameterInfo">The parameter for which member info must be obtained.</param>
@@ -95,13 +88,5 @@ namespace CK.Setup
         /// <param name="eventInfo">The event for which nullability info must be obtained.</param>
         /// <returns>The <see cref="IExtNullabilityInfo"/>.</returns>
         IExtNullabilityInfo CreateNullabilityInfo( EventInfo eventInfo );
-
-        /// <summary>
-        /// Obtains the <see cref="IExtNullabilityInfo" /> for a type, optionally the nullable one.
-        /// </summary>
-        /// <param name="type">The type for which nullability info must be obtained.</param>
-        /// <param name="toNullable">Optionally returns the <see cref="IExtNullabilityInfo.ToNullable()"/>.</param>
-        /// <returns>The <see cref="IExtNullabilityInfo"/>.</returns>
-        IExtNullabilityInfo CreateNullabilityInfo( Type type, bool toNullable = false );
     }
 }

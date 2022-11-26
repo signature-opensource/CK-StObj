@@ -5,15 +5,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 
 namespace CK.Setup.PocoJson
 {
     public sealed class CommonImpl : ICSCodeGenerator
     {
-        // The byte array is specially handled.
-        IPocoType? _byteArray;
-
         // We must give a chance to other generators to register new types (typically the result of Cris ICOmmand<TResult>).
         // We have to wait for all the PocoType to be registered, but how do we know that other generators are done with all
         // their required registrations?
@@ -21,16 +19,15 @@ namespace CK.Setup.PocoJson
         // more new registrations are done.
         int _lastRegistrationCount;
 
+        static byte[] _bytes = default!;
+        static object[] _objects = default!;
+
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
         {
             var typeSystem = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
-            // Ensures that the byte array is registered.
-             _byteArray = typeSystem.Register( monitor, typeof( byte[] ) );
-            if( _byteArray == null )
-            {
-                monitor.Error( "Unable to register the byte[] type." );
-                return CSCodeGenerationResult.Failed;
-            }
+            // Ensures that byte array and object array are registered (there's no reason they couldn't, hence the Throw).
+            Throw.CheckState( typeSystem.Register( monitor, GetType().GetField( nameof( _bytes ), BindingFlags.NonPublic|BindingFlags.Static )! ) != null );
+            Throw.CheckState( typeSystem.Register( monitor, GetType().GetField( nameof( _objects ), BindingFlags.NonPublic | BindingFlags.Static )! ) != null );
             // Catches the current registration count.
             _lastRegistrationCount = typeSystem.AllTypes.Count;
             monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );

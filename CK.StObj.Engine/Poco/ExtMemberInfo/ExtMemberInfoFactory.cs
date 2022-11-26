@@ -11,18 +11,9 @@ namespace CK.Setup
     {
         readonly TEMPNullabilityInfoContext _nullabilityContext;
 
-        static MethodInfo? _typeBuilder;
-        static T TypeBuilder<T>() => default!;
-
         public ExtMemberInfoFactory()
         {
             _nullabilityContext = new TEMPNullabilityInfoContext();
-        }
-
-        public IExtTypeInfo Create( Type type )
-        {
-            Throw.CheckNotNullArgument( type );
-            return new ExtTypeInfo( this, type );
         }
 
         public IExtParameterInfo Create( ParameterInfo parameterInfo )
@@ -57,16 +48,6 @@ namespace CK.Setup
         {
             Throw.CheckNotNullArgument( eventInfo );
             return new ExtEventInfo( this, eventInfo );
-        }
-
-        public IExtNullabilityInfo CreateNullabilityInfo( Type t, bool toNullable = false )
-        {
-            // Okay... This is not the greatest code ever written, but it does its job...
-            ParameterInfo p;
-            _typeBuilder ??= typeof( ExtMemberInfoFactory ).GetMethod( nameof( TypeBuilder ), BindingFlags.Static | BindingFlags.NonPublic )!;
-            p = (_typeBuilder.MakeGenericMethod( t )).ReturnParameter;
-            var r = CreateNullabilityInfo( p, true );
-            return toNullable ? r.ToNullable() : r;
         }
 
         public IExtNullabilityInfo CreateNullabilityInfo( ParameterInfo parameterInfo, bool useReadState = true )
