@@ -15,6 +15,7 @@ namespace CK.Poco.Exc.Json.Tests
     [TestFixture]
     public class CollectionTests
     {
+        [ExternalName( "IWithArray" )]
         public interface IWithArray : IPoco
         {
             int[] ArrayOfInt { get; set; }
@@ -23,7 +24,9 @@ namespace CK.Poco.Exc.Json.Tests
 
             long[][] ArrayOfArrayOfLong { get; set; }
 
-            IWithArray?[] ArrayOfMe { get; set; }
+            IWithArray[]? ArrayOfMe { get; set; }
+
+            object? Result { get; set; }
         }
 
         [Test]
@@ -34,13 +37,14 @@ namespace CK.Poco.Exc.Json.Tests
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithArray>>();
-            var o1 = f.Create();
+            var o1 = f.Create( o => o.Result = "This-is-o1!" );
             var o2 = f.Create( o =>
             {
                 o.ArrayOfInt = new int[] { 1, 2 };
                 o.ArrayOfObject = new object[] { 1, "Hello" };
                 o.ArrayOfArrayOfLong = new long[][] { new long[] { 1, 2 }, new long[] { 3, 4, 5 } };
-                o.ArrayOfMe = new IWithArray?[] { o1, null };
+                o.ArrayOfMe = new[] { o1 };
+                o.Result = new object[] { o.ArrayOfInt, o.ArrayOfObject, o.ArrayOfArrayOfLong };
             } );
             o2.ToString().Should().Be( @"
                 {
@@ -56,10 +60,32 @@ namespace CK.Poco.Exc.Json.Tests
                             [""3"",""4"",""5""]
                         ],
                     ""ArrayOfMe"":
-                    [
-                        {""ArrayOfInt"":[],""ArrayOfObject"":[],""ArrayOfArrayOfLong"":[],""ArrayOfMe"":[]},
-                        null
-                    ]
+                        [
+                            {
+                                ""ArrayOfInt"": [],
+                                ""ArrayOfObject"": [],
+                                ""ArrayOfArrayOfLong"": [],
+                                ""ArrayOfMe"": null,
+                                ""Result"": [""string"",""This-is-o1!""]
+                            }
+                        ],
+                    ""Result"": [""object?[]"",
+                                    [
+                                        [""int[]"",[1,2]],
+                                        [""object?[]"",
+                                            [
+                                                [""int"",1],
+                                                [""string"",""Hello""]
+                                            ]
+                                        ],
+                                        [""long[]?[]"",
+                                            [
+                                                [""1"",""2""],
+                                                [""3"",""4"",""5""]
+                                            ]
+                                        ]
+                                    ]
+                                ]
                 }"
                 .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
         }
@@ -99,12 +125,13 @@ namespace CK.Poco.Exc.Json.Tests
                 ""ListOfList"": [[1,2],[3,4,5]],
                 ""CovariantListImpl"": [42,3712],
                 ""CovariantListNullableImpl"": [null,0,null],
-                ""Result"":
-                    [
-                       [[1,2],[3,4,5]],
-                       [42,3712],
-                       [null,0,null]
-                    ]
+                ""Result"": [""object?[]"",
+                                [
+                                    [""L(L(int)?)"",[[1,2],[3,4,5]]],
+                                    [""L(int)"",[42,3712]],
+                                    [""L(int?)"",[null,0,null]]
+                                ]
+                            ]
             }"
             .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
         }

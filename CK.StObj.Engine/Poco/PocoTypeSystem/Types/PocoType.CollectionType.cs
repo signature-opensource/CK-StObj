@@ -14,17 +14,16 @@ namespace CK.Setup
 
     partial class PocoType
     {
-        internal static ListOrSetType CreateCollection( IActivityMonitor monitor,
+        internal static ListOrSetOrArrayType CreateCollection( IActivityMonitor monitor,
                                                         PocoTypeSystem s,
                                                         Type tCollection,
                                                         string csharpName,
                                                         string implTypeName,
                                                         PocoTypeKind kind,
                                                         IPocoType itemType,
-                                                        ICollectionPocoType? implNominalType,
-                                                        string? nominalAndRegularName )
+                                                        IPocoType? implNominalType )
         {
-            return new ListOrSetType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, implNominalType, nominalAndRegularName );
+            return new ListOrSetOrArrayType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, implNominalType );
         }
 
         internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
@@ -34,10 +33,9 @@ namespace CK.Setup
                                                          string implTypeName,
                                                          IPocoType itemType1,
                                                          IPocoType itemType2,
-                                                         ICollectionPocoType? implNominalType,
-                                                         string nominalAndRegularName )
+                                                         IPocoType? implNominalType )
         {
-            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, implNominalType, nominalAndRegularName );
+            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, implNominalType );
         }
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
@@ -51,7 +49,7 @@ namespace CK.Setup
 
             public IReadOnlyList<IPocoType> ItemTypes => NonNullable.ItemTypes;
 
-            public ICollectionPocoType.IRegularAndNominalInfo? NominalAndRegularInfo => NonNullable.NominalAndRegularInfo;
+            public new ICollectionPocoType ImplNominalType => NonNullable.ImplNominalType;
 
             ICollectionPocoType ICollectionPocoType.NonNullable => NonNullable;
 
@@ -59,58 +57,36 @@ namespace CK.Setup
         }
 
         // List, HashSet, Array.
-        // This auto implements IReadOnlyList<IPocoType> and IPocoType.ITypeRef.
-        internal sealed class ListOrSetType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
+        // This auto implements IPocoType.ITypeRef.
+        internal sealed class ListOrSetOrArrayType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
         {
             readonly IPocoType[] _itemType;
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
-            readonly IPocoType _implNominalType;
-            readonly ICollectionPocoType.IRegularAndNominalInfo? _nominalAndRegularInfo;
+            readonly ICollectionPocoType _implNominalType;
 
-            public ListOrSetType( IActivityMonitor monitor,
-                                  PocoTypeSystem s,
-                                  Type tCollection,
-                                  string csharpName,
-                                  string implTypeName,
-                                  PocoTypeKind kind,
-                                  IPocoType itemType,
-                                  ICollectionPocoType? implNominalType,
-                                  string? nominalAndRegularName )
+            public ListOrSetOrArrayType( IActivityMonitor monitor,
+                                         PocoTypeSystem s,
+                                         Type tCollection,
+                                         string csharpName,
+                                         string implTypeName,
+                                         PocoTypeKind kind,
+                                         IPocoType itemType,
+                                         IPocoType? implNominalType )
                 : base( s, tCollection, csharpName, kind, t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
-                Debug.Assert( implNominalType == null || implNominalType.NominalAndRegularInfo?.TypeName == nominalAndRegularName );
                 _implTypeName = implTypeName;
                 _itemType = new[] { itemType };
                 if( itemType.Kind != PocoTypeKind.Any )
                 {
                     _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
                 }
-                if( kind == PocoTypeKind.Array )
-                {
-                    Debug.Assert( nominalAndRegularName == null );
-                    _def = new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" );
-                    _implNominalType = implNominalType ?? this;
-                }
-                else
-                {
-                    Debug.Assert( nominalAndRegularName != null );
-                    if( implNominalType != null )
-                    {
-                        _implNominalType = implNominalType;
-                        _nominalAndRegularInfo = implNominalType.NominalAndRegularInfo;
-                        Debug.Assert( _nominalAndRegularInfo != null );
-                        Debug.Assert( _nominalAndRegularInfo.ItemTypes[0] == (_itemType[0].Type.IsValueType ? _itemType[0] : _itemType[0].Nullable) );
-                    }
-                    else
-                    {
-                        _nominalAndRegularInfo = s.RegisterPocoRegularAndNominal( nominalAndRegularName, this );
-                        _implNominalType = this;
-                    }
-                    _def = new FieldDefaultValue( $"new {implTypeName}()" );
-                }
+                _implNominalType = (ICollectionPocoType?)implNominalType ?? this;
+                _def = kind == PocoTypeKind.Array
+                        ? new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" )
+                        : new FieldDefaultValue( $"new {implTypeName}()" );
                 // Sets the initial IsExchangeable status.
                 if( !itemType.IsExchangeable )
                 {
@@ -124,7 +100,7 @@ namespace CK.Setup
 
             public override IPocoType ImplNominalType => _implNominalType;
 
-            public ICollectionPocoType.IRegularAndNominalInfo? NominalAndRegularInfo => _nominalAndRegularInfo;
+            ICollectionPocoType ICollectionPocoType.ImplNominalType => _implNominalType;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemType;
 
@@ -280,8 +256,7 @@ namespace CK.Setup
             readonly IPocoType.ITypeRef? _nextRefKey;
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
-            readonly IPocoType _implNominalType;
-            readonly ICollectionPocoType.IRegularAndNominalInfo? _nominalAndRegularInfo;
+            readonly ICollectionPocoType _implNominalType;
 
             public DictionaryType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -290,8 +265,7 @@ namespace CK.Setup
                                    string implTypeName,
                                    IPocoType keyType,
                                    IPocoType valueType,
-                                   ICollectionPocoType? implNominalType,
-                                   string nominalAndRegularName )
+                                   IPocoType? implNominalType )
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
@@ -309,19 +283,7 @@ namespace CK.Setup
                     if( IsExchangeable && !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
                 }
                 _implTypeName = implTypeName;
-                if( implNominalType != null )
-                {
-                    _implNominalType = implNominalType;
-                    _nominalAndRegularInfo = implNominalType.NominalAndRegularInfo;
-                    Debug.Assert( _nominalAndRegularInfo != null );
-                    Debug.Assert( _nominalAndRegularInfo.ItemTypes[0] == _itemTypes[0]
-                                  && _nominalAndRegularInfo.ItemTypes[1] == (_nominalAndRegularInfo.ItemTypes[1].Type.IsValueType ? _itemTypes[1] : _itemTypes[1].Nullable) );
-                }
-                else
-                {
-                    _implNominalType = this;
-                    _nominalAndRegularInfo = s.RegisterPocoRegularAndNominal( nominalAndRegularName, this );
-                }
+                _implNominalType = (ICollectionPocoType?)implNominalType ?? this;
             }
 
             // Base OnNoMoreExchangeable method is fine here.
@@ -335,7 +297,7 @@ namespace CK.Setup
 
             public override IPocoType ImplNominalType => _implNominalType;
 
-            public ICollectionPocoType.IRegularAndNominalInfo? NominalAndRegularInfo => _nominalAndRegularInfo;
+            ICollectionPocoType ICollectionPocoType.ImplNominalType => _implNominalType;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 

@@ -76,7 +76,22 @@ namespace CK.Setup
                 return NonNullable.IsWritableType( type.ToNonNullable() );
             }
 
-            public override string ToString() => $"[{Kind}]{CSharpName}";
+            static string ToString( IPocoType t, bool withNominal )
+            {
+                var r = $"[{t.Kind}]{t.CSharpName}";
+                if( t.CSharpName != t.ImplTypeName )
+                {
+                    r += $"/ {t.ImplTypeName}";
+                }
+                if( withNominal && t.Kind != PocoTypeKind.Any && t.Kind != PocoTypeKind.Basic )
+                {
+                    if( t.ImplNominalType == t ) r += " (IsNominal)";
+                    else r += $" (Nominal: {ToString( t.ImplNominalType, false )})";
+                }
+                return r;
+            }
+
+            public override string ToString() => ToString( this, true );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

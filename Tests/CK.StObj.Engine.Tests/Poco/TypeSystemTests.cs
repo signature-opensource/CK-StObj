@@ -320,108 +320,90 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // List of Value type
 
-            // List<int>
+            // List<int>: This is a nominal type.
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListV ) )! );
-            Debug.Assert( tRV != null && tRV.NominalAndRegularInfo != null );
+            Debug.Assert( tRV != null && tRV.ImplNominalType == tRV );
             tRV.CSharpName.Should().Be( "List<int>" );
             tRV.ImplTypeName.Should().Be( "List<int>" );
-            tRV.NominalAndRegularInfo.TypeName.Should().Be( "List<int>" );
-            (tRV.ImplNominalType == tRV).Should().BeTrue();
 
-            // List<int?>
+            // List<int?>: : This is a nominal type.
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNV ) )! );
-            Debug.Assert( tRNV != null && tRNV.NominalAndRegularInfo != null );
+            Debug.Assert( tRNV != null && tRNV.ImplNominalType == tRNV );
             tRNV.CSharpName.Should().Be( "List<int?>" );
             tRNV.ImplTypeName.Should().Be( "List<int?>" );
-            tRNV.NominalAndRegularInfo.TypeName.Should().Be( "List<int?>" );
-            (tRNV.ImplNominalType == tRNV).Should().BeTrue();
 
             // IList<int>
             var tIV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListV ) )! );
-            Debug.Assert( tIV != null && tIV.NominalAndRegularInfo != null );
+            Debug.Assert( tIV != null );
             tIV.CSharpName.Should().Be( "IList<int>" );
             tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
-            tIV.NominalAndRegularInfo.TypeName.Should().Be( "List<int>" );
-            (tIV.ImplNominalType == tIV).Should().BeTrue();
+            tIV.ImplNominalType.Should().BeSameAs( tRV );
 
             // IList<int?>
             var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNV ) )! );
-            Debug.Assert( tINV != null && tINV.NominalAndRegularInfo != null );
+            Debug.Assert( tINV != null );
             tINV.CSharpName.Should().Be( "IList<int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
-            tINV.NominalAndRegularInfo.TypeName.Should().Be( "List<int?>" );
-            (tINV.ImplNominalType == tINV).Should().BeTrue();
+            tINV.ImplNominalType.Should().BeSameAs( tRNV );
 
             // List of Reference type (object)
 
-            // List<object>
-            var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListR ) )! );
-            Debug.Assert( tRR != null && tRR.NominalAndRegularInfo != null );
-            tRR.CSharpName.Should().Be( "List<object>" );
-            tRR.ImplTypeName.Should().Be( "List<object?>" );
-            tRR.NominalAndRegularInfo.TypeName.Should().Be( "List<object?>" );
-            (tRR.ImplNominalType != tRR).Should().BeTrue( "The nominal type is below." );
-
-            // List<object?>
+            // List<object?>: This is the nominal type.
             var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNR ) )! );
-            Debug.Assert( tRNR != null && tRNR.NominalAndRegularInfo != null );
+            Debug.Assert( tRNR != null && tRNR.ImplNominalType == tRNR );
             tRNR.CSharpName.Should().Be( "List<object?>" );
             tRNR.ImplTypeName.Should().Be( "List<object?>" );
-            tRNR.NominalAndRegularInfo.TypeName.Should().Be( "List<object?>" );
-            (tRNR.ImplNominalType == tRNR).Should().BeTrue( "List<object?> is its own nominal type." );
-            (tRR.ImplNominalType == tRNR).Should().BeTrue( "The List<object> has List<object?> as its nominal type." );
+
+            // List<object>
+            var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListR ) )! );
+            Debug.Assert( tRR != null );
+            tRR.CSharpName.Should().Be( "List<object>" );
+            tRR.ImplTypeName.Should().Be( "List<object?>" );
+            tRR.ImplNominalType.Should().BeSameAs( tRNR );
 
             // IList<object?>
             var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNR ) )! );
-            Debug.Assert( tINR != null && tINR.NominalAndRegularInfo != null );
+            Debug.Assert( tINR != null );
             tINR.CSharpName.Should().Be( "IList<object?>" );
             tINR.ImplTypeName.Should().Be( "List<object?>" );
-            tINR.NominalAndRegularInfo.TypeName.Should().Be( "List<object?>" );
-            (tINR.ImplNominalType == tRNR).Should().BeTrue( "IList<object?> has also List<object?> as its nominal type." );
+            tINR.ImplNominalType.Should().BeSameAs( tRNR );
 
             // IList<object>
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListR ) )! );
-            Debug.Assert( tIR != null && tIR.NominalAndRegularInfo != null );
+            Debug.Assert( tIR != null );
             tIR.CSharpName.Should().Be( "IList<object>" );
             tIR.ImplTypeName.Should().Be( "List<object?>" );
-            tIR.NominalAndRegularInfo.TypeName.Should().Be( "List<object?>" );
-            (tIR.ImplNominalType == tRNR).Should().BeTrue( "IList<object?> has also List<object?> as its nominal type." );
+            tIR.ImplNominalType.Should().BeSameAs( tRNR );
 
             // List of Reference type but IVerySimplePoco.
-
             var n = typeof( IVerySimplePoco ).ToCSharpName();
-            // List<IVerySimplePoco>
-            var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPR ) )! );
-            Debug.Assert( tPRR != null && tPRR.NominalAndRegularInfo != null );
-            tPRR.CSharpName.Should().Be( $"List<{n}>" );
-            tPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
-            tPRR.NominalAndRegularInfo.TypeName.Should().Be( $"List<{n}?>" );
-            (tPRR.ImplNominalType != tPRR).Should().BeTrue( "The nominal type is List<IVerySimplePoco?> below." );
 
-            // List<IVerySimplePoco?>
+            // List<IVerySimplePoco?>: This is the nominal implementation.
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPNR ) )! );
-            Debug.Assert( tPRNR != null && tPRNR.NominalAndRegularInfo != null );
+            Debug.Assert( tPRNR != null && tPRNR.ImplNominalType == tPRNR );
             tPRNR.CSharpName.Should().Be( $"List<{n}?>" );
             tPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
-            tPRNR.NominalAndRegularInfo.TypeName.Should().Be( $"List<{n}?>" );
-            (tPRNR.ImplNominalType == tPRNR).Should().BeTrue( "List<IVerySimplePoco?> is its own nominal type." );
-            (tPRR.ImplNominalType == tPRNR).Should().BeTrue( "The List<IVerySimplePoco> has List<IVerySimplePoco?> as its nominal type." );
+
+            // List<IVerySimplePoco>
+            var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPR ) )! );
+            Debug.Assert( tPRR != null );
+            tPRR.CSharpName.Should().Be( $"List<{n}>" );
+            tPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
+            tPRR.ImplNominalType.Should().BeSameAs( tPRNR );
 
             // IList<IVerySimplePoco?>
             var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListPNR ) )! );
-            Debug.Assert( tPINR != null && tPINR.NominalAndRegularInfo != null );
+            Debug.Assert( tPINR != null );
             tPINR.CSharpName.Should().Be( $"IList<{n}?>" );
             tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoList_*_CK" );
-            tPINR.NominalAndRegularInfo.TypeName.Should().Be( $"List<{n}?>" );
-            (tPINR.ImplNominalType == tPINR).Should().BeTrue( "Not the same as IList<object?>: the IList<IPoco?> is the nominal type." );
+            tPINR.ImplNominalType.Should().BeSameAs( tPRNR );
 
             // IList<IVerySimplePoco>
             var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListPR ) )! );
-            Debug.Assert( tPIR != null && tPIR.NominalAndRegularInfo != null );
+            Debug.Assert( tPIR != null );
             tPIR.CSharpName.Should().Be( $"IList<{n}>" );
             tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the IList<IVerySimplePoco?>." );
-            tPIR.NominalAndRegularInfo.TypeName.Should().Be( $"List<{n}?>" );
-            (tPIR.ImplNominalType == tPINR).Should().BeTrue( "It is the IList<IPoco?> that is the nominal type." );
+            tPIR.ImplNominalType.Should().BeSameAs( tPRNR );
 
         }
 
@@ -450,110 +432,90 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // Dictionary of Value type for the value (int)
 
-            // Dictionary<object,int>
+            // Dictionary<object,int>: This is a nominal implementation.
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicV ) )! );
-            Debug.Assert( tRV != null && tRV.NominalAndRegularInfo != null );
+            Debug.Assert( tRV != null && tRV.ImplNominalType == tRV );
             tRV.CSharpName.Should().Be( "Dictionary<object,int>" );
             tRV.ImplTypeName.Should().Be( "Dictionary<object,int>" );
-            tRV.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<object,int>" );
-            (tRV.ImplNominalType == tRV).Should().BeTrue();
 
-            // Dictionary<object,int?>
+            // Dictionary<object,int?>: This is a nominal implementation.
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNV ) )! );
-            Debug.Assert( tRNV != null && tRNV.NominalAndRegularInfo != null );
+            Debug.Assert( tRNV != null && tRNV.ImplTypeName == tRNV.ImplNominalType.ImplTypeName );
             tRNV.CSharpName.Should().Be( "Dictionary<object,int?>" );
             tRNV.ImplTypeName.Should().Be( "Dictionary<object,int?>" );
-            tRNV.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<object,int?>" );
-            (tRNV.ImplNominalType == tRNV).Should().BeTrue();
 
-            // IList<int>
+            // IDictionary<object,int>
             var tIV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicV ) )! );
-            Debug.Assert( tIV != null && tIV.NominalAndRegularInfo != null );
+            Debug.Assert( tIV != null );
             tIV.CSharpName.Should().Be( "IDictionary<object,int>" );
             tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueDictionary<object,int>" );
-            tIV.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<object,int>" );
-            (tIV.ImplNominalType == tIV).Should().BeTrue();
+            tIV.ImplNominalType.Should().BeSameAs( tRV );
 
-            // IList<int?>
+            // IDictionary<object,int?>
             var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNV ) )! );
-            Debug.Assert( tINV != null && tINV.NominalAndRegularInfo != null );
+            Debug.Assert( tINV != null );
             tINV.CSharpName.Should().Be( "IDictionary<object,int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueDictionary<object,int>" );
-            tINV.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<object,int?>" );
-            (tINV.ImplNominalType == tINV).Should().BeTrue();
+            tINV.ImplNominalType.Should().BeSameAs( tRNV );
 
-            // Dictionary of Reference type for the value (object)
+            // Dictionary of reference type (object) for the value.
+
+            // Dictionary<int,object?>: This is the nominal type.
+            var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNR ) )! );
+            Debug.Assert( tRNR != null && tRNR.ImplNominalType == tRNR );
+            tRNR.CSharpName.Should().Be( "Dictionary<int,object?>" );
+            tRNR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
 
             // Dictionary<int,object>
             var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicR ) )! );
-            Debug.Assert( tRR != null && tRR.NominalAndRegularInfo != null );
+            Debug.Assert( tRR != null );
             tRR.CSharpName.Should().Be( "Dictionary<int,object>" );
             tRR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tRR.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<int,object?>" );
-            (tRR.ImplNominalType != tRR).Should().BeTrue( "The nominal type is below." );
-
-            // Dictionary<int,object?>
-            var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNR ) )! );
-            Debug.Assert( tRNR != null && tRNR.NominalAndRegularInfo != null );
-            tRNR.CSharpName.Should().Be( "Dictionary<int,object?>" );
-            tRNR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tRNR.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<int,object?>" );
-            (tRNR.ImplNominalType == tRNR).Should().BeTrue( "Dictionary<int,object?> is its own nominal type." );
-            (tRR.ImplNominalType == tRNR).Should().BeTrue( "The Dictionary<int,object> has Dictionary<int,object?> as its nominal type." );
+            tRR.ImplNominalType.Should().BeSameAs( tRNR );
 
             // IDictionary<int,object?>
             var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNR ) )! );
-            Debug.Assert( tINR != null && tINR.NominalAndRegularInfo != null );
+            Debug.Assert( tINR != null );
             tINR.CSharpName.Should().Be( "IDictionary<int,object?>" );
             tINR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tINR.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<int,object?>" );
-            (tINR.ImplNominalType == tRNR).Should().BeTrue( "Dictionary<int,object?> has also Dictionary<int,object?> as its nominal type." );
+            tINR.ImplNominalType.Should().BeSameAs( tRNR );
 
             // IDictionary<int,object>
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicR ) )! );
-            Debug.Assert( tIR != null && tIR.NominalAndRegularInfo != null );
+            Debug.Assert( tIR != null );
             tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
             tIR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tIR.NominalAndRegularInfo.TypeName.Should().Be( "Dictionary<int,object?>" );
-            (tIR.ImplNominalType == tRNR).Should().BeTrue( "Dictionary<int,object?> has also Dictionary<int,object?> as its nominal type." );
+            tIR.ImplNominalType.Should().BeSameAs( tRNR );
 
-
-            // Dictionary of Value type IVerySimplePoco.
-
+            // Dictionary of IPoco type (IVerySimplePoco) for the value.
             var n = typeof( IVerySimplePoco ).ToCSharpName();
-            // Dictionary<int,IVerySimplePoco>
-            var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPR ) )! );
-            Debug.Assert( tPRR != null && tPRR.NominalAndRegularInfo != null );
-            tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
-            tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            tPRR.NominalAndRegularInfo.TypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            (tPRR.ImplNominalType != tPRR).Should().BeTrue( "The nominal type is Dictionary<int,IVerySimplePoco?> below." );
 
-            // Dictionary<int,IVerySimplePoco?>
+            // Dictionary<int,IVerySimplePoco?>: This is the nominal type.
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPNR ) )! );
-            Debug.Assert( tPRNR != null && tPRNR.NominalAndRegularInfo != null );
+            Debug.Assert( tPRNR != null && tPRNR.ImplTypeName == tPRNR.ImplNominalType.ImplTypeName );
             tPRNR.CSharpName.Should().Be( $"Dictionary<int,{n}?>" );
             tPRNR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            tPRNR.NominalAndRegularInfo.TypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            (tPRNR.ImplNominalType == tPRNR).Should().BeTrue( "Dictionary<int,IVerySimplePoco?> is its own nominal type." );
-            (tPRR.ImplNominalType == tPRNR).Should().BeTrue( "The Dictionary<int,IVerySimplePoco> has Dictionary<int,IVerySimplePoco?> as its nominal type." );
+
+            // Dictionary<int,IVerySimplePoco>
+            var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPR ) )! );
+            Debug.Assert( tPRR != null );
+            tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
+            tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
+            tPRR.ImplNominalType.Should().BeSameAs( tPRNR );
 
             // IDictionary<int,IVerySimplePoco?>
             var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPNR ) )! );
-            Debug.Assert( tPINR != null && tPINR.NominalAndRegularInfo != null );
+            Debug.Assert( tPINR != null );
             tPINR.CSharpName.Should().Be( $"IDictionary<int,{n}?>" );
             tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoDictionary_*_*_CK" );
-            tPINR.NominalAndRegularInfo.TypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            (tPINR.ImplNominalType == tPINR).Should().BeTrue( "Not the same as IList<object?>: the Dictionary<int,IPoco?> is the nominal type." );
+            tPINR.ImplNominalType.Should().BeSameAs( tPRNR );
 
             // IDictionary<int,IVerySimplePoco>
             var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPR ) )! );
-            Debug.Assert( tPIR != null && tPIR.NominalAndRegularInfo != null );
+            Debug.Assert( tPIR != null );
             tPIR.CSharpName.Should().Be( $"IDictionary<int,{n}>" );
             tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the Dictionary<int,IVerySimplePoco?>." );
-            tPIR.NominalAndRegularInfo.TypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            (tPIR.ImplNominalType == tPINR).Should().BeTrue( "It is the IDictionary<int,IPoco?> that is the nominal type." );
-
+            tPIR.ImplNominalType.Should().BeSameAs( tPRNR );
         }
 
     }
