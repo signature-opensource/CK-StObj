@@ -66,15 +66,6 @@ namespace CK.Setup.PocoJson
             }
         }
 
-        void GenerateWritePropertyName( ICodeWriter writer, string name )
-        {
-            writer.Append( "w.WritePropertyName( options.UseCamelCase ? " )
-                  .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( name ) )
-                  .Append( " : " )
-                  .AppendSourceString( name )
-                  .Append( " );" ).NewLine();
-        }
-
         public bool Run( IActivityMonitor monitor )
         {
             RegisterWriters();
@@ -199,30 +190,49 @@ namespace CK.Setup.PocoJson
 
                 static CodeWriter GetNominalCodeWriter( IPocoType type )
                 {
-                    if( type.ImplTypeName != type.ImplNominalType.ImplTypeName )
+                    if( type.ImplTypeName != type.ObliviousType.ImplTypeName )
                     {
                         // There is a adapter that is a type.ImplNominalType.ImplTypeName.
                         return ( writer, v ) => writer.Append( "PocoDirectory_CK.WriteJson_" )
-                                                      .Append( type.ImplNominalType.Index )
+                                                      .Append( type.ObliviousType.Index )
                                                       .Append( "( w, ref System.Runtime.CompilerServices.Unsafe.AsRef<" )
-                                                      .Append( type.ImplNominalType.ImplTypeName )
+                                                      .Append( type.ObliviousType.ImplTypeName )
                                                       .Append( ">(" )
                                                       .Append( v )
                                                       .Append( "), options );" );
                     }
                     return ( writer, v ) => writer.Append( "PocoDirectory_CK.WriteJson_" )
-                                                  .Append( type.ImplNominalType.Index )
+                                                  .Append( type.ObliviousType.Index )
                                                   .Append( "( w, ref " )
                                                   .Append( v ).Append( ", options );" );
                 }
 
             }
 
+            // Used by GenerateWriteMethods.GeneratePocoWriteMethod for the WriteJson( w, withType, options )
+            // and  GenerateWriteAny().
+            void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable )
+            {
+                var typeName = _nameMap.GetName( nonNullable );
+                writer.Append( "if( !options.SkipTypeNameArray ) " );
+                if( typeName.HasSimplifiedNames )
+                {
+                    writer.Append( "w.WriteStringValue( options.UseSimplifiedTypes ? " )
+                        .AppendSourceString( typeName.SimplifiedName )
+                        .Append( " : " ).AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
+                }
+                else
+                {
+                    writer.Append( "w.WriteStringValue( " )
+                        .AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
+                }
+            }
+
             void GenerateWriteMethods( IActivityMonitor monitor )
             {
                 foreach( var type in _nameMap.ExchangeableNonNullableTypes )
                 {
-                    if( type.ImplNominalType == type )
+                    if( type.ObliviousType == type )
                     {
                         switch( type.Kind )
                         {
@@ -343,6 +353,15 @@ namespace CK.Setup.PocoJson
                                   .CloseBlock();
                 }
 
+                void GenerateWritePropertyName( ICodeWriter writer, string name )
+                {
+                    writer.Append( "w.WritePropertyName( options.UseCamelCase ? " )
+                          .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( name ) )
+                          .Append( " : " )
+                          .AppendSourceString( name )
+                          .Append( " );" ).NewLine();
+                }
+
                 void GenerateNamedRecordWriteMethod( ITypeScope code, IRecordPocoType type )
                 {
                     GenerateWriteJsonMethodHeader( code, type );
@@ -415,33 +434,14 @@ namespace CK.Setup.PocoJson
                 }
             }
 
-        }
-
-
-        void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable )
-        {
-            var typeName = _nameMap.GetName( nonNullable );
-            if( typeName.HasSimplifiedNames )
+            void GenerateWriteAny()
             {
-                writer.Append( "w.WriteStringValue( options.UseSimplifiedTypes ? " )
-                    .AppendSourceString( typeName.SimplifiedName )
-                    .Append( " : " ).AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
-            }
-            else
-            {
-                writer.Append( "w.WriteStringValue( " )
-                    .AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
-            }
-        }
-
-        void GenerateWriteAny()
-        {
-            _pocoDirectory
-                .GeneratedByComment()
-                .Append( @"
+                _pocoDirectory
+                    .GeneratedByComment()
+                    .Append( @"
 internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
 {
-    w.WriteStartArray();
+    if( !options.SkipTypeNameArray ) w.WriteStartArray();
     var t = o.GetType();
     if( t.IsValueType )
     {
@@ -494,87 +494,88 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
             default: w.ThrowJsonException( $""Unregistered type: {t.ToCSharpName(false)}"" ); break;
         }
     }
-    w.WriteEndArray();
+    if( !options.SkipTypeNameArray ) w.WriteEndArray();
 }" );
-            // Builds the different sorters for cases that must be ordered: arrays and collections
-            // only since these are the only reference types except the basic ones (that moreover
-            // is currently the single 'string').
-            var arrays = new NominalReferenceTypeSorter();
-            var collections = new NominalReferenceTypeSorter();
-            
-            foreach( var t in _nameMap.ExchangeableNonNullableTypes )
-            {
-                if( t.Kind == PocoTypeKind.Any
-                    || t.Kind == PocoTypeKind.AbstractIPoco
-                    || t.Kind == PocoTypeKind.UnionType
-                    || t.ImplNominalType != t )
+                // Builds the different sorters for cases that must be ordered: arrays and collections
+                // only since these are the only reference types except the basic ones (that moreover
+                // is currently the single 'string').
+                var arrays = new NominalReferenceTypeSorter();
+                var collections = new NominalReferenceTypeSorter();
+
+                foreach( var t in _nameMap.ExchangeableNonNullableTypes )
                 {
-                    continue;
-                }
-                switch( t.Kind )
-                {
-                    case PocoTypeKind.Basic:
-                        {
-                            var part = t.Type.IsValueType ? basicValueTypeCases : basicRefTypeCases;
-                            WriteCase( part, t );
-                            break;
-                        }
-
-                    case PocoTypeKind.Enum:
-                        {
-                            WriteCase( enumCases, t );
-                            break;
-                        }
-
-                    case PocoTypeKind.Array:
-                        {
-                            arrays.Add( t );
-                            break;
-                        }
-
-                    case PocoTypeKind.IPoco:
-                        {
-                            WriteCase( pocoCases, t );
-                            break;
-                        }
-                    case PocoTypeKind.List:
-                    case PocoTypeKind.HashSet:
-                    case PocoTypeKind.Dictionary:
-                        collections.Add( t );
-                        break;
-                    case PocoTypeKind.AnonymousRecord:
-                        {
-                            WriteCase( valueTupleCases, t, t.Type.ToCSharpName( useValueTupleParentheses: false ) );
-                            break;
-                        }
-                    case PocoTypeKind.Record:
-                        {
-                            WriteCase( namedRecordCases, t );
-                            break;
-                        }
-                    default:
-                        Throw.NotSupportedException( t.ToString() );
-                        break;
-                }
-            }
-
-            foreach( var t in arrays.SortedTypes ) WriteCase( arrayCases, t );
-            foreach( var t in collections.SortedTypes ) WriteCase( collectionCases, t );
-
-            return;
-
-            void WriteCase( ITypeScopePart code, IPocoType t, string? typeName = null )
-            {
-                code.Append( "case " ).Append( typeName ?? t.ImplTypeName ).Append( " v:" )
-                    .OpenBlock()
-                    .Append( writer =>
+                    if( t.Kind == PocoTypeKind.Any
+                        || t.Kind == PocoTypeKind.AbstractIPoco
+                        || t.Kind == PocoTypeKind.UnionType
+                        || t.ObliviousType != t )
                     {
-                        GenerateTypeHeader( writer, t );
-                        GenerateWrite( writer, t, "v" );
-                    } )
-                    .NewLine()
-                    .Append( "break;" )
-                    .CloseBlock();
+                        continue;
+                    }
+                    switch( t.Kind )
+                    {
+                        case PocoTypeKind.Basic:
+                            {
+                                var part = t.Type.IsValueType ? basicValueTypeCases : basicRefTypeCases;
+                                WriteCase( part, t );
+                                break;
+                            }
+
+                        case PocoTypeKind.Enum:
+                            {
+                                WriteCase( enumCases, t );
+                                break;
+                            }
+
+                        case PocoTypeKind.Array:
+                            {
+                                arrays.Add( t );
+                                break;
+                            }
+
+                        case PocoTypeKind.IPoco:
+                            {
+                                WriteCase( pocoCases, t );
+                                break;
+                            }
+                        case PocoTypeKind.List:
+                        case PocoTypeKind.HashSet:
+                        case PocoTypeKind.Dictionary:
+                            collections.Add( t );
+                            break;
+                        case PocoTypeKind.AnonymousRecord:
+                            {
+                                WriteCase( valueTupleCases, t, t.Type.ToCSharpName( useValueTupleParentheses: false ) );
+                                break;
+                            }
+                        case PocoTypeKind.Record:
+                            {
+                                WriteCase( namedRecordCases, t );
+                                break;
+                            }
+                        default:
+                            Throw.NotSupportedException( t.ToString() );
+                            break;
+                    }
+                }
+
+                foreach( var t in arrays.SortedTypes ) WriteCase( arrayCases, t );
+                foreach( var t in collections.SortedTypes ) WriteCase( collectionCases, t );
+
+                return;
+
+                void WriteCase( ITypeScopePart code, IPocoType t, string? typeName = null )
+                {
+                    code.Append( "case " ).Append( typeName ?? t.ImplTypeName ).Append( " v:" )
+                        .OpenBlock()
+                        .Append( writer =>
+                        {
+                            GenerateTypeHeader( writer, t );
+                            GenerateWrite( writer, t, "v" );
+                        } )
+                        .NewLine()
+                        .Append( "break;" )
+                        .CloseBlock();
+                }
             }
         }
     }

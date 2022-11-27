@@ -203,13 +203,27 @@ namespace CK.Setup
             {
                 var tI = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( tI == null ) return null;
+
+                // When we are on a recursive named record like:
+                //
+                //  public record struct Rec( IList<Rec> R, int A );
+                //
+                // The Rec.ObliviousType is null (still unknown).
+                if( tI.ObliviousType == null )
+                {
+                    Debug.Assert( tI.Kind == PocoTypeKind.Record );
+                    // We need a trampoline here: this is not currently supported.
+                    monitor.Error( $"{ctx}: '{t:C}' Recursive named record definition is currently not supported." );
+                    return null;
+                }
+
                 var listOrHashSet = isList ? "List" : "HashSet";
                 var csharpName = isRegular
                                     ? $"{listOrHashSet}<{tI.CSharpName}>"
                                     : $"{(isList ? "IList" : "ISet")}<{tI.CSharpName}>";
                 if( !_cache.TryGetValue( csharpName, out var result ) )
                 {
-                    string? nominalCSharpName = null;
+                    string? obliviousCSharpName = null;
                     string? typeName = null;
                     if( !isRegular )
                     {
@@ -230,8 +244,8 @@ namespace CK.Setup
                                 t = (isList ? typeof( CovariantHelpers.CovNotNullValueList<> ) : (typeof( CovariantHelpers.CovNotNullValueHashSet<> )))
                                     .MakeGenericType( tI.Type );
                             }
-                            // The nominal and regular type name includes the nullability of the value type.
-                            nominalCSharpName = $"{listOrHashSet}<{tI.CSharpName}>";
+                            // The oblivious type name includes the nullability of the value type.
+                            obliviousCSharpName = $"{listOrHashSet}<{tI.CSharpName}>";
                         }
                         else if( tI.Kind == PocoTypeKind.IPoco )
                         {
@@ -239,8 +253,9 @@ namespace CK.Setup
                             // We choose the nullable item type to follow the C# "oblivious nullable reference type". 
                             typeName = EnsurePocoListOrHashSetType( monitor, (IPrimaryPocoType)tI.Nullable, isList, listOrHashSet );
                             t = IDynamicAssembly.PurelyGeneratedType;
-                            // Since we are on a reference type, the nominal and regular uses the nullable.
-                            nominalCSharpName = $"{listOrHashSet}<{tI.Nullable.CSharpName}>";
+                            // Since we are on a reference type, the oblivious uses the nullable.
+                            Debug.Assert( tI.Nullable.IsOblivious, "Non composed nullable reference types are their own oblivious type." );
+                            obliviousCSharpName = $"{listOrHashSet}<{tI.Nullable.CSharpName}>";
                         }
                     }
                     if( typeName == null )
@@ -248,50 +263,47 @@ namespace CK.Setup
                         // It's not an abstraction for which we have a dedicated implementation or it's
                         // explicitly a regular List/HashSet: use the regular collection type.
                         t = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                        // This is the nominal implementation if:
+                        // This is the oblivious implementation if:
                         //   - the regular type has been requested
-                        //   - AND
-                        //      - the item type is a value type (nullability is handled at the type level)
-                        //      - OR the item type is nullable.
+                        //   - AND the item type is the oblivious one.
                         // Same as above here: we expose that it's a List<T?> that actually is implemented and not a
                         // (buggy) IList<T>.
-                        bool isNominal = isRegular && (tI.Type.IsValueType || tI.IsNullable);
-                        if( isNominal )
+                        if( isRegular && tI.IsOblivious )
                         {
-                            // We are building the nominal: let the nominalCSharpName be null.
+                            // We are building the oblivious: let the obliviousCSharpName be null.
                             typeName = csharpName;
                         }
                         else
                         {
-                            nominalCSharpName = tI.Type.IsValueType
-                                                  ? $"{listOrHashSet}<{tI.CSharpName}>"
-                                                  : $"{listOrHashSet}<{tI.Nullable.CSharpName}>";
-                            typeName = nominalCSharpName;
-                            Debug.Assert( typeName != csharpName, "This is why this is not the nominal type." );
+                            obliviousCSharpName = $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>";
+                            typeName = obliviousCSharpName;
+                            Debug.Assert( typeName != csharpName, "This is why this is not the oblivious type." );
                         }
                     }
-                    // Handle the nominal implementation: if we are here with a null nominalCSharpName then
-                    // the nominal type is about to be created.
-                    IPocoType? implNominalType = null;
-                    if( nominalCSharpName != null )
+                    // Handle the oblivious implementation: if we are here with a null obliviousCSharpName then
+                    // the oblivious type is about to be created.
+                    IPocoType? obliviousType = null;
+                    if( obliviousCSharpName != null )
                     {
-                        // The type we are about to create is not the implementation nominal one.
+                        // The type we are about to create is not the implementation oblivious one.
                         // However we have everything here to create it:
                         // - It has the same t, typeName and kind.
-                        // - Its item type is tI.Nullable.
+                        // - Its item type is tI.ObliviousType.
                         // - We used the nominalCSharpName != null as a flag, so we have it.
-                        if( !_cache.TryGetValue( nominalCSharpName, out implNominalType ) )
+                        if( !_cache.TryGetValue( obliviousCSharpName, out obliviousType ) )
                         {
-                            implNominalType = PocoType.CreateCollection( monitor,
+                            obliviousType = PocoType.CreateCollection( monitor,
                                                                          this,
                                                                          t,
-                                                                         nominalCSharpName,
+                                                                         obliviousCSharpName,
                                                                          typeName,
                                                                          isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
-                                                                         tI.Nullable,
+                                                                         tI.ObliviousType,
                                                                          null );
-                            _cache.Add( nominalCSharpName, implNominalType );
+                            _cache.Add( obliviousCSharpName, obliviousType );
                         }
+                        // The oblivious reference type is the nullable.
+                        obliviousType = obliviousType.Nullable;
                     }
                     result = PocoType.CreateCollection( monitor,
                                                         this,
@@ -300,7 +312,7 @@ namespace CK.Setup
                                                         typeName,
                                                         isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                         tI,
-                                                        implNominalType );
+                                                        obliviousType );
                     _cache.Add( csharpName, result );
 
                 }
@@ -319,12 +331,32 @@ namespace CK.Setup
                 var tV = Register( monitor, ctx, nType.GenericTypeArguments[1] );
                 if( tV == null ) return null;
 
+                // When we are on a recursive named record like:
+                //
+                //  public record struct Rec( Dictionary<int,Rec> R, int A );
+                //
+                // The Rec.ObliviousType is null (still unknown).
+                if( tK.ObliviousType == null )
+                {
+                    Debug.Assert( tK.Kind == PocoTypeKind.Record );
+                    // We need a trampoline here: this is not currently supported.
+                    monitor.Error( $"{ctx}: '{t:C}' Recursive named record definition is currently not supported." );
+                    return null;
+                }
+                if( tV.ObliviousType == null )
+                {
+                    Debug.Assert( tV.Kind == PocoTypeKind.Record );
+                    // We need a trampoline here: this is not currently supported.
+                    monitor.Error( $"{ctx}: '{t:C}' Recursive named record definition is currently not supported." );
+                    return null;
+                }
+
                 var csharpName = isRegular
                                     ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
                                     : $"IDictionary<{tK.CSharpName},{tV.CSharpName}>";
                 if( !_cache.TryGetValue( csharpName, out var result ) )
                 {
-                    string? nominalCSharpName = null;
+                    string? obliviousCSharpName = null;
                     string? typeName = null;
                     if( !isRegular )
                     {
@@ -340,48 +372,47 @@ namespace CK.Setup
                                 typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.CSharpName},{tV.CSharpName}>";
                                 t = typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                             }
-                            nominalCSharpName = $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
+                            Debug.Assert( tV.IsOblivious, "Value types are their own oblivious type." );
+                            obliviousCSharpName = $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
                         }
                         else if( tV.Kind == PocoTypeKind.IPoco )
                         {
                             typeName = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV.Nullable );
                             t = IDynamicAssembly.PurelyGeneratedType;
-                            nominalCSharpName = $"Dictionary<{tK.CSharpName},{tV.Nullable.CSharpName}>";
+                            Debug.Assert( tV.Nullable.IsOblivious, "Non composed nullable reference types are their own oblivious type." );
+                            obliviousCSharpName = $"Dictionary<{tK.CSharpName},{tV.Nullable.CSharpName}>";
                         }
                     }
                     if( typeName == null )
                     {
                         t = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                        bool isNominal = isRegular && (tV.Type.IsValueType || tV.IsNullable);
-                        if( isNominal )
+                        if( isRegular && tV.IsOblivious )
                         {
-                            // We are building the nominal: let the nominalCSharpName be null.
                             typeName = csharpName;
                         }
                         else
                         {
-                            nominalCSharpName = tV.Type.IsValueType
-                                                        ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
-                                                        : $"Dictionary<{tK.CSharpName},{tV.Nullable.CSharpName}>";
-                            typeName = nominalCSharpName;
+                            obliviousCSharpName = $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>";
+                            typeName = obliviousCSharpName;
                             Debug.Assert( typeName != csharpName, "This is why this is not the nominal type." );
                         }
                     }
-                    IPocoType? implNominalType = null;
-                    if( nominalCSharpName != null )
+                    IPocoType? obliviousType = null;
+                    if( obliviousCSharpName != null )
                     {
-                        if( !_cache.TryGetValue( nominalCSharpName, out implNominalType ) )
+                        if( !_cache.TryGetValue( obliviousCSharpName, out obliviousType ) )
                         {
-                            implNominalType = PocoType.CreateDictionary( monitor,
+                            obliviousType = PocoType.CreateDictionary( monitor,
                                                                          this,
                                                                          t,
-                                                                         nominalCSharpName,
+                                                                         obliviousCSharpName,
                                                                          typeName,
                                                                          tK,
-                                                                         tV.Nullable,
+                                                                         tV.ObliviousType,
                                                                          null );
-                            _cache.Add( nominalCSharpName, implNominalType );
+                            _cache.Add( obliviousCSharpName, obliviousType );
                         }
+                        obliviousType = obliviousType.Nullable;
                     }
                     result = PocoType.CreateDictionary( monitor,
                                                         this,
@@ -390,7 +421,7 @@ namespace CK.Setup
                                                         typeName,
                                                         tK,
                                                         tV,
-                                                        implNominalType );
+                                                        obliviousType );
                     _cache.Add( csharpName, result );
                 }
                 return nType.IsNullable ? result.Nullable : result;
@@ -423,29 +454,40 @@ namespace CK.Setup
         {
             Debug.Assert( nType.ElementType != null );
 
-            // The nominal array type is the array of its value type item
-            // or the array of its nullable reference type.
+            // The oblivious array type is the array of its oblivious item type
+            // (value type or nullable reference type).
             var tItem = Register( monitor, ctx, nType.ElementType );
             if( tItem == null ) return null;
-            // If the item is a value type OR a nullable reference type then, it is the nominal.
-            bool isNominal = tItem.Type.IsValueType || tItem.IsNullable;
 
-            if( !_cache.TryGetValue( nType.Type, out var nominalType ) )
+            // When we are on a recursive named record like:
+            //
+            //  public record struct Rec( Rec[] R, int A );
+            //
+            // The Rec.ObliviousType is null (still unknown).
+            if( tItem.ObliviousType == null )
             {
-                // The nominal array is not registered.
-                var tItemForNominal = isNominal ? tItem : tItem.Nullable;
-                var chsarpNameNominal = tItemForNominal.CSharpName + "[]";
-                nominalType = PocoType.CreateCollection( monitor,
+                Debug.Assert( tItem.Kind == PocoTypeKind.Record );
+                // We need a trampoline here: this is not currently supported.
+                monitor.Error( $"{ctx}: '{nType.Type:C}' Recursive named record definition is currently not supported." );
+                return null;
+            }
+
+            if( !_cache.TryGetValue( nType.Type, out var obliviousType ) )
+            {
+                // The oblivious array is not registered.
+                var oName = tItem.ObliviousType.CSharpName + "[]";
+                obliviousType = PocoType.CreateCollection( monitor,
                                                          this,
                                                          nType.Type,
-                                                         chsarpNameNominal,
-                                                         chsarpNameNominal,
+                                                         oName,
+                                                         oName,
                                                          PocoTypeKind.Array,
-                                                         tItemForNominal,
+                                                         tItem.ObliviousType,
                                                          null );
-                _cache.Add( nType.Type, nominalType );
+                _cache.Add( nType.Type, obliviousType );
             }
-            if( isNominal ) return nType.IsNullable ? nominalType.Nullable : nominalType;
+            // If the item is oblivious then, it is the oblivious array.
+            if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType.Nullable : obliviousType;
 
             var chsarpName = tItem.CSharpName + "[]";
             if( !_cache.TryGetValue( chsarpName, out var result ) )
@@ -457,7 +499,7 @@ namespace CK.Setup
                                                     chsarpName,
                                                     PocoTypeKind.Array,
                                                     tItem,
-                                                    nominalType );
+                                                    obliviousType );
                 _cache.Add( chsarpName, result );
             }
             return nType.IsNullable ? result.Nullable : result;
@@ -479,42 +521,50 @@ namespace CK.Setup
                 tNotNull = nType.Type;
                 tNull = null;
             }
-            // We first handle ValueTuple since the cache key must be computed.
-            // For other value types, the key is the (non null) type: this avoids a lookup in the cache for basic types.
-            if( tNotNull.IsValueTuple() )
+            // The not nullable value type is registered in the cache and it is
+            // necessarily the oblivious type (except for name record) that is registered (others are registered by name).
+            // We are done for basic, enum and named record types but for anonymous record we must ensure
+            // the registration of non oblivious types.
+            if( _cache.TryGetValue( tNotNull, out var obliviousType ) )
             {
-                Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
-                tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
-                // Anonymous record: the CSharpName is the key and it can
-                // be found in the cache or a new one is created.
-                return OnValueTypeAnonymousRecord( monitor, ctx, nType, tNotNull, tNull );
-            }
-            // Basic types and enums are oblivious of the readonly/mutable context.
-            // We handle them first before trying the record (fully mutable struct).
-            if( _cache.TryGetValue( tNotNull, out var existing ) )
-            {
-                Debug.Assert( !existing.IsNullable );
-                return nType.IsNullable ? existing.Nullable : existing;
+                Debug.Assert( !obliviousType.IsNullable );
+                Debug.Assert( obliviousType.Type == tNotNull );
+                Debug.Assert( obliviousType.Kind == PocoTypeKind.Record || obliviousType.IsOblivious && obliviousType.Nullable.IsOblivious );
+                if( obliviousType.Kind == PocoTypeKind.Basic
+                    || obliviousType.Kind == PocoTypeKind.Enum
+                    || obliviousType.Kind == PocoTypeKind.Record )
+                {
+                    return nType.IsNullable ? obliviousType.Nullable : obliviousType;
+                }
             }
             if( tNotNull.IsEnum )
             {
-                if( !TypeExtensions.TryGetExternalNames( monitor, tNotNull, tNotNull.GetCustomAttributesData(), out var externalNames ) )
+                if( !TypeExtensions.TryGetExternalNames( monitor, tNotNull, tNotNull.GetCustomAttributesData(), out var externalName ) )
                 {
                     return null;
                 }
-                // New Enum (basic type).
                 // There is necessary the underlying integral type.
                 tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
-                existing = PocoType.CreateEnum( monitor,
-                                                this,
-                                                tNotNull,
-                                                tNull,
-                                                _cache[tNotNull.GetEnumUnderlyingType()],
-                                                externalNames );
-                _cache.Add( tNotNull, existing );
-                return nType.IsNullable ? existing.Nullable : existing;
+                obliviousType = PocoType.CreateEnum( monitor,
+                                                     this,
+                                                     tNotNull,
+                                                     tNull,
+                                                     _cache[tNotNull.GetEnumUnderlyingType()],
+                                                     externalName );
+                _cache.Add( tNotNull, obliviousType );
+                return nType.IsNullable ? obliviousType.Nullable : obliviousType;
             }
-            // Generic value type is not supported.
+            // We first handle ValueTuple since we can easily detect them.
+            if( tNotNull.IsValueTuple() )
+            {
+                Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
+                Debug.Assert( obliviousType == null || obliviousType.Kind == PocoTypeKind.AnonymousRecord );
+                // We may be on the oblivious type... But we have to check (and we may be on an already registered
+                // anonymous record anyway: field names and types are the key).
+                tNull ??= obliviousType?.Nullable.Type ?? typeof( Nullable<> ).MakeGenericType( tNotNull );
+                return OnValueTypeAnonymousRecord( monitor, ctx, nType, tNotNull, tNull, (IRecordPocoType?)obliviousType );
+            }
+            // Other generic value types are not supported.
             if( tNotNull.IsGenericType )
             {
                 Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
@@ -526,58 +576,64 @@ namespace CK.Setup
             return OnTypedRecord( monitor, ctx, nType, tNotNull, tNull );
         }
 
-        IPocoType? OnValueTypeAnonymousRecord( IActivityMonitor monitor, MemberContext ctx, IExtNullabilityInfo nType, Type tNotNull, Type tNull )
+        IPocoType? OnValueTypeAnonymousRecord( IActivityMonitor monitor,
+                                               MemberContext ctx,
+                                               IExtNullabilityInfo nType,
+                                               Type tNotNull,
+                                               Type tNull,
+                                               IRecordPocoType? obliviousType )
         {
             var subInfos = FlattenValueTuple( nType ).ToList();
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
             // Here we can resolve the field types without fear of infinite recursion: value tuples
             // cannot be recursive by design.
             var b = StringBuilderPool.Get();
-            var bNominal = StringBuilderPool.Get();
             b.Append( '(' );
-            bNominal.Append( '(' );
             int idx = 0;
             foreach( var sub in subInfos )
             {
                 var f = fields[idx++];
                 var tF = Register( monitor, ctx, sub );
                 if( tF == null ) return null;
-                if( b.Length != 1 )
-                {
-                    b.Append( ',' );
-                    bNominal.Append( ',' );
-                }
+                if( b.Length != 1 ) b.Append( ',' );
                 b.Append( tF.CSharpName );
-                bNominal.Append( tF.CSharpName );
                 if( !f.IsUnnamed ) b.Append( ' ' ).Append( f.Name );
                 f.SetType( tF );
             }
             b.Append( ')' );
-            bNominal.Append( ')' );
-
-            var nominalTypeName = StringBuilderPool.GetStringAndReturn( bNominal );
-            if( !_cache.TryGetValue( nominalTypeName, out var implNominalType ) )
+            // We have the registered type name.
+            var typeName = b.ToString();
+            if( obliviousType == null )
             {
-                RecordField[] nominalFields = new RecordField[fields.Length];
-                for( int i = 0; i < nominalFields.Length; i++ )
+                b.Clear();
+                b.Append( '(' );
+                RecordField[] obliviousFields = new RecordField[fields.Length];
+                for( int i = 0; i < obliviousFields.Length; i++ )
                 {
-                    var f  = new RecordField( i, null );
+                    var f = new RecordField( i, null );
                     f.SetType( fields[i].Type );
-                    nominalFields[i] = f;
+                    obliviousFields[i] = f;
+                    if( b.Length != 1 ) b.Append( ',' );
+                    b.Append( f.Type.ObliviousType.CSharpName );
                 }
-                implNominalType = PocoType.CreateRecord( monitor, this, tNotNull, tNull, nominalTypeName, nominalFields, null, null );
-                _cache.Add( nominalTypeName, implNominalType );
-            }
-
-            var typeName = StringBuilderPool.GetStringAndReturn( b );
-            var result = implNominalType;
-            if( typeName != nominalTypeName )
-            {
-                if( !_cache.TryGetValue( typeName, out result ) )
+                b.Append( ')' );
+                var obliviousTypeName = b.ToString();
+                obliviousType = PocoType.CreateRecord( monitor, this, tNotNull, tNull, obliviousTypeName, obliviousFields, null, null );
+                _cache.Add( tNotNull, obliviousType );
+                // If there's no field name and field types are the same as the oblivious ones,
+                // we are done.
+                if( typeName == obliviousTypeName )
                 {
-                    result = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, fields, null, implNominalType );
-                    _cache.Add( typeName, result );
+                    return nType.IsNullable ? obliviousType.Nullable : obliviousType;
                 }
+            }
+            // Don't need the buffer anymore.
+            StringBuilderPool.GetStringAndReturn( b );
+            // Registers the non oblivious type if not already registered.
+            if( !_cache.TryGetValue( typeName, out var result ) )
+            {
+                result = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, fields, null, obliviousType );
+                _cache.Add( typeName, result );
             }
             return nType.IsNullable ? result.Nullable : result;
 
@@ -599,20 +655,25 @@ namespace CK.Setup
             }
         }
 
-        IPocoType? OnTypedRecord( IActivityMonitor monitor, MemberContext ctx, IExtNullabilityInfo nType, Type tNotNull, Type tNull )
+        IPocoType? OnTypedRecord( IActivityMonitor monitor,
+                                  MemberContext ctx,
+                                  IExtNullabilityInfo nType,
+                                  Type tNotNull,
+                                  Type tNull )
         {
             // C#10 record struct are not decorated by any special attribute: we treat them like any other struct.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
             Debug.Assert( tNotNull.IsValueType );
             Debug.Assert( !_cache.ContainsKey( tNotNull ), "OnValueType found it." );
 
-            if( !TypeExtensions.TryGetExternalNames( monitor, tNotNull, tNotNull.GetCustomAttributesData(), out var externalNames ) )
+            // Named record can have an [ExternalName].
+            if( !TypeExtensions.TryGetExternalNames( monitor, tNotNull, tNotNull.GetCustomAttributesData(), out var externalName ) )
             {
                 return null;
             }
 
             var typeName = tNotNull.ToCSharpName();
-            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, null, externalNames, null );
+            var r = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, null, externalName, null );
             _cache.Add( tNotNull, r );
 
             // Currently allows only a single constructor. This is not good: we should allow deserialization constructor...
@@ -628,6 +689,7 @@ namespace CK.Setup
             var propertyInfos = tNotNull.GetProperties();
             var fieldInfos = tNotNull.GetFields();
             var fields = new RecordField[propertyInfos.Length + fieldInfos.Length];
+            bool hasNonObliviousFieldType = false;
             for( int i = 0; i < propertyInfos.Length; i++ )
             {
                 var pInfo = _memberInfoFactory.Create( propertyInfos[i] );
@@ -638,6 +700,7 @@ namespace CK.Setup
                 }
                 var f = CreateField( monitor, i, Register( monitor, pInfo ), pInfo, ctorParams );
                 if( f == null ) return null;
+                if( !f.Type.IsOblivious ) hasNonObliviousFieldType = true;
                 fields[i] = f;
             }
             int idx = propertyInfos.Length;
@@ -651,9 +714,21 @@ namespace CK.Setup
                 }
                 var f = CreateField( monitor, idx, Register( monitor, fInfo ), fInfo, ctorParams );
                 if( f == null ) return null;
+                if( !f.Type.IsOblivious ) hasNonObliviousFieldType = true;
                 fields[idx++] = f;
             }
-            r.SetFields( monitor, this, fields );
+            PocoType.RecordType? obliviousType = null;
+            if( hasNonObliviousFieldType )
+            {
+                var obliviousFields = new RecordField[fields.Length];
+                for( int i = 0; i < fields.Length; i++ )
+                {
+                    obliviousFields[i] = new RecordField( fields[i] );
+                }
+                obliviousType = PocoType.CreateRecord( monitor, this, tNotNull, tNull, typeName, null, externalName, null );
+                obliviousType.SetFields( monitor, this, obliviousFields, obliviousType );
+            }
+            r.SetFields( monitor, this, fields, obliviousType );
             return nType.IsNullable ? r.Nullable : r;
         }
 

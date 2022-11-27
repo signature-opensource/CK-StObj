@@ -19,13 +19,18 @@ namespace CK.Setup
 
         internal sealed class PrimaryPocoType : PocoType, IPrimaryPocoType
         {
-
             // Auto implementation of IReadOnlyList<IAbstractPocoType> AbstractTypes.
             sealed class Null : NullReferenceType, IPrimaryPocoType, IReadOnlyList<IAbstractPocoType>
             {
+                IPrimaryPocoType _obliviousType;
+
                 public Null( IPocoType notNullable )
                     : base( notNullable )
                 {
+                    // During the initialization, this is the oblivious type.
+                    // If it appears that one field's type is not an oblivious type,
+                    // then this will be set to a PrimaryPocoTypeONull instance.
+                    _obliviousType = this;
                 }
 
                 new PrimaryPocoType NonNullable => Unsafe.As<PrimaryPocoType>( base.NonNullable );
@@ -38,14 +43,22 @@ namespace CK.Setup
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
-                ICompositePocoType ICompositePocoType.Nullable => this;
-                ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
+                public override IPocoType ObliviousType => _obliviousType;
 
-                public string CSharpBodyConstructorSourceCode => NonNullable.CSharpBodyConstructorSourceCode;
+                IPrimaryPocoType IPrimaryPocoType.ObliviousType => _obliviousType;
+
+                ICompositePocoType ICompositePocoType.ObliviousType => _obliviousType;
+
+                internal void SetObliviousType( IPrimaryPocoType? obliviousType ) => _obliviousType = obliviousType ?? this;
 
                 IPrimaryPocoType IPrimaryPocoType.Nullable => this;
 
                 IPrimaryPocoType IPrimaryPocoType.NonNullable => NonNullable;
+
+                ICompositePocoType ICompositePocoType.Nullable => this;
+                ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
+
+                public string CSharpBodyConstructorSourceCode => NonNullable.CSharpBodyConstructorSourceCode;
 
                 public IReadOnlyList<IAbstractPocoType> AbstractTypes => this;
 
@@ -80,11 +93,15 @@ namespace CK.Setup
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
 
-            new IPrimaryPocoType Nullable => Unsafe.As<IPrimaryPocoType>( base.Nullable );
+            new IPrimaryPocoType Nullable => Unsafe.As<IPrimaryPocoType>( _nullable );
 
             public IPocoFamilyInfo FamilyInfo => _familyInfo;
 
             public IPrimaryPocoType PrimaryInterface => this;
+
+            ICompositePocoType ICompositePocoType.ObliviousType => Nullable.ObliviousType;
+
+            IPrimaryPocoType IPrimaryPocoType.ObliviousType => Nullable.ObliviousType;
 
             public override string ImplTypeName => _familyInfo.PocoClass.FullName!;
 
@@ -106,7 +123,8 @@ namespace CK.Setup
 
             internal bool SetFields( IActivityMonitor monitor,
                                      PocoTypeSystem.IStringBuilderPool sbPool,
-                                     PrimaryPocoField[] fields )
+                                     PrimaryPocoField[] fields,
+                                     bool createFakeObliviousType )
             {
                 _fields = fields;
                 var d = CompositeHelper.CreateDefaultValueInfo( monitor, sbPool, this );
@@ -116,6 +134,9 @@ namespace CK.Setup
                     return false;
                 }
                 _ctorCode = d.RequiresInit ? d.DefaultValue.ValueCSharpSource : String.Empty;
+                Unsafe.As<Null>( _nullable ).SetObliviousType( createFakeObliviousType
+                                                                    ? new PrimaryPocoTypeONull( this )
+                                                                    : null );
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {
@@ -161,7 +182,6 @@ namespace CK.Setup
             IPrimaryPocoType IPrimaryPocoType.Nullable => Nullable;
 
             IPrimaryPocoType IPrimaryPocoType.NonNullable => this;
-
         }
     }
 

@@ -14,8 +14,8 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyList<IPocoType> ItemTypes { get; }
 
-        /// <inheritdoc cref="IPocoType.ImplNominalType" />
-        new ICollectionPocoType ImplNominalType { get; }
+        /// <inheritdoc cref="IPocoType.ObliviousType" />
+        new ICollectionPocoType ObliviousType { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
         new ICollectionPocoType Nullable { get; }

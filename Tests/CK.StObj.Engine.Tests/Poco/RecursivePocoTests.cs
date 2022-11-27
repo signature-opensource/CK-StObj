@@ -113,24 +113,66 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco: " );
         }
 
-        public interface IHoldRec : IPoco
+        public interface IHoldRecList : IPoco
         {
             public record struct Rec( IList<Rec> R, int A );
 
             ref Rec P { get; }
         }
 
+        [Explicit]
         [Test]
-        public void recursive_use_of_named_record_is_handled()
+        public void recursive_list_use_of_named_record_is_NOT_YET_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IHoldRec ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IHoldRecList ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindByType( typeof( IHoldRec.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );
             list.ItemTypes[0].Should().Be( tRec );
         }
+
+        public interface IHoldRecArray : IPoco
+        {
+            public record struct Rec( Rec[] R, int A );
+
+            ref Rec P { get; }
+        }
+
+        [Explicit]
+        [Test]
+        public void recursive_array_use_of_named_record_is_NOT_YET_handled()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IHoldRecArray ) );
+            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
+            Debug.Assert( tRec != null );
+            var list = tRec.Fields[0].Type as ICollectionPocoType;
+            Debug.Assert( list != null );
+            list.ItemTypes[0].Should().Be( tRec );
+        }
+
+        public interface IHoldRecDic : IPoco
+        {
+            public record struct Rec( Dictionary<int,Rec> R, int A );
+
+            ref Rec P { get; }
+        }
+
+        [Explicit]
+        [Test]
+        public void recursive_dicionary_use_of_named_record_is_NOT_YET_handled()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IHoldRecDic ) );
+            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
+            Debug.Assert( tRec != null );
+            var list = tRec.Fields[0].Type as ICollectionPocoType;
+            Debug.Assert( list != null );
+            list.ItemTypes[0].Should().Be( tRec );
+        }
+
 
     }
 }

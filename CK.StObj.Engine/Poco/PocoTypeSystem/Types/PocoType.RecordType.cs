@@ -22,9 +22,9 @@ namespace CK.Setup
                                                  string typeName,
                                                  RecordField[]? anonymousFields,
                                                  ExternalNameAttribute? externalName,
-                                                 IPocoType? implNominalType )
+                                                 IPocoType? obliviousType )
         {
-            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields, externalName, implNominalType );
+            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields, externalName, (IRecordPocoType?)obliviousType );
         }
 
         internal sealed class RecordType : PocoType, IRecordPocoType
@@ -39,6 +39,12 @@ namespace CK.Setup
                 new RecordType NonNullable => Unsafe.As<RecordType>( base.NonNullable );
 
                 public bool IsAnonymous => NonNullable.IsAnonymous;
+
+                public override IPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
+
+                ICompositePocoType ICompositePocoType.ObliviousType => Unsafe.As<ICompositePocoType>( ObliviousType );
+
+                IRecordPocoType IRecordPocoType.ObliviousType => Unsafe.As<IRecordPocoType>( ObliviousType );
 
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
@@ -58,8 +64,8 @@ namespace CK.Setup
             }
 
             [AllowNull] RecordField[] _fields;
+            [AllowNull] IRecordPocoType _obliviousType;
             readonly ExternalNameAttribute? _externalName;
-            readonly IPocoType _implNominalType;
             DefaultValueInfo _defInfo;
 
             public RecordType( IActivityMonitor monitor,
@@ -69,23 +75,26 @@ namespace CK.Setup
                                string typeName,
                                RecordField[]? anonymousFields,
                                ExternalNameAttribute? externalName,
-                               IPocoType? implNominalType )
+                               IRecordPocoType? obliviousType )
                 : base( s,
                         tNotNull,
                         typeName,
                         anonymousFields != null ? PocoTypeKind.AnonymousRecord : PocoTypeKind.Record,
                         t => new Null( t, tNull ) )
             {
-                if( anonymousFields != null ) SetFields( monitor, s, anonymousFields );
+                if( anonymousFields != null )
+                {
+                    SetFields( monitor, s, anonymousFields, obliviousType );
+                }
                 _externalName = externalName;
-                _implNominalType = implNominalType ?? this;
             }
 
-            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields )
+            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields, IRecordPocoType? obliviousType )
             {
                 _fields = fields;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
+                _obliviousType = obliviousType ?? this;
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {
@@ -101,7 +110,11 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
 
-            public override IPocoType ImplNominalType => _implNominalType;
+            public override IPocoType ObliviousType => _obliviousType;
+
+            ICompositePocoType ICompositePocoType.ObliviousType => _obliviousType;
+
+            IRecordPocoType IRecordPocoType.ObliviousType => _obliviousType;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 

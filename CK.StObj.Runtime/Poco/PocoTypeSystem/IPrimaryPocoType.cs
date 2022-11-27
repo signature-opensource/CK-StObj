@@ -16,6 +16,9 @@ namespace CK.Setup
         /// <inheritdoc cref="ICompositePocoType.Fields"/>
         new IReadOnlyList<IPrimaryPocoField> Fields { get; }
 
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        new IPrimaryPocoType ObliviousType { get; }
+
         /// <summary>
         /// Gets the <see cref="IAbstractPocoType"/> that this Poco supports,
         /// excluding the <see cref="CK.Core.IPoco"/> and the <see cref="CK.Core.IClosedPoco"/>.

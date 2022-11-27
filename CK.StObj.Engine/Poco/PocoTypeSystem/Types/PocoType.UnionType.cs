@@ -101,9 +101,6 @@ namespace CK.Setup
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
 
-            public override bool IsAbstract => _allowedTypes.All( t => t.IsAbstract );
-
-
             IReadOnlyList<IPocoType> AllowedTypes => _allowedTypes;
 
             IEnumerable<IPocoType> IOneOfPocoType.AllowedTypes => _allowedTypes;

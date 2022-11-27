@@ -52,13 +52,25 @@ namespace CK.Setup
 
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
-            public bool IsAbstract => NonNullable.IsAbstract;
-
             public ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
 
             public bool IsExchangeable => NonNullable.IsExchangeable;
 
-            public IPocoType ImplNominalType => NonNullable.ImplNominalType;
+            /// <summary>
+            /// Returning this works for any, basic (string), and abstract IPoco.
+            /// - Composites (ie. IPoco for reference types) need to have oblivious fields.
+            /// - Collections and unions need to reference oblivious item types.
+            /// </summary>
+            public virtual IPocoType ObliviousType
+            {
+                get
+                {
+                    Debug.Assert( Kind == PocoTypeKind.Any
+                                  || Kind == PocoTypeKind.Basic
+                                  || Kind == PocoTypeKind.AbstractIPoco, "The others override." );
+                    return this;
+                }
+            }
 
             public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
@@ -76,22 +88,7 @@ namespace CK.Setup
                 return NonNullable.IsWritableType( type.ToNonNullable() );
             }
 
-            static string ToString( IPocoType t, bool withNominal )
-            {
-                var r = $"[{t.Kind}]{t.CSharpName}";
-                if( t.CSharpName != t.ImplTypeName )
-                {
-                    r += $"/ {t.ImplTypeName}";
-                }
-                if( withNominal && t.Kind != PocoTypeKind.Any && t.Kind != PocoTypeKind.Basic )
-                {
-                    if( t.ImplNominalType == t ) r += " (IsNominal)";
-                    else r += $" (Nominal: {ToString( t.ImplNominalType, false )})";
-                }
-                return r;
-            }
-
-            public override string ToString() => ToString( this, true );
+            public override string ToString() => PocoType.ToString( this, true );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -136,7 +133,18 @@ namespace CK.Setup
 
             public string ImplTypeName => _csharpName;
 
-            public IPocoType ImplNominalType => this;
+            /// <summary>
+            /// Returning this works for basic types only.
+            /// - Composites (i.e. records for value types) need to have oblivious fields.
+            /// </summary>
+            public virtual IPocoType ObliviousType
+            {
+                get
+                {
+                    Debug.Assert( Kind == PocoTypeKind.Basic );
+                    return this;
+                }
+            }
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
@@ -149,8 +157,6 @@ namespace CK.Setup
             public IPocoType NonNullable => _nonNullable;
 
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
-
-            public bool IsAbstract => NonNullable.IsAbstract;
 
             public ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
 
@@ -166,7 +172,7 @@ namespace CK.Setup
 
             public bool IsWritableType( IExtNullabilityInfo type ) => type.Type == Type;
 
-            public override string ToString() => $"[{Kind}]{CSharpName}";
+            public override string ToString() => PocoType.ToString( this, true );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -221,11 +227,20 @@ namespace CK.Setup
         public virtual string ImplTypeName => _csharpName;
 
         /// <summary>
-        /// By default this: this works for basic types and for record.
+        /// Defaults to "_type.IsValueType ? this : _nullable.ObliviousType".
+        /// Works for everything except for records (since they are value tuples that have
+        /// associated oblivious types). 
         /// </summary>
-        public virtual IPocoType ImplNominalType => this;
+        public virtual IPocoType ObliviousType
+        {
+            get
+            {
+                Debug.Assert( Kind != PocoTypeKind.AnonymousRecord && Kind != PocoTypeKind.Record );
+                return _type.IsValueType ? this : _nullable.ObliviousType;
+            }
+        }
 
-        public bool IsPurelyGeneratedType => Type == IDynamicAssembly.PurelyGeneratedType;
+        public bool IsPurelyGeneratedType => _type == IDynamicAssembly.PurelyGeneratedType;
 
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
@@ -247,8 +262,6 @@ namespace CK.Setup
         public IPocoType Nullable => _nullable;
 
         public IPocoType NonNullable => this;
-
-        public virtual bool IsAbstract => Kind == PocoTypeKind.Any || Kind == PocoTypeKind.AbstractIPoco;
 
         public virtual bool IsExchangeable => _isExchangeable;
 
@@ -318,7 +331,22 @@ namespace CK.Setup
             return type.Type.IsAssignableFrom( Type );
         }
 
-        public override string ToString() => $"[{Kind}]{CSharpName}";
+        static string ToString( IPocoType t, bool withOblivious )
+        {
+            var r = $"[{t.Kind}]{t.CSharpName}";
+            if( t.CSharpName != t.ImplTypeName )
+            {
+                r += $"/ {t.ImplTypeName}";
+            }
+            if( withOblivious )
+            {
+                if( t.IsOblivious ) r += " (IsOblivious)";
+                else r += $" (Oblivious: {ToString( t.ObliviousType, false )})";
+            }
+            return r;
+        }
+
+        public override sealed string ToString() => ToString( this, true );
 
         public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 

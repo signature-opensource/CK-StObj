@@ -15,6 +15,9 @@ namespace CK.Setup
         /// <inheritdoc cref="ICompositePocoType.Fields"/>
         new IReadOnlyList<IRecordPocoField> Fields { get; }
 
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        new IRecordPocoType ObliviousType { get; }
+
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IRecordPocoType Nullable { get; }
 

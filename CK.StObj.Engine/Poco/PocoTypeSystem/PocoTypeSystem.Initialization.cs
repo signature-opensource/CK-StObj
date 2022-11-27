@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System;
+using CK.CodeGen;
+using static OneOf.Types.TrueFalseOrNull;
 
 namespace CK.Setup
 {
@@ -42,7 +44,10 @@ namespace CK.Setup
                 //       is what matters. If, for any reason, these interfaces are needed, they are
                 //       captured at the PocoDirectory level and may be used to restore a detailed
                 //       "IPoco definition" knowledge.
-                //       
+                //
+                // We cannot decide here for the ObliviousType: first, all the fields have
+                // to be resolved to know if we need an "oblivious companion type" or if this
+                // is its own oblivious type.
                 var primary = PocoType.CreatePrimaryPoco( this, family );
                 Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
                 foreach( var i in family.Interfaces )
@@ -94,14 +99,16 @@ namespace CK.Setup
             foreach( var p in allPrimaries )
             {
                 Debug.Assert( p.FamilyInfo != null );
+                bool hasNonObliviousFieldType = false;
                 PrimaryPocoField[] fields = new PrimaryPocoField[p.FamilyInfo.Properties.Count];
                 foreach( var prop in p.FamilyInfo.Properties.Values )
                 {
                     var f = builder.Build( monitor, p, prop );
                     if( f == null ) return false;
                     fields[prop.Index] = f;
+                    if( !f.Type.IsOblivious ) hasNonObliviousFieldType = true;
                 }
-                success &= p.SetFields( monitor, StringBuilderPool, fields );
+                success &= p.SetFields( monitor, StringBuilderPool, fields, createFakeObliviousType: hasNonObliviousFieldType );
             }
             // If no error occurred, we can now detect any instantiation cycle error.
             // We handle only IPoco since collection items are not instantiated

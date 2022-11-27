@@ -52,6 +52,11 @@ namespace CK.Setup
         bool IsNullable { get; }
 
         /// <summary>
+        /// Gets whether this type is the oblivious one.
+        /// </summary>
+        bool IsOblivious => ObliviousType == this;
+
+        /// <summary>
         /// Gets the C# name with namespaces and nullabilities of this type.
         /// </summary>
         string CSharpName { get; }
@@ -62,9 +67,37 @@ namespace CK.Setup
         string ImplTypeName { get; }
 
         /// <summary>
-        /// Gets the type that defines the nominal implementation of this type.
+        /// Gets the oblivious type. This type is oblivious in three ways:
+        /// <list type="bullet">
+        ///   <item>
+        ///     <term>Nullable Reference Types</term>
+        ///     <description>
+        ///         All reference types (including this one if <see cref="Type.IsValueType"/>
+        ///         is false) are the <see cref="Nullable"/> ones.
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///   <term>Specialized implementation types</term>
+        ///   <description>
+        ///         Specialized covariant collections are erased to be the regular <see cref="List{T}"/>,
+        ///         <see cref="HashSet{T}"/> and <see cref="Dictionary{TKey, TValue}"/>.
+        ///   </description>
+        ///   </item>
+        ///   <item>
+        ///   <term>Value tuple field names</term>
+        ///   <description>
+        ///         Anonymous record field names are erased (<see cref="IRecordPocoField.IsUnnamed"/> is
+        ///         always true).
+        ///   </description>
+        ///   </item>
+        /// </list>
+        /// The <see cref="IPrimaryPocoType.ObliviousType"/> is "virtual": all other oblivious types
+        /// corresponds to actual type that exist, can have instances of a concrete type but the oblivious
+        /// for IPoco is only here to expose fields of oblivious types. The <see cref="IPocoType.Index"/>
+        /// of oblivious <see cref="IPrimaryPocoType"/> are the ones of the real <see cref="IPrimaryPocoType"/>
+        /// (nullable and not nullable).
         /// </summary>
-        IPocoType ImplNominalType { get; }
+        IPocoType ObliviousType { get; }
 
         /// <summary>
         /// Gets the nullable associated type (this if <see cref="IsNullable"/> is true).
@@ -75,12 +108,6 @@ namespace CK.Setup
         /// Gets the non nullable associated type (this if <see cref="IsNullable"/> is false).
         /// </summary>
         IPocoType NonNullable { get; }
-
-        /// <summary>
-        /// Gets whether this type is abstract: it is <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractIPoco"/>
-        /// or a <see cref="PocoTypeKind.UnionType"/> with only abstract variants.
-        /// </summary>
-        bool IsAbstract { get; }
 
         /// <summary>
         /// Captures a reference from a <see cref="Owner"/> to a <see cref="Type"/>

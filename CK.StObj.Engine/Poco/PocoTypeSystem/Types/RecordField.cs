@@ -25,6 +25,16 @@ namespace CK.Setup
             return _itemNames[index];
         }
 
+        // Used to build the oblivious type fields.
+        internal RecordField( RecordField f )
+        {
+            _index = f._index;
+            _name = f._name;
+            _defInfo = f._defInfo;
+            _isUnnamed = f._isUnnamed;
+            SetType( f.Type.ObliviousType );
+        }
+
         public RecordField( int index, string? name, IPocoFieldDefaultValue? defaultValue = null )
         {
             _index = index;

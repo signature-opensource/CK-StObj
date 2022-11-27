@@ -312,7 +312,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public IList<IVerySimplePoco> IListPR = null!;
 
         [Test]
-        public void nominal_and_type_name_List()
+        public void oblivious_and_type_name_List()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
             var r = TestHelper.GetSuccessfulResult( c );
@@ -322,13 +322,13 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // List<int>: This is a nominal type.
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListV ) )! );
-            Debug.Assert( tRV != null && tRV.ImplNominalType == tRV );
+            Debug.Assert( tRV != null && tRV.ObliviousType == tRV.Nullable && tRV.Nullable.IsOblivious );
             tRV.CSharpName.Should().Be( "List<int>" );
             tRV.ImplTypeName.Should().Be( "List<int>" );
 
             // List<int?>: : This is a nominal type.
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNV ) )! );
-            Debug.Assert( tRNV != null && tRNV.ImplNominalType == tRNV );
+            Debug.Assert( tRNV != null && tRNV.ObliviousType == tRNV.Nullable && tRNV.ObliviousType.Nullable == tRNV.Nullable );
             tRNV.CSharpName.Should().Be( "List<int?>" );
             tRNV.ImplTypeName.Should().Be( "List<int?>" );
 
@@ -337,20 +337,20 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tIV != null );
             tIV.CSharpName.Should().Be( "IList<int>" );
             tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
-            tIV.ImplNominalType.Should().BeSameAs( tRV );
+            tIV.ObliviousType.Should().BeSameAs( tRV.Nullable );
 
             // IList<int?>
             var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNV ) )! );
             Debug.Assert( tINV != null );
             tINV.CSharpName.Should().Be( "IList<int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
-            tINV.ImplNominalType.Should().BeSameAs( tRNV );
+            tINV.ObliviousType.Should().BeSameAs( tRNV.Nullable );
 
             // List of Reference type (object)
 
             // List<object?>: This is the nominal type.
             var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNR ) )! );
-            Debug.Assert( tRNR != null && tRNR.ImplNominalType == tRNR );
+            Debug.Assert( tRNR != null && tRNR.ObliviousType == tRNR.Nullable && tRNR.Nullable.IsOblivious );
             tRNR.CSharpName.Should().Be( "List<object?>" );
             tRNR.ImplTypeName.Should().Be( "List<object?>" );
 
@@ -359,28 +359,28 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tRR != null );
             tRR.CSharpName.Should().Be( "List<object>" );
             tRR.ImplTypeName.Should().Be( "List<object?>" );
-            tRR.ImplNominalType.Should().BeSameAs( tRNR );
+            tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // IList<object?>
             var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNR ) )! );
             Debug.Assert( tINR != null );
             tINR.CSharpName.Should().Be( "IList<object?>" );
             tINR.ImplTypeName.Should().Be( "List<object?>" );
-            tINR.ImplNominalType.Should().BeSameAs( tRNR );
+            tINR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // IList<object>
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListR ) )! );
             Debug.Assert( tIR != null );
             tIR.CSharpName.Should().Be( "IList<object>" );
             tIR.ImplTypeName.Should().Be( "List<object?>" );
-            tIR.ImplNominalType.Should().BeSameAs( tRNR );
+            tIR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // List of Reference type but IVerySimplePoco.
             var n = typeof( IVerySimplePoco ).ToCSharpName();
 
             // List<IVerySimplePoco?>: This is the nominal implementation.
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPNR ) )! );
-            Debug.Assert( tPRNR != null && tPRNR.ImplNominalType == tPRNR );
+            Debug.Assert( tPRNR != null && tPRNR.ObliviousType == tPRNR.Nullable && tPRNR.Nullable.IsOblivious );
             tPRNR.CSharpName.Should().Be( $"List<{n}?>" );
             tPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
 
@@ -389,21 +389,21 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tPRR != null );
             tPRR.CSharpName.Should().Be( $"List<{n}>" );
             tPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
-            tPRR.ImplNominalType.Should().BeSameAs( tPRNR );
+            tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
             // IList<IVerySimplePoco?>
             var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListPNR ) )! );
             Debug.Assert( tPINR != null );
             tPINR.CSharpName.Should().Be( $"IList<{n}?>" );
             tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoList_*_CK" );
-            tPINR.ImplNominalType.Should().BeSameAs( tPRNR );
+            tPINR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
             // IList<IVerySimplePoco>
             var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListPR ) )! );
             Debug.Assert( tPIR != null );
             tPIR.CSharpName.Should().Be( $"IList<{n}>" );
             tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the IList<IVerySimplePoco?>." );
-            tPIR.ImplNominalType.Should().BeSameAs( tPRNR );
+            tPIR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
         }
 
@@ -424,7 +424,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public IDictionary<int, IVerySimplePoco> IDicPR = null!;
 
         [Test]
-        public void nominal_and_type_name_Dictionary()
+        public void oblivious_and_type_name_Dictionary()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
             var r = TestHelper.GetSuccessfulResult( c );
@@ -434,13 +434,13 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // Dictionary<object,int>: This is a nominal implementation.
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicV ) )! );
-            Debug.Assert( tRV != null && tRV.ImplNominalType == tRV );
+            Debug.Assert( tRV != null && tRV.ObliviousType == tRV.Nullable && tRV.Nullable.IsOblivious );
             tRV.CSharpName.Should().Be( "Dictionary<object,int>" );
             tRV.ImplTypeName.Should().Be( "Dictionary<object,int>" );
 
             // Dictionary<object,int?>: This is a nominal implementation.
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNV ) )! );
-            Debug.Assert( tRNV != null && tRNV.ImplTypeName == tRNV.ImplNominalType.ImplTypeName );
+            Debug.Assert( tRNV != null && tRNV.ObliviousType == tRNV.Nullable && tRNV.Nullable.IsOblivious );
             tRNV.CSharpName.Should().Be( "Dictionary<object,int?>" );
             tRNV.ImplTypeName.Should().Be( "Dictionary<object,int?>" );
 
@@ -449,20 +449,20 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tIV != null );
             tIV.CSharpName.Should().Be( "IDictionary<object,int>" );
             tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueDictionary<object,int>" );
-            tIV.ImplNominalType.Should().BeSameAs( tRV );
+            tIV.ObliviousType.Should().BeSameAs( tRV.Nullable );
 
             // IDictionary<object,int?>
             var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNV ) )! );
             Debug.Assert( tINV != null );
             tINV.CSharpName.Should().Be( "IDictionary<object,int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueDictionary<object,int>" );
-            tINV.ImplNominalType.Should().BeSameAs( tRNV );
+            tINV.ObliviousType.Should().BeSameAs( tRNV.Nullable );
 
             // Dictionary of reference type (object) for the value.
 
             // Dictionary<int,object?>: This is the nominal type.
             var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNR ) )! );
-            Debug.Assert( tRNR != null && tRNR.ImplNominalType == tRNR );
+            Debug.Assert( tRNR != null && tRNR.ObliviousType == tRNR.Nullable && tRNR.Nullable.IsOblivious );
             tRNR.CSharpName.Should().Be( "Dictionary<int,object?>" );
             tRNR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
 
@@ -471,28 +471,28 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tRR != null );
             tRR.CSharpName.Should().Be( "Dictionary<int,object>" );
             tRR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tRR.ImplNominalType.Should().BeSameAs( tRNR );
+            tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // IDictionary<int,object?>
             var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNR ) )! );
             Debug.Assert( tINR != null );
             tINR.CSharpName.Should().Be( "IDictionary<int,object?>" );
             tINR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tINR.ImplNominalType.Should().BeSameAs( tRNR );
+            tINR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // IDictionary<int,object>
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicR ) )! );
             Debug.Assert( tIR != null );
             tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
             tIR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tIR.ImplNominalType.Should().BeSameAs( tRNR );
+            tIR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // Dictionary of IPoco type (IVerySimplePoco) for the value.
             var n = typeof( IVerySimplePoco ).ToCSharpName();
 
             // Dictionary<int,IVerySimplePoco?>: This is the nominal type.
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPNR ) )! );
-            Debug.Assert( tPRNR != null && tPRNR.ImplTypeName == tPRNR.ImplNominalType.ImplTypeName );
+            Debug.Assert( tPRNR != null && tPRNR.ObliviousType == tPRNR.Nullable && tPRNR.Nullable.IsOblivious  );
             tPRNR.CSharpName.Should().Be( $"Dictionary<int,{n}?>" );
             tPRNR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
 
@@ -501,21 +501,21 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tPRR != null );
             tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
             tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            tPRR.ImplNominalType.Should().BeSameAs( tPRNR );
+            tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
             // IDictionary<int,IVerySimplePoco?>
             var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPNR ) )! );
             Debug.Assert( tPINR != null );
             tPINR.CSharpName.Should().Be( $"IDictionary<int,{n}?>" );
             tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoDictionary_*_*_CK" );
-            tPINR.ImplNominalType.Should().BeSameAs( tPRNR );
+            tPINR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
             // IDictionary<int,IVerySimplePoco>
             var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPR ) )! );
             Debug.Assert( tPIR != null );
             tPIR.CSharpName.Should().Be( $"IDictionary<int,{n}>" );
             tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the Dictionary<int,IVerySimplePoco?>." );
-            tPIR.ImplNominalType.Should().BeSameAs( tPRNR );
+            tPIR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
         }
 
     }

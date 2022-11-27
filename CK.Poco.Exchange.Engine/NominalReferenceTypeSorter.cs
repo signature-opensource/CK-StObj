@@ -39,7 +39,7 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( t );
             if( t.Kind == PocoTypeKind.Any
                 || t.Type.IsValueType
-                || t.ImplNominalType != t )
+                || t.ObliviousType != t )
             {
                 Throw.ArgumentException( $"The type must not be 'object', nor a value type and be the nominal one: {t}." );
             }
