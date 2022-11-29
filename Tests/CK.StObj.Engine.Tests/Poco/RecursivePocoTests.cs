@@ -120,13 +120,12 @@ namespace CK.StObj.Engine.Tests.Poco
             ref Rec P { get; }
         }
 
-        [Explicit]
         [Test]
-        public void recursive_list_use_of_named_record_is_NOT_YET_handled()
+        public void recursive_list_use_of_named_record_is_handled()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecList ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindObliviousType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );
@@ -140,13 +139,12 @@ namespace CK.StObj.Engine.Tests.Poco
             ref Rec P { get; }
         }
 
-        [Explicit]
         [Test]
-        public void recursive_array_use_of_named_record_is_NOT_YET_handled()
+        public void recursive_array_use_of_named_record_is_handled()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecArray ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindObliviousType( typeof( IHoldRecArray.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );
@@ -160,17 +158,17 @@ namespace CK.StObj.Engine.Tests.Poco
             ref Rec P { get; }
         }
 
-        [Explicit]
         [Test]
-        public void recursive_dicionary_use_of_named_record_is_NOT_YET_handled()
+        public void recursive_dicionary_use_of_named_record_is_handled()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecDic ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindObliviousType( typeof( IHoldRecDic.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );
-            list.ItemTypes[0].Should().Be( tRec );
+            list.ItemTypes[0].Type.Should().Be( typeof( int ) );
+            list.ItemTypes[1].Should().Be( tRec );
         }
 
 

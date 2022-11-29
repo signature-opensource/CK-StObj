@@ -41,7 +41,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
-        IPocoType? FindByType( Type type );
+        IPocoType? FindObliviousType( Type type );
         
         /// <summary>
         /// Gets the primary poco type from any of its interface.

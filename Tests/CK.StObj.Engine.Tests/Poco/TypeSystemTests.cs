@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Xml.Linq;
 using static CK.StObj.Engine.Tests.SimpleObjectsTests;
 using static CK.Testing.StObjEngineTestHelper;
@@ -38,9 +39,9 @@ namespace CK.StObj.Engine.Tests.Poco
             List<(int Count, string Name)> Thing { get; }
         }
 
-        public record struct RecAnonymous( int Count, string Name, (int Count, string Name) Inside );
+        public record struct NamedRec( int Count, string Name, (int Count, string Name) Inside );
 
-        public RecAnonymous GetRecAnonymous => default;
+        public NamedRec GetNamedRec => default;
 
         [Test]
         public void AllTypes_and_identity_test()
@@ -54,13 +55,13 @@ namespace CK.StObj.Engine.Tests.Poco
 
             const int basicTypesCount = 19;
             const int pocoTypesCount = 4 + 2; // IPoco and IClosedPoco
-            const int listTypesCount = 1;
-            const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective "naked" ImplNominalType.
+            const int listTypesCount = 1 + 1; // List<(int,string)> and List<(int Count, string Name)>
+            const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective oblivious types.
 
             ts.AllTypes.Count.Should().Be( (basicTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
             int before = ts.AllTypes.Count;
-            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetRecAnonymous ) )! );
+            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
             Debug.Assert( tRec != null );
             ts.AllTypes.Count.Should().Be( before + 2 );
             tRec.Kind.Should().Be( PocoTypeKind.Record );
@@ -73,7 +74,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         // Same structure but not same field names.
-        public struct SameAsRecAnonymous
+        public struct NotSameFieldNameAsNamedRec
         {
             public int A;
             [DefaultValue( "" )]
@@ -81,10 +82,10 @@ namespace CK.StObj.Engine.Tests.Poco
             public (int, string N) C;
         }
 
-        public SameAsRecAnonymous GetSameNakedAsRecAnonymous => default;
+        public NotSameFieldNameAsNamedRec GetNotSameFieldNameAsNamedRec => default;
 
         // Same field names but not same default.
-        public struct NotSameAsRecAnonymous
+        public struct NotSameDefaultAsNamedRec
         {
             public int A;
             [DefaultValue( "Not the default string." )]
@@ -92,32 +93,32 @@ namespace CK.StObj.Engine.Tests.Poco
             public (int, string N) C;
         }
 
-        public NotSameAsRecAnonymous GetNotSameNakedAsRecAnonymous => default;
+        public NotSameDefaultAsNamedRec GetNotSameDefaultAsNamedRec => default;
 
         [Test]
-        public void NakedRecord_embedds_the_default_values()
+        public void named_record_embedds_the_default_values()
         {
             var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
 
-            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetRecAnonymous ) )! );
+            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
             Debug.Assert( tRec != null );
-            var tSameAsRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSameNakedAsRecAnonymous ) )! );
-            Debug.Assert( tSameAsRec != null );
+            var tNotFieldName = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameFieldNameAsNamedRec ) )! );
+            Debug.Assert( tNotFieldName != null );
 
-            tSameAsRec.Should().NotBeSameAs( tRec );
+            tNotFieldName.Should().NotBeSameAs( tRec );
 
             var tRecDef = tRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
-            var tSameAsRecDef = tSameAsRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
+            var tNotFieldNameDef = tNotFieldName.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 
-            tSameAsRecDef.Should().Be( "new(){B = \"\", C = (default, \"\")}" );
             tRecDef.Should().Be( "new(){Name = \"\", Inside = (default, \"\")}" );
+            tNotFieldNameDef.Should().Be( "new(){B = \"\", C = (default, \"\")}" );
 
-            var rtNotSameAsRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameNakedAsRecAnonymous ) )! );
-            Debug.Assert( rtNotSameAsRec != null );
-            rtNotSameAsRec.Should().NotBeSameAs( tRec );
-            var tNotSameAsRecDef = rtNotSameAsRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
+            var tNotSameDefault = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameDefaultAsNamedRec ) )! );
+            Debug.Assert( tNotSameDefault != null );
+            tNotSameDefault.Should().NotBeSameAs( tRec );
+            var tNotSameDefaultDef = tNotSameDefault.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 
-            tNotSameAsRecDef.Should().Be( "new(){B = @\"Not the default string.\", C = (default, \"\")}" );
+            tNotSameDefaultDef.Should().Be( "new(){B = @\"Not the default string.\", C = (default, \"\")}" );
         }
 
         public struct AnEmptyOne { }
@@ -125,7 +126,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public AnEmptyOne GetAnEmptyOne => default;
 
         [Test]
-        public void an_empty_records_is_handled_bu_is_not_exchangeable()
+        public void an_empty_records_is_handled_but_is_not_exchangeable()
         {
             var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
             var tEmptyOne = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetAnEmptyOne ) )! );
@@ -312,7 +313,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public IList<IVerySimplePoco> IListPR = null!;
 
         [Test]
-        public void oblivious_and_type_name_List()
+        public void oblivious_List()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
             var r = TestHelper.GetSuccessfulResult( c );
@@ -358,7 +359,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListR ) )! );
             Debug.Assert( tRR != null );
             tRR.CSharpName.Should().Be( "List<object>" );
-            tRR.ImplTypeName.Should().Be( "List<object?>" );
+            tRR.ImplTypeName.Should().Be( "List<object>" );
             tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // IList<object?>
@@ -372,7 +373,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListR ) )! );
             Debug.Assert( tIR != null );
             tIR.CSharpName.Should().Be( "IList<object>" );
-            tIR.ImplTypeName.Should().Be( "List<object?>" );
+            tIR.ImplTypeName.Should().Be( "List<object>" );
             tIR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // List of Reference type but IVerySimplePoco.
@@ -388,7 +389,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPR ) )! );
             Debug.Assert( tPRR != null );
             tPRR.CSharpName.Should().Be( $"List<{n}>" );
-            tPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
+            tPRR.ImplTypeName.Should().Be( $"List<{n}>" );
             tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
             // IList<IVerySimplePoco?>
@@ -424,7 +425,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public IDictionary<int, IVerySimplePoco> IDicPR = null!;
 
         [Test]
-        public void oblivious_and_type_name_Dictionary()
+        public void oblivious_Dictionary()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
             var r = TestHelper.GetSuccessfulResult( c );
@@ -470,7 +471,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicR ) )! );
             Debug.Assert( tRR != null );
             tRR.CSharpName.Should().Be( "Dictionary<int,object>" );
-            tRR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
+            tRR.ImplTypeName.Should().Be( "Dictionary<int,object>" );
             tRR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // IDictionary<int,object?>
@@ -484,7 +485,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicR ) )! );
             Debug.Assert( tIR != null );
             tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
-            tIR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
+            tIR.ImplTypeName.Should().Be( "Dictionary<int,object>" );
             tIR.ObliviousType.Should().BeSameAs( tRNR.Nullable );
 
             // Dictionary of IPoco type (IVerySimplePoco) for the value.
@@ -500,7 +501,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPR ) )! );
             Debug.Assert( tPRR != null );
             tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
-            tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
+            tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}>" );
             tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
 
             // IDictionary<int,IVerySimplePoco?>
@@ -518,6 +519,47 @@ namespace CK.StObj.Engine.Tests.Poco
             tPIR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
         }
 
+        // AnonymousSampleO is the common ObliviousType: 
+        public (IVerySimplePoco?, List<IVerySimplePoco?>?) AnonymousSampleO = default;
+        public (IVerySimplePoco A, IList<IVerySimplePoco> B) AnonymousSample1 = default;
+        public (IVerySimplePoco? A, IList<IVerySimplePoco?> B) AnonymousSample2 = default;
+        public (IVerySimplePoco? A, IList<IVerySimplePoco?>? B) AnonymousSample3 = default;
+        public (IVerySimplePoco? A, IList<IVerySimplePoco> B) AnonymousSample4 = default;
+        public (IVerySimplePoco? A, IList<IVerySimplePoco> B2) AnonymousSample5 = default;
+
+        [TestCase( "ObliviousFirst" )]
+        [TestCase( "ObliviousLast" )]
+        public void oblivious_anonymous_record( string mode )
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+            var ts = r.CKTypeResult.PocoTypeSystem;
+
+            IRecordPocoType? tO = null;
+            if( mode == "ObliviousFirst" ) tO = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSampleO ) )! );
+
+            var t1 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample1 ) )! );
+            Debug.Assert( t1 != null );
+            var t2 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample2 ) )! );
+            Debug.Assert( t2 != null );
+            var t3 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample3 ) )! );
+            Debug.Assert( t3 != null );
+            var t4 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample4 ) )! );
+            Debug.Assert( t4 != null );
+            var t5 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample5 ) )! );
+            Debug.Assert( t5 != null );
+
+            if( mode == "ObliviousLast" ) tO = (IRecordPocoType?)ts.FindObliviousType( GetType().GetField( nameof( AnonymousSampleO ) )!.FieldType );
+            Debug.Assert( tO != null && tO.IsAnonymous && tO.IsOblivious );
+
+            tO.ObliviousType.Should().BeSameAs( tO );
+            t1.ObliviousType.Should().BeSameAs( tO );
+            t2.ObliviousType.Should().BeSameAs( tO );
+            t3.ObliviousType.Should().BeSameAs( tO );
+            t4.ObliviousType.Should().BeSameAs( tO );
+            t5.ObliviousType.Should().BeSameAs( tO );
+            new object[] { tO, t1, t2, t3, t4, t5 }.Distinct().Should().HaveCount( 6, "Different PocoTypes." );
+        }
     }
 
 }

@@ -236,10 +236,9 @@ namespace CK.Setup
             bool TryFindWritableAndCheckReadOnlys( IActivityMonitor monitor )
             {
                 Debug.Assert( _prop != null );
-                int idx = 0;
                 foreach( var p in _prop.DeclaredProperties )
                 {
-                    if( !Add( monitor, p, idx ) )
+                    if( !Add( monitor, p ) )
                     {
                         return false;
                     }
@@ -256,20 +255,19 @@ namespace CK.Setup
                             return false;
                         }
                     }
-                    ++idx;
                 }
                 return true;
 
             }
 
-            bool Add( IActivityMonitor monitor, IExtPropertyInfo p, int idxP )
+            bool Add( IActivityMonitor monitor, IExtPropertyInfo p )
             {
                 Debug.Assert( _prop != null );
 
                 if( p.PropertyInfo.CanWrite || p.Type.IsByRef )
                 {
                     _fieldAccesskind = p.Type.IsByRef ? PocoFieldAccessKind.IsByRef : PocoFieldAccessKind.HasSetter;
-                    if( !AddWritable( monitor, p, idxP ) ) return false;
+                    if( !AddWritable( monitor, p ) ) return false;
                     // On success, always check that a record must be a ref property, that a collection must not
                     // have a setter and that any other type must be a regular property.
                     Debug.Assert( _bestReg != null );
@@ -306,7 +304,7 @@ namespace CK.Setup
                 }
                 return true;
 
-                bool AddWritable( IActivityMonitor monitor, IExtPropertyInfo p, int idxP )
+                bool AddWritable( IActivityMonitor monitor, IExtPropertyInfo p )
                 {
                     var reg = _system.Register( monitor, p );
                     if( reg == null ) return false;

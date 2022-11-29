@@ -52,7 +52,7 @@ namespace CK.Setup
                 Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
                 foreach( var i in family.Interfaces )
                 {
-                    _obliviousCache.Add( i.PocoInterface, primary );
+                    _obliviousCache.Add( i.PocoInterface, primary.Nullable );
                 }
                 allPrimaries[iPrimary++] = primary;
                 if( family.IsClosedPoco ) closedPrimaries[iClosedPrimary++] = primary;
@@ -71,9 +71,9 @@ namespace CK.Setup
             }
             // Third, registers the IPoco and IClosedPoco full sets.
             var all = PocoType.CreateAbstractPoco( monitor, this, typeof( IPoco ), allAbstracts.ToArray(), allPrimaries );
-            _obliviousCache.Add( typeof( IPoco ), all );
+            _obliviousCache.Add( typeof( IPoco ), all.Nullable );
             var allClosed = PocoType.CreateAbstractPoco( monitor, this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
-            _obliviousCache.Add( typeof( IClosedPoco ), allClosed );
+            _obliviousCache.Add( typeof( IClosedPoco ), allClosed.Nullable );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
             foreach( var p in allPrimaries )
             {
@@ -84,7 +84,7 @@ namespace CK.Setup
                     int idx = 0;
                     foreach( var a in p.FamilyInfo.OtherInterfaces )
                     {
-                        abstracts[idx++] = (IAbstractPocoType)_obliviousCache[a];
+                        abstracts[idx++] = (IAbstractPocoType)_obliviousCache[a].NonNullable;
                     }
                     p.AbstractTypes = abstracts;
                 }
@@ -99,16 +99,14 @@ namespace CK.Setup
             foreach( var p in allPrimaries )
             {
                 Debug.Assert( p.FamilyInfo != null );
-                bool hasNonObliviousFieldType = false;
                 PrimaryPocoField[] fields = new PrimaryPocoField[p.FamilyInfo.Properties.Count];
                 foreach( var prop in p.FamilyInfo.Properties.Values )
                 {
                     var f = builder.Build( monitor, p, prop );
                     if( f == null ) return false;
                     fields[prop.Index] = f;
-                    if( !f.Type.IsOblivious ) hasNonObliviousFieldType = true;
                 }
-                success &= p.SetFields( monitor, StringBuilderPool, fields, createFakeObliviousType: hasNonObliviousFieldType );
+                success &= p.SetFields( monitor, StringBuilderPool, fields );
             }
             // If no error occurred, we can now detect any instantiation cycle error.
             // We handle only IPoco since collection items are not instantiated
@@ -152,10 +150,11 @@ namespace CK.Setup
                 }
                 foreach( var f in families )
                 {
-                    subTypes[i++] = _obliviousCache[f.PrimaryInterface.PocoInterface];
+                    subTypes[i++] = _obliviousCache[f.PrimaryInterface.PocoInterface].NonNullable;
                 }
                 var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes );
-                _obliviousCache.Add( tAbstract, result = a );
+                result = a;
+                _obliviousCache.Add( tAbstract, a.Nullable );
                 allAbstracts.Add( a );
                 if( typeof( IClosedPoco ).IsAssignableFrom( tAbstract ) ) closedAbstracts.Add( a );
             }

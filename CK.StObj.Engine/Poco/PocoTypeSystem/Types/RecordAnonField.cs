@@ -29,7 +29,7 @@ namespace CK.Setup
         {
             _index = f._index;
             _name = f._name;
-            _isUnnamed = f._isUnnamed;
+            _isUnnamed = true;
             SetType( f.Type.ObliviousType );
         }
 

@@ -54,7 +54,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this type oblivious. See <see cref="ObliviousType"/>.
         /// </summary>
-        bool IsOblivious { get; }
+        bool IsOblivious => ObliviousType == this;
 
         /// <summary>
         /// Gets the C# name with namespaces and nullabilities of this type.
@@ -91,11 +91,14 @@ namespace CK.Setup
         ///   </description>
         ///   </item>
         /// </list>
-        /// The <see cref="IPrimaryPocoType.ObliviousType"/> is "virtual": all other oblivious types
-        /// corresponds to actual type that exist, can have instances of a concrete type but the oblivious
-        /// for IPoco is only here to expose fields of oblivious types. The <see cref="IPocoType.Index"/>
-        /// of oblivious <see cref="IPrimaryPocoType"/> are the ones of the real <see cref="IPrimaryPocoType"/>
-        /// (nullable and not nullable).
+        /// <para>
+        /// Named composites (<see cref="PocoTypeKind.IPoco"/> and <see cref="PocoTypeKind.Record"/>) are their
+        /// own oblivious types (for IPoco, as a reference type, it is the nullable one).
+        /// </para>
+        /// <para>
+        /// Anonymous records (value tuples) have a "in depth" ObliviousType: field names are erased
+        /// and all field types are oblivious.
+        /// </para>
         /// </summary>
         IPocoType ObliviousType { get; }
 

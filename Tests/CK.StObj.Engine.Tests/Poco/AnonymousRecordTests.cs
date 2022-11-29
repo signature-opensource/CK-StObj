@@ -117,10 +117,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullability_incoherence_is_checked()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
-            TestHelper.GetSuccessfulResult( c );
+            //var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
+            //TestHelper.GetSuccessfulResult( c );
 
-            CheckError( typeof( INullabilityError0 ) );
+            //CheckError( typeof( INullabilityError0 ) );
             CheckError( typeof( INullabilityError1 ) );
             CheckError( typeof( INullabilityError2 ) );
             CheckError( typeof( INullabilityError3 ) );

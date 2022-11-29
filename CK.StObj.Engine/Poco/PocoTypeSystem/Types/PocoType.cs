@@ -58,9 +58,9 @@ namespace CK.Setup
             public bool IsExchangeable => NonNullable.IsExchangeable;
 
             /// <summary>
-            /// Returning this works for any (object), basic (string), and abstract IPoco.
-            /// - Composites (i.e. IPoco for reference types) need to have oblivious fields.
-            /// - Collections and unions need to reference oblivious item types.
+            /// Returning this works for any (object), basic (string), and AbstractPoco.
+            /// This also works for IPoco since they are their own Oblivious.
+            /// Collections override this.
             /// </summary>
             public virtual IPocoType ObliviousType
             {
@@ -68,42 +68,9 @@ namespace CK.Setup
                 {
                     Debug.Assert( Kind == PocoTypeKind.Any
                                   || Kind == PocoTypeKind.Basic
+                                  || Kind == PocoTypeKind.IPoco
                                   || Kind == PocoTypeKind.AbstractIPoco, "The others override." );
                     return this;
-                }
-            }
-
-            /// <summary>
-            /// Returns the CSharpName.
-            /// Works for every type since reference types are all "named" types
-            /// except for collections since their oblivious name is based on the
-            /// oblivious names of their type arguments.
-            /// </summary>
-            public virtual string ObliviousCSharpName
-            {
-                get
-                {
-                    Debug.Assert( Kind != PocoTypeKind.Array
-                                  && Kind != PocoTypeKind.List
-                                  && Kind != PocoTypeKind.HashSet
-                                  && Kind != PocoTypeKind.Dictionary, "The others override." );
-                    return _csharpName;
-                }
-            }
-
-            /// <summary>
-            /// Returning true works for any (object), basic (string), and abstract IPoco.
-            /// Composites (i.e. IPoco for reference types), collections and unions
-            /// override this (the nullable may be the oblivious or not).
-            /// </summary>
-            public virtual bool IsOblivious
-            {
-                get
-                {
-                    Debug.Assert( Kind == PocoTypeKind.Any
-                                  || Kind == PocoTypeKind.Basic
-                                  || Kind == PocoTypeKind.AbstractIPoco, "The others override." );
-                    return true;
                 }
             }
 
@@ -178,32 +145,6 @@ namespace CK.Setup
                 {
                     Debug.Assert( Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Record );
                     return this;
-                }
-            }
-
-            /// <summary>
-            /// Returning this works for basic value types and named records only.
-            /// Anonymous records is named with its oblivious fields' type.
-            /// </summary>
-            public virtual string ObliviousCSharpName
-            {
-                get
-                {
-                    Debug.Assert( Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Record );
-                    return _csharpName;
-                }
-            }
-
-            /// <summary>
-            /// Returning true works for basic value types only.
-            /// Records override this (the nullable may be the oblivious or not).
-            /// </summary>
-            public virtual bool IsOblivious
-            {
-                get
-                {
-                    Debug.Assert( Kind == PocoTypeKind.Basic );
-                    return true;
                 }
             }
 
@@ -300,19 +241,6 @@ namespace CK.Setup
             {
                 Debug.Assert( Kind != PocoTypeKind.AnonymousRecord && Kind != PocoTypeKind.Record );
                 return _type.IsValueType ? this : _nullable.ObliviousType;
-            }
-        }
-
-        /// <summary>
-        /// True if this is a value type.
-        /// Works for everything except for records (just like ObliviousType). 
-        /// </summary>
-        public virtual bool IsOblivious
-        {
-            get
-            {
-                Debug.Assert( Kind != PocoTypeKind.AnonymousRecord && Kind != PocoTypeKind.Record );
-                return _type.IsValueType;
             }
         }
 
