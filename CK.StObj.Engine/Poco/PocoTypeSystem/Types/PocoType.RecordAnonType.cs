@@ -9,25 +9,25 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using static CK.CodeGen.TupleTypeName;
+using static CK.Setup.IPocoType;
 
 namespace CK.Setup
 {
     partial class PocoType
     {
 
-        internal static RecordType CreateRecord( IActivityMonitor monitor,
-                                                 PocoTypeSystem s,
-                                                 Type tNotNull,
-                                                 Type tNull,
-                                                 string typeName,
-                                                 RecordField[]? anonymousFields,
-                                                 ExternalNameAttribute? externalName,
-                                                 IPocoType? obliviousType )
+        internal static RecordAnonType CreateAnonymousRecord( IActivityMonitor monitor,
+                                                              PocoTypeSystem s,
+                                                              Type tNotNull,
+                                                              Type tNull,
+                                                              string typeName,
+                                                              RecordAnonField[] fields,
+                                                              IPocoType? obliviousType )
         {
-            return new RecordType( monitor, s, tNotNull, tNull, typeName, anonymousFields, externalName, (IRecordPocoType?)obliviousType );
+            return new RecordAnonType( monitor, s, tNotNull, tNull, typeName, fields, (IRecordPocoType?)obliviousType );
         }
 
-        internal sealed class RecordType : PocoType, IRecordPocoType
+        internal sealed class RecordAnonType : PocoType, IRecordPocoType
         {
             sealed class Null : NullValueType, IRecordPocoType
             {
@@ -36,9 +36,9 @@ namespace CK.Setup
                 {
                 }
 
-                new RecordType NonNullable => Unsafe.As<RecordType>( base.NonNullable );
+                new RecordAnonType NonNullable => Unsafe.As<RecordAnonType>( base.NonNullable );
 
-                public bool IsAnonymous => NonNullable.IsAnonymous;
+                public bool IsAnonymous => true;
 
                 public override IPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
 
@@ -63,38 +63,27 @@ namespace CK.Setup
                 public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
             }
 
-            [AllowNull] RecordField[] _fields;
-            [AllowNull] IRecordPocoType _obliviousType;
-            readonly ExternalNameAttribute? _externalName;
+            RecordAnonField[] _fields;
+            IRecordPocoType _obliviousType;
             DefaultValueInfo _defInfo;
 
-            public RecordType( IActivityMonitor monitor,
-                               PocoTypeSystem s,
-                               Type tNotNull,
-                               Type tNull,
-                               string typeName,
-                               RecordField[]? anonymousFields,
-                               ExternalNameAttribute? externalName,
-                               IRecordPocoType? obliviousType )
+            public RecordAnonType( IActivityMonitor monitor,
+                                   PocoTypeSystem s,
+                                   Type tNotNull,
+                                   Type tNull,
+                                   string typeName,
+                                   RecordAnonField[] fields,
+                                   IRecordPocoType? obliviousType )
                 : base( s,
                         tNotNull,
                         typeName,
-                        anonymousFields != null ? PocoTypeKind.AnonymousRecord : PocoTypeKind.Record,
+                        PocoTypeKind.AnonymousRecord,
                         t => new Null( t, tNull ) )
             {
-                if( anonymousFields != null )
-                {
-                    SetFields( monitor, s, anonymousFields, obliviousType );
-                }
-                _externalName = externalName;
-            }
-
-            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordField[] fields, IRecordPocoType? obliviousType )
-            {
+                _obliviousType = obliviousType ?? this;
                 _fields = fields;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
-                _obliviousType = obliviousType ?? this;
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {
@@ -106,9 +95,9 @@ namespace CK.Setup
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
 
-            public ExternalNameAttribute? ExternalName => _externalName;
+            public ExternalNameAttribute? ExternalName => null;
 
-            public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
+            public string ExternalOrCSharpName => CSharpName;
 
             public override IPocoType ObliviousType => _obliviousType;
 

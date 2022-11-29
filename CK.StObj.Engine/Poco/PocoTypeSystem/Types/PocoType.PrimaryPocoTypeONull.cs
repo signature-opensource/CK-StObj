@@ -6,7 +6,6 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-
         /// <summary>
         /// Fake type that is only here to holds the oblivious fields.
         /// This is the nullable (oblivious reference types are nullable) and
@@ -16,14 +15,14 @@ namespace CK.Setup
         /// The IPocoType.Index are the same as the actual IPrimaryPocoType.
         /// </para>
         /// </summary>
-        internal sealed class PrimaryPocoTypeONull : IPrimaryPocoType
+        internal sealed class PrimaryPocoTypeONull : IPrimaryPocoType, IPocoType
         {
             readonly IPrimaryPocoType _primary;
             readonly Field[] _fields;
             readonly NotNull _notNull;
             AnnotationSetImpl _annotations;
 
-            sealed class NotNull : IPrimaryPocoType
+            sealed class NotNull : IPrimaryPocoType, IPocoType
             {
                 readonly PrimaryPocoTypeONull _nullable;
                 AnnotationSetImpl _annotations;
@@ -61,6 +60,14 @@ namespace CK.Setup
 
                 public string CSharpName => _nullable._primary.CSharpName;
 
+                public string ObliviousCSharpName => _nullable._primary.Nullable.CSharpName;
+
+                ICompositePocoType ICompositePocoType.ObliviousType => _nullable;
+
+                IPocoType IPocoType.ObliviousType => _nullable;
+
+                public bool IsOblivious => false;
+
                 public string ImplTypeName => _nullable._primary.ImplTypeName;
 
                 public bool IsExchangeable => _nullable._primary.IsExchangeable;
@@ -73,9 +80,6 @@ namespace CK.Setup
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => _nullable.Fields;
 
-                ICompositePocoType ICompositePocoType.ObliviousType => _nullable;
-
-                IPocoType IPocoType.ObliviousType => _nullable;
 
                 ICompositePocoType ICompositePocoType.Nullable => _nullable;
 
@@ -126,6 +130,8 @@ namespace CK.Setup
 
             public IPrimaryPocoType ObliviousType => this;
 
+            public bool IsOblivious => true;
+
             public IReadOnlyList<IAbstractPocoType> AbstractTypes => _primary.Nullable.AbstractTypes;
 
             public string CSharpBodyConstructorSourceCode => _primary.CSharpBodyConstructorSourceCode;
@@ -147,6 +153,9 @@ namespace CK.Setup
             public bool IsNullable => true;
 
             public string CSharpName => _primary.Nullable.CSharpName;
+
+            public string ObliviousCSharpName => _primary.Nullable.CSharpName;
+
 
             public string ImplTypeName => _primary.ImplTypeName;
 

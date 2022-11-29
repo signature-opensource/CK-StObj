@@ -52,9 +52,9 @@ namespace CK.Setup
         bool IsNullable { get; }
 
         /// <summary>
-        /// Gets whether this type is the oblivious one.
+        /// Gets whether this type oblivious. See <see cref="ObliviousType"/>.
         /// </summary>
-        bool IsOblivious => ObliviousType == this;
+        bool IsOblivious { get; }
 
         /// <summary>
         /// Gets the C# name with namespaces and nullabilities of this type.

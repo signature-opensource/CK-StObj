@@ -7,17 +7,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
-    sealed class RecordField : IRecordPocoField
+    sealed class RecordAnonField : IRecordPocoField
     {
         readonly static List<string> _itemNames = new List<string>();
-
-        [AllowNull] IPocoType _type;
-        [AllowNull] PocoType.RecordType _owner;
-        IPocoType.ITypeRef? _nextRef;
-        readonly string _name;
-        readonly int _index;
-        DefaultValueInfo _defInfo;
-        readonly bool _isUnnamed;
 
         static string GetItemName( int index )
         {
@@ -25,17 +17,23 @@ namespace CK.Setup
             return _itemNames[index];
         }
 
+        [AllowNull] IPocoType _type;
+        [AllowNull] PocoType.RecordAnonType _owner;
+        IPocoType.ITypeRef? _nextRef;
+        readonly string _name;
+        readonly int _index;
+        readonly bool _isUnnamed;
+
         // Used to build the oblivious type fields.
-        internal RecordField( RecordField f )
+        internal RecordAnonField( RecordAnonField f )
         {
             _index = f._index;
             _name = f._name;
-            _defInfo = f._defInfo;
             _isUnnamed = f._isUnnamed;
             SetType( f.Type.ObliviousType );
         }
 
-        public RecordField( int index, string? name, IPocoFieldDefaultValue? defaultValue = null )
+        public RecordAnonField( int index, string? name )
         {
             _index = index;
             if( name == null )
@@ -47,10 +45,6 @@ namespace CK.Setup
             {
                 _name = name;
             }
-            if( defaultValue != null )
-            {
-                _defInfo = new DefaultValueInfo( defaultValue );
-            }
         }
 
         public int Index => _index;
@@ -61,9 +55,11 @@ namespace CK.Setup
 
         public IPocoType Type => _type;
 
+        IPocoType IPocoType.ITypeRef.Type => _type;
+
         public bool IsExchangeable => _type.IsExchangeable;
 
-        public DefaultValueInfo DefaultValueInfo => _defInfo;
+        public DefaultValueInfo DefaultValueInfo => _type.DefaultValueInfo;
 
         public ICompositePocoType Owner => _owner;
 
@@ -79,15 +75,12 @@ namespace CK.Setup
                 _nextRef = ((PocoType)t.NonNullable).AddBackRef( this );
             }
             _type = t;
-            if( _defInfo.IsDisallowed )
-            {
-                _defInfo = _type.DefaultValueInfo;
-            }
         }
 
-        internal void SetOwner( PocoType.RecordType record ) => _owner = record;
+        internal void SetOwner( PocoType.RecordAnonType record ) => _owner = record;
 
         public override string ToString() => $"{(_type == null ? "(no type)" : _type)} {Name}";
 
     }
+
 }

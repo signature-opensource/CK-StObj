@@ -25,13 +25,13 @@ namespace CK.Setup
                 _tupleIndex = 0;
             }
 
-            public RecordField[] GetTupleNamedFields( int count )
+            public RecordAnonField[] GetTupleNamedFields( int count )
             {
                 _tupleNames ??= _root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();
-                var fields = new RecordField[count];
+                var fields = new RecordAnonField[count];
                 for( int i = 0; i < fields.Length; ++i )
                 {
-                    fields[i] = new RecordField( i, _tupleNames.Count > _tupleIndex ? _tupleNames[_tupleIndex++] : null );
+                    fields[i] = new RecordAnonField( i, _tupleNames.Count > _tupleIndex ? _tupleNames[_tupleIndex++] : null );
                 }
                 return fields;
             }

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -16,15 +17,16 @@ namespace CK.Setup
     partial class PocoType
     {
         internal static ListOrSetOrArrayType CreateCollection( IActivityMonitor monitor,
-                                                        PocoTypeSystem s,
-                                                        Type tCollection,
-                                                        string csharpName,
-                                                        string implTypeName,
-                                                        PocoTypeKind kind,
-                                                        IPocoType itemType,
-                                                        IPocoType? obliviousType )
+                                                               PocoTypeSystem s,
+                                                               Type tCollection,
+                                                               string csharpName,
+                                                               string implTypeName,
+                                                               PocoTypeKind kind,
+                                                               IPocoType itemType,
+                                                               string? obliviousCSharpName,
+                                                               IPocoType? obliviousType )
         {
-            return new ListOrSetOrArrayType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType );
+            return new ListOrSetOrArrayType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, obliviousCSharpName, ( ICollectionPocoType?)obliviousType );
         }
 
         internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
@@ -34,29 +36,46 @@ namespace CK.Setup
                                                          string implTypeName,
                                                          IPocoType itemType1,
                                                          IPocoType itemType2,
+                                                         string? obliviousCSharpName,
                                                          IPocoType? obliviousType )
         {
-            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
+            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, obliviousCSharpName, (ICollectionPocoType?)obliviousType );
         }
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
         {
-            readonly ICollectionPocoType _obliviousType;
+            [AllowNull] ICollectionPocoType _obliviousType;
+            readonly string _obliviousCSharpName;
 
-            public NullCollection( IPocoType notNullable, ICollectionPocoType? obliviousType )
+            public NullCollection( IPocoType notNullable, string? obliviousCSharpName, ICollectionPocoType? obliviousType )
                 : base( notNullable )
             {
-                Debug.Assert( obliviousType == null
-                             || (obliviousType.Kind == PocoTypeKind.Dictionary && obliviousType.ItemTypes[1].IsOblivious )
-                             || (obliviousType.Kind != PocoTypeKind.Dictionary && obliviousType.ItemTypes[0].IsOblivious) );
-                _obliviousType = obliviousType ?? this;
+                Debug.Assert( obliviousType == null || obliviousCSharpName == null, "We cannot have both here." );
+                if( obliviousType == null && obliviousCSharpName == null )
+                {
+                    // If both are null, then we are building the oblivious type.
+                    Debug.Assert( (notNullable.Kind == PocoTypeKind.Dictionary && ((ICollectionPocoType)notNullable).ItemTypes[1].IsOblivious)
+                                  || (notNullable.Kind != PocoTypeKind.Dictionary && ((ICollectionPocoType)notNullable).ItemTypes[0].IsOblivious) );
+                    _obliviousType = this;
+                    _obliviousCSharpName = CSharpName;
+                }
+                else
+                {
+                    // Either we have the oblivious already or we'll have it later.
+                    _obliviousType = obliviousType;
+                    _obliviousCSharpName = obliviousCSharpName ?? obliviousType!.CSharpName;
+                }
             }
 
             new ICollectionPocoType NonNullable => Unsafe.As<ICollectionPocoType>( base.NonNullable );
 
             public IReadOnlyList<IPocoType> ItemTypes => NonNullable.ItemTypes;
 
-            public override IPocoType ObliviousType => _obliviousType; 
+            public override IPocoType ObliviousType => _obliviousType;
+
+            public override bool IsOblivious => ReferenceEquals( _obliviousCSharpName, CSharpName );
+
+            public override string ObliviousCSharpName => _obliviousCSharpName;
 
             ICollectionPocoType ICollectionPocoType.ObliviousType => _obliviousType;
 
@@ -81,8 +100,9 @@ namespace CK.Setup
                                          string implTypeName,
                                          PocoTypeKind kind,
                                          IPocoType itemType,
+                                         string? obliviousCSharpName,
                                          ICollectionPocoType? obliviousType )
-                : base( s, tCollection, csharpName, kind, t => new NullCollection( t, obliviousType ) )
+                : base( s, tCollection, csharpName, kind, t => new NullCollection( t, obliviousCSharpName, obliviousType ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
                 _implTypeName = implTypeName;
@@ -269,8 +289,9 @@ namespace CK.Setup
                                    string implTypeName,
                                    IPocoType keyType,
                                    IPocoType valueType,
+                                   string? obliviousCSharpName,
                                    ICollectionPocoType? obliviousType )
-                : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t, obliviousType ) )
+                : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t, obliviousCSharpName, obliviousType ) )
             {
                 _itemTypes = new[] { keyType, valueType };
                 Debug.Assert( !keyType.IsNullable );
