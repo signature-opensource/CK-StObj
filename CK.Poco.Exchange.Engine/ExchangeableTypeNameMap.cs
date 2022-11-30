@@ -50,6 +50,21 @@ namespace CK.Setup
         public IReadOnlyList<IPocoType> ExchangeableNonNullableTypes => _exchangeables;
 
         /// <summary>
+        /// Gets all the types that are exchangeable.
+        /// </summary>
+        public IEnumerable<IPocoType> AllExchangeableTypes
+        {
+            get
+            {
+                foreach( var t in _exchangeables )
+                {
+                    yield return t;
+                    yield return t.Nullable;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the exchangeable type name (that may be not <see cref="ExchangeableTypeName.IsExchangeable"/>)
         /// for a type. This returns the nullable or non nullable names.
         /// </summary>

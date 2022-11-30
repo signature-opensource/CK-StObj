@@ -136,14 +136,14 @@ namespace CK.Setup
             public string ImplTypeName => _csharpName;
 
             /// <summary>
-            /// Returning this works for basic value types and named records
+            /// Returning this works for basic value types, enumerations and named records
             /// but not for anonymous records.
             /// </summary>
             public virtual IPocoType ObliviousType
             {
                 get
                 {
-                    Debug.Assert( Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Record );
+                    Debug.Assert( Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Enum || Kind == PocoTypeKind.Record );
                     return this;
                 }
             }

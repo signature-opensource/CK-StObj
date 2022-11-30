@@ -219,11 +219,11 @@ namespace CK.Setup
                 }
                 if( success )
                 {
+                    // Types must be in a deterministic order for the PocoType.KeyUnionTypes to be correct.
+                    types.Sort( ( t1, t2 ) => StringComparer.Ordinal.Compare( t1.CSharpName, t2.CSharpName ) );
                     var newFinal = _system.RegisterUnionType( monitor, types );
-                    if( newFinal != null )
-                    {
-                        return isNullable ? newFinal.Nullable : newFinal;
-                    }
+                    Debug.Assert( newFinal != null && !newFinal.IsNullable );
+                    return isNullable ? newFinal.Nullable : newFinal;
                 }
                 return null;
             }

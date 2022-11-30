@@ -95,7 +95,7 @@ namespace CK.Setup.PocoJson
                                 var tA = (ICollectionPocoType)type;
                                 _writers[type.Index >> 1] = tA.ItemTypes[0].Type == typeof( byte )
                                                                 ? ( writer, v ) => writer.Append( "w.WriteBase64StringValue( " ).Append( v ).Append( " );" )
-                                                                : GetNominalCodeWriter( type );
+                                                                : GetObliviousCodeWriter( type );
                                 break;
                             }
                         case PocoTypeKind.List:
@@ -103,7 +103,7 @@ namespace CK.Setup.PocoJson
                         case PocoTypeKind.Dictionary:
                         case PocoTypeKind.Record:
                         case PocoTypeKind.AnonymousRecord:
-                            _writers[type.Index >> 1] = GetNominalCodeWriter( type );
+                            _writers[type.Index >> 1] = GetObliviousCodeWriter( type );
                             break;
                         case PocoTypeKind.Enum:
                             {
@@ -188,7 +188,7 @@ namespace CK.Setup.PocoJson
                     }
                 }
 
-                static CodeWriter GetNominalCodeWriter( IPocoType type )
+                static CodeWriter GetObliviousCodeWriter( IPocoType type )
                 {
                     if( type.ImplTypeName != type.ObliviousType.ImplTypeName )
                     {
@@ -232,36 +232,48 @@ namespace CK.Setup.PocoJson
             {
                 foreach( var type in _nameMap.ExchangeableNonNullableTypes )
                 {
-                    if( type.ObliviousType == type )
+                    switch( type.Kind )
                     {
-                        switch( type.Kind )
-                        {
-                            case PocoTypeKind.IPoco:
-                                GeneratePocoWriteMethod( monitor, _generationContext, (IPrimaryPocoType)type );
-                                break;
-                            case PocoTypeKind.AnonymousRecord:
+                        case PocoTypeKind.IPoco:
+                            GeneratePocoWriteMethod( monitor, _generationContext, (IPrimaryPocoType)type );
+                            break;
+                        case PocoTypeKind.AnonymousRecord:
+                            if( type.IsOblivious )
+                            {
                                 GenerateAnonymousRecordWriteMethod( _pocoDirectory, (IRecordPocoType)type );
-                                break;
-                            case PocoTypeKind.Record:
-                                GenerateNamedRecordWriteMethod( _pocoDirectory, (IRecordPocoType)type );
-                                break;
-                            case PocoTypeKind.Array:
+                            }
+                            break;
+                        case PocoTypeKind.Record:
+                            GenerateNamedRecordWriteMethod( _pocoDirectory, (IRecordPocoType)type );
+                            break;
+                        case PocoTypeKind.Array:
+                            if( type.Nullable.IsOblivious )
+                            {
                                 ICollectionPocoType tA = (ICollectionPocoType)type;
                                 if( tA.ItemTypes[0].Type != typeof( byte ) )
                                 {
                                     GenerateListOrArrayWriteMethod( _pocoDirectory, tA );
                                 }
-                                break;
-                            case PocoTypeKind.List:
+                            }
+                            break;
+                        case PocoTypeKind.List:
+                            if( type.Nullable.IsOblivious )
+                            {
                                 GenerateListOrArrayWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
-                                break;
-                            case PocoTypeKind.HashSet:
+                            }
+                            break;
+                        case PocoTypeKind.HashSet:
+                            if( type.Nullable.IsOblivious )
+                            {
                                 GenerateHashSetWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
-                                break;
-                            case PocoTypeKind.Dictionary:
+                            }
+                            break;
+                        case PocoTypeKind.Dictionary:
+                            if( type.Nullable.IsOblivious )
+                            {
                                 GenerateDictionaryWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
-                                break;
-                        }
+                            }
+                            break;
                     }
                 }
 

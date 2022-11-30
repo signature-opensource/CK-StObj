@@ -3,7 +3,8 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Type for <see cref="PocoTypeKind.Record"/> and <see cref="PocoTypeKind.AnonymousRecord"/>.
+    /// Type for <see cref="PocoTypeKind.Record"/> (fully mutable structs)
+    /// and <see cref="PocoTypeKind.AnonymousRecord"/>.
     /// </summary>
     public interface IRecordPocoType : ICompositePocoType
     {

@@ -19,11 +19,16 @@ namespace CK.Setup
             readonly IPocoType[] _types;
             readonly int _hash;
 
-            public KeyUnionTypes( IPocoType[] types )
+            public KeyUnionTypes( IPocoType[] types, out bool isOblivious )
             {
+                isOblivious = true;
                 _types = types;
                 var h = new HashCode();
-                foreach( var t in types ) h.Add( t );
+                foreach( var t in types )
+                {
+                    isOblivious &= t.IsOblivious;
+                    h.Add( t );
+                }
                 _hash = h.ToHashCode();
             }
 
@@ -36,21 +41,27 @@ namespace CK.Setup
 
         internal static UnionType CreateUnion( IActivityMonitor monitor,
                                                PocoTypeSystem s,
-                                               IPocoType[] allowedTypes )
+                                               IPocoType[] allowedTypes,
+                                               IPocoType? obliviousType )
         {
-            return new UnionType( monitor, s, allowedTypes );
+            return new UnionType( monitor, s, allowedTypes, (IUnionPocoType?)obliviousType );
         }
 
         internal sealed class UnionType : PocoType, IUnionPocoType
         {
             sealed class Null : NullReferenceType, IUnionPocoType
             {
-                public Null( IPocoType notNullable )
+                readonly IUnionPocoType _obliviousType;
+
+                public Null( IPocoType notNullable, IUnionPocoType? obliviousType )
                     : base( notNullable )
                 {
+                    _obliviousType = obliviousType ?? this;
                 }
 
                 new UnionType NonNullable => Unsafe.As<UnionType>( base.NonNullable );
+
+                public override IPocoType ObliviousType => _obliviousType;
 
                 public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
@@ -64,12 +75,12 @@ namespace CK.Setup
             readonly IReadOnlyList<IPocoType> _allowedTypes;
             readonly DefaultValueInfo _defInfo;
 
-            public UnionType( IActivityMonitor monitor, PocoTypeSystem s, IPocoType[] allowedTypes )
+            public UnionType( IActivityMonitor monitor, PocoTypeSystem s, IPocoType[] allowedTypes, IUnionPocoType? obliviousType )
                 : base( s,
                         typeof(object),
                         "object",
                         PocoTypeKind.UnionType,
-                        t => new Null( t ) )
+                        t => new Null( t, obliviousType ) )
             {
                 _allowedTypes = allowedTypes;
                 // Finds the first type that has a non-disallowed default.

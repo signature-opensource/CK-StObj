@@ -20,9 +20,9 @@ namespace CK.Setup
         }
 
         internal static IPocoType CreateBasicValue( PocoTypeSystem s,
-                                                            Type notNullable,
-                                                            Type nullable,
-                                                            string csharpName )
+                                                    Type notNullable,
+                                                    Type nullable,
+                                                    string csharpName )
         {
             Debug.Assert( notNullable.IsValueType );
             // A basic value type is always initializable.

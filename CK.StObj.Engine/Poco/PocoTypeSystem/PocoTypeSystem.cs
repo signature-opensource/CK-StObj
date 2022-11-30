@@ -291,6 +291,7 @@ namespace CK.Setup
                                                                        tI.ObliviousType,
                                                                        null ).Nullable;
                             _obliviousCache.Add( tOblivious, obliviousType );
+                            _obliviousCache.Add( obliviousTypeName, obliviousType.NonNullable );
                         }
                         Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>?" );
                     }
@@ -308,6 +309,7 @@ namespace CK.Setup
                     if( obliviousType == null )
                     {
                         Debug.Assert( result.Nullable.IsOblivious );
+                        Debug.Assert( csharpName == typeName );
                         _obliviousCache.Add( result.Type, result.Nullable );
                     }
                 }
@@ -385,6 +387,7 @@ namespace CK.Setup
                                                                        tV.ObliviousType,
                                                                        null ).Nullable;
                             _obliviousCache.Add( tOblivious, obliviousType );
+                            _obliviousCache.Add( obliviousTypeName, obliviousType.NonNullable );
                         }
                         Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>?" );
                     }
@@ -401,6 +404,7 @@ namespace CK.Setup
                     if( obliviousType == null )
                     {
                         Debug.Assert( result.Nullable.IsOblivious );
+                        Debug.Assert( csharpName == typeName );
                         _obliviousCache.Add( result.Type, result.Nullable );
                     }
                 }
@@ -439,26 +443,27 @@ namespace CK.Setup
             var tItem = Register( monitor, ctx, nType.ElementType );
             if( tItem == null ) return null;
 
-            if( !_obliviousCache.TryGetValue( nType.Type, out var obliviousType ) )
-            {
-                // The oblivious array is not registered.
-                var oName = tItem.ObliviousType.CSharpName + "[]";
-                obliviousType = PocoType.CreateCollection( monitor,
-                                                         this,
-                                                         nType.Type,
-                                                         oName,
-                                                         oName,
-                                                         PocoTypeKind.Array,
-                                                         tItem.ObliviousType,
-                                                         null ).Nullable;
-                _obliviousCache.Add( nType.Type, obliviousType );
-            }
-            // If the item is oblivious then, it is the oblivious array.
-            if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType : obliviousType.NonNullable;
-
             var chsarpName = tItem.CSharpName + "[]";
             if( !_obliviousCache.TryGetValue( chsarpName, out var result ) )
             {
+                if( !_obliviousCache.TryGetValue( nType.Type, out var obliviousType ) )
+                {
+                    // The oblivious array is not registered.
+                    var oName = tItem.ObliviousType.CSharpName + "[]";
+                    obliviousType = PocoType.CreateCollection( monitor,
+                                                             this,
+                                                             nType.Type,
+                                                             oName,
+                                                             oName,
+                                                             PocoTypeKind.Array,
+                                                             tItem.ObliviousType,
+                                                             null ).Nullable;
+                    _obliviousCache.Add( nType.Type, obliviousType );
+                    _obliviousCache.Add( oName, obliviousType.NonNullable );
+                }
+                // If the item is oblivious then, it is the oblivious array.
+                if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType : obliviousType.NonNullable;
+
                 result = PocoType.CreateCollection( monitor,
                                                     this,
                                                     nType.Type,
@@ -767,14 +772,33 @@ namespace CK.Setup
 
         }
 
-        IUnionPocoType? RegisterUnionType( IActivityMonitor monitor, List<IPocoType> types )
+        IUnionPocoType RegisterUnionType( IActivityMonitor monitor, List<IPocoType> types )
         {
             var a = types.ToArray();
-            var k = new PocoType.KeyUnionTypes( a );
-            if( _obliviousCache.TryGetValue( k, out var result ) ) return (IUnionPocoType)result;
-            var t = PocoType.CreateUnion( monitor, this, a );
-            _obliviousCache.Add( k, t );
-            return t;
+            var k = new PocoType.KeyUnionTypes( a, out bool isOblivious );
+            IPocoType? obliviousType = null;
+            if( !isOblivious )
+            {
+                var aO = new IPocoType[a.Length];
+                for( int i = 0; i < a.Length; i++ )
+                {
+                    aO[i] = a[i].ObliviousType;
+                }
+                var kO = new PocoType.KeyUnionTypes( aO, out var _ );
+                Debug.Assert( !kO.Equals( k ) );
+                if( !_obliviousCache.TryGetValue( kO, out obliviousType ) )
+                {
+                    // Always register the non nullable one.
+                    obliviousType = PocoType.CreateUnion( monitor, this, aO, null );
+                    _obliviousCache.Add( kO, obliviousType );
+                }
+            }
+            if( !_obliviousCache.TryGetValue( k, out var result ) )
+            {
+                result = PocoType.CreateUnion( monitor, this, a, obliviousType?.Nullable );
+                _obliviousCache.Add( k, result );
+            }
+            return (IUnionPocoType)result;
         }
 
     }
