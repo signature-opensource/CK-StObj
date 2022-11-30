@@ -19,15 +19,12 @@ namespace CK.Setup.PocoJson
         // more new registrations are done.
         int _lastRegistrationCount;
 
-        static byte[] _bytes = default!;
-        static object[] _objects = default!;
-
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
         {
             var typeSystem = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
             // Ensures that byte array and object array are registered (there's no reason they couldn't, hence the Throw).
-            Throw.CheckState( typeSystem.Register( monitor, GetType().GetField( nameof( _bytes ), BindingFlags.NonPublic|BindingFlags.Static )! ) != null );
-            Throw.CheckState( typeSystem.Register( monitor, GetType().GetField( nameof( _objects ), BindingFlags.NonPublic | BindingFlags.Static )! ) != null );
+            Throw.CheckState( typeSystem.RegisterNullableOblivious( monitor, typeof( byte[] ) ) != null );
+            Throw.CheckState( typeSystem.RegisterNullableOblivious( monitor, typeof( object[] ) ) != null );
             // Catches the current registration count.
             _lastRegistrationCount = typeSystem.AllTypes.Count;
             monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );

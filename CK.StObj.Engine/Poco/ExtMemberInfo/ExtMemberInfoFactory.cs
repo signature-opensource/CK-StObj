@@ -16,6 +16,12 @@ namespace CK.Setup
             _nullabilityContext = new TEMPNullabilityInfoContext();
         }
 
+        public IExtTypeInfo CreateNullableOblivious( Type type )
+        {
+            Throw.CheckNotNullArgument( type );
+            return new ExtTypeInfo( this, type );
+        }
+
         public IExtParameterInfo Create( ParameterInfo parameterInfo )
         {
             Throw.CheckNotNullArgument( parameterInfo );
@@ -42,6 +48,12 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( p );
             Throw.CheckArgument( homogeneousInfo?.IsHomogeneous == true );
             return new ExtPropertyInfo( this, p, homogeneousInfo, customAttributes, customAttributesData );
+        }
+
+        public IExtNullabilityInfo CreateNullabilityInfo( Type t )
+        {
+            Throw.CheckNotNullArgument( t );
+            return new ExtNullabilityInfo( t );
         }
 
         public IExtEventInfo Create( EventInfo eventInfo )

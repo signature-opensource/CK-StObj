@@ -119,6 +119,8 @@ namespace CK.Setup
             }
         }
 
+        public IPocoType? RegisterNullableOblivious( IActivityMonitor monitor, Type t ) => DoRegister( monitor, _memberInfoFactory.CreateNullableOblivious( t ) );
+
         public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo ) => DoRegister( monitor, memberInfo );
 
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => DoRegister( monitor, _memberInfoFactory.Create( p ) );

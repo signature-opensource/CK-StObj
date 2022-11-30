@@ -1,7 +1,9 @@
 using CK.Core;
 using CK.Core.Impl;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -42,6 +44,67 @@ namespace CK.Setup
             else
             {
                 _subTypes = Array.Empty<ExtNullabilityInfo>();
+            }
+        }
+
+        /// <summary>
+        /// "Fake" builder: reference types are all nullable.
+        /// </summary>
+        /// <param name="type">The root type.</param>
+        public ExtNullabilityInfo( Type type )
+        {
+            _type = type;
+            _useReadState = true;
+            _homogeneous = true;
+            if( type.IsValueType )
+            {
+                if( type.IsGenericType )
+                {
+                    var tGen = type.GetGenericTypeDefinition();
+                    var args = type.GetGenericArguments();
+                    if( tGen == typeof( Nullable<> ) )
+                    {
+                        _subTypes = new[] { new ExtNullabilityInfo( args[0], false ) };
+                        _isNullable = true;
+                    }
+                    else
+                    {
+                        _isNullable = false;
+                        _subTypes = CreateFromArgs( args );
+                    }
+                }
+                else
+                {
+                    _subTypes = Array.Empty<ExtNullabilityInfo>();
+                    _isNullable = false;
+                }
+            }
+            else
+            {
+                _isNullable = true;
+                if( type.IsArray )
+                {
+                    _subTypes = new ExtNullabilityInfo( type.GetElementType()! );
+                }
+                else if( type.IsGenericType )
+                {
+                    var args = type.GetGenericArguments();
+                    _subTypes = CreateFromArgs( args );
+                }
+                else
+                {
+                    _subTypes = Array.Empty<ExtNullabilityInfo>();
+                }
+            }
+
+            static object CreateFromArgs( Type[] args )
+            {
+                var s = new ExtNullabilityInfo[args.Length];
+                for( int i = 0; i < args.Length; i++ )
+                {
+                    s[i] = new ExtNullabilityInfo( args[i] );
+                }
+                return s;
             }
         }
 
