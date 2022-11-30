@@ -648,7 +648,10 @@ namespace CK.Setup
                             yield return rest;
                         };
                     }
-                    yield return info;
+                    else
+                    {
+                        yield return info;
+                    }
                 }
             }
 

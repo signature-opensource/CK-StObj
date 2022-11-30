@@ -1,9 +1,12 @@
 using CK.Core;
+using CK.Setup;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -117,10 +120,10 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullability_incoherence_is_checked()
         {
-            //var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
-            //TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
+            TestHelper.GetSuccessfulResult( c );
 
-            //CheckError( typeof( INullabilityError0 ) );
+            CheckError( typeof( INullabilityError0 ) );
             CheckError( typeof( INullabilityError1 ) );
             CheckError( typeof( INullabilityError2 ) );
             CheckError( typeof( INullabilityError3 ) );
@@ -134,5 +137,54 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetFailedResult( c, "Type must be exactly '(string? A,IList<string?>? B,IList<IList<string?>?>? C)?' since " );
             }
         }
+
+        public interface IWithLongTuple : IPoco
+        {
+            ref ( string F1,
+                  string F2,
+                  string F3,
+                  string F4,
+                  string F5,
+                  string F6,
+                  string F7,
+                  string F8,
+                  string F9,
+                  string F10,
+                  string F11,
+                  string F12,
+                  string F13,
+                  string F14,
+                  string F15,
+                  string F16,
+                  string F17,
+                  string F18,
+                  string F19,
+                  string F20
+                ) Long { get; }
+        }
+
+
+        [Test]
+        public void long_value_tuples_are_handled()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IWithLongTuple ) );
+            var result = TestHelper.CreateAutomaticServices( c );
+            var ts = result.CollectorResult.CKTypeResult.PocoTypeSystem;
+
+            var tPoco = ts.GetPrimaryPocoType( typeof( IWithLongTuple ) );
+            Debug.Assert( tPoco != null );
+            var tA = (IRecordPocoType)tPoco.Fields[0].Type;
+            tA.Fields.Count.Should().Be( 20 );
+
+            // Just to test the code generation.
+            using var s = result.Services;
+            var p = s.GetRequiredService<IPocoFactory<IWithLongTuple>>().Create();
+            var tuple = (ITuple)p.Long;
+            for( int i = 0; i < tuple.Length; i++ )
+            {
+                tuple[i].Should().BeOfType<string>().And.Be( String.Empty, "The default value for non nullable string is empty." );
+            }
+        }
+
     }
 }
