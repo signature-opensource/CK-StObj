@@ -200,7 +200,7 @@ namespace CK.StObj.Engine.Tests.Poco
             ncif.GenericTypeArguments[0].IsNullable.Should().BeFalse();
 
             var ncid = f.CreateNullabilityInfo( NoConstraintIntDirect );
-            ncid.IsNullable.Should().BeTrue();
+            ncid.IsNullable.Should().BeFalse();
             ncid.GenericTypeArguments[0].IsNullable.Should().BeFalse();
 
             var ncof = f.CreateNullabilityInfo( GetType().GetField( nameof( NoConstraintObjectField ) )! );
@@ -208,16 +208,16 @@ namespace CK.StObj.Engine.Tests.Poco
             ncof.GenericTypeArguments[0].IsNullable.Should().BeFalse();
 
             var ncod = f.CreateNullabilityInfo( NoConstraintObjectDirect );
-            ncod.IsNullable.Should().BeTrue();
-            ncod.GenericTypeArguments[0].IsNullable.Should().BeTrue();
+            ncod.IsNullable.Should().BeFalse();
+            ncod.GenericTypeArguments[0].IsNullable.Should().BeFalse();
 
             var nncof = f.CreateNullabilityInfo( GetType().GetField( nameof( NotNullConstraintObjectField ) )! );
             nncof.IsNullable.Should().BeFalse();
             nncof.GenericTypeArguments[0].IsNullable.Should().BeTrue( "The warning is ignored, the actual definition wins against the generic constraint..." );
 
             var nncod = f.CreateNullabilityInfo( NotNullConstraintObjectDirect );
-            nncod.IsNullable.Should().BeTrue();
-            nncod.GenericTypeArguments[0].IsNullable.Should().BeTrue();
+            nncod.IsNullable.Should().BeFalse();
+            nncod.GenericTypeArguments[0].IsNullable.Should().BeFalse();
         }
     }
 }

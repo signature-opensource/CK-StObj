@@ -61,10 +61,10 @@ namespace CK.Poco.Exc.Json.Export
         public bool UseSimplifiedTypes { get; init; }
 
         /// <summary>
-        /// Gets whether an ambiguous type should not be written.
-        /// Defaults to false: when ambiguous, the type is written via a 2-cells array <c>["type", &lt;value...&gt;]</c>.
+        /// Gets whether type names should never be written.
+        /// Defaults to false: when ambiguous, the type is written via a 2-cells array <c>["type name", &lt;value...&gt;]</c>.
         /// </summary>
-        public bool SkipTypeNameArray { get; init; }
+        public bool TypeLess { get; init; }
 
         /// <summary>
         /// Get the writer options. See <see cref="Default"/>.

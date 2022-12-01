@@ -65,6 +65,20 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Gets all the oblivious types that are exchangeable (they can be nullable and non nullable).
+        /// </summary>
+        public IEnumerable<IPocoType> AllExchangeableObliviousTypes => AllExchangeableTypes.Where( t => t.IsOblivious );
+
+        /// <summary>
+        /// Gets all the non nullable oblivious types that are exchangeable.
+        /// <para>
+        /// This is often the set of types that must be handled by a serializer as long as anonymous records
+        /// field names must not be specified.
+        /// </para>
+        /// </summary>
+        public IEnumerable<IPocoType> ExchangeableNonNullableObliviousTypes => _exchangeables.Where( t => t.IsOblivious );
+
+        /// <summary>
         /// Gets the exchangeable type name (that may be not <see cref="ExchangeableTypeName.IsExchangeable"/>)
         /// for a type. This returns the nullable or non nullable names.
         /// </summary>

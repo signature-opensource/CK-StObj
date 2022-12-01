@@ -34,10 +34,7 @@ namespace CK.Setup
         IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
 
         /// <summary>
-        /// Tries to find a Poco type from an actual type.
-        /// Anonymous <see cref="IRecordPocoType"/> cannot be found by this method.
-        /// When the <paramref name="type"/> is a reference type, its non nullable
-        /// Poco type is returned.
+        /// Tries to find the oblivious Poco type from an actual type.
         /// </summary>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
@@ -98,13 +95,13 @@ namespace CK.Setup
         IPocoType? Register( IActivityMonitor monitor, ParameterInfo f );
 
         /// <summary>
-        /// Tries to register a new type. On success, the obtained type is the
-        /// always nullable for reference type and all subordinated reference types are nullable.
+        /// Tries to register a new type. On success, the obtained type is always non nullable for reference type
+        /// and all subordinated reference types are non nullable.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The type that must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
-        IPocoType? RegisterNullableOblivious( IActivityMonitor monitor, Type t );
+        IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t );
     }
 
 }

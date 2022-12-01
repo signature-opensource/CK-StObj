@@ -28,6 +28,10 @@ namespace CK.Core
             /// <param name="withType">
             /// When true, a 2-cells array contains the Poco's name first and then the Poco's value.
             /// When false, the Poco's value object is directly written.
+            /// <para>
+            /// This overrides (for the root object only), the <see cref="PocoJsonExportOptions.TypeLess"/>
+            /// option.
+            /// </para>
             /// </param>
             /// <param name="options">Optional export options.</param>
             void WriteJson( Utf8JsonWriter writer, bool withType, PocoJsonExportOptions? options = null );

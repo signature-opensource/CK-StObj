@@ -42,21 +42,16 @@ namespace CK.Setup
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
         {
-            readonly ICollectionPocoType _obliviousType;
-
-            public NullCollection( IPocoType notNullable, ICollectionPocoType? obliviousType )
+            public NullCollection( IPocoType notNullable )
                 : base( notNullable )
             {
-                _obliviousType = obliviousType ?? this;
             }
 
             new ICollectionPocoType NonNullable => Unsafe.As<ICollectionPocoType>( base.NonNullable );
 
             public IReadOnlyList<IPocoType> ItemTypes => NonNullable.ItemTypes;
 
-            public override IPocoType ObliviousType => _obliviousType;
-
-            ICollectionPocoType ICollectionPocoType.ObliviousType => _obliviousType;
+            ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( ObliviousType );
 
             ICollectionPocoType ICollectionPocoType.NonNullable => NonNullable;
 
@@ -71,6 +66,8 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
+            readonly ICollectionPocoType _obliviousType;
+
 
             public ListOrSetOrArrayType( IActivityMonitor monitor,
                                          PocoTypeSystem s,
@@ -80,9 +77,10 @@ namespace CK.Setup
                                          PocoTypeKind kind,
                                          IPocoType itemType,
                                          ICollectionPocoType? obliviousType )
-                : base( s, tCollection, csharpName, kind, t => new NullCollection( t, obliviousType ) )
+                : base( s, tCollection, csharpName, kind, t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
+                _obliviousType = obliviousType ?? this;
                 _implTypeName = implTypeName;
                 _itemType = new[] { itemType };
                 if( itemType.Kind != PocoTypeKind.Any )
@@ -103,7 +101,9 @@ namespace CK.Setup
 
             public override string ImplTypeName => _implTypeName;
 
-            ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( _nullable.ObliviousType );
+            public override IPocoType ObliviousType => _obliviousType;
+
+            ICollectionPocoType ICollectionPocoType.ObliviousType => _obliviousType;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemType;
 
@@ -259,6 +259,7 @@ namespace CK.Setup
             readonly IPocoType.ITypeRef? _nextRefKey;
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
+            readonly ICollectionPocoType _obliviousType;
 
             public DictionaryType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -268,10 +269,11 @@ namespace CK.Setup
                                    IPocoType keyType,
                                    IPocoType valueType,
                                    ICollectionPocoType? obliviousType )
-                : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t, obliviousType ) )
+                : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
                 Debug.Assert( !keyType.IsNullable );
+                _obliviousType = obliviousType ?? this;
                 _def = new FieldDefaultValue( $"new {implTypeName}()" );
                 // Register back references and sets the initial IsExchangeable status.
                 if( keyType.Kind != PocoTypeKind.Any )
@@ -296,7 +298,9 @@ namespace CK.Setup
 
             public override string ImplTypeName => _implTypeName;
 
-            ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( _nullable.ObliviousType );
+            public override IPocoType ObliviousType => _obliviousType;
+
+            ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( _obliviousType );
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 

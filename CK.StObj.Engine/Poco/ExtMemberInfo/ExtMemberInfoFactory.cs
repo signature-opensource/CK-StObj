@@ -16,7 +16,7 @@ namespace CK.Setup
             _nullabilityContext = new TEMPNullabilityInfoContext();
         }
 
-        public IExtTypeInfo CreateNullableOblivious( Type type )
+        public IExtTypeInfo CreateNullOblivious( Type type )
         {
             Throw.CheckNotNullArgument( type );
             return new ExtTypeInfo( this, type );

@@ -51,17 +51,12 @@ namespace CK.Setup
         {
             sealed class Null : NullReferenceType, IUnionPocoType
             {
-                readonly IUnionPocoType _obliviousType;
-
-                public Null( IPocoType notNullable, IUnionPocoType? obliviousType )
+                public Null( IPocoType notNullable )
                     : base( notNullable )
                 {
-                    _obliviousType = obliviousType ?? this;
                 }
 
                 new UnionType NonNullable => Unsafe.As<UnionType>( base.NonNullable );
-
-                public override IPocoType ObliviousType => _obliviousType;
 
                 public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
@@ -74,14 +69,16 @@ namespace CK.Setup
 
             readonly IReadOnlyList<IPocoType> _allowedTypes;
             readonly DefaultValueInfo _defInfo;
+            readonly IUnionPocoType _obliviousType;
 
             public UnionType( IActivityMonitor monitor, PocoTypeSystem s, IPocoType[] allowedTypes, IUnionPocoType? obliviousType )
                 : base( s,
                         typeof(object),
                         "object",
                         PocoTypeKind.UnionType,
-                        t => new Null( t, obliviousType ) )
+                        t => new Null( t ) )
             {
+                _obliviousType = obliviousType ?? this;
                 _allowedTypes = allowedTypes;
                 // Finds the first type that has a non-disallowed default.
                 _defInfo = _allowedTypes.Select( t => t.DefaultValueInfo ).FirstOrDefault( d => !d.IsDisallowed );
@@ -111,6 +108,8 @@ namespace CK.Setup
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
+
+            public override IPocoType ObliviousType => _obliviousType;
 
             IReadOnlyList<IPocoType> AllowedTypes => _allowedTypes;
 

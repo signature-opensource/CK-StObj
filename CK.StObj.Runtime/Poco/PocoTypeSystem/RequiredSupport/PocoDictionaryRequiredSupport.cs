@@ -11,7 +11,7 @@ namespace CK.Setup
             : base( typeName )
         {
             Throw.CheckNotNullArgument( type );
-            Throw.CheckArgument( type.IsNullable );
+            Throw.CheckArgument( !type.IsNullable );
             Throw.CheckArgument( typeName == $"PocoDictionary_{key.Index}_{type.Index}_CK" );
             Key = key;
             Type = type;

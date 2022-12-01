@@ -15,10 +15,11 @@ namespace CK.Setup
     {
         /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="Type" />.
+        /// The oblivious information is not nullable for all reference types.
         /// </summary>
         /// <param name="type">The type for which member info must be obtained.</param>
         /// <returns>The <see cref="IExtTypeInfo"/>.</returns>
-        IExtTypeInfo CreateNullableOblivious( Type type );
+        IExtTypeInfo CreateNullOblivious( Type type );
 
         /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="ParameterInfo" />.
@@ -97,7 +98,8 @@ namespace CK.Setup
         IExtNullabilityInfo CreateNullabilityInfo( EventInfo eventInfo );
 
         /// <summary>
-        /// Obtains an oblivious <see cref="IExtNullabilityInfo" /> for a type.
+        /// Obtains an oblivious <see cref="IExtNullabilityInfo" /> for a type
+        /// (all reference types are non nullable).
         /// </summary>
         /// <param name="type">The type for which nullability info must be obtained.</param>
         /// <returns>The non nullable <see cref="IExtNullabilityInfo"/>.</returns>

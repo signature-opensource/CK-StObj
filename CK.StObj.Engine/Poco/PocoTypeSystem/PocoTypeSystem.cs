@@ -119,7 +119,7 @@ namespace CK.Setup
             }
         }
 
-        public IPocoType? RegisterNullableOblivious( IActivityMonitor monitor, Type t ) => DoRegister( monitor, _memberInfoFactory.CreateNullableOblivious( t ) );
+        public IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t ) => DoRegister( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
         public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo ) => DoRegister( monitor, memberInfo );
 
@@ -243,11 +243,11 @@ namespace CK.Setup
                         else if( tI.Kind == PocoTypeKind.IPoco )
                         {
                             // For IPoco, use generated covariant implementations.
-                            // We choose the nullable item type to follow the C# "oblivious nullable reference type". 
-                            typeName = EnsurePocoListOrHashSetType( monitor, (IPrimaryPocoType)tI.Nullable, isList, listOrHashSet );
+                            // We choose the non nullable item type to follow the C# "oblivious nullable reference type" that is non nullable. 
+                            typeName = EnsurePocoListOrHashSetType( monitor, (IPrimaryPocoType)tI.NonNullable, isList, listOrHashSet );
                             t = IDynamicAssembly.PurelyGeneratedType;
-                            // Since we are on a reference type, the oblivious uses the nullable.
-                            Debug.Assert( tI.Nullable.IsOblivious, "Non composed nullable reference types are their own oblivious type." );
+                            // Since we are on a reference type, the oblivious is the non nullable.
+                            Debug.Assert( tI.NonNullable.IsOblivious, "Non composed nullable reference types are their own oblivious type." );
                             // We are obviously not the oblivious.
                             tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
                         }
@@ -291,11 +291,11 @@ namespace CK.Setup
                                                                        obliviousTypeName,
                                                                        isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                                        tI.ObliviousType,
-                                                                       null ).Nullable;
+                                                                       null );
                             _obliviousCache.Add( tOblivious, obliviousType );
-                            _obliviousCache.Add( obliviousTypeName, obliviousType.NonNullable );
+                            _obliviousCache.Add( obliviousTypeName, obliviousType );
                         }
-                        Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>?" );
+                        Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>" );
                     }
                     Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
                     result = PocoType.CreateCollection( monitor,
@@ -310,9 +310,9 @@ namespace CK.Setup
                     // If we have built the oblivious, register it.
                     if( obliviousType == null )
                     {
-                        Debug.Assert( result.Nullable.IsOblivious );
+                        Debug.Assert( result.IsOblivious );
                         Debug.Assert( csharpName == typeName );
-                        _obliviousCache.Add( result.Type, result.Nullable );
+                        _obliviousCache.Add( result.Type, result );
                     }
                 }
                 return nType.IsNullable ? result.Nullable : result;
@@ -355,7 +355,7 @@ namespace CK.Setup
                         }
                         else if( tV.Kind == PocoTypeKind.IPoco )
                         {
-                            typeName = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV.Nullable );
+                            typeName = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV.NonNullable );
                             t = IDynamicAssembly.PurelyGeneratedType;
                             tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                         }
@@ -387,11 +387,11 @@ namespace CK.Setup
                                                                        obliviousTypeName,
                                                                        tK,
                                                                        tV.ObliviousType,
-                                                                       null ).Nullable;
+                                                                       null );
                             _obliviousCache.Add( tOblivious, obliviousType );
-                            _obliviousCache.Add( obliviousTypeName, obliviousType.NonNullable );
+                            _obliviousCache.Add( obliviousTypeName, obliviousType );
                         }
-                        Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>?" );
+                        Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>" );
                     }
                     Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
                     result = PocoType.CreateDictionary( monitor,
@@ -405,9 +405,9 @@ namespace CK.Setup
                     _obliviousCache.Add( csharpName, result );
                     if( obliviousType == null )
                     {
-                        Debug.Assert( result.Nullable.IsOblivious );
+                        Debug.Assert( result.IsOblivious );
                         Debug.Assert( csharpName == typeName );
-                        _obliviousCache.Add( result.Type, result.Nullable );
+                        _obliviousCache.Add( result.Type, result );
                     }
                 }
                 return nType.IsNullable ? result.Nullable : result;
@@ -415,7 +415,7 @@ namespace CK.Setup
 
             string EnsurePocoListOrHashSetType( IActivityMonitor monitor, IPrimaryPocoType tI, bool isList, string listOrHasSet )
             {
-                Debug.Assert( tI.IsNullable );
+                Debug.Assert( !tI.IsNullable );
                 var genTypeName = $"Poco{listOrHasSet}_{tI.Index}_CK";
                 if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
                 {
@@ -426,7 +426,7 @@ namespace CK.Setup
 
             string EnsurePocoDictionaryType( IActivityMonitor monitor, IPocoType tK, IPrimaryPocoType tV )
             {
-                Debug.Assert( tV.IsNullable );
+                Debug.Assert( !tV.IsNullable );
                 var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
                 if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
                 {
@@ -459,12 +459,12 @@ namespace CK.Setup
                                                              oName,
                                                              PocoTypeKind.Array,
                                                              tItem.ObliviousType,
-                                                             null ).Nullable;
+                                                             null );
                     _obliviousCache.Add( nType.Type, obliviousType );
-                    _obliviousCache.Add( oName, obliviousType.NonNullable );
+                    _obliviousCache.Add( oName, obliviousType );
                 }
                 // If the item is oblivious then, it is the oblivious array.
-                if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType : obliviousType.NonNullable;
+                if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType.Nullable : obliviousType;
 
                 result = PocoType.CreateCollection( monitor,
                                                     this,
@@ -503,7 +503,7 @@ namespace CK.Setup
             {
                 Debug.Assert( !obliviousType.IsNullable );
                 Debug.Assert( obliviousType.Type == tNotNull );
-                Debug.Assert( obliviousType.Kind == PocoTypeKind.Record || obliviousType.IsOblivious && obliviousType.Nullable.IsOblivious );
+                Debug.Assert( obliviousType.Kind == PocoTypeKind.Record || (obliviousType.IsOblivious && obliviousType.Nullable.IsOblivious) );
                 if( obliviousType.Kind == PocoTypeKind.Basic
                     || obliviousType.Kind == PocoTypeKind.Enum
                     || obliviousType.Kind == PocoTypeKind.Record )
@@ -552,11 +552,11 @@ namespace CK.Setup
         }
 
         IPocoType? OnValueTypeAnonymousRecord( IActivityMonitor monitor,
-                                                       MemberContext ctx,
-                                                       IExtNullabilityInfo nType,
-                                                       Type tNotNull,
-                                                       Type tNull,
-                                                       IRecordPocoType? obliviousType )
+                                               MemberContext ctx,
+                                               IExtNullabilityInfo nType,
+                                               Type tNotNull,
+                                               Type tNull,
+                                               IRecordPocoType? obliviousType )
         {
             var subInfos = FlattenValueTuple( nType ).ToList();
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
@@ -644,7 +644,7 @@ namespace CK.Setup
 
             static IEnumerable<IExtNullabilityInfo> FlattenValueTuple( IExtNullabilityInfo nType )
             {
-                Debug.Assert( nType.IsNullable || nType.Type.IsValueTuple() );
+                Debug.Assert( nType.Type.IsValueType && (nType.IsNullable || nType.Type.IsValueTuple()) );
                 int idx = 0;
                 foreach( var info in nType.GenericTypeArguments )
                 {
@@ -790,14 +790,13 @@ namespace CK.Setup
                 Debug.Assert( !kO.Equals( k ) );
                 if( !_obliviousCache.TryGetValue( kO, out obliviousType ) )
                 {
-                    // Always register the non nullable one.
                     obliviousType = PocoType.CreateUnion( monitor, this, aO, null );
                     _obliviousCache.Add( kO, obliviousType );
                 }
             }
             if( !_obliviousCache.TryGetValue( k, out var result ) )
             {
-                result = PocoType.CreateUnion( monitor, this, a, obliviousType?.Nullable );
+                result = PocoType.CreateUnion( monitor, this, a, obliviousType );
                 _obliviousCache.Add( k, result );
             }
             return (IUnionPocoType)result;

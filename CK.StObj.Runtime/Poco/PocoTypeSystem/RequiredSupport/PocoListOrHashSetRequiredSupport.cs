@@ -11,7 +11,7 @@ namespace CK.Setup
             : base( typeName )
         {
             Throw.CheckNotNullArgument( type );
-            Throw.CheckArgument( type.IsNullable );
+            Throw.CheckArgument( !type.IsNullable );
             Throw.CheckArgument( typeName == (isList ? $"PocoList_{type.Index}_CK" : $"PocoHashSet_{type.Index}_CK") );
             Type = type;
             IsList = isList;

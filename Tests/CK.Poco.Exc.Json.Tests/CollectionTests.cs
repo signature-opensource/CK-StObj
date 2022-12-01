@@ -69,16 +69,16 @@ namespace CK.Poco.Exc.Json.Tests
                                 ""Result"": [""string"",""This-is-o1!""]
                             }
                         ],
-                    ""Result"": [""object?[]"",
+                    ""Result"": [""object[]"",
                                     [
                                         [""int[]"",[1,2]],
-                                        [""object?[]"",
+                                        [""object[]"",
                                             [
                                                 [""int"",1],
                                                 [""string"",""Hello""]
                                             ]
                                         ],
-                                        [""long[]?[]"",
+                                        [""long[][]"",
                                             [
                                                 [""1"",""2""],
                                                 [""3"",""4"",""5""]
@@ -125,9 +125,9 @@ namespace CK.Poco.Exc.Json.Tests
                 ""ListOfList"": [[1,2],[3,4,5]],
                 ""CovariantListImpl"": [42,3712],
                 ""CovariantListNullableImpl"": [null,0,null],
-                ""Result"": [""object?[]"",
+                ""Result"": [""object[]"",
                                 [
-                                    [""L(L(int)?)"",[[1,2],[3,4,5]]],
+                                    [""L(L(int))"",[[1,2],[3,4,5]]],
                                     [""L(int)"",[42,3712]],
                                     [""L(int?)"",[null,0,null]]
                                 ]

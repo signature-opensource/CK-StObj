@@ -40,7 +40,7 @@ namespace CK.Setup
 
         public IExtNullabilityInfo WriteNullabilityInfo => ReadNullabilityInfo;
 
-        public IExtTypeInfo? BaseType => _baseType ??= _type.BaseType != null ? _factory.CreateNullableOblivious( _type.BaseType ) : null;
+        public IExtTypeInfo? BaseType => _baseType ??= _type.BaseType != null ? _factory.CreateNullOblivious( _type.BaseType ) : null;
 
         public override string ToString() => TypeCSharpName;
     }

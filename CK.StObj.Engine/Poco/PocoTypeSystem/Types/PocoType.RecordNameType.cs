@@ -39,11 +39,9 @@ namespace CK.Setup
 
                 public bool IsAnonymous => NonNullable.IsAnonymous;
 
-                public override IPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
+                ICompositePocoType ICompositePocoType.ObliviousType => Unsafe.As<ICompositePocoType>( this );
 
-                ICompositePocoType ICompositePocoType.ObliviousType => Unsafe.As<ICompositePocoType>( ObliviousType );
-
-                IRecordPocoType IRecordPocoType.ObliviousType => Unsafe.As<IRecordPocoType>( ObliviousType );
+                IRecordPocoType IRecordPocoType.ObliviousType => Unsafe.As<IRecordPocoType>( this );
 
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
@@ -99,8 +97,6 @@ namespace CK.Setup
             public ExternalNameAttribute? ExternalName => _externalName;
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
-
-            public override IPocoType ObliviousType => this;
 
             ICompositePocoType ICompositePocoType.ObliviousType => this;
 

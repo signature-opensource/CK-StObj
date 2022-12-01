@@ -63,9 +63,9 @@ namespace CK.Setup
                 public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
             }
 
-            RecordAnonField[] _fields;
-            IRecordPocoType _obliviousType;
-            DefaultValueInfo _defInfo;
+            readonly RecordAnonField[] _fields;
+            readonly IRecordPocoType _obliviousType;
+            readonly DefaultValueInfo _defInfo;
 
             public RecordAnonType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -119,7 +119,7 @@ namespace CK.Setup
 
             IRecordPocoType IRecordPocoType.NonNullable => this;
 
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
+            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, ITypeRef r )
             {
                 Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
                 if( IsExchangeable )

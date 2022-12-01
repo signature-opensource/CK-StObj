@@ -81,7 +81,7 @@ namespace CK.Setup
             }
             else
             {
-                _isNullable = true;
+                _isNullable = false;
                 if( type.IsArray )
                 {
                     _subTypes = new ExtNullabilityInfo( type.GetElementType()! );

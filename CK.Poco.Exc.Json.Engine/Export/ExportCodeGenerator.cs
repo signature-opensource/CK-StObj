@@ -1,9 +1,11 @@
 using CK.CodeGen;
 using CK.Core;
+using CK.Poco.Exc.Json.Export;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text.Json.Serialization.Metadata;
@@ -24,6 +26,7 @@ namespace CK.Setup.PocoJson
         readonly ITypeScope _pocoDirectory;
         readonly ExchangeableTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
+        // Writers are for the non nullable types.
         readonly CodeWriter[] _writers;
 
         public ExportCodeGenerator( ITypeScope pocoDirectory, ExchangeableTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
@@ -36,32 +39,29 @@ namespace CK.Setup.PocoJson
 
         void GenerateWrite( ICodeWriter writer, IPocoType t, string variableName )
         {
-            if( t.IsNullable ) GenerateNullableWrite( writer, t, variableName );
-            else GenerateNonNullableWrite( writer, t, variableName );
-
-            void GenerateNonNullableWrite( ICodeWriter writer, IPocoType nonNullable, string variableName )
+            if( t.Type.IsValueType )
             {
-                Debug.Assert( _writers[nonNullable.Index >> 1] != null );
-                Debug.Assert( !nonNullable.IsNullable && (nonNullable.Index & 1) == 0 );
-                if( !nonNullable.Type.IsValueType )
+                if( t.IsNullable )
                 {
-                    writer.Append( "if( " ).Append( variableName )
-                          .Append( " == null ) w.ThrowJsonNullWriteException();" )
-                          .NewLine();
+                    writer.Append( "if( !" ).Append( variableName ).Append( ".HasValue ) w.WriteNullValue();" ).NewLine()
+                          .Append( "else" )
+                          .OpenBlock();
+                    var v = $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})";
+                    _writers[t.Index >> 1].Invoke( writer, v );
+                    writer.CloseBlock();
                 }
-                _writers[nonNullable.Index >> 1].Invoke( writer, variableName );
+                else
+                {
+                    _writers[t.Index >> 1].Invoke( writer, variableName );
+                }
             }
-
-            void GenerateNullableWrite( ICodeWriter writer, IPocoType nullable, string variableName )
+            else
             {
-                Debug.Assert( nullable.IsNullable && (nullable.Index & 1) == 1 );
+                // Since we are working in oblivious mode, any reference type MAY be null.
                 writer.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
                       .Append( "else" )
                       .OpenBlock();
-                var v = nullable.Type.IsValueType
-                        ? $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})"
-                        : variableName;
-                _writers[nullable.Index >> 1].Invoke( writer, v );
+                _writers[t.Index >> 1].Invoke( writer, variableName );
                 writer.CloseBlock();
             }
         }
@@ -192,7 +192,7 @@ namespace CK.Setup.PocoJson
                 {
                     if( type.ImplTypeName != type.ObliviousType.ImplTypeName )
                     {
-                        // There is a adapter that is a type.ImplNominalType.ImplTypeName.
+                        // The type is an adapter that is a type.ObliviousType.ImplTypeName.
                         return ( writer, v ) => writer.Append( "PocoDirectory_CK.WriteJson_" )
                                                       .Append( type.ObliviousType.Index )
                                                       .Append( "( w, ref System.Runtime.CompilerServices.Unsafe.AsRef<" )
@@ -211,26 +211,26 @@ namespace CK.Setup.PocoJson
 
             // Used by GenerateWriteMethods.GeneratePocoWriteMethod for the WriteJson( w, withType, options )
             // and  GenerateWriteAny().
-            void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable )
+            void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable, bool honorOption )
             {
                 var typeName = _nameMap.GetName( nonNullable );
-                writer.Append( "if( !options.SkipTypeNameArray ) " );
+                if( honorOption ) writer.Append( $"if(!options.TypeLess)" );
                 if( typeName.HasSimplifiedNames )
                 {
-                    writer.Append( "w.WriteStringValue( options.UseSimplifiedTypes ? " )
+                    writer.Append( "w.WriteStringValue(options.UseSimplifiedTypes?" )
                         .AppendSourceString( typeName.SimplifiedName )
-                        .Append( " : " ).AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
+                        .Append( ":" );
                 }
                 else
                 {
-                    writer.Append( "w.WriteStringValue( " )
-                        .AppendSourceString( typeName.Name ).Append( " );" ).NewLine();
+                    writer.Append( "w.WriteStringValue(" );
                 }
+                writer.AppendSourceString( typeName.Name ).Append( ");" ).NewLine();
             }
 
             void GenerateWriteMethods( IActivityMonitor monitor )
             {
-                foreach( var type in _nameMap.ExchangeableNonNullableTypes )
+                foreach( var type in _nameMap.ExchangeableNonNullableObliviousTypes )
                 {
                     switch( type.Kind )
                     {
@@ -238,41 +238,26 @@ namespace CK.Setup.PocoJson
                             GeneratePocoWriteMethod( monitor, _generationContext, (IPrimaryPocoType)type );
                             break;
                         case PocoTypeKind.AnonymousRecord:
-                            if( type.IsOblivious )
-                            {
-                                GenerateAnonymousRecordWriteMethod( _pocoDirectory, (IRecordPocoType)type );
-                            }
+                            GenerateAnonymousRecordWriteMethod( _pocoDirectory, (IRecordPocoType)type );
                             break;
                         case PocoTypeKind.Record:
                             GenerateNamedRecordWriteMethod( _pocoDirectory, (IRecordPocoType)type );
                             break;
                         case PocoTypeKind.Array:
-                            if( type.Nullable.IsOblivious )
+                            ICollectionPocoType tA = (ICollectionPocoType)type;
+                            if( tA.ItemTypes[0].Type != typeof( byte ) )
                             {
-                                ICollectionPocoType tA = (ICollectionPocoType)type;
-                                if( tA.ItemTypes[0].Type != typeof( byte ) )
-                                {
-                                    GenerateListOrArrayWriteMethod( _pocoDirectory, tA );
-                                }
+                                GenerateListOrArrayWriteMethod( _pocoDirectory, tA );
                             }
                             break;
                         case PocoTypeKind.List:
-                            if( type.Nullable.IsOblivious )
-                            {
-                                GenerateListOrArrayWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
-                            }
+                            GenerateListOrArrayWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
                             break;
                         case PocoTypeKind.HashSet:
-                            if( type.Nullable.IsOblivious )
-                            {
-                                GenerateHashSetWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
-                            }
+                            GenerateHashSetWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
                             break;
                         case PocoTypeKind.Dictionary:
-                            if( type.Nullable.IsOblivious )
-                            {
-                                GenerateDictionaryWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
-                            }
+                            GenerateDictionaryWriteMethod( _pocoDirectory, (ICollectionPocoType)type );
                             break;
                     }
                 }
@@ -403,7 +388,7 @@ namespace CK.Setup.PocoJson
                              .Append( "if( withType )" )
                              .OpenBlock()
                              .Append( "w.WriteStartArray();" ).NewLine()
-                             .Append( writer => GenerateTypeHeader( writer, type ) )
+                             .Append( writer => GenerateTypeHeader( writer, type, honorOption: false ) )
                              .CloseBlock()
                              .Append( "WriteJson( w, options );" ).NewLine()
                              .Append( "if( withType )" )
@@ -453,7 +438,7 @@ namespace CK.Setup.PocoJson
                     .Append( @"
 internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
 {
-    if( !options.SkipTypeNameArray ) w.WriteStartArray();
+    if( !options.TypeLess ) w.WriteStartArray();
     var t = o.GetType();
     if( t.IsValueType )
     {
@@ -506,7 +491,7 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
             default: w.ThrowJsonException( $""Unregistered type: {t.ToCSharpName(false)}"" ); break;
         }
     }
-    if( !options.SkipTypeNameArray ) w.WriteEndArray();
+    if( !options.TypeLess ) w.WriteEndArray();
 }" );
                 // Builds the different sorters for cases that must be ordered: arrays and collections
                 // only since these are the only reference types except the basic ones (that moreover
@@ -514,7 +499,7 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
                 var arrays = new NominalReferenceTypeSorter();
                 var collections = new NominalReferenceTypeSorter();
 
-                foreach( var t in _nameMap.ExchangeableNonNullableTypes )
+                foreach( var t in _nameMap.ExchangeableNonNullableObliviousTypes )
                 {
                     if( t.Kind == PocoTypeKind.Any
                         || t.Kind == PocoTypeKind.AbstractIPoco
@@ -556,6 +541,7 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
                             break;
                         case PocoTypeKind.AnonymousRecord:
                             {
+                                // Switch case doesn't work with (tuple, syntax).
                                 WriteCase( valueTupleCases, t, t.Type.ToCSharpName( useValueTupleParentheses: false ) );
                                 break;
                             }
@@ -581,7 +567,7 @@ internal static void WriteAnyJson( System.Text.Json.Utf8JsonWriter w, object o, 
                         .OpenBlock()
                         .Append( writer =>
                         {
-                            GenerateTypeHeader( writer, t );
+                            GenerateTypeHeader( writer, t, true );
                             GenerateWrite( writer, t, "v" );
                         } )
                         .NewLine()

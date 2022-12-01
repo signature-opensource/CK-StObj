@@ -58,21 +58,10 @@ namespace CK.Setup
             public bool IsExchangeable => NonNullable.IsExchangeable;
 
             /// <summary>
-            /// Returning this works for any (object), basic (string), and AbstractPoco.
-            /// This also works for IPoco since they are their own Oblivious.
-            /// Collections override this.
+            /// Returning "NonNullable.ObliviousType" always works since we only have to
+            /// erase this nullability.
             /// </summary>
-            public virtual IPocoType ObliviousType
-            {
-                get
-                {
-                    Debug.Assert( Kind == PocoTypeKind.Any
-                                  || Kind == PocoTypeKind.Basic
-                                  || Kind == PocoTypeKind.IPoco
-                                  || Kind == PocoTypeKind.AbstractIPoco, "The others override." );
-                    return this;
-                }
-            }
+            public IPocoType ObliviousType => _nonNullable.ObliviousType;
 
             public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
@@ -231,16 +220,29 @@ namespace CK.Setup
         public virtual string ImplTypeName => _csharpName;
 
         /// <summary>
-        /// Defaults to "_type.IsValueType ? this : _nullable.ObliviousType".
-        /// Works for everything except for records (since they are value tuples that have
-        /// associated oblivious types, this cannot be 'this' by default). 
+        /// Defaults to "this".
+        /// Works for everything except for:
+        /// - Anonymous records: since they are value tuples that have no field name and associated oblivious types,
+        ///   this cannot be 'this' by default.
+        /// - Collections and Union types: since they have an oblivious composed of oblivious types.
         /// </summary>
         public virtual IPocoType ObliviousType
         {
             get
             {
-                Debug.Assert( Kind != PocoTypeKind.AnonymousRecord && Kind != PocoTypeKind.Record );
-                return _type.IsValueType ? this : _nullable.ObliviousType;
+                Debug.Assert( Kind != PocoTypeKind.AnonymousRecord
+                              && Kind != PocoTypeKind.Array
+                              && Kind != PocoTypeKind.List
+                              && Kind != PocoTypeKind.HashSet
+                              && Kind != PocoTypeKind.Dictionary
+                              && Kind != PocoTypeKind.UnionType, "These override." );
+                Debug.Assert( Kind == PocoTypeKind.Any
+                              || Kind == PocoTypeKind.Basic
+                              || Kind == PocoTypeKind.Enum
+                              || Kind == PocoTypeKind.Record
+                              || Kind == PocoTypeKind.IPoco
+                              || Kind == PocoTypeKind.AbstractIPoco );
+                return this;
             }
         }
 

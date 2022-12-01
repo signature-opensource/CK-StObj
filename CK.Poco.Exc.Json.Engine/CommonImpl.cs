@@ -23,8 +23,8 @@ namespace CK.Setup.PocoJson
         {
             var typeSystem = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
             // Ensures that byte array and object array are registered (there's no reason they couldn't, hence the Throw).
-            Throw.CheckState( typeSystem.RegisterNullableOblivious( monitor, typeof( byte[] ) ) != null );
-            Throw.CheckState( typeSystem.RegisterNullableOblivious( monitor, typeof( object[] ) ) != null );
+            Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( byte[] ) ) != null );
+            Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( object[] ) ) != null );
             // Catches the current registration count.
             _lastRegistrationCount = typeSystem.AllTypes.Count;
             monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );
