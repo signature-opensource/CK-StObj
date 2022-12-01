@@ -222,7 +222,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 // IList<object?>
                 ICollectionPocoType? tINR = IList_ObjectN( revert, ts, null! );
                 // List<object?>
-                ICollectionPocoType? tRNR = List_ObjectN( revert, ts, null );
+                ICollectionPocoType? tRNR = List_ObjectN( revert, ts, null! );
                 // List<object>: This is the oblivious type.
                 ICollectionPocoType? tRR = List_Object_Is_Oblivious( ts );
 

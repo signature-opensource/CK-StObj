@@ -3,10 +3,12 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Diagnostics;
+using static CK.Poco.Exc.Json.Tests.EnumSupportTest;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
 {
+
     [TestFixture]
     public class EnumSupportTest
     {

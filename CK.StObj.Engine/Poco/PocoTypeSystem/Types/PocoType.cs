@@ -249,7 +249,9 @@ namespace CK.Setup
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
         /// overrides this).
-        /// The only case where we disallow is object and AbstractIPoco.
+        /// The only case where we disallow is object, AbstractIPoco and UnionType: union type
+        /// default is handled at the field level based on the DefaultValue attribute (like the others)
+        /// or based on the first type in the variants definition that can provide a default value.
         /// </summary>
         public virtual DefaultValueInfo DefaultValueInfo
         {
@@ -257,6 +259,7 @@ namespace CK.Setup
             {
                 Debug.Assert( Kind == PocoTypeKind.Any
                               || (Kind == PocoTypeKind.Basic && !(Type == typeof( string ) || Type == typeof( DateTime )))
+                              || Kind == PocoTypeKind.UnionType
                               || Kind == PocoTypeKind.AbstractIPoco, "All other PocoType override this." );
 
                 return Kind == PocoTypeKind.Basic ? DefaultValueInfo.Allowed : DefaultValueInfo.Disallowed;

@@ -60,6 +60,23 @@ namespace CK.Setup
             return new FieldDefaultValue( value, WriteSourceValue( value, sbPool ) );
         }
 
+        public static FieldDefaultValue? CreateFromDefaultValue( IActivityMonitor monitor,
+                                                                 PocoTypeSystem.IStringBuilderPool sbPool,
+                                                                 Type t )
+        {
+            try
+            {
+                var value = Activator.CreateInstance( t )!;
+                if( ReferenceEquals( value, String.Empty ) ) return StringDefault;
+                return new FieldDefaultValue( value, WriteSourceValue( value, sbPool ) );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"Unable to create a FieldDefaultValue from type {t:N}.", ex );
+                return null;
+            }
+        }
+
         public bool CheckSameOrNone( IActivityMonitor monitor, IExtMemberInfo defaultValueSource, PocoTypeSystem.IStringBuilderPool sbPool, IExtMemberInfo other )
         {
             var a = other.GetCustomAttributes<DefaultValueAttribute>().FirstOrDefault();

@@ -298,11 +298,12 @@ namespace CK.StObj.Engine.Tests.Poco
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var p = s.GetRequiredService<IPocoFactory<IPocoWithUnionTypeNoNullable>>().Create();
+            p.Thing.Should().Be( 0m, "Since it's not null, it defaults to the first definition type that is 'defaultable': here the decimal." );
 
             p.Thing = 34;
             p.Thing.Should().Be( 34 );
-            p.Thing = (decimal)555;
-            p.Thing.Should().Be( (decimal)555 );
+            p.Thing = 555m;
+            p.Thing.Should().Be( 555m );
 
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();

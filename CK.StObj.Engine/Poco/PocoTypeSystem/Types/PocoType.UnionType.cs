@@ -68,7 +68,6 @@ namespace CK.Setup
             }
 
             readonly IReadOnlyList<IPocoType> _allowedTypes;
-            readonly DefaultValueInfo _defInfo;
             readonly IUnionPocoType _obliviousType;
 
             public UnionType( IActivityMonitor monitor, PocoTypeSystem s, IPocoType[] allowedTypes, IUnionPocoType? obliviousType )
@@ -80,8 +79,6 @@ namespace CK.Setup
             {
                 _obliviousType = obliviousType ?? this;
                 _allowedTypes = allowedTypes;
-                // Finds the first type that has a non-disallowed default.
-                _defInfo = _allowedTypes.Select( t => t.DefaultValueInfo ).FirstOrDefault( d => !d.IsDisallowed );
                 // Sets the initial IsExchangeable status.
                 bool initialIsExchangeable = false;
                 for( int i = 0; i < allowedTypes.Length; i++ )
@@ -106,8 +103,6 @@ namespace CK.Setup
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
-
-            public override DefaultValueInfo DefaultValueInfo => _defInfo;
 
             public override IPocoType ObliviousType => _obliviousType;
 

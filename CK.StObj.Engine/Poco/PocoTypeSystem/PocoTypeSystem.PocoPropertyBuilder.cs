@@ -71,22 +71,40 @@ namespace CK.Setup
                     if( !CheckExistingReadOnlyProperties( monitor, null ) ) return null;
                 }
                 Debug.Assert( _bestReg != null && _bestProperty != null );
+                // Now that we know that there are no issues on the unified type across the property implementations:
+                //  - We handle the potential UnionType type.
+                //  - Or check the default value instance if there's one that will apply to the field.
+                //
+                // First, check the pathological case of an existing null default on a non null property.
                 if( _defaultValue != null
-                    && _defaultValue.SimpleValue != null
-                    && !_bestReg.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) )
+                    && _defaultValue.SimpleValue == null
+                    && !_bestReg.IsNullable )
                 {
-                    monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_bestReg.CSharpName}'." );
+                    monitor.Error( $"Invalid null DefaultValue attribute on non nullable property {prop}: '{_bestReg.CSharpName}'." );
                     return null;
                 }
-                // Now that we know that there are no issues on the unified type across the property implementations
-                // we handle the potential UnionType actual type.
-                var finalType = _bestReg;
+
+                IPocoType? finalType;
                 if( prop.UnionTypeDefinition != null )
                 {
                     Debug.Assert( _bestReg.Kind == PocoTypeKind.Any, "Only 'object' property can be used for union types." );
+                    // This has the awful side effect to alter the _defaultValue...
+                    // But I'm tired and lazy.
                     finalType = HandleUnionTypeDefinition( monitor, prop );
                     if( finalType == null ) return null;
                 }
+                else
+                {
+                    if( _defaultValue != null
+                        && _defaultValue.SimpleValue != null
+                        && !_bestReg.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) )
+                    {
+                        monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_bestReg.CSharpName}'." );
+                        return null;
+                    }
+                    finalType = _bestReg;
+                }
+
                 return new PrimaryPocoField( prop,
                                              finalType,
                                              _fieldAccesskind,
@@ -220,10 +238,49 @@ namespace CK.Setup
                 if( success )
                 {
                     // Types must be in a deterministic order for the PocoType.KeyUnionTypes to be correct.
+                    // Before sorting, take the first type in the "visible" order that can handle a default value.
+                    var tDef = types.FirstOrDefault( t => !t.DefaultValueInfo.IsDisallowed );
                     types.Sort( ( t1, t2 ) => StringComparer.Ordinal.Compare( t1.CSharpName, t2.CSharpName ) );
-                    var newFinal = _system.RegisterUnionType( monitor, types );
-                    Debug.Assert( newFinal != null && !newFinal.IsNullable );
-                    return isNullable ? newFinal.Nullable : newFinal;
+                    var unionType = _system.RegisterUnionType( monitor, types );
+                    Debug.Assert( unionType != null && !unionType.IsNullable );
+
+                    // Handle default value now.
+                    if( _defaultValue != null )
+                    {
+                        if( _defaultValue.SimpleValue != null
+                            && !unionType.AllowedTypes.Any( t => t.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) ) )
+                        {
+                            string sTypes = unionType.AllowedTypes.Select( t => t.CSharpName ).Concatenate( "', '" );
+                            monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with any of the union type '{sTypes}'." );
+                            return null;
+                        }
+                        // We have a default value (even if it is null - the fact that the property is not nullable in this case has been done above)
+                        // that is compatible with the union type. This is fine.
+                    }
+                    else
+                    {
+                        // There's no default value. We must try to synthesize one from the first type that is "defaultable" since we need
+                        // an object instance for the field's default value if the property is not nullable.
+                        if( !unionType.IsNullable )
+                        {
+                            if( tDef == null )
+                            {
+                                monitor.Error( $"Unable to resolve a default value for non nullable {prop}." );
+                                return null;
+                            }
+                            if( tDef.DefaultValueInfo.DefaultValue != null )
+                            {
+                                // The type itself has a valid field default value.
+                                _defaultValue = (FieldDefaultValue)tDef.DefaultValueInfo.DefaultValue;
+                            }
+                            else
+                            {
+                                _defaultValue = FieldDefaultValue.CreateFromDefaultValue( monitor, _system, tDef.Type );
+                                if( _defaultValue == null ) return null;
+                            }
+                        }
+                    }
+                    return isNullable ? unionType.Nullable : unionType;
                 }
                 return null;
             }

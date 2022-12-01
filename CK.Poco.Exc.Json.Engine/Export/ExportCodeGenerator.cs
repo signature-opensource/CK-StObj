@@ -13,7 +13,7 @@ namespace CK.Setup.PocoJson
     /// <param name="variableName">The variable name to write.</param>
     delegate void CodeWriter( ICodeWriter write, string variableName );
 
-    class ExportCodeGenerator
+    sealed class ExportCodeGenerator
     {
         readonly ITypeScope _pocoDirectory;
         readonly ExchangeableTypeNameMap _nameMap;
