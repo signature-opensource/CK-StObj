@@ -1,15 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Poco.Exc.Json.Export;
-using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data.SqlTypes;
-using System.Diagnostics;
 using System.Numerics;
-using System.Text.Json.Serialization.Metadata;
-using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Setup.PocoJson
 {
@@ -26,7 +18,8 @@ namespace CK.Setup.PocoJson
         readonly ITypeScope _pocoDirectory;
         readonly ExchangeableTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
-        // Writers are for the non nullable types.
+        // Writers are for the non nullable types, whether they are oblivious types
+        // or not: writers for the same "oblivious family" will share the same function.
         readonly CodeWriter[] _writers;
 
         public ExportCodeGenerator( ITypeScope pocoDirectory, ExchangeableTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
@@ -73,6 +66,8 @@ namespace CK.Setup.PocoJson
             GenerateWriteAny();
             return true;
 
+            // Step 1: The _writers array is filled with Writer delegates for all Exchangeable and NonNullable types
+            //         Writers for the same "oblivious family" will share the same delegate.
             void RegisterWriters()
             {
                 foreach( var type in _nameMap.ExchangeableNonNullableTypes )
@@ -228,6 +223,7 @@ namespace CK.Setup.PocoJson
                 writer.AppendSourceString( typeName.Name ).Append( ");" ).NewLine();
             }
 
+            // Step 2: The actual Write methods are implemented only for the Exchangeable, NonNullable, and Oblivious types.
             void GenerateWriteMethods( IActivityMonitor monitor )
             {
                 foreach( var type in _nameMap.ExchangeableNonNullableObliviousTypes )
@@ -431,6 +427,9 @@ namespace CK.Setup.PocoJson
                 }
             }
 
+            // Step 3: Generating the WriteAnyJson that routes any object to its registered Oblivious type.
+            //         This is basically a big switch case on the object.GetType() except that it is broken
+            //         into smaller pieces for better performance.
             void GenerateWriteAny()
             {
                 _pocoDirectory
