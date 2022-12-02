@@ -111,7 +111,13 @@ namespace CK.Setup
                 foreach( var f in pocoType.Fields )
                 {
                     // Creates the backing field.
+                    if( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.ReadOnly )
+                    {
+                        // If it can be readonly, it should be.
+                        fieldPart.Append( "readonly " );
+                    }
                     fieldPart.Append( f.Type.ImplTypeName ).Space().Append( f.PrivateFieldName ).Append( ";" ).NewLine();
+
                     // Creates the property.
                     if( f.FieldAccess == PocoFieldAccessKind.IsByRef )
                     {
@@ -125,7 +131,12 @@ namespace CK.Setup
                         tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
                         if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
                         {
-                            // Readonly doesn't require the "get".
+                            Debug.Assert( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.ReadOnly );
+                            // Readonly and MutableCollection doesn't require the "get".
+                            // This expose a public (read only) property that is required for MutableCollection but
+                            // a little bit useless for pure ReadOnly. However we need an implementation of the property
+                            // declared on the interface (we could have generated explicit implementations here but it
+                            // would be over complicated).
                             tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                         }
                         else
@@ -168,24 +179,21 @@ namespace CK.Setup
                               .CloseBlock();
                         }
                     }
-                    //
-                    foreach( var prop in family.PropertyList[f.Index].DeclaredProperties )
+                    // Finally, provide an explicit implementations of all the declared properties
+                    // that are not satisfied by the final property type.
+                    foreach( IExtPropertyInfo prop in family.PropertyList[f.Index].DeclaredProperties )
                     {
                         if( prop.Type != f.Type.Type )
                         {
                             if( prop.Type.IsByRef )
                             {
-                                var pType = prop.Type.GetElementType()!;
-                                if( pType != f.Type.Type )
-                                {
-                                    tB.Append( "ref " ).Append( pType.ToCSharpName() ).Space()
-                                      .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
-                                      .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
-                                }
+                                tB.Append( "ref " ).Append( prop.TypeCSharpName ).Space()
+                                    .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
+                                    .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                             }
                             else if( prop.Type != f.Type.Type )
                             {
-                                tB.Append( prop.Type.ToCSharpName() ).Space()
+                                tB.Append( prop.TypeCSharpName ).Space()
                                   .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
                                   .Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
 

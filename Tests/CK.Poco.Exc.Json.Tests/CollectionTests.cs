@@ -2,12 +2,7 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -174,13 +169,14 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithDictionaries : IPoco
         {
-            Dictionary<int, Dictionary<object,object?>> DicOfDic { get; }
+            Dictionary<int, Dictionary<object, object?>> DicOfDic { get; }
 
-            IDictionary<int,int> CovariantDicImpl { get; }
+            IDictionary<int, int> CovariantDicImpl { get; }
 
-            IDictionary<int,bool?> CovariantDicNullableImpl { get; }
+            IDictionary<int, bool?> CovariantDicNullableImpl { get; }
         }
 
+        [Test]
         public void dictionaries_serialization()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithDictionaries ) );
@@ -190,7 +186,7 @@ namespace CK.Poco.Exc.Json.Tests
             var f = s.GetRequiredService<IPocoFactory<IWithDictionaries>>();
             var oD = f.Create( o =>
             {
-                o.DicOfDic.Add( 1, new Dictionary<object,object?> { { 1, 2L }, { "Hello", "World!" }, { "Goodbye", null } } );
+                o.DicOfDic.Add( 1, new Dictionary<object, object?> { { 1, 2L }, { "Hello", "World!" }, { "Goodbye", null } } );
                 o.DicOfDic.Add( 2, new Dictionary<object, object?> { { 3, 4 }, { "Hello2", "World2!" } } );
                 o.CovariantDicImpl.Add( 42, 3712 );
                 o.CovariantDicImpl.Add( 3712, 42 );

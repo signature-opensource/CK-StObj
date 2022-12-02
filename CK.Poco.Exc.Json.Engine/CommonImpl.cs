@@ -48,12 +48,14 @@ namespace CK.Setup.PocoJson
         {
             var nameMap = new JsonTypeNameBuilder().Generate( monitor, typeSystem, false );
 
-            var pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            var ns = c.Assembly.Code.Global.FindOrCreateNamespace( "CK.Poco.Exc.JsonGen" );
 
-            var export = new ExportCodeGenerator( pocoDirectory, nameMap, c );
+            var exporterType = ns.CreateType( "internal static class Exporter" );
+            var export = new ExportCodeGenerator( exporterType, nameMap, c );
             if( !export.Run( monitor ) ) return CSCodeGenerationResult.Failed;
 
-            var import = new ImportCodeGenerator( pocoDirectory, nameMap, c );
+            var importerType = ns.CreateType( "internal static class Importer" );
+            var import = new ImportCodeGenerator( importerType, nameMap, c );
             if( !import.Run( monitor ) ) return CSCodeGenerationResult.Failed;
 
             return CSCodeGenerationResult.Success;

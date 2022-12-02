@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,19 +6,19 @@ using System.Diagnostics;
 namespace CK.Setup
 {
     /// <summary>
-    /// Utility class that orders a set of nominal reference types using
+    /// Utility class that orders a set of oblivious reference types using
     /// <see cref="Type.IsAssignableFrom(Type?)"/> rule: this can be used to
     /// generate a valid switch-case on the <see cref="IPocoType.ImplTypeName"/> for
     /// an untyped variable.
     /// </summary>
-    public readonly struct NominalReferenceTypeSorter
+    public readonly struct ObliviousReferenceTypeSorter
     {
         readonly List<IPocoType> _sorted;
 
         /// <summary>
         /// Initializes a new empty sorter.
         /// </summary>
-        public NominalReferenceTypeSorter()
+        public ObliviousReferenceTypeSorter()
         {
             _sorted = new List<IPocoType>();
         }

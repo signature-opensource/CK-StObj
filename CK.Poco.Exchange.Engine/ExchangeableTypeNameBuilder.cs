@@ -231,8 +231,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Routes the call to <see cref="MakeArrayName(IPocoType, in FullExchangeableTypeName)"/>, <see cref="MakeListName(IPocoType, in FullExchangeableTypeName)"/>,
-        /// <see cref="MakeSetName(IPocoType, in FullExchangeableTypeName)"/>, <see cref="MakeDynamicObject(IPocoType, FullExchangeableTypeName)"/> or
-        /// <see cref="MakeMap(FullExchangeableTypeName, IPocoType, FullExchangeableTypeName)"/>.
+        /// <see cref="MakeSetName(IPocoType, in FullExchangeableTypeName)"/>, <see cref="MakeDynamicObject(IPocoType, in FullExchangeableTypeName)"/> or
+        /// <see cref="MakeMap(IPocoType, in ExchangeableTypeName, IPocoType, in FullExchangeableTypeName)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="collection">The collection type.</param>
@@ -306,7 +306,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns "R(t1,t2,...)" type name: field names are erased by default.
+        /// Returns "(t1,t2,...)" type name: field names are erased by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="record">The record type.</param>
@@ -316,8 +316,8 @@ namespace CK.Setup
                                                                             IRecordPocoType record,
                                                                             Func<IPocoField,FullExchangeableTypeName> fieldTypeNames )
         {
-            _nBuilder.Append( "R(" );
-            _sBuilder.Append( "R(" );
+            _nBuilder.Append( "(" );
+            _sBuilder.Append( "(" );
             bool atLeastOne = false;
             bool hasSimplified = false;
             foreach( var f in record.Fields )

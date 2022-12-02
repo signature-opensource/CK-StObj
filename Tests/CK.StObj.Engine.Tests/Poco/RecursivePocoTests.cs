@@ -140,7 +140,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void recursive_array_use_of_named_record_is_handled()
+        public void recursive_array_use_of_named_record_is_possible()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecArray ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
@@ -159,7 +159,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void recursive_dicionary_use_of_named_record_is_handled()
+        public void recursive_dicionary_use_of_named_record_is_possible()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecDic ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;

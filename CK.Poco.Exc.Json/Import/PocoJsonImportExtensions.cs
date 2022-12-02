@@ -3,6 +3,7 @@ using CK.Poco.Exc.Json.Import;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -76,5 +77,17 @@ namespace CK.Core
         {
             return JsonDeserialize( @this, Encoding.UTF8.GetBytes( s ).AsSpan(), options );
         }
+
+        /// <summary>
+        /// Throws a <see cref="JsonException"/>.
+        /// </summary>
+        /// <param name="reader">This reader.</param>
+        /// <param name="message">The exception message.</param>
+        [DoesNotReturn]
+        public static void ThrowJsonException( this ref Utf8JsonReader reader, string message )
+        {
+            throw new JsonException( $"{message} - {reader.BytesConsumed} consumed bytes, current depth is {reader.CurrentDepth}." );
+        }
+
     }
 }
