@@ -19,6 +19,7 @@ namespace CK.Setup
         public ExtTypeInfo( ExtMemberInfoFactory factory, Type type )
         {
             _factory = factory;
+            if( type.IsByRef ) type = type.GetElementType()!;
             _type = type;
         }
 

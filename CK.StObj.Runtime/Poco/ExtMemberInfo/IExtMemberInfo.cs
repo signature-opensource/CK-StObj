@@ -27,6 +27,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the Type of the member.
+        /// Note that <see cref="Type.IsByRef"/> may be true.
         /// <para>
         /// For <see cref="IExtTypeInfo"/> this is the type itself.
         /// </para>
@@ -47,6 +48,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the member type C# name. This caches <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>,
         /// there is no handling of Nullable Reference Type here.
+        /// <para>No ByRef marker (trailing &amp;) exists in this type name.</para>
         /// </summary>
         string TypeCSharpName { get; }
 

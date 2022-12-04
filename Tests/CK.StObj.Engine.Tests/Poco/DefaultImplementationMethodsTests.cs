@@ -38,6 +38,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             IList<string> Lines { get; }
 
+            // DIM properties require an [AutoImplementationClaim] attribute.
             [AutoImplementationClaim]
             int LineCount => Lines.Count;
         }
@@ -56,7 +57,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 }
             }
 
-            [AutoImplementationClaim]
+            // DIM methods don't require an [AutoImplementationClaim] attribute.
             void Clear()
             {
                 Lines.Clear();
@@ -113,7 +114,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void a_Default_Implementation_Method_must_use_AutoImplementationClaim_Attribute()
+        public void a_DIM_property_must_use_AutoImplementationClaim_Attribute()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IFaultyRoot ) );
             TestHelper.GetFailedResult( c, "is a Default Implemented Method (DIM), it must use the [AutoImplementationClaim] attribute." );

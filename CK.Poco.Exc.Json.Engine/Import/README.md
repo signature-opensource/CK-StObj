@@ -34,6 +34,7 @@ we have the corresponding top-level reader function.
 But we also need a function that can read the associated nullable value type (for instance to fill a `List<Guid?>`). This
 must be done with a utility function:
 
+```csharp
 static T ReadBasic_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
 {
   // Type dependent code comes here.
@@ -48,7 +49,7 @@ static T? NullReadBasic_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
   }
   return ReadBasic_T( ref r, options );
 }
-
+```
 Here, the TopLevelReadBasic_T is ReadBasic_T.
 
 ## Records
@@ -56,6 +57,7 @@ For records that are value tuples with fields, the basic pattern is not optimal:
 useless copies by having a `ref` version of the read so we can read in place the value. And we need a specific
 function for the null and for the top-level reader:
 
+```csharp
 static void ReadRecord_T( ref Utf8JsonReader r, ref T v, PocoJsonImportOptions options )
 {
   // Type dependent code comes here.
@@ -80,6 +82,7 @@ static T TopLevelReadRecord_T( ref Utf8JsonReader r, PocoJsonImportOptions optio
   InPlaceNullReader_T( ref r, ref v, options );
   return v;
 }
+```
 
 ## Reference types
 
@@ -97,6 +100,7 @@ method is implemented that must be called on the new instance: this method is an
 The top level reader must handle potentially null (whether a non null Poco is required is let to the
 validation layer):
 
+```csharp
 static TPoco? TopLevelReader_TPoco( ref Utf8JsonReader r, PocoJsonImportOptions options )
 {
   if( r.TokenType == JsonTokenType.Null )
@@ -108,26 +112,32 @@ static TPoco? TopLevelReader_TPoco( ref Utf8JsonReader r, PocoJsonImportOptions 
   v.Read( ref r, options );
   return v;
 }
+```
 
 Poco constructors instantiates non nullable subordinated IPoco. When reading:
 
+```csharp
 public interface I1 : IPoco
 {
   IOther Other { get; } 
 }
+```
 
 The `Other` is already instantiated (with all its default values), the read must be done "in place".
 If the property was a nullable (then it has necessarily a setter otherwise, this property would not be exchangeable
 and serialization/deserialization would ignore it):
 
+```csharp
 public interface I1 : IPoco
 {
   IOther? Other { get; set; } 
 }
+```
 
 In such case, the initial field value is null: reading "in place" only is not enough.
 Do we need yet another variation that can allocate if needed?
 
+```csharp
 static void NullReadReferenceType_T( ref Utf8JsonReader r, ref T? v, PocoJsonImportOptions options )
 {
   if( r.TokenType == JsonTokenType.Null )
@@ -141,6 +151,8 @@ static void NullReadReferenceType_T( ref Utf8JsonReader r, ref T? v, PocoJsonImp
     v.Read( ref r, options );
   }
 }
+```
+
 Actually this is quite the same as the TopLevelReader_TPoco. If we are able to know whether a field
 is initially null or not, we don't need this: `TopLevelReader_TPoco` or `_field.Read( ref r, options )`
 is all we need.
@@ -151,52 +163,22 @@ The fact is that we know whether a field should use the top level reader or the 
     must be done.
   - Else, the top-level reader must be called.
 
-This can be extended to all the types
+This can be extended to all the types:
 - If the field's type is an AbstractIPoco, a Union type or Any (`object`): the `ReadAny` root method must be used.
 - If the field's type is a Record or an AnonymousRecord:
   - If the field's type is nullable, use the NullReadRecord_T reader.
-  - Else use the ReadRecord_T reader
+  - Else use the ReadRecord_T in place reader
 - If the field type is a Basic type:
   -  If the field's type is nullable, use the NullReadBasic_T.
   -  Else use the ReadBasic_T
 
 To conclude, we only need for collections, the equivalent of the Poco's ReadJson instance method:
 
+```csharp
 static void ReadCollection_T( ref Utf8JsonReader r, T collection, PocoJsonImportOptions options )
 {
   // Type dependent reader.
 }
-
-
-## Reference type: collections and their "internal types"
-One need both to create new instances of collections and to read them in place.
-The pattern is similar to the record one except that no `ref` must be used since
-`readonly` fields must be read.
-The top level reader must handle null.
-
-static void ReadCollection_T( Utf8JsonReader r, T v, PocoJsonImportOptions options )
-{
-  // Type dependent code comes here.
-}
-
-static void NullReadCollection_T( Utf8JsonReader r, ref T? v, PocoJsonImportOptions options )
-{
-  if( r.TokenType == JsonTokenType.Null )
-  {
-    r.Read();
-    v = default;
-  }
-  else
-  {
-    ReadRecord_T( r, ref v, options );
-  }
-}
-
-static T TopLevelReader_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
-{
-  var v = new T();
-  InPlaceNullReader_T( ref r, ref v, options );
-  return v;
-}
+```
 
 

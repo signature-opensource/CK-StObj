@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using System.Numerics;
 using System;
+using System.Diagnostics;
 
 namespace CK.Setup.PocoJson
 {
@@ -145,18 +146,7 @@ namespace CK.Setup.PocoJson
 
             static CodeWriter GetRecordObliviousCodeWriter( IPocoType type )
             {
-                if( type.ImplTypeName != type.ObliviousType.ImplTypeName )
-                {
-                    throw new NotSupportedException( "Should not be here." );
-                    // The type is an adapter that is a type.ObliviousType.ImplTypeName.
-                    return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
-                                                  .Append( type.ObliviousType.Index )
-                                                  .Append( "( w, ref System.Runtime.CompilerServices.Unsafe.AsRef<" )
-                                                  .Append( type.ObliviousType.ImplTypeName )
-                                                  .Append( ">(" )
-                                                  .Append( v )
-                                                  .Append( "), options );" );
-                }
+                Debug.Assert( type.Kind == PocoTypeKind.Record || type.Kind == PocoTypeKind.AnonymousRecord );
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
                                               .Append( type.ObliviousType.Index )
                                               .Append( "( w, ref " )

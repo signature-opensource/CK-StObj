@@ -101,7 +101,18 @@ namespace CK.Setup
 
         public IReadOnlyList<object> CustomAttributes => _customAttributes ??= _o.GetCustomAttributes( false );
 
-        public string TypeCSharpName => _typeName ??= _type.ToCSharpName();
+        public string TypeCSharpName
+        {
+            get
+            {
+                if( _typeName == null )
+                {
+                    var t = _type.IsByRef ? _type.GetElementType() : _type; 
+                    _typeName = t.ToCSharpName();
+                }
+                return _typeName;
+            }
+        }
 
         public IExtNullabilityInfo? HomogeneousNullabilityInfo => ReadNullabilityInfo.IsHomogeneous ? _rNullabilityInfo : null;
 

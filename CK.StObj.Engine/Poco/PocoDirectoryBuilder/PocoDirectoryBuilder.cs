@@ -385,9 +385,9 @@ namespace CK.Setup
                         // a multiple inheritance capability... However, I'm a bit reluctant to do this since this would transform
                         // IPoco from a DTO structure to an Object beast. Such IPoco become far less "exchangeable" with the external
                         // world since they would lost their behavior. The funny Paradox here is that this would not be a real issue
-                        // with "real" Methods that do things: nobody will be surprised to have "lost" these methods in Type Script,
-                        // but for DIM properties (typically computed values) this will definitely be surprising. In practice, the
-                        // code would often has to be transfered "on the other side", with the data...
+                        // with "real" Methods that do things: nobody will be surprised to have "lost" these methods in Type Script
+                        // for instance, but for DIM properties (typically computed values) this will definitely be surprising.
+                        // In practice, the code would often has to be transfered "on the other side", with the data...
                         //
                         // Choosing here to NOT play the multiple inheritance game is clearly the best choice (at least for me :)).
                         //

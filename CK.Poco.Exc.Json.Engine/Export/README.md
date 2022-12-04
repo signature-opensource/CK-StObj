@@ -103,8 +103,8 @@ Only regular collection types (`List<T>`, `HashSet<T>` and `Dictionary<T>`) need
 are casted into the regular ones. 
 
 Lists and arrays are very efficiently written since they use `AsSpan()` and [`CollectionsMarshal.AsSpan`](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal.asspan)
-to avoid any value type copies. Here is for instance the `List<List<int>>` and `List<int>`
-write methods:
+to avoid any value type copies. Here is for instance the `List<List<int>>` and `List<int>` write methods:
+
 ```csharp
 internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<int>> v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
 {
@@ -120,7 +120,7 @@ internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<
     }
     w.WriteEndArray();
 }
-internal static void WriteJson_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+internal static void Write_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
 {
     var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
     w.WriteStartArray();
