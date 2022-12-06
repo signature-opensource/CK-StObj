@@ -14,7 +14,7 @@ namespace CK.Core
     public static class PocoJsonImportSupport
     {
         /// <summary>
-        /// Base interface reader for typed Poco.
+        /// Base interface reader for typed Poco on the factory.
         /// </summary>
         public interface IFactoryReader
         {

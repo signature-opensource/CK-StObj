@@ -22,8 +22,8 @@ namespace CK.Setup.PocoJson
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
         {
             var typeSystem = codeGenContext.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
-            // Ensures that byte array and object array are registered (there's no reason they couldn't, hence the Throw).
-            Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( byte[] ) ) != null );
+            // Ensures that byte object array and List are registered (there's no reason they couldn't, hence the Throw).
+            Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( List<object> ) ) != null );
             Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( object[] ) ) != null );
             // Catches the current registration count.
             _lastRegistrationCount = typeSystem.AllTypes.Count;

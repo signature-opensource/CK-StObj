@@ -14,7 +14,7 @@ appropriate reader function.
 
 These reader functions instantiate a non null object:
 ```csharp
-delegate object ReaderFunction( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Export.PocoJsonImportOptions options );
+delegate object ReaderFunction( ref Utf8JsonReader r, PocoJsonImportOptions options );
 ```
 They are limited to instantiate oblivious types: the type `IList<ISet<ICommand>>` is out of their scope because this
 type is not an exported type name (it is exported as a "L(S(object))" that is `List<HashSet<object>>`).
@@ -54,8 +54,8 @@ Here, the TopLevelReadBasic_T is ReadBasic_T.
 
 ## Records
 For records that are value tuples with fields, the basic pattern is not optimal: we should be able to limit
-useless copies by having a `ref` version of the read so we can read in place the value. And we need a specific
-function for the null and for the top-level reader:
+useless copies by having a `ref` version of the read so we can read in place the value.
+And we need a specific function for the null and for the top-level reader:
 
 ```csharp
 static void ReadRecord_T( ref Utf8JsonReader r, ref T v, PocoJsonImportOptions options )
@@ -79,7 +79,7 @@ static void NullReadRecord_T( ref Utf8JsonReader r, ref T? v, PocoJsonImportOpti
 static T TopLevelReadRecord_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
 {
   var v = new T();
-  InPlaceNullReader_T( ref r, ref v, options );
+  ReadRecord_T( ref r, ref v, options );
   return v;
 }
 ```
@@ -97,20 +97,11 @@ Poco implementation has a generated default constructor that initializes its fie
 default values and nullability constraints. To avoid replicating this logic in a deserialization
 constructor, an independent `ReadJson( ref Utf8JsonReader r, PocoJsonImportOptions options )`
 method is implemented that must be called on the new instance: this method is an "in place" reader.
-The top level reader must handle potentially null (whether a non null Poco is required is let to the
-validation layer):
 
 ```csharp
-static TPoco? TopLevelReader_TPoco( ref Utf8JsonReader r, PocoJsonImportOptions options )
+static TPoco TopLevelReader_TPoco( ref Utf8JsonReader r, PocoJsonImportOptions options )
 {
-  if( r.TokenType == JsonTokenType.Null )
-  {
-    r.Read();
-    return null;
-  }
-  var v = new TPoco();
-  v.Read( ref r, options );
-  return v;
+  return new TPoco( ref r, options );
 }
 ```
 

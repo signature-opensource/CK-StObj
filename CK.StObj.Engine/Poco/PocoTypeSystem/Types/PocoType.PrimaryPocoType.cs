@@ -74,7 +74,7 @@ namespace CK.Setup
                 : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.IPoco, t => new Null( t ) )
             {
                 _familyInfo = family;
-                // The full name is the ImplTypeName. This works because the generated type is not a nested type (not a generic of course).
+                // The full name is the ImplTypeName. This works because the generated type is not a nested type (and not a generic of course).
                 Debug.Assert( !family.PocoClass.FullName!.Contains( '+' ) );
                 _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {family.PocoClass.FullName}()" );
             }

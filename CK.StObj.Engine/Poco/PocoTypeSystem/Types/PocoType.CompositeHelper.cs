@@ -24,7 +24,7 @@ namespace CK.Setup
             /// Generates the initialization list syntax of a record.
             /// The code is in <see cref="IPocoFieldDefaultValue.ValueCSharpSource"/>.
             /// If the resulting DefaultValueInfo.IsDisabled, then an error occurred, if DefaultValueInfo.IsAllowed
-            /// the no code is required (<see cref="DefaultValueInfo.DefaultValue"/> is null).
+            /// then no code is required (<see cref="DefaultValueInfo.DefaultValue"/> is null).
             /// </summary>
             public static DefaultValueInfo CreateDefaultValueInfo( IActivityMonitor monitor,
                                                                    PocoTypeSystem.IStringBuilderPool sbPool,

@@ -104,7 +104,7 @@ namespace CK.Poco.Exc.Json.Tests
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithLists>>();
-            var oD = f.Create( o =>
+            var oL = f.Create( o =>
             {
                 o.ListOfList.Add( new List<int> { 1, 2 } );
                 o.ListOfList.Add( new List<int> { 3, 4, 5 } );
@@ -115,20 +115,28 @@ namespace CK.Poco.Exc.Json.Tests
                 o.CovariantListNullableImpl.Add( null );
                 o.Result = new object[] { o.ListOfList, o.CovariantListImpl, o.CovariantListNullableImpl };
             } );
-            oD.ToString().Should().Be( @"
+            CheckToString( oL );
+
+            var oL2 = JsonTestHelper.Roundtrip( directory, oL );
+            CheckToString( oL2 );
+
+            static void CheckToString( IWithLists oD )
             {
-                ""ListOfList"": [[1,2],[3,4,5]],
-                ""CovariantListImpl"": [42,3712],
-                ""CovariantListNullableImpl"": [null,0,null],
-                ""Result"": [""object[]"",
-                                [
-                                    [""L(L(int))"",[[1,2],[3,4,5]]],
-                                    [""L(int)"",[42,3712]],
-                                    [""L(int?)"",[null,0,null]]
+                oD.ToString().Should().Be( @"
+                {
+                    ""ListOfList"": [[1,2],[3,4,5]],
+                    ""CovariantListImpl"": [42,3712],
+                    ""CovariantListNullableImpl"": [null,0,null],
+                    ""Result"": [""object[]"",
+                                    [
+                                        [""L(L(int))"",[[1,2],[3,4,5]]],
+                                        [""L(int)"",[42,3712]],
+                                        [""L(int?)"",[null,0,null]]
+                                    ]
                                 ]
-                            ]
-            }"
-            .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+                }"
+                                .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+            }
         }
 
         public interface IWithSets : IPoco
@@ -148,7 +156,7 @@ namespace CK.Poco.Exc.Json.Tests
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var f = s.GetRequiredService<IPocoFactory<IWithSets>>();
-            var oD = f.Create( o =>
+            var oS = f.Create( o =>
             {
                 o.SetOfSet.Add( new HashSet<int> { 1, 2 } );
                 o.SetOfSet.Add( new HashSet<int> { 3, 4, 5 } );
@@ -158,13 +166,22 @@ namespace CK.Poco.Exc.Json.Tests
                 o.CovariantSetNullableImpl.Add( 0 );
                 o.CovariantSetNullableImpl.Add( 1 );
             } );
-            oD.ToString().Should().Be( @"
+
+            CheckToString( oS );
+
+            var oS2 = JsonTestHelper.Roundtrip( directory, oS );
+            CheckToString( oS2 );
+
+            static void CheckToString( IWithSets o )
             {
-                ""SetOfSet"":[[1,2],[3,4,5]],
-                ""CovariantSetImpl"":[42,3712],
-                ""CovariantSetNullableImpl"":[null,0,1]
-            }"
-            .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+                o.ToString().Should().Be( @"
+                {
+                    ""SetOfSet"":[[1,2],[3,4,5]],
+                    ""CovariantSetImpl"":[42,3712],
+                    ""CovariantSetNullableImpl"":[null,0,1]
+                }"
+                .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+            }
         }
 
         public interface IWithDictionaries : IPoco
@@ -179,7 +196,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void dictionaries_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithDictionaries ) );
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IWithDictionaries ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -194,35 +211,46 @@ namespace CK.Poco.Exc.Json.Tests
                 o.CovariantDicNullableImpl.Add( 2, null );
                 o.CovariantDicNullableImpl.Add( 3, false );
             } );
-            oD.ToString().Should().Be( @"
+            CheckToString( oD );
+
+            var oD2 = JsonTestHelper.Roundtrip( directory, oD );
+            CheckToString( oD2 );
+
+            static void CheckToString( IWithDictionaries o )
             {
-                ""DicOfDic"":
-                    [
-                        [1,[
-                            [[""int"",1],[""long"",""2""]],
-                            [[""string"",""Hello""],[""string"",""World!""]],
-                            [[""string"",""Goodbye""],null]
-                           ]
+                o.ToString().Should().Be( @"
+                {
+                    ""DicOfDic"":
+                        [
+                            [1,[
+                                [[""int"",1],[""long"",""2""]],
+                                [[""string"",""Hello""],[""string"",""World!""]],
+                                [[""string"",""Goodbye""],null]
+                               ]
+                            ],
+                            [2,[
+                                [[""int"",3],[""int"",4]],
+                                [[""string"",""Hello2""],[""string"",""World2!""]]
+                               ]
+                            ]
                         ],
-                        [2,[
-                            [[""int"",3],[""int"",4]],
-                            [[""string"",""Hello2""],[""string"",""World2!""]]
-                           ]
+                    ""CovariantDicImpl"":
+                        [
+                            [42,3712],
+                            [3712,42]
+                        ],
+                    ""CovariantDicNullableImpl"":
+                        [
+                            [1,true],
+                            [2,null],
+                            [3,false]
                         ]
-                    ],
-                ""CovariantDicImpl"":
-                    [
-                        [42,3712],
-                        [3712,42]
-                    ],
-                ""CovariantDicNullableImpl"":
-                    [
-                        [1,true],
-                        [2,null],
-                        [3,false]
-                    ]
-            }"
-            .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+                }"
+                .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+            }
         }
+
+
+
     }
 }
