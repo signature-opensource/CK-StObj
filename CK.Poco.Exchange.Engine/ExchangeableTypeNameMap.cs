@@ -29,7 +29,7 @@ namespace CK.Setup
             int idx = 0;
             foreach( var t in typeSystem.AllNonNullableTypes )
             {
-                var n = _names[t.Index >> 1];
+                ref var n = ref _names[t.Index >> 1];
                 if( n.IsExchangeable )
                 {
                     _exchangeables[idx] = t;
@@ -100,6 +100,67 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyList<FullExchangeableTypeName> AllFullNames => _names;
 
+        /// <summary>
+        /// Process a set of types across one or more maps (types must obviously belong to the maps) and
+        /// with help of the <paramref name="ambuiguityResolver"/> provides a unique mapping
+        /// from a name to a type or any object that may indicate a specific handling for the name.
+        /// <para>
+        /// This must be used if names from the map(s) can lead to ambiguities. This should be avoided
+        /// if possible since resolving the ambiguity to a supported type may not be that easy.
+        /// </para>
+        /// </summary>
+        /// <param name="source">
+        /// The source set of type. Typically <see cref="AllExchangeableObliviousTypes"/> or <see cref="ExchangeableNonNullableTypes"/>:
+        /// this depends on the reader implementation.
+        /// </param>
+        /// <param name="maps">One or more maps to unify.</param>
+        /// <param name="ambuiguityResolver">
+        /// A function that must choose one type or an object among the different possible types associated to the same name.
+        /// </param>
+        /// <returns>The mapping from name to type or object.</returns>
+        public static IEnumerable<(string,object)> GetUnifiedIncomingMap( IEnumerable<IPocoType> source,
+                                                                          IEnumerable<ExchangeableTypeNameMap> maps,
+                                                                          Func<string, IReadOnlySet<IPocoType>, object> ambuiguityResolver )
+        {
+            var names = new Dictionary<string, object>();
+            foreach( var t in source )
+            {
+                foreach( var map in maps )
+                {
+                    AddNamedTypes( names, t, map );
+                }
+            }
+            foreach( var (name,o) in names )
+            {
+                if( o is IPocoType t ) yield return (name, t);
+                else
+                {
+                    yield return (name, ambuiguityResolver( name, (IReadOnlySet<IPocoType>)o ));
+                }
+            }
 
+            static void AddNamedTypes( Dictionary<string, object> names, IPocoType t, ExchangeableTypeNameMap map )
+            {
+                var n = map.GetName( t );
+                if( n.IsExchangeable && n.Type == t )
+                {
+                    if( names.TryGetValue( n.Name, out var o ) )
+                    {
+                        if( o is IPocoType p )
+                        {
+                            if( p != t ) names[n.Name] = new HashSet<IPocoType>() { p, t };
+                        }
+                        else
+                        {
+                            ((HashSet<IPocoType>)o).Add( t );
+                        }
+                    }
+                    else
+                    {
+                        names[n.Name] = t;
+                    }
+                }
+            }
+        }
     }
 }

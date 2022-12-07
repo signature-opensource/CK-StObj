@@ -13,6 +13,17 @@ namespace CK.Setup
     /// <summary>
     /// Implements a reusable builder for <see cref="ExchangeableTypeName"/>.
     /// This type is completely opened to extensions.
+    /// <para>
+    /// The default implementation generates names based on the <see cref="IPocoType.CSharpName"/> except
+    /// for collections where "L(T)", "S(T)", "M(TKey,TValue)" and "O(T)" replaces List, HashSet and Dictionary
+    /// names.
+    /// </para>
+    /// <para>
+    /// Using the same name for different types is possible but is not recommended since
+    /// incoming names will require a specific, certainly complex, handler. In such case
+    /// the <see cref="ExchangeableTypeNameMap.GetUnifiedIncomingMap(IEnumerable{IPocoType}, IEnumerable{ExchangeableTypeNameMap}, Func{string, IReadOnlySet{IPocoType}, object})"/>
+    /// helper may be used.
+    /// </para>
     /// </summary>
     public class ExchangeableTypeNameBuilder
     {
@@ -191,15 +202,14 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns <see cref="ObjectTypeName"/>.
-        /// Abstractions are usually exchanged with the "object" type but this may be overridden.
+        /// Returns the interface C# name.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="abstractPoco">The abstract Poco.</param>
-        /// <returns>By default, the "object" exchanged name.</returns>
+        /// <returns>By default, the C# interface name.</returns>
         protected virtual FullExchangeableTypeName MakeAbstractPocoName( IActivityMonitor monitor, IAbstractPocoType abstractPoco )
         {
-            return ObjectTypeName;
+            return new FullExchangeableTypeName( abstractPoco );
         }
 
         /// <summary>
@@ -329,8 +339,10 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns the <see cref="ObjectTypeName"/>.
-        /// Union types are usually exchanged with the "object" type but this may be overridden.
+        /// Returns <see cref="ObjectTypeName"/>: this union type is not used since only
+        /// actual objects are emitted and since this can only be a IPoco field, an union type
+        /// cannot appear in a collection.
+        /// This is implemented only for the sake of coherence.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="union">The union type.</param>
