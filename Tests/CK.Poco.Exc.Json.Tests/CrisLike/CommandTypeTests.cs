@@ -107,6 +107,10 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
 ";
             var toString = batch.ToString();
             toString.Should().Be ( result.Replace( "\r", "" ).Replace( "\n", "" ).Replace( "\t", "" ).Replace( " ", "" ) );
+
+            var batch2 = JsonTestHelper.Roundtrip( directory, batch );
+            Debug.Assert( batch2 != null );
+            batch2.Should().BeEquivalentTo( batch );
         }
     }
 }

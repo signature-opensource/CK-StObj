@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -250,7 +251,37 @@ namespace CK.Poco.Exc.Json.Tests
             }
         }
 
+        public interface IWithDynamicObject : IPoco
+        {
+            IDictionary<string, int> OfInt { get; }
+        }
 
+        [Test]
+        public void dictionaries_with_string_keys_can_be_objects_or_use_arrays()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IWithDynamicObject ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
 
+            var o = directory.Create<IWithDynamicObject>( o =>
+            {
+                o.OfInt.Add( "One", 1 );
+                o.OfInt.Add( "Two", 2 );
+                o.OfInt.Add( "Three", 3 );
+            } );
+
+            // A Dictionary<string,T> is expressed as an object by default.
+            o.ToString().Should().Be( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}".Replace( " ", "" ) );
+
+            var f = s.GetRequiredService<IPocoFactory<IWithDynamicObject>>();
+            var oBack = f.JsonDeserialize( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}" );
+            Debug.Assert( oBack != null );
+            oBack.OfInt["Three"].Should().Be( 3 );
+            oBack.Should().BeEquivalentTo( o );
+
+            var oBackA = f.JsonDeserialize( @"{""OfInt"":[[""One"",1],[""Two"",2],[""Three"",3]]}" );
+            Debug.Assert( oBackA != null );
+            oBackA.Should().BeEquivalentTo( oBack );
+        }
     }
 }

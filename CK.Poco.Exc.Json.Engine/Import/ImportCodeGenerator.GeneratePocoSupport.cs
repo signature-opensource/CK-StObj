@@ -41,7 +41,8 @@ if( isDef )
     }
     r.Read();
 }
-if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( ""Expecting '{' to start a Poco."" );
+if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( ""Expecting '{' to start Poco '" )
+        .Append( type.ExternalOrCSharpName ).Append( @"'."" );
 r.Read();
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 {

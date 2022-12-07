@@ -7,7 +7,7 @@ namespace CK.Setup
     /// Holds an exchangeable type name and an optional mapped one that can be
     /// a simplified name for a type. This projection can be not <see cref="IsExchangeable"/>:
     /// any type that structurally depends on a non exchangeable type is also not exchangeable
-    /// and <see cref="IPocoField"/> with a non exchangeable type should be ignored.
+    /// and <see cref="IPocoField"/> with a non exchangeable type name should be ignored.
     /// <para>
     /// This and its <see cref="ExchangeableTypeNameBuilder"/> implements once for all a
     /// type mapping from C# type to external names (the simplified ones being optional)

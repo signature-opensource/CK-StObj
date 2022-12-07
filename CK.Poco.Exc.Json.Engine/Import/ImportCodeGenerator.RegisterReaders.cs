@@ -4,25 +4,31 @@ using System.Numerics;
 using System;
 using System.Diagnostics;
 using static CK.Core.PocoJsonExportSupport;
+using System.Collections.Generic;
 
 namespace CK.Setup.PocoJson
 {
     sealed partial class ImportCodeGenerator
     {
         // Step 1: The _readers array is filled with Reader delegates for all Exchangeable and NonNullable types.
-        void RegisterReaders()
+        //         Among them, only IPoco and Records require an explicit generation of their methods since collections
+        //         are implemented once for all based on the typed functions reader of their item type.
+        void RegisterReaders( List<IPrimaryPocoType> pocos, List<IRecordPocoType> records )
         {
             foreach( var type in _nameMap.ExchangeableNonNullableTypes )
             {
                 switch( type.Kind )
                 {
                     case PocoTypeKind.UnionType:
-                    case PocoTypeKind.AbstractIPoco:
                     case PocoTypeKind.Any:
                         _readers[type.Index >> 1] = ObjectReader;
                         break;
+                    case PocoTypeKind.AbstractIPoco:
+                        _readers[type.Index >> 1] = GetAbstractPocoReader( type );
+                        break;
                     case PocoTypeKind.IPoco:
                         _readers[type.Index >> 1] = GetPocoReader( type );
+                        pocos.Add( (IPrimaryPocoType)type );
                         break;
                     case PocoTypeKind.Basic:
                         _readers[type.Index >> 1] = GetBasicTypeCodeReader( type );
@@ -45,6 +51,7 @@ namespace CK.Setup.PocoJson
                     case PocoTypeKind.Record:
                     case PocoTypeKind.AnonymousRecord:
                         _readers[type.Index >> 1] = GetRecordCodeReader( type );
+                        records.Add( (IRecordPocoType)type );
                         break;
                     case PocoTypeKind.Enum:
                         {
@@ -66,6 +73,15 @@ namespace CK.Setup.PocoJson
             static void ObjectReader( ICodeWriter writer, string variableName )
             {
                 writer.Append( variableName ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, options );" );
+            }
+
+            static CodeReader GetAbstractPocoReader( IPocoType type )
+            {
+                return ( w, v ) =>
+                {
+                    w.Append( v ).Append( "=(" ).Append( type.CSharpName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, options );" );
+                };
+
             }
 
             static CodeReader GetPocoReader( IPocoType type )

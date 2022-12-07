@@ -2,7 +2,10 @@ using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json;
+using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Setup.PocoJson
 {
@@ -51,14 +54,30 @@ internal static void FillDictionary<TKey,TValue>( ref System.Text.Json.Utf8JsonR
     r.Read();
 }
 
-internal static void FillDynamicObject<TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<string,TValue> c, TypedReader<TValue> vR, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static void FillDynamicObject<TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<string, TValue> c, TypedReader<TValue> vR, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
 {
-    r.Read();
-    while( r.TokenType != System.Text.Json.JsonTokenType.EndObject )
+    if( r.TokenType == System.Text.Json.JsonTokenType.StartArray )
     {
-        var k = r.GetString();
         r.Read();
-        c.Add( k, vR( ref r, options ) );
+        while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
+        {
+            r.Read();
+            var k = r.GetString();
+            r.Read();
+            c.Add( k, vR( ref r, options ) );
+            r.Read();
+        }
+    }
+    else
+    {
+        if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( $""Expecting '{{' or '[' to start a map of string to '{typeof(TValue).ToCSharpName()}'."" );
+        r.Read();
+        while( r.TokenType != System.Text.Json.JsonTokenType.EndObject )
+        {
+            var k = r.GetString();
+            r.Read();
+            c.Add( k, vR( ref r, options ) );
+        }
     }
     r.Read();
 }
@@ -107,9 +126,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
 
                 _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
                 // Use the potentially nullable reference type here to generate the actual read.
-                // We must use the non nullable to compute the requiresInit since all nullable reference types
-                // have a DefaultValue.IsAllowed (since null is fine).
-                GenerateRead( _readerFunctionsPart, tActual, "o", DefaultRequiresInit( tFunc ) );
+                GenerateRead( _readerFunctionsPart, tActual, "o", null );
                 _readerFunctionsPart.NewLine()
                     .Append( "return o;" )
                     .CloseBlock();
@@ -117,21 +134,8 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             return $"CK.Poco.Exc.JsonGen.Importer.FRead_{tFunc.Index}";
         }
 
-
-        bool DefaultRequiresInit( IPocoType t ) => t.DefaultValueInfo.RequiresInit &&
-                                                   (t.Kind == PocoTypeKind.IPoco
-                                                     || t.Kind == PocoTypeKind.List
-                                                     || t.Kind == PocoTypeKind.Dictionary
-                                                     || t.Kind == PocoTypeKind.HashSet
-                                                     || t.Kind == PocoTypeKind.AnonymousRecord
-                                                     || t.Kind == PocoTypeKind.Record);
-
         void GenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool? requiresInit )
         {
-            if( !requiresInit.HasValue )
-            {
-                requiresInit = DefaultRequiresInit( t );
-            }
             if( t.IsNullable )
             {
                 writer.Append( "if(r.TokenType==System.Text.Json.JsonTokenType.Null)" )
@@ -141,19 +145,37 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                         .CloseBlock()
                         .Append( "else" )
                         .OpenBlock();
-                DoGenerateRead( writer, t, variableName, requiresInit.Value );
+                DoGenerateRead( writer, t, variableName, requiresInit );
                 writer.CloseBlock();
             }
             else
             {
-                DoGenerateRead( writer, t, variableName, requiresInit.Value );
+                DoGenerateRead( writer, t, variableName, requiresInit );
             }
 
-            void DoGenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
+            static bool DefaultRequiresInit( IPocoType t )
             {
-                if( requiresInit )
+                Debug.Assert( !t.IsNullable, "This must be called only when it makes sense: nullable doesn't require any initialization." );
+                return t.DefaultValueInfo.RequiresInit
+                       && (t.Kind == PocoTypeKind.IPoco
+                           || t.Kind == PocoTypeKind.List
+                           || t.Kind == PocoTypeKind.Dictionary
+                           || t.Kind == PocoTypeKind.HashSet
+                           || t.Kind == PocoTypeKind.AnonymousRecord
+                           || t.Kind == PocoTypeKind.Record);
+            }
+
+            void DoGenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool? requiresInit )
+            {
+                if( requiresInit ?? DefaultRequiresInit( t.NonNullable ) )
                 {
-                    writer.Append( variableName ).Append( "=new " ).Append( t.ImplTypeName ).Append( "();" ).NewLine();
+                    Debug.Assert( t.NonNullable.DefaultValueInfo.DefaultValue != null, "Since requiresInit is true." );
+                    writer.Append( variableName ).Append( "=" ).Append( t.NonNullable.DefaultValueInfo.DefaultValue.ValueCSharpSource ).Append( ";" ).NewLine();
+                }
+                // For nullable records, we need this adapter.
+                if( t.IsNullable && (t.Kind == PocoTypeKind.AnonymousRecord || t.Kind == PocoTypeKind.Record) )
+                {
+                    variableName = $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
                 }
                 _readers[t.Index >> 1].Invoke( writer, variableName );
             }
@@ -161,45 +183,18 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
 
         public bool Run( IActivityMonitor monitor )
         {
-            RegisterReaders();
-
-            foreach( var type in _nameMap.ExchangeableNonNullableTypes )
+            var pocos = new List<IPrimaryPocoType>();
+            var records = new List<IRecordPocoType>(); 
+            RegisterReaders( pocos, records );
+            foreach( var p in pocos )
             {
-                switch( type.Kind )
-                {
-                    case PocoTypeKind.UnionType:
-                    case PocoTypeKind.AbstractIPoco:
-                    case PocoTypeKind.Any:
-                    case PocoTypeKind.Enum:
-                    case PocoTypeKind.Basic:
-                        break;
-                    case PocoTypeKind.IPoco:
-                        GeneratePocoSupport( monitor, _generationContext, (IPrimaryPocoType)type );
-                        break;
-                    case PocoTypeKind.Array:
-                        {
-                            var tA = (ICollectionPocoType)type;
-                            if( tA.ItemTypes[0].Type != typeof( byte ) )
-                            {
-                                // TODO
-                            }
-                            break;
-                        }
-                    case PocoTypeKind.List:
-                    case PocoTypeKind.HashSet:
-                    case PocoTypeKind.Dictionary:
-                        // TODO
-                        break;
-                    case PocoTypeKind.Record:
-                    case PocoTypeKind.AnonymousRecord:
-                        // TODO
-                        break;
-                    default: throw new NotSupportedException();
-                }
+                GeneratePocoSupport( monitor, _generationContext, p );
             }
-
+            foreach( var r in records )
+            {
+                GenerateRecordReader( monitor, _importerType, r );
+            }
             GenerateReadAny();
-
             return true;
         }
 

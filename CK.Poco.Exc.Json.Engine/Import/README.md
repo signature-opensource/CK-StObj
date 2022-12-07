@@ -12,9 +12,9 @@ These top-level reader functions returns an `object` and powers the static `Read
 reads the type name from the first cell of the required 2-cells array `["type",<value>]` and calls the
 appropriate reader function.
 
-These reader functions instantiate a non null object:
+These object reader functions instantiate a non null object:
 ```csharp
-delegate object ReaderFunction( ref Utf8JsonReader r, PocoJsonImportOptions options );
+delegate object ObjectReader( ref Utf8JsonReader r, PocoJsonImportOptions options );
 ```
 They are limited to instantiate oblivious types: the type `IList<ISet<ICommand>>` is out of their scope because this
 type is not an exported type name (it is exported as a "L(S(object))" that is `List<HashSet<object>>`).
