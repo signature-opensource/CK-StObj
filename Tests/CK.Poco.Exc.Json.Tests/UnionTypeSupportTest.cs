@@ -29,7 +29,7 @@ namespace CK.Poco.Exc.Json.Tests
             var directory = s.GetRequiredService<PocoDirectory>();
 
             var o = directory.Create<IBasicUnion>();
-            o.ToString().Should().Be( @"{""Thing"":[""string"",""""]}", "The first possible default is selected, here it's the string that defauts to empty." );
+            o.ToString().Should().Be( @"{""Thing"":[""string"",""""]}", "The first possible default is selected, here it's the string that defaults to empty." );
 
             o.Thing = "Hip!";
             o.ToString().Should().Be( @"{""Thing"":[""string"",""Hip!""]}" );

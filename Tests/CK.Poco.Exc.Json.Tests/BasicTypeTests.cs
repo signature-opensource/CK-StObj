@@ -33,9 +33,8 @@ namespace CK.Poco.Exc.Json.Tests
             Guid PGuid { get; set; }
         }
 
-        [TestCase( true )]
-        [TestCase( false )]
-        public void all_basic_types_roundtrip( bool useSimplifiedTypes )
+        [Test]
+        public void all_basic_types_roundtrip()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IAllBasicTypes ) ); ;
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
@@ -77,12 +76,10 @@ namespace CK.Poco.Exc.Json.Tests
             nMin.PTimeSpan = TimeSpan.MinValue;
             nMin.PGuid = Guid.Empty;
 
-            var options = new PocoJsonExportOptions { UseSimplifiedTypes = useSimplifiedTypes };
-
-            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, options, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(max) serialization: " + t ) );
+            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(max) serialization: " + t ) );
             nMax2.Should().BeEquivalentTo( nMax );
 
-            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, options, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(min) serialization: " + t ) );
+            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllBasicTypes(min) serialization: " + t ) );
             nMin2.Should().BeEquivalentTo( nMin );
         }
 
@@ -108,9 +105,8 @@ namespace CK.Poco.Exc.Json.Tests
             Guid? PGuid { get; set; }
         }
 
-        [TestCase( true )]
-        [TestCase( false )]
-        public void all_nullable_basic_types_roundtrip( bool useSimplifiedTypes )
+        [Test]
+        public void all_nullable_basic_types_roundtrip()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IAllNullableBasicTypes ) ); ;
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
@@ -154,15 +150,13 @@ namespace CK.Poco.Exc.Json.Tests
             nMin.PTimeSpan = TimeSpan.MinValue;
             nMin.PGuid = Guid.Empty;
 
-            var options = new PocoJsonExportOptions { UseSimplifiedTypes = useSimplifiedTypes };
-
-            var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, options, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(null) serialization: " + t ) );
+            var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(null) serialization: " + t ) );
             nNull2.Should().BeEquivalentTo( nNull );
 
-            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, options, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(max) serialization: " + t ) );
+            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(max) serialization: " + t ) );
             nMax2.Should().BeEquivalentTo( nMax );
 
-            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, options, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(min) serialization: " + t ) );
+            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(min) serialization: " + t ) );
             nMin2.Should().BeEquivalentTo( nMin );
         }
 
