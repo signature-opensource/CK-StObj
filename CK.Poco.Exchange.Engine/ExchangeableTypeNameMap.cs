@@ -99,5 +99,7 @@ namespace CK.Setup
         /// Gets all the exchanged names.
         /// </summary>
         public IReadOnlyList<FullExchangeableTypeName> AllFullNames => _names;
+
+
     }
 }

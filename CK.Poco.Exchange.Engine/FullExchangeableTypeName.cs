@@ -1,4 +1,5 @@
 using CK.Core;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
 namespace CK.Setup
@@ -27,29 +28,29 @@ namespace CK.Setup
         public bool IsExchangeable => NonNullable.IsExchangeable;
 
         /// <summary>
-        /// Gets the exchanged name of the type based on the C# type (no mapping).
+        /// Gets the non nullable exchanged name of the type.
         /// <see cref="IsExchangeable"/> must be true for this to be accessed.
         /// </summary>
         public string Name => NonNullable.Name;
 
         /// <summary>
-        /// Gets the simplified name of the type based on the C# type (no mapping).
+        /// Gets the non nullable type.
         /// <see cref="IsExchangeable"/> must be true for this to be accessed.
         /// </summary>
-        public string SimplifiedName => NonNullable.SimplifiedName;
+        public IPocoType Type => NonNullable.Type;
 
         /// <summary>
-        /// Gets whether <see cref="SimplifiedName"/> differs from <see cref="Name"/>.
+        /// Gets whether <see cref="Name"/> differs from <see cref="IPocoType.CSharpName"/>.
         /// </summary>
-        public bool HasSimplifiedNames => NonNullable.HasSimplifiedNames;
+        public bool HasOverriddenName => NonNullable.HasOverriddenName;
 
         /// <summary>
-        /// Gets the non nullable names (same interface as this one).
+        /// Gets the non nullable name (same interface as this one).
         /// </summary>
         public readonly ExchangeableTypeName NonNullable;
 
         /// <summary>
-        /// Gets the nullable type names.
+        /// Gets the nullable type name.
         /// </summary>
         public readonly ExchangeableTypeName Nullable;
 
@@ -61,24 +62,28 @@ namespace CK.Setup
         public FullExchangeableTypeName( in ExchangeableTypeName nonNullable )
         {
             Throw.CheckArgument( nonNullable.IsExchangeable );
+            Throw.CheckArgument( !nonNullable.Type.IsNullable );
             Throw.CheckArgument( !nonNullable.Name.EndsWith( '?' ) );
             NonNullable = nonNullable;
-            var n = nonNullable.Name + '?';
-            Nullable = nonNullable.HasSimplifiedNames
-                        ? new ExchangeableTypeName( n, nonNullable.SimplifiedName + '?' )
-                        : new ExchangeableTypeName( n );
+            Nullable = nonNullable.HasOverriddenName
+                        ? new ExchangeableTypeName( nonNullable.Type.Nullable, nonNullable.Name + '?' )
+                        : new ExchangeableTypeName( nonNullable.Type.Nullable );
         }
 
         /// <summary>
         /// Initializes a new <see cref="FullExchangeableTypeName"/> from a non nullable
-        /// string name.
+        /// <see cref="IPocoType"/> and an optional overridden name.
         /// </summary>
         /// <param name="name">The non nullable name.</param>
-        public FullExchangeableTypeName( string nonNullableName )
+        public FullExchangeableTypeName( IPocoType nonNullable, string? overriddenName = null )
         {
-            NonNullable = new ExchangeableTypeName( nonNullableName );
-            var n = nonNullableName + '?';
-            Nullable = new ExchangeableTypeName( n );
+            Throw.CheckArgument( nonNullable.IsExchangeable );
+            Throw.CheckArgument( !nonNullable.IsNullable );
+            Debug.Assert( !nonNullable.CSharpName.EndsWith( '?' ) );
+            NonNullable = new ExchangeableTypeName( nonNullable, overriddenName );
+            Nullable = NonNullable.HasOverriddenName
+                        ? new ExchangeableTypeName( nonNullable.Nullable, NonNullable.Name + '?' )
+                        : new ExchangeableTypeName( nonNullable.Nullable );
         }
 
         public FullExchangeableTypeName( bool _ )

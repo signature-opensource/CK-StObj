@@ -46,12 +46,13 @@ namespace CK.Setup.PocoJson
 
         CSCodeGenerationResult GenerateAllCode( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystem typeSystem )
         {
-            var nameMap = new JsonTypeNameBuilder().Generate( monitor, typeSystem, false );
+            var nameMap = new ExchangeableTypeNameBuilder().Generate( monitor, typeSystem, false );
+            var simplifieldNameMap = new JsonTypeSimplifiedNameBuilder().Generate( monitor, typeSystem, false, "*" );
 
             var ns = c.Assembly.Code.Global.FindOrCreateNamespace( "CK.Poco.Exc.JsonGen" );
 
             var exporterType = ns.CreateType( "internal static class Exporter" );
-            var export = new ExportCodeGenerator( exporterType, nameMap, c );
+            var export = new ExportCodeGenerator( exporterType, nameMap, simplifieldNameMap, c );
             if( !export.Run( monitor ) ) return CSCodeGenerationResult.Failed;
 
             var importerType = ns.CreateType( "internal static class Importer" );

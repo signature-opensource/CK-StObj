@@ -13,16 +13,11 @@ namespace CK.Setup
     /// <summary>
     /// Implements a reusable builder for <see cref="ExchangeableTypeName"/>.
     /// This type is completely opened to extensions.
-    /// <para>
-    /// Using any <see cref="ExchangeableTypeName.SimplifiedName"/> is totally optional.
-    /// By default, the simplified name is the same as the <see cref="ExchangeableTypeName.Name"/>.
-    /// </para>
     /// </summary>
     public class ExchangeableTypeNameBuilder
     {
         [AllowNull] FullExchangeableTypeName[]? _result;
         readonly StringBuilder _nBuilder = new StringBuilder();
-        readonly StringBuilder _sBuilder = new StringBuilder();
         FullExchangeableTypeName _objectTypeName;
         bool _condemnEnumFromUnderlyingType;
         int _exchangeableCount;
@@ -55,7 +50,7 @@ namespace CK.Setup
 
             _exchangeableCount = typeSystem.AllNonNullableTypes.Count;
             _result = new FullExchangeableTypeName[_exchangeableCount];
-            _objectTypeName = _result[typeSystem.ObjectType.Index >> 1] = new FullExchangeableTypeName( objectName );
+            _objectTypeName = _result[typeSystem.ObjectType.Index >> 1] = new FullExchangeableTypeName( typeSystem.ObjectType, objectName );
             foreach( var t in typeSystem.AllNonNullableTypes )
             {
                 ref var n = ref _result[t.Index >> 1];
@@ -215,7 +210,7 @@ namespace CK.Setup
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakeBasicName( IActivityMonitor monitor, IPocoType basic )
         {
-            return new FullExchangeableTypeName( basic.CSharpName );
+            return new FullExchangeableTypeName( basic );
         }
 
         /// <summary>
@@ -226,7 +221,7 @@ namespace CK.Setup
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakeEnumName( IActivityMonitor monitor, IEnumPocoType enumeration )
         {
-            return new FullExchangeableTypeName( enumeration.ExternalOrCSharpName );
+            return new FullExchangeableTypeName( enumeration, enumeration.ExternalOrCSharpName );
         }
 
         /// <summary>
@@ -247,21 +242,21 @@ namespace CK.Setup
                         var item = collection.ItemTypes[0];
                         ref var nItem = ref _result[item.Index>>1];
                         Debug.Assert( nItem.IsExchangeable );
-                        return MakeArrayName( item, nItem );
+                        return MakeArrayName( collection, item, nItem );
                     }
                 case PocoTypeKind.List:
                     {
                         var item = collection.ItemTypes[0];
                         ref var nItem = ref _result[item.Index >> 1];
                         Debug.Assert( nItem.IsExchangeable );
-                        return MakeListName( item, nItem );
+                        return MakeListName( collection, item, nItem );
                     }
                 case PocoTypeKind.HashSet:
                     {
                         var item = collection.ItemTypes[0];
                         ref var nItem = ref _result[item.Index >> 1];
                         Debug.Assert( nItem.IsExchangeable );
-                        return MakeSetName( item, nItem );
+                        return MakeSetName( collection, item, nItem );
                     }
                 case PocoTypeKind.Dictionary:
                     {
@@ -271,11 +266,11 @@ namespace CK.Setup
                         Debug.Assert( nV.IsExchangeable );
                         if( k.Type == typeof( string ) )
                         {
-                            return MakeDynamicObject( v, nV );
+                            return MakeDynamicObject( collection, v, nV );
                         }
                         ref var nK = ref _result[k.Index >> 1];
                         Debug.Assert( nK.IsExchangeable );
-                        return MakeMap( k, nK.NonNullable, v, nV );
+                        return MakeMap( collection, k, nK.NonNullable, v, nV );
                     }
             };
             return Throw.NotSupportedException<FullExchangeableTypeName>();
@@ -289,7 +284,7 @@ namespace CK.Setup
         /// <returns>The exchangeable name for the type.</returns>
         protected virtual FullExchangeableTypeName MakePrimaryPocoName( IActivityMonitor monitor, IPrimaryPocoType primary )
         {
-            return new FullExchangeableTypeName( primary.ExternalOrCSharpName );
+            return new FullExchangeableTypeName( primary, primary.ExternalOrCSharpName );
         }
 
         /// <summary>
@@ -302,7 +297,7 @@ namespace CK.Setup
                                                                    IRecordPocoType record,
                                                                    Func<IPocoField, FullExchangeableTypeName> fieldTypeNames )
         {
-            return new FullExchangeableTypeName( record.ExternalOrCSharpName );
+            return new FullExchangeableTypeName( record, record.ExternalOrCSharpName );
         }
 
         /// <summary>
@@ -316,29 +311,21 @@ namespace CK.Setup
                                                                             IRecordPocoType record,
                                                                             Func<IPocoField,FullExchangeableTypeName> fieldTypeNames )
         {
-            _nBuilder.Append( "(" );
-            _sBuilder.Append( "(" );
+            _nBuilder.Clear()
+                     .Append( "(" );
             bool atLeastOne = false;
-            bool hasSimplified = false;
             foreach( var f in record.Fields )
             {
                 if( atLeastOne )
                 {
                     _nBuilder.Append( ',' );
-                    _sBuilder.Append( ',' );
                 }
                 else atLeastOne = true;
                 var nF = fieldTypeNames( f );
-                hasSimplified |= nF.HasSimplifiedNames;
                 _nBuilder.Append( f.Type.IsNullable ? nF.Nullable.Name : nF.Name );
-                _sBuilder.Append( f.Type.IsNullable ? nF.Nullable.SimplifiedName : nF.SimplifiedName );
             }
             _nBuilder.Append( ')' );
-            _sBuilder.Append( ')' );
-
-            return hasSimplified
-                        ? new FullExchangeableTypeName( new ExchangeableTypeName( _nBuilder.ToString(), _sBuilder.ToString() ) )
-                        : new FullExchangeableTypeName( _nBuilder.ToString() );
+            return new FullExchangeableTypeName( record, _nBuilder.ToString() );
         }
 
         /// <summary>
@@ -350,8 +337,8 @@ namespace CK.Setup
         /// <param name="typeNames">Type names provider.</param>
         /// <returns>By default, the "object" exchanged name.</returns>
         protected virtual FullExchangeableTypeName MakeUnionTypeName( IActivityMonitor monitor,
-                                                                       IUnionPocoType union,
-                                                                       Func<IPocoType, FullExchangeableTypeName> typeNames )
+                                                                      IUnionPocoType union,
+                                                                      Func<IPocoType, FullExchangeableTypeName> typeNames )
         {
             return ObjectTypeName;
         }
@@ -359,75 +346,69 @@ namespace CK.Setup
         /// <summary>
         /// Returns a "ItemName[]" pattern.
         /// </summary>
+        /// <param name="array">The array type.</param>
         /// <param name="item">The item type.</param>
         /// <param name="itemName">The exchanged name of the item type.</param>
         /// <returns>The exchangeable name for the type.</returns>
-        protected virtual FullExchangeableTypeName MakeArrayName( IPocoType item, in FullExchangeableTypeName itemName )
+        protected virtual FullExchangeableTypeName MakeArrayName( ICollectionPocoType array, IPocoType item, in FullExchangeableTypeName itemName )
         {
             var name = (item.IsNullable ? itemName.Nullable.Name : itemName.Name) + "[]";
-            return itemName.HasSimplifiedNames
-                    ? new FullExchangeableTypeName( new ExchangeableTypeName( name, (item.IsNullable ? itemName.Nullable.SimplifiedName : itemName.SimplifiedName) + "[]" ) )
-                    : new FullExchangeableTypeName( name );
+            return new FullExchangeableTypeName( array, name );
         }
 
         /// <summary>
         /// Returns a "L(T)" pattern.
         /// </summary>
+        /// <param name="list">The list type.</param>
         /// <param name="item">The item type.</param>
         /// <param name="itemName">The exchanged name of the item type.</param>
         /// <returns>The exchangeable name for the type.</returns>
-        protected virtual FullExchangeableTypeName MakeListName( IPocoType item, in FullExchangeableTypeName itemName )
+        protected virtual FullExchangeableTypeName MakeListName( ICollectionPocoType list, IPocoType item, in FullExchangeableTypeName itemName )
         {
             var name = $"L({(item.IsNullable ? itemName.Nullable.Name : itemName.Name)})";
-            return itemName.HasSimplifiedNames
-                    ? new FullExchangeableTypeName( new ExchangeableTypeName( name, $"L({(item.IsNullable ? itemName.Nullable.SimplifiedName : itemName.SimplifiedName)})" ) )
-                    : new FullExchangeableTypeName( name );
+            return new FullExchangeableTypeName( list, name );
         }
 
         /// <summary>
         /// Returns a "S(T)" pattern.
         /// </summary>
+        /// <param name="list">The set type.</param>
         /// <param name="item">The item type.</param>
         /// <param name="itemName">The exchanged name of the item type.</param>
         /// <returns>The exchangeable name for the type.</returns>
-        protected virtual FullExchangeableTypeName MakeSetName( IPocoType item, in FullExchangeableTypeName itemName )
+        protected virtual FullExchangeableTypeName MakeSetName( ICollectionPocoType set, IPocoType item, in FullExchangeableTypeName itemName )
         {
             var name = $"S({(item.IsNullable ? itemName.Nullable.Name : itemName.Name)})";
-            return itemName.HasSimplifiedNames
-                    ? new FullExchangeableTypeName( new ExchangeableTypeName( name, $"S({(item.IsNullable ? itemName.Nullable.SimplifiedName : itemName.SimplifiedName)})" ) )
-                    : new FullExchangeableTypeName( name );
+            return new FullExchangeableTypeName( set, name );
         }
 
         /// <summary>
         /// Returns a "M(TKey,TValue)" pattern. Note that key is necessarily not nullable.
         /// </summary>
+        /// <param name="map">The map type.</param>
         /// <param name="key">The key type.</param>
         /// <param name="keyName">The exchanged name of the key.</param>
         /// <param name="value">The type of the value.</param>
         /// <param name="valueName">The exchanged name of the value.</param>
         /// <returns>The exchangeable name for the type.</returns>
-        protected virtual FullExchangeableTypeName MakeMap( IPocoType key, in ExchangeableTypeName keyName, IPocoType value, in FullExchangeableTypeName valueName )
+        protected virtual FullExchangeableTypeName MakeMap( ICollectionPocoType map, IPocoType key, in ExchangeableTypeName keyName, IPocoType value, in FullExchangeableTypeName valueName )
         {
-            var nameK = $"M({keyName.Name},{(value.IsNullable ? valueName.Nullable.Name : valueName.Name)})";
-            return keyName.HasSimplifiedNames || valueName.HasSimplifiedNames
-                ? new FullExchangeableTypeName( new ExchangeableTypeName( nameK, $"M({keyName.SimplifiedName},{(value.IsNullable ? valueName.Nullable.SimplifiedName : valueName.SimplifiedName)})" ) )
-                : new FullExchangeableTypeName( nameK );
+            var name = $"M({keyName.Name},{(value.IsNullable ? valueName.Nullable.Name : valueName.Name)})";
+            return new FullExchangeableTypeName( map, name );
         }
 
         /// <summary>
         /// Returns a "O(TValue)" pattern. This is map of string to TValue.
         /// </summary>
+        /// <param name="map">The map type.</param>
         /// <param name="value">The type of the value.</param>
         /// <param name="valueName">The exchanged name of the value.</param>
         /// <returns>The exchangeable name for the type.</returns>
-        protected virtual FullExchangeableTypeName MakeDynamicObject( IPocoType value, in FullExchangeableTypeName valueName )
+        protected virtual FullExchangeableTypeName MakeDynamicObject( ICollectionPocoType map, IPocoType value, in FullExchangeableTypeName valueName )
         {
             var name = $"O({(value.IsNullable ? valueName.Nullable.Name : valueName.Name)})";
-            return valueName.HasSimplifiedNames
-                ? new FullExchangeableTypeName( new ExchangeableTypeName( name, $"O({(value.IsNullable ? valueName.Nullable.SimplifiedName : valueName.SimplifiedName)})" ) )
-                : new FullExchangeableTypeName( name );
+            return new FullExchangeableTypeName( map, name );
         }
-
 
     }
 

@@ -17,15 +17,20 @@ namespace CK.Setup.PocoJson
     {
         readonly ITypeScope _exporterType;
         readonly ExchangeableTypeNameMap _nameMap;
+        readonly ExchangeableTypeNameMap _simplifieldNameMap;
         readonly ICSCodeGenerationContext _generationContext;
         // Writers are for the non nullable types, whether they are oblivious types
         // or not: writers for the same "oblivious family" will share the same function.
         readonly CodeWriter[] _writers;
 
-        public ExportCodeGenerator( ITypeScope exporterType, ExchangeableTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
+        public ExportCodeGenerator( ITypeScope exporterType,
+                                    ExchangeableTypeNameMap nameMap,
+                                    ExchangeableTypeNameMap simplifieldNameMap,
+                                    ICSCodeGenerationContext generationContext )
         {
             _exporterType = exporterType;
             _nameMap = nameMap;
+            _simplifieldNameMap = simplifieldNameMap;
             _generationContext = generationContext;
             _writers = new CodeWriter[nameMap.TypeSystem.AllNonNullableTypes.Count];
         }
@@ -64,11 +69,13 @@ namespace CK.Setup.PocoJson
         void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable, bool honorOption )
         {
             var typeName = _nameMap.GetName( nonNullable );
+            var simplifiedTypeName = _simplifieldNameMap.GetName( nonNullable );
+
             if( honorOption ) writer.Append( $"if(!options.TypeLess)" );
-            if( typeName.HasSimplifiedNames )
+            if( typeName.Name != simplifiedTypeName.Name )
             {
                 writer.Append( "w.WriteStringValue(options.UseSimplifiedTypes?" )
-                    .AppendSourceString( typeName.SimplifiedName )
+                    .AppendSourceString( simplifiedTypeName.Name )
                     .Append( ":" );
             }
             else
