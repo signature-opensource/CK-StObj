@@ -16,160 +16,136 @@ These object reader functions instantiate a non null object:
 ```csharp
 delegate object ObjectReader( ref Utf8JsonReader r, PocoJsonImportOptions options );
 ```
-They are limited to instantiate oblivious types: the type `IList<ISet<ICommand>>` is out of their scope because this
-type is not an exported type name (it is exported as a "L(S(object))" that is `List<HashSet<object>>`).
+They are limited to instantiate oblivious types: the type `IList<(int A, int B)>` is out of their scope because this
+type is not an exported type name (it is exported as a "L((int,int))" that is `List<(int,int)>`).
 
 These top-level functions cannot always be used internally: Poco collection types often use non regular collection
 types (a `IList<IUserInfo>` where `IUserInfo : IPoco` is implemented by a generated specialized `List<IUserInfo>`
 that supports an extended covariance). Moreover, Poco fields can be `readonly`: they cannot be assigned to a new instance,
 only can they be filled with their content.
 
-This why an Importer has more "readers" than an Exporter has "writers". An Exporter relies on the ObliviousType that
-erase "internal types" to do its job whereas Importers have to deal with these internal types.
+This why Importers are often more complex. Exporters rely on the ObliviousType that erase "internal types" to do
+its job whereas Importers have to deal with these internal types.
 
-## Basic types
-We need a function that reads a value. This function is typically inlined, it doesn't require
-a dedicated method (the Utf8JsonReader provides some of them like `ReadGuid()`). By simply boxing the result `(object)`
-we have the corresponding top-level reader function.
-But we also need a function that can read the associated nullable value type (for instance to fill a `List<Guid?>`). This
-must be done with a utility function:
+## Code Generation
+
+The first step is to build an array of `CodeReader` for each exchangeable and non nullable types:
+
+`delegate void CodeReader( ICodeWriter write, string variableName );`
+
+These functions know how to read their corresponding type into a named variable from a `Utf8JsonReader r` 
+and a `PocoJsonImportOptions options`
+
+For a basic type (`int`), the generated code simply uses the `Utf8JsonReader` API:
+- The function is: `(w,v) => w.Append( v ).Append( " = r.GetInt32(); r.Read();" )`
+- This generates for instance: `i = r.GetInt32(); r.Read();`
+
+For a Poco object, the reader function calls the `ReadJson` method that is generated on each Poco class implementation.
+The object is already allocated, this reader function "fills" an existing instance. This supports an incomplete
+read: missing Json properties keep their default values.
 
 ```csharp
-static T ReadBasic_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
+static CodeReader GetPocoReader( IPocoType type )
 {
-  // Type dependent code comes here.
+    return ( w, v ) => w.Append( v ).Append( ".ReadJson( ref r, options );" );
 }
+```
+This generates for instance: `o.ReadJson( ref r, options );`
 
-static T? NullReadBasic_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
+For an abstract Poco, the reader function calls the `ReadAny` function and casts its result:
+
+```csharp
+static CodeReader GetAbstractPocoReader( IPocoType type )
 {
-  if( r.TokenType == JsonTokenType.Null )
-  {
+    return ( w, v ) =>
+    {
+        w.Append( v ).Append( "=(" ).Append( type.CSharpName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, options );" );
+    };
+}
+```
+   
+For records, the reader function calls a generated function dedicated to the record type. The function uses a `ref`
+parameter: the value must be available before the call.
+
+```csharp
+static CodeReader GetRecordCodeReader( IPocoType type )
+{
+    return ( w, v ) => w.Append( "CK.Poco.Exc.JsonGen.Importer.Read_" )
+                        .Append( type.Index )
+                        .Append( "(ref r,ref " )
+                        .Append( v ).Append( ",options);" );
+}
+```
+
+For collections, this is a little bit different. To minimize the generated code size, filling an array, a list, set
+or dictionary is done by common functions that take a item reader function as a parameter. All arrays for instance are
+read by the `ReadArray` helper:
+```csharp
+internal delegate T TypedReader<T>( ref Utf8JsonReader r, PocoJsonImportOptions options );
+
+internal static T[] ReadArray<T>( ref Utf8JsonReader r, TypedReader<T> itemReader, PocoJsonImportOptions options )
+{
+    var c = new List<T>();
     r.Read();
-    return default;
-  }
-  return ReadBasic_T( ref r, options );
-}
-```
-Here, the TopLevelReadBasic_T is ReadBasic_T.
-
-## Records
-For records that are value tuples with fields, the basic pattern is not optimal: we should be able to limit
-useless copies by having a `ref` version of the read so we can read in place the value.
-And we need a specific function for the null and for the top-level reader:
-
-```csharp
-static void ReadRecord_T( ref Utf8JsonReader r, ref T v, PocoJsonImportOptions options )
-{
-  // Type dependent code comes here.
-}
-
-static void NullReadRecord_T( ref Utf8JsonReader r, ref T? v, PocoJsonImportOptions options )
-{
-  if( r.TokenType == JsonTokenType.Null )
-  {
+    while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
+    {
+        c.Add( itemReader( ref r, options ) );
+    }
     r.Read();
-    v = default;
-  }
-  else
-  {
-    ReadRecord_T( ref r, ref v, options );
-  }
-}
-
-static T TopLevelReadRecord_T( ref Utf8JsonReader r, PocoJsonImportOptions options )
-{
-  var v = new T();
-  ReadRecord_T( ref r, ref v, options );
-  return v;
+    return c.ToArray();
 }
 ```
-
-## Reference types
-
-There are only 2 kind of reference types in the Poco type system that must be handled here:
-IPoco and Collections. The third kind of reference type is the AbstractIPoco and since it is
-abstract we don't have to bother dealing with unexisting instances.
-
-IPoco and Collections are quite similar here. Let's start with the IPoco that is simpler for one
-reason: its `ReadJson` is a direct method of any IPoco (instead of a static independent helper).
-
-Poco implementation has a generated default constructor that initializes its fields according to the
-default values and nullability constraints. To avoid replicating this logic in a deserialization
-constructor, an independent `ReadJson( ref Utf8JsonReader r, PocoJsonImportOptions options )`
-method is implemented that must be called on the new instance: this method is an "in place" reader.
-
+And all Lists or Sets are filled by the common `FillListOrSet` helper:
 ```csharp
-static TPoco TopLevelReader_TPoco( ref Utf8JsonReader r, PocoJsonImportOptions options )
+internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
 {
-  return new TPoco( ref r, options );
-}
-```
-
-Poco constructors instantiates non nullable subordinated IPoco. When reading:
-
-```csharp
-public interface I1 : IPoco
-{
-  IOther Other { get; } 
-}
-```
-
-The `Other` is already instantiated (with all its default values), the read must be done "in place".
-If the property was a nullable (then it has necessarily a setter otherwise, this property would not be exchangeable
-and serialization/deserialization would ignore it):
-
-```csharp
-public interface I1 : IPoco
-{
-  IOther? Other { get; set; } 
-}
-```
-
-In such case, the initial field value is null: reading "in place" only is not enough.
-Do we need yet another variation that can allocate if needed?
-
-```csharp
-static void NullReadReferenceType_T( ref Utf8JsonReader r, ref T? v, PocoJsonImportOptions options )
-{
-  if( r.TokenType == JsonTokenType.Null )
-  {
     r.Read();
-    v = null;
-  }
-  else
-  {
-    if( v == null ) v = new T();
-    v.Read( ref r, options );
-  }
+    while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
+    {
+        c.Add( itemReader( ref r, options ) );
+    }
+    r.Read();
 }
 ```
-
-Actually this is quite the same as the TopLevelReader_TPoco. If we are able to know whether a field
-is initially null or not, we don't need this: `TopLevelReader_TPoco` or `_field.Read( ref r, options )`
-is all we need.
-
-The fact is that we know whether a field should use the top level reader or the in place read function:
-- If the field's type is IPoco or a Collection:
-  - If its DefaultValueInfo is RequiresInit then the instance has been created by the constructor: in place read
-    must be done.
-  - Else, the top-level reader must be called.
-
-This can be extended to all the types:
-- If the field's type is an AbstractIPoco, a Union type or Any (`object`): the `ReadAny` root method must be used.
-- If the field's type is a Record or an AnonymousRecord:
-  - If the field's type is nullable, use the NullReadRecord_T reader.
-  - Else use the ReadRecord_T in place reader
-- If the field type is a Basic type:
-  -  If the field's type is nullable, use the NullReadBasic_T.
-  -  Else use the ReadBasic_T
-
-To conclude, we only need for collections, the equivalent of the Poco's ReadJson instance method:
-
+For each registered collection type, the reader function calls `GetReadFunctionName` to obtain the name of a
+function that is able to read an item type instance:
 ```csharp
-static void ReadCollection_T( ref Utf8JsonReader r, T collection, PocoJsonImportOptions options )
+CodeReader GetArrayCodeReader( ICollectionPocoType type )
 {
-  // Type dependent reader.
+    var readerFunction = GetReadFunctionName( type.ItemTypes[0] );
+    return ( writer, v ) => writer.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadArray(ref r," )
+                                  .Append( readerFunction )
+                                  .Append( ",options);" );
+}
+
+CodeReader GetListOrSetCodeReader( ICollectionPocoType type )
+{
+    var readerFunction = GetReadFunctionName( type.ItemTypes[0] );
+    return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillListOrSet(ref r," )
+                                  .Append( v )
+                                  .Append( "," )
+                                  .Append( readerFunction )
+                                  .Append( ",options);" );
 }
 ```
+
+The call to `GetReadFunctionName` triggers the creation of a dedicated function that does what is needed to deserialize
+the corresponding type. The creation of the function, if it has not been already generated, can be done immediately
+because a collection item types appear necessarily before the collection that uses it: its CodeReader is already
+available.  
+
+Based on these CodeReader available for each type, the fundamental `GenerateRead` method can generate any
+read code for any type. The code generated by this function takes care of nullable/not nullable, value/reference
+types and whether the variable name provided needs to be initialized (new Poco, new collection or initial default value
+of a record):
+
+`void GenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool? requiresInit )`
+
+Once all the CodeReader are available, we can:
+- Generate the `ReadJson` method on all Poco.
+- Generate the `void Read_XXX( ref r, ref T record, options)` methods.
+- Generate the `ReadAny` method that reads the 2-cells array with the type name, finds the top-level ObjectReader 
+  in the static dictionary and calls it.
+
 
 

@@ -33,6 +33,7 @@ namespace CK.Setup
         readonly HalfTypeList _exposedAllTypes;
         readonly Stack<StringBuilder> _stringBuilderPool;
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
+        bool _locked;
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
@@ -79,6 +80,21 @@ namespace CK.Setup
             }
         }
 
+        public bool IsLocked => _locked;
+
+        public void Lock( IActivityMonitor monitor )
+        {
+            if( _locked )
+            {
+                monitor.Warn( $"TypeSystem is already locked with {_exposedAllTypes.Count} types." );
+            }
+            else
+            {
+                _locked = true;
+                monitor.Warn( $"Locking TypeSystem with {_exposedAllTypes.Count} types." );
+            }
+        }
+
         public IPocoType ObjectType => _objectType;
 
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
@@ -89,6 +105,7 @@ namespace CK.Setup
 
         internal void AddNew( PocoType t )
         {
+            Throw.CheckState( !IsLocked );
             Debug.Assert( t.Index == _allTypes.Count * 2 );
             _allTypes.Add( t );
         }
@@ -109,6 +126,7 @@ namespace CK.Setup
 
         public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )
         {
+            Throw.CheckState( !IsLocked );
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckArgument( type != null && type.Index < _exposedAllTypes.Count && _exposedAllTypes[type.Index] == type );
             Throw.CheckArgument( type.Kind != PocoTypeKind.Any );

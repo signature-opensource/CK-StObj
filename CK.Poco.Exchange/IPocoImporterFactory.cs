@@ -9,7 +9,7 @@ namespace CK.Core
     public interface IPocoImporterFactory : ISingletonAutoService
     {
         /// <summary>
-        /// Gets the base protocol name that this factory handled.
+        /// Gets the base protocol name that this factory handles.
         /// See <see cref="PocoExtendedProtocolName.BaseName"/>.
         /// <para>
         /// This name doesn't identify a factory: more than one factory can

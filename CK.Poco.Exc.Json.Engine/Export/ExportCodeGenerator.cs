@@ -7,7 +7,7 @@ namespace CK.Setup.PocoJson
 {
     /// <summary>
     /// The code writer delegate is in charge of generating the write code into a <see cref="System.Text.Json.Utf8JsonWriter"/>
-    /// from a variable named "w" and a PocoJsonExportOptions variable named "options".
+    /// and a PocoJsonExportOptions variable named "options" from a variable named "w".
     /// </summary>
     /// <param name="writer">The code writer to uses.</param>
     /// <param name="variableName">The variable name to write.</param>

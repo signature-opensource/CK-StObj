@@ -5,7 +5,9 @@ using System.Linq;
 namespace CK.Core
 {
     /// <summary>
-    /// Simple registry of available <see cref="IPocoImporter"/> and <see cref="IPocoExporter"/>.
+    /// Simple registry of available <see cref="IPocoImporter"/> and <see cref="IPocoExporter"/>
+    /// and resolver of such importers/exporters thanks to available <see cref="IPocoImporterFactory"/>
+    /// and <see cref="IPocoImporterFactory"/>.
     /// </summary>
     public class PocoExchangeService : ISingletonAutoService
     {
@@ -57,7 +59,7 @@ namespace CK.Core
         /// </summary>
         /// <param name="protocolName">The protocol name.</param>
         /// <returns>The importer.</returns>
-        public IPocoImporter FindBasicImporter( string protocolName )
+        public IPocoImporter FindAvailableImporter( string protocolName )
         {
             var o = _importers.FirstOrDefault( i => i.ProtocolName == protocolName );
             if( o == null ) Throw.InvalidOperationException( $"Unable to find IPocoImporter with ProtocolName '{protocolName}'." );

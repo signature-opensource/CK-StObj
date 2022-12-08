@@ -1,7 +1,8 @@
 namespace CK.Core
 {
     /// <summary>
-    /// Standard Poco importer implementation identified by its <see cref="ProtocolName"/>.
+    /// Auto singleton service that implements an import protocol.
+    /// This is a <see cref="IPocoDeserializer"/> with a <see cref="ProtocolName"/>.
     /// </summary>
     [IsMultiple]
     public interface IPocoImporter : IPocoDeserializer, ISingletonAutoService

@@ -6,13 +6,15 @@ using static CK.Testing.StObjEngineTestHelper;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
 using FluentAssertions;
+using System.ComponentModel;
 
 namespace CK.Poco.Exc.Json.Tests.CrisLike
 {
     [ExternalName( "BatchCommand" )]
     public interface IBatchCommand : ICommand<ICrisResult[]>
     {
-        IList<ICommand> Commands { get; }
+        ICommand? First { get; set; }
+        IList<ICommand> OtherCommands { get; }
     }
 
     public record struct Person( string Name, int Power );
@@ -22,6 +24,13 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
     {
         ref Person Root { get; }
         Person[] Friends { get; set; }
+    }
+
+    [ExternalName( "SimpleCommand" )]
+    public interface ISimpleCommand : ICommand
+    {
+        [DefaultValue(42)]
+        int Power { get; set; }
     }
 
     public record struct Account( int AccountId, long Balance, List<Person> Members );
@@ -39,6 +48,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         public void commands_serialization()
         {
             var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ),
+                                                     typeof( ISimpleCommand ),
                                                      typeof( IPersonCommand ),
                                                      typeof( IAccountCommand ),
                                                      typeof( IBatchCommand ),
@@ -59,13 +69,15 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
             } );
             var batch = directory.Create<IBatchCommand>( c =>
             {
-                c.Commands.Add( person );
-                c.Commands.Add( account );
+                c.First = directory.Create<ISimpleCommand>();
+                c.OtherCommands.Add( person );
+                c.OtherCommands.Add( account );
             } );
 
             var result = @"
 {
-	""Commands"": [
+	""First"": [""SimpleCommand"", { ""Power"": 42 }],
+	""OtherCommands"": [
 		[""PersonCommand"", {
 			""Root"": {
 				""Name"": ""Albert"",

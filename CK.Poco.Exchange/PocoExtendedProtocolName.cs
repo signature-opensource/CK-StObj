@@ -8,7 +8,7 @@ namespace CK.Core
     /// Formalized extended protocol name: "BaseProtocolName[Options]".
     /// <para>
     /// Currently there is no inner model for Options but the idea is that it should be
-    /// a Json array with simple elements. 
+    /// a Json array with simple elements or a be like a connection string. 
     /// </para>
     /// </summary>
     public sealed class PocoExtendedProtocolName

@@ -4,8 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using CK.Core;
 using System.Diagnostics;
-using static System.Formats.Asn1.AsnWriter;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
@@ -14,8 +13,13 @@ namespace CK.Setup
     /// Generates the implementation of the <see cref="PocoDirectory"/> abstract real object
     /// and all the Poco final classes.
     /// </summary>
-    public class PocoDirectoryImpl : CSCodeGeneratorType
+    public sealed class PocoDirectoryImpl : CSCodeGeneratorType, ILockedPocoTypeSystem
     {
+        [AllowNull]
+        IPocoTypeSystem _typeSystem;
+        Action? _isLocked;
+        int _lastRegistrationCount;
+
         /// <summary>
         /// Generates the <paramref name="scope"/> that is the PocoDirectory_CK class and
         /// all the factories (<see cref="IPocoFactory"/> implementations) and the Poco class (<see cref="IPoco"/> implementations).
@@ -32,11 +36,22 @@ namespace CK.Setup
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
             IPocoDirectory pocoDirectory = c.Assembly.GetPocoDirectory();
-            IPocoTypeSystem pocoTypeSystem = c.Assembly.GetPocoTypeSystem();
+            _typeSystem = c.Assembly.GetPocoTypeSystem();
             Debug.Assert( pocoDirectory == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoDirectory ) ), "The IPocoDirectory is also available at the GeneratedBinPath." );
-            Debug.Assert( pocoTypeSystem == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
+            Debug.Assert( _typeSystem == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
 
-            ImplementPocoRequiredSupport( monitor, pocoTypeSystem, scope.Workspace );
+            // Adds this ILockedPocoTypeSystem to the DI container right now.
+            // Once [WaitFor] attribute is implemented, this should be done when locking the type system.
+            c.CurrentRun.ServiceContainer.Add<ILockedPocoTypeSystem>( this );
+            // Catches the current registration count.
+            _lastRegistrationCount = _typeSystem.AllTypes.Count;
+            monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );
+
+            // One can immediately generate the Poco related code: poco are registered
+            // during PocoTypeSystem initialization. Only other types (collection, records, etc.)
+            // can be registered later (this is typically the case of the ICommand<TResult> results).
+            // Those extra types don't impact the Poco code.
+            ImplementPocoRequiredSupport( monitor, _typeSystem, scope.Workspace );
 
             // PocoDirectory_CK class.
             scope.GeneratedByComment().NewLine()
@@ -102,7 +117,7 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
                 tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                var pocoType = pocoTypeSystem.GetPrimaryPocoType( family.PrimaryInterface.PocoInterface );
+                var pocoType = _typeSystem.GetPrimaryPocoType( family.PrimaryInterface.PocoInterface );
                 Debug.Assert( pocoType != null );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );
@@ -244,7 +259,7 @@ namespace CK.Setup
                        .NewLine();
                 }
             }
-            return CSCodeGenerationResult.Success;
+            return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
         }
 
         static void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem, ICodeWorkspace workspace )
@@ -455,6 +470,40 @@ public bool IsReadOnly => false;" ).NewLine();
                 t.Append( "IEnumerator<KeyValuePair<TKey, " ).Append( abstractTypeName ).Append( ">> IEnumerable<KeyValuePair<TKey," ).Append( abstractTypeName ).Append( ">>.GetEnumerator()" ).NewLine()
                  .Append( "=> ((IEnumerable<KeyValuePair<TKey, " ).Append( pocoClassName ).Append( ">>)this).Select( kv => KeyValuePair.Create( kv.Key, (" ).Append( abstractTypeName ).Append( ")kv.Value ) ).GetEnumerator();" ).NewLine();
             }
+        }
+
+
+        CSCodeGenerationResult CheckNoMoreRegisteredPocoTypes( IActivityMonitor monitor )
+        {
+            var newCount = _typeSystem.AllTypes.Count;
+            if( newCount != _lastRegistrationCount )
+            {
+                monitor.Trace( $"PocoTypeSystem has {newCount - _lastRegistrationCount} new types. Deferring Lock." );
+                _lastRegistrationCount = newCount;
+                return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
+            }
+            using( monitor.OpenInfo( $"PocoTypeSystem has no new types, code generation that requires all the Poco types to be known can start." ) )
+            {
+                _typeSystem.Lock( monitor );
+                try
+                {
+                    _isLocked?.Invoke();
+                }
+                catch( Exception ex )
+                {
+                    monitor.Error( "While raising ILockedPocoTypeSystem.IsLocked event.", ex );
+                    return CSCodeGenerationResult.Failed;
+                }
+            }
+            return CSCodeGenerationResult.Success;
+        }
+
+        IPocoTypeSystem ILockedPocoTypeSystem.TypeSystem => _typeSystem;
+
+        event Action ILockedPocoTypeSystem.IsLocked
+        {
+            add => _isLocked += value;
+            remove => _isLocked -= value;
         }
 
     }

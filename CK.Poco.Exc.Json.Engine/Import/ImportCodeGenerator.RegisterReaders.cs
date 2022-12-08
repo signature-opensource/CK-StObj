@@ -81,15 +81,11 @@ namespace CK.Setup.PocoJson
                 {
                     w.Append( v ).Append( "=(" ).Append( type.CSharpName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, options );" );
                 };
-
             }
 
             static CodeReader GetPocoReader( IPocoType type )
             {
-                return ( w, v ) =>
-                {
-                    w.Append( "((" ).Append( type.ImplTypeName ).Append(")").Append( v ).Append( ").ReadJson( ref r, options );" );
-                };
+                return ( w, v ) => w.Append( v ).Append( ".ReadJson( ref r, options );" );
             }
 
             static CodeReader GetBasicTypeCodeReader( IPocoType type )
@@ -221,10 +217,10 @@ namespace CK.Setup.PocoJson
             static CodeReader GetRecordCodeReader( IPocoType type )
             {
                 Debug.Assert( type.Kind == PocoTypeKind.Record || type.Kind == PocoTypeKind.AnonymousRecord );
-                return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.Read_" )
-                                              .Append( type.Index )
-                                              .Append( "(ref r,ref " )
-                                              .Append( v ).Append( ",options);" );
+                return ( w, v ) => w.Append( "CK.Poco.Exc.JsonGen.Importer.Read_" )
+                                    .Append( type.Index )
+                                    .Append( "(ref r,ref " )
+                                    .Append( v ).Append( ",options);" );
             }
 
         }

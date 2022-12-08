@@ -5,6 +5,8 @@ using System.Reflection;
 
 namespace CK.Setup
 {
+
+
     /// <summary>
     /// The Poco type system manages by default all the types reachable from IPoco
     /// objects. Further <see cref="IRecordPocoType"/> and <see cref="ICollectionPocoType"/> can
@@ -27,6 +29,18 @@ namespace CK.Setup
         /// Gets all the registered non nullable types.
         /// </summary>
         IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
+
+        /// <summary>
+        /// Locks this type system: no more registration can be done,
+        /// <see cref="SetNotExchangeable(IActivityMonitor, IPocoType)"/> cannot be called anymore.
+        /// </summary>
+        /// <param name="monitor"></param>
+        void Lock( IActivityMonitor monitor );
+
+        /// <summary>
+        /// Gets whether this type system has been locked.
+        /// </summary>
+        bool IsLocked { get; }
 
         /// <summary>
         /// Gets the set of types that must be generated to support this type system.

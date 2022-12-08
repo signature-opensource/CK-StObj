@@ -15,7 +15,8 @@ This common code generator then:
 - Waits for a stable set of registered PocoTypes: it is a "trampoline" that wait until no new types have 
   been registered into the [IPocoTypeSystem](../CK.StObj.Runtime/Poco/PocoTypeSystem/IPocoTypeSystem.cs) by other
   code generators
-- Builds the names that will be used for types (see [JsonTypeNameBuilder](JsonTypeNameBuilder.cs) and its base class).
+- Builds the names that will be used for types (thanks to the [ExchangeableTypeNameBuilder](../CK.Poco.Exchange.Engine/ExchangeableTypeNameBuilder.cs) 
+  in CK.Poco.Exchange.Engine).
 - Creates the `CK.Poco.Exc.JsonGen` namespace and the 2 purely generated static classes `Exporter` and `Importer` 
   in it that will implement the different methods.
 - Delegates the actual code generation to the [ExportCodeGenerator](Export/README.md) and [ImportCodeGenerator](Import/README.md).

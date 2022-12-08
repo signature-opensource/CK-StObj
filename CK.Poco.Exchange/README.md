@@ -22,8 +22,8 @@ public interface IPocoDeserializer
 }
 ```
 **Key points:**
-- Synchronous and asynchronous implementations must be provided even if the async is actually a "fake" async on sync implementation 
-  (the other way around, sync on async, is not a good idea).
+- Synchronous and asynchronous implementations must be provided even if the async is a "fake" async on sync implementation 
+  (recall that the other way around, sync on async, is not a good idea).
 - A null Poco can always be read or written: `null` is a valid data. If it has to be considered invalid, this is up to the callers 
   to handle this.
 
@@ -32,13 +32,13 @@ Extending these 2 interfaces, importers and exporters are singleton (multiple) a
 
 ```csharp
 [IsMultiple]
-public interface IPocoExporter : IPocoExporter, ISingletonAutoService
+public interface IPocoExporter : IPocoSerializer, ISingletonAutoService
 {
    string ProtocolName { get; }
 }
 
 [IsMultiple]
-public interface IPocoImporter : IPocoImporter, ISingletonAutoService
+public interface IPocoImporter : IPocoDeserializer, ISingletonAutoService
 {
    string ProtocolName { get; }
 }
@@ -51,7 +51,7 @@ implemented by the same class.
 - `ProtocolName` typically denotes a "ContentType" (IANA media types) but may denote a more complex protocol.
 - There is no Options nor Context of any kind: the `ProtocolName` fully describes what and how things are serialized and deserialized.
 
-Forcing these implementations to be singletons somehow extends the idea of the "There is No Options": imports
+Forcing these implementations to be singletons somehow extends the idea that "There is No Options": imports
 and exports should always be as contextless as possible.
 
 The [`PocoExchangeService`](PocoExchangeService.cs) collects the available importers/exporters that can be resolved by
@@ -59,7 +59,7 @@ their `ProtocolName`.
 
 ## Contextual Importers and Exporters: the Factories.
 
-Nothing prevents contextual serializes/deserializers to be implemented that more complex protocols. Specific
+Nothing prevents contextual serializes/deserializers to be implemented with more complex protocols. Specific
 stores of serializes/deserializers are bound to the target/receiver "Party" of the exchanged data, for instance: 
 - A protocol that supports a kind of Dictionary-based compression.
 - A protocol that can benefit or requires the knowledge of the model of the IPoco types before deserializing (optimized binary 
@@ -100,13 +100,13 @@ This package offers more extension methods (helpers) to ease the use of the API 
 a `string`, etc., but these 3 methods are the core of the Exchange specification.
 
 This enables a lot of optimizations and versatility since any kind of parameters can be used.
-For instance the CK.Poco.Exc.Json above is basically synchronous, no Read/WriteAsync are supported (because this
-is not easy to support), but it CAN always be done.
+For instance the CK.Poco.Exc.Json above is basically synchronous, no Read/WriteAsync are supported (just because
+this is not easy to support), but it CAN always be done.
 
 The second step is to implement one or more one `IPocoImporter` and `IPocoExporter` that are basically
 adapters from `Stream` to whatever is needed to serialize/deserialize the IPoco types.
 Their `ProtocolName` embeds/defines/summarizes/describes the "options" used to serialize/deserialize: a package can
-expose multiple `IPocoImporter` and `IPocoExporter` that define for each protocol name the options that will be used.
+expose multiple `IPocoImporter` and `IPocoExporter` that embed for each protocol name the options that will be used.
 
 
 

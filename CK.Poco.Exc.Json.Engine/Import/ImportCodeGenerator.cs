@@ -10,8 +10,8 @@ using static CK.Core.PocoJsonExportSupport;
 namespace CK.Setup.PocoJson
 {
     /// <summary>
-    /// The code reader delegate is in charge of generating the write code from a <see cref="System.Text.Json.Utf8JsonReader"/>
-    /// variable named "r" into a "ref variable" and a PocoJsonImportOptions variable named "options".
+    /// The code reader delegate is in charge of generating the read code from a <see cref="System.Text.Json.Utf8JsonReader"/>
+    /// variable named "r" and a PocoJsonImportOptions variable named "options" into a "variableName".
     /// </summary>
     /// <param name="write">The code writer to uses.</param>
     /// <param name="variableName">The variable name to read.</param>
