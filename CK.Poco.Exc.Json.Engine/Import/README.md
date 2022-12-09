@@ -97,7 +97,7 @@ internal static T[] ReadArray<T>( ref Utf8JsonReader r, TypedReader<T> itemReade
 ```
 And all Lists or Sets are filled by the common `FillListOrSet` helper:
 ```csharp
-internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static void FillListOrSet<T>( ref Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, PocoJsonImportOptions options )
 {
     r.Read();
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )

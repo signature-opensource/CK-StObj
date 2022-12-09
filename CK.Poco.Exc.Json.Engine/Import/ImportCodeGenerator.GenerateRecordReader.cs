@@ -12,7 +12,7 @@ namespace CK.Setup.PocoJson
                         .Append( r.Index )
                         .Append( "(ref System.Text.Json.Utf8JsonReader r,ref " )
                         .Append( r.ImplTypeName )
-                        .Append( " v,CK.Poco.Exc.Json.Import.PocoJsonImportOptions options)" )
+                        .Append( " v,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                         .OpenBlock()
                         .GeneratedByComment().NewLine();
             if( r.IsAnonymous )
@@ -30,7 +30,7 @@ namespace CK.Setup.PocoJson
             {
                 writer.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) r.ThrowJsonException( \"Expecting '[' to start anonymous record '" )
                       .Append( type.CSharpName ).Append( "'.\" );" ).NewLine()
-                      .Append( "r.Read();" ).NewLine();
+                      .Append( "if( !r.Read() ) rCtx.NeedMoreData( ref r );" ).NewLine();
                 foreach( var f in type.Fields )
                 {
                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
@@ -45,11 +45,11 @@ namespace CK.Setup.PocoJson
             {
                 writer.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( \"Expecting '{' to start named record '" )
                       .Append( type.CSharpName ).Append( @"'."" );
-r.Read();
+if( !r.Read() ) rCtx.NeedMoreData( ref r );
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 {
     var n = r.GetString();
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     switch( n )
     {
 " );
@@ -75,15 +75,15 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
             var t = r.TokenType; 
             if( t == System.Text.Json.JsonTokenType.StartObject || t == System.Text.Json.JsonTokenType.StartArray )
             {
-                r.Skip();
+                if( !r.TrySkip() ) rCtx.NeedMoreData( ref r, true );
             }
-            r.Read();
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
             break;
         }
     }
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) r.ThrowJsonException( ""Expecting '}' to end a Poco."" );
-r.Read();" );
+if( !r.Read() ) rCtx.NeedMoreData( ref r );" );
             }
         }
     }

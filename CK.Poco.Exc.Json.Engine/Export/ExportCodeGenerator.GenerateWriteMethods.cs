@@ -47,7 +47,7 @@ namespace CK.Setup.PocoJson
                     .Append( type.Index )
                     .Append( "(System.Text.Json.Utf8JsonWriter w," );
                 if( type.Type.IsValueType ) code.Append( "ref " );
-                code.Append( type.ImplTypeName ).Append( " v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )" );
+                code.Append( type.ImplTypeName ).Append( " v, CK.Poco.Exc.Json.PocoJsonExportOptions options )" );
             }
 
             void GenerateDictionaryWriteMethod( ITypeScope code, ICollectionPocoType type )
@@ -168,7 +168,7 @@ namespace CK.Setup.PocoJson
 
                 // The Write method.
                 // The write part will be filled with the properties (name and writer code).
-                pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, bool withType, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )" )
+                pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, bool withType, CK.Poco.Exc.Json.PocoJsonExportOptions options )" )
                          .OpenBlock()
                          .GeneratedByComment().NewLine()
                          .Append( "if( withType )" )
@@ -183,11 +183,11 @@ namespace CK.Setup.PocoJson
                          .CloseBlock()
                          .CloseBlock();
 
-                pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )" )
+                pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonExportOptions options )" )
                          .OpenBlock()
                          .GeneratedByComment().NewLine()
                          .Append( "w.WriteStartObject();" ).NewLine()
-                         .Append( "options ??= CK.Poco.Exc.Json.Export.PocoJsonExportOptions.Default;" ).NewLine()
+                         .Append( "options ??= CK.Poco.Exc.Json.PocoJsonExportOptions.Default;" ).NewLine()
                          .Append( writer =>
                          {
                              foreach( var f in type.Fields )
@@ -211,7 +211,7 @@ namespace CK.Setup.PocoJson
                         .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
                         .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
                         .OpenBlock()
-                        .Append( "WriteJson( w, CK.Poco.Exc.Json.Export.PocoJsonExportOptions.ToStringDefault );" ).NewLine()
+                        .Append( "WriteJson( w, CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault );" ).NewLine()
                         .Append( "w.Flush();" ).NewLine()
                         .CloseBlock()
                         .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );

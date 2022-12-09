@@ -1,5 +1,5 @@
 using CK.Core;
-using CK.Poco.Exc.Json.Export;
+using CK.Poco.Exc.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;

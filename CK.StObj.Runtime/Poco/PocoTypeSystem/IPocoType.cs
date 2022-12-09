@@ -12,7 +12,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Compact index that uniquely identifies this type
-        /// in the <see cref="PocoTypeSystem.AllTypes"/> list.
+        /// in the <see cref="IPocoTypeSystem.AllTypes"/> list.
         /// </summary>
         int Index { get; }
 
@@ -20,7 +20,7 @@ namespace CK.Setup
         /// Gets the Type. When this is a value type and <see cref="IsNullable"/> is true,
         /// this is a <see cref="Nullable{T}"/>.
         /// <para>
-        /// This is the <see cref="IDynamicAssembly.PurelyGeneratedType"/> marker type if <see cref="IsGeneratedType"/> is true.
+        /// This is the <see cref="IDynamicAssembly.PurelyGeneratedType"/> marker type if <see cref="IsPurelyGeneratedType"/> is true.
         /// </para>
         /// </summary>
         Type Type { get; }
@@ -148,7 +148,7 @@ namespace CK.Setup
             ///         For collections, this is the index in the <see cref="ICollectionPocoType.ItemTypes"/>.
             ///     </item>
             ///     <item>
-            ///         For union types, this is the index in the <see cref="IOneOfPocoType{T}.AllowedTypes"/>.
+            ///         For union types, this is the index in the <see cref="IOneOfPocoType.AllowedTypes"/>.
             ///     </item>
             /// </list>
             /// </summary>
@@ -161,12 +161,8 @@ namespace CK.Setup
         bool IsExchangeable { get; }
 
         /// <summary>
-        /// Gets the head of a linked list of the <see cref="IPocoField"/>, <see cref="ICollectionPocoType.IPocoTypeGenericArgument"/>
-        /// or <see cref="IOneOfPocoType{T}.AllowedTypes"/> that directly reference this type.
-        /// <para>
-        /// Nullability is erased, for types, only the non nullable form appears here (for fields, the <see cref="IPocoField.Type"/>
-        /// may of course be nullable).
-        /// </para>
+        /// Gets the head of a linked list of the <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/>
+        /// or <see cref="IOneOfPocoType.AllowedTypes"/> that directly reference this type.
         /// </summary>
         ITypeRef? FirstBackReference { get; }
 

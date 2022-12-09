@@ -77,7 +77,7 @@ namespace CK.Setup
         /// Tries to register a type.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="p">The <see cref="IExtMemberInfo"/> whose <see cref="IExtMemberInfo.Type"/> must be registered.</param>
+        /// <param name="memberInfo">The <see cref="IExtMemberInfo"/> whose <see cref="IExtMemberInfo.Type"/> must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
         IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo );
 

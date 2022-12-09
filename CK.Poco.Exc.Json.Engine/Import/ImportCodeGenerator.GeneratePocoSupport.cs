@@ -18,17 +18,17 @@ namespace CK.Setup.PocoJson
             pocoClass.GeneratedByComment()
                      .Append( "public " )
                      .Append( pocoClass.Name )
-                     .Append( "(ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options ):this()=>" )
-                     .Append( "ReadJson(ref r,options);" )
+                     .Append( "(ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx ):this()=>" )
+                     .Append( "ReadJson(ref r,rCtx);" )
                      .NewLine();
 
-            pocoClass.Append( "public void ReadJson(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.Import.PocoJsonImportOptions options)" )
+            pocoClass.Append( "public void ReadJson(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                      .OpenBlock()
                      .Append( @"
 bool isDef = r.TokenType == System.Text.Json.JsonTokenType.StartArray;
 if( isDef )
 {
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     string name = r.GetString();
     if( name != " ).AppendSourceString( type.ExternalOrCSharpName );
             if( type.ExternalName != null && type.ExternalName.PreviousNames.Count > 0 )
@@ -39,15 +39,15 @@ if( isDef )
     {
         r.ThrowJsonException( ""Expected '""+ " ).AppendSourceString( type.ExternalOrCSharpName ).Append( @" + $""' Poco type, but found '{name}'."" );
     }
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( ""Expecting '{' to start Poco '" )
         .Append( type.ExternalOrCSharpName ).Append( @"'."" );
-r.Read();
+if( !r.Read() ) rCtx.NeedMoreData( ref r );
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 {
     var n = r.GetString();
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     switch( n )
     {
 " ).NewLine();
@@ -74,19 +74,19 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
             var t = r.TokenType; 
             if( t == System.Text.Json.JsonTokenType.StartObject || t == System.Text.Json.JsonTokenType.StartArray )
             {
-                r.Skip();
+                if( !r.TrySkip() ) rCtx.NeedMoreData( ref r );
             }
-            r.Read();
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
             break;
         }
     }
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) r.ThrowJsonException( ""Expecting '}' to end a Poco."" );
-r.Read();
+if( !r.Read() ) rCtx.NeedMoreData( ref r );
 if( isDef )
 {
     if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) r.ThrowJsonException( ""Expecting ']' to end a Poco array."" );
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
 }
 " ).CloseBlock();
 
@@ -98,13 +98,13 @@ if( isDef )
                     var readerName = $"PocoJsonImportSupport.IFactoryReader<{i.CSharpName}>";
 
                     factory.Definition.BaseTypes.Add( new ExtendedTypeName( readerName ) );
-                    factory.Append( i.CSharpName ).Space().Append( readerName ).Append( ".Read( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )" ).NewLine()
+                    factory.Append( i.CSharpName ).Space().Append( readerName ).Append( ".Read( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )" ).NewLine()
                             .Append( " => r.TokenType == System.Text.Json.JsonTokenType.Null ? null : new " )
-                            .Append( pocoTypeName ).Append( "( ref r, options );" ).NewLine();
+                            .Append( pocoTypeName ).Append( "( ref r, rCtx );" ).NewLine();
 
                 }
-                factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options ) => new " )
-                    .Append( pocoTypeName ).Append( "( ref r, options );" ).NewLine();
+                factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx ) => new " )
+                    .Append( pocoTypeName ).Append( "( ref r, rCtx );" ).NewLine();
             }
         }
 

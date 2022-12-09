@@ -8,7 +8,7 @@ namespace CK.Setup
     /// when no new types are registered after a generation step, <see cref="IsLocked"/>
     /// event is raised.
     /// <para>
-    /// We must give a chance to other generators to register new types (typically the result of Cris ICommand<TResult>).
+    /// We must give a chance to other generators to register new types (typically the result of Cris ICommand&lt;TResult&gt;).
     /// We have to wait for all the PocoType to be registered, but how do we know that other generators are done with all
     /// their required registrations?
     /// Instead of doing one hop on the trampoline and prey that no one will need more, we continue hopping until no

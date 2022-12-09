@@ -82,41 +82,43 @@ namespace CK.Setup
             foreach( var t in typeSystem.AllNonNullableTypes )
             {
                 ref var n = ref _result[t.Index >> 1];
-                if( n.IsInitialized ) continue;
-                if( t is ICollectionPocoType c )
+                if( !n.IsInitialized )
                 {
-                    n = MakeCollectionName( monitor, c );
-                }
-                else
-                {
-                    switch( t.Kind )
+                    if( t is ICollectionPocoType c )
                     {
-                        case PocoTypeKind.Record:
-                            n = MakeRecordName( monitor, (IRecordPocoType)t, GetFieldTypeName );
-                            break;
-                        case PocoTypeKind.AnonymousRecord:
-                            n = MakeAnonymousRecordName( monitor, (IRecordPocoType)t, GetFieldTypeName );
-                            break;
-                        case PocoTypeKind.Enum:
-                            n = MakeEnumName( monitor, (IEnumPocoType)t );
-                            break;
-                        case PocoTypeKind.Basic:
-                            n = MakeBasicName( monitor, t );
-                            break;
-                        case PocoTypeKind.IPoco:
-                            n = MakePrimaryPocoName( monitor, (IPrimaryPocoType)t );
-                            break;
-                        case PocoTypeKind.AbstractIPoco:
-                            n = MakeAbstractPocoName( monitor, (IAbstractPocoType)t );
-                            break;
-                        case PocoTypeKind.UnionType:
-                            n = MakeUnionTypeName( monitor, (IUnionPocoType)t, GetTypeName );
-                            break;
-                        default: Throw.NotSupportedException( t.ToString() ); break;
+                        n = MakeCollectionName( monitor, c );
                     }
-                    if( !n.IsInitialized || !n.IsExchangeable )
+                    else
                     {
-                        Throw.InvalidOperationException( $"Invalid name made for '{t}'." );
+                        switch( t.Kind )
+                        {
+                            case PocoTypeKind.Record:
+                                n = MakeRecordName( monitor, (IRecordPocoType)t, GetFieldTypeName );
+                                break;
+                            case PocoTypeKind.AnonymousRecord:
+                                n = MakeAnonymousRecordName( monitor, (IRecordPocoType)t, GetFieldTypeName );
+                                break;
+                            case PocoTypeKind.Enum:
+                                n = MakeEnumName( monitor, (IEnumPocoType)t );
+                                break;
+                            case PocoTypeKind.Basic:
+                                n = MakeBasicName( monitor, t );
+                                break;
+                            case PocoTypeKind.IPoco:
+                                n = MakePrimaryPocoName( monitor, (IPrimaryPocoType)t );
+                                break;
+                            case PocoTypeKind.AbstractIPoco:
+                                n = MakeAbstractPocoName( monitor, (IAbstractPocoType)t );
+                                break;
+                            case PocoTypeKind.UnionType:
+                                n = MakeUnionTypeName( monitor, (IUnionPocoType)t, GetTypeName );
+                                break;
+                            default: Throw.NotSupportedException( t.ToString() ); break;
+                        }
+                        if( !n.IsInitialized || !n.IsExchangeable )
+                        {
+                            Throw.InvalidOperationException( $"Invalid name made for '{t}'." );
+                        }
                     }
                 }
             }
@@ -235,9 +237,11 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Routes the call to <see cref="MakeArrayName(IPocoType, in FullExchangeableTypeName)"/>, <see cref="MakeListName(IPocoType, in FullExchangeableTypeName)"/>,
-        /// <see cref="MakeSetName(IPocoType, in FullExchangeableTypeName)"/>, <see cref="MakeDynamicObject(IPocoType, in FullExchangeableTypeName)"/> or
-        /// <see cref="MakeMap(IPocoType, in ExchangeableTypeName, IPocoType, in FullExchangeableTypeName)"/>.
+        /// Routes the call to <see cref="MakeArrayName(ICollectionPocoType, IPocoType, in FullExchangeableTypeName)"/>,
+        /// <see cref="MakeListName(ICollectionPocoType, IPocoType, in FullExchangeableTypeName)"/>,
+        /// <see cref="MakeSetName(ICollectionPocoType, IPocoType, in FullExchangeableTypeName)"/>,
+        /// <see cref="MakeDynamicObject(ICollectionPocoType, IPocoType, in FullExchangeableTypeName)"/> or
+        /// <see cref="MakeMap(ICollectionPocoType, IPocoType, in ExchangeableTypeName, IPocoType, in FullExchangeableTypeName)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="collection">The collection type.</param>

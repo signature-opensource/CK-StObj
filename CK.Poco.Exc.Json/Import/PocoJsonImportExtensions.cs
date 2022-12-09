@@ -1,13 +1,10 @@
-using CK.Poco.Exc.Json.Export;
-using CK.Poco.Exc.Json.Import;
+using CK.Poco.Exc.Json;
+using Microsoft.IO;
 using System;
-using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace CK.Core
 {
@@ -29,7 +26,7 @@ namespace CK.Core
         public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null ) where T : class, IPoco
         {
             var r = new Utf8JsonReader( utf8Json );
-            return @this.ReadJson( ref r, options );
+            return @this.ReadJson( ref r, new PocoJsonReadContext( options ) );
         }
 
         /// <summary>
@@ -61,9 +58,8 @@ namespace CK.Core
         public static IPoco? JsonDeserialize( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null )
         {
             var r = new Utf8JsonReader( utf8Json );
-            return @this.ReadJson( ref r, options );
+            return @this.ReadJson( ref r, new PocoJsonReadContext( options ) );
         }
-
 
         /// <summary>
         /// Reads a <see cref="IPoco"/> (that can be null) from a JSON string.
@@ -76,6 +72,26 @@ namespace CK.Core
         public static IPoco? JsonDeserialize( this PocoDirectory @this, string s, PocoJsonImportOptions? options = null )
         {
             return JsonDeserialize( @this, Encoding.UTF8.GetBytes( s ).AsSpan(), options );
+        }
+
+        /// <summary>
+        /// Reads a <see cref="IPoco"/> (that can be null) from a utf8 encoded stream.
+        /// The Poco must have been written with its type.
+        /// </summary>
+        /// <param name="this">This directory.</param>
+        /// <param name="utf8JsonStream">The stream to deserialize from.</param>
+        /// <param name="options">Optional import options.</param>
+        /// <returns>The Poco (can be null).</returns>
+        public static IPoco? JsonDeserialize( this PocoDirectory @this, Stream utf8JsonStream, PocoJsonImportOptions? options = null )
+        {
+            if( utf8JsonStream is RecyclableMemoryStream r )
+            {
+                var rSeq = new Utf8JsonReader( r.GetReadOnlySequence(), PocoJsonImportOptions.Default.ReaderOptions );
+                return @this.ReadJson( ref rSeq, new PocoJsonReadContext( options) );
+            }
+            options ??= PocoJsonImportOptions.Default;
+            var context = new PocoJsonReadContext( options, Utf8JsonStreamReader.Create( utf8JsonStream, options.ReaderOptions, out var reader ) );
+            return @this.ReadJson( ref reader, context );
         }
 
         /// <summary>

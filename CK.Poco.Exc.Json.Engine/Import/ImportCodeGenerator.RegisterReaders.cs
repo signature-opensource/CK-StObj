@@ -3,7 +3,6 @@ using CK.Core;
 using System.Numerics;
 using System;
 using System.Diagnostics;
-using static CK.Core.PocoJsonExportSupport;
 using System.Collections.Generic;
 
 namespace CK.Setup.PocoJson
@@ -37,7 +36,7 @@ namespace CK.Setup.PocoJson
                         {
                             var tA = (ICollectionPocoType)type;
                             _readers[type.Index >> 1] = tA.ItemTypes[0].Type == typeof( byte )
-                                                            ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();r.Read();" )
+                                                            ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.NeedMoreData(ref r);" )
                                                             : GetArrayCodeReader( tA );
                             break;
                         }
@@ -72,104 +71,104 @@ namespace CK.Setup.PocoJson
 
             static void ObjectReader( ICodeWriter writer, string variableName )
             {
-                writer.Append( variableName ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, options );" );
+                writer.Append( variableName ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
             }
 
             static CodeReader GetAbstractPocoReader( IPocoType type )
             {
                 return ( w, v ) =>
                 {
-                    w.Append( v ).Append( "=(" ).Append( type.CSharpName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, options );" );
+                    w.Append( v ).Append( "=(" ).Append( type.CSharpName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
                 };
             }
 
             static CodeReader GetPocoReader( IPocoType type )
             {
-                return ( w, v ) => w.Append( v ).Append( ".ReadJson( ref r, options );" );
+                return ( w, v ) => w.Append( v ).Append( ".ReadJson( ref r, rCtx );" );
             }
 
             static CodeReader GetBasicTypeCodeReader( IPocoType type )
             {
                 if( type.Type == typeof(int) )
                 {
-                    return (w,v) => w.Append( v ).Append( "=r.GetInt32();r.Read();" );
+                    return (w,v) => w.Append( v ).Append( "=r.GetInt32();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( bool ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetBoolean();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetBoolean();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( string ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetString();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetString();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( double ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetDouble();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetDouble();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( float ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetSingle();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetSingle();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( byte ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetByte();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetByte();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( sbyte ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetSByte();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetSByte();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( DateTime ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTime();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTime();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( DateTimeOffset ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTimeOffset();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTimeOffset();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( TimeSpan ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64()); r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64()); if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( short ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetInt16();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetInt16();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( ushort ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt16();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt16();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( BigInteger ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=System.Numerics.BigInteger.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo );r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=System.Numerics.BigInteger.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo );if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( long ) )
                 {
                     // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                     // WHY is the Utf8JsonReader has a perfect GetInt64WithQuotes() that is internal?
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
-                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( ulong ) )
                 {
                     // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                     // WHY is the Utf8JsonReader has a perfect GetUInt64WithQuotes() that is internal?
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
-                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?UInt64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetUInt64();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?UInt64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetUInt64();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( Guid ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetGuid();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetGuid();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( uint ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt32();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt32();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 if( type.Type == typeof( decimal ) )
                 {
                     // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                     // WHY is the Utf8JsonReader has a perfect  GetUInt64WithQuotes() that is internal?
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
-                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Decimal.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo ):r.GetDecimal();r.Read();" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Decimal.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo ):r.GetDecimal();if(!r.Read())rCtx.NeedMoreData(ref r);" );
                 }
                 return Throw.NotSupportedException<CodeReader>();
             }
@@ -179,7 +178,7 @@ namespace CK.Setup.PocoJson
                 var readerFunction = GetReadFunctionName( type.ItemTypes[0] );
                 return ( writer, v ) => writer.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadArray(ref r," )
                                               .Append( readerFunction )
-                                              .Append( ",options);" );
+                                              .Append( ",rCtx);" );
             }
 
             CodeReader GetListOrSetCodeReader( ICollectionPocoType type )
@@ -189,7 +188,7 @@ namespace CK.Setup.PocoJson
                                               .Append( v )
                                               .Append( "," )
                                               .Append( readerFunction )
-                                              .Append( ",options);" );
+                                              .Append( ",rCtx);" );
             }
 
             CodeReader GetDictionaryCodeReader( ICollectionPocoType type )
@@ -202,7 +201,7 @@ namespace CK.Setup.PocoJson
                                                   .Append( v )
                                                   .Append( "," )
                                                   .Append( valueFunction )
-                                                  .Append( ",options);" );
+                                                  .Append( ",rCtx);" );
                 }
                 var keyFunction = GetReadFunctionName( type.ItemTypes[0] );
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillDictionary(ref r," )
@@ -211,7 +210,7 @@ namespace CK.Setup.PocoJson
                                               .Append( keyFunction )
                                               .Append( "," )
                                               .Append( valueFunction )
-                                              .Append( ",options);" );
+                                              .Append( ",rCtx);" );
             }
 
             static CodeReader GetRecordCodeReader( IPocoType type )
@@ -220,7 +219,7 @@ namespace CK.Setup.PocoJson
                 return ( w, v ) => w.Append( "CK.Poco.Exc.JsonGen.Importer.Read_" )
                                     .Append( type.Index )
                                     .Append( "(ref r,ref " )
-                                    .Append( v ).Append( ",options);" );
+                                    .Append( v ).Append( ",rCtx);" );
             }
 
         }

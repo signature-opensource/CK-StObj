@@ -10,8 +10,8 @@ using static CK.Core.PocoJsonExportSupport;
 namespace CK.Setup.PocoJson
 {
     /// <summary>
-    /// The code reader delegate is in charge of generating the read code from a <see cref="System.Text.Json.Utf8JsonReader"/>
-    /// variable named "r" and a PocoJsonImportOptions variable named "options" into a "variableName".
+    /// The code reader delegate is in charge of generating the read code from a <see cref="Utf8JsonReader"/>
+    /// variable named "r" and a PocoJsonReadContext variable named "rCtx" into a "variableName".
     /// </summary>
     /// <param name="write">The code writer to uses.</param>
     /// <param name="variableName">The variable name to read.</param>
@@ -30,71 +30,71 @@ namespace CK.Setup.PocoJson
         {
             _importerType = importerType;
             importerType.Append( @"
-internal delegate T TypedReader<T>( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options );
+internal delegate T TypedReader<T>( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx );
 
-internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
-        c.Add( itemReader( ref r, options ) );
+        c.Add( itemReader( ref r, rCtx ) );
     }
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
 }
 
-internal static void FillDictionary<TKey,TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<TKey,TValue> c, TypedReader<TKey> kR, TypedReader<TValue> vR, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static void FillDictionary<TKey,TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<TKey,TValue> c, TypedReader<TKey> kR, TypedReader<TValue> vR, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
-        r.Read(); // [
-        c.Add( kR( ref r, options ), vR( ref r, options ) );
-        r.Read(); // ]
+        if( !r.Read() ) rCtx.NeedMoreData( ref r ); // [
+        c.Add( kR( ref r, rCtx ), vR( ref r, rCtx ) );
+        if( !r.Read() ) rCtx.NeedMoreData( ref r );  // ]
     }
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
 }
 
-internal static void FillDynamicObject<TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<string, TValue> c, TypedReader<TValue> vR, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static void FillDynamicObject<TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<string, TValue> c, TypedReader<TValue> vR, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
     if( r.TokenType == System.Text.Json.JsonTokenType.StartArray )
     {
-        r.Read();
+        if( !r.Read() ) rCtx.NeedMoreData( ref r );
         while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
         {
-            r.Read();
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
             var k = r.GetString();
-            r.Read();
-            c.Add( k, vR( ref r, options ) );
-            r.Read();
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            c.Add( k, vR( ref r, rCtx ) );
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
         }
     }
     else
     {
         if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( $""Expecting '{{' or '[' to start a map of string to '{typeof(TValue).ToCSharpName()}'."" );
-        r.Read();
+        if( !r.Read() ) rCtx.NeedMoreData( ref r );
         while( r.TokenType != System.Text.Json.JsonTokenType.EndObject )
         {
             var k = r.GetString();
-            r.Read();
-            c.Add( k, vR( ref r, options ) );
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            c.Add( k, vR( ref r, rCtx ) );
         }
     }
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
 }
 
-internal static T[] ReadArray<T>( ref System.Text.Json.Utf8JsonReader r, TypedReader<T> itemReader, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static T[] ReadArray<T>( ref System.Text.Json.Utf8JsonReader r, TypedReader<T> itemReader, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
     var c = new List<T>();
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
-        c.Add( itemReader( ref r, options ) );
+        c.Add( itemReader( ref r, rCtx ) );
     }
-    r.Read();
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     return c.ToArray();
 }
 
-delegate object ObjectReader( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options );
+delegate object ObjectReader( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx );
 static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<string, ObjectReader>();
 
 " ).Append( "#region Read functions." ).NewLine()
@@ -121,7 +121,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                 var tActual = t.Type.IsValueType ? t : t.Nullable;
                 Debug.Assert( tFunc.ImplTypeName == t.ImplTypeName && tActual.ImplTypeName == t.ImplTypeName );
                 _readerFunctionsPart.Append( "internal static " ).Append( t.ImplTypeName ).Append( " FRead_" ).Append( tFunc.Index )
-                                    .Append( "(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.Import.PocoJsonImportOptions options)" )
+                                    .Append( "(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                                     .OpenBlock();
 
                 _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
@@ -141,7 +141,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                 writer.Append( "if(r.TokenType==System.Text.Json.JsonTokenType.Null)" )
                         .OpenBlock()
                         .Append( variableName ).Append( "=default;" ).NewLine()
-                        .Append( "r.Read();" )
+                        .Append( "if(!r.Read()) rCtx.NeedMoreData(ref r);" )
                         .CloseBlock()
                         .Append( "else" )
                         .OpenBlock();

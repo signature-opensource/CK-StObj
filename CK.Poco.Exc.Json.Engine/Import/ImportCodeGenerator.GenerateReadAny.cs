@@ -1,6 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
-using CK.Poco.Exc.Json.Import;
+using CK.Poco.Exc.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -37,8 +37,8 @@ namespace CK.Setup.PocoJson
                 {
                     ctor.OpenBlock()
                         .Append( "// Type: " ).Append( t.ImplTypeName ).NewLine()
-                        .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.Import.PocoJsonImportOptions options)" )
-                        .Append( "=>" ).Append( readFunction ).Append( "(ref r, options);" ).NewLine()
+                        .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
+                        .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
                         .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" )
                         .CloseBlock();
                     // Handle also the nullable value types.
@@ -47,8 +47,8 @@ namespace CK.Setup.PocoJson
                     readFunction = GetReadFunctionName( tNull );
                     ctor.OpenBlock()
                         .Append( "// Type: " ).Append( tNull.ImplTypeName ).NewLine()
-                        .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.Import.PocoJsonImportOptions options)" )
-                        .Append( "=>" ).Append( readFunction ).Append( "(ref r, options);" ).NewLine()
+                        .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
+                        .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
                         .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" )
                         .CloseBlock();
                 }
@@ -63,7 +63,7 @@ namespace CK.Setup.PocoJson
 static internal readonly object oFalse = false;
 static internal readonly object oTrue = true;
 
-internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.Import.PocoJsonImportOptions options )
+internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
     object o;
     switch( r.TokenType )
@@ -78,9 +78,9 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
         default:
         {
             if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) r.ThrowJsonException( ""Expected 2-cells array."" );
-            r.Read(); // [
+            if( !r.Read() ) rCtx.NeedMoreData( ref r ); // [
             var n = r.GetString();
-            r.Read();
+            if( !r.Read() ) rCtx.NeedMoreData( ref r );
             if( !_anyReaders.TryGetValue( n, out var reader ) )
             {
                 r.ThrowJsonException( $""Unregistered type name '{n}'."" );
@@ -88,17 +88,17 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
             if( r.TokenType == System.Text.Json.JsonTokenType.Null )
             {
                 o = null;
-                r.Read();
+                if( !r.Read() ) rCtx.NeedMoreData( ref r );
             }
             else
             {
-                o = reader( ref r, options );
+                o = reader( ref r, rCtx );
             }
             if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) r.ThrowJsonException( ""Expected end of 2-cells array."" );
             break;
         }
     }
-    r.Read(); 
+    if( !r.Read() ) rCtx.NeedMoreData( ref r );
     return o;
 }
 " );

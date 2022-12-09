@@ -1,15 +1,14 @@
-using CK.Poco.Exc.Json.Export;
+using CK.Poco.Exc.Json;
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace CK.Core
 {
+    /// <summary>
+    /// Provides read from Json extension methods.
+    /// </summary>
     public static class PocoJsonExportExtensions
     {
         /// <summary>

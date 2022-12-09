@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 
-namespace CK.Poco.Exc.Json.Export
+namespace CK.Poco.Exc.Json
 {
     /// <summary>
     /// Describes immutable dynamic serialization options.

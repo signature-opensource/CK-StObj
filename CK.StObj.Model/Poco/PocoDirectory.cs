@@ -29,7 +29,7 @@ namespace CK.Core
         /// <summary>
         /// Gets a typed factory from a IPoco interface.
         /// </summary>
-        /// <param name="pocoInterface">The Poco interface.</param>
+        /// <typeparam name="T">The IPoco interface type.</typeparam>
         /// <returns>The factory or null if not found.</returns>
         public IPocoFactory<T>? Find<T>() where T : class, IPoco => (IPocoFactory<T>?)Find( typeof( T ) );
 

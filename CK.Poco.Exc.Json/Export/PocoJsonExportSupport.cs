@@ -1,11 +1,6 @@
-using CK.Core;
-using CK.Poco.Exc.Json.Export;
+using CK.Poco.Exc.Json;
 using CK.Setup;
-using System;
-using System.Buffers;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using System.Xml.Schema;
 
 namespace CK.Core
 {

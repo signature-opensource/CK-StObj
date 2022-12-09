@@ -13,7 +13,7 @@ namespace CK.Setup.PocoJson
             _exporterType
                 .GeneratedByComment()
                 .Append( @"
-internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.PocoJsonExportOptions options )
 {
     if( !options.TypeLess ) w.WriteStartArray();
     var t = o.GetType();

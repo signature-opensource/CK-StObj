@@ -1,6 +1,5 @@
 using CK.Core;
-using CK.Poco.Exc.Json.Export;
-using CK.Poco.Exc.Json.Import;
+using CK.Poco.Exc.Json;
 using FluentAssertions;
 using System;
 using System.Diagnostics.CodeAnalysis;
@@ -32,9 +31,9 @@ namespace CK.Poco.Exc.Json.Tests
         {
             byte[] bin1;
             string bin1Text;
-            using( var m = new MemoryStream() )
+            using( var m = Util.RecyclableStreamManager.GetStream() )
             {
-                Utf8JsonWriter w = new Utf8JsonWriter( m );
+                using Utf8JsonWriter w = new Utf8JsonWriter( m );
                 try
                 {
                     o.WriteJson( w, true, exportOptions );
@@ -52,9 +51,7 @@ namespace CK.Poco.Exc.Json.Tests
                     throw;
                 }
 
-                var r1 = new Utf8JsonReader( bin1 );
-
-                var o2 = directory.ReadJson( ref r1, importOptions );
+                var o2 = directory.JsonDeserialize( bin1, importOptions );
 
                 m.Position = 0;
                 using( var w2 = new Utf8JsonWriter( m ) )

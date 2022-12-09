@@ -1,9 +1,10 @@
 using CK.Core;
 using System.IO;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CK.Poco.Exc.Json.Export
+namespace CK.Poco.Exc.Json
 {
     public sealed class PocoJsonExporter : IPocoExporter
     {
@@ -11,11 +12,14 @@ namespace CK.Poco.Exc.Json.Export
 
         public void Write( IActivityMonitor monitor, Stream output, IPoco? data )
         {
+            using Utf8JsonWriter w = new Utf8JsonWriter( output );
+            data.WriteJson( w, true, PocoJsonExportOptions.Default );
         }
 
         public Task WriteAsync( IActivityMonitor monitor, Stream output, IPoco? data, CancellationToken cancel = default )
         {
-            throw new System.NotImplementedException();
+            Write( monitor, output, data );
+            return Task.CompletedTask;
         }
     }
 

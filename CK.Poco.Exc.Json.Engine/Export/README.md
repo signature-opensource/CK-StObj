@@ -52,7 +52,7 @@ The full code of this step is here: [GenerateWriteMethods](ExportCodeGenerator.G
 
 For the `Thing` record struct, it is:
 ```csharp
-internal static void WriteJson_44( System.Text.Json.Utf8JsonWriter w, ref CK.Poco.Exc.Json.Tests.RecordTests.Thing v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+internal static void WriteJson_44( System.Text.Json.Utf8JsonWriter w, ref CK.Poco.Exc.Json.Tests.RecordTests.Thing v, CK.Poco.Exc.Json.PocoJsonExportOptions options )
 {
     w.WriteStartObject();
     w.WritePropertyName( options.UseCamelCase ? @"name" : @"Name" );
@@ -70,20 +70,20 @@ For the following IPoco `public interface IWithRecord : IPoco { ref Thing Hop { 
 publicly available [PocoJsonExportSupport.IWriter.WriteJson](../../CK.Poco.Exc.Json/Export/PocoJsonExportSupport.cs#L44)
 instance method that writes each fields (here we have only one): 
 ```csharp
-public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonExportOptions options )
 {
     w.WriteStartObject();
-    options ??= CK.Poco.Exc.Json.Export.PocoJsonExportOptions.Default;
+    options ??= CK.Poco.Exc.Json.PocoJsonExportOptions.Default;
     w.WritePropertyName( options.UseCamelCase ? @"hop" : @"Hop" );
     CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref _v0, options ); w.WriteEndObject();
 }
 ```
 When the `Thing` property is nullable `IWithNullableRecord : IPoco { ref Thing? Hop { get; } }`, the method becomes:
 ```csharp
-public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonExportOptions options )
 {
     w.WriteStartObject();
-    options ??= CK.Poco.Exc.Json.Export.PocoJsonExportOptions.Default;
+    options ??= CK.Poco.Exc.Json.PocoJsonExportOptions.Default;
     w.WritePropertyName( options.UseCamelCase ? @"hop" : @"Hop" );
     if( !_v0.HasValue ) w.WriteNullValue();
     else
@@ -106,7 +106,7 @@ Lists and arrays are very efficiently written since they use `AsSpan()` and [`Co
 to avoid any value type copies. Here is for instance the `List<List<int>>` and `List<int>` write methods:
 
 ```csharp
-internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<int>> v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<int>> v, CK.Poco.Exc.Json.PocoJsonExportOptions options )
 {
     var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
     w.WriteStartArray();
@@ -120,7 +120,7 @@ internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<
     }
     w.WriteEndArray();
 }
-internal static void Write_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.Export.PocoJsonExportOptions options )
+internal static void Write_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.PocoJsonExportOptions options )
 {
     var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
     w.WriteStartArray();
