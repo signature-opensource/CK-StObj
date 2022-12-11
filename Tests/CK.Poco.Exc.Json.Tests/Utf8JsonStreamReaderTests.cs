@@ -106,33 +106,44 @@ namespace CK.Poco.Exc.Json.Tests
     ""Done"": true
 }";
 
-        bool ReadDoneProperty( Utf8JsonStreamReader context, ref Utf8JsonReader reader )
+        bool ReadDoneProperty( Utf8JsonStreamReader context, ref Utf8JsonReader reader, bool skipWholeProperty )
         {
             bool result;
-            if( !reader.Read() ) context.NeedMoreData( ref reader );
+            if( !reader.Read() ) context.ReadMoreData( ref reader );
             reader.TokenType.Should().Be( JsonTokenType.StartObject );
-            if( !reader.Read() ) context.NeedMoreData( ref reader );
+            if( !reader.Read() ) context.ReadMoreData( ref reader );
             for(; ; )
             {
                 reader.TokenType.Should().Be( JsonTokenType.PropertyName );
                 if( reader.ValueTextEquals( "Done" ) )
                 {
-                    if( !reader.Read() ) context.NeedMoreData( ref reader );
+                    if( !reader.Read() ) context.ReadMoreData( ref reader );
                     result = reader.GetBoolean();
                     break;
                 }
-                // Eats the property name.
-                if( !reader.Read() ) context.NeedMoreData( ref reader );
-                // Skip the property value.
-                if( reader.TokenType == JsonTokenType.StartArray || reader.TokenType == JsonTokenType.StartObject )
+                // Skip and TrySkip can skip a PropertyName, an Object or an Array:
+                // Since we want to skip the next property here, we can either:
+                //  - Read() the property name and skip the potential object or array.
+                //  - Skip() the property and its value directly.
+                //  We test both behaviors here:
+                if( skipWholeProperty )
                 {
-                    if( !reader.TrySkip() ) context.NeedMoreData( ref reader, true );
-                    Debug.Assert( reader.TokenType == JsonTokenType.EndArray || reader.TokenType == JsonTokenType.EndObject,
-                                    "This is why we need a subsequent Read." );
+                    if( !reader.TrySkip() ) context.SkipMoreData( ref reader );
+                    if( !reader.Read() ) context.ReadMoreData( ref reader );
                 }
-                if( !reader.Read() ) context.NeedMoreData( ref reader );
+                else
+                {
+                    // Eats the property name.
+                    if( !reader.Read() ) context.ReadMoreData( ref reader );
+                    // Skip the property value: this will do nothing if the value is not an array or an object.
+                    bool isObjectOrArray = reader.TokenType == JsonTokenType.StartArray || reader.TokenType == JsonTokenType.StartObject;
+                    if( !reader.TrySkip() ) context.SkipMoreData( ref reader );
+                    Debug.Assert( !isObjectOrArray || reader.TokenType == JsonTokenType.EndArray || reader.TokenType == JsonTokenType.EndObject,
+                                    "This is why we always need a subsequent Read and why Skip/TrySkip can easily skip a object/array as well as a primitive." );
+                    if( !reader.Read() ) context.ReadMoreData( ref reader );
+                }
             }
-            if( !reader.Read() ) context.NeedMoreData( ref reader );
+            if( !reader.Read() ) context.ReadMoreData( ref reader );
             reader.TokenType.Should().Be( JsonTokenType.EndObject );
             return result;
         }
@@ -142,68 +153,100 @@ namespace CK.Poco.Exc.Json.Tests
             return new SlicedStream( new MemoryStream( Encoding.UTF8.GetBytes( data ) ), mode );
         }
 
-        [TestCase( SlicedStream.ReadMode.OneByte )]
-        [TestCase( SlicedStream.ReadMode.TwoBytes )]
-        [TestCase( SlicedStream.ReadMode.Full )]
-        [TestCase( SlicedStream.ReadMode.Random )]
-        public void worst_case_read( SlicedStream.ReadMode mode )
+        [TestCase( SlicedStream.ReadMode.OneByte, 0, true )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 0, true )]
+        [TestCase( SlicedStream.ReadMode.Full, 0, true )]
+        [TestCase( SlicedStream.ReadMode.Random, 0, true )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.Full, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.Random, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 0, false )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 0, false )]
+        [TestCase( SlicedStream.ReadMode.Full, 0, false )]
+        [TestCase( SlicedStream.ReadMode.Random, 0, false )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.Full, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.Random, 1024, false )]
+        public void worst_case_read( SlicedStream.ReadMode mode, int initialBufferSize, bool skipWholeProperty )
         {
-            // The ArrayPool<byte> gives us 16 bytes min.
-            Utf8JsonStreamReader.InitialBufferSize = 16;
+            // leaveOpened is true by default.
+            SlicedStream stream = CreateDataStream( mode, sampleJson );
+            using( var sr = Utf8JsonStreamReader.Create( stream, default, out var reader, initialBufferSize: initialBufferSize ) )
+            {
+                ReadDoneProperty( sr, ref reader, skipWholeProperty ).Should().BeTrue();
 
-            // OneByte triggers a lot of calls to NeedMoreData. 
-            using SlicedStream stream = CreateDataStream( mode, sampleJson );
-            using var sr = Utf8JsonStreamReader.Create( stream, default, out var reader );
-
-            ReadDoneProperty( sr, ref reader ).Should().BeTrue();
-
-            // We cannot read more.
-            reader.Read().Should().BeFalse();
-            // But calling for more data can always be safely done.
-            if( !reader.Read() ) sr.NeedMoreData( ref reader );
+                // We cannot read more.
+                reader.Read().Should().BeFalse();
+                // But calling for more data can always be safely done.
+                if( !reader.Read() ) sr.ReadMoreData( ref reader );
+            }
+            stream.IsDisposed.Should().BeTrue();
         }
 
-        [TestCase( SlicedStream.ReadMode.OneByte )]
-        [TestCase( SlicedStream.ReadMode.TwoBytes )]
-        [TestCase( SlicedStream.ReadMode.Full )]
-        [TestCase( SlicedStream.ReadMode.Random )]
-        public void worst_case_read_with_Utf8_BOM( SlicedStream.ReadMode mode )
+        [TestCase( SlicedStream.ReadMode.OneByte, 0, true )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 0, true )]
+        [TestCase( SlicedStream.ReadMode.Full, 0, true )]
+        [TestCase( SlicedStream.ReadMode.Random, 0, true )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.Full, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.Random, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 0, false )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 0, false )]
+        [TestCase( SlicedStream.ReadMode.Full, 0, false )]
+        [TestCase( SlicedStream.ReadMode.Random, 0, false )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.Full, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.Random, 1024, false )]
+        public void worst_case_read_with_Utf8_BOM( SlicedStream.ReadMode mode, int initialBufferSize, bool skipWholeProperty )
         {
             var Utf8Bom = new byte[] { 0xEF, 0xBB, 0xBF };
             byte[] data = Utf8Bom.Concat( Encoding.UTF8.GetBytes( sampleJson ) ).ToArray();
 
-            // The ArrayPool<byte> gives us 16 bytes min.
-            Utf8JsonStreamReader.InitialBufferSize = 16;
-
             using SlicedStream stream = new SlicedStream( new MemoryStream( data ), mode );
-            using var sr = Utf8JsonStreamReader.Create( stream, default, out var reader );
+            using var sr = Utf8JsonStreamReader.Create( stream, default, out var reader, initialBufferSize: initialBufferSize );
 
-            ReadDoneProperty( sr, ref reader ).Should().BeTrue();
+            ReadDoneProperty( sr, ref reader, skipWholeProperty ).Should().BeTrue();
 
             // We cannot read more.
             reader.Read().Should().BeFalse();
             // But calling for more data can always be safely done.
-            if( !reader.Read() ) sr.NeedMoreData( ref reader );
+            if( !reader.Read() ) sr.ReadMoreData( ref reader );
         }
 
-        [TestCase( SlicedStream.ReadMode.OneByte )]
-        [TestCase( SlicedStream.ReadMode.TwoBytes )]
-        [TestCase( SlicedStream.ReadMode.Full )]
-        [TestCase( SlicedStream.ReadMode.Random )]
-        public void read_buffer_GetUnreadBytes( SlicedStream.ReadMode mode )
+        [TestCase( SlicedStream.ReadMode.OneByte, 0, true )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 0, true )]
+        [TestCase( SlicedStream.ReadMode.Full, 0, true )]
+        [TestCase( SlicedStream.ReadMode.Random, 0, true )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.Full, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.Random, 1024, true )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 0, false )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 0, false )]
+        [TestCase( SlicedStream.ReadMode.Full, 0, false )]
+        [TestCase( SlicedStream.ReadMode.Random, 0, false )]
+        [TestCase( SlicedStream.ReadMode.OneByte, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.TwoBytes, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.Full, 1024, false )]
+        [TestCase( SlicedStream.ReadMode.Random, 1024, false )]
+        public void read_buffer_GetUnreadBytes( SlicedStream.ReadMode mode, int initialBufferSize, bool skipWholeProperty )
         {
             var data = sampleJson + "More bytes after...";
             using SlicedStream stream = CreateDataStream( mode, data );
-            using var sr = Utf8JsonStreamReader.Create( stream, default, out var reader );
+            using var sr = Utf8JsonStreamReader.Create( stream, default, out var reader, initialBufferSize: initialBufferSize );
 
-            ReadDoneProperty( sr, ref reader ).Should().BeTrue();
+            ReadDoneProperty( sr, ref reader, skipWholeProperty ).Should().BeTrue();
 
             // We are on the closing brace.
             reader.TokenType.Should().Be( JsonTokenType.EndObject );
             // If we try to Read() more, this is an exception.
             try
             {
-                if( !reader.Read() ) sr.NeedMoreData( ref reader );
+                if( !reader.Read() ) sr.ReadMoreData( ref reader );
                 Debug.Fail( "This is not Json after!" );
             }
             catch( JsonException ) { }

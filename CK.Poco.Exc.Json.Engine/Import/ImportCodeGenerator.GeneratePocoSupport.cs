@@ -28,7 +28,7 @@ namespace CK.Setup.PocoJson
 bool isDef = r.TokenType == System.Text.Json.JsonTokenType.StartArray;
 if( isDef )
 {
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     string name = r.GetString();
     if( name != " ).AppendSourceString( type.ExternalOrCSharpName );
             if( type.ExternalName != null && type.ExternalName.PreviousNames.Count > 0 )
@@ -39,15 +39,15 @@ if( isDef )
     {
         r.ThrowJsonException( ""Expected '""+ " ).AppendSourceString( type.ExternalOrCSharpName ).Append( @" + $""' Poco type, but found '{name}'."" );
     }
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( ""Expecting '{' to start Poco '" )
         .Append( type.ExternalOrCSharpName ).Append( @"'."" );
-if( !r.Read() ) rCtx.NeedMoreData( ref r );
+if( !r.Read() ) rCtx.ReadMoreData( ref r );
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 {
     var n = r.GetString();
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     switch( n )
     {
 " ).NewLine();
@@ -71,22 +71,18 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
             pocoClass.Append( @"
         default:
         {
-            var t = r.TokenType; 
-            if( t == System.Text.Json.JsonTokenType.StartObject || t == System.Text.Json.JsonTokenType.StartArray )
-            {
-                if( !r.TrySkip() ) rCtx.NeedMoreData( ref r );
-            }
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.TrySkip() ) rCtx.SkipMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
             break;
         }
     }
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) r.ThrowJsonException( ""Expecting '}' to end a Poco."" );
-if( !r.Read() ) rCtx.NeedMoreData( ref r );
+if( !r.Read() ) rCtx.ReadMoreData( ref r );
 if( isDef )
 {
     if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) r.ThrowJsonException( ""Expecting ']' to end a Poco array."" );
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 " ).CloseBlock();
 

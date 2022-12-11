@@ -36,7 +36,7 @@ namespace CK.Setup.PocoJson
                         {
                             var tA = (ICollectionPocoType)type;
                             _readers[type.Index >> 1] = tA.ItemTypes[0].Type == typeof( byte )
-                                                            ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.NeedMoreData(ref r);" )
+                                                            ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.ReadMoreData(ref r);" )
                                                             : GetArrayCodeReader( tA );
                             break;
                         }
@@ -91,84 +91,84 @@ namespace CK.Setup.PocoJson
             {
                 if( type.Type == typeof(int) )
                 {
-                    return (w,v) => w.Append( v ).Append( "=r.GetInt32();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return (w,v) => w.Append( v ).Append( "=r.GetInt32();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( bool ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetBoolean();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetBoolean();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( string ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetString();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetString();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( double ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetDouble();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetDouble();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( float ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetSingle();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetSingle();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( byte ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetByte();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetByte();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( sbyte ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetSByte();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetSByte();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( DateTime ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTime();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTime();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( DateTimeOffset ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTimeOffset();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetDateTimeOffset();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( TimeSpan ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64()); if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=TimeSpan.FromTicks(r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64()); if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( short ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetInt16();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetInt16();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( ushort ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt16();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt16();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( BigInteger ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=System.Numerics.BigInteger.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo );if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=System.Numerics.BigInteger.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo );if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( long ) )
                 {
                     // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                     // WHY is the Utf8JsonReader has a perfect GetInt64WithQuotes() that is internal?
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
-                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Int64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetInt64();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( ulong ) )
                 {
                     // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                     // WHY is the Utf8JsonReader has a perfect GetUInt64WithQuotes() that is internal?
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
-                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?UInt64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetUInt64();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?UInt64.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo):r.GetUInt64();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( Guid ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetGuid();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetGuid();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( uint ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt32();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetUInt32();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( decimal ) )
                 {
                     // Challenge the data itself (apply Postel's law, see https://en.wikipedia.org/wiki/Robustness_principle).
                     // WHY is the Utf8JsonReader has a perfect  GetUInt64WithQuotes() that is internal?
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
-                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Decimal.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo ):r.GetDecimal();if(!r.Read())rCtx.NeedMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Decimal.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo ):r.GetDecimal();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 return Throw.NotSupportedException<CodeReader>();
             }

@@ -23,7 +23,8 @@ namespace CK.Core
             var m = new ArrayBufferWriter<byte>();
             using( var w = new Utf8JsonWriter( m ) )
             {
-                @this.WriteJson( w, withType, options );
+                using var wCtx = new PocoJsonWriteContext( options );
+                @this.WriteJson( w, wCtx, withType );
                 w.Flush();
             }
             return m.WrittenMemory;

@@ -7,7 +7,7 @@ namespace CK.Setup.PocoJson
 {
     /// <summary>
     /// The code writer delegate is in charge of generating the write code into a <see cref="System.Text.Json.Utf8JsonWriter"/>
-    /// and a PocoJsonExportOptions variable named "options" from a variable named "w".
+    /// named "w" and a PocoJsonWriteContext variable named "wCtx" from a variable.
     /// </summary>
     /// <param name="writer">The code writer to uses.</param>
     /// <param name="variableName">The variable name to write.</param>
@@ -66,7 +66,7 @@ namespace CK.Setup.PocoJson
         void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable, bool honorOption )
         {
             var typeName = _nameMap.GetName( nonNullable );
-            if( honorOption ) writer.Append( $"if(!options.TypeLess)" );
+            if( honorOption ) writer.Append( $"if(!wCtx.Options.TypeLess)" );
             writer.Append( "w.WriteStringValue(" ).AppendSourceString( typeName.Name ).Append( ");" ).NewLine();
         }
 

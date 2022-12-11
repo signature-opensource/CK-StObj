@@ -12,9 +12,9 @@ These top-level reader functions returns an `object` and powers the static `Read
 reads the type name from the first cell of the required 2-cells array `["type",<value>]` and calls the
 appropriate reader function.
 
-These object reader functions instantiate a non null object:
+These object reader functions must instantiate a non null object:
 ```csharp
-delegate object ObjectReader( ref Utf8JsonReader r, PocoJsonImportOptions options );
+delegate object ObjectReader( ref Utf8JsonReader r, PocoJsonReadContext rCtx );
 ```
 They are limited to instantiate oblivious types: the type `IList<(int A, int B)>` is out of their scope because this
 type is not an exported type name (it is exported as a "L((int,int))" that is `List<(int,int)>`).
@@ -27,6 +27,24 @@ only can they be filled with their content.
 This why Importers are often more complex. Exporters rely on the ObliviousType that erase "internal types" to do
 its job whereas Importers have to deal with these internal types.
 
+## Reading from a Stream
+Writing into a stream is easy (the `Utf8JsonWriter` does it natively), but reading from a stream is not as
+simple.
+
+The [.Net documentation is irrelevant](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/use-dom-utf8jsonreader-utf8jsonwriter?pivots=dotnet-7-0#read-from-a-stream-using-utf8jsonreader).
+An issue has been opened here: https://github.com/dotnet/docs/issues/32950
+
+The code required to make this work is provided by the [`Utf8JsonStreamReader`](../../CK.Poco.Exc.Json/Utf8JsonStreamReader.cs).
+In the code below, simple call to `r.Read()` and `r.Skip()` are used but generated code uses the `PocoJsonReadContext rCtx`
+that implements `IUtf8JsonReaderDataProvider`. The real code for a Read is:
+```csharp
+if( !r.Read() ) rCtx.ReadMoreData( ref reader );
+```
+And for a Skip, it is:
+```csharp
+if( !r.TrySkip() ) rCtx.SkipMoreData( ref reader );
+```
+
 ## Code Generation
 
 The first step is to build an array of `CodeReader` for each exchangeable and non nullable types:
@@ -34,7 +52,7 @@ The first step is to build an array of `CodeReader` for each exchangeable and no
 `delegate void CodeReader( ICodeWriter write, string variableName );`
 
 These functions know how to read their corresponding type into a named variable from a `Utf8JsonReader r` 
-and a `PocoJsonImportOptions options`
+and a `PocoJsonReadContext rCtx`
 
 For a basic type (`int`), the generated code simply uses the `Utf8JsonReader` API:
 - The function is: `(w,v) => w.Append( v ).Append( " = r.GetInt32(); r.Read();" )`

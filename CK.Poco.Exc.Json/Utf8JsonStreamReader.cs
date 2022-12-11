@@ -1,4 +1,5 @@
 using Microsoft.IO;
+using Microsoft.VisualBasic;
 using System;
 using System.Buffers;
 using System.Diagnostics;
@@ -9,8 +10,9 @@ using System.Text.Json;
 namespace CK.Core
 {
     /// <summary>
-    /// Provides a reading buffer on a Utf8 stream of bytes that may start with
-    /// the Utf8 Byte Order Mask (BOM: 0xEF, 0xBB, 0xBF).
+    /// Provides a reading buffer on a Utf8 stream of bytes. 
+    /// The Utf8 Byte Order Mask (BOM: 0xEF, 0xBB, 0xBF) that may exist at the start is
+    /// kindly handled.
     /// <para>
     /// The buffer comes from the <see cref="ArrayPool{T}.Shared"/> of bytes: this
     /// reader MUST be disposed to return the current buffer to the pool.
@@ -18,11 +20,11 @@ namespace CK.Core
     /// <para>
     /// The pattern to use it is to replace all <c>Read()</c> calls with:
     /// <code>
-    /// if( !reader.Read() ) streamReader.NeedMoreData( ref reader );
+    /// if( !reader.Read() ) streamReader.ReadMoreData( ref reader );
     /// </code>
     /// And all <c>Skip()</c> calls with:
     /// <code>
-    /// if( !reader.TrySkip() ) streamReader.NeedMoreData( ref reader, true );
+    /// if( !reader.TrySkip() ) streamReader.SkipMoreData( ref reader );
     /// </code>
     /// </para>
     /// </summary>
@@ -35,11 +37,10 @@ namespace CK.Core
         int _count;
 
 #if DEBUG
+        // We can test/change this in debug mode only.
         public static int MaxBufferSize = int.MaxValue;
-        public static int InitialBufferSize = 256;
 #else
-            const int MaxBufferSize = int.MaxValue;
-            const int InitialBufferSize = 256;
+        const int MaxBufferSize = int.MaxValue;
 #endif
         Utf8JsonStreamReader( Stream stream, byte[] buffer, int count, int initialOffset, bool leaveOpened )
         {
@@ -60,12 +61,22 @@ namespace CK.Core
         /// True to let the stream opened when disposing the reader. to dispose it.
         /// By default, the stream is disposed.
         /// </param>
+        /// <param name="initialBufferSize">
+        /// Initial buffer size (will grow as needed). The buffer size is only driven by
+        /// the longest token (plus some white space) to read.
+        /// Current <c>>ArrayPool&lt;byte&gt.Shared</c> that is used returns at least 16 bytes: the
+        /// initial buffer size will at least be 16.
+        /// </param>
         /// <returns>A new stream reader.</returns>
-        public static Utf8JsonStreamReader Create( Stream stream, JsonReaderOptions options, out Utf8JsonReader r, bool leaveOpened = false )
+        public static Utf8JsonStreamReader Create( Stream stream,
+                                                   JsonReaderOptions options,
+                                                   out Utf8JsonReader r,
+                                                   bool leaveOpened = false,
+                                                   int initialBufferSize = 512 )
         {
             Throw.CheckNotNullArgument( stream );
-            Throw.CheckArgument( stream is not RecyclableMemoryStream, "Please use the ReadOnlySquence<byte> on the RecyclableMemoryStream instead." );
-            if( ReadFirstBuffer( stream, out var buffer, out var count, out var initialOffset ) )
+            Throw.CheckArgument( "Please use the ReadOnlySquence<byte> on the RecyclableMemoryStream instead.", stream is not RecyclableMemoryStream );
+            if( ReadFirstBuffer( stream, out var buffer, out var count, out var initialOffset, initialBufferSize ) )
             {
                 r = new Utf8JsonReader( buffer.AsSpan( initialOffset, count - initialOffset ), false, new JsonReaderState( options ) );
             }
@@ -77,9 +88,10 @@ namespace CK.Core
             }
             return new Utf8JsonStreamReader( stream, buffer, count, initialOffset, leaveOpened );
 
-            static bool ReadFirstBuffer( Stream stream, out byte[] buffer, out int count, out int offset )
+            static bool ReadFirstBuffer( Stream stream, out byte[] buffer, out int count, out int offset, int initialBufferSize )
             {
-                buffer = ArrayPool<byte>.Shared.Rent( InitialBufferSize );
+                // ArrayPool gives us 16 bytes at least but 4 is the required min size to handle the BOM.
+                buffer = ArrayPool<byte>.Shared.Rent( Math.Max( initialBufferSize, 4 ) );
                 offset = 0;
                 int lenRead = count = stream.Read( buffer );
                 if( lenRead == 0 ) return false;
@@ -123,8 +135,9 @@ namespace CK.Core
 
         /// <summary>
         /// Gets the unread available bytes in the buffer.
-        /// This uses the <see cref="Utf8JsonReader.BytesConsumed"/> and the
-        /// current count of read bytes in the buffer. 
+        /// This uses the <see cref="Utf8JsonReader.BytesConsumed"/>, the
+        /// current count of read bytes in the buffer and ignores the leading
+        /// Utf8 Byte Order Mask if any. 
         /// </summary>
         /// <param name="reader">The reader.</param>
         /// <returns>The unread available bytes.</returns>
@@ -150,13 +163,32 @@ namespace CK.Core
         }
 
         /// <inheritdoc />
-        public void NeedMoreData( ref Utf8JsonReader reader, bool skip = false )
+        public void ReadMoreData( ref Utf8JsonReader reader ) => ReadMoreData( ref reader, false );
+
+        /// <inheritdoc />
+        public void SkipMoreData( ref Utf8JsonReader reader )
+        {
+            // TrySkip returns always true when TokenType is not a PropertyName, a StartObject or StartArray.
+            // If we want to be aggressive here we could require that the caller does this check:
+            //      Throw.CheckState( reader.TokenType == JsonTokenType.PropertyName || reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray );
+            // But this is not how this API has been designed: a Skip/TrySkip requires a subsequent Read() call that does skip the token if it's not one of these.
+            if( reader.TokenType == JsonTokenType.PropertyName )
+            {
+                ReadMoreData( ref reader, false );
+            }
+            if( reader.TokenType == JsonTokenType.StartObject || reader.TokenType == JsonTokenType.StartArray )
+            {
+                if( !reader.TrySkip() ) ReadMoreData( ref reader, true );
+            }
+        }
+
+        void ReadMoreData( ref Utf8JsonReader reader, bool skip )
         {
             int bytesConsumed = (int)reader.BytesConsumed + _initialOffset;
             // Not needed anymore (only for the BOM of the first buffer).
             _initialOffset = 0;
             // This is for skip handling (if skip parameter is true).
-            int skipTargetDepth = reader.CurrentDepth;
+            int initialDepth = reader.CurrentDepth;
 
             retry:
             if( reader.IsFinalBlock ) return;
@@ -192,8 +224,8 @@ namespace CK.Core
             reader = new Utf8JsonReader( _buffer.AsSpan( 0, _count ), isFinalBlock: bytesRead == 0, reader.CurrentState );
             if( reader.Read()
                 && (!skip
-                     || skipTargetDepth == reader.CurrentDepth
-                     || SkipUntil( ref reader, skipTargetDepth )) )
+                     || initialDepth == reader.CurrentDepth
+                     || SkipUntil( ref reader, initialDepth )) )
             {
                 // We have read a token and we are not skipping or the skip is over.
                 return;

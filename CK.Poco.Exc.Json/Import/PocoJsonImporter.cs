@@ -19,14 +19,42 @@ namespace CK.Poco.Exc.Json
             _pocoDirectory = pocoDirectory;
         }
 
+        /// <inheritdoc />
         public bool TryRead( IActivityMonitor monitor, Stream input, out IPoco? data )
         {
-            throw new NotImplementedException();
+            try
+            {
+                data = _pocoDirectory.JsonDeserialize( input, PocoJsonImportOptions.Default );
+                return true;
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While trying to read a Poco in Json.", ex );
+                data = null;
+                return false;
+            }
         }
 
+        /// <inheritdoc />
         public Task<(bool Success, IPoco? Data)> TryReadAsync( IActivityMonitor monitor, Stream input, CancellationToken cancel )
         {
-            throw new System.NotImplementedException();
+            if( TryRead(monitor,input,out var data) )
+            {
+                return Task.FromResult( (true, data) );
+            }
+            return Task.FromResult( (false, (IPoco?)null) );
+        }
+
+        /// <inheritdoc />
+        public IPoco? Read( IActivityMonitor monitor, Stream input )
+        {
+            return _pocoDirectory.JsonDeserialize( input, PocoJsonImportOptions.Default );
+        }
+
+        /// <inheritdoc />
+        public Task<IPoco?> ReadAsync( IActivityMonitor monitor, Stream input, CancellationToken cancel )
+        {
+            return Task.FromResult( _pocoDirectory.JsonDeserialize( input, PocoJsonImportOptions.Default ) );
         }
     }
 

@@ -19,6 +19,8 @@ public interface IPocoDeserializer
 {
     bool TryRead( IActivityMonitor monitor, Stream input, out IPoco? data );
     Task<(bool Success, IPoco? Data)> TryReadAsync( IActivityMonitor monitor, Stream input, CancellationToken cancel );
+    IPoco? Read( IActivityMonitor monitor, Stream input );
+    Task<IPoco?> ReadAsync( IActivityMonitor monitor, Stream input, CancellationToken cancel );
 }
 ```
 **Key points:**
@@ -26,6 +28,9 @@ public interface IPocoDeserializer
   (recall that the other way around, sync on async, is not a good idea).
 - A null Poco can always be read or written: `null` is a valid data. If it has to be considered invalid, this is up to the callers 
   to handle this.
+- Read can more often fail than Write: this is why implementing a deserializer requires to implement the 2 versions.
+  Depending on the underlying code (whether it throws or implements error management without exceptions), the methods must
+  adapt its behavior.
 
 ## Importers and Exporters: the ProtocolName
 Extending these 2 interfaces, importers and exporters are singleton (multiple) auto services:

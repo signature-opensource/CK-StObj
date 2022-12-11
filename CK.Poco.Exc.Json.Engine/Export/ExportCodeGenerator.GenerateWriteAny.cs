@@ -13,9 +13,9 @@ namespace CK.Setup.PocoJson
             _exporterType
                 .GeneratedByComment()
                 .Append( @"
-internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.PocoJsonExportOptions options )
+internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
-    if( !options.TypeLess ) w.WriteStartArray();
+    if( !wCtx.Options.TypeLess ) w.WriteStartArray();
     var t = o.GetType();
     if( t.IsValueType )
     {
@@ -68,7 +68,7 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             default: w.ThrowJsonException( $""Unregistered type: {t.ToCSharpName(false)}"" ); break;
         }
     }
-    if( !options.TypeLess ) w.WriteEndArray();
+    if( !wCtx.Options.TypeLess ) w.WriteEndArray();
 }" );
             // Builds the different sorters for cases that must be ordered: arrays and collections
             // only since these are the only reference types except the basic ones (that moreover

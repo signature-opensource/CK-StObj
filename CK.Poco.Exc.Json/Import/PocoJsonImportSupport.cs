@@ -23,9 +23,9 @@ namespace CK.Core
             /// </para>
             /// </summary>
             /// <param name="reader">The Json reader.</param>
-            /// <param name="context">Optional context with import options and data provider.</param>
+            /// <param name="context">Reader context with import options and data provider.</param>
             /// <returns>A new Poco.</returns>
-            IPoco ReadTyped( ref Utf8JsonReader reader, PocoJsonReadContext? context = null );
+            IPoco ReadTyped( ref Utf8JsonReader reader, PocoJsonReadContext context );
         }
 
         /// <summary>
@@ -42,8 +42,8 @@ namespace CK.Core
             /// When the reader is <see cref="JsonTokenType.StartObject"/>, then it is the Poco's value.
             /// </summary>
             /// <param name="reader">The Json reader.</param>
-            /// <param name="context">Optional context with import options and data provider.</param>
-            T? Read( ref Utf8JsonReader reader, PocoJsonReadContext? context = null );
+            /// <param name="context">Reader context with import options and data provider.</param>
+            T? Read( ref Utf8JsonReader reader, PocoJsonReadContext context );
         }
 
         /// <summary>
@@ -57,12 +57,12 @@ namespace CK.Core
         /// <typeparam name="T">The poco type.</typeparam>
         /// <param name="this">This poco factory.</param>
         /// <param name="reader">The reader.</param>
-        /// <param name="context">Optional context with import options and data provider.</param>
+        /// <param name="context">Reader context with import options and data provider.</param>
         /// <returns>The Poco (can be null).</returns>
-        public static T? ReadJson<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonReadContext? context = null ) where T : class, IPoco
+        public static T? ReadJson<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonReadContext context ) where T : class, IPoco
         {
             Throw.CheckNotNullArgument( @this );
-            context ??= new PocoJsonReadContext();
+            Throw.CheckNotNullArgument( context );
             if( CheckNullStart( ref reader, context, "expecting Json object, Json array or null value." ) ) return null;
             return ((IFactoryReader<T>)@this).Read( ref reader, context );
         }
@@ -73,23 +73,23 @@ namespace CK.Core
         /// </summary>
         /// <param name="this">This directory.</param>
         /// <param name="reader">The Json reader.</param>
-        /// <param name="context">Optional context with import options and data provider.</param>
+        /// <param name="context">Reader context with import options and data provider.</param>
         /// <returns>The Poco (can be null).</returns>
-        public static IPoco? ReadJson( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonReadContext? context = null )
+        public static IPoco? ReadJson( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonReadContext context )
         {
             Throw.CheckNotNullArgument( @this );
-            context ??= new PocoJsonReadContext();
+            Throw.CheckNotNullArgument( context );
             if( CheckNullStart( ref reader, context, "expecting Json Poco array or null value." ) ) return null;
 
             if( reader.TokenType != JsonTokenType.StartArray ) reader.ThrowJsonException( "Expecting Json Poco array." );
-            if( !reader.Read() ) context.NeedMoreData( ref reader );
+            if( !reader.Read() ) context.ReadMoreData( ref reader );
             string? name = reader.GetString();
             IPocoFactory? f = name != null ? @this.Find( name ) : null;
             if( f == null ) reader.ThrowJsonException( $"Poco type '{name}' not found." );
-            if( !reader.Read() ) context.NeedMoreData( ref reader );
+            if( !reader.Read() ) context.ReadMoreData( ref reader );
             var p = ((IFactoryReader)f).ReadTyped( ref reader, context );
             if( reader.TokenType != JsonTokenType.EndArray ) reader.ThrowJsonException( "Expecting Json Poco end array." );
-            if( !reader.Read() ) context.NeedMoreData( ref reader );
+            if( !reader.Read() ) context.ReadMoreData( ref reader );
             return p;
         }
 
@@ -97,7 +97,7 @@ namespace CK.Core
         {
             if( reader.TokenStartIndex == 0 )
             {
-                if( !!reader.Read() ) context.NeedMoreData( ref reader );
+                if( !reader.Read() ) context.ReadMoreData( ref reader );
                 if( reader.TokenType == JsonTokenType.None )
                 {
                     reader.ThrowJsonException( "Empty reader: " + error );
@@ -105,7 +105,7 @@ namespace CK.Core
             }
             if( reader.TokenType == JsonTokenType.Null )
             {
-                if( !reader.Read() ) context.NeedMoreData( ref reader );
+                if( !reader.Read() ) context.ReadMoreData( ref reader );
                 return true;
             }
             return false;

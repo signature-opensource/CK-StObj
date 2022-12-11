@@ -34,63 +34,63 @@ internal delegate T TypedReader<T>( ref System.Text.Json.Utf8JsonReader r, CK.Po
 
 internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
         c.Add( itemReader( ref r, rCtx ) );
     }
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 
 internal static void FillDictionary<TKey,TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<TKey,TValue> c, TypedReader<TKey> kR, TypedReader<TValue> vR, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
-        if( !r.Read() ) rCtx.NeedMoreData( ref r ); // [
+        if( !r.Read() ) rCtx.ReadMoreData( ref r ); // [
         c.Add( kR( ref r, rCtx ), vR( ref r, rCtx ) );
-        if( !r.Read() ) rCtx.NeedMoreData( ref r );  // ]
+        if( !r.Read() ) rCtx.ReadMoreData( ref r );  // ]
     }
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 
 internal static void FillDynamicObject<TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<string, TValue> c, TypedReader<TValue> vR, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
     if( r.TokenType == System.Text.Json.JsonTokenType.StartArray )
     {
-        if( !r.Read() ) rCtx.NeedMoreData( ref r );
+        if( !r.Read() ) rCtx.ReadMoreData( ref r );
         while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
         {
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
             var k = r.GetString();
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
             c.Add( k, vR( ref r, rCtx ) );
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
         }
     }
     else
     {
         if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( $""Expecting '{{' or '[' to start a map of string to '{typeof(TValue).ToCSharpName()}'."" );
-        if( !r.Read() ) rCtx.NeedMoreData( ref r );
+        if( !r.Read() ) rCtx.ReadMoreData( ref r );
         while( r.TokenType != System.Text.Json.JsonTokenType.EndObject )
         {
             var k = r.GetString();
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
             c.Add( k, vR( ref r, rCtx ) );
         }
     }
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 
 internal static T[] ReadArray<T>( ref System.Text.Json.Utf8JsonReader r, TypedReader<T> itemReader, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
     var c = new List<T>();
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
         c.Add( itemReader( ref r, rCtx ) );
     }
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     return c.ToArray();
 }
 
@@ -141,7 +141,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                 writer.Append( "if(r.TokenType==System.Text.Json.JsonTokenType.Null)" )
                         .OpenBlock()
                         .Append( variableName ).Append( "=default;" ).NewLine()
-                        .Append( "if(!r.Read()) rCtx.NeedMoreData(ref r);" )
+                        .Append( "if(!r.Read()) rCtx.ReadMoreData(ref r);" )
                         .CloseBlock()
                         .Append( "else" )
                         .OpenBlock();

@@ -24,9 +24,15 @@ namespace CK.Poco.Exc.Json.Tests
                 _mode = mode;
             }
 
+            public bool IsDisposed { get; private set; }
+
             protected override void Dispose( bool disposing )
             {
-                if( disposing ) _inner.Dispose();
+                if( disposing )
+                {
+                    IsDisposed = true;
+                    _inner.Dispose();
+                }
                 base.Dispose( disposing );
             }
 

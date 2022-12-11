@@ -78,9 +78,9 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
         default:
         {
             if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) r.ThrowJsonException( ""Expected 2-cells array."" );
-            if( !r.Read() ) rCtx.NeedMoreData( ref r ); // [
+            if( !r.Read() ) rCtx.ReadMoreData( ref r ); // [
             var n = r.GetString();
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
             if( !_anyReaders.TryGetValue( n, out var reader ) )
             {
                 r.ThrowJsonException( $""Unregistered type name '{n}'."" );
@@ -88,7 +88,7 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
             if( r.TokenType == System.Text.Json.JsonTokenType.Null )
             {
                 o = null;
-                if( !r.Read() ) rCtx.NeedMoreData( ref r );
+                if( !r.Read() ) rCtx.ReadMoreData( ref r );
             }
             else
             {
@@ -98,7 +98,7 @@ internal static object? ReadAny( ref System.Text.Json.Utf8JsonReader r, CK.Poco.
             break;
         }
     }
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     return o;
 }
 " );

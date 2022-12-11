@@ -30,7 +30,7 @@ namespace CK.Setup.PocoJson
             {
                 writer.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartArray ) r.ThrowJsonException( \"Expecting '[' to start anonymous record '" )
                       .Append( type.CSharpName ).Append( "'.\" );" ).NewLine()
-                      .Append( "if( !r.Read() ) rCtx.NeedMoreData( ref r );" ).NewLine();
+                      .Append( "if( !r.Read() ) rCtx.ReadMoreData( ref r );" ).NewLine();
                 foreach( var f in type.Fields )
                 {
                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
@@ -45,11 +45,11 @@ namespace CK.Setup.PocoJson
             {
                 writer.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.StartObject ) r.ThrowJsonException( \"Expecting '{' to start named record '" )
                       .Append( type.CSharpName ).Append( @"'."" );
-if( !r.Read() ) rCtx.NeedMoreData( ref r );
+if( !r.Read() ) rCtx.ReadMoreData( ref r );
 while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 {
     var n = r.GetString();
-    if( !r.Read() ) rCtx.NeedMoreData( ref r );
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     switch( n )
     {
 " );
@@ -72,18 +72,14 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                 writer.Append( @"
         default:
         {
-            var t = r.TokenType; 
-            if( t == System.Text.Json.JsonTokenType.StartObject || t == System.Text.Json.JsonTokenType.StartArray )
-            {
-                if( !r.TrySkip() ) rCtx.NeedMoreData( ref r, true );
-            }
-            if( !r.Read() ) rCtx.NeedMoreData( ref r );
+            if( !r.TrySkip() ) rCtx.SkipMoreData( ref r );
+            if( !r.Read() ) rCtx.ReadMoreData( ref r );
             break;
         }
     }
 }
 if( r.TokenType != System.Text.Json.JsonTokenType.EndObject ) r.ThrowJsonException( ""Expecting '}' to end a Poco."" );
-if( !r.Read() ) rCtx.NeedMoreData( ref r );" );
+if( !r.Read() ) rCtx.ReadMoreData( ref r );" );
             }
         }
     }

@@ -26,7 +26,9 @@ namespace CK.Core
         public static T? JsonDeserialize<T>( this IPocoFactory<T> @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null ) where T : class, IPoco
         {
             var r = new Utf8JsonReader( utf8Json );
-            return @this.ReadJson( ref r, new PocoJsonReadContext( options ) );
+            // Dispose even if it is not currently required (no data provider).
+            using var rCtx = new PocoJsonReadContext( options );
+            return @this.ReadJson( ref r, rCtx );
         }
 
         /// <summary>
@@ -58,7 +60,9 @@ namespace CK.Core
         public static IPoco? JsonDeserialize( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null )
         {
             var r = new Utf8JsonReader( utf8Json );
-            return @this.ReadJson( ref r, new PocoJsonReadContext( options ) );
+            // Dispose even if it is not currently required (no data provider).
+            using var rCtx = new PocoJsonReadContext( options );
+            return @this.ReadJson( ref r, rCtx );
         }
 
         /// <summary>
@@ -87,11 +91,13 @@ namespace CK.Core
             if( utf8JsonStream is RecyclableMemoryStream r )
             {
                 var rSeq = new Utf8JsonReader( r.GetReadOnlySequence(), PocoJsonImportOptions.Default.ReaderOptions );
-                return @this.ReadJson( ref rSeq, new PocoJsonReadContext( options) );
+                // Dispose even if it is not currently required (no data provider).
+                using var rSeqCtx = new PocoJsonReadContext( options );
+                return @this.ReadJson( ref rSeq, rSeqCtx );
             }
             options ??= PocoJsonImportOptions.Default;
-            var context = new PocoJsonReadContext( options, Utf8JsonStreamReader.Create( utf8JsonStream, options.ReaderOptions, out var reader ) );
-            return @this.ReadJson( ref reader, context );
+            using var rCtx = new PocoJsonReadContext( options, Utf8JsonStreamReader.Create( utf8JsonStream, options.ReaderOptions, out var reader ) );
+            return @this.ReadJson( ref reader, rCtx );
         }
 
         /// <summary>

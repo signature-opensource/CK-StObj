@@ -23,7 +23,7 @@ The first step is to associate a "code writer" to each non nullable type:
 ```csharp
 /// <summary>
 /// The code writer delegate is in charge of generating the write code into a <see cref="System.Text.Json.Utf8JsonWriter"/>
-/// from a variable named "w" and a PocoJsonExportOptions variable named "options".
+/// named "w" and a PocoJsonWriteContext variable named "wCtx" from a variable.
 /// </summary>
 /// <param name="write">The code writer to uses.</param>
 /// <param name="variableName">The variable name to write.</param>
@@ -33,8 +33,8 @@ delegate void CodeWriter( ICodeWriter write, string variableName );
 This writer function generates rather simple code that is totally inlined or is a call to a more complex method
 - For `public enum Code { ... }` generates `w.WriteNumberValue( ((int)v) );`. 
 - For the named record `public record struct Thing( string Name, int Count );`, this function 
-  generates `CK.Poco.Exc.JsonGen.Exporter.WriteJson_44( w, ref v, options );` (that is a static method).
-- For a Poco, this function generates a call to the `WriteJson` method: `((PocoJsonExportSupport.IWriter)v).WriteJson( w, options );` 
+  generates `CK.Poco.Exc.JsonGen.Exporter.WriteJson_44( w, ref v, wCtx );` (that is a static method).
+- For a Poco, this function generates a call to the `WriteJson` method: `((PocoJsonExportSupport.IWriter)v).WriteJson( w, wCtx );` 
 
 Based on these writers, all types can be written:
 - If the type is a nullable value type, we must handle the null potential value explicitly and emit `null` or the non null value.
@@ -52,16 +52,16 @@ The full code of this step is here: [GenerateWriteMethods](ExportCodeGenerator.G
 
 For the `Thing` record struct, it is:
 ```csharp
-internal static void WriteJson_44( System.Text.Json.Utf8JsonWriter w, ref CK.Poco.Exc.Json.Tests.RecordTests.Thing v, CK.Poco.Exc.Json.PocoJsonExportOptions options )
+internal static void WriteJson_44( System.Text.Json.Utf8JsonWriter w, ref CK.Poco.Exc.Json.Tests.RecordTests.Thing v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
     w.WriteStartObject();
-    w.WritePropertyName( options.UseCamelCase ? @"name" : @"Name" );
+    w.WritePropertyName( wCtx.Options.UseCamelCase ? @"name" : @"Name" );
     if( v.Name == null ) w.WriteNullValue();
     else
     {
         w.WriteStringValue( v.Name );
     }
-    w.WritePropertyName( options.UseCamelCase ? @"count" : @"Count" );
+    w.WritePropertyName( wCtx.Options.UseCamelCase ? @"count" : @"Count" );
     w.WriteNumberValue( v.Count );
     w.WriteEndObject();
 }
@@ -70,28 +70,26 @@ For the following IPoco `public interface IWithRecord : IPoco { ref Thing Hop { 
 publicly available [PocoJsonExportSupport.IWriter.WriteJson](../../CK.Poco.Exc.Json/Export/PocoJsonExportSupport.cs#L44)
 instance method that writes each fields (here we have only one): 
 ```csharp
-public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonExportOptions options )
+public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
     w.WriteStartObject();
-    options ??= CK.Poco.Exc.Json.PocoJsonExportOptions.Default;
-    w.WritePropertyName( options.UseCamelCase ? @"hop" : @"Hop" );
-    CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref _v0, options ); w.WriteEndObject();
+    w.WritePropertyName( wCtx.Options.UseCamelCase ? @"hop" : @"Hop" );
+    CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref _v0, wCtx );
+    w.WriteEndObject();
 }
 ```
 When the `Thing` property is nullable `IWithNullableRecord : IPoco { ref Thing? Hop { get; } }`, the method becomes:
 ```csharp
-public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonExportOptions options )
+public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
     w.WriteStartObject();
-    options ??= CK.Poco.Exc.Json.PocoJsonExportOptions.Default;
-    w.WritePropertyName( options.UseCamelCase ? @"hop" : @"Hop" );
+    w.WritePropertyName( wCtx.Options.UseCamelCase ? @"hop" : @"Hop" );
     if( !_v0.HasValue ) w.WriteNullValue();
     else
     {
-        CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference( ref _v0 ), options );
+        CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference( ref _v0 ), wCtx );
     }
     w.WriteEndObject();
-
 }
 ```
 
@@ -106,7 +104,7 @@ Lists and arrays are very efficiently written since they use `AsSpan()` and [`Co
 to avoid any value type copies. Here is for instance the `List<List<int>>` and `List<int>` write methods:
 
 ```csharp
-internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<int>> v, CK.Poco.Exc.Json.PocoJsonExportOptions options )
+internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<int>> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
     var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
     w.WriteStartArray();
@@ -115,12 +113,12 @@ internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<
         if( a[i] == null ) w.WriteNullValue();
         else
         {
-            CK.Poco.Exc.JsonGen.Exporter.Write_54( w, ref a[i], options );
+            CK.Poco.Exc.JsonGen.Exporter.Write_54( w, ref a[i], wCtx );
         }
     }
     w.WriteEndArray();
 }
-internal static void Write_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.PocoJsonExportOptions options )
+internal static void Write_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
     var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
     w.WriteStartArray();
@@ -145,7 +143,7 @@ For this polymorphic type to be read back by consumers, its type must be conveye
 by most of the serialization libraries, we use a different approach: a 2-cells array with the `["type name", ...and its value...]
 is written.
 
-The core of the static void WriteAny( Utf8JsonWriter w, object o, PocoJsonExportOptions options )` method
+The core of the static void WriteAny( Utf8JsonWriter w, object o, PocoJsonExportWriteContext wCtx )` method
 is basically a big switch case on `o.GetType()` that routes any object to its registered Oblivious type. The
 switch is broken into smaller pieces for better performance.
 

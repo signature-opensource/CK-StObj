@@ -9,8 +9,8 @@ namespace CK.Core
     /// </summary>
     public interface IPocoSerializer
     {
-        /// <summary>
-        /// Synchronous serialization.
+       /// <summary>
+        /// Synchronous serialization (throws on error).
         /// </summary>
         /// <param name="monitor">The monitor that may be used.</param>
         /// <param name="output">The output stream.</param>
@@ -18,7 +18,7 @@ namespace CK.Core
         void Write( IActivityMonitor monitor, Stream output, IPoco? data );
 
         /// <summary>
-        /// Asynchronous serialization.
+        /// Asynchronous serialization (throws on error).
         /// </summary>
         /// <param name="monitor">The monitor that may be used.</param>
         /// <param name="output">The output stream.</param>

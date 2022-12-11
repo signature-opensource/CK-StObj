@@ -56,12 +56,12 @@ namespace CK.Setup.PocoJson
 
             static void ObjectWriter( ICodeWriter writer, string variableName )
             {
-                writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteAny( w, " ).Append( variableName ).Append( ", options );" );
+                writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteAny( w, " ).Append( variableName ).Append( ", wCtx );" );
             }
 
             static void PocoWriter( ICodeWriter writer, string variableName )
             {
-                writer.Append( "((PocoJsonExportSupport.IWriter)" ).Append( variableName ).Append( ").WriteJson( w, options );" );
+                writer.Append( "((PocoJsonExportSupport.IWriter)" ).Append( variableName ).Append( ").WriteJson( w, wCtx );" );
             }
 
             static CodeWriter GetBasicTypeCodeWriter( IPocoType type )
@@ -136,12 +136,12 @@ namespace CK.Setup.PocoJson
                                                   .Append( type.ObliviousType.Index )
                                                   .Append( "( w, (" ).Append( type.ObliviousType.ImplTypeName ).Append( ")" )
                                                   .Append( v )
-                                                  .Append( ",options);" );
+                                                  .Append( ",wCtx);" );
                 }
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
                                               .Append( type.ObliviousType.Index )
                                               .Append( "(w," )
-                                              .Append( v ).Append( ",options);" );
+                                              .Append( v ).Append( ",wCtx);" );
             }
 
             static CodeWriter GetRecordObliviousCodeWriter( IPocoType type )
@@ -150,7 +150,7 @@ namespace CK.Setup.PocoJson
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
                                               .Append( type.ObliviousType.Index )
                                               .Append( "( w, ref " )
-                                              .Append( v ).Append( ", options );" );
+                                              .Append( v ).Append( ", wCtx );" );
             }
 
         }

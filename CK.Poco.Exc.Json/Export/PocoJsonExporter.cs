@@ -13,7 +13,8 @@ namespace CK.Poco.Exc.Json
         public void Write( IActivityMonitor monitor, Stream output, IPoco? data )
         {
             using Utf8JsonWriter w = new Utf8JsonWriter( output );
-            data.WriteJson( w, true, PocoJsonExportOptions.Default );
+            using var wCtx = new PocoJsonWriteContext();
+            data.WriteJson( w, wCtx, true );
         }
 
         public Task WriteAsync( IActivityMonitor monitor, Stream output, IPoco? data, CancellationToken cancel = default )
