@@ -34,9 +34,10 @@ namespace CK.Poco.Exc.Json
         public PocoJsonExportOptions()
         {
             UseCamelCase = true;
+#if DEBUG
+            WriterOptions = new JsonWriterOptions() { SkipValidation = true };
+#else
             WriterOptions = new JsonWriterOptions();
-#if !DEBUG
-            WriterOptions.SkipValidation = true;
 #endif
         }
 
