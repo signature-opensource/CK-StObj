@@ -342,13 +342,19 @@ namespace CK.Setup
                 // An unused Auto Service interface (i.e. that has no implementation in the context)
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
+
+                //Interfaces = collector.RegisterServiceInterfaces( monitor,
+                //                                                    TypeInfo.Interfaces,
+                //                                                    IsRealObject
+                //                                                    ? null
+                //                                                    : !TypeInfo.IsSpecialized
+                //                                                        ? TypeInfo.AddMultipleMapping
+                //                                                        : null ).ToArray();
                 Interfaces = collector.RegisterServiceInterfaces( monitor,
                                                                     TypeInfo.Interfaces,
                                                                     IsRealObject
-                                                                    ? (Action<IActivityMonitor, Type, CKTypeKind, CKTypeCollector>?)null
-                                                                    : !TypeInfo.IsSpecialized
-                                                                        ? TypeInfo.AddMultipleMapping
-                                                                        : null ).ToArray();
+                                                                        ? null
+                                                                        : TypeInfo.AddMultipleMapping ).ToArray();
             }
             return isConcretePath;
         }

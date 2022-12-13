@@ -10,15 +10,14 @@ namespace CK.Setup
     /// </summary>
     public class AutoServiceCollectorResult
     {
-        internal AutoServiceCollectorResult(
-            bool success,
-            IReadOnlyList<AutoServiceInterfaceInfo> allInterfaces,
-            IReadOnlyList<AutoServiceInterfaceInfo> leafInterfaces,
-            IReadOnlyList<AutoServiceInterfaceInfo> rootInterfaces,
-            IReadOnlyList<AutoServiceClassInfo> rootClasses,
-            IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
-            IReadOnlyList<Type>? abstractTails,
-            IReadOnlyList<AutoServiceClassInfo> subGraphs )
+        internal AutoServiceCollectorResult( bool success,
+                                             IReadOnlyList<AutoServiceInterfaceInfo> allInterfaces,
+                                             IReadOnlyList<AutoServiceInterfaceInfo> leafInterfaces,
+                                             IReadOnlyList<AutoServiceInterfaceInfo> rootInterfaces,
+                                             IReadOnlyList<AutoServiceClassInfo> rootClasses,
+                                             IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
+                                             IReadOnlyList<Type>? abstractTails,
+                                             IReadOnlyList<AutoServiceClassInfo> subGraphs )
         {
             AllInterfaces = allInterfaces;
             LeafInterfaces = leafInterfaces;

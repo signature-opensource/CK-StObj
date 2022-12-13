@@ -133,15 +133,14 @@ namespace CK.Setup
             Debug.Assert( idxAll == allInterfaces.Length );
             Debug.Assert( idxRoot == rootInterfaces.Length );
             monitor.Info( $"{allInterfaces.Length} Service interfaces with {rootInterfaces.Length} roots and {leafInterfaces.Count} interface leaves." );
-            return new AutoServiceCollectorResult(
-                success,
-                allInterfaces,
-                leafInterfaces,
-                rootInterfaces,
-                _serviceRoots,
-                classAmbiguities,
-                abstractTails,
-                subGraphs );
+            return new AutoServiceCollectorResult( success,
+                                                   allInterfaces,
+                                                   leafInterfaces,
+                                                   rootInterfaces,
+                                                   _serviceRoots,
+                                                   classAmbiguities,
+                                                   abstractTails,
+                                                   subGraphs );
         }
 
         bool InitializeRootServices( IActivityMonitor monitor,
