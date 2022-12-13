@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests
 
         public abstract class A2 : A
         {
-            [AutoImplementMethod]
+            //[AutoImplementMethod]
             public abstract A ThirdMethod( int i, string s );
         }
 
@@ -46,6 +46,20 @@ namespace CK.StObj.Engine.Tests
             Debug.Assert( r.EngineMap != null, "No initialization error." );
             r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2>();
         }
+
+        public abstract class A2Spec : A2
+        {
+        }
+
+        [Test]
+        public void abstract_can_be_implemented_by_base_class()
+        {
+            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( A2Spec ) );
+            var r = TestHelper.GetSuccessfulResult( collector );
+            Debug.Assert( r.EngineMap != null, "No initialization error." );
+            r.EngineMap.StObjs.Obtain<A>().Should().NotBeNull().And.BeAssignableTo<A2Spec>();
+        }
+
 
         public abstract class A3 : A
         {

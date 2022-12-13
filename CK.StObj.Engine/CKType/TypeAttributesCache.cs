@@ -62,7 +62,7 @@ namespace CK.Setup
                              IServiceProvider services,
                              bool includeBaseClasses )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            Throw.CheckNotNullArgument( type );
 
             // This is ready to be injected in the delegated attribute constructor: no other attributes are visible.
             // If other attributes must be accessed, then the IAttributeContextBoundInitializer interface must be used.

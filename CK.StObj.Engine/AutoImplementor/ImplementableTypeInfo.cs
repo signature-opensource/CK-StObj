@@ -6,6 +6,7 @@ using CK.CodeGen;
 using System.Reflection.Emit;
 using CK.Core;
 using CK.Setup;
+using System.Diagnostics;
 
 #nullable enable
 
@@ -120,7 +121,7 @@ namespace CK.Setup
                 bool isAbstract = m.IsAbstract;
                 if( isAbstract ) ++nbUncovered;
                 // First, consider any IAutoImplementorMethod attribute.
-                IAutoImplementorMethod? impl = attributeProvider.GetCustomAttributes<IAutoImplementorMethod>( m ).SingleOrDefault();
+                var impl = GetAutoImplementorAttribute<IAutoImplementorMethod>( monitor, attributeProvider, m );
                 if( impl == null )
                 {
                     // Second, ask the type.
@@ -139,7 +140,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( isAbstract ) monitor.Warn( $"Unable to find auto implementor for abstract method {m.DeclaringType}.{m.Name}." );
+                    if( isAbstract ) WarnMissingImplementor( monitor, abstractType, m );
                 }
             }
             List<ImplementablePropertyInfo> properties = new List<ImplementablePropertyInfo>();
@@ -153,8 +154,8 @@ namespace CK.Setup
 
                 bool isAbstract = (mGet != null && mGet.IsAbstract) || (mSet != null && mSet.IsAbstract);
                 if( isAbstract ) ++nbUncovered;
-                // First, consider any IAutoImplementorMethod attribute.
-                IAutoImplementorProperty? impl = attributeProvider.GetCustomAttributes<IAutoImplementorProperty>( p ).SingleOrDefault();
+                // First, consider any IAutoImplementorProperty attribute.
+                var impl = GetAutoImplementorAttribute<IAutoImplementorProperty>( monitor, attributeProvider, p );
                 if( impl == null )
                 {
                     // Second, ask the type.
@@ -172,7 +173,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( isAbstract ) monitor.Warn( $"Unable to find auto implementor for abstract property {p.DeclaringType}.{p.Name}." );
+                    if( isAbstract ) WarnMissingImplementor( monitor, abstractType, p );
                 }
             }
             if( nbUncovered > 0 )
@@ -181,6 +182,43 @@ namespace CK.Setup
                 return null;
             }
             return new ImplementableTypeInfo( abstractType, typeImplementors, properties, methods );
+
+            static T? GetAutoImplementorAttribute<T>( IActivityMonitor monitor, ICKCustomAttributeProvider attributeProvider, MemberInfo m ) where T : class
+            {
+                T? impl = null;
+                List<object>? extra = null;
+                foreach( var autoImpl in attributeProvider.GetCustomAttributes<T>( m ) )
+                {
+                    if( impl == null ) impl = autoImpl;
+                    else
+                    {
+                        extra ??= new List<object>();
+                        extra.Add( autoImpl );
+                    }
+                }
+                if( extra != null )
+                {
+                    Debug.Assert( impl != null );
+                    var ignoring = extra.Select( e => e.GetType().ToCSharpName( false ) ).Concatenate( "', '" );
+                    monitor.Warn( $"More than one AutoImplementor attribute found on {m.DeclaringType:N}.{m.Name}. Considering '{impl.GetType():C}', ignoring '{ignoring}'." );
+                }
+                return impl;
+            }
+
+            static void WarnMissingImplementor( IActivityMonitor monitor, Type abstractType, MemberInfo m )
+            {
+                var declaringType = m.DeclaringType;
+                Debug.Assert( declaringType != null );
+                var mType = m is MethodInfo ? "method" : "property";
+                if( declaringType != abstractType )
+                {
+                    monitor.Warn( $"Unable to find auto implementor for abstract {mType} {declaringType:C}.{m.Name} (from specialized type {abstractType:N})." );
+                }
+                else
+                {
+                    monitor.Warn( $"Unable to find auto implementor for abstract {mType} {declaringType:N}.{m.Name}." );
+                }
+            }
         }
 
         /// <summary>
