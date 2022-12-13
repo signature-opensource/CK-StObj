@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using System.IO;
 
-#pragma warning disable CA1001 // Types that own disposable fields should be disposable (StObjEngine._status is used only 
-
 #nullable enable
 
 namespace CK.Setup

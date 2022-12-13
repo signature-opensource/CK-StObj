@@ -17,7 +17,6 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
   </ItemGroup>
   <ItemGroup>
-    <!--<ProjectReference Include="..\..\CK.Poco.Json\CK.Poco.Json.csproj" />-->
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
