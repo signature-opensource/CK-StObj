@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests
 
         public abstract class A2 : A
         {
-            //[AutoImplementMethod]
+            [AutoImplementMethod]
             public abstract A ThirdMethod( int i, string s );
         }
 
