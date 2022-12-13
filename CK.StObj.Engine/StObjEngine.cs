@@ -270,7 +270,11 @@ namespace CK.Setup
                 // In all cases, we emit a warn and filters this beast out.
                 if( t.FullName == null )
                 {
-                    monitor.Warn( $"Type has no FullName: '{t.Name}'. It is excluded." );
+                    // Warn only if it's not a generic type definition.
+                    if( !t.IsGenericTypeDefinition )
+                    {
+                        monitor.Warn( $"Type has no FullName: '{t:C}'. It is excluded." );
+                    }
                     return false;
                 }
                 Debug.Assert( t.AssemblyQualifiedName != null, "Since FullName is defined." );

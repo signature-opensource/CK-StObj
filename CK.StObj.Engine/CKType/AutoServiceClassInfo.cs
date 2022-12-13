@@ -343,18 +343,13 @@ namespace CK.Setup
                 // is like any other interface.
                 // Note that if this is a Real Object, multiple mappings are already handled by the real object.
 
-                //Interfaces = collector.RegisterServiceInterfaces( monitor,
-                //                                                    TypeInfo.Interfaces,
-                //                                                    IsRealObject
-                //                                                    ? null
-                //                                                    : !TypeInfo.IsSpecialized
-                //                                                        ? TypeInfo.AddMultipleMapping
-                //                                                        : null ).ToArray();
                 Interfaces = collector.RegisterServiceInterfaces( monitor,
                                                                     TypeInfo.Interfaces,
                                                                     IsRealObject
-                                                                        ? null
-                                                                        : TypeInfo.AddMultipleMapping ).ToArray();
+                                                                    ? null
+                                                                    : !TypeInfo.IsSpecialized
+                                                                        ? TypeInfo.AddMultipleMapping
+                                                                        : null ).ToArray();
             }
             return isConcretePath;
         }
