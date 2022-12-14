@@ -81,7 +81,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
 
         [Test]
-        public void FindObliviousType_finds_AbstractIPoco()
+        public void FindObliviousType_finds_AbstractIPoco_and_PocoClass_implementation_type()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ILinkedListPart ),
                                                      typeof( IWithList ) );
@@ -102,6 +102,10 @@ namespace CK.StObj.Engine.Tests.Poco
             a.Should().BeAssignableTo<IAbstractPocoType>();
 
             ((IAbstractPocoType)a).AllowedTypes.Should().Contain( p );
+
+            var impl = ts.FindObliviousType( p.FamilyInfo.PocoClass );
+            impl.Should().BeSameAs( p );
+
         }
 
         // Same structure but not same field names.

@@ -31,13 +31,11 @@ namespace CK.Setup
 
                 public IPocoFamilyInfo FamilyInfo => NonNullable.FamilyInfo;
 
-                public IPrimaryPocoType PrimaryInterface => this;
-
                 public IReadOnlyList<IPrimaryPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
-                ICompositePocoType ICompositePocoType.ObliviousType => this;
+                ICompositePocoType ICompositePocoType.ObliviousType => NonNullable;
 
                 IPrimaryPocoType IPrimaryPocoType.Nullable => this;
 
@@ -87,7 +85,7 @@ namespace CK.Setup
 
             public IPrimaryPocoType PrimaryInterface => this;
 
-            ICompositePocoType ICompositePocoType.ObliviousType => Nullable.ObliviousType;
+            ICompositePocoType ICompositePocoType.ObliviousType => this;
 
             public override string ImplTypeName => _familyInfo.PocoClass.FullName!;
 

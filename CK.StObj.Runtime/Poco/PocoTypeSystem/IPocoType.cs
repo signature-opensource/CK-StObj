@@ -73,7 +73,7 @@ namespace CK.Setup
         ///     <term>Nullable Reference Types</term>
         ///     <description>
         ///         All reference types (including this one if <see cref="Type.IsValueType"/>
-        ///         is false) are the <see cref="Nullable"/> ones.
+        ///         is false) are the <see cref="NonNullable"/> ones.
         ///     </description>
         ///   </item>
         ///   <item>
@@ -93,7 +93,7 @@ namespace CK.Setup
         /// </list>
         /// <para>
         /// Named composites (<see cref="PocoTypeKind.IPoco"/> and <see cref="PocoTypeKind.Record"/>) are their
-        /// own oblivious types (for IPoco, as a reference type, it is the nullable one).
+        /// own oblivious types (for IPoco, as a reference type, it is the non nullable one).
         /// </para>
         /// <para>
         /// Anonymous records (value tuples) have a "in depth" ObliviousType: field names are erased

@@ -45,15 +45,15 @@ namespace CK.Setup
                 //       captured at the PocoDirectory level and may be used to restore a detailed
                 //       "IPoco definition" knowledge.
                 //
-                // We cannot decide here for the ObliviousType: first, all the fields have
-                // to be resolved to know if we need an "oblivious companion type" or if this
-                // is its own oblivious type.
+                // We also index the primary by its generated PocoClass type.
+                //
                 var primary = PocoType.CreatePrimaryPoco( this, family );
                 Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
                 foreach( var i in family.Interfaces )
                 {
                     _obliviousCache.Add( i.PocoInterface, primary );
                 }
+                _obliviousCache.Add( family.PocoClass, primary );
                 allPrimaries[iPrimary++] = primary;
                 if( family.IsClosedPoco ) closedPrimaries[iClosedPrimary++] = primary;
             }
