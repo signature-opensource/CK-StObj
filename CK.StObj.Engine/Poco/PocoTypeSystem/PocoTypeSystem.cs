@@ -66,11 +66,11 @@ namespace CK.Setup
 
             _objectType = PocoType.CreateBasicRef( this, typeof( object ), "object", PocoTypeKind.Any );
             _obliviousCache.Add( "object", _objectType );
-            _obliviousCache.Add( _objectType.Type, _objectType.Nullable );
+            _obliviousCache.Add( _objectType.Type, _objectType );
 
             _stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", PocoTypeKind.Basic );
             _obliviousCache.Add( "string", _stringType );
-            _obliviousCache.Add( _stringType.Type, _stringType.Nullable );
+            _obliviousCache.Add( _stringType.Type, _stringType );
 
             static void RegValueType( PocoTypeSystem s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
             {
@@ -179,12 +179,12 @@ namespace CK.Setup
             }
             if( _obliviousCache.TryGetValue( t, out var result ) )
             {
-                Debug.Assert( result.IsNullable );
+                Debug.Assert( !result.IsNullable );
                 Debug.Assert( result.Kind == PocoTypeKind.Any
                               || result.Type == typeof( string )
                               || result.Kind == PocoTypeKind.IPoco
                               || result.Kind == PocoTypeKind.AbstractIPoco );
-                return nType.IsNullable ? result : result.NonNullable;
+                return nType.IsNullable ? result.Nullable : result;
             }
             if( typeof( IPoco ).IsAssignableFrom( t ) )
             {

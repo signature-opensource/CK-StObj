@@ -79,6 +79,31 @@ namespace CK.StObj.Engine.Tests.Poco
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
         }
 
+
+        [Test]
+        public void FindObliviousType_finds_AbstractIPoco()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ILinkedListPart ),
+                                                     typeof( IWithList ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+            var ts = r.CKTypeResult.PocoTypeSystem;
+
+            var p = ts.GetPrimaryPocoType( typeof( IWithList ) );
+            Debug.Assert( p != null );
+            p.IsNullable.Should().BeFalse();
+            p.IsOblivious.Should().BeTrue();
+            p.Should().BeAssignableTo<IPrimaryPocoType>();
+
+            var p2 = ts.FindObliviousType( typeof( IWithList ) );
+            p2.Should().BeSameAs( p );
+
+            var a = ts.FindObliviousType( typeof( ILinkedListPart ) );
+            Debug.Assert( a != null );
+            a.Should().BeAssignableTo<IAbstractPocoType>();
+
+            ((IAbstractPocoType)a).AllowedTypes.Should().Contain( p );
+        }
+
         // Same structure but not same field names.
         public struct NotSameFieldNameAsNamedRec
         {

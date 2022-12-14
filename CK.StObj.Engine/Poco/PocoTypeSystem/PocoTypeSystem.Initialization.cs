@@ -52,7 +52,7 @@ namespace CK.Setup
                 Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
                 foreach( var i in family.Interfaces )
                 {
-                    _obliviousCache.Add( i.PocoInterface, primary.Nullable );
+                    _obliviousCache.Add( i.PocoInterface, primary );
                 }
                 allPrimaries[iPrimary++] = primary;
                 if( family.IsClosedPoco ) closedPrimaries[iClosedPrimary++] = primary;
@@ -71,9 +71,9 @@ namespace CK.Setup
             }
             // Third, registers the IPoco and IClosedPoco full sets.
             var all = PocoType.CreateAbstractPoco( monitor, this, typeof( IPoco ), allAbstracts.ToArray(), allPrimaries );
-            _obliviousCache.Add( typeof( IPoco ), all.Nullable );
+            _obliviousCache.Add( typeof( IPoco ), all );
             var allClosed = PocoType.CreateAbstractPoco( monitor, this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
-            _obliviousCache.Add( typeof( IClosedPoco ), allClosed.Nullable );
+            _obliviousCache.Add( typeof( IClosedPoco ), allClosed );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
             foreach( var p in allPrimaries )
             {
@@ -84,7 +84,7 @@ namespace CK.Setup
                     int idx = 0;
                     foreach( var a in p.FamilyInfo.OtherInterfaces )
                     {
-                        abstracts[idx++] = (IAbstractPocoType)_obliviousCache[a].NonNullable;
+                        abstracts[idx++] = (IAbstractPocoType)_obliviousCache[a];
                     }
                     p.AbstractTypes = abstracts;
                 }
@@ -108,6 +108,18 @@ namespace CK.Setup
                 }
                 success &= p.SetFields( monitor, StringBuilderPool, fields );
             }
+            // Oblivious check: all reference type registered by types are non nullable.
+            // Only ValueT Types are oblivious and registered for nullable and non nullable.
+            Debug.Assert( _obliviousCache.Where( kv => kv.Key is Type )
+                                         .Select( kv => (Type: (Type)kv.Key, PocoType: kv.Value) )
+                                         .All( x => x.PocoType.IsOblivious
+                                                    &&
+                                                    (
+                                                        (x.Type.IsValueType && (x.PocoType.IsNullable == (Nullable.GetUnderlyingType(x.Type) != null)))
+                                                        ||
+                                                        (!x.Type.IsValueType && !x.PocoType.IsNullable)
+                                                    )
+                                             ) );
             // If no error occurred, we can now detect any instantiation cycle error.
             // We handle only IPoco since collection items are not instantiated
             // and records are struct: a cycle in struct is not possible.
@@ -150,11 +162,11 @@ namespace CK.Setup
                 }
                 foreach( var f in families )
                 {
-                    subTypes[i++] = _obliviousCache[f.PrimaryInterface.PocoInterface].NonNullable;
+                    subTypes[i++] = _obliviousCache[f.PrimaryInterface.PocoInterface];
                 }
                 var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes );
                 result = a;
-                _obliviousCache.Add( tAbstract, a.Nullable );
+                _obliviousCache.Add( tAbstract, a );
                 allAbstracts.Add( a );
                 if( typeof( IClosedPoco ).IsAssignableFrom( tAbstract ) ) closedAbstracts.Add( a );
             }
