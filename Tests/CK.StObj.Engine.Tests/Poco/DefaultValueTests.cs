@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void default_values()
+        public void default_values_on_simple_field()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IThing ), typeof( IThingHolder ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
@@ -38,5 +38,29 @@ namespace CK.StObj.Engine.Tests.Poco
             h.Value.Should().NotBeNull();
             h.Value.Power.Should().Be( 3712 );
         }
+
+        public enum TypeDefaultIsUnsignedMinimalValue
+        {
+            NotTheDefault = -1,
+            NotTheDefault2 = -89794,
+            NotTheDefault3 = 43,
+            NotTheDefault4 = 6546,
+            ThisIsTheDefault = 42,
+        }
+
+        [Test]
+        public void default_values_on_enum_is_the_Unsigned_minimal_value()
+        {
+            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var t = ts.RegisterNullOblivious( TestHelper.Monitor, typeof( TypeDefaultIsUnsignedMinimalValue ) );
+
+            Debug.Assert( t != null && t.DefaultValueInfo.DefaultValue != null );
+            t.DefaultValueInfo.DefaultValue.SimpleValue.Should().Be( TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault );
+            t.DefaultValueInfo.DefaultValue.ValueCSharpSource.Should().Be( "CK.StObj.Engine.Tests.Poco.DefaultValueTests.TypeDefaultIsUnsignedMinimalValue.ThisIsTheDefault" );
+
+            var tE = (IEnumPocoType)t;
+            tE.DefaultValueName.Should().Be( "ThisIsTheDefault" );
+        }
+
     }
 }

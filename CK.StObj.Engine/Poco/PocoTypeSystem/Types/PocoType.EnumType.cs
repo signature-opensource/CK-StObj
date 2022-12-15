@@ -42,11 +42,14 @@ namespace CK.Setup
                 public ExternalNameAttribute? ExternalName => NonNullable.ExternalName;
 
                 public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
+
+                public string? DefaultValueName => NonNullable.DefaultValueName;
             }
 
             readonly IPocoType _underlyingType;
             IPocoType.ITypeRef? _nextRef;
             readonly ExternalNameAttribute? _externalName;
+            readonly string? _defaultValueName;
             readonly DefaultValueInfo _defInfo;
 
             public EnumType( IActivityMonitor monitor,
@@ -65,18 +68,19 @@ namespace CK.Setup
                 _underlyingType = underlyingType;
                 _externalName = externalName;
                 _nextRef = ((PocoType)underlyingType.NonNullable).AddBackRef( this );
-                _defInfo = ComputeDefaultValueInfo( monitor, tNotNull, out bool isEmpty );
+                _defInfo = ComputeDefaultValueInfo( monitor, tNotNull, out bool isEmpty, out _defaultValueName );
                 if( isEmpty ) SetNotExchangeable( monitor, "Enumeration has no defined values." );
             }
 
-            DefaultValueInfo ComputeDefaultValueInfo( IActivityMonitor monitor, Type tNotNull, out bool isEmpty )
+            DefaultValueInfo ComputeDefaultValueInfo( IActivityMonitor monitor, Type tNotNull, out bool isEmpty, out string? defaultValueName )
             {
                 // [Doc] The elements of the array are sorted by the binary values (that is, the unsigned values)
                 //       of the enumeration constants.
                 // 
                 // => This is perfect for us: if 0 is defined (that is the "normal" default), then it will be
                 //    the first value even if negative exist.
-                var values = tNotNull.GetEnumValues();
+                defaultValueName = null;
+                Array values = tNotNull.GetEnumValues();
                 if( values.Length == 0 )
                 {
                     monitor.Warn( $"Enum type '{CSharpName}' is empty. A valid default value cannot be selected and this enum cannot be exchanged." );
@@ -85,14 +89,13 @@ namespace CK.Setup
                 }
                 isEmpty = false;
                 object? value = values.GetValue( 0 );
-                string? name;
-                if( value == null || (name = tNotNull.GetEnumName( value )) == null )
+                if( value == null || (defaultValueName = tNotNull.GetEnumName( value )) == null )
                 {
                     monitor.Warn( $"Enum type '{CSharpName}' has a null first value or name for the first value. A valid default value cannot be selected." );
                     return DefaultValueInfo.Disallowed;
                 }
-                monitor.Info( $"Enum type '{CSharpName}', default value selected is '{name} = {value:D}'." );
-                return new DefaultValueInfo( new FieldDefaultValue( value, $"{CSharpName}.{name}" ) );
+                monitor.Info( $"Enum type '{CSharpName}', default value selected is '{defaultValueName} = {value:D}'." );
+                return new DefaultValueInfo( new FieldDefaultValue( value, $"{CSharpName}.{defaultValueName}" ) );
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
@@ -102,6 +105,8 @@ namespace CK.Setup
             public ExternalNameAttribute? ExternalName => _externalName;
 
             public string ExternalOrCSharpName => _externalName != null ? _externalName.Name : CSharpName;
+
+            public string? DefaultValueName => _defaultValueName;
 
             /// <summary>
             /// At this type level, this is not because a basic type becomes (weirdly!) no more exchangeable

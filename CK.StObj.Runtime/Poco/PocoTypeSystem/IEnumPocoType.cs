@@ -11,10 +11,17 @@ namespace CK.Setup
         /// </summary>
         IPocoType UnderlyingType { get; }
 
+        /// <summary>
+        /// Gets the default value enumeration name.
+        /// It corresponds to the smallest unsigned numerical value: it is usually the name with the 0 value.
+        /// </summary>
+        string? DefaultValueName { get; }
+
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IEnumPocoType Nullable { get; }
 
         /// <inheritdoc cref="IPocoType.NonNullable" />
         new IEnumPocoType NonNullable { get; }
+
     }
 }
