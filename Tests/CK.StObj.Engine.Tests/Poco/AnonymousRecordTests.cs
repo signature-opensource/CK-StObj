@@ -171,7 +171,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var result = TestHelper.CreateAutomaticServices( c );
             var ts = result.CollectorResult.CKTypeResult.PocoTypeSystem;
 
-            var tPoco = ts.GetPrimaryPocoType( typeof( IWithLongTuple ) );
+            var tPoco = ts.FindObliviousType<IPrimaryPocoType>( typeof( IWithLongTuple ) );
             Debug.Assert( tPoco != null );
             var tA = (IRecordPocoType)tPoco.Fields[0].Type;
             tA.Fields.Count.Should().Be( 20 );

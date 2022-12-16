@@ -55,12 +55,13 @@ namespace CK.Setup
         IPocoType? FindObliviousType( Type type );
         
         /// <summary>
-        /// Gets the primary poco type from any of its interface.
+        /// Tries to find the oblivious Poco type from an actual type.
         /// </summary>
-        /// <param name="i">The IPoco interface.</param>
-        /// <returns>The primary poco type or null.</returns>
-        IPrimaryPocoType? GetPrimaryPocoType( Type i );
-
+        /// <typeparam name="T">The expected <see cref="IPocoType"/>.</typeparam>
+        /// <param name="type">The type to find.</param>
+        /// <returns>The Poco type or null.</returns>
+        T? FindObliviousType<T>( Type type ) where T : class, IPocoType;
+        
         /// <summary>
         /// Forbids a type to be <see cref="IPocoType.IsExchangeable"/>. This
         /// condemns all fields that depend on it to be no more <see cref="IPocoField.IsExchangeable"/>

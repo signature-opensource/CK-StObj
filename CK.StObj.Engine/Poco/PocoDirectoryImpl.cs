@@ -117,7 +117,7 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
                 tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                var pocoType = _typeSystem.GetPrimaryPocoType( family.PrimaryInterface.PocoInterface );
+                var pocoType = _typeSystem.FindObliviousType<IPrimaryPocoType>( family.PrimaryInterface.PocoInterface );
                 Debug.Assert( pocoType != null );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );

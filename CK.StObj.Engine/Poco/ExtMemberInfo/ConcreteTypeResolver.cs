@@ -119,7 +119,7 @@ namespace CK.Setup
                         // It's useless here to try do detect an incompatibility between the 2 interfaces.
                         // The only thing we must do is trying to select a family if possible so we don't
                         // erase any "concrete" Poco, letting a last "abstract" win the choice.
-                        var fLeft = typeSystem.GetPrimaryPocoType( left.Type );
+                        var fLeft = typeSystem.FindObliviousType<IPrimaryPocoType>( left.Type );
                         if( fLeft != null ) return left;
                         // Left is abstract: right may be a concrete one...
                         return right;
@@ -231,7 +231,7 @@ namespace CK.Setup
             return left;
         }
 
-        struct RooContext
+        ref struct RooContext
         {
             public readonly IExtMemberInfo Root;
 
@@ -312,7 +312,7 @@ namespace CK.Setup
                 // We are left with IPoco interfaces.
                 if( !typeof( IPoco ).IsAssignableFrom( t.Type ) ) return UnsupportedTypeError( monitor, t.Type );
                 // If the poco is not abstract, resolves its primary type.
-                var concrete = ctx.TypeSystem.GetPrimaryPocoType( t.Type );
+                var concrete = ctx.TypeSystem.FindObliviousType<IPrimaryPocoType>( t.Type );
                 return concrete != null
                         ? new ExtNullabilityInfo( concrete.Type, t.IsNullable )
                         : t;

@@ -115,13 +115,9 @@ namespace CK.Setup
             return _obliviousCache.GetValueOrDefault( type );
         }
 
-        public IPrimaryPocoType? GetPrimaryPocoType( Type i )
+        public T? FindObliviousType<T>( Type type ) where T : class, IPocoType
         {
-            if( _obliviousCache.TryGetValue( i, out var result ) )
-            {
-                return result as IPrimaryPocoType;
-            }
-            return null;
+            return _obliviousCache.GetValueOrDefault( type ) as T;
         }
 
         public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )

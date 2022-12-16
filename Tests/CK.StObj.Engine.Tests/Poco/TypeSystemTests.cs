@@ -72,10 +72,10 @@ namespace CK.StObj.Engine.Tests.Poco
             ts.AllTypes.Count.Should().Be( before + 2 );
             tRec.Kind.Should().Be( PocoTypeKind.Record );
 
-            IPrimaryPocoType wA = ts.GetPrimaryPocoType( typeof( IPartWithAnonymous ) )!;
+            IPrimaryPocoType wA = ts.FindObliviousType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
             IPocoType countAndName = wA.Fields[0].Type;
 
-            IPrimaryPocoType wR = ts.GetPrimaryPocoType( typeof( IPartWithRecAnonymous ) )!;
+            IPrimaryPocoType wR = ts.FindObliviousType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
         }
 
@@ -88,7 +88,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var r = TestHelper.GetSuccessfulResult( c );
             var ts = r.CKTypeResult.PocoTypeSystem;
 
-            var p = ts.GetPrimaryPocoType( typeof( IWithList ) );
+            var p = ts.FindObliviousType<IPrimaryPocoType>( typeof( IWithList ) );
             Debug.Assert( p != null );
             p.IsNullable.Should().BeFalse();
             p.IsOblivious.Should().BeTrue();
