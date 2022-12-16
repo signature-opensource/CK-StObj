@@ -28,7 +28,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void arrays_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithArray ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithArray ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -100,7 +100,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void lists_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithLists ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithLists ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -152,7 +152,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void sets_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithSets ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithSets ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -197,7 +197,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void dictionaries_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IWithDictionaries ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithDictionaries ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -259,7 +259,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void dictionaries_with_string_keys_can_be_objects_or_use_arrays()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IWithDynamicObject ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithDynamicObject ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 

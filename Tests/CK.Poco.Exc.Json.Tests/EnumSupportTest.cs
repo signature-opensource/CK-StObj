@@ -32,7 +32,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( ITest ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -44,7 +44,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( ITest ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ITest ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -82,7 +82,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void enum_serialization_with_ulong_underlying_type()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithULong ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithULong ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 

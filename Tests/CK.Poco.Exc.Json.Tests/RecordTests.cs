@@ -24,7 +24,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithRecord ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithRecord ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -48,7 +48,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_nullable_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithNullableRecord ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableRecord ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -76,7 +76,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void recursive_list_use_of_named_record_is_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IHoldRecList ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IHoldRecList ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 

@@ -1,5 +1,4 @@
 using CK.Poco.Exc.Json;
-using CK.Setup;
 using System.Text.Json;
 
 namespace CK.Core
@@ -7,7 +6,6 @@ namespace CK.Core
     /// <summary>
     /// Supports Json serialization for <see cref="IPoco"/> types.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.PocoJson.CommonImpl, CK.Poco.Exc.Json.Engine" )]
     public static class PocoJsonExportSupport
     {
         /// <summary>

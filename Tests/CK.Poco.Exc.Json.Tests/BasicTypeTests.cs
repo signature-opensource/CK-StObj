@@ -36,7 +36,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void all_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IAllBasicTypes ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IAllBasicTypes ) ); ;
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 
@@ -108,7 +108,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void all_nullable_basic_types_roundtrip()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( PocoJsonImportSupport ), typeof( IAllNullableBasicTypes ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IAllNullableBasicTypes ) ); ;
             using var services = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = services.GetRequiredService<PocoDirectory>();
 

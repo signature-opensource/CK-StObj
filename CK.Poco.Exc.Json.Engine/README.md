@@ -3,12 +3,11 @@
 This engine package generates code to support export and import of Poco types in Json format.
 
 The work starts with the [CommonImpl](CommonImpl.cs) code generator that is triggered by the
-[PocoJsonExportSupport](../CK.Poco.Exc.Json/Export/PocoJsonExportSupport.cs) model package:
+[CommonPocoJsonSupport](../CK.Poco.Exc.Json/CommonPocoJsonSupport.cs) model package:
 ```csharp
 [ContextBoundDelegation( "CK.Setup.PocoJson.CommonImpl, CK.Poco.Exc.Json.Engine" )]
-public static class PocoJsonExportSupport
+public static class CommonPocoJsonSupport
 {
-  // ...
 }
 ```
 This common code generator then:
@@ -18,6 +17,6 @@ This common code generator then:
 - Builds the names that will be used for types (thanks to the [ExchangeableTypeNameBuilder](../CK.Poco.Exchange.Engine/ExchangeableTypeNameBuilder.cs) 
   in CK.Poco.Exchange.Engine).
 - Creates the `CK.Poco.Exc.JsonGen` namespace and the 2 internal generated static classes `Exporter` and `Importer` 
-  in it that will implement the different methods.
+  that will implement the different methods.
 - Delegates the actual code generation to the [ExportCodeGenerator](Export/README.md) and [ImportCodeGenerator](Import/README.md).
 

@@ -24,7 +24,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void union_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IBasicUnion ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IBasicUnion ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 

@@ -47,7 +47,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         [Test]
         public void commands_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ),
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ),
                                                      typeof( ISimpleCommand ),
                                                      typeof( IPersonCommand ),
                                                      typeof( IAccountCommand ),

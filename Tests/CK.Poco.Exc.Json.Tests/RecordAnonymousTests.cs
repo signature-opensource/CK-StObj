@@ -21,7 +21,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithTuple ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithTuple ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -41,7 +41,7 @@ namespace CK.Poco.Exc.Json.Tests
         [Test]
         public void simple_nullable_tuple_serialization()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonExportSupport ), typeof( IWithNullableTuple ) ); ;
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithNullableTuple ) ); ;
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
