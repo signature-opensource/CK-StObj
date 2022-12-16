@@ -2,6 +2,7 @@ using CK.Poco.Exc.Json;
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Text.Json;
 
 namespace CK.Core
@@ -23,11 +24,40 @@ namespace CK.Core
             var m = new ArrayBufferWriter<byte>();
             using( var w = new Utf8JsonWriter( m ) )
             {
-                using var wCtx = new PocoJsonWriteContext( options );
-                @this.WriteJson( w, wCtx, withType );
-                w.Flush();
+                JsonSerialize( @this, w, withType, options );
             }
             return m.WrittenMemory;
+        }
+
+        /// <summary>
+        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/>.
+        /// </summary>
+        /// <param name="this">The poco (can be null).</param>
+        /// <param name="w">The target writer.</param>
+        /// <param name="withType">True to emit this Poco type.</param>
+        /// <param name="options">Optional export options.</param>
+        /// <returns>The Utf8 bytes.</returns>
+        public static void JsonSerialize( this IPoco? @this, Utf8JsonWriter w, bool withType = true, PocoJsonExportOptions? options = null )
+        {
+            using var wCtx = new PocoJsonWriteContext( options );
+            @this.WriteJson( w, wCtx, withType );
+            w.Flush();
+        }
+
+        /// <summary>
+        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/>.
+        /// </summary>
+        /// <param name="this">The poco (can be null).</param>
+        /// <param name="utf8JsonStream">The target stream.</param>
+        /// <param name="withType">True to emit this Poco type.</param>
+        /// <param name="options">Optional export options.</param>
+        /// <returns>The Utf8 bytes.</returns>
+        public static void JsonSerialize( this IPoco? @this, Stream utf8JsonStream, bool withType = true, PocoJsonExportOptions? options = null )
+        {
+            using( var w = new Utf8JsonWriter( utf8JsonStream ) )
+            {
+                JsonSerialize( @this, w, withType, options );
+            }
         }
 
         /// <summary>

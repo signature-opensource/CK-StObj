@@ -36,8 +36,7 @@ namespace CK.Poco.Exc.Json.Tests
                 using Utf8JsonWriter w = new Utf8JsonWriter( m );
                 try
                 {
-                    using var wCtx = new PocoJsonWriteContext( exportOptions );
-                    o.WriteJson( w, wCtx, true );
+                    o.JsonSerialize( w, true, exportOptions );
                     w.Flush();
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
@@ -57,8 +56,7 @@ namespace CK.Poco.Exc.Json.Tests
                 m.Position = 0;
                 using( var w2 = new Utf8JsonWriter( m ) )
                 {
-                    using var wCtx = new PocoJsonWriteContext( exportOptions );
-                    o2.WriteJson( w2, wCtx, true );
+                    o2.JsonSerialize( w2, true, exportOptions );
                     w2.Flush();
                 }
                 var bin2 = m.ToArray();
