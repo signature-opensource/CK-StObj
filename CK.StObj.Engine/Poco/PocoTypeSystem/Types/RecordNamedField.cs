@@ -40,6 +40,8 @@ namespace CK.Setup
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
+        public bool HasOwnDefaultValue => !_defInfo.IsDisallowed && _defInfo.DefaultValue != _type.DefaultValueInfo.DefaultValue;
+
         public ICompositePocoType Owner => _owner;
 
         IPocoType IPocoType.ITypeRef.Owner => _owner;

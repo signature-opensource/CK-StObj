@@ -22,6 +22,13 @@ namespace CK.Setup
         DefaultValueInfo DefaultValueInfo { get; }
 
         /// <summary>
+        /// Gets whether this field's <see cref="DefaultValueInfo"/> is not disallowed (either it requires
+        /// an initialization or its default value is fine) and is specific to this field: it is not the
+        /// same as the <see cref="IPocoType.DefaultValueInfo"/>.
+        /// </summary>
+        bool HasOwnDefaultValue { get; }
+
+        /// <summary>
         /// Gets whether this field is exchangeable: the field type must be exchangeable
         /// and for <see cref="IPrimaryPocoField"/>, <see cref="IPrimaryPocoField.FieldAccess"/>
         /// must not be <see cref="PocoFieldAccessKind.ReadOnly"/>.

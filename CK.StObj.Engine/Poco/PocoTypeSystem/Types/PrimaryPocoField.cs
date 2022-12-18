@@ -52,6 +52,8 @@ namespace CK.Setup
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 
+        public bool HasOwnDefaultValue => !_defInfo.IsDisallowed && _defInfo.DefaultValue != _type.DefaultValueInfo.DefaultValue;
+
         public PocoFieldAccessKind FieldAccess => _fieldAccesskind;
 
         IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRef;

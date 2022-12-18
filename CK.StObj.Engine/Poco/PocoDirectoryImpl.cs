@@ -151,7 +151,7 @@ namespace CK.Setup
                             // This expose a public (read only) property that is required for MutableCollection but
                             // a little bit useless for pure ReadOnly. However we need an implementation of the property
                             // declared on the interface (we could have generated explicit implementations here but it
-                            // would be over complicated).
+                            // would be overcomplicated).
                             tB.Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                         }
                         else

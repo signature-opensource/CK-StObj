@@ -61,6 +61,8 @@ namespace CK.Setup
 
         public DefaultValueInfo DefaultValueInfo => _type.DefaultValueInfo;
 
+        public bool HasOwnDefaultValue => false;
+
         public ICompositePocoType Owner => _owner;
 
         IPocoType IPocoType.ITypeRef.Owner => _owner;
