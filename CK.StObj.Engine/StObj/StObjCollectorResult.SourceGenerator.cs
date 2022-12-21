@@ -46,9 +46,8 @@ namespace CK.Setup
             try
             {
                 Debug.Assert( _valueCollector != null );
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
                 using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.ConfigurationGroup.Names}." ) )
-                using( monitor.CollectEntries( entries => errorSummary = entries ) )
+                using( monitor.CollectEntries( out var errorSummary ) )
                 {
                     using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                     {
@@ -128,18 +127,20 @@ namespace CK.Setup
                     {
                         t.RunFirstPass( monitor, codeGenContext, collector );
                     }
-                }
-                if( errorSummary != null )
-                {
-                    using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+
+                    if( errorSummary.Count > 0 )
                     {
-                        foreach( var e in errorSummary )
+                        using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
                         {
-                            monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
+                            foreach( var e in errorSummary )
+                            {
+                                monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
+                            }
                         }
+                        return false;
                     }
-                    return false;
                 }
+
                 return true;
             }
             catch( Exception ex )
@@ -160,22 +161,21 @@ namespace CK.Setup
 
             try
             {
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? errorSummary = null;
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {configurationGroup.Names}." ) )
-                using( monitor.CollectEntries( entries => errorSummary = entries ) )
+                using( monitor.CollectEntries( out var errorSummary ) )
                 {
                     MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
-                }
-                if( errorSummary != null )
-                {
-                    using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                    if( errorSummary.Count > 0 )
                     {
-                        foreach( var e in errorSummary )
+                        using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
                         {
-                            monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
+                            foreach( var e in errorSummary )
+                            {
+                                monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
+                            }
                         }
+                        return (false, runSignature);
                     }
-                    return (false, runSignature);
                 }
                 // Code generation itself succeeds.
                 if( configurationGroup.IsUnifiedPure )

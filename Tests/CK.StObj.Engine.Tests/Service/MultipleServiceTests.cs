@@ -107,22 +107,21 @@ namespace CK.StObj.Engine.Tests.Service
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( MayWork ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var logs, LogLevelFilter.Trace, 1000 ) )
                 {
                     using var s = TestHelper.CreateAutomaticServices( collector, null ).Services;
                     var resolved = s.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeEmpty();
+
+                    logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                                && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
                 }
-                logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.RegisterType( typeof( MayWork ) );
 
-                IReadOnlyList<ActivityMonitorSimpleCollector.Entry>? logs = null;
-                using( TestHelper.Monitor.CollectEntries( entries => logs = entries, LogLevelFilter.Trace, 1000 ) )
+                using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
                 {
                     var explicitInstance = new[] { 42, 3712 };
 
@@ -134,9 +133,9 @@ namespace CK.StObj.Engine.Tests.Service
                     var resolved = s.GetRequiredService<MayWork>();
                     resolved.Ints.Should().BeSameAs( explicitInstance );
 
+                    entries.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
+                                                && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
                 }
-                logs.Should().Contain( e => e.MaskedLevel == LogLevel.Warn
-                                            && e.Text.Contains( "This requires an explicit registration in the DI container", StringComparison.Ordinal ) );
             }
 
         }
