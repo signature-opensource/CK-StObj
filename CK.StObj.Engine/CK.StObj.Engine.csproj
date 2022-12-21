@@ -9,8 +9,8 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="5.0.1--0006-develop" />
-    <PackageReference Include="CK.Core" Version="16.0.1--0009-develop" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="6.0.0" />
+    <PackageReference Include="CK.Core" Version="16.1.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
