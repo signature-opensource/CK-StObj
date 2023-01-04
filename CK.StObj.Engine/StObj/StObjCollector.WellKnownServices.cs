@@ -37,6 +37,10 @@ namespace CK.Setup
             // IConfigurationRoot is not added to the DI by default, only the IConfiguration (that happens to be the root) is registered.
             // See https://github.com/aspnet/templating/issues/193#issuecomment-351137277.
             SetAutoServiceKind( "Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
+
+            // The SignalR IHubContext<THub> and IHubContext<THub,T> are singletons (that expose all the Clients of the hub).
+            SetAutoServiceKind( "Microsoft.AspNetCore.SignalR.IHubContext`1, Microsoft.AspNetCore.SignalR.Core", AutoServiceKind.IsSingleton, isOptional: true );
+            SetAutoServiceKind( "Microsoft.AspNetCore.SignalR.IHubContext`2, Microsoft.AspNetCore.SignalR.Core", AutoServiceKind.IsSingleton, isOptional: true );
         }
     }
 }
