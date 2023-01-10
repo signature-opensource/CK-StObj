@@ -91,8 +91,24 @@ namespace CK.Setup.Json
                           .OpenBlock()
                           .Append( "w.WriteStartArray();" ).NewLine();
 
-                    keyHandler.GenerateWrite( fWrite, "e.Key" );
-                    valueHandler.GenerateWrite( fWrite, "e.Value" );
+                    if( keyHandler.TypeInfo.ByRefWriter )
+                    {
+                        fWrite.Append( "var vK = e.Key;" ).NewLine();
+                        keyHandler.GenerateWrite( fWrite, "vK" );
+                    }
+                    else
+                    {
+                        keyHandler.GenerateWrite( fWrite, "e.Key" );
+                    }
+                    if( valueHandler.TypeInfo.ByRefWriter )
+                    {
+                        fWrite.Append( "var vV = e.Value;" ).NewLine();
+                        valueHandler.GenerateWrite( fWrite, "vV" );
+                    }
+                    else
+                    {
+                        valueHandler.GenerateWrite( fWrite, "e.Value" );
+                    }
 
                     fWrite.Append( "w.WriteEndArray();" )
                           .CloseBlock()
@@ -149,7 +165,15 @@ namespace CK.Setup.Json
                           .Append( "foreach( var e in c )" )
                           .OpenBlock()
                           .Append( "w.WritePropertyName( e.Key );" );
-                    valueHandler.GenerateWrite( fWrite, "e.Value" );
+                    if( valueHandler.TypeInfo.ByRefWriter )
+                    {
+                        fWrite.Append( "var vV = e.Value;" ).NewLine();
+                        valueHandler.GenerateWrite( fWrite, "vV" );
+                    }
+                    else
+                    {
+                        valueHandler.GenerateWrite( fWrite, "e.Value" );
+                    }
                     fWrite.CloseBlock()
                      .Append( "w.WriteEndObject();" ).NewLine();
 
