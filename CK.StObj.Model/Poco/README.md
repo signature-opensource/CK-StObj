@@ -167,14 +167,14 @@ The set of Poco compliant type is precisely defined:
  - Formally `object` is a basic type provided that at runtime, the instance must be a Poco compliant type.
  - Other `IPoco` objects (through any interface or the base `IPoco` interface).
  - Value tuples of compliant Poco types.
- - `List<>`, `IList<>`, `HashSet<>`, `IHashSet<>`, `Dictionary<,>` `IDictionary<,>` and array 
+ - `List<>`, `IList<>`, `HashSet<>`, `ISet<>`, `Dictionary<,>` `IDictionary<,>` and array 
    of Poco compliant type.
 
 ### The PocoRecord
 
 A PocoRecord is a mutable struct. It aims to capture "micro local types". They are detailed below.
 
-#### ValueTuple: the Anonymous Record
+#### ValueTuple: the "Anonymous Record"
 
 A value tuple is like an anonymous type that locally defines a small structure. The following
 pattern is quite common:
@@ -203,7 +203,7 @@ initial `Values` field will be a ready-to-use empty list).
 
 Value tuples can be nested:
 ```csharp
-public interface INVALID : IPoco
+public interface IOneInside : IPoco
 {
     ref (int A, (string Name, List<int> Values) B) Thing { get; }
 }
@@ -241,7 +241,7 @@ somehow the reverse as how the Value Tuples work).
 
 A word about the `record class`: it is useless for us here since it is a reference type and immutable by default.
 To have it mutable, the standard syntax must be used: there is no real difference between defining a `IPoco` and
-a `record class` (and also no difference in the final implementation: it's a class with its backing field):
+a `record class` (and also no difference in the final implementation: it's a class with its backing fields):
 ```csharp
 public interface IPerson : IPoco
 {
@@ -308,7 +308,7 @@ public interface IWithComplexRecords : IPoco
 }
 ```
 
-### The "standard collections
+### The conformant collections
 IPoco can expose `T[]`, `List<T>`, `IList<T>`, `HashSet<T>`, `ISet<T>`, `Dictionary<TKey,TValue>` and
 `IDictionary<TKey,TValue>` where `T`, `TKey` and `TValue` are Poco compliant types.
 A `List<(string Name, IDictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
@@ -323,10 +323,14 @@ A collection defined on a IPoco must be either fully read only or fully mutable:
 
 ### IPoco properties
 
-A IPoco property can be writable `{get; set;}` or read only `{get;}` and can be nullable or not.
+A IPoco property can be:
+- writable `{get; set;}` or `ref ... {get;}` for records
+- or read only `{get;}` 
+- and can be nullable or not.
 
 Whether they are writable or read only, a non nullable property type requires an initial non null value
-(otherwise the newly created Poco will not be valid).
+(otherwise the newly created Poco will not be valid): the code generator takes care of this by generating
+a default constructor that setups the fields, including nested records' fields.
 
 #### Non nullable properties: the initial value
 
@@ -378,7 +382,7 @@ by exposing read only properties:
     is assignable from Y.
 
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
-specification). This relation between 2 types is written `<:`. Below is listed some expected covariances and the (sad)
+specification). This relation between 2 types is written `<:`. Below is listed some **expected covariances** and the (sad)
 reality about them:
 
 | Example  | .Net support | Remarks |
@@ -396,8 +400,10 @@ reality about them:
 To overcome these limitations and unifies the API, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco collections,
 extended collection types are generated that automatically support all these expected covariance.
 
+> **The IPoco framework automatically corrects these cases!**
+
 Note that this "extended covariance":
-- Supports nullability (and enforces it!): `IReadOnlyList<object?>` <: `IList<IUser>` is allowed and supported BUT 
+- **Supports nullability** (and enforces it!): `IReadOnlyList<object?>` <: `IList<IUser>` is allowed and supported BUT 
   `IReadOnlyList<object>` <: `IList<IUser?>` is an error (even for reference types).
 - Considers dictionary key as being invariant. (Even if this can be done, the number of required adaptations to support this would explode.)
 
