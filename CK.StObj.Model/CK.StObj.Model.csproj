@@ -8,7 +8,7 @@
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CSemVer" Version="11.0.0" />
+    <PackageReference Include="CSemVer" Version="11.0.1" />
     <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="17.1.1--0023-develop" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
   </ItemGroup>
