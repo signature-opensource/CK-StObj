@@ -1,20 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\CK.Testing.StObjSetup\CK.Testing.StObjSetup.csproj" />
     <ProjectReference Include="..\..\LibWithSampleModel\LibWithSampleModel.csproj" />
-
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="NUnit" Version="3.13.3" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.2.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.3.1" />
   </ItemGroup>
-
   <ItemGroup>
     <!--
       This simply ensures that the CK.StObj.Model/Runtime/Engine and Sample.Model/Engine are build before this one but we don't reference nor use it.
@@ -25,7 +21,6 @@
     -->
     <ProjectReference Include="..\..\..\StObjEngineTesting\Tests\Sample.Engine.Tests\Sample.Engine.Tests.csproj" ReferenceOutputAssembly="false" Private="false" />
   </ItemGroup>
-
   <ItemGroup>
     <Folder Include="%24StObjGen\" />
   </ItemGroup>
