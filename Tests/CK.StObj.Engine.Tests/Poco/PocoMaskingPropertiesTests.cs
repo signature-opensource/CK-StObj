@@ -1,9 +1,8 @@
 using CK.Core;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
-using System.Diagnostics;
+using static CK.StObj.Engine.Tests.Poco.PocoGenericTests;
+using static CK.StObj.Engine.Tests.Poco.PocoMaskingPropertiesTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco

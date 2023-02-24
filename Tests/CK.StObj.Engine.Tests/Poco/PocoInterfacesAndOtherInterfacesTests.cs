@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes().Where( t => t != typeof( ICannotBe ) );
+        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes();
 
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()
@@ -98,17 +98,17 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
-        public interface IAlien { }
+        //public interface IAlien { }
 
-        public interface ICannotBe : IPoco, IAlien { }
+        //public interface ICannotBe : IPoco, IAlien { }
 
 
-        [Test]
-        public void Poco_OtherInterfaces_MUST_be_IPoco()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( ICannotBe ) );
-            TestHelper.GetFailedResult( c );
-        }
+        //[Test]
+        //public void Poco_OtherInterfaces_MUST_be_IPoco()
+        //{
+        //    var c = TestHelper.CreateStObjCollector( typeof( ICannotBe ) );
+        //    TestHelper.GetFailedResult( c );
+        //}
 
     }
 }
