@@ -53,9 +53,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests )
-                                                                    .GetNestedTypes()
-                                                                    .Where( t => t != typeof( ICannotBe ) );
+        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes();
 
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()
@@ -98,18 +96,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );
                 poco.OtherInterfaces.Keys.Should().BeEmpty();
             }
-        }
-
-        public interface IAlien { }
-
-        public interface ICannotBe : IPoco, IAlien { }
-
-
-        [Test]
-        public void Poco_OtherInterfaces_MUST_be_IPoco()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( ICannotBe ) );
-            TestHelper.GetFailedResult( c, "'CK.StObj.Engine.Tests.Poco.PocoInterfacesAndOtherInterfacesTests.ICannotBe' extends 'IAlien'. 'IAlien' must be marked with CK.Core.IPoco interface." );
         }
 
     }
