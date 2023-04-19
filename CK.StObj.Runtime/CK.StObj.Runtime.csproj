@@ -11,7 +11,7 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
     <PackageReference Include="CK.CodeGen" Version="7.0.1--0005-develop" />
     <PackageReference Include="CK.Reflection" Version="9.0.3--0036-develop" />
-    <PackageReference Include="CK.Setup.Dependency" Version="15.0.1--0005-develop" />
+    <PackageReference Include="CK.Setup.Dependency" Version="15.0.1--0006-develop" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
