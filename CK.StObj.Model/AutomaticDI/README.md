@@ -1,6 +1,6 @@
 # Automatic DI
 
-This folder contains type that will eventually be defined in CK.Core.
+This folder contains types that will eventually be defined in CK.Core.
 "Front/Process context" for services and marshalling is not finalized yet: we should be able to model
 "endpoint adherence" of front services (there's more than one endpoint) and marshaller may not be able to work across
 all contexts.
