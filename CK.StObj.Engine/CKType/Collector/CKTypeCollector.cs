@@ -27,6 +27,12 @@ namespace CK.Setup
         readonly Func<IActivityMonitor, Type, bool> _typeFilter;
         readonly IReadOnlyList<string> _names;
 
+        // This currently implements [CKAlsoRegisterType( Type )].
+        // Current implementation relies on IAttributeContextBoundInitializer.Initialize
+        // that takes this _alsoRegister delegate. 
+        readonly List<Type> _alsoRegisteredTypes = new List<Type>();
+        readonly Action<Type> _alsoRegister;
+
         /// <summary>
         /// Initializes a new <see cref="CKTypeCollector"/> instance.
         /// </summary>
@@ -56,6 +62,8 @@ namespace CK.Setup
             KindDetector = new CKTypeKindDetector( typeFilter );
             _memberInfoFactory = new ExtMemberInfoFactory();
             _pocoBuilder = new PocoDirectoryBuilder( _memberInfoFactory, ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );
+            _alsoRegisteredTypes = new List<Type>();
+            _alsoRegister = _alsoRegisteredTypes.Add;
             _names = names == null || !names.Any() ? new[] { String.Empty } : names.ToArray();
         }
 
@@ -177,7 +185,7 @@ namespace CK.Setup
 
         RealObjectClassInfo RegisterObjectClassInfo( IActivityMonitor monitor, Type t, bool isExcluded, RealObjectClassInfo? parent )
         {
-            RealObjectClassInfo result = new RealObjectClassInfo( monitor, parent, t, _serviceProvider, isExcluded );
+            RealObjectClassInfo result = new RealObjectClassInfo( monitor, parent, t, _serviceProvider, isExcluded, _alsoRegister );
             if( !result.IsExcluded )
             {
                 RegisterAssembly( monitor, t );
@@ -207,7 +215,7 @@ namespace CK.Setup
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                var c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t );
+                var c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t, _alsoRegister );
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
@@ -224,6 +232,17 @@ namespace CK.Setup
         /// <returns>The result object.</returns>
         public CKTypeCollectorResult GetResult( IActivityMonitor monitor )
         {
+            if( _alsoRegisteredTypes.Count > 0 )
+            {
+                using( monitor.OpenInfo( $"Also registering {_alsoRegisteredTypes.Count} types." ) )
+                {
+                    // Uses index loop: new types can appear.
+                    for( int i = 0; i < _alsoRegisteredTypes.Count; ++i )
+                    {
+                        RegisterType( monitor, _alsoRegisteredTypes[i] );
+                    }
+                }
+            }
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoDirectory? pocoDirectory;

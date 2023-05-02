@@ -23,7 +23,8 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use. Any error or fatal logged will abort the process after the types discovering phase.</param>
         /// <param name="owner">The <see cref="ITypeAttributesCache"/> that gives access to all the types' attributes.</param>
         /// <param name="m">The member that is decorated by this attribute.</param>
-        void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m );
+        /// <param name="alsoRegister">Enables this method to register types (typically nested types).</param>
+        void Initialize( IActivityMonitor monitor, ITypeAttributesCache owner, MemberInfo m, Action<Type> alsoRegister );
     }
     
 }

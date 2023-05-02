@@ -23,7 +23,7 @@ namespace CK.Setup
 
         AutoServiceClassInfo RegisterServiceClassInfo( IActivityMonitor monitor, Type t, bool isExcluded, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
         {
-            var serviceInfo = new AutoServiceClassInfo( monitor, _serviceProvider, parent, t, isExcluded, objectInfo );
+            var serviceInfo = new AutoServiceClassInfo( monitor, _serviceProvider, parent, t, isExcluded, objectInfo, _alsoRegister );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
                 RegisterAssembly( monitor, t );
@@ -67,7 +67,7 @@ namespace CK.Setup
                                     || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
                                     || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
 
-                    var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false );
+                    var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false, _alsoRegister );
                     info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( monitor, t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;
                     if( info.Interfaces.Count == 0 ) ++_serviceRootInterfaceCount;

@@ -37,7 +37,14 @@ namespace CK.Setup
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="isExcluded">True to actually exclude this type from the registration.</param>
         /// <param name="serviceClass">Service class is mandatory if this is an independent Type info.</param>
-        internal CKTypeInfo( IActivityMonitor monitor, CKTypeInfo? parent, Type t, IServiceProvider services, bool isExcluded, AutoServiceClassInfo? serviceClass )
+        /// <param name="alsoRegister">Enables a <see cref="IAttributeContextBoundInitializer.Initialize"/> to register types (typically nested types).</param>
+        internal CKTypeInfo( IActivityMonitor monitor,
+                             CKTypeInfo? parent,
+                             Type t,
+                             IServiceProvider services,
+                             bool isExcluded,
+                             AutoServiceClassInfo? serviceClass,
+                             Action<Type> alsoRegister )
         {
             Debug.Assert( (serviceClass == null) == (this is RealObjectClassInfo) );
             ServiceClass = serviceClass;
@@ -55,7 +62,7 @@ namespace CK.Setup
             }
             else
             {
-                _attributes = new TypeAttributesCache( monitor, t, services, parent == null );
+                _attributes = new TypeAttributesCache( monitor, t, services, parent == null, alsoRegister );
                 _interfacesCache = t.GetInterfaces();
                 if( parent != null )
                 {

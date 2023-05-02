@@ -189,8 +189,9 @@ namespace CK.Setup
                                       RealObjectClassInfo parent,
                                       Type t,
                                       IServiceProvider provider,
-                                      bool isExcluded )
-            : base( monitor, parent, t, provider, isExcluded, null )
+                                      bool isExcluded,
+                                      Action<Type> alsoRegister )
+            : base( monitor, parent, t, provider, isExcluded, null, alsoRegister )
         {
             Debug.Assert( parent == Generalization );
             if( IsExcluded ) return;

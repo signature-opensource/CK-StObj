@@ -25,7 +25,7 @@ namespace CK.Setup
         /// <see cref="AutoServiceInterfaceInfo"/>, a enumeration of one of them or a
         /// regular (no IAutoService) parameter.
         /// </summary>
-        public class CtorParameter
+        public sealed class CtorParameter
         {
             /// <summary>
             /// The parameter info.
@@ -84,10 +84,9 @@ namespace CK.Setup
             /// </summary>
             public string Name => ParameterInfo.Name!;
 
-            internal CtorParameter(
-                ParameterInfo p,
-                AutoServiceClassInfo? cS,
-                AutoServiceInterfaceInfo? iS )
+            internal CtorParameter( ParameterInfo p,
+                                    AutoServiceClassInfo? cS,
+                                    AutoServiceInterfaceInfo? iS )
             {
                 Debug.Assert( (cS != null) ^ (iS != null) );
                 ParameterInfo = p;
@@ -120,7 +119,8 @@ namespace CK.Setup
                                        AutoServiceClassInfo? parent,
                                        Type t,
                                        bool isExcluded,
-                                       RealObjectClassInfo? objectInfo )
+                                       RealObjectClassInfo? objectInfo,
+                                       Action<Type> alsoRegister )
         {
             Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
             if( objectInfo != null )
@@ -130,7 +130,7 @@ namespace CK.Setup
             }
             else
             {
-                TypeInfo = new CKTypeInfo( m, parent?.TypeInfo, t, serviceProvider, isExcluded, this );
+                TypeInfo = new CKTypeInfo( m, parent?.TypeInfo, t, serviceProvider, isExcluded, this, alsoRegister );
             }
             Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
 
