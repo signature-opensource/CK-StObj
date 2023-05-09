@@ -276,7 +276,7 @@ namespace CK.Setup
             Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
             if( _multipleMappings == null ) _multipleMappings = new List<Type>();
             _multipleMappings.Add( t );
-            if( (k&(CKTypeKind.IsFrontService|CKTypeKind.IsMarshallable)) != (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
+            if( (k&(CKTypeKind.IsEndpointService|CKTypeKind.IsMarshallable)) != (CKTypeKind.IsEndpointService | CKTypeKind.IsMarshallable) )
             {
                 collector.RegisterMultipleInterfaces( t, k, this );
             }

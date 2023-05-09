@@ -66,7 +66,7 @@ namespace CK.Setup
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Front service).
-        /// Note that <see cref="AutoServiceKind.IsFrontService"/> is automatically expanded with <see cref="AutoServiceKind.IsScoped"/>
+        /// Note that <see cref="AutoServiceKind.IsEndpointService"/> is automatically expanded with <see cref="AutoServiceKind.IsScoped"/>
         /// and <see cref="AutoServiceKind.IsFrontProcessService"/>.
         /// </summary>
         /// <param name="m">The monitor.</param>
@@ -77,14 +77,14 @@ namespace CK.Setup
         {
             Throw.CheckArgument( kind != AutoServiceKind.None );
 
-            bool hasFrontType = (kind & (AutoServiceKind.IsFrontProcessService|AutoServiceKind.IsFrontService)) != 0;
+            bool hasFrontType = (kind & (AutoServiceKind.IsFrontProcessService|AutoServiceKind.IsEndpointService)) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
             bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
 
             CKTypeKind k = (CKTypeKind)kind;
             if( hasFrontType )
             {
-                if( (kind & AutoServiceKind.IsFrontService) != 0 )
+                if( (kind & AutoServiceKind.IsEndpointService) != 0 )
                 {
                     k |= CKTypeKind.IsScoped;
                     hasLifetime = true;
@@ -239,7 +239,7 @@ namespace CK.Setup
                     else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
                     else if( t.Name == nameof( IFrontProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontProcessService | IsDefiner | IsReasonMarker;
-                    else if( t.Name == nameof( IFrontAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsFrontService | CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
+                    else if( t.Name == nameof( IEndpointAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsEndpointService | CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                     else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                 }
                 // If it's not one of the interface marker and it's not an internal interface, we analyze it.

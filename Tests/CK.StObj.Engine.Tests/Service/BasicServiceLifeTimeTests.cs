@@ -274,18 +274,18 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsEndpointService );
                 collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsFrontService );
+                                                                                        | AutoServiceKind.IsEndpointService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsEndpointService );
                 collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
                 collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
                 collector.RegisterType( typeof( ExtS ) );
@@ -293,7 +293,7 @@ namespace CK.StObj.Engine.Tests.Service
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsFrontService );
+                                                                                        | AutoServiceKind.IsEndpointService );
             }
         }
 

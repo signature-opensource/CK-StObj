@@ -29,10 +29,10 @@ namespace CK.Core
         /// This flag implies <see cref="IsFrontProcessService"/> AND <see cref="IsScoped"/>: a Front only service is necessarily Scoped
         /// (since a Singleton is, by design, available in the whole process).
         /// </summary>
-        IsFrontService = 2,
+        IsEndpointService = 2,
 
         /// <summary>
-        /// This service is marshallable. This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsFrontService"/>.
+        /// This service is marshallable. This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsEndpointService"/>.
         /// </summary>
         IsMarshallable = 4,
 

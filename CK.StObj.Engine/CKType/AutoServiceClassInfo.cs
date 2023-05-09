@@ -160,7 +160,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final service kind.
         /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
-        /// <see cref="AutoServiceKind.IsFrontService"/> or <see cref="AutoServiceKind.IsFrontProcessService"/>
+        /// <see cref="AutoServiceKind.IsEndpointService"/> or <see cref="AutoServiceKind.IsFrontProcessService"/>
         /// are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
         /// </summary>
         public AutoServiceKind? FinalTypeKind { get; private set; }
@@ -258,16 +258,6 @@ namespace CK.Setup
         public IReadOnlyCollection<Type>? MarshallableTypes { get; private set; }
 
         IReadOnlyCollection<Type> IStObjServiceClassDescriptor.MarshallableTypes => MarshallableTypes!;
-
-        /// <summary>
-        /// Gets the types that must be marshalled for this Auto service to be marshallable inside the same process.
-        /// This is null until the EnsureCtorBinding internal method has been called.
-        /// This is empty if this service is not marshallable or if it doesn't need to be: only services marked
-        /// with <see cref="AutoServiceKind.IsFrontService"/> are concerned since, by design, services that are
-        /// not front services at all or are <see cref="AutoServiceKind.IsFrontProcessService"/> don't need to be
-        /// marshalled inside the same process.
-        /// </summary>
-        public IReadOnlyCollection<Type>? MarshallableInProcessTypes { get; private set; }
 
         /// <summary>
         /// Gets the <see cref="ImplementableTypeInfo"/> if this <see cref="CKTypeInfo.Type"/>
@@ -437,21 +427,13 @@ namespace CK.Setup
                 var final = initial;
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsFrontService;
-                    const AutoServiceKind IsFrontMashallableMask = AutoServiceKind.IsFrontService | AutoServiceKind.IsMarshallable;
+                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService;
                     HashSet<Type>? allMarshallableTypes = null;
-                    HashSet<Type>? frontMarshallableTypes = null;
                     // If this service is not marshallable then all its parameters that are Front services must be marshallable
                     // so that this service can be "normally" created as long as its required dependencies have been marshalled.
                     // Lets's be optimistic: all parameters that are Front(Process) services (if any) will be marshallable, so this one
                     // can be used "on the other side" as if it was itself marshallable.
                     bool isAutomaticallyMarshallable = true;
-
-                    // If this service is marshallable, it "handles" any of the FrontEnd/Process front service
-                    // on which it relies.
-                    // If we are on a Front service (the worst case) and this Service is IsMarshallable at its level, 
-                    // we don't need to process the parameters since we have nothing to learn...
-                    bool isFrontMarshallable = (final & IsFrontMashallableMask) == IsFrontMashallableMask;
 
                     if( path.Contains( this ) )
                     {
@@ -521,24 +503,19 @@ namespace CK.Setup
                                         final |= AutoServiceKind.IsScoped;
                                     }
                                 }
-                                // Handling Front aspects.
-                                if( isFrontMarshallable ) continue;
-                                // If the parameter is not a front service, we skip it: we don't care of a IsMarshallable only type,
-                                // as long as the parameter is not "front", we can safely ignore it. 
+                                // Handling EndPoint/FrontProcess propagation.
+                                // If the parameter is not a endpoint or a front process service, we can safely ignore it: we don't care of a IsMarshallable only type.
                                 if( (kP & FrontTypeMask) == 0 ) continue;
 
                                 var newFinal = final | (kP & FrontTypeMask);
                                 if( newFinal != final )
                                 {
-                                    // Upgrades from None, Process to Front...
+                                    // Upgrades from None, FrontProcess to Endpoint...
                                     m.Trace( $"Type '{ClassType}' must be {newFinal & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
                                     final = newFinal;
-                                    // We don't have to worry about the IsFrontService that implies the IsScoped flag since this is already handled
-                                    // by the lifetime code above: if the current parameter is a FrontService then it is also a Scoped and any conflict
+                                    // We don't have to worry about the EndpointService that implies the IsScoped flag since this is already handled
+                                    // by the lifetime code above: if the current parameter is a EndpointService then it is also a Scoped and any conflict
                                     // with this being a singleton would have been handled.
-                                    // We can update the flag that avoids useless processing.
-                                    isFrontMarshallable = (final & IsFrontMashallableMask) == IsFrontMashallableMask;
-                                    if( isFrontMarshallable ) continue;
                                 }
                                 // If this Service is marshallable at its level OR it is already known to be NOT automatically marshallable,
                                 // we don't have to worry anymore about the parameters marshalling.
@@ -551,7 +528,7 @@ namespace CK.Setup
                                 }
                                 else
                                 {
-                                    if( allMarshallableTypes == null ) allMarshallableTypes = new HashSet<Type>();
+                                    allMarshallableTypes ??= new HashSet<Type>();
                                     if( pC != null )
                                     {
                                         Debug.Assert( pC.MarshallableTypes != null, "EnsureCtorBinding has been called." );
@@ -560,19 +537,6 @@ namespace CK.Setup
                                     else
                                     {
                                         allMarshallableTypes.Add( p.ParameterInfo.ParameterType );
-                                    }
-                                    if( (kP & AutoServiceKind.IsFrontService) != 0 )
-                                    {
-                                        if( frontMarshallableTypes == null ) frontMarshallableTypes = new HashSet<Type>();
-                                        if( pC != null )
-                                        {
-                                            Debug.Assert( pC.MarshallableInProcessTypes != null, "EnsureCtorBinding has been called." );
-                                            frontMarshallableTypes.AddRange( pC.MarshallableInProcessTypes );
-                                        }
-                                        else
-                                        {
-                                            frontMarshallableTypes.Add( p.ParameterInfo.ParameterType );
-                                        }
                                     }
                                 }
                             }
@@ -588,9 +552,9 @@ namespace CK.Setup
                                 final |= AutoServiceKind.IsSingleton;
                             }
                             // Conclude about Front aspect.
-                            if( isFrontMarshallable )
+                            if( (final & AutoServiceKind.IsMarshallable) != 0 )
                             {
-                                MarshallableTypes = MarshallableInProcessTypes = new[] { ClassType };
+                                MarshallableTypes = new[] { ClassType };
                             }
                             else
                             {
@@ -599,18 +563,13 @@ namespace CK.Setup
                                     Debug.Assert( allMarshallableTypes.Count > 0 );
                                     MarshallableTypes = allMarshallableTypes;
                                     final |= AutoServiceKind.IsMarshallable;
-                                    if( frontMarshallableTypes != null )
-                                    {
-                                        MarshallableInProcessTypes = frontMarshallableTypes;
-                                    }
-                                    else MarshallableInProcessTypes = Type.EmptyTypes;
                                 }
                                 else
                                 {
-                                    // This service is not a Front service OR it is not automatically marshallable.
+                                    // This service is not a FrontProcess service OR it is not automatically marshallable.
                                     // We have nothing special to do: the set of Marshallable types is empty (this is not an error)
                                     // and this FinalTypeKind will be 'None' or a EndPoint/Process service but without the IsMarshallable bit.
-                                    MarshallableTypes = MarshallableInProcessTypes = Type.EmptyTypes;
+                                    MarshallableTypes = Type.EmptyTypes;
                                 }
                             }
                         }
