@@ -10,3 +10,234 @@ CKTypeDefinerAttribute and CKTypeSuperDefinerAttribute.
 
 See https://github.com/Invenietis/CK-Core/tree/develop/CK.Core/AutomaticDI
 
+## The "Endpoint" DI roots
+
+The notion of "IEndpointService singleton" doesn't currently exist (may 2323)... I've always considered
+"Endpoint services" to necessarily be scoped dependencies. That was a mistake (an overlook).
+One of the first idea was to hook the service resolution with a configurable scoped service:
+
+```csharp
+[IsMultiple]
+public interface IEndpointServiceResolver : ISingletonAutoService
+{
+    object? GetService( IServiceProvider scope, Type serviceType );
+}
+
+public sealed class ServiceHook : IScopedAutoService
+{
+    readonly IServiceProvider _scoped;
+    IEndpointServiceResolver? _resolver;
+    readonly Dictionary<Type, object?> _resolved;
+
+    public ServiceHook( IServiceProvider scoped )
+    {
+        _resolved = new Dictionary<Type, object?>();
+        _scoped = scoped;
+    }
+
+    public void SetResolver( IEndpointServiceResolver resolver )
+    {
+        Throw.CheckState( _resolver == null );
+        _resolver = resolver;
+    }
+
+    public object? GetService( Type t )
+    {
+        Throw.CheckState( _resolver != null );
+        if( !_resolved.TryGetValue( t, out object? o ) )
+        {
+           o = _resolver.GetService( _scoped, t );
+           _resolved.Add( t, o );
+           return o;
+        }
+    }
+}
+```
+We cannot register a "IEndpointService singleton" as a singleton and resolves it through from a scoped hook
+because of an optimization in the .Net Core DI where registered singleton are directly resolved to the root
+(resolving from the requesting scope is short-circuited). To be able to hook the resolution we must register them as
+Scoped. But by doing this, they are no more singletons. Anyway, this simply cannot work at all.
+
+It seems that we need either:
+- A more powerful DI engine (Autofac) and use its capabilities but it comes with a fair amount of complexities
+  (which is perfectly normal) and requires hooks to be setup to be integrated with the "Conformant DI".
+- Continue to use the Conformant DI but take more control on it.
+
+Our need is NOT a multi-tenant management (like Orchard does). Our application is ONE application, an homogeneous
+Party that interacts with other parties. The DI we need is about Endpoints that connect the Application to the external
+world. We also want "Dynamic Endpoint" (endpoints can appear and disappear dynamically).
+What we have so far:
+- A Endpoint always creates a Scope to do its job (this is what does ASPNet for each HTTP request).
+- There is no issue about regular scoped services and regular singletons (true singletons) but we would like
+  to hide some services for some endpoints: not all the services must (and even can) be available from all the endpoints
+  (think to the awful AsyncLocal-is-evil `IHttpContextAccessor`). This "hiding" is not per endpoint instance but per endpoint type:
+     - A MQTT endpoint on port 51634 must provide the same "MQTTAccessChecker" or "MQTTMessageStore" singletons as the
+       one on the port 6871.
+     - All MQTT endpoint must see the same singletons instances and have access to the same set of service types, including the
+       scoped ones. For the scoped services, it is the responsibility of the endpoint to provide potentially configured
+       service instances based on its configuration and/or the external world it is dealing with (a `IMQTTCallerInfo` scoped
+       service can expose a RemoteAddress property for instance).
+- The "EndpointType" is a perfect candidate to be a IRealObject that can expose the IServiceProvider that must be used
+  by any of its endpoint instance (so that a Scope can be created from it).
+
+If we follow this path, we reuse the Microsoft DI container (primarily for its Scope management). The issue now is to
+handle the configuration of these DI container and/vs. the "global/primary DI" that .Net Core hosts uses.
+
+Currently, any IRealObject can have a 'void ConfigureServices( StObjContextRoot.ServiceRegister, ... )' method that
+enables real objects to configure the DI (registering new services, configuring things, etc.) based on any number
+of parameters that can be any other real objects and/or startup services previously registered.
+
+This is all about configuring the "global/primary DI" to allow standard .Net applications to work seamlessly with
+the Automatic DI. Here, we need to:
+ - Preserve this as much as possible, except that EndpointType specific services should not be registered in it.
+ - Setup EndpointType DI containers with their specific types and all the common ones.
+
+The "Global DI" build is currently out of our control (to avoid the required use of IServiceProviderFactory) and
+this is a good thing. If we want to minimize the changes here, we must at least find a way to "tag" the services
+that are bound to the regular .Net Core endpoint (often the "WebEndpoint") to not register them in the other endpoint's
+containers. For the "Web", these are the services that ultimately depend on the HTTP layer and not too many are like this.
+
+Currently (may 2023), IsEndpointService can be set externally (SetAutoServiceKind and by configuration). The
+IsEndpointService semantics must be changed a little bit: it doesn't imply a Scope lifetime anymore (but still
+implies the IsFrontProcess service for the future "marshalling" capability).
+
+When a service is marked as a IsEndpointService, it means that we know what it is, we know that it has an
+adherence to some specific aspects of the system... Is it enough to orchestrate the whole thing?
+
+- If it is a scoped service, it is up to a EndPointType to claim that it handles it: this is
+  an opt-in, explicit, statement (by attribute certainly) since it will have to register a way to instantiate the
+  scoped service from its own container.
+- If it is a singleton, it must be the same instance if other endpoints also want/need to support it. This can
+  be the one of the Global DI or must be shared between the EndpointTypes that want it and not appear in the
+  Global DI.
+
+The idea of the process should look like:
+- During the static type analysis, we collect all the existing EndPointType.
+- A EndpointType must claim any "specific" endpoint service it handles. Let's do this with a (AllowMultiple) attribute:
+    [SpecificEndpointService( Type t )]
+    This states that endpoint instances will be able to provide the t service AND that this type is specific
+    (but not exclusive) to the EndpointType.
+    Two different endpoint can claim to support the same "specific" endpoint service type (if exclusivity must be
+    supported, it will be rather easy but we don't need it here).
+- We use this opt-in claim to flag all the services with at least one such "Specific" declaration: these services
+  must disappear from the "Global DI".
+- When we AddStObjMap/AddCKDatabase, we remove any ServiceDescriptor with a "specific type" from the ServiceCollection:
+  the Global DI won't be able to resolve these types.
+
+We must now consider the EndpointType container initialization. To rely/reuse the Conformant DI infrastructure, we must
+reason only in terms of ServiceCollection configuration. Each container will be obtained through the BuildServiceProvider()
+method: once built, the container is sealed, it cannot be altered.
+
+A EndpointType container must be able to return singletons:
+ - from the global DI if the type is not a IsEndPointService or is a IsEndPointService that is not "specific".
+ - from a shared container for IsEndPointService that is not exclusive to the endpoint.
+ - from its own container otherwise.
+
+And scoped services:
+ - These are "parametrized services". Their parametrization can come from the endpoint instance (a "EndpointAddress" property)
+   or from a more dynamic context (a "CallerAddress" from one of the many connections that the endpoint is managing).
+
+Actually, singletons are also "parametrized" by the EndpointType itself and this raises a question about a singleton shared 
+by 2 or more endpoints: somehow, the one who's in charge of its initialization "wins", the other ones have nothing to say about
+the properties/configuration of the service (necessarily stable because it's a singleton). This is problematic: we cannot
+trust the developer to ensure the coherency of different singleton initialization, it must be the same "by design", initialized
+by one and only one EndpointType. Following this path leads to a simple conclusion: the "Global DI" is a container like the
+others, nothing makes it "special" or more "global" than any EndpointType's container. However, if the "WebEndpointType" exists,
+it is unfortunately not exactly the same as the other ones because its container is managed "above", by the application host
+(should it be named "HostEndpointType"?) and it's configuration (the ServiceCollection that has been configured by Startup
+methods) is the basis of the other ones.
+
+Should we model this "HostEndpointType" ("DefaultEndpointType" may be a better name)? Or should we keep the idea described above
+that considers the DefaultEndpointType's "specific" services to be by default the services that are not marked with the
+ [SpecificEndpointService( Type t )]` attribute on any other EndpointType?
+If we model it, it must expose its final ServiceProvider like the others. It means that there must be some code somewhere
+that sets the host's final service provider on it. Unfortunately, there's no "OnContainerBuilt" event or hook exposed by
+.Net Core DI and using a IHostedService is not really an option since even if StartAsync is called right after the container
+initialization there is no ordering constraints. It seems that we cannot model it, its handling must be specific.
+
+BUT! A EndpointType must be able to configure its container to resolve a singleton from the global DI container
+with something like that:
+```csharp
+myContainerBuilder.AddSingleton( typeof( ICommonSingleton ), _theGlobalDI.GetService( typeof( ICommonSingleton ) ) );
+```
+This means that EndpointType must have access to the global DI before being able to resolve even a common singleton. EndpointTypes
+are IRealObject, their constructor have no parameters. We need a singleton service to capture the global DI container (in its constructor)
+and the instantiation of this service must be triggered by someone: we are stuck with the `IHostedService` execution to initialize the
+EndpointTypes, we have no choice... So, we *can* model the "DefaultEndpointType". If we do model it, it can describe its own specific
+endpoint services (like `IAuthenticationService` that requires a `HttpContext` to do its job), de facto removing it from the set of
+services of any other EndpointType.
+
+BUT (again)! This `IAuthenticationService` must be preempted by the DefaultEndpointType only if it exists, if the host is a web
+application. This would require a "late binding" approach of these services (based on the Assembly Qualified Name of the type,
+similar to the configuration of AutoServiceKind for well known external services) that must be as exhaustive as possible.
+This doesn't seem sustainable. We can change how a "specific endpoint service" is tied to its EndpointType and be more powerful
+(and may be more explicit): with one attribute on the service type itself `[EndpointService( Type endpointType )]` and one assembly
+attribute `[assembly:EndpointService( Type serviceType, Type endpointType )]` we reverse the declaration and use strong type
+to declare the association.
+
+One can take this opportunity to add a `bool exclusiveEndpoint` to the attribute parameters to prevent any service sharing
+when it doesn't make sense for the service to be available in any other EndpointType. When `exclusiveEndpoint` is false,
+we are left with an important issue: a "shared singleton" must be initialized by one and only one EndpointService, the others
+may reuse/expose it but it should come from a single *Owner* container. We can express this by refining the attributes:
+- `[EndpointServiceImplementation( Type endpointType, bool exclusiveEndpoint )]`
+   and `[assembly:EndpointServiceImplementation( Type serviceType, Type endpointType, bool exclusiveEndpoint )]`.
+   These attributes specify the single owner/creator of the service.
+
+But the notion of ownership (and the `exclusiveEndpoint` for sharing or not) only applies to singletons. They'd better be named:
+- `[EndpointSingletonServiceImplementation( Type endpointType, bool exclusiveEndpoint )]`
+   and `[assembly:EndpointSingletonServiceImplementation( Type serviceType, Type endpointType, bool exclusiveEndpoint )]`.
+
+The assembly attribute may seem useless however it is required to define: `IAuthenticationService` -> DefaultEndPointType association.
+In practice, this assembly attribute will be used for the DefaultEndPointType, but it doesn't cost much to keep it as-is.
+
+Scoped services have no "shareability" issue, so why do we care about tying a service to one (or more) EndpointType?
+Because we want to be able to reason about the services for 2 different reasons:
+- We want to "frame the developer's work", to detect inconsistencies and errors as early and as automatically as possible.
+- If we precisely know the set of services that is supported by a endpoint, then we can check the availability of a command
+  handler or any other methods and/or service for the endpoint at setup time. For Cris, this enables us to compute the exact
+  set of commands that a endpoint supports. (We can even imagine automatically selecting a constructor or a method based on
+  its signature but this may be weird).
+
+To reason about services, we do need `[EndpointServiceAvailability( Type endpointType )]` and
+`[assembly:EndpointServiceAvailability( Type serviceType, Type endpointType )`. The good news is that they apply
+to singletons and scoped services: we don't need more. It is important to understand at this point that any "regular"
+service (that is not tied to an EndPointType) be it singleton or scoped MUST be available from all the endpoints.
+If it is not, then its a bug that must be corrected by:
+- Declaring it to be available in the DefaultEndpointType (this tags the service to be IsEndpointService).
+- Declaring it to be available in any EndpointType that can expose it (and do the job of actually supporting it in
+  every existing EndpointType).
+
+All this implies a refactoring of the static type analysis so that a class or an interface is associated to 0 or more
+EndpointType, the IsEndpointService bit flag is now derived from the emptiness of this set.
+
+Thanks to this, any assembly that is tied to a "host capability" can participate in these associations. The CK.AspNet.Auth
+assembly for instance can declare the `IAuthenticationService` to be a endpoint specific (and exclusive!) service of the
+DefaultEndpointType.
+
+It is the service that now claims to be tied to a EndpointType. When it is the DefaultEndpointType we cannot do much, but
+for the other ones, we may now check that they really support it: ensuring at setup time that the System is coherent is
+an important aspect of the Automatic DI. To do this, the fact that a EndpointType handles a service type must be discoverable
+by reflection. A simple `[EndpointServices( params Type[] types )]` on the specialized EndpointType should be enough.
+
+It is now time to better describe how a EndpointType does its magic. Because of the required use of `IHostedService.StartAsync`
+as the "OnContainerBuild" hook, everything starts (at runtime) with the singleton Auto service `EndpointTypeManager` that captures
+the global DI container and the DefaultEndpointType real object instance through its constructor and is a `IHostedService` with
+a no-op StartSync method: the constructor is enough (we don't need an sync context here), the hosted service is only here to trigger
+the type resolution from the global DI container. The `EndpointTypeManager` constructor calls an internal `SetGlobalContainer( IServiceProvider )`
+method on the DefaultEndpointType that memorizes the global container as its own one and relays the call to all the other
+existing EndpointType that can now use the global one to do their job... and we are done.
+
+What?!  
+-
+Of course, this is the only the final runtime part. The real (and hard) work has been done before.
+Before that, our "BeforeContainerBuild" hook on the IStObjMap has been called by the AddStObjMap
+extension method and has provided the global `IServiceCollection` to all the EndpointType instances.
+The EndpointType instances have used it to build their own `IServiceCollection` and build their own
+container. The global `IServiceCollection` is then cleaned up of all the specific endpoint services
+and returns to the host that will build the final global container... and we are done.
+
+Yes, except that before the "build their own `IServiceCollection`" step can be executed, it's code has
+been generated by the setup based on the static type analysis.
+
+
+
