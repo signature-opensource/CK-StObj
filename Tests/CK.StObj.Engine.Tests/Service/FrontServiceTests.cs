@@ -32,7 +32,7 @@ namespace CK.StObj.Engine.Tests.Service
             descriptor.Should().BeSameAs( map.Services.SimpleMappings[typeof( EndpointService1 )] );
 
             descriptor.IsScoped.Should().BeTrue();
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsScoped );
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped );
         }
 
         public class Impossible0 : IRealObject, IEndpointAutoService
@@ -65,7 +65,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_defined_as_FrontOnly_services()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsFrontProcessService );
+            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
             collector.RegisterType( typeof( RealObjectAndAutoService ) );
             TestHelper.GetFailedResult( collector );
         }
@@ -88,7 +88,7 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
         }
 
         public interface IFrontDependentService2 : IAutoService
@@ -116,9 +116,9 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
             IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IEndpointService1 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
         }
 
         public class OneSingleton : ISingletonAutoService

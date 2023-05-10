@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dI = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
             IStObjServiceClassDescriptor dC = map.Services.SimpleMappings[typeof( FrontProcessService1 )];
             dI.Should().BeSameAs( dC );
-            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
         [Test]
@@ -85,7 +85,7 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
             var dM = map.Services.SimpleMappings[typeof( MService1 )];
             var dMClass = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontProcessService1> )];
@@ -129,12 +129,12 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
             IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontProcessDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( IFrontProcessDependentService2 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
 

@@ -46,7 +46,7 @@ namespace CK.Setup
                 EnumeratedType = tI;
                 // Ite missa est.
                 _isComputed = true;
-                _finalKind = AutoServiceKind.IsEndpointService | AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsScoped | AutoServiceKind.IsMarshallable;
+                _finalKind = AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped | AutoServiceKind.IsMarshallable;
                 MarshallableTypes = null!;
             }
 
@@ -74,7 +74,7 @@ namespace CK.Setup
                     if( _isComputing )
                     {
                         m.Warn( $"Automatic DI type of 'IEnumerable<{EnumeratedType.FullName}> is not decidable: a dependency cycle has been found. It will be considered as the \"worst case\": a non marshallable IsEndpointService|IsScoped." );
-                        _finalKind = AutoServiceKind.IsEndpointService | AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsScoped;
+                        _finalKind = AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped;
                     }
                     else
                     {
@@ -102,7 +102,7 @@ namespace CK.Setup
             {
                 Debug.Assert( _rawImpls != null );
 
-                const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService;
+                const AutoServiceKind FrontTypeMask = AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService;
 
                 bool isScoped = (initial & AutoServiceKind.IsScoped) != 0;
                 HashSet<Type>? allMarshallableTypes = null;

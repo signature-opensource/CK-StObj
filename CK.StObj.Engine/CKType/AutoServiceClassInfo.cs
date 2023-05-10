@@ -160,7 +160,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final service kind.
         /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
-        /// <see cref="AutoServiceKind.IsEndpointService"/> or <see cref="AutoServiceKind.IsFrontProcessService"/>
+        /// <see cref="AutoServiceKind.IsEndpointService"/> or <see cref="AutoServiceKind.IsProcessService"/>
         /// are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
         /// </summary>
         public AutoServiceKind? FinalTypeKind { get; private set; }
@@ -427,7 +427,7 @@ namespace CK.Setup
                 var final = initial;
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters!.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService;
+                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService;
                     HashSet<Type>? allMarshallableTypes = null;
                     // If this service is not marshallable then all its parameters that are Front services must be marshallable
                     // so that this service can be "normally" created as long as its required dependencies have been marshalled.
@@ -503,14 +503,14 @@ namespace CK.Setup
                                         final |= AutoServiceKind.IsScoped;
                                     }
                                 }
-                                // Handling EndPoint/FrontProcess propagation.
-                                // If the parameter is not a endpoint or a front process service, we can safely ignore it: we don't care of a IsMarshallable only type.
+                                // Handling EndPoint/Process propagation.
+                                // If the parameter is not a endpoint or a process service, we can safely ignore it: we don't care of a IsMarshallable only type.
                                 if( (kP & FrontTypeMask) == 0 ) continue;
 
                                 var newFinal = final | (kP & FrontTypeMask);
                                 if( newFinal != final )
                                 {
-                                    // Upgrades from None, FrontProcess to Endpoint...
+                                    // Upgrades from None, Process to Endpoint...
                                     m.Trace( $"Type '{ClassType}' must be {newFinal & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
                                     final = newFinal;
                                     // We don't have to worry about the EndpointService that implies the IsScoped flag since this is already handled
@@ -566,7 +566,7 @@ namespace CK.Setup
                                 }
                                 else
                                 {
-                                    // This service is not a FrontProcess service OR it is not automatically marshallable.
+                                    // This service is not a Process service OR it is not automatically marshallable.
                                     // We have nothing special to do: the set of Marshallable types is empty (this is not an error)
                                     // and this FinalTypeKind will be 'None' or a EndPoint/Process service but without the IsMarshallable bit.
                                     MarshallableTypes = Type.EmptyTypes;

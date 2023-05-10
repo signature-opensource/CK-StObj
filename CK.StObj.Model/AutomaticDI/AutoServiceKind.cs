@@ -12,27 +12,26 @@ namespace CK.Core
     {
         /// <summary>
         /// Not a service we handle or external service for which
-        /// no lifetime nor front binding is known.
+        /// no lifetime nor any information is known.
         /// </summary>
         None = 0,
 
         /// <summary>
-        /// This is a front service, bound to the front process that cannot be used directly in
-        /// another process and needs to be marshalled to any other process (a typical example is
-        /// the IOptions&lt;&gt; implementations for instance). 
+        /// Indicates a service that has a data/configuration adherence to the current process: it requires some
+        /// sort of marshalling/configuration to be able to do its job remotely (out of this process).
+        /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
         /// </summary>
-        IsFrontProcessService = 1,
+        IsProcessService = 1,
 
         /// <summary>
-        /// This is a front service bound to the End Point: even inside the front process, it cannot be used directly
-        /// (a typical example of such service is the HttpContext). To be used by a background service, it must be <see cref="IsMarshallable"/>.
-        /// This flag implies <see cref="IsFrontProcessService"/> AND <see cref="IsScoped"/>: a Front only service is necessarily Scoped
-        /// (since a Singleton is, by design, available in the whole process).
+        /// This is a service bound to a End Point: even inside this process, it may not be available
+        /// (a typical example of such service is the IAuthenticationService that requires an HttpContext).
+        /// This flag implies <see cref="IsProcessService"/>.
         /// </summary>
         IsEndpointService = 2,
 
         /// <summary>
-        /// This service is marshallable. This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsEndpointService"/>.
+        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> and <see cref="IsEndpointService"/>.
         /// </summary>
         IsMarshallable = 4,
 

@@ -19,20 +19,25 @@ namespace CK.Setup
         None,
 
         /// <summary>
-        /// Front process service.
+        /// Process service flag indicates a service that has a data/configuration adherence to the
+        /// current process: it requires some sort of marshalling/configuration to be able to do its job
+        /// remotely (out of this process).
+        /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
+        /// <para>
         /// This flag has to be set for <see cref="IsEndpointService"/> to be set.
+        /// </para>
         /// </summary>
-        IsFrontProcessService = 1,
+        IsProcessService = 1,
 
         /// <summary>
-        /// Service is bound to the End Point. The service is necessarily bound to front
-        /// process (<see cref="IsFrontProcessService"/> is also set) AND this is necessarily <see cref="IsScoped"/>.
+        /// Service is bound to a End Point. The service is necessarily bound to the front
+        /// process (<see cref="IsProcessService"/> is also set).
         /// </summary>
         IsEndpointService = 2,
 
         /// <summary>
         /// Marshallable service.
-        /// This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsEndpointService"/> flags.
+        /// This is independent of <see cref="IsProcessService"/> and <see cref="IsEndpointService"/> flags.
         /// </summary>
         IsMarshallable = 4,
 
@@ -78,9 +83,9 @@ namespace CK.Setup
         RealObject = IsSingleton | 512,
 
         /// <summary>
-        /// Simple bit mask on <see cref="IsEndpointService"/> | <see cref="IsFrontProcessService"/>.
+        /// Simple bit mask on <see cref="IsEndpointService"/> | <see cref="IsProcessService"/>.
         /// </summary>
-        FrontTypeMask = IsEndpointService | IsFrontProcessService,
+        FrontTypeMask = IsEndpointService | IsProcessService,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
@@ -107,7 +112,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the <see cref="AutoServiceKind"/> (masks the internal bits).
-        /// Note that a check of the "IsEndpointService => IsFrontProcessService and IsScoped" rule
+        /// Note that a check of the "IsEndpointService => IsProcessService" rule
         /// is made: an <see cref="ArgumentException"/> may be thrown.
         /// </summary>
         /// <param name="this">This type kind.</param>
@@ -116,9 +121,9 @@ namespace CK.Setup
         {
             if( (@this&CKTypeKind.IsEndpointService) != 0
                 &&
-                (@this & (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped)) != (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped) )
+                (@this & CKTypeKind.IsProcessService) == 0 )
             {
-                Throw.ArgumentException( $"Invalid CKTypeKind: IsEndpointService must imply IsFrontProcessService and IsScoped." );
+                Throw.ArgumentException( $"Invalid CKTypeKind: IsEndpointService must imply IsProcessService." );
             }
             return (AutoServiceKind)((int)@this & 63);
         }
@@ -164,12 +169,12 @@ namespace CK.Setup
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
             bool isPocoClass = (@this & CKTypeKind.IsPocoClass) != 0;
-            bool isFrontEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
-            bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
+            bool isEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
+            bool isProcess = (@this & CKTypeKind.IsProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
 
-            if( isFrontEndPoint && !isFrontProcess )
+            if( isEndPoint && !isProcess )
             {
                 Throw.ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
             }
@@ -201,25 +206,22 @@ namespace CK.Setup
                     if( isScoped ) conflict = "RealObject cannot have a Scoped lifetime";
                     else if( isMultiple ) conflict = "IRealObject interface cannot be marked as a Multiple service";
                     else if( isAuto && !isClass ) conflict = "IRealObject interface cannot be an IAutoService";
-                    // Always handle Front service.
                     if( isMarshallable )
                     {
                         if( conflict != null ) conflict += ", ";
                         conflict += "RealObject cannot be marked as Marshallable";
                     }
                     // Always handle Front service.
-                    if( isFrontEndPoint | isFrontProcess )
+                    if( isEndPoint | isProcess )
                     {
                         if( conflict != null ) conflict += ", ";
-                        conflict += "RealObject cannot be a front service";
+                        conflict += "RealObject cannot be a Endpoint or Process service";
                     }
                 }
             }
             else if( isScoped && isSingleton )
             {
-                if( isFrontEndPoint )
-                    conflict = "An interface or an implementation cannot be both Scoped and Singleton (since this is marked as a IsEndpointService, this is de facto Scoped)";
-                else conflict = "An interface or an implementation cannot be both Scoped and Singleton";
+                conflict = "An interface or an implementation cannot be both Scoped and Singleton";
             }
             if( isClass )
             {
@@ -243,7 +245,7 @@ namespace CK.Setup
                                      "IsPoco",
                                      "IsPocoClass",
                                      "IsEndpointService",
-                                     "IsFrontProcessService",
+                                     "IsProcessService",
                                      "IsMarshallable",
                                      "IsMultipleService",
                                      "IsExcludedType",
@@ -256,7 +258,7 @@ namespace CK.Setup
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
                                              || (i == 5 && (@this & CKTypeKind.IsPocoClass) != 0)
                                              || (i == 6 && (@this & CKTypeKind.IsEndpointService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsProcessService) != 0)
                                              || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
                                              || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
                                              || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
