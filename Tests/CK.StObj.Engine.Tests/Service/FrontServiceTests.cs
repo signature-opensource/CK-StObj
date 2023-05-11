@@ -24,8 +24,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void simple_front_only_registration()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( EndpointService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -45,15 +44,15 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void real_objects_cannot_be_FrontOnly_services()
+        public void real_objects_cannot_be_ProcessServices()
         {
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a front service for class '" );
+                TestHelper.GetFailedResult( collector, "RealObject cannot be a Endpoint or Process service (type is a class)." );
             }
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );
-                TestHelper.GetFailedResult( collector, "Invalid CK type combination: RealObject cannot be a front service" );
+                TestHelper.GetFailedResult( collector, "Invalid CK type combination 'IsAutoService|IsSingleton|IsRealObject|IsProcessService': RealObject cannot be a Endpoint or Process service (type is a class)." );
             }
         }
 

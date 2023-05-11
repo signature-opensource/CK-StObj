@@ -87,7 +87,7 @@ public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJ
     if( !_v0.HasValue ) w.WriteNullValue();
     else
     {
-        CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference( ref _v0 ), wCtx );
+        CK.Poco.Exc.JsonGen.Exporter.Write_44( w, ref CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference( ref _v0 ), wCtx );
     }
     w.WriteEndObject();
 }

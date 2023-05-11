@@ -10,7 +10,7 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class FrontProcessServiceMarshallerTests
     {
-        public interface IFrontProcessService1 : IFrontProcessAutoService
+        public interface IFrontProcessService1 : IProcessAutoService
         {
         }
 

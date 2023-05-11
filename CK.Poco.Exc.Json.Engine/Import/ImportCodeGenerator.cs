@@ -174,7 +174,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                 // For nullable records, we need this adapter.
                 if( t.IsNullable && (t.Kind == PocoTypeKind.AnonymousRecord || t.Kind == PocoTypeKind.Record) )
                 {
-                    variableName = $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
+                    variableName = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
                 }
                 _readers[t.Index >> 1].Invoke( writer, variableName );
             }

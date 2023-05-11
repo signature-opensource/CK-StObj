@@ -1,14 +1,10 @@
 using CK.CodeGen;
 using CK.Core;
-using CommunityToolkit.HighPerformance.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-
-using NullabilityInfo = System.Reflection.TEMPNullabilityInfo;
-using NullabilityInfoContext = System.Reflection.TEMPNullabilityInfoContext;
 
 namespace CK.Setup
 {
@@ -19,7 +15,7 @@ namespace CK.Setup
             readonly PocoTypeSystem _system;
             IPocoPropertyInfo? _prop;
             IExtPropertyInfo? _bestProperty;
-            PocoFieldAccessKind _fieldAccesskind;
+            PocoFieldAccessKind _fieldAccessKind;
             IPocoType? _bestReg;
             IExtMemberInfo? _defaultValueSource;
             FieldDefaultValue? _defaultValue;
@@ -41,7 +37,7 @@ namespace CK.Setup
                 _bestReg = null;
                 _defaultValueSource = null;
                 _defaultValue = null;
-                _fieldAccesskind = PocoFieldAccessKind.ReadOnly;
+                _fieldAccessKind = PocoFieldAccessKind.ReadOnly;
                 if( !TryFindWritableAndCheckReadOnlys( monitor ) )
                 {
                     return null;
@@ -59,7 +55,7 @@ namespace CK.Setup
                         return null;
                     }
                     isWritable = inferred.Value.IsWritableCollection;
-                    if( isWritable ) _fieldAccesskind = PocoFieldAccessKind.MutableCollection;
+                    if( isWritable ) _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
                     monitor.Trace( $"Inferred {(isWritable ? "mutable collection" : "read only")} type for {prop}: {inferred.Value.Resolved.Type:C}" );
 
                     _inferredPropertyInfo ??= GetType().GetProperty( nameof( Inferred ) )!;
@@ -107,7 +103,7 @@ namespace CK.Setup
 
                 return new PrimaryPocoField( prop,
                                              finalType,
-                                             _fieldAccesskind,
+                                             _fieldAccessKind,
                                              p,
                                              _defaultValue );
             }
@@ -323,7 +319,7 @@ namespace CK.Setup
 
                 if( p.PropertyInfo.CanWrite || p.Type.IsByRef )
                 {
-                    _fieldAccesskind = p.Type.IsByRef ? PocoFieldAccessKind.IsByRef : PocoFieldAccessKind.HasSetter;
+                    _fieldAccessKind = p.Type.IsByRef ? PocoFieldAccessKind.IsByRef : PocoFieldAccessKind.HasSetter;
                     if( !AddWritable( monitor, p ) ) return false;
                     // On success, always check that a record must be a ref property, that a collection must not
                     // have a setter and that any other type must be a regular property.

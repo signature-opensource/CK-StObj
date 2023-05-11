@@ -217,7 +217,7 @@ namespace CK.Setup
             {
                 if( (@this & CKTypeKind.IsMultipleService) != 0 ) conflict = "A class cannot be marked as a Multiple service: only interfaces can be IsMultiple.";
             }
-            return conflict == null ? null : $"Invalid CK type combination: {conflict} for {(isClass ? "class" : "interface")} '{@this.ToStringFlags()}'.";
+            return conflict == null ? null : $"Invalid CK type combination '{@this.ToStringFlags()}': {conflict} (type is a{(isClass ? " class" : "n interface")}).";
         }
 
 

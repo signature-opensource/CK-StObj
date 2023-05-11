@@ -39,7 +39,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_class_with_both_scopes_is_an_error()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( BuggyDoubleScopeClassAmbient ) );
-            TestHelper.GetFailedResult( collector, "Invalid CK type combination: An interface or an implementation cannot be both Scoped and Singleton" );
+            TestHelper.GetFailedResult( collector, "Invalid CK type combination 'IsAutoService|IsScopedService|IsSingleton': An interface or an implementation cannot be both Scoped and Singleton" );
         }
 
         public class LifetimeErrorClassAmbientBecauseOfScoped : Core.ISingletonAutoService

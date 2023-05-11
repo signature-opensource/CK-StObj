@@ -41,7 +41,7 @@ namespace CK.Setup.PocoJson
                     writer.Append( "if( !" ).Append( variableName ).Append( ".HasValue ) w.WriteNullValue();" ).NewLine()
                           .Append( "else" )
                           .OpenBlock();
-                    var v = $"CommunityToolkit.HighPerformance.Extensions.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})";
+                    var v = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})";
                     _writers[t.Index >> 1].Invoke( writer, v );
                     writer.CloseBlock();
                 }

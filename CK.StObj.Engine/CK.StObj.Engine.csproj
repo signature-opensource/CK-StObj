@@ -13,7 +13,7 @@ This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency 
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="5.0.1--0004-develop" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="7.0.1--0019-develop" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
