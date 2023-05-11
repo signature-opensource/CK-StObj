@@ -234,6 +234,16 @@ namespace CK.Setup
         {
             if( _alsoRegisteredTypes.Count > 0 )
             {
+                using( _monitor.OpenInfo( $"Also registering {_alsoRegisteredTypes.Count} types." ) )
+                {
+                    // Uses index loop: new types can appear.
+                    for( int i = 0; i < _alsoRegisteredTypes.Count; ++i )
+                    {
+                        RegisterType( _alsoRegisteredTypes[i] );
+                    }
+                }
+            }
+            {
                 using( monitor.OpenInfo( $"Also registering {_alsoRegisteredTypes.Count} types." ) )
                 {
                     // Uses index loop: new types can appear.

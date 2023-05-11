@@ -10,7 +10,10 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class FrontServiceTests
     {
-        public interface IEndpointService1 : IEndpointAutoService
+
+
+        [EndpointServiceAvailability( typeof(DefaultEndpointType) )]
+        public interface IEndpointService1 : IScopedAutoService
         {
         }
 
@@ -22,8 +25,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( EndpointService1 ), AutoServiceKind.IsScoped );
-            collector.RegisterType( TestHelper.Monitor, typeof( EndpointService1 ) );
+            collector.RegisterType( typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -38,7 +40,7 @@ namespace CK.StObj.Engine.Tests.Service
         public class Impossible0 : IRealObject, IEndpointAutoService
         {
         }
-        public class Impossible1 : IRealObject, IFrontProcessAutoService
+        public class Impossible1 : IRealObject, IProcessAutoService
         {
         }
 
@@ -79,7 +81,6 @@ namespace CK.StObj.Engine.Tests.Service
         public void an_impl_that_depends_on_a_front_service_is_a_Front_service()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ), typeof( FrontDependentService1 ) );
-            collector.RegisterType( TestHelper.Monitor, typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -103,7 +104,6 @@ namespace CK.StObj.Engine.Tests.Service
         public void Front_services_are_transitively_propagated_through_the_constructors()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( FrontDependentService2 ), typeof( FrontDependentService1 ), typeof( EndpointService1 ) );
-            collector.RegisterType(TestHelper.Monitor, typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );

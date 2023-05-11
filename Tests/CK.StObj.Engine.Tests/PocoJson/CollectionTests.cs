@@ -33,5 +33,43 @@ namespace CK.StObj.Engine.Tests.PocoJson
             oD2.List[0].Should().HaveCount( 2 );
         }
 
+        public interface IDic : IPoco
+        {
+            Dictionary<(int, int), string> StrangeBeast { get; }
+        }
+
+        [Test]
+        public void dictionary_with_value_tuple_keys()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IDic ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
+
+            var o = directory.Create<IDic>();
+            o.StrangeBeast.Add( (0, 0), "First" );
+            o.StrangeBeast.Add( (42, 3712), "Second" );
+
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
+            o2.StrangeBeast.Should().BeEquivalentTo( o.StrangeBeast );
+        }
+        public interface IDicVKey : IPoco
+        {
+            Dictionary<int, string> ByInt { get; }
+        }
+
+        [Test]
+        public void dictionary_with_int_keys()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IDicVKey ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
+
+            var o = directory.Create<IDicVKey>();
+            o.ByInt.Add( 0, "First" );
+            o.ByInt.Add( 42, "Second" );
+
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
+            o2.ByInt.Should().BeEquivalentTo( o.ByInt );
+        }
     }
 }
