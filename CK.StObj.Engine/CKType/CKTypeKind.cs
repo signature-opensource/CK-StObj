@@ -19,14 +19,19 @@ namespace CK.Setup
         None,
 
         /// <summary>
-        /// Front process service.
+        /// Process service flag indicates a service that has a data/configuration adherence to the
+        /// current process: it requires some sort of marshalling/configuration to be able to do its job
+        /// remotely (out of this process).
+        /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
+        /// <para>
         /// This flag has to be set for <see cref="IsEndpointService"/> to be set.
+        /// </para>
         /// </summary>
         IsProcessService = 1,
 
         /// <summary>
-        /// Service is bound to the End Point. The service is necessarily bound to front
-        /// process (<see cref="IsProcessService"/> is also set) AND this is necessarily <see cref="IsScoped"/>.
+        /// Service is bound to a End Point. The service is necessarily bound to the front
+        /// process (<see cref="IsProcessService"/> is also set).
         /// </summary>
         IsEndpointService = 2,
 
@@ -158,12 +163,12 @@ namespace CK.Setup
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
-            bool isFrontEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
-            bool isFrontProcess = (@this & CKTypeKind.IsProcessService) != 0;
+            bool isEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
+            bool isProcess = (@this & CKTypeKind.IsProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
 
-            if( isFrontEndPoint && !isFrontProcess )
+            if( isEndPoint && !isProcess )
             {
                 Throw.ArgumentException( "CKTypeKind value error: missing IsProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
             }
@@ -191,25 +196,22 @@ namespace CK.Setup
                     if( isScoped ) conflict = "RealObject cannot have a Scoped lifetime";
                     else if( isMultiple ) conflict = "IRealObject interface cannot be marked as a Multiple service";
                     else if( isAuto && !isClass ) conflict = "IRealObject interface cannot be an IAutoService";
-                    // Always handle Front service.
                     if( isMarshallable )
                     {
                         if( conflict != null ) conflict += ", ";
                         conflict += "RealObject cannot be marked as Marshallable";
                     }
                     // Always handle Front service.
-                    if( isFrontEndPoint | isFrontProcess )
+                    if( isEndPoint | isProcess )
                     {
                         if( conflict != null ) conflict += ", ";
-                        conflict += "RealObject cannot be a front service";
+                        conflict += "RealObject cannot be a Endpoint or Process service";
                     }
                 }
             }
             else if( isScoped && isSingleton )
             {
-                if( isFrontEndPoint )
-                    conflict = "An interface or an implementation cannot be both Scoped and Singleton (since this is marked as a IsEndpointService, this is de facto Scoped)";
-                else conflict = "An interface or an implementation cannot be both Scoped and Singleton";
+                conflict = "An interface or an implementation cannot be both Scoped and Singleton";
             }
             if( isClass )
             {
@@ -232,7 +234,7 @@ namespace CK.Setup
                                      "IsRealObject",
                                      "IsPoco",
                                      "IsEndpointService",
-                                     "IsFrontProcessService",
+                                     "IsProcessService",
                                      "IsMarshallable",
                                      "IsMultipleService",
                                      "IsExcludedType",

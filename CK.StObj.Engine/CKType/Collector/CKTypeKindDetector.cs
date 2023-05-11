@@ -65,9 +65,8 @@ namespace CK.Setup
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Front service).
-        /// Note that <see cref="AutoServiceKind.IsEndpointService"/> is automatically expanded with <see cref="AutoServiceKind.IsScoped"/>
-        /// and <see cref="AutoServiceKind.IsProcessService"/>.
+        /// a <see cref="IRealObject"/> cannot be a endpoint service).
+        /// Note that <see cref="AutoServiceKind.IsEndpointService"/> is automatically expanded with <see cref="AutoServiceKind.IsProcessService"/>.
         /// </summary>
         /// <param name="m">The monitor.</param>
         /// <param name="t">The type to register.</param>

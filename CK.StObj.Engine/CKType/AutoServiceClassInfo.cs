@@ -510,14 +510,14 @@ namespace CK.Setup
                                         final |= AutoServiceKind.IsScoped;
                                     }
                                 }
-                                // Handling EndPoint/FrontProcess propagation.
-                                // If the parameter is not a endpoint or a front process service, we can safely ignore it: we don't care of a IsMarshallable only type.
+                                // Handling EndPoint/Process propagation.
+                                // If the parameter is not a endpoint or a process service, we can safely ignore it: we don't care of a IsMarshallable only type.
                                 if( (kP & FrontTypeMask) == 0 ) continue;
 
                                 var newFinal = final | (kP & FrontTypeMask);
                                 if( newFinal != final )
                                 {
-                                    // Upgrades from None, FrontProcess to Endpoint...
+                                    // Upgrades from None, Process to Endpoint...
                                     m.Trace( $"Type '{ClassType}' must be {newFinal & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
                                     final = newFinal;
                                     // We don't have to worry about the EndpointService that implies the IsScoped flag since this is already handled
@@ -573,7 +573,7 @@ namespace CK.Setup
                                 }
                                 else
                                 {
-                                    // This service is not a FrontProcess service OR it is not automatically marshallable.
+                                    // This service is not a Process service OR it is not automatically marshallable.
                                     // We have nothing special to do: the set of Marshallable types is empty (this is not an error)
                                     // and this FinalTypeKind will be 'None' or a EndPoint/Process service but without the IsMarshallable bit.
                                     MarshallableTypes = Type.EmptyTypes;
