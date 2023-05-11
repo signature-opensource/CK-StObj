@@ -6,12 +6,12 @@ namespace CK.Core
     /// "front end point" service.
     /// <para>
     /// It is not required to be this exact type: any empty interface (no members)
-    /// named "IFrontAutoService" defined in any namespace will be considered as
+    /// named "IEndpointAutoService" defined in any namespace will be considered as
     /// a valid marker, regardless of the fact that it specializes any interface
     /// named "IFrontProcessAutoService".
     /// </para>
     /// </summary>
-    public interface IFrontAutoService : IFrontProcessAutoService
+    public interface IEndpointAutoService : IFrontProcessAutoService
     {
     }
 

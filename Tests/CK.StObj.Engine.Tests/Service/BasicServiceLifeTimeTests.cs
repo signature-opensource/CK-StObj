@@ -253,14 +253,14 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( TestHelper.Monitor, typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsFrontService );
+                                                                                        | AutoServiceKind.IsEndpointService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -272,7 +272,7 @@ namespace CK.StObj.Engine.Tests.Service
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsFrontProcessService
-                                                                                        | AutoServiceKind.IsFrontService );
+                                                                                        | AutoServiceKind.IsEndpointService );
             }
         }
 
