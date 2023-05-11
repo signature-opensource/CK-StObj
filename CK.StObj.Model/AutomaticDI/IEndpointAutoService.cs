@@ -11,7 +11,7 @@ namespace CK.Core
     /// named "IFrontProcessAutoService".
     /// </para>
     /// </summary>
-    public interface IEndpointAutoService : IFrontProcessAutoService
+    public interface IEndpointAutoService : IProcessAutoService
     {
     }
 

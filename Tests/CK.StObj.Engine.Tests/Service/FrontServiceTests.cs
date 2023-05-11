@@ -10,7 +10,10 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class FrontServiceTests
     {
-        public interface IEndpointService1 : IEndpointAutoService
+
+
+        [EndpointServiceAvailability( typeof(DefaultEndpointType) )]
+        public interface IEndpointService1 : IScopedAutoService
         {
         }
 
@@ -22,7 +25,6 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( EndpointService1 ), AutoServiceKind.IsScoped );
             collector.RegisterType( typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
@@ -38,7 +40,7 @@ namespace CK.StObj.Engine.Tests.Service
         public class Impossible0 : IRealObject, IEndpointAutoService
         {
         }
-        public class Impossible1 : IRealObject, IFrontProcessAutoService
+        public class Impossible1 : IRealObject, IProcessAutoService
         {
         }
 

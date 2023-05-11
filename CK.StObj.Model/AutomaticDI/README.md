@@ -149,16 +149,16 @@ methods) is the basis of the other ones.
 
 Should we model this "HostEndpointType" ("DefaultEndpointType" may be a better name)? Or should we keep the idea described above
 that considers the DefaultEndpointType's "specific" services to be by default the services that are not marked with the
- [SpecificEndpointService( Type t )]` attribute on any other EndpointType?
+[SpecificEndpointService( Type t )]` attribute on any other EndpointType?
 If we model it, it must expose its final ServiceProvider like the others. It means that there must be some code somewhere
 that sets the host's final service provider on it. Unfortunately, there's no "OnContainerBuilt" event or hook exposed by
-.Net Core DI and using a IHostedService is not really an option since even if StartAsync is called right after the container
+.Net Core DI and using a IHostedService is not a perfect option since even if StartAsync is called right after the container
 initialization there is no ordering constraints. It seems that we cannot model it, its handling must be specific.
 
 BUT! A EndpointType must be able to configure its container to resolve a singleton from the global DI container
 with something like that:
 ```csharp
-myContainerBuilder.AddSingleton( typeof( ICommonSingleton ), _theGlobalDI.GetService( typeof( ICommonSingleton ) ) );
+myContainerBuilder.AddSingleton( typeof( ICommonSingleton ), _ => _theGlobalDI.GetService( typeof( ICommonSingleton ) ) );
 ```
 This means that EndpointType must have access to the global DI before being able to resolve even a common singleton. EndpointTypes
 are IRealObject, their constructor have no parameters. We need a singleton service to capture the global DI container (in its constructor)
@@ -172,7 +172,7 @@ application. This would require a "late binding" approach of these services (bas
 similar to the configuration of AutoServiceKind for well known external services) that must be as exhaustive as possible.
 This doesn't seem sustainable. We can change how a "specific endpoint service" is tied to its EndpointType and be more powerful
 (and may be more explicit): with one attribute on the service type itself `[EndpointService( Type endpointType )]` and one assembly
-attribute `[assembly:EndpointService( Type serviceType, Type endpointType )]` we reverse the declaration and use strong type
+attribute `[assembly:EndpointServiceType( Type serviceType, Type endpointType )]` we reverse the declaration and use strong type
 to declare the association.
 
 One can take this opportunity to add a `bool exclusiveEndpoint` to the attribute parameters to prevent any service sharing
@@ -180,12 +180,12 @@ when it doesn't make sense for the service to be available in any other Endpoint
 we are left with an important issue: a "shared singleton" must be initialized by one and only one EndpointService, the others
 may reuse/expose it but it should come from a single *Owner* container. We can express this by refining the attributes:
 - `[EndpointServiceImplementation( Type endpointType, bool exclusiveEndpoint )]`
-   and `[assembly:EndpointServiceImplementation( Type serviceType, Type endpointType, bool exclusiveEndpoint )]`.
+   and `[assembly:EndpointServiceTypeImplementation( Type serviceType, Type endpointType, bool exclusiveEndpoint )]`.
    These attributes specify the single owner/creator of the service.
 
 But the notion of ownership (and the `exclusiveEndpoint` for sharing or not) only applies to singletons. They'd better be named:
-- `[EndpointSingletonServiceImplementation( Type endpointType, bool exclusiveEndpoint )]`
-   and `[assembly:EndpointSingletonServiceImplementation( Type serviceType, Type endpointType, bool exclusiveEndpoint )]`.
+- `[EndpointSingletonServiceOwner( Type endpointType, bool exclusiveEndpoint )]`
+   and `[assembly:EndpointSingletonServiceTypeOwner( Type serviceType, Type endpointType, bool exclusiveEndpoint )]`.
 
 The assembly attribute may seem useless however it is required to define: `IAuthenticationService` -> DefaultEndPointType association.
 In practice, this assembly attribute will be used for the DefaultEndPointType, but it doesn't cost much to keep it as-is.
@@ -199,13 +199,18 @@ Because we want to be able to reason about the services for 2 different reasons:
   its signature but this may be weird).
 
 To reason about services, we do need `[EndpointServiceAvailability( Type endpointType )]` and
-`[assembly:EndpointServiceAvailability( Type serviceType, Type endpointType )`. The good news is that they apply
+`[assembly:EndpointServiceTypeAvailability( Type serviceType, Type endpointType )`. The good news is that they apply
 to singletons and scoped services: we don't need more. It is important to understand at this point that any "regular"
 service (that is not tied to an EndPointType) be it singleton or scoped MUST be available from all the endpoints.
 If it is not, then its a bug that must be corrected by:
 - Declaring it to be available in the DefaultEndpointType (this tags the service to be IsEndpointService).
 - Declaring it to be available in any EndpointType that can expose it (and do the job of actually supporting it in
   every existing EndpointType).
+
+__Remark__: A singleton marked with one or more `EndpointServiceAvailability` and no `EndpointSingletonServiceOwner`
+is an error. This breaks the `IAutoService` magic that automatically computes the lifetime based on the dependencies
+but this limitation concerns only singleton endpoint services. Endpoint is an "advanced" concept: one won't implement an
+EndPoint every day and defining a service for an endpoint is a special task.
 
 All this implies a refactoring of the static type analysis so that a class or an interface is associated to 0 or more
 EndpointType, the IsEndpointService bit flag is now derived from the emptiness of this set.

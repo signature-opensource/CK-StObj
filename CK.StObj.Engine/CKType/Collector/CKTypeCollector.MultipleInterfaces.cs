@@ -106,15 +106,14 @@ namespace CK.Setup
 
                 bool isScoped = (initial & AutoServiceKind.IsScoped) != 0;
                 HashSet<Type>? allMarshallableTypes = null;
-                HashSet<Type>? frontMarshallableTypes = null;
-                // If it is [IsMarshallable], the marshaller must handle the marhsalling of any implementations
+                // If it is [IsMarshallable], the marshaller must handle the marshalling of any implementations
                 // (this is strange... but who knows?).
                 bool isInterfaceMarshallable = (initial & AutoServiceKind.IsMarshallable) != 0;
 
                 // If isInterfaceMarshallable is false (regular case), then for this IEnumerable to be marshallable, all its
-                // implementations that are Front services must be marshallable so that it can be resolved as long as its
+                // implementations that are Process services must be marshallable so that it can be resolved as long as its
                 // implementations have been marshalled.
-                // Lets's be optimistic: all implementations that are Front(Process) services (if any) will be marshallable.
+                // Lets's be optimistic: all implementations that are Process services (if any) will be marshallable.
                 bool isAutomaticallyMarshallable = true;
 
                 using( m.OpenTrace( $"Computing 'IEnumerable<{EnumeratedType.FullName}>'s final type from {_rawImpls.Count} implementations. Initial: '{initial}'." ) )
