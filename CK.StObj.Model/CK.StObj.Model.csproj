@@ -13,9 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
     <PackageReference Include="OneOf" Version="3.0.223" />
   </ItemGroup>
-  <PropertyGroup>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
+
   <ItemGroup>
     <Content Include="MSBuild/CK.StObj.Model.props">
       <Pack>true</Pack>
@@ -26,4 +24,5 @@
       <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
     </Content>
   </ItemGroup>
+  
 </Project>
