@@ -22,17 +22,17 @@ namespace CK.Setup
         /// Front process service.
         /// This flag has to be set for <see cref="IsEndpointService"/> to be set.
         /// </summary>
-        IsProcessService = 1,
+        IsFrontProcessService = 1,
 
         /// <summary>
         /// Service is bound to the End Point. The service is necessarily bound to front
-        /// process (<see cref="IsProcessService"/> is also set) AND this is necessarily <see cref="IsScoped"/>.
+        /// process (<see cref="IsFrontProcessService"/> is also set) AND this is necessarily <see cref="IsScoped"/>.
         /// </summary>
         IsEndpointService = 2,
 
         /// <summary>
         /// Marshallable service.
-        /// This is independent of <see cref="IsProcessService"/> and <see cref="IsEndpointService"/> flags.
+        /// This is independent of <see cref="IsFrontProcessService"/> and <see cref="IsEndpointService"/> flags.
         /// </summary>
         IsMarshallable = 4,
 
@@ -73,9 +73,9 @@ namespace CK.Setup
         RealObject = IsSingleton | 256,
 
         /// <summary>
-        /// Simple bit mask on <see cref="IsEndpointService"/> | <see cref="IsProcessService"/>.
+        /// Simple bit mask on <see cref="IsEndpointService"/> | <see cref="IsFrontProcessService"/>.
         /// </summary>
-        FrontTypeMask = IsEndpointService | IsProcessService,
+        FrontTypeMask = IsEndpointService | IsFrontProcessService,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
@@ -102,7 +102,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the <see cref="AutoServiceKind"/> (masks the internal bits).
-        /// Note that a check of the "IsEndpointService => IsProcessService" rule
+        /// Note that a check of the "IsEndpointService => IsFrontProcessService and IsScoped" rule
         /// is made: an <see cref="ArgumentException"/> may be thrown.
         /// </summary>
         /// <param name="this">This type kind.</param>
@@ -111,9 +111,9 @@ namespace CK.Setup
         {
             if( (@this&CKTypeKind.IsEndpointService) != 0
                 &&
-                (@this & CKTypeKind.IsProcessService) == 0 )
+                (@this & (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped)) != (CKTypeKind.IsFrontProcessService | CKTypeKind.IsScoped) )
             {
-                Throw.ArgumentException( $"Invalid CKTypeKind: IsEndpointService must imply IsProcessService." );
+                Throw.ArgumentException( $"Invalid CKTypeKind: IsEndpointService must imply IsFrontProcessService and IsScoped." );
             }
             return (AutoServiceKind)((int)@this & 63);
         }
@@ -158,14 +158,19 @@ namespace CK.Setup
             bool isSingleton = (@this & CKTypeKind.IsSingleton) != 0;
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
+<<<<<<< HEAD
+            bool isFrontEndPoint = (@this & CKTypeKind.IsFrontService) != 0;
+=======
+            bool isPocoClass = (@this & CKTypeKind.IsPocoClass) != 0;
             bool isFrontEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
-            bool isFrontProcess = (@this & CKTypeKind.IsProcessService) != 0;
+>>>>>>> 2a489fd (Removed MarshallableInProcessTypes.)
+            bool isFrontProcess = (@this & CKTypeKind.IsFrontProcessService) != 0;
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
 
             if( isFrontEndPoint && !isFrontProcess )
             {
-                Throw.ArgumentException( "CKTypeKind value error: missing IsProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
+                Throw.ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
             }
             if( isRealObject && !isSingleton )
             {
@@ -231,7 +236,12 @@ namespace CK.Setup
                                      "IsSingleton",
                                      "IsRealObject",
                                      "IsPoco",
+<<<<<<< HEAD
+                                     "IsFrontService",
+=======
+                                     "IsPocoClass",
                                      "IsEndpointService",
+>>>>>>> 2a489fd (Removed MarshallableInProcessTypes.)
                                      "IsFrontProcessService",
                                      "IsMarshallable",
                                      "IsMultipleService",
@@ -243,12 +253,22 @@ namespace CK.Setup
                                              || (i == 2 && (@this & CKTypeKind.IsSingleton) != 0)
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
-                                             || (i == 5 && (@this & CKTypeKind.IsEndpointService) != 0)
-                                             || (i == 6 && (@this & CKTypeKind.IsProcessService) != 0)
+<<<<<<< HEAD
+                                             || (i == 5 && (@this & CKTypeKind.IsFrontService) != 0)
+                                             || (i == 6 && (@this & CKTypeKind.IsFrontProcessService) != 0)
                                              || (i == 7 && (@this & CKTypeKind.IsMarshallable) != 0)
                                              || (i == 8 && (@this & CKTypeKind.IsMultipleService) != 0)
                                              || (i == 9 && (@this & CKTypeKind.IsExcludedType) != 0)
                                              || (i == 10 && (@this & CKTypeKind.HasCombinationError) != 0) );
+=======
+                                             || (i == 5 && (@this & CKTypeKind.IsPocoClass) != 0)
+                                             || (i == 6 && (@this & CKTypeKind.IsEndpointService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsFrontProcessService) != 0)
+                                             || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
+                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
+                                             || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
+                                             || (i == 11 && (@this & CKTypeKind.HasCombinationError) != 0) );
+>>>>>>> 2a489fd (Removed MarshallableInProcessTypes.)
             return String.Join( "|", f );
         }
     }

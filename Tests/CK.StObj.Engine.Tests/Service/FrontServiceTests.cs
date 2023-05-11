@@ -22,8 +22,8 @@ namespace CK.StObj.Engine.Tests.Service
         public void simple_front_only_registration()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( EndpointService1 ), AutoServiceKind.IsScoped );
-            collector.RegisterType( typeof( EndpointService1 ) );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( EndpointService1 ), AutoServiceKind.IsScoped );
+            collector.RegisterType( TestHelper.Monitor, typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -32,7 +32,7 @@ namespace CK.StObj.Engine.Tests.Service
             descriptor.Should().BeSameAs( map.Services.SimpleMappings[typeof( EndpointService1 )] );
 
             descriptor.IsScoped.Should().BeTrue();
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsScoped );
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped );
         }
 
         public class Impossible0 : IRealObject, IEndpointAutoService
@@ -63,9 +63,9 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_defined_as_FrontOnly_services()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsFrontProcessService );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
             collector.RegisterType( TestHelper.Monitor, typeof( RealObjectAndAutoService ) );
-            TestHelper.GetFailedResult( collector, "is already registered as a 'IsAutoService|IsSingleton|IsRealObject [IsMarkerInterface]'. It can not be defined as IsFrontProcessService [FrontType:External]." );
+            TestHelper.GetFailedResult( collector, "is already registered as a 'IsAutoService|IsSingleton|IsRealObject [IsMarkerInterface]'. It can not be defined as IsProcessService [FrontType:External]." );
         }
 
         public class FrontDependentService1 : IAutoService
@@ -78,14 +78,14 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_impl_that_depends_on_a_front_service_is_a_Front_service()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( FrontService1 ), typeof( FrontDependentService1 ) );
-            collector.RegisterType( typeof( EndpointService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ), typeof( FrontDependentService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
         }
 
         public interface IFrontDependentService2 : IAutoService
@@ -102,8 +102,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Front_services_are_transitively_propagated_through_the_constructors()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( FrontDependentService2 ), typeof( FrontDependentService1 ), typeof( FrontService1 ) );
-            collector.RegisterType( typeof( EndpointService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontDependentService2 ), typeof( FrontDependentService1 ), typeof( EndpointService1 ) );
+            collector.RegisterType(TestHelper.Monitor, typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -111,9 +111,9 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
             IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IEndpointService1 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
         }
 
         public class OneSingleton : ISingletonAutoService

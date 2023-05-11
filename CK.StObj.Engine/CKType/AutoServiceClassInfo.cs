@@ -160,7 +160,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final service kind.
         /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
-        /// <see cref="AutoServiceKind.IsEndpointService"/> or <see cref="AutoServiceKind.IsFrontProcessService"/>
+        /// <see cref="AutoServiceKind.IsEndpointService"/> or <see cref="AutoServiceKind.IsProcessService"/>
         /// are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
         /// </summary>
         public AutoServiceKind? FinalTypeKind { get; private set; }
@@ -434,7 +434,7 @@ namespace CK.Setup
                 Debug.Assert( ConstructorParameters != null );
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsEndpointService;
+                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService;
                     HashSet<Type>? allMarshallableTypes = null;
                     // If this service is not marshallable then all its parameters that are Front services must be marshallable
                     // so that this service can be "normally" created as long as its required dependencies have been marshalled.

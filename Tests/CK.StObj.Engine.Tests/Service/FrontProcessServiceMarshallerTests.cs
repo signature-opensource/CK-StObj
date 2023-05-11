@@ -29,7 +29,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void Marshallers_are_not_AutoServices()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( MService1NoAutoService ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( MService1NoAutoService ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -45,23 +45,23 @@ namespace CK.StObj.Engine.Tests.Service
         public void registering_a_Frontservice_with_its_AutoService_Marshaller_makes_it_marshallable()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontProcessService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontProcessService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             IStObjServiceClassDescriptor dI = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
             IStObjServiceClassDescriptor dC = map.Services.SimpleMappings[typeof( FrontProcessService1 )];
             dI.Should().BeSameAs( dC );
-            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
         [Test]
         public void registered_AutoService_Marshaller_is_mapped_by_the_class_type_and_its_interfaces()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontProcessService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontProcessService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -78,14 +78,14 @@ namespace CK.StObj.Engine.Tests.Service
         public void registered_AutoService_Marshaller_handles_only_the_exact_type()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontProcessService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontProcessService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
             var dM = map.Services.SimpleMappings[typeof( MService1 )];
             var dMClass = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontProcessService1> )];
@@ -120,21 +120,21 @@ namespace CK.StObj.Engine.Tests.Service
         public void Marshallable_Front_services_are_no_more_propagated()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontProcessDependentService2 ) );
-            collector.RegisterType( typeof( FrontProcessDependentService1 ) );
-            collector.RegisterType( typeof( FrontProcessService1 ) );
-            collector.RegisterType( typeof( MService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontProcessDependentService2 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontProcessDependentService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( FrontProcessService1 ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( MService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
             IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontProcessDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( IFrontProcessDependentService2 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsFrontProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
 
@@ -153,8 +153,8 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_mere_service_does_not_become_AutoService_because_a_Marshaller_exists()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( MarshalAnyway ) );
-            collector.RegisterType( typeof( NotAutoService ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( MarshalAnyway ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( NotAutoService ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );

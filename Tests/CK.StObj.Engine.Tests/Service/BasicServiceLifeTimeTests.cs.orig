@@ -252,25 +252,41 @@ namespace CK.StObj.Engine.Tests.Service
             // Because all interfaces are flattened on Types that support them.
             {
                 var collector = TestHelper.CreateStObjCollector();
+<<<<<<< HEAD
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( TestHelper.Monitor, typeof( ExtS ) );
+=======
+                collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
+                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsEndpointService );
+                collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
+                collector.RegisterType( typeof( ExtS ) );
+>>>>>>> 2a489fd (Removed MarshallableInProcessTypes.)
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsProcessService );
+                                                                                        | AutoServiceKind.IsFrontProcessService
+                                                                                        | AutoServiceKind.IsEndpointService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
+<<<<<<< HEAD
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsFrontService );
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
                 collector.RegisterType( TestHelper.Monitor, typeof( ExtS ) );
+=======
+                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsEndpointService );
+                collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
+                collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
+                collector.RegisterType( typeof( ExtS ) );
+>>>>>>> 2a489fd (Removed MarshallableInProcessTypes.)
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsProcessService );
+                                                                                        | AutoServiceKind.IsFrontProcessService
+                                                                                        | AutoServiceKind.IsEndpointService );
             }
         }
 
@@ -290,17 +306,17 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase3 ), AutoServiceKind.IsMarshallable );
                 collector.RegisterType( TestHelper.Monitor, typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsProcessService );
+                                                                                        | AutoServiceKind.IsFrontProcessService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase3 ), AutoServiceKind.IsMarshallable );
                 // CBase1 is set last: without the "base type flattening" step, the ExtSC below would be a Singleton!
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
@@ -308,7 +324,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
-                                                                                        | AutoServiceKind.IsProcessService );
+                                                                                        | AutoServiceKind.IsFrontProcessService );
             }
         }
 
@@ -317,7 +333,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
-            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsProcessService );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsFrontProcessService );
             collector.RegisterType( TestHelper.Monitor, typeof( CBase1 ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
