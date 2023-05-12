@@ -317,7 +317,7 @@ class GStObj : IStObj
     internal StObjMapping AsMapping => new StObjMapping( this, FinalImplementation );
 }";
         const string _sourceFinalGStObj = @"
-class GFinalStObj : GStObj, IStObjFinalImplementation
+sealed class GFinalStObj : GStObj, IStObjFinalImplementation
 {
     public GFinalStObj( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, int idx )
             : base( t, g, idx )
@@ -374,8 +374,8 @@ internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
 internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
 
 // Direct static access to the StObjs and the FinalStObjs for generated code.
-static IReadOnlyList<IStObj> GenStObjs => _stObjs;
-static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalStObjs;
+public static IReadOnlyList<IStObj> GenStObjs => _stObjs;
+public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalStObjs;
 " );
             var rootStaticCtor = rootType.GeneratedByComment().NewLine()
                                          .CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );

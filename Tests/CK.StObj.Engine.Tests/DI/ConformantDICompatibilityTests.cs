@@ -7,123 +7,122 @@ using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests.DI
 {
-    [IsMultiple]
-    public interface IEndpointServiceResolver : ISingletonAutoService
-    { 
-        object? GetService( IServiceProvider scope, Type serviceType );
-    }
-
-    public sealed class ServiceHook : IScopedAutoService
-    {
-        readonly IServiceProvider _scoped;
-        IEndpointServiceResolver? _resolver;
-        readonly Dictionary<Type, object?> _resolved;
-
-        public ServiceHook( IServiceProvider scoped )
-        {
-            _resolved = new Dictionary<Type, object?>();
-            _scoped = scoped;
-        }
-
-        public void SetResolver( IEndpointServiceResolver resolver )
-        {
-            Throw.CheckState( _resolver == null );
-            _resolver = resolver;
-        }
-
-        public object? GetService( Type type )
-        {
-            Throw.CheckState( _resolver != null );
-            if( _resolved.TryGetValue( type, out object? value ) ) return value;
-            var o = _resolver.GetService( _scoped, type );
-            _resolved.Add( type, o );
-            return o;
-        }
-    }
-
-    public sealed class CommonSingleton { }
-
-    public sealed class CommonScoped { }
-
-    /// <summary>
-    /// Web specific singleton service: the same instance must be available to all Web end points.
-    /// </summary>
-    public sealed class HttpContextAccessor { }
-
-    /// <summary>
-    /// Web specific scoped service.
-    /// </summary>
-    public sealed class HttpRequest { }
-
-    /// <summary>
-    /// MQTT specific singleton service: the same instance must be available to all MQTT end points.
-    /// </summary>
-    public sealed class MQTTServer { }
-
-    /// <summary>
-    /// MQTT specific scoped service.
-    /// </summary>
-    public sealed class MQTTCaller { }
-
-
-    public sealed class WebEndpointServices : IEndpointServiceResolver
-    {
-        readonly IServiceProvider _primary;
-
-        public WebEndpointServices( IServiceProvider primary )
-        {
-            _primary = primary;
-        }
-
-        public object? GetService( IServiceProvider scope, Type serviceType )
-        {
-            // The fact that the EndpointServiceResolver knows what it cannot handle is
-            // bearable.
-            if( serviceType == typeof( MQTTServer )
-                || serviceType == typeof( MQTTCaller ) )
-            {
-                return null;
-            }
-            // This is annoying: we must know the singleton/scoped lifetime.
-            if( serviceType == typeof( HttpContextAccessor ) )
-            {
-                return _primary.GetService( serviceType );
-            }
-            // Here we are annoyed... to say the least.
-            // To call this we must be sure that the hook will not kick-in again...
-            // ...and again...and...
-            return scope.GetService( serviceType );
-        }
-    }
-
-    public sealed class MQTTEndpointServices : IEndpointServiceResolver
-    {
-        readonly IServiceProvider _primary;
-
-        public MQTTEndpointServices( IServiceProvider primary )
-        {
-            _primary = primary;
-        }
-
-
-        public object? GetService( IServiceProvider scope, Type serviceType )
-        {
-            if( serviceType == typeof( HttpContextAccessor )
-                || serviceType == typeof( HttpRequest ) )
-            {
-                return null;
-            }
-            if( serviceType == typeof( MQTTServer ) )
-            {
-                return _primary.GetService( serviceType );
-            }
-            return scope.GetService( serviceType );
-        }
-    }
-
     [TestFixture]
     public class ConformantDICompatibilityTests
     {
+        [IsMultiple]
+        public interface IEndpointServiceResolver : ISingletonAutoService
+        {
+            object? GetService( IServiceProvider scope, Type serviceType );
+        }
+
+        public sealed class ServiceHook : IScopedAutoService
+        {
+            readonly IServiceProvider _scoped;
+            IEndpointServiceResolver? _resolver;
+            readonly Dictionary<Type, object?> _resolved;
+
+            public ServiceHook( IServiceProvider scoped )
+            {
+                _resolved = new Dictionary<Type, object?>();
+                _scoped = scoped;
+            }
+
+            public void SetResolver( IEndpointServiceResolver resolver )
+            {
+                Throw.CheckState( _resolver == null );
+                _resolver = resolver;
+            }
+
+            public object? GetService( Type type )
+            {
+                Throw.CheckState( _resolver != null );
+                if( _resolved.TryGetValue( type, out object? value ) ) return value;
+                var o = _resolver.GetService( _scoped, type );
+                _resolved.Add( type, o );
+                return o;
+            }
+        }
+
+        public sealed class CommonSingleton { }
+
+        public sealed class CommonScoped { }
+
+        /// <summary>
+        /// Web specific singleton service: the same instance must be available to all Web end points.
+        /// </summary>
+        public sealed class HttpContextAccessor { }
+
+        /// <summary>
+        /// Web specific scoped service.
+        /// </summary>
+        public sealed class HttpRequest { }
+
+        /// <summary>
+        /// MQTT specific singleton service: the same instance must be available to all MQTT end points.
+        /// </summary>
+        public sealed class MQTTServer { }
+
+        /// <summary>
+        /// MQTT specific scoped service.
+        /// </summary>
+        public sealed class MQTTCaller { }
+
+
+        public sealed class WebEndpointServices : IEndpointServiceResolver
+        {
+            readonly IServiceProvider _primary;
+
+            public WebEndpointServices( IServiceProvider primary )
+            {
+                _primary = primary;
+            }
+
+            public object? GetService( IServiceProvider scope, Type serviceType )
+            {
+                // The fact that the EndpointServiceResolver knows what it cannot handle is
+                // bearable.
+                if( serviceType == typeof( MQTTServer )
+                    || serviceType == typeof( MQTTCaller ) )
+                {
+                    return null;
+                }
+                // This is annoying: we must know the singleton/scoped lifetime.
+                if( serviceType == typeof( HttpContextAccessor ) )
+                {
+                    return _primary.GetService( serviceType );
+                }
+                // Here we are annoyed... to say the least.
+                // To call this we must be sure that the hook will not kick-in again...
+                // ...and again...and...
+                return scope.GetService( serviceType );
+            }
+        }
+
+        public sealed class MQTTEndpointServices : IEndpointServiceResolver
+        {
+            readonly IServiceProvider _primary;
+
+            public MQTTEndpointServices( IServiceProvider primary )
+            {
+                _primary = primary;
+            }
+
+
+            public object? GetService( IServiceProvider scope, Type serviceType )
+            {
+                if( serviceType == typeof( HttpContextAccessor )
+                    || serviceType == typeof( HttpRequest ) )
+                {
+                    return null;
+                }
+                if( serviceType == typeof( MQTTServer ) )
+                {
+                    return _primary.GetService( serviceType );
+                }
+                return scope.GetService( serviceType );
+            }
+        }
 
         [Explicit("This hook cannot work. This is kept here for memory.")]
         public void Scope_and_resolution_hook()

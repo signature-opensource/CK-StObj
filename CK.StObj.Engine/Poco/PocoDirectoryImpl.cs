@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// Code source generator for <see cref="IPoco"/>.
     /// Generates the implementation of the <see cref="PocoDirectory"/> abstract real object
@@ -31,7 +32,7 @@ namespace CK.Setup
         /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
-            Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );
+            Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the CK.Core.PocoDirectory_CK type name to reference the PocoDirectory implementation." );
             // Let the PocoDirectory_CK be sealed.
             scope.Definition.Modifiers |= Modifiers.Sealed;
 

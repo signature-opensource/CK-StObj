@@ -38,8 +38,7 @@ namespace CK.StObj.Engine.Tests
                 StObjCollector collector = TestHelper.CreateStObjCollector( typeof( SimpleContainer ) );
                 var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
                 result.OrderedStObjs
-                      .Where( o => o.FinalImplementation.Implementation is not PocoDirectory )
-                      .First()
+                      .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
             }
         }

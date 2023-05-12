@@ -258,8 +258,8 @@ __Remarks__:
 the OnHostStart/Stop[Async] support on IRealObject is an optional feature that kicks in only if at least one
 `IRealObject.OnHostStart/Stop` is used. Because of the `EndpointTypeManager`, CK.StObj.Model now requires this dependency.
 - We lied about the fact that the `EndpointTypeManager` was a `IHostedService`: actually there is only a
-`EndpointTypeManager`, just an interface. The actual hosted service is the code generated `HostedServiceLifetimeTrigger`
-that has been extended to handle the real EndpointTypeManager that is also fully code generated. But this is
+`EndpointTypeManager` (abstract class). The actual hosted service is the code generated `HostedServiceLifetimeTrigger`
+that has been extended to handle the EndpointTypeManager that is also fully code generated. But this is
 an implementation detail (to have the cleanest possible CK.StObj.Model API) and doesn't change the principle.
 
 

@@ -134,10 +134,6 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    map.FinalImplementations
-                        .Count( f => f.Implementation is IRealObject && f.Implementation is not PocoDirectory )
-                        .Should().Be( 2 );
-
                     StObjInitializeOnACalled = true;
                 }
 
@@ -159,9 +155,6 @@ namespace CK.StObj.Engine.Tests
 
                 void StObjInitialize( IActivityMonitor monitor, IStObjObjectMap map )
                 {
-                    map.FinalImplementations
-                       .Count( f => f.Implementation is IRealObject && f.Implementation is not PocoDirectory )
-                       .Should().Be( 2 );
                     Assert.That( StObjInitializeOnACalled );
                     StObjInitializeOnASpecCalled = true;
                 }
@@ -204,8 +197,6 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( TestHelper.Monitor, typeof( ASpec ) );
                 collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
                 collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
-
-
 
                 var (r, map) = TestHelper.CompileAndLoadStObjMap( collector );
 

@@ -102,9 +102,9 @@ namespace CK.Setup
         /// last items of the <see cref="RealObjectCollectorResult.ConcreteClasses"/>.
         /// </summary>
         internal IReadOnlyCollection<MutableItem> FinalImplementations => _finaImplementations;
-
+        
         /// <summary>
-        /// Gets all the mapping from object (including <see cref="RealObjectInterfaceKey"/>) to
+        /// Gets all the mappings from object (including <see cref="RealObjectInterfaceKey"/>) to
         /// <see cref="MutableItem"/>.
         /// </summary>
         internal IReadOnlyDictionary<object, MutableItem> RawMappings => _map;
@@ -144,9 +144,11 @@ namespace CK.Setup
 
         IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finaImplementations;
 
+        IReadOnlyCollection<IStObjFinalImplementationResult> IStObjObjectEngineMap.FinalImplementations => _finaImplementations;
+
         IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _map.Where( kv => kv.Key is Type ).Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
 
-        IStObjResult? IStObjObjectEngineMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
+        IStObjFinalImplementationResult? IStObjObjectEngineMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
         IReadOnlyList<IStObjResult> IStObjObjectEngineMap.OrderedStObjs => _orderedStObjs ?? Array.Empty<MutableItem>();
 
