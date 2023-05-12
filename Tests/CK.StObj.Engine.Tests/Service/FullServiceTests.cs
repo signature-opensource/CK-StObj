@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests.Service
         /// </summary>
         public interface IAutoServiceCanBeImplementedByRealObject : IAutoService
         {
-            void DoSometing( IActivityMonitor m );
+            void DoSomething( IActivityMonitor m );
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace CK.StObj.Engine.Tests.Service
                 _objectProvider = objectProvider;
             }
 
-            public void DoSometing( IActivityMonitor m )
+            public void DoSomething( IActivityMonitor m )
             {
                 var o = _objectProvider.Obtain( Environment.TickCount % 2 == 0 );
                 m.Info( $"Based on IAliceOrBobProvider: I'm working with '{o}'." );
@@ -84,10 +84,10 @@ namespace CK.StObj.Engine.Tests.Service
                 _defaultImpl = defaultImpl;
             }
 
-            public void DoSometing( IActivityMonitor m )
+            public void DoSomething( IActivityMonitor m )
             {
                 m.Info( $"I'm wrapping the default B's implementation." );
-                _defaultImpl.DoSometing( m );
+                _defaultImpl.DoSomething( m );
             }
         }
 
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests.Service
                 _theB = b;
             }
 
-            void IAutoServiceCanBeImplementedByRealObject.DoSometing( IActivityMonitor m )
+            void IAutoServiceCanBeImplementedByRealObject.DoSomething( IActivityMonitor m )
             {
                 m.Info( "B is no more doing something." );
             }
@@ -242,7 +242,7 @@ namespace CK.StObj.Engine.Tests.Service
         /// </summary>
         public abstract class B : IB, IAutoServiceCanBeImplementedByRealObject
         {
-            void IAutoServiceCanBeImplementedByRealObject.DoSometing( IActivityMonitor m )
+            void IAutoServiceCanBeImplementedByRealObject.DoSomething( IActivityMonitor m )
             {
                 m.Info( "I'm doing something from B." );
             }
@@ -354,7 +354,7 @@ namespace CK.StObj.Engine.Tests.Service
                         sp.GetRequiredService<IB>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IB>(), "Real object is Singleton." );
                     }
                     // We are using here the default B's implementation.
-                    sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
+                    sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
                     logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
                     logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
@@ -386,7 +386,7 @@ namespace CK.StObj.Engine.Tests.Service
                 using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
                 // We are using here the ScopedImplementation.
                 var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
-                s.DoSometing( TestHelper.Monitor );
+                s.DoSomething( TestHelper.Monitor );
                 // Just to be sure it's actually a Scoped service.
                 using( var scoped = sp.CreateScope() )
                 {
@@ -417,7 +417,7 @@ namespace CK.StObj.Engine.Tests.Service
                 // We are using here the ScopedImplementation.
                 var s = sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>();
                 s.Should().BeOfType<ScopedImplementation>();
-                s.DoSometing( TestHelper.Monitor );
+                s.DoSomething( TestHelper.Monitor );
 
                 logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
                 logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );
@@ -441,7 +441,7 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
                 using var sp = r.ServiceRegister.Services.BuildServiceProvider();
-                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
+                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
                 r.ServiceRegister.Services.Should().ContainSingle( s => s.ServiceType == typeof( IAutoServiceCanBeImplementedByRealObject ) && s.Lifetime == ServiceLifetime.Singleton );
 
                 logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
@@ -466,7 +466,7 @@ namespace CK.StObj.Engine.Tests.Service
             {
                 var r = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices );
                 using var sp = r.ServiceRegister.Services.BuildServiceProvider();
-                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSometing( TestHelper.Monitor );
+                sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );
 
                 logs.Should().NotContain( e => e.MaskedLevel >= LogLevel.Error );
                 logs.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );

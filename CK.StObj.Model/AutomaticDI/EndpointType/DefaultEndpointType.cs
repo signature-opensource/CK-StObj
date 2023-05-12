@@ -1,3 +1,4 @@
+using CK.Setup;
 using Microsoft.Extensions.Hosting;
 
 namespace CK.Core
@@ -8,7 +9,8 @@ namespace CK.Core
     /// It can be associated to services that cannot or must not be available
     /// in other endpoints.
     /// </summary>
-    public sealed class DefaultEndpointType : EndpointType
+    [ContextBoundDelegation( "CK.Setup.DefaultEndpointTypeImpl, CK.StObj.Engine" )]
+    public abstract class DefaultEndpointType : EndpointType
     {
     }
 

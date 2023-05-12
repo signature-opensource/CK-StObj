@@ -27,8 +27,8 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">Logger to use. Can not be null.</param>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
-        /// <param name="traceDepencySorterInput">True to trace in <paramref name="monitor"/> the input of dependency graph.</param>
-        /// <param name="traceDepencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
+        /// <param name="traceDependencySorterInput">True to trace in <paramref name="monitor"/> the input of dependency graph.</param>
+        /// <param name="traceDepedencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
         /// <param name="typeFilter">Optional type filter.</param>
         /// <param name="configurator">Used to configure items. See <see cref="IStObjStructuralConfigurator"/>.</param>
         /// <param name="valueResolver">
@@ -38,8 +38,8 @@ namespace CK.Setup
         /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
         public StObjCollector( IActivityMonitor monitor,
                                IServiceProvider serviceProvider,
-                               bool traceDepencySorterInput = false,
-                               bool traceDepencySorterOutput = false,
+                               bool traceDependencySorterInput = false,
+                               bool traceDepedencySorterOutput = false,
                                IStObjTypeFilter? typeFilter = null,
                                IStObjStructuralConfigurator? configurator = null,
                                IStObjValueResolver? valueResolver = null,
@@ -53,8 +53,8 @@ namespace CK.Setup
             _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter, names );
             _configurator = configurator;
             _valueResolver = valueResolver;
-            if( traceDepencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
-            if( traceDepencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
+            if( traceDependencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
+            if( traceDepedencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
 
             AddWellKnownServices();
         }
@@ -264,6 +264,11 @@ namespace CK.Setup
             _computedResult = true;
             try
             {
+                // Systematically registers the EndpointTypeManager and DefaultEndpointType.
+                // (Note that the PocoDirectory is registered by the CKTypeCollector.
+                _cc.RegisterClass( typeof( EndpointTypeManager ) );
+                _cc.RegisterClass( typeof( DefaultEndpointType ) );
+
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
                 if( orderedItems != null )
                 {
@@ -377,8 +382,8 @@ namespace CK.Setup
                             // Calls StObjConstruct on Head for Groups.
                             if( m.ItemKind == DependentItemKindSpec.Item || sorted.IsGroupHead )
                             {
-                                m.SetSorterData( ordered.Count, sorted.Rank, sorted.Requires, sorted.Children, sorted.Groups );
-                                using( _monitor.OpenTrace( $"Constructing '{m.ToString()}'." ) )
+                                m.SetSorterData( ordered.Count, sorted.Requires, sorted.Children, sorted.Groups );
+                                using( _monitor.OpenTrace( $"Constructing '{m}'." ) )
                                 {
                                     try
                                     {

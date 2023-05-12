@@ -39,8 +39,7 @@ namespace CK.StObj.Engine.Tests
                 collector.RegisterType( typeof( SimpleContainer ) );
                 var result = collector.GetResult().EngineMap!.StObjs;
                 result.OrderedStObjs
-                      .Where( o => o.FinalImplementation.Implementation is not PocoDirectory )
-                      .First()
+                      .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
             }
         }

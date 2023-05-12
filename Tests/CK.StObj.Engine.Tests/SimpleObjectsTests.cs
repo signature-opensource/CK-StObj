@@ -411,7 +411,7 @@ namespace CK.StObj.Engine.Tests
             var c = TestHelper.CreateStObjCollector( typeof( MissingAutoImplementation ) );
             var m = TestHelper.GetSuccessfulResult( c ).EngineMap;
             Debug.Assert( m != null );
-            m.StObjs.FinalImplementations.Where( i => i.Implementation is not PocoDirectory ).Should().BeEmpty();
+            m.StObjs.FinalImplementations.Should().NotContain( i => i.FinalImplementation.Implementation is MissingAutoImplementation );
         }
     }
 }
