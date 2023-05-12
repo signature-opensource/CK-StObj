@@ -3,6 +3,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// A StObj "slices" a Structured Object (that is an <see cref="IRealObject"/>) by types in its inheritance chain.
     /// This interface is available after the dependency graph ordering (this is the Owner exposed by <see cref="IStObjFinalParameter"/> for
@@ -96,6 +97,14 @@ namespace CK.Setup
         /// <param name="propertyName">Name of the property. Must not be null nor empty.</param>
         /// <returns>The <see cref="System.Type.Missing"/> marker if the property has not been defined.</returns>
         object? GetStObjProperty( string propertyName );
-        
+
+        /// <summary>
+        /// Gets the code that returns the instance of this <see cref="IRealObject"/>.
+        /// <para>
+        /// The CK.StObj.GeneratedRootContext stores all the instances in static arrays. This string
+        /// enables a contextless access (thanks to the static) to the final instance.
+        /// </para>
+        /// </summary>
+        string CodeInstanceAccessor { get; }
     }
 }

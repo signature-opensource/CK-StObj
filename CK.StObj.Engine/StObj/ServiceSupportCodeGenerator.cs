@@ -299,7 +299,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                     .Append( ": base( " )
                         .AppendTypeOf( c.ClassType ).Append( ", " ).NewLine()
                         .AppendTypeOf( c.FinalType ).Append( ", " ).NewLine()
-                        .Append( x => GenerateStObjServiceFactortInfoAssignments( x, c.Assignments ) )
+                        .Append( x => GenerateStObjServiceFactoryInfoAssignments( x, c.Assignments ) )
                         .Append( ", " ).NewLine()
                         .Append( c.AutoServiceKind )
                         .Append( ", " ).NewLine()
@@ -351,7 +351,7 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             t.Append( "public static readonly IStObjServiceClassFactory Default = new S" ).Append( c.ManualMappingIndex ).Append( "();" ).NewLine();
         }
 
-        void GenerateStObjServiceFactortInfoAssignments( ICodeWriter b, IReadOnlyList<IStObjServiceParameterInfo> assignments )
+        void GenerateStObjServiceFactoryInfoAssignments( ICodeWriter b, IReadOnlyList<IStObjServiceParameterInfo> assignments )
         {
             if( assignments.Count == 0 )
             {

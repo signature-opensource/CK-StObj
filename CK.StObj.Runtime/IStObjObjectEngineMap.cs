@@ -16,7 +16,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="t">Key type.</param>
         /// <returns>Most specialized StObj or null if no mapping exists for this type.</returns>
-        new IStObjResult? ToLeaf( Type t );
+        new IStObjFinalImplementationResult? ToLeaf( Type t );
 
         /// <summary>
         /// Gets the most abstract type for any type mapped.
@@ -30,5 +30,9 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyList<IStObjResult> OrderedStObjs { get; }
 
+        /// <summary>
+        /// Gets the final, most specialized, <see cref="IStObjFinalImplementationResult"/>.
+        /// </summary>
+        new IReadOnlyCollection<IStObjFinalImplementationResult> FinalImplementations { get; }
     }
 }
