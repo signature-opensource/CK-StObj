@@ -489,13 +489,14 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
 
             " );
 
-            // Ignores boolean error return here.
-            HostedServiceLifetimeTriggerImpl.DiscoverMethods( monitor, EngineMap, out var hostedServiceLifetimeTriggerImpl );
-            hostedServiceLifetimeTriggerImpl?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
+            // Ignores null (error) return here: we always generate th code.
+            // Errors are detected through the monitor by the caller.
+            var hostedServiceLifetimeTrigger = HostedServiceLifetimeTriggerImpl.DiscoverMethods( monitor, EngineMap );
+            hostedServiceLifetimeTrigger?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
-            serviceGen.CreateConfigureServiceMethod( orderedStObjs, hostedServiceLifetimeTriggerImpl != null );
+            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
 
             GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }

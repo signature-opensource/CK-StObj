@@ -108,7 +108,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector( allTypes );
             using var services = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => TestHelper.Monitor );
+                services.Services.AddScoped( sp => TestHelper.Monitor );
             } ).Services;
             Debug.Assert( services != null );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )
