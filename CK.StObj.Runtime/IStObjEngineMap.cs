@@ -32,6 +32,5 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyDictionary<Type, ITypeAttributesCache> AllTypesAttributesCache { get; }
 
-
     }
 }
