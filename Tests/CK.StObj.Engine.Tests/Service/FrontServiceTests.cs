@@ -36,15 +36,17 @@ namespace CK.StObj.Engine.Tests.Service
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped );
         }
 
-        public class Impossible0 : IRealObject, IEndpointAutoService
+        [EndpointServiceAvailability( typeof( DefaultEndpointType ) )]
+        public class Impossible0 : IRealObject
         {
         }
+
         public class Impossible1 : IRealObject, IProcessAutoService
         {
         }
 
         [Test]
-        public void real_objects_cannot_be_ProcessServices()
+        public void real_objects_cannot_be_Endpoint_or_Process_services()
         {
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
@@ -61,7 +63,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void real_objects_cannot_be_defined_as_FrontOnly_services()
+        public void real_objects_cannot_be_externally_defined_as_Process_services()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );

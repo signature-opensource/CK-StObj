@@ -214,19 +214,14 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             }
         }
 
-        public void CreateConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs, bool hostedServiceLifetimeTrigger )
+        public void CreateConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            _rootType.GeneratedByComment();
+            _rootType.GeneratedByComment().NewLine();
             var configure = _rootType.CreateFunction( "void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )" );
 
-            if( hostedServiceLifetimeTrigger )
-            {
-                configure.Append( "// There is at least one OnHostStart/Stop[Async] method to call: The Microsoft.Extensions.Hosting.Abstractions package is required." )
-                         .NewLine()
-                         .Append( "register.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( Microsoft.Extensions.Hosting.IHostedService ), typeof( HostedServiceLifetimeTrigger ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );" )
-                         .NewLine();
-            }
-
+            configure.Append( "register.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( Microsoft.Extensions.Hosting.IHostedService ), typeof( HostedServiceLifetimeTrigger ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );" )
+                     .NewLine();
+            
             configure.Append( "register.StartupServices.Add( typeof(IStObjObjectMap), this );" ).NewLine()
                      .Append( "object[] registerParam = new object[]{ register.Monitor, register.StartupServices };" ).NewLine();
 

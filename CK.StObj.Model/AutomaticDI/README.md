@@ -56,7 +56,8 @@ public sealed class ServiceHook : IScopedAutoService
 We cannot register a "IEndpointService singleton" as a singleton and resolves it through from a scoped hook
 because of an optimization in the .Net Core DI where registered singleton are directly resolved to the root
 (resolving from the requesting scope is short-circuited). To be able to hook the resolution we must register them as
-Scoped. But by doing this, they are no more singletons. Anyway, this simply cannot work at all.
+Scoped. But by doing this, they are no more singletons. Anyway, this simply cannot work at all because of the inherent
+recursion on the scoped container and hook.
 
 It seems that we need either:
 - A more powerful DI engine (Autofac) and use its capabilities but it comes with a fair amount of complexities
@@ -105,8 +106,8 @@ When a service is marked as a IsEndpointService, it means that we know what it i
 adherence to some specific aspects of the system... Is it enough to orchestrate the whole thing?
 
 - If it is a scoped service, it is up to a EndPointType to claim that it handles it: this is
-  an opt-in, explicit, statement (by attribute certainly) since it will have to register a way to instantiate the
-  scoped service from its own container.
+  an opt-in, explicit, statement (by attribute for instance) since it will have to register a way to
+  instantiate the scoped service from its own container.
 - If it is a singleton, it must be the same instance if other endpoints also want/need to support it. This can
   be the one of the Global DI or must be shared between the EndpointTypes that want it and not appear in the
   Global DI.
@@ -207,10 +208,14 @@ If it is not, then its a bug that must be corrected by:
 - Declaring it to be available in any EndpointType that can expose it (and do the job of actually supporting it in
   every existing EndpointType).
 
-__Remark__: A singleton marked with one or more `EndpointServiceAvailability` and no `EndpointSingletonServiceOwner`
+__Remarks__:
+- A singleton marked with one or more `EndpointServiceAvailability` and no `EndpointSingletonServiceOwner`
 is an error. This breaks the `IAutoService` magic that automatically computes the lifetime based on the dependencies
 but this limitation concerns only singleton endpoint services. Endpoint is an "advanced" concept: one won't implement an
 EndPoint every day and defining a service for an endpoint is a special task.
+- We have skipped an important point here: the "Endpoint services and specialization" issue. This is not trivial but the
+main point is that the IAutoService lifetime detection is available for endpoint services but extending service availability
+of inherited services is forbidden. Only mere interfaces and classes can extend the service availability of their base types.
 
 All this implies a refactoring of the static type analysis so that a class or an interface is associated to 0 or more
 EndpointType, the IsEndpointService bit flag is now derived from the emptiness of this set.
@@ -224,25 +229,41 @@ for the other ones, we may now check that they really support it: ensuring at se
 an important aspect of the Automatic DI. To do this, the fact that a EndpointType handles a service type must be discoverable
 by reflection. A simple `[EndpointServices( params Type[] types )]` on the specialized EndpointType should be enough.
 
-It is now time to better describe how a EndpointType does its magic. Because of the required use of `IHostedService.StartAsync`
-as the "OnContainerBuild" hook, everything starts (at runtime) with the singleton Auto service `EndpointTypeManager` that captures
-the global DI container and the DefaultEndpointType real object instance through its constructor and is a `IHostedService` with
-a no-op StartSync method: the constructor is enough (we don't need an sync context here), the hosted service is only here to trigger
-the type resolution from the global DI container. The `EndpointTypeManager` constructor calls an internal `SetGlobalContainer( IServiceProvider )`
-method on the DefaultEndpointType that memorizes the global container as its own one and relays the call to all the other
-existing EndpointType that can now use the global one to do their job... and we are done.
+It is now time to better describe how a EndpointType does its magic. Because of the required `IHostedService.StartAsync`
+used as the "OnGlobalContainerBuild" hook, everything starts (at runtime) with the singleton Auto service `EndpointTypeManager`
+that captures the global DI container and the DefaultEndpointType real object instance through its constructor.
+
+This `EndpointTypeManager` is a `IHostedService` with a no-op StartSync method: the constructor is enough (we don't need
+an sync context here), the hosted service is only here to trigger the type resolution from the global DI container as early as possible.
+
+The `EndpointTypeManager` constructor calls an internal `SetGlobalContainer( IServiceProvider )` method on the DefaultEndpointType
+that memorizes the global container as its own one and relays the call to all the other existing EndpointType that can now use the
+global one to do their job... and we are done.
 
 What?!  
 -
 Of course, this is the only the final runtime part. The real (and hard) work has been done before.
 Before that, our "BeforeContainerBuild" hook on the IStObjMap has been called by the AddStObjMap
 extension method and has provided the global `IServiceCollection` to all the EndpointType instances.
-The EndpointType instances have used it to build their own `IServiceCollection` and build their own
-container. The global `IServiceCollection` is then cleaned up of all the specific endpoint services
+The EndpointType instances have used it to configure their own `IServiceCollection` and build from it
+their own container. The global `IServiceCollection` is then cleaned up of all the specific endpoint services
 and returns to the host that will build the final global container... and we are done.
 
-Yes, except that before the "build their own `IServiceCollection`" step can be executed, it's code has
-been generated by the setup based on the static type analysis.
+Yes... except that the "build their own `IServiceCollection`" step is not trivial. It's code has
+been generated by the setup based on the static type analysis as well as the code of the "cleaned up of
+all the specific endpoint services" for the global service collection.
+
+__Remarks__:
+- Before the EndpointFeature, CK.StObj.Model has no dependency on `Microsoft.Extensions.Hosting.Abstractions`:
+the OnHostStart/Stop[Async] support on IRealObject is an optional feature that kicks in only if at least one
+`IRealObject.OnHostStart/Stop` is used. Because of the `EndpointTypeManager`, CK.StObj.Model now requires this dependency.
+- We lied about the fact that the `EndpointTypeManager` was a `IHostedService`: actually there is only a
+`EndpointTypeManager`, just an interface. The actual hosted service is the code generated `HostedServiceLifetimeTrigger`
+that has been extended to handle the real EndpointTypeManager that is also fully code generated. But this is
+an implementation detail (to have the cleanest possible CK.StObj.Model API) and doesn't change the principle.
+
+
+
 
 
 

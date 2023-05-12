@@ -14,7 +14,7 @@ namespace CK.Setup
 {
     public partial class StObjCollectorResult
     {
-        class HostedServiceLifetimeTriggerImpl
+        sealed class HostedServiceLifetimeTriggerImpl
         {
             readonly List<(IStObjResult, MethodInfo)> _starts;
             readonly List<(IStObjResult, MethodInfo)> _stops;
@@ -27,7 +27,6 @@ namespace CK.Setup
 
             public void GenerateHostedServiceLifetimeTrigger( IActivityMonitor monitor, IStObjEngineMap map, ITypeDefinerScope code )
             {
-                Debug.Assert( _starts.Count > 0 || _stops.Count > 0 );
                 code.GeneratedByComment();
                 var c = code.CreateType( "sealed class HostedServiceLifetimeTrigger : Microsoft.Extensions.Hosting.IHostedService" )
                             .Append( "readonly IServiceProvider _services;" ).NewLine()
@@ -101,42 +100,51 @@ namespace CK.Setup
             }
 
 
-            public static bool DiscoverMethods( IActivityMonitor monitor, IStObjEngineMap map, out HostedServiceLifetimeTriggerImpl? impl )
+            public static HostedServiceLifetimeTriggerImpl? DiscoverMethods( IActivityMonitor monitor, IStObjEngineMap map )
             {
-                impl = null;
                 using( monitor.OpenInfo( "Discovering OnHostStart/Stop[Async] methods on real objects and generating HostedServiceLifetimeTrigger implementation." ) )
                 {
                     var types = map.StObjs.OrderedStObjs;
                     var startMethods = new List<(IStObjResult, MethodInfo)>();
                     var stopMethods = new List<(IStObjResult, MethodInfo)>();
 
-                    // Uses logical or (no shortcut) to always evaluate all methods.
-                    if( !DiscoverStartOrStopMethod( monitor, types, StObjContextRoot.StartMethodName, startMethods )
-                        | !DiscoverStartOrStopMethod( monitor, types, StObjContextRoot.StartMethodNameAsync, startMethods )
-                        | !DiscoverStartOrStopMethod( monitor, types, StObjContextRoot.StopMethodName, stopMethods )
-                        | !DiscoverStartOrStopMethod( monitor, types, StObjContextRoot.StopMethodNameAsync, stopMethods ) )
+                    if( !DiscoverStartOrStopMethod( monitor, types, startMethods, stopMethods ) )
                     {
-                        return false;
-                    }
-                    if( startMethods.Count == 0 && stopMethods.Count == 0 )
-                    {
-                        monitor.CloseGroup( $"No OnHostStart/Stop[Async] method found on the {types.Count} real objects. Skipping HostedServiceLifetimeTrigger implementation." );
-                        return true;
+                        monitor.CloseGroup( "Failed." );
+                        return null;
                     }
                     stopMethods.Reverse();
-                    monitor.CloseGroup( $"Found {startMethods.Count} OnHostStart[Async] method(s) and {stopMethods.Count} OnHostStop[Async] found on the {types.Count} real objects." );
-                    impl = new HostedServiceLifetimeTriggerImpl( startMethods, stopMethods );
-                    return true;
+                    if( startMethods.Count == 0 && stopMethods.Count == 0 )
+                    {
+                        monitor.CloseGroup( $"No OnHostStart/Stop[Async] method found on the {types.Count} real objects. HostedServiceLifetimeTrigger will only deal with the EndpointTypeManager." );
+                    }
+                    else
+                    {
+                        monitor.CloseGroup( $"Found {startMethods.Count} OnHostStart[Async] method(s) and {stopMethods.Count} OnHostStop[Async] found on the {types.Count} real objects." );
+                    }
+                    return new HostedServiceLifetimeTriggerImpl( startMethods, stopMethods );
                 }
 
             }
 
-            static bool DiscoverStartOrStopMethod( IActivityMonitor monitor, IEnumerable<IStObjResult> all, string methodName, List<(IStObjResult, MethodInfo)> collector )
+            static bool DiscoverStartOrStopMethod( IActivityMonitor monitor,
+                                                   IEnumerable<IStObjResult> all,
+                                                   List<(IStObjResult, MethodInfo)> startMethods,
+                                                   List<(IStObjResult, MethodInfo)> stopMethods )
             {
                 bool success = true;
                 foreach( var r in all )
                 {
                     var t = r.ClassType;
+                    ProcessMethod( monitor, StObjContextRoot.StartMethodName, startMethods, ref success, r, t );
+                    ProcessMethod( monitor, StObjContextRoot.StartMethodNameAsync, startMethods, ref success, r, t );
+                    ProcessMethod( monitor, StObjContextRoot.StopMethodName, stopMethods, ref success, r, t );
+                    ProcessMethod( monitor, StObjContextRoot.StopMethodNameAsync, stopMethods, ref success, r, t );
+                }
+                return success;
+
+                static void ProcessMethod( IActivityMonitor monitor, string methodName, List<(IStObjResult, MethodInfo)> collector, ref bool success, IStObjResult r, Type t )
+                {
                     var m = t.GetMethod( methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly | BindingFlags.Static );
                     if( m != null )
                     {
@@ -172,7 +180,6 @@ namespace CK.Setup
                         }
                     }
                 }
-                return success;
             }
 
         }
