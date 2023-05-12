@@ -12,7 +12,14 @@ namespace CK.Setup
         readonly List<Type> _endpoints;
         Type? _owner;
         bool _exclusive;
-        bool _locked;
+        string? _lockedReason;
+        bool _typeProcessed;
+
+        internal enum ExtendStatus
+        {
+            Full,
+            PromoteToExclusive,
+        }
 
         /// <summary>
         /// Gets the service type that is a endpoint service.
@@ -52,7 +59,11 @@ namespace CK.Setup
             _endpoints = new List<Type>( baseInfo._endpoints );
         }
 
-        internal bool Lock() => _locked = true;
+        internal void SetTypeProcessed() => _typeProcessed = true;
+
+        internal bool IsLocked => _lockedReason != null;
+
+        internal void Lock( string reason ) => _lockedReason ??= reason;
 
         internal bool CombineWith( IActivityMonitor monitor, Type? owner, bool exclusive, IReadOnlyList<Type> endpoints )
         {
@@ -67,15 +78,15 @@ namespace CK.Setup
                         monitor.Error( $"Singleton Endpoint service '{_serviceType}' is already owned by '{_owner.Name}', it cannot also be owned by {owner.Name}." );
                         return false;
                     }
+                    // Exclusive can only transition from false to true.
                     if( Exclusive != exclusive )
                     {
                         _exclusive = true;
                         if( exclusive )
                         {
-                            if( _locked )
+                            if( _typeProcessed )
                             {
-                                monitor.Error( $"Too late registration: Singleton Endpoint service '{_serviceType}' owned by '{_owner.Name}' cannot be set to Exclusive." );
-                                return false;
+                                return ErrorTypeProcessed( monitor );
                             }
                             monitor.Warn( $"Singleton Endpoint service '{_serviceType}' owned by '{_owner.Name}' is now Exclusive." );
                         }
@@ -87,10 +98,9 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( _locked )
+                    if( _typeProcessed )
                     {
-                        monitor.Error( $"Too late registration: Defining singleton Endpoint service '{_serviceType}' to be owned by '{owner.Name}' must be done earlier." );
-                        return false;
+                        return ErrorTypeProcessed( monitor );
                     }
                     _owner = owner;
                     _exclusive = exclusive;
@@ -100,9 +110,9 @@ namespace CK.Setup
             {
                 if( !_endpoints.Contains( type ) )
                 {
-                    if( _locked )
+                    if( _lockedReason != null )
                     {
-                        monitor.Error( $"Too late registration: Extending Endpoint service '{_serviceType}' availability to '{type.Name}' endpoint must be done earlier." );
+                        monitor.Error( $"Endpoint registration failed because: '{_lockedReason}': Extending Endpoint service '{_serviceType}' availability to '{type.Name}' endpoint is not possible." );
                         return false;
                     }
                     _endpoints.Add( type );
@@ -111,9 +121,22 @@ namespace CK.Setup
             return true;
         }
 
+        bool ErrorTypeProcessed( IActivityMonitor monitor )
+        {
+            monitor.Error( $"Type '{_serviceType}' has been processed. Singleton ownership cannot be altered." );
+            return false;
+        }
+
         internal bool CombineWith( IActivityMonitor monitor, EndpointServiceInfo baseInfo )
         {
             return CombineWith( monitor, baseInfo._owner, baseInfo._exclusive, baseInfo._endpoints );
+        }
+
+        internal void SetDefaultSingletonOwner()
+        {
+            Debug.Assert( _owner == null && !_exclusive && !_typeProcessed && _lockedReason == null );
+            _owner = typeof( DefaultEndpointType );
+            if( !_endpoints.Contains( _owner ) ) _endpoints.Contains( _owner );
         }
     }
 

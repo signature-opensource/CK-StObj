@@ -1,16 +1,9 @@
 using CK.Core;
 using CK.Setup;
 using FluentAssertions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NUnit.Framework;
-using NUnit.Framework.Constraints;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
