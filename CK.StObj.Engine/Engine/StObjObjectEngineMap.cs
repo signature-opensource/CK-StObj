@@ -6,6 +6,7 @@ using System.Reflection;
 using CSemVer;
 using CK.Core;
 using System.Collections.Immutable;
+using System.Collections;
 
 namespace CK.Setup
 {
@@ -141,7 +142,7 @@ namespace CK.Setup
 
         object? IStObjObjectMap.Obtain( Type t ) => _map.GetValueOrDefault( t )?.InitialObject;
 
-        IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finaImplementations.Select( m => m.FinalImplementation );
+        IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finaImplementations;
 
         IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _map.Where( kv => kv.Key is Type ).Select( kv => new StObjMapping( kv.Value, kv.Value.FinalImplementation ) );
 

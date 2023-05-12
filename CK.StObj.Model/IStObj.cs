@@ -13,11 +13,6 @@ namespace CK.Core
         Type ClassType { get; }
 
         /// <summary>
-        /// Gets the StObj map to which this StObj belongs.
-        /// </summary>
-        IStObjMap StObjMap { get; }
-
-        /// <summary>
         /// Gets the parent <see cref="IStObj"/> in the inheritance chain (the one associated to the base class of this <see cref="ClassType"/>).
         /// </summary>
         IStObj? Generalization { get; }

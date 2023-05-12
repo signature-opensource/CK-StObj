@@ -28,7 +28,7 @@ namespace CK.Core
         /// <summary>
         /// Gets all the real object final implementations that exist in this context.
         /// </summary>
-        IEnumerable<IStObjFinalImplementation> FinalImplementations { get; }
+        IReadOnlyList<IStObjFinalImplementation> FinalImplementations { get; }
 
         /// <summary>
         /// Gets all the <see cref="IStObj"/> and their final implementation that exist in this context.
@@ -41,7 +41,7 @@ namespace CK.Core
         /// If external services are required, then the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> can be configured
         /// to expose those "external" services.
         /// <para>
-        /// The first step is to call all  <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods on all the <see cref="IStObj"/>, following
+        /// The first step calls all  <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods on all the <see cref="IStObj"/>, following
         /// the topological sort: during this step, startup services can be registered in the <see cref="ISimpleServiceContainer"/>) and/or used by
         /// dependent StObj (as a kind of "shared memory/state").
         /// <c>void RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer );</c>
