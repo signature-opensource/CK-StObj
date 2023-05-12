@@ -151,7 +151,6 @@ namespace CK.Setup
                                      out bool asyncRequires )
             {
                 asyncRequires = false;
-                body.Append( "var g = (" ).Append( StObjContextRoot.RootContextTypeName ).Append( ")_services.GetService( typeof(IStObjMap) );" ).NewLine();
                 body.Append( "using var scope = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateScope( _services );" ).NewLine();
                 body.Append( "var monitor = scope.ServiceProvider.GetService<IActivityMonitor>( true );" ).NewLine();
                 var callings = string.Join( " and ", methods.GroupBy( x => x.M.Name ).Select( g => $"{g.Count()} '{g.Key}' method{(g.Count() > 1 ? "s" : "")}" ) );
@@ -161,7 +160,7 @@ namespace CK.Setup
                 body.GeneratedByComment();
                 foreach( var m in methods )
                 {
-                    monitor.Trace( $"Generating call to '{m.T.ClassType.ToString()}.{m.M.Name}'." );
+                    monitor.Trace( $"Generating call to '{m.T.ClassType:C}.{m.M.Name}'." );
                     bool isAsync = m.M.Name.EndsWith( "Async" );
                     if( isAsync )
                     {
@@ -169,7 +168,7 @@ namespace CK.Setup
                         body.Append( "await (" ).Append( m.M.ReturnType == typeof( ValueTask ) ? "(ValueTask)" : "(Task)" );
                     }
                     body.AppendTypeOf( m.T.ClassType ).Append( ".GetMethod( " ).AppendSourceString( m.M.Name ).Append( " , BindingFlags.Instance | BindingFlags.NonPublic )" )
-                                                      .Append( ".Invoke( g.InternalRealObjects[" ).Append( m.T.IndexOrdered ).Append( "].FinalImplementation.Implementation, " )
+                                                      .Append( ".Invoke( CK.StObj.GeneratedRootContext.GenStObjs[" ).Append( m.T.IndexOrdered ).Append( "].FinalImplementation.Implementation, " )
                                                       .Append( requiredTypes.GetParametersArray( m.M.GetParameters() ) ).Append( " )" );
                     if( isAsync )
                     {
