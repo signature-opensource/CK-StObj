@@ -368,9 +368,14 @@ IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMap
 
 GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
 
-// Generated code, by casting IStObjMap (available in DI) into GeneratedRootContext can access to this by index.
+[Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.GenStObjs."", true )]
 internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
+[Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.GenFinalStObjs."", true )]
 internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
+
+// Direct static access to the StObjs and the FinalStObjs for generated code.
+static IReadOnlyList<IStObj> GenStObjs => _stObjs;
+static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalStObjs;
 " );
             var rootStaticCtor = rootType.GeneratedByComment().NewLine()
                                          .CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
