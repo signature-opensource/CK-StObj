@@ -17,7 +17,7 @@ namespace CK.Setup
 
     partial class MutableItem : IStObjResult, IStObjFinalImplementation, IStObjMutableItem, IDependentItemContainerTyped, IDependentItemContainerRef
     {
-        class LeafData
+        sealed class LeafData
         {
 #pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
             public LeafData( MutableItem leaf, List<MutableAmbientProperty> ap, MutableInjectObject[] ac )
@@ -309,7 +309,7 @@ namespace CK.Setup
 
         /// <summary>
         /// The ImplementableTypeInfo is not null only if the Type is abstract but
-        /// a <see cref="ImplementableTypeInfo.StubType"/> has been successfuly created.
+        /// a <see cref="ImplementableTypeInfo.StubType"/> has been successfully created.
         /// </summary>
         public ImplementableTypeInfo? ImplementableTypeInfo => _leafData.ImplementableTypeInfo;
 
@@ -687,7 +687,7 @@ namespace CK.Setup
         /// Called by StObjCollector once the mutable items have been sorted.
         /// </summary>
         /// <param name="idx">The index in the whole ordered list of items.</param>
-        /// <param name="rank">Rank in the depedency graph. This is used for Service association.</param>
+        /// <param name="rank">Rank in the dependency graph. This is used for Service association.</param>
         /// <param name="requiresFromSorter">Required items.</param>
         /// <param name="childrenFromSorter">Children items.</param>
         /// <param name="groupsFromSorter">Groups items.</param>
@@ -839,8 +839,6 @@ namespace CK.Setup
         IReadOnlyList<IStObjResult> IStObjResult.Groups => _dGroups; 
 
         IReadOnlyList<IStObjTrackedAmbientPropertyInfo> IStObjResult.TrackedAmbientProperties => _trackedAmbientProperties;
-
-        IStObjMap IStObj.StObjMap => EngineMap;
 
         object IStObjResult.GetStObjProperty( string propertyName )
         {

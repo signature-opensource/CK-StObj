@@ -89,7 +89,6 @@ namespace CK.Setup
 
             public IReadOnlyCollection<Type> UniqueMappings { get; }
         }
-
 ";
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
@@ -107,12 +106,12 @@ namespace CK.Setup
             _infoType.Namespace.Append( _sourceServiceSupport );
 
             _rootType.GeneratedByComment().Append( @"
-readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
-readonly IStObjFinalImplementation[] _objectServiceMappingList;
-readonly Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
-readonly IStObjServiceClassDescriptor[] _simpleServiceList;
-readonly Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappings;
-readonly IStObjServiceClassFactory[] _manualServiceList;
+static readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
+static readonly IStObjFinalImplementation[] _objectServiceMappingList;
+static readonly Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
+static readonly IStObjServiceClassDescriptor[] _simpleServiceList;
+static readonly Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappings;
+static readonly IStObjServiceClassFactory[] _manualServiceList;
 
 public IStObjServiceMap Services => this;
 IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
@@ -124,7 +123,8 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                      .NewLine();
 
             // Object mappings.
-            _rootCtor.Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({liftedMap.ObjectMappings.Count});" ).NewLine();
+            _rootCtor.GeneratedByComment().NewLine()
+                     .Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({liftedMap.ObjectMappings.Count});" ).NewLine();
             foreach( var map in liftedMap.ObjectMappings )
             {
                 _rootCtor.Append( "_objectServiceMappings.Add( " )
@@ -285,7 +285,6 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                     configure.Append( " } );" ).NewLine();
                 }
             }
-
         }
 
         string GetServiceClassFactoryDefaultPropertyName( IStObjServiceFinalManualMapping f ) => $"SFInfo.S{f.ManualMappingIndex}.Default";

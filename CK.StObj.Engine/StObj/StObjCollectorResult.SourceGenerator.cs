@@ -297,19 +297,16 @@ namespace CK.Setup
         const string _sourceGStObj = @"
 class GStObj : IStObj
 {
-    public GStObj( Type t, IStObj g, IStObjMap m, int idx )
+    public GStObj( Type t, IStObj g, int idx )
     {
         ClassType = t;
         Generalization = g;
-        StObjMap = m;
         IndexOrdered = idx;
     }
 
     public Type ClassType { get; }
 
     public IStObj Generalization { get; }
-
-    public IStObjMap StObjMap { get; }
 
     public IStObj Specialization { get; internal set; }
 
@@ -322,8 +319,8 @@ class GStObj : IStObj
         const string _sourceFinalGStObj = @"
 class GFinalStObj : GStObj, IStObjFinalImplementation
 {
-    public GFinalStObj( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, IStObjMap m, int idx )
-            : base( t, g, m, idx )
+    public GFinalStObj( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, int idx )
+            : base( t, g, idx )
     {
         FinalImplementation = this;
         Implementation = impl;
@@ -349,64 +346,127 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
               .Append( _sourceGStObj ).NewLine()
               .Append( _sourceFinalGStObj ).NewLine();
 
-            var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" )
-                                .Append( "readonly GStObj[] _stObjs;" ).NewLine()
-                                .Append( "readonly GFinalStObj[] _finalStObjs;" ).NewLine()
-                                .Append( "readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine();
+            var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" );
 
-            var rootCtor = rootType.CreateFunction( $"public {StObjContextRoot.RootContextTypeName}( IActivityMonitor monitor )" );
+            rootType.Append( "static readonly GStObj[] _stObjs;" ).NewLine()
+                    .Append( "static readonly GFinalStObj[] _finalStObjs;" ).NewLine()
+                    .Append( "static readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine()
+                    .Append( "static readonly IReadOnlyCollection<VFeature> _vFeatures;" ).NewLine()
+                    .Append( "static int _intializeOnce;" ).NewLine();
 
-            rootCtor.Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
-                    .Append( $"_finalStObjs = new GFinalStObj[{CKTypeResult.RealObjects.EngineMap.FinalImplementations.Count}];" ).NewLine();
+            rootType.Append( @"
+public IStObjObjectMap StObjs => this;
+
+IReadOnlyList<string> IStObjMap.Names => CK.StObj.SignatureAttribute.V.Names;
+SHA1Value IStObjMap.GeneratedSignature => CK.StObj.SignatureAttribute.V.Signature;
+IReadOnlyCollection<VFeature> IStObjMap.Features => _vFeatures;
+
+IStObj IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
+object IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
+IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finalStObjs;
+IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
+
+GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
+
+// Generated code, by casting IStObjMap (available in DI) into GeneratedRootContext can access to this by index.
+internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
+internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
+" );
+            var rootStaticCtor = rootType.GeneratedByComment().NewLine()
+                                         .CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
+            SetupObjectsGraph( rootStaticCtor, orderedStObjs, CKTypeResult.RealObjects.EngineMap );
+
+            // Construct and Initialize methods takes a monitor and the context instance: we need the instance constructor.
+            GenerateInstanceConstructor( rootType, orderedStObjs );
+
+            // Ignores null (error) return here: we always generate the code.
+            // Errors are detected through the monitor by the caller.
+            var hostedServiceLifetimeTrigger = HostedServiceLifetimeTriggerImpl.DiscoverMethods( monitor, EngineMap );
+            hostedServiceLifetimeTrigger?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
+
+            var serviceGen = new ServiceSupportCodeGenerator( rootType, rootStaticCtor );
+            serviceGen.CreateServiceSupportCode( EngineMap.Services );
+            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
+
+            GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );
+        }
+
+        static void SetupObjectsGraph( IFunctionScope rootStaticCtor, IReadOnlyList<IStObjResult> orderedStObjs, StObjObjectEngineMap map )
+        {
+            rootStaticCtor.GeneratedByComment().NewLine()
+                          .Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
+                          .Append( $"_finalStObjs = new GFinalStObj[{map.FinalImplementations.Count}];" ).NewLine()
+                          .Append( $"_map = new Dictionary<Type,GFinalStObj>();" ).NewLine();
             int iStObj = 0;
             int iImplStObj = 0;
             foreach( var m in orderedStObjs )
             {
                 Debug.Assert( (m.Specialization != null) == (m != m.FinalImplementation) );
                 string generalization = m.Generalization == null ? "null" : $"_stObjs[{m.Generalization.IndexOrdered}]";
-                rootCtor.Append( $"_stObjs[{iStObj++}] = " );
+                rootStaticCtor.Append( $"_stObjs[{iStObj++}] = " );
                 if( m.Specialization == null )
                 {
-                    rootCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
-                            .AppendCSharpName( m.FinalImplementation.FinalType, true, true, true ).Append("(), " )
-                            .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
-                            .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
-                            .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();
+                    rootStaticCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
+                                  .AppendCSharpName( m.FinalImplementation.FinalType, true, true, true ).Append( "(), " )
+                                  .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
+                                  .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
+                                  .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();
                 }
-                else rootCtor.Append( "new GStObj(" );
+                else rootStaticCtor.Append( "new GStObj(" );
 
-                rootCtor.AppendTypeOf( m.ClassType ).Append( ", " )
-                        .Append( generalization )
-                        .Append( ", this, " ).Append( m.IndexOrdered ).Append( " );" ).NewLine();
+                rootStaticCtor.AppendTypeOf( m.ClassType ).Append( ", " )
+                              .Append( generalization )
+                              .Append( ", " ).Append( m.IndexOrdered ).Append( " );" ).NewLine();
 
             }
 
-            rootCtor.Append( $"_map = new Dictionary<Type,GFinalStObj>();" ).NewLine();
-            var allMappings = CKTypeResult.RealObjects.EngineMap.RawMappings;
+            IReadOnlyDictionary<object, MutableItem> allMappings = map.RawMappings;
             // We skip highest implementation Type mappings (ie. RealObjectInterfaceKey keys) since 
             // there is no ToHead mapping (to root generalization) on final (runtime) IStObjMap.
             foreach( var e in allMappings.Where( e => e.Key is Type ) )
             {
-                rootCtor.Append( $"_map.Add( " ).AppendTypeOf( (Type)e.Key )
-                        .Append( ", (GFinalStObj)_stObjs[" ).Append( e.Value.IndexOrdered ).Append( "] );" ).NewLine();
+                rootStaticCtor.Append( $"_map.Add( " ).AppendTypeOf( (Type)e.Key )
+                              .Append( ", (GFinalStObj)_stObjs[" ).Append( e.Value.IndexOrdered ).Append( "] );" ).NewLine();
             }
             if( orderedStObjs.Count > 0 )
             {
-                rootCtor.Append( $"int iStObj = {orderedStObjs.Count};" ).NewLine()
-                       .Append( "while( --iStObj >= 0 ) {" ).NewLine()
-                       .Append( " var o = _stObjs[iStObj];" ).NewLine()
-                       .Append( " if( o.Specialization == null ) {" ).NewLine()
-                       .Append( "  var oF = (GFinalStObj)o;" ).NewLine()
-                       .Append( "  GStObj g = (GStObj)o.Generalization;" ).NewLine()
-                       .Append( "  while( g != null ) {" ).NewLine()
-                       .Append( "   g.Specialization = o;" ).NewLine()
-                       .Append( "   g.FinalImplementation = oF;" ).NewLine()
-                       .Append( "   o = g;" ).NewLine()
-                       .Append( "   g = (GStObj)o.Generalization;" ).NewLine()
-                       .Append( "  }" ).NewLine()
-                       .Append( " }" ).NewLine()
-                       .Append( "}" ).NewLine();
+                rootStaticCtor.Append( $"int iStObj = {orderedStObjs.Count};" ).NewLine()
+                              .Append( "while( --iStObj >= 0 ) {" ).NewLine()
+                              .Append( " var o = _stObjs[iStObj];" ).NewLine()
+                              .Append( " if( o.Specialization == null ) {" ).NewLine()
+                              .Append( "  var oF = (GFinalStObj)o;" ).NewLine()
+                              .Append( "  GStObj g = (GStObj)o.Generalization;" ).NewLine()
+                              .Append( "  while( g != null ) {" ).NewLine()
+                              .Append( "   g.Specialization = o;" ).NewLine()
+                              .Append( "   g.FinalImplementation = oF;" ).NewLine()
+                              .Append( "   o = g;" ).NewLine()
+                              .Append( "   g = (GStObj)o.Generalization;" ).NewLine()
+                              .Append( "  }" ).NewLine()
+                              .Append( " }" ).NewLine()
+                              .Append( "}" ).NewLine();
             }
+        }
+
+        static void GenerateInstanceConstructor( ITypeScope rootType, IReadOnlyList<IStObjResult> orderedStObjs )
+        {
+            var rootCtor = rootType.GeneratedByComment().NewLine()
+                           .CreateFunction( $"public {StObjContextRoot.RootContextTypeName}( IActivityMonitor monitor )" );
+
+            rootCtor.Append( @"if( System.Threading.Interlocked.CompareExchange( ref _intializeOnce, 1, 0 ) != 0 )" )
+                    .OpenBlock()
+                    .Append( "monitor.UnfilteredLog( LogLevel.Warn, null, \"This context has already been initialized.\", null );" )
+                    .Append( "return;" )
+                    .CloseBlock();
+
+            InitializePreConstructPropertiesAndCallConstruct( rootCtor, orderedStObjs );
+            InitializePostBuildProperties( rootCtor, orderedStObjs );
+            CallInitializeMethods( rootCtor, orderedStObjs );
+        }
+
+
+        static void InitializePreConstructPropertiesAndCallConstruct( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
+        {
+            rootCtor.GeneratedByComment().NewLine();
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
             foreach( MutableItem m in orderedStObjs )
             {
@@ -417,7 +477,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                         Debug.Assert( setter.Property.DeclaringType != null );
                         Type decl = setter.Property.DeclaringType;
                         var key = ValueTuple.Create( decl, setter.Property.Name );
-                        if(!propertyCache.TryGetValue( key, out string? varName ))
+                        if( !propertyCache.TryGetValue( key, out string? varName ) )
                         {
                             varName = "pI" + propertyCache.Count.ToString();
                             rootCtor
@@ -434,7 +494,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                         }
                         rootCtor.Append( varName )
                                .Append( ".SetValue(_stObjs[" )
-                               .Append( m.IndexOrdered).Append( "].FinalImplementation.Implementation," );
+                               .Append( m.IndexOrdered ).Append( "].FinalImplementation.Implementation," );
                         GenerateValue( rootCtor, setter.Value );
                         rootCtor.Append( ");" ).NewLine();
                     }
@@ -455,6 +515,32 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     CallConstructMethod( rootCtor, m, m.ConstructParameters );
                 }
             }
+
+            static void CallConstructMethod( IFunctionScope rootCtor, MutableItem m, IEnumerable<IStObjMutableParameter> parameters )
+            {
+                rootCtor.Append( ".GetMethod(" )
+                        .AppendSourceString( StObjContextRoot.ConstructMethodName )
+                        .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
+                        .Append( $".Invoke( _stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, new object[] {{" );
+                // Missing Value {get;} on IStObjMutableParameter and we need the BuilderValueIndex...
+                // Hideous downcast for the moment.
+                foreach( var p in parameters.Cast<MutableParameter>() )
+                {
+                    if( p.BuilderValueIndex < 0 )
+                    {
+                        rootCtor.Append( $"_stObjs[{-(p.BuilderValueIndex + 1)}].FinalImplementation.Implementation" );
+                    }
+                    else GenerateValue( rootCtor, p.Value );
+                    rootCtor.Append( ',' );
+                }
+                rootCtor.Append( "});" ).NewLine();
+            }
+
+        }
+
+        static void InitializePostBuildProperties( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
+        {
+            rootCtor.GeneratedByComment().NewLine();
             foreach( MutableItem m in orderedStObjs )
             {
                 if( m.PostBuildProperties != null )
@@ -471,6 +557,11 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     }
                 }
             }
+        }
+
+        static void CallInitializeMethods( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
+        {
+            rootCtor.GeneratedByComment().NewLine();
             foreach( MutableItem m in orderedStObjs )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
@@ -478,7 +569,7 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                     if( init == m.RealObjectType.StObjInitialize ) rootCtor.Append( $"_stObjs[{m.IndexOrdered}].ClassType" );
                     else rootCtor.AppendTypeOf( init.DeclaringType! );
 
-                    rootCtor.Append( ".GetMethod(")
+                    rootCtor.Append( ".GetMethod(" )
                             .AppendSourceString( StObjContextRoot.InitializeMethodName )
                             .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
                             .NewLine();
@@ -486,82 +577,27 @@ class GFinalStObj : GStObj, IStObjFinalImplementation
                             .NewLine();
                 }
             }
-
-            rootType.Append( "" ).NewLine()
-                    .Append( @"
-            public IStObjObjectMap StObjs => this;
-
-            IReadOnlyList<string> IStObjMap.Names => CK.StObj.SignatureAttribute.V.Names;
-            SHA1Value IStObjMap.GeneratedSignature => CK.StObj.SignatureAttribute.V.Signature;
-
-            IStObj IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
-            object IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
-
-            IEnumerable<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finalStObjs;
-
-            IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
-
-            GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
-
-            // Generated code, by casting IStObjMap (available in DI) into GeneratedRootContext can access to this by index.
-            internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
-            internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
-
-            " );
-
-            // Ignores null (error) return here: we always generate th code.
-            // Errors are detected through the monitor by the caller.
-            var hostedServiceLifetimeTrigger = HostedServiceLifetimeTriggerImpl.DiscoverMethods( monitor, EngineMap );
-            hostedServiceLifetimeTrigger?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
-
-            var serviceGen = new ServiceSupportCodeGenerator( rootType, rootCtor );
-            serviceGen.CreateServiceSupportCode( EngineMap.Services );
-            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
-
-            GenerateVFeatures( monitor, rootType, rootCtor, EngineMap.Features );
         }
 
-        static void CallConstructMethod( IFunctionScope rootCtor, MutableItem m, IEnumerable<IStObjMutableParameter> parameters )
-        {
-            rootCtor.Append( ".GetMethod(" )
-                    .AppendSourceString( StObjContextRoot.ConstructMethodName )
-                    .Append( ", BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly )" )
-                    .Append( $".Invoke( _stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, new object[] {{" );
-            // Missing Value {get;} on IStObjMutableParameter and we need the BuilderValueIndex...
-            // Hideous downcast for the moment.
-            foreach( var p in parameters.Cast<MutableParameter>() )
-            {
-                if( p.BuilderValueIndex < 0 )
-                {
-                    rootCtor.Append( $"_stObjs[{-(p.BuilderValueIndex + 1)}].FinalImplementation.Implementation" );
-                }
-                else GenerateValue( rootCtor, p.Value );
-                rootCtor.Append( ',' );
-            }
-            rootCtor.Append( "});" ).NewLine();
-        }
-
-        static void GenerateVFeatures( IActivityMonitor monitor, ITypeScope rootType, IFunctionScope rootCtor, IReadOnlyCollection<VFeature> features )
+        static void GenerateVFeatures( IActivityMonitor monitor, IFunctionScope rootStaticCtor, ITypeScope rootType, IReadOnlyCollection<VFeature> features )
         {
             monitor.Info( $"Generating VFeatures: {features.Select( f => f.ToString()).Concatenate()}." );
 
-            rootType.Append( "readonly IReadOnlyCollection<VFeature> _vFeatures;" ).NewLine();
-
-            rootCtor.Append( "_vFeatures = new VFeature[]{ " );
-            bool atleastOne = false;
+            rootStaticCtor.GeneratedByComment().NewLine()
+                          .Append( "_vFeatures = new VFeature[]{ " );
+            bool atLeastOne = false;
             foreach( var f in features )
             {
-                if( atleastOne ) rootCtor.Append( ", " );
-                atleastOne = true;
-                rootCtor.Append( "new VFeature( " )
+                if( atLeastOne ) rootStaticCtor.Append( ", " );
+                atLeastOne = true;
+                rootStaticCtor.Append( "new VFeature( " )
                         .AppendSourceString( f.Name )
                         .Append(',')
                         .Append( "CSemVer.SVersion.Parse( " )
                         .AppendSourceString( f.Version.ToNormalizedString() )
                         .Append( " ) )" );
             }
-            rootCtor.Append( "};" );
-            rootType.Append( "public IReadOnlyCollection<VFeature> Features => _vFeatures;" ).NewLine();
+            rootStaticCtor.Append( "};" );
         }
 
         static void GenerateValue( ICodeWriter b, object? o )
