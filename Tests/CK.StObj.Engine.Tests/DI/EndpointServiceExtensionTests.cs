@@ -25,7 +25,7 @@ namespace CK.StObj.Engine.Tests.DI
         public void IAutoService_Endpoint_services_cannot_extend_their_endpoints()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEPService1 ), typeof( IEPService2 ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "Endpoint registration failed because: 'This type is an IAutoService. IAutoService Endpoint services cannot be altered.': Extending Endpoint service 'CK.StObj.Engine.Tests.DI.EndpointServiceExtensionTests+IEPService2' availability to 'AnotherEndpointType' endpoint is not possible." );
         }
     }
 }
