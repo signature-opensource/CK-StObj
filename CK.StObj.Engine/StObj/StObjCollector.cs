@@ -102,29 +102,29 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
-        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointType )
+        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
-            return _cc.KindDetector.SetEndpointServiceAvailability( monitor, serviceType, endpointType );
+            return _cc.KindDetector.SetEndpointServiceAvailability( monitor, serviceType, endpointDefinition );
         }
 
         /// <summary>
-        /// Tries to define a service as a singleton managed by a <see cref="EndpointType"/>.
+        /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
         /// <para>
         /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
-        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
-        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointType"/>.</param>
+        /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
+        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointDefinition"/>.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointType, bool exclusiveEndpoint )
+        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, bool exclusiveEndpoint )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
-            return _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointType, exclusiveEndpoint );
+            return _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointDefinition, exclusiveEndpoint );
         }
 
         /// <summary>
@@ -191,11 +191,11 @@ namespace CK.Setup
                             // since once registered the Endpoint service info is often (not always) locked.
                             foreach( var eA in a.GetCustomAttributes<EndpointServiceTypeAvailabilityAttribute>() )
                             {
-                                SetEndpointServiceAvailability( monitor, eA.ServiceType, eA.EndpointType );
+                                SetEndpointServiceAvailability( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
                             foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
                             {
-                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointType, eA.ExclusiveEndpoint );
+                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointDefinition, eA.ExclusiveEndpoint );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( monitor, a.GetTypes() );
@@ -321,10 +321,10 @@ namespace CK.Setup
             if( _errorEntries.Count != 0 ) Throw.InvalidOperationException( $"There are {_errorEntries.Count} registration errors." );
             try
             {
-                // Systematically registers the EndpointTypeManager and DefaultEndpointType.
+                // Systematically registers the EndpointTypeManager and DefaultEndpointDefinition.
                 // (Note that the PocoDirectory is registered by the CKTypeCollector.
                 _cc.RegisterClass( monitor, typeof( EndpointTypeManager ) );
-                _cc.RegisterClass( monitor, typeof( DefaultEndpointType ) );
+                _cc.RegisterClass( monitor, typeof( DefaultEndpointDefinition ) );
 
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
                 if( orderedItems != null )

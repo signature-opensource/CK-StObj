@@ -9,7 +9,7 @@ namespace CK.Setup
     /// <summary>
     /// Implements the EndpointTypeManager.
     /// </summary>
-    public sealed class EndpointTypeImpl : CSCodeGeneratorType
+    public sealed class EndpointDefinitionImpl : CSCodeGeneratorType
     {
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {

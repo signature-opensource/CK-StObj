@@ -72,51 +72,51 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
-        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointType )
+        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
-            CheckEndpointServiceParameters( serviceType, endpointType );
+            CheckEndpointServiceParameters( serviceType, endpointDefinition );
             if( _endpointServices.TryGetValue( serviceType, out var exists ) )
             {
-                return exists.AddAvailableEndpointType( monitor, endpointType );
+                return exists.AddAvailableEndpointDefinition( monitor, endpointDefinition );
             }
             // The type hasn't been registered yet. We DON'T register it here.
             // We memorize the configuration that will be handled once the type is registered.
-            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, null, false, new List<Type> { endpointType } ) );
+            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, null, false, new List<Type> { endpointDefinition } ) );
             return true;
         }
 
-        static void CheckEndpointServiceParameters( Type serviceType, Type endpointType )
+        static void CheckEndpointServiceParameters( Type serviceType, Type endpointDefinition )
         {
             Throw.CheckNotNullArgument( serviceType );
-            Throw.CheckArgument( (serviceType.IsInterface || serviceType.IsClass) && !typeof( IRealObject ).IsAssignableFrom( endpointType ) );
-            Throw.CheckArgument( typeof( EndpointType ).IsAssignableFrom( endpointType ) && endpointType != typeof( EndpointType ) );
+            Throw.CheckArgument( (serviceType.IsInterface || serviceType.IsClass) && !typeof( IRealObject ).IsAssignableFrom( endpointDefinition ) );
+            Throw.CheckArgument( typeof( EndpointDefinition ).IsAssignableFrom( endpointDefinition ) && endpointDefinition != typeof( EndpointDefinition ) );
         }
 
         /// <summary>
-        /// Tries to define a service as a singleton managed by a <see cref="EndpointType"/>.
+        /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
         /// <para>
         /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
-        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
-        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointType"/>.</param>
+        /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
+        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointDefinition"/>.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointType, bool exclusiveEndpoint )
+        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, bool exclusiveEndpoint )
         {
-            CheckEndpointServiceParameters( serviceType, endpointType );
+            CheckEndpointServiceParameters( serviceType, endpointDefinition );
 
-            List<Type> endpoints = new List<Type> { endpointType };
+            List<Type> endpoints = new List<Type> { endpointDefinition };
             if( _endpointServices.TryGetValue( serviceType, out var exists ) )
             {
-                return exists.CombineWith( monitor, endpointType, exclusiveEndpoint, endpoints );
+                return exists.CombineWith( monitor, endpointDefinition, exclusiveEndpoint, endpoints );
             }
             // The type hasn't been registered yet. We DON'T register it here.
             // We memorize the configuration that will be handled once the type is registered.
-            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, endpointType, exclusiveEndpoint, endpoints ) );
+            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, endpointDefinition, exclusiveEndpoint, endpoints ) );
             return true;
         }
 
@@ -294,9 +294,9 @@ namespace CK.Setup
                     bool isMultipleInterface = false;
                     bool hasMarshallable = false;
                     bool isExcludedType = false;
-                    // As soon as endpointTypes is not null, this is a EndpointService either because
+                    // As soon as endpointDefinitions is not null, this is a EndpointService either because
                     // of [EndpointServiceAvailability] or [EndpointSingletonServiceOwner].
-                    List<Type>? endpointTypes = null;
+                    List<Type>? endpointDefinitions = null;
                     Type? endpointSingletonOwner = null;
                     bool exclusiveEndpointSingletonOwner = false;
                     bool hasEndpointServiceError = false;
@@ -320,12 +320,12 @@ namespace CK.Setup
                                 break;
                             case "EndpointServiceAvailabilityAttribute":
                                 {
-                                    hasEndpointServiceError |= !ReadEndpointAvailability( m, t, a, ref endpointTypes );
+                                    hasEndpointServiceError |= !ReadEndpointAvailability( m, t, a, ref endpointDefinitions );
                                     break;
                                 }
                             case "EndpointSingletonServiceOwnerAttribute":
                                 {
-                                    hasEndpointServiceError |= !ReadEndpointSingleton( m, t, a, ref endpointTypes, ref endpointSingletonOwner, ref exclusiveEndpointSingletonOwner );
+                                    hasEndpointServiceError |= !ReadEndpointSingleton( m, t, a, ref endpointDefinitions, ref endpointSingletonOwner, ref exclusiveEndpointSingletonOwner );
                                     break;
                                 }
                             case "CKTypeDefinerAttribute":
@@ -502,17 +502,17 @@ namespace CK.Setup
 
                             // We now have up to 3 sources of EndPoint service information:
                             // - The inherited one (inheritedEndpointInfo).
-                            // - The attribute defined (in locals endpointSingletonOwner, exclusiveEndpointSingletonOwner and endpointTypes).
+                            // - The attribute defined (in locals endpointSingletonOwner, exclusiveEndpointSingletonOwner and endpointDefinitions).
                             // - The external one in _endpointServices map.
                             //
                             // We first consider the attributes and infer what we can about the type kind.
-                            if( endpointTypes != null )
+                            if( endpointDefinitions != null )
                             {
                                 k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
                                 m.Info( $"Type '{t}' is a Endpoint service because of a [EndpointSingletonServiceOwner] or [EndpointServiceAvailability] attribute." );
                                 if( endpointSingletonOwner != null )
                                 {
-                                    Debug.Assert( endpointTypes.Contains( t ) );
+                                    Debug.Assert( endpointDefinitions.Contains( t ) );
                                     if( (k & CKTypeKind.IsSingleton) == 0 )
                                     {
                                         k |= CKTypeKind.IsSingleton;
@@ -526,7 +526,7 @@ namespace CK.Setup
                             if( inheritedEndpointInfo != null )
                             {
                                 final = inheritedEndpointInfo;
-                                if( endpointTypes == null )
+                                if( endpointDefinitions == null )
                                 {
                                     k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
                                     m.Info( $"Type '{t}' is a Endpoint service because it inherits from a Endpoint service." );
@@ -539,9 +539,9 @@ namespace CK.Setup
                                     inheritedEndpointInfo.Lock( $"This type is an IAutoService. IAutoService Endpoint services cannot be altered." );
                                 }
                                 // Now that the base is locked if it must be, try to combine with the attributes if any.
-                                if( endpointTypes != null )
+                                if( endpointDefinitions != null )
                                 {
-                                    hasEndpointServiceError |= !inheritedEndpointInfo.CombineWith( m, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes );
+                                    hasEndpointServiceError |= !inheritedEndpointInfo.CombineWith( m, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointDefinitions );
                                 }
                                 if( hasEndpointServiceError )
                                 {
@@ -567,9 +567,9 @@ namespace CK.Setup
                                 {
                                     // ...and no external info: final is provided by the attributes if any
                                     // or this is not an endpoint service at all and final remains null.
-                                    if( endpointTypes != null )
+                                    if( endpointDefinitions != null )
                                     {
-                                        final = new CKTypeEndpointServiceInfo( t, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes );
+                                        final = new CKTypeEndpointServiceInfo( t, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointDefinitions );
                                     }
                                 }
                                 else
@@ -578,7 +578,7 @@ namespace CK.Setup
                                     // If we have no attribute, the external defines the kind else
                                     // it is combined with the attributes (that already defined the kind).
                                     final = exists;
-                                    if( endpointTypes == null )
+                                    if( endpointDefinitions == null )
                                     {
                                         Debug.Assert( k == CKTypeKind.None && !hasEndpointServiceError );
                                         k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
@@ -594,7 +594,7 @@ namespace CK.Setup
                                     }
                                     else
                                     {
-                                        hasEndpointServiceError |= !exists.CombineWith( m, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes );
+                                        hasEndpointServiceError |= !exists.CombineWith( m, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointDefinitions );
                                     }
                                 }
                             }
@@ -618,9 +618,9 @@ namespace CK.Setup
                                     // scoped (this is the work of ComputeFinalTypeKind methods).
                                     // But, this is a Endpoint service: singletons are "special" (scoped services are simply not
                                     // available from non specified endpoints) because if it happens to be a singleton, we must
-                                    // have a owner (the EndpointType that will be in charge of creating it and from
+                                    // have a owner (the EndpointDefinition that will be in charge of creating it and from
                                     // which the other ones will pick it up). We cannot randomly assigns it a owner... except the
-                                    // DefaultEndpointType (with a non exclusive ownership). We really have no other choice and this
+                                    // DefaultEndpointDefinition (with a non exclusive ownership). We really have no other choice and this
                                     // seems coherent.
                                     // If the lifetime is not yet specified, then we choose Scoped.
                                     // If the lifetime is already on error (Scoped & Singleton), we skip this and let the error be signaled below.
@@ -636,12 +636,12 @@ namespace CK.Setup
                                             // Note that we cannot be here if we have inherited: this job has already been done above and we benefit from it,
                                             // so the final EndpointServiceInfo is necessarily not locked yet.
                                             Debug.Assert( !final.IsLocked );
-                                            m.Warn( $"Type '{t}' is a Singleton and an Endpoint service but no owner has been declared. The DefaultEndpointType will be the non exclusive owner." );
+                                            m.Warn( $"Type '{t}' is a Singleton and an Endpoint service but no owner has been declared. The DefaultEndpointDefinition will be the non exclusive owner." );
                                             final.SetDefaultSingletonOwner();
                                         }
                                     }
                                 }
-                                // This locks the owner/exclusive information but EndpointTypes may still be added if
+                                // This locks the owner/exclusive information but EndpointDefinitions may still be added if
                                 // the EndpointServiceInfo is not locked.
                                 final.SetTypeProcessed( k );
                                 // Adds or updates (it may already exist when inherited and external).
@@ -717,35 +717,35 @@ namespace CK.Setup
             static bool ReadEndpointSingleton( IActivityMonitor monitor,
                                                Type t,
                                                System.Reflection.CustomAttributeData a,
-                                               ref List<Type>? endpointTypes,
+                                               ref List<Type>? endpointDefinitions,
                                                ref Type? endpointSingletonOwner,
                                                ref bool exclusiveEndpointSingletonOwner )
             {
                 var args = a.ConstructorArguments;
                 if( args.Count != 2 )
                 {
-                    monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type endpointType, bool exclusiveEndpoint )] on '{t}': expected 2 arguments (got {args.Count})." );
+                    monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type endpointDefinition, bool exclusiveEndpoint )] on '{t}': expected 2 arguments (got {args.Count})." );
                     return false;
                 }
-                if( args[0].Value is not Type tEndpointType
-                    || !typeof( EndpointType ).IsAssignableFrom( tEndpointType ) )
+                if( args[0].Value is not Type tEndpointDefinition
+                    || !typeof( EndpointDefinition ).IsAssignableFrom( tEndpointDefinition ) )
                 {
-                    monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type endpointType, bool exclusiveEndpoint )] on '{t}': the endpointType must be a EndpointType (got '{args[0].Value}')." );
+                    monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type endpointDefinition, bool exclusiveEndpoint )] on '{t}': the endpointDefinition must be a EndpointDefinition (got '{args[0].Value}')." );
                     return false;
                 }
                 if( args[1].Value is not bool exclusiveEndpoint )
                 {
-                    monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type endpointType, bool exclusiveEndpoint )] on '{t}': the exclusiveEndpoint must be a boolean (got '{args[0].ArgumentType}')." );
+                    monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type endpointDefinition, bool exclusiveEndpoint )] on '{t}': the exclusiveEndpoint must be a boolean (got '{args[0].ArgumentType}')." );
                     return false;
                 }
-                if( endpointSingletonOwner != null && endpointSingletonOwner != tEndpointType )
+                if( endpointSingletonOwner != null && endpointSingletonOwner != tEndpointDefinition )
                 {
                     monitor.Error( $"Invalid [EndpointSingletonServiceOwner( Type, bool )] on '{t}': already bound to owner '{endpointSingletonOwner}'." );
                     return false;
                 }
-                endpointSingletonOwner = tEndpointType;
+                endpointSingletonOwner = tEndpointDefinition;
                 exclusiveEndpointSingletonOwner = exclusiveEndpoint;
-                endpointTypes = AddEndpoint( endpointTypes, tEndpointType );
+                endpointDefinitions = AddEndpoint( endpointDefinitions, tEndpointDefinition );
                 return true;
 
             }
@@ -753,37 +753,37 @@ namespace CK.Setup
             static bool ReadEndpointAvailability( IActivityMonitor monitor,
                                                   Type t,
                                                   System.Reflection.CustomAttributeData a,
-                                                  ref List<Type>? endpointTypes )
+                                                  ref List<Type>? endpointDefinitions )
             {
                 var args = a.ConstructorArguments;
                 if( args.Count != 1 )
                 {
-                    monitor.Error( $"Invalid [EndpointServiceAvailability( Type endpointType )] on '{t}': expected a single argument (got {args.Count})." );
+                    monitor.Error( $"Invalid [EndpointServiceAvailability( Type endpointDefinition )] on '{t}': expected a single argument (got {args.Count})." );
                     return false;
                 }
-                if( args[0].Value is not Type tEndpointType
-                    || !typeof( EndpointType ).IsAssignableFrom( tEndpointType ) )
+                if( args[0].Value is not Type tEndpointDefinition
+                    || !typeof( EndpointDefinition ).IsAssignableFrom( tEndpointDefinition ) )
                 {
-                    monitor.Error( $"Invalid [EndpointServiceAvailability( Type endpointType )] on '{t}': the endpointType must be a EndpointType (got '{args[0].Value}')." );
+                    monitor.Error( $"Invalid [EndpointServiceAvailability( Type endpointDefinition )] on '{t}': the endpointDefinition must be a EndpointDefinition (got '{args[0].Value}')." );
                     return false;
                 }
-                endpointTypes = AddEndpoint( endpointTypes, tEndpointType );
+                endpointDefinitions = AddEndpoint( endpointDefinitions, tEndpointDefinition );
                 return true;
             }
 
-            static List<Type> AddEndpoint( List<Type>? endpointTypes, Type tEndpointType )
+            static List<Type> AddEndpoint( List<Type>? endpointDefinitions, Type tEndpointDefinition )
             {
-                if( endpointTypes == null )
+                if( endpointDefinitions == null )
                 {
-                    endpointTypes = new List<Type>() { tEndpointType };
+                    endpointDefinitions = new List<Type>() { tEndpointDefinition };
                 }
                 else
                 {
                     // Just in case both EndpointServiceAvailabilityAttribute and EndpointSingletonServiceOwner are used
                     // or duplicated types with EndpointServiceAvailabilityAttribute.
-                    if( !endpointTypes.Contains( tEndpointType ) ) endpointTypes.Add( tEndpointType );
+                    if( !endpointDefinitions.Contains( tEndpointDefinition ) ) endpointDefinitions.Add( tEndpointDefinition );
                 }
-                return endpointTypes;
+                return endpointDefinitions;
             }
         }
 

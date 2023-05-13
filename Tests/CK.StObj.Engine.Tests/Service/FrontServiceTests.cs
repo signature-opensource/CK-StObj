@@ -12,7 +12,7 @@ namespace CK.StObj.Engine.Tests.Service
     {
 
 
-        [EndpointServiceAvailability( typeof(DefaultEndpointType) )]
+        [EndpointServiceAvailability( typeof(DefaultEndpointDefinition) )]
         public interface IEndpointService1 : IScopedAutoService
         {
         }
@@ -36,7 +36,7 @@ namespace CK.StObj.Engine.Tests.Service
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped );
         }
 
-        [EndpointServiceAvailability( typeof( DefaultEndpointType ) )]
+        [EndpointServiceAvailability( typeof( DefaultEndpointDefinition ) )]
         public class Impossible0 : IRealObject
         {
         }

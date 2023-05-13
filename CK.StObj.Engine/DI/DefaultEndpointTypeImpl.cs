@@ -7,9 +7,9 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements the DefaultEndpointTypeImpl.
+    /// Implements the DefaultEndpointDefinitionImpl.
     /// </summary>
-    public sealed class DefaultEndpointTypeImpl : CSCodeGeneratorType
+    public sealed class DefaultEndpointDefinitionImpl : CSCodeGeneratorType
     {
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {

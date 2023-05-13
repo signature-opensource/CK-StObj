@@ -17,36 +17,36 @@ namespace CK.Setup
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
             // This CK.Core.EndpointTypeManager_CK statically exposes the default and all endpoint types.
-            scope.Append( "public static readonly CK.Core.DefaultEndpointType Default;" ).NewLine();
-            scope.Append( "public static readonly CK.Core.EndpointType[] Endpoints;" ).NewLine();
+            scope.Append( "public static readonly CK.Core.DefaultEndpointDefinition Default;" ).NewLine();
+            scope.Append( "public static readonly CK.Core.EndpointDefinition[] Endpoints;" ).NewLine();
 
             var ctor = scope.GeneratedByComment().NewLine()
                             .CreateFunction( "static EndpointTypeManager_CK()" );
 
             StaticConstructor( ctor, c.CurrentRun.EngineMap.StObjs );
 
-            scope.Append( "public override DefaultEndpointType DefaultEndpointType => Default;" ).NewLine()
-                 .Append( "public override IReadOnlyList<EndpointType> AllEndpointTypes => Endpoints;" ).NewLine();
+            scope.Append( "public override DefaultEndpointDefinition DefaultEndpointDefinition => Default;" ).NewLine()
+                 .Append( "public override IReadOnlyList<EndpointDefinition> AllEndpointDefinitions => Endpoints;" ).NewLine();
 
             return CSCodeGenerationResult.Success;
         }
 
         static void StaticConstructor( IFunctionScope ctor, IStObjObjectEngineMap stObjMap )
         {
-            var def = stObjMap.ToLeaf( typeof( DefaultEndpointType ) );
+            var def = stObjMap.ToLeaf( typeof( DefaultEndpointDefinition ) );
             Debug.Assert( def != null, "Systematically registered by StObjCollector.GetResult()." );
 
-            ctor.Append( "Default = (DefaultEndpointType)" ).Append( def.CodeInstanceAccessor ).Append( ";" ).NewLine();
+            ctor.Append( "Default = (DefaultEndpointDefinition)" ).Append( def.CodeInstanceAccessor ).Append( ";" ).NewLine();
 
-            var endpoints = stObjMap.FinalImplementations.Where( f => typeof( EndpointType ).IsAssignableFrom( f.ClassType ) ).ToList();
-            ctor.Append( "Endpoints = new EndpointType[" ).Append( endpoints.Count ).Append( "];" ).NewLine()
+            var endpoints = stObjMap.FinalImplementations.Where( f => typeof( EndpointDefinition ).IsAssignableFrom( f.ClassType ) ).ToList();
+            ctor.Append( "Endpoints = new EndpointDefinition[" ).Append( endpoints.Count ).Append( "];" ).NewLine()
                 .Append( "Endpoints[0] = Default;" ).NewLine();
             int i = 1;
-            foreach( var e in stObjMap.FinalImplementations.Where( f => typeof( EndpointType ).IsAssignableFrom( f.ClassType ) ) )
+            foreach( var e in stObjMap.FinalImplementations.Where( f => typeof( EndpointDefinition ).IsAssignableFrom( f.ClassType ) ) )
             {
                 if( e != def )
                 {
-                    ctor.Append( "Endpoints[" ).Append( i++ ).Append( "] = (EndpointType)" ).Append( e.CodeInstanceAccessor ).Append( ";" ).NewLine();
+                    ctor.Append( "Endpoints[" ).Append( i++ ).Append( "] = (EndpointDefinition)" ).Append( e.CodeInstanceAccessor ).Append( ";" ).NewLine();
                 }
             }
         }

@@ -6,8 +6,8 @@ namespace CK.Core
     /// Base class for a end point.
     /// </summary>
     [CKTypeDefiner]
-    [ContextBoundDelegation( "CK.Setup.EndpointTypeImpl, CK.StObj.Engine" )]
-    public abstract class EndpointType : IRealObject
+    [ContextBoundDelegation( "CK.Setup.EndpointDefinitionImpl, CK.StObj.Engine" )]
+    public abstract class EndpointDefinition : IRealObject
     {
     }
 
