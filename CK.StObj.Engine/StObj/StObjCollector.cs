@@ -71,7 +71,8 @@ namespace CK.Setup
         public bool RevertOrderingNames { get; set; }
 
         /// <summary>
-        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
+        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/> nor has the
+        /// <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Front service).
         /// </summary>
@@ -80,8 +81,7 @@ namespace CK.Setup
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( Type type, AutoServiceKind kind )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
-            if( kind == AutoServiceKind.None ) throw new ArgumentOutOfRangeException( nameof( kind ) );
+            Throw.CheckNotNullArgument( type );
             if( _cc.RegisteredTypeCount > 0 )
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );

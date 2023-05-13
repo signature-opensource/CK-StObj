@@ -158,7 +158,7 @@ namespace CK.Setup
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
             CKTypeKind lt = KindDetector.GetRawKind( _monitor, t );
-            if( (lt & CKTypeKind.HasCombinationError) == 0 )
+            if( (lt & CKTypeKind.HasError) == 0 )
             {
                 bool isExcluded = (lt & CKTypeKind.IsExcludedType) != 0;
                 if( acParent != null || (lt & CKTypeKind.RealObject) == CKTypeKind.RealObject )

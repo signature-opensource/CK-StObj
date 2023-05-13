@@ -6,14 +6,19 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    public sealed class EndpointServiceInfo
+    /// <summary>
+    /// Captures <see cref="EndpointServiceAvailabilityAttribute"/>, <see cref="EndpointSingletonServiceOwnerAttribute"/>,
+    /// <see cref="EndpointServiceTypeAvailabilityAttribute"/> and <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>
+    /// attributes declaration.
+    /// </summary>
+    sealed class CKTypeEndpointServiceInfo
     {
         readonly Type _serviceType;
         readonly List<Type> _endpoints;
         Type? _owner;
         bool _exclusive;
         string? _lockedReason;
-        bool _typeProcessed;
+        CKTypeKind _processedkind;
 
         internal enum ExtendStatus
         {
@@ -22,7 +27,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets the service type that is a endpoint service.
+        /// Gets the type that is a endpoint service.
         /// </summary>
         public Type ServiceType => _serviceType;
 
@@ -41,7 +46,7 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyList<Type> Endpoints => _endpoints;
 
-        internal EndpointServiceInfo( Type serviceType, Type? owner, bool exclusive, List<Type> endpoints )
+        internal CKTypeEndpointServiceInfo( Type serviceType, Type? owner, bool exclusive, List<Type> endpoints )
         {
             Debug.Assert( owner == null || endpoints.Contains( owner ) );
             Debug.Assert( !exclusive || owner != null, "exclusive => owner != null" );
@@ -51,7 +56,7 @@ namespace CK.Setup
             _endpoints = endpoints;
         }
 
-        internal EndpointServiceInfo( Type serviceType, EndpointServiceInfo baseInfo )
+        internal CKTypeEndpointServiceInfo( Type serviceType, CKTypeEndpointServiceInfo baseInfo )
         {
             _serviceType = serviceType;
             _owner = baseInfo._owner;
@@ -59,7 +64,14 @@ namespace CK.Setup
             _endpoints = new List<Type>( baseInfo._endpoints );
         }
 
-        internal void SetTypeProcessed() => _typeProcessed = true;
+        internal void SetTypeProcessed( CKTypeKind processedKind )
+        {
+            Debug.Assert( _processedkind == CKTypeKind.None );
+            Debug.Assert( (processedKind & CKTypeKind.EndpointProcessServiceMask) == CKTypeKind.EndpointProcessServiceMask );
+            _processedkind = processedKind;
+        }
+
+        internal bool HasBeenProcessed => _processedkind != 0;
 
         internal bool IsLocked => _lockedReason != null;
 
@@ -84,7 +96,7 @@ namespace CK.Setup
                         _exclusive = true;
                         if( exclusive )
                         {
-                            if( _typeProcessed )
+                            if( HasBeenProcessed )
                             {
                                 return ErrorTypeProcessed( monitor );
                             }
@@ -98,7 +110,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    if( _typeProcessed )
+                    if( HasBeenProcessed )
                     {
                         return ErrorTypeProcessed( monitor );
                     }
@@ -108,15 +120,7 @@ namespace CK.Setup
             }
             foreach( Type type in endpoints )
             {
-                if( !_endpoints.Contains( type ) )
-                {
-                    if( _lockedReason != null )
-                    {
-                        monitor.Error( $"Endpoint registration failed because: '{_lockedReason}': Extending Endpoint service '{_serviceType}' availability to '{type.Name}' endpoint is not possible." );
-                        return false;
-                    }
-                    _endpoints.Add( type );
-                }
+                if( !AddAvailableEndpointType( monitor, type ) )  return false;
             }
             return true;
         }
@@ -127,14 +131,28 @@ namespace CK.Setup
             return false;
         }
 
-        internal bool CombineWith( IActivityMonitor monitor, EndpointServiceInfo baseInfo )
+        internal bool AddAvailableEndpointType( IActivityMonitor monitor, Type newEndpointType )
+        {
+            if( !_endpoints.Contains( newEndpointType ) )
+            {
+                if( _lockedReason != null )
+                {
+                    monitor.Error( $"Endpoint definition failed because: '{_lockedReason}': Extending Endpoint service '{_serviceType}' availability to '{newEndpointType.Name}' endpoint is not possible." );
+                    return false;
+                }
+                _endpoints.Add( newEndpointType );
+            }
+            return true;
+        }
+
+        internal bool CombineWith( IActivityMonitor monitor, CKTypeEndpointServiceInfo baseInfo )
         {
             return CombineWith( monitor, baseInfo._owner, baseInfo._exclusive, baseInfo._endpoints );
         }
 
         internal void SetDefaultSingletonOwner()
         {
-            Debug.Assert( _owner == null && !_exclusive && !_typeProcessed && _lockedReason == null );
+            Debug.Assert( _owner == null && !_exclusive && !HasBeenProcessed && _lockedReason == null );
             _owner = typeof( DefaultEndpointType );
             if( !_endpoints.Contains( _owner ) ) _endpoints.Contains( _owner );
         }

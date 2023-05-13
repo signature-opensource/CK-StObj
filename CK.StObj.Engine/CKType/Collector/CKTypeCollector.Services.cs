@@ -57,7 +57,7 @@ namespace CK.Setup
         {
             Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( _monitor, t ) );
             // Front service constraint is managed dynamically.
-            lt &= ~(CKTypeKind.FrontTypeMask|CKTypeKind.IsMarshallable);
+            lt &= ~(CKTypeKind.EndpointProcessServiceMask|CKTypeKind.IsMarshallable);
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
             {
                 if( (lt & CKTypeKind.IsExcludedType) == 0 )
@@ -82,7 +82,7 @@ namespace CK.Setup
             foreach( var iT in interfaces )
             {
                 CKTypeKind k = KindDetector.GetRawKind( _monitor, iT );
-                if( (k & CKTypeKind.HasCombinationError) == 0 )
+                if( (k & CKTypeKind.HasError) == 0 )
                 {
                     if( (k & CKTypeKind.IsMultipleService) != 0 )
                     {

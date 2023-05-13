@@ -85,7 +85,7 @@ namespace CK.Setup
         /// <summary>
         /// Simple bit mask on <see cref="IsEndpointService"/> | <see cref="IsProcessService"/>.
         /// </summary>
-        FrontTypeMask = IsEndpointService | IsProcessService,
+        EndpointProcessServiceMask = IsEndpointService | IsProcessService,
 
         /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
@@ -100,9 +100,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Flags set whenever initial <see cref="CKTypeKindExtension.GetCombinationError(CKTypeKind, bool)"/>
-        /// (that has been logged) returned an error.
+        /// (that has been logged) returned an error or an error occurred in endpoint service handling.
         /// </summary>
-        HasCombinationError = 2048
+        HasError = 2048
     }
 
     /// <summary>
@@ -176,7 +176,7 @@ namespace CK.Setup
 
             if( isEndPoint && !isProcess )
             {
-                Throw.ArgumentException( "CKTypeKind value error: missing IsFrontProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
+                Throw.ArgumentException( "CKTypeKind value error: missing IsProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
             }
             if( isRealObject && !isSingleton )
             {
@@ -249,7 +249,7 @@ namespace CK.Setup
                                      "IsMarshallable",
                                      "IsMultipleService",
                                      "IsExcludedType",
-                                     "HasCombinationError"};
+                                     "HasError"};
             if( @this == CKTypeKind.None ) return "None";
             var f = flags.Where( ( s, i ) => (i == 0 && (@this & CKTypeKind.IsAutoService) != 0)
                                              || (i == 1 && (@this & CKTypeKind.IsScoped) != 0)
@@ -262,7 +262,7 @@ namespace CK.Setup
                                              || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
                                              || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
                                              || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
-                                             || (i == 11 && (@this & CKTypeKind.HasCombinationError) != 0) );
+                                             || (i == 11 && (@this & CKTypeKind.HasError) != 0) );
             return String.Join( "|", f );
         }
     }
