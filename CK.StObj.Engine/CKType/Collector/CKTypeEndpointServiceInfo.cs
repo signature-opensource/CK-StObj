@@ -32,7 +32,7 @@ namespace CK.Setup
         public Type ServiceType => _serviceType;
 
         /// <summary>
-        /// Gets the <see cref="EndpointType"/> owner if this service is a endpoint singleton.
+        /// Gets the <see cref="EndpointDefinition"/> owner if this service is a endpoint singleton.
         /// </summary>
         public Type? Owner => _owner;
 
@@ -120,7 +120,7 @@ namespace CK.Setup
             }
             foreach( Type type in endpoints )
             {
-                if( !AddAvailableEndpointType( monitor, type ) )  return false;
+                if( !AddAvailableEndpointDefinition( monitor, type ) )  return false;
             }
             return true;
         }
@@ -131,16 +131,16 @@ namespace CK.Setup
             return false;
         }
 
-        internal bool AddAvailableEndpointType( IActivityMonitor monitor, Type newEndpointType )
+        internal bool AddAvailableEndpointDefinition( IActivityMonitor monitor, Type newEndpointDefinition )
         {
-            if( !_endpoints.Contains( newEndpointType ) )
+            if( !_endpoints.Contains( newEndpointDefinition ) )
             {
                 if( _lockedReason != null )
                 {
-                    monitor.Error( $"Endpoint definition failed because: '{_lockedReason}': Extending Endpoint service '{_serviceType}' availability to '{newEndpointType.Name}' endpoint is not possible." );
+                    monitor.Error( $"Endpoint definition failed because: '{_lockedReason}': Extending Endpoint service '{_serviceType}' availability to '{newEndpointDefinition.Name}' endpoint is not possible." );
                     return false;
                 }
-                _endpoints.Add( newEndpointType );
+                _endpoints.Add( newEndpointDefinition );
             }
             return true;
         }
@@ -153,7 +153,7 @@ namespace CK.Setup
         internal void SetDefaultSingletonOwner()
         {
             Debug.Assert( _owner == null && !_exclusive && !HasBeenProcessed && _lockedReason == null );
-            _owner = typeof( DefaultEndpointType );
+            _owner = typeof( DefaultEndpointDefinition );
             if( !_endpoints.Contains( _owner ) ) _endpoints.Contains( _owner );
         }
     }

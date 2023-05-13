@@ -7,16 +7,16 @@ namespace CK.StObj.Engine.Tests.DI
     [TestFixture]
     public class EndpointServiceExtensionTests
     {
-        public class AnotherEndpointType : EndpointType
+        public class AnotherEndpointDefinition : EndpointDefinition
         {
         }
 
-        [EndpointServiceAvailability( typeof( DefaultEndpointType ) )]
+        [EndpointServiceAvailability( typeof( DefaultEndpointDefinition ) )]
         public interface IEPService1 : IScopedAutoService
         {
         }
 
-        [EndpointServiceAvailability( typeof( AnotherEndpointType ) )]
+        [EndpointServiceAvailability( typeof( AnotherEndpointDefinition ) )]
         public interface IEPService2 : IEPService1
         {
         }

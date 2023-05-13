@@ -141,12 +141,11 @@ namespace CK.Setup
                 subGraphs );
         }
 
-        bool InitializeRootServices(
-            StObjObjectEngineMap engineMap,
-            out IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
-            ref List<Type>? abstractTails )
+        bool InitializeRootServices( StObjObjectEngineMap engineMap,
+                                     out IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
+                                     ref List<Type>? abstractTails )
         {
-            using( _monitor.OpenInfo( $"Analysing {_serviceRoots.Count} Service class hierarchies." ) )
+            using( _monitor.OpenInfo( $"Analyzing {_serviceRoots.Count} Service class hierarchies." ) )
             {
                 bool error = false;
                 var deepestConcretes = new List<AutoServiceClassInfo>();

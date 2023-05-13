@@ -15,29 +15,30 @@ using static CK.Testing.StObjEngineTestHelper;
 namespace CK.StObj.Engine.Tests.DI
 {
     [TestFixture]
-    public class EndpointTypeTests
+    public class EndpointDefinitionTests
     {
 
-        public class AppIdentityEndpointType : EndpointType
+        public class AppIdentityEndpointDefinition : EndpointDefinition
         {
         }
 
-        public class BackdoorEndpointType : EndpointType
+        public class BackdoorEndpointDefinition : EndpointDefinition
         {
         }
 
         [Test]
-        public void EndpointTypeManager_exposes_the_EndpointTypes()
+        public void EndpointTypeManager_exposes_the_EndpointDefinitions()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( AppIdentityEndpointType ), typeof( BackdoorEndpointType ) );
+            var c = TestHelper.CreateStObjCollector( typeof( AppIdentityEndpointDefinition ), typeof( BackdoorEndpointDefinition ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
 
             var manager = s.GetRequiredService<EndpointTypeManager>();
-            manager.DefaultEndpointType.Should().NotBeNull();
-            manager.AllEndpointTypes.Should().HaveCount( 3 );
-            manager.AllEndpointTypes[0].Should().BeSameAs( manager.DefaultEndpointType );
-            manager.AllEndpointTypes.Skip(1).Should().Contain( e => e is AppIdentityEndpointType )
-                                                     .And.Contain( e => e is BackdoorEndpointType );
+            manager.DefaultEndpointDefinition.Should().NotBeNull();
+            manager.AllEndpointDefinitions.Should().HaveCount( 3 );
+            manager.AllEndpointDefinitions[0].Should().BeSameAs( manager.DefaultEndpointDefinition );
+            manager.AllEndpointDefinitions.Skip(1).Should().Contain( e => e is AppIdentityEndpointDefinition )
+                                                     .And.Contain( e => e is BackdoorEndpointDefinition );
         }
+
     }
 }

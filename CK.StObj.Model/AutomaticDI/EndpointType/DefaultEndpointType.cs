@@ -9,8 +9,8 @@ namespace CK.Core
     /// It can be associated to services that cannot or must not be available
     /// in other endpoints.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.DefaultEndpointTypeImpl, CK.StObj.Engine" )]
-    public abstract class DefaultEndpointType : EndpointType
+    [ContextBoundDelegation( "CK.Setup.DefaultEndpointDefinitionImpl, CK.StObj.Engine" )]
+    public abstract class DefaultEndpointDefinition : EndpointDefinition
     {
     }
 

@@ -4,7 +4,7 @@ namespace CK.Core
 {
     /// <summary>
     /// States that the decorated type is a endpoint service that is available on
-    /// the specified <see cref="EndpointType"/>.
+    /// the specified <see cref="EndpointDefinition"/>.
     /// </summary>
     [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )]
     public sealed class EndpointServiceTypeAvailabilityAttribute : Attribute
@@ -13,16 +13,16 @@ namespace CK.Core
         /// Initialize a new <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
         /// </summary>
         /// <param name="serviceType">The type of the service that is a endpoint service.</param>
-        /// <param name="endpointType">The type that must be a <see cref="EndpointType"/>.</param>
-        public EndpointServiceTypeAvailabilityAttribute( Type serviceType, Type endpointType )
+        /// <param name="endpointDefinition">The type that must be a <see cref="EndpointDefinition"/>.</param>
+        public EndpointServiceTypeAvailabilityAttribute( Type serviceType, Type endpointDefinition )
         {
             Throw.CheckNotNullArgument( serviceType );
-            if( !typeof( EndpointType ).IsAssignableFrom( endpointType ) )
+            if( !typeof( EndpointDefinition ).IsAssignableFrom( endpointDefinition ) )
             {
-                Throw.ArgumentException( nameof( endpointType ), $"The type '{endpointType.ToCSharpName()}' must be a EndpointType." );
+                Throw.ArgumentException( nameof( endpointDefinition ), $"The type '{endpointDefinition.ToCSharpName()}' must be a EndpointDefinition." );
             }
             ServiceType = serviceType;
-            EndpointType = endpointType;
+            EndpointDefinition = endpointDefinition;
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace CK.Core
         /// <summary>
         /// Gets the endpoint type.
         /// </summary>
-        public Type EndpointType { get; }
+        public Type EndpointDefinition { get; }
     }
 
 }

@@ -316,12 +316,12 @@ namespace CK.StObj.Engine.Tests
             r.EngineMap.AllTypesAttributesCache.Values
                           .Select( attrs => attrs.Type )
                           // These 3 objects are systematically registered.
-                          // The base EndpointType of the DefaultEndpointType that is a [CKTypeDefiner]
+                          // The base EndpointDefinition of the DefaultEndpointDefinition that is a [CKTypeDefiner]
                           // is also registered.
                           .Where( t => !typeof( PocoDirectory ).IsAssignableFrom( t )
                                        && !typeof( EndpointTypeManager ).IsAssignableFrom( t )
-                                       // This filters both the EndpointType of the DefaultEndpointType types.
-                                       && !typeof( EndpointType ).IsAssignableFrom( t ) )
+                                       // This filters both the EndpointDefinition of the DefaultEndpointDefinition types.
+                                       && !typeof( EndpointDefinition ).IsAssignableFrom( t ) )
                           .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
             r.EngineMap.AllTypesAttributesCache.Values

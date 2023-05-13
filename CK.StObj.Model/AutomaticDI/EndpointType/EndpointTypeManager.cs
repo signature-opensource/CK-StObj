@@ -5,20 +5,20 @@ using System.Collections.Generic;
 namespace CK.Core
 {
     /// <summary>
-    /// Gives access to all the existing <see cref="EndpointType"/>.
+    /// Gives access to all the existing <see cref="EndpointDefinition"/>.
     /// </summary>
     [ContextBoundDelegation( "CK.Setup.EndpointTypeManagerImpl, CK.StObj.Engine" )]
     public abstract class EndpointTypeManager : ISingletonAutoService
     {
         /// <summary>
-        /// Gets the default EndpointType.
+        /// Gets the default EndpointDefinition.
         /// </summary>
-        public abstract DefaultEndpointType DefaultEndpointType { get; }
+        public abstract DefaultEndpointDefinition DefaultEndpointDefinition { get; }
 
         /// <summary>
-        /// Gets all the EndpointType including the <see cref="DefaultEndpointType"/> (that is the first one).
+        /// Gets all the EndpointDefinition including the <see cref="DefaultEndpointDefinition"/> (that is the first one).
         /// </summary>
-        public abstract IReadOnlyList<EndpointType> AllEndpointTypes { get; }
+        public abstract IReadOnlyList<EndpointDefinition> AllEndpointDefinitions { get; }
 
         static void KeepTheMicrosoftExtensionsHostingAbstractionAssemblyRef( IHostedService service ) { }
     }
