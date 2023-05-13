@@ -17,12 +17,13 @@ namespace CK.StObj.Engine.Tests.DI
     [TestFixture]
     public class EndpointDefinitionTests
     {
-
-        public class AppIdentityEndpointDefinition : EndpointDefinition
+        [EndpointDefinition]
+        public abstract class AppIdentityEndpointDefinition : EndpointDefinition
         {
         }
 
-        public class BackdoorEndpointDefinition : EndpointDefinition
+        [EndpointDefinition]
+        public abstract class BackdoorEndpointDefinition : EndpointDefinition
         {
         }
 
@@ -38,6 +39,26 @@ namespace CK.StObj.Engine.Tests.DI
             manager.AllEndpointDefinitions[0].Should().BeSameAs( manager.DefaultEndpointDefinition );
             manager.AllEndpointDefinitions.Skip(1).Should().Contain( e => e is AppIdentityEndpointDefinition )
                                                      .And.Contain( e => e is BackdoorEndpointDefinition );
+        }
+
+        [EndpointDefinition]
+        public abstract class NoWay1Definition : EndpointDefinition
+        {
+        }
+
+        [EndpointDefinition]
+        public abstract class NoWay2Definition : DefaultEndpointDefinition
+        {
+        }
+
+
+        [Test]
+        public void EndpointDefinitions_cannot_be_specialized()
+        {
+            var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
+            TestHelper.GenerateCode( c1, null );
+            var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
+            TestHelper.GetFailedResult( c2 );
         }
 
     }

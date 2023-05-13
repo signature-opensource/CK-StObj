@@ -4,9 +4,9 @@ namespace CK.Core
 {
     /// <summary>
     /// Base class for a end point.
+    /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.
     /// </summary>
     [CKTypeDefiner]
-    [ContextBoundDelegation( "CK.Setup.EndpointDefinitionImpl, CK.StObj.Engine" )]
     public abstract class EndpointDefinition : IRealObject
     {
     }

@@ -109,7 +109,8 @@ namespace CK.Setup
                     using( var sLocal = new SimpleServiceContainer( services ) )
                     {
                         Debug.Assert( _all.Length == 0, "Constructors see no attributes at all. IAttributeContextBoundInitializer must be used to have access to other attributes." );
-                        sLocal.Add<Type>( Type );
+                        sLocal.Add( monitor );
+                        sLocal.Add( Type );
                         sLocal.Add<ITypeAttributesCache>( this );
                         sLocal.Add<MemberInfo>( m );
                         if( m is MethodInfo method ) sLocal.Add<MethodInfo>( method );
