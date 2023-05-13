@@ -125,7 +125,7 @@ namespace CK.Setup
         /// the <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a endpoint service).
+        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -136,6 +136,7 @@ namespace CK.Setup
         /// <returns>The type kind on success, null on error (errors - included combination ones - are logged).</returns>
         public CKTypeKind? SetAutoServiceKind( IActivityMonitor monitor, Type t, AutoServiceKind kind )
         {
+            Throw.CheckNotNullArgument( t );
             Throw.CheckArgument( kind != AutoServiceKind.None );
             Throw.CheckArgument( (kind&AutoServiceKind.IsEndpointService) == 0 );
 

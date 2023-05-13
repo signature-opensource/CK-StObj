@@ -26,7 +26,6 @@ namespace CK.StObj.Engine.Tests.DI
         {
         }
 
-
         [Test]
         public void EndpointTypeManager_exposes_the_EndpointTypes()
         {

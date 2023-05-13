@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using CK.Core;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 
 namespace CK.Setup
 {
@@ -28,7 +29,7 @@ namespace CK.Setup
         /// <param name="monitor">Logger to use. Can not be null.</param>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="traceDependencySorterInput">True to trace in <paramref name="monitor"/> the input of dependency graph.</param>
-        /// <param name="traceDepedencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
+        /// <param name="traceDependencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
         /// <param name="typeFilter">Optional type filter.</param>
         /// <param name="configurator">Used to configure items. See <see cref="IStObjStructuralConfigurator"/>.</param>
         /// <param name="valueResolver">
@@ -39,7 +40,7 @@ namespace CK.Setup
         public StObjCollector( IActivityMonitor monitor,
                                IServiceProvider serviceProvider,
                                bool traceDependencySorterInput = false,
-                               bool traceDepedencySorterOutput = false,
+                               bool traceDependencySorterOutput = false,
                                IStObjTypeFilter? typeFilter = null,
                                IStObjStructuralConfigurator? configurator = null,
                                IStObjValueResolver? valueResolver = null,
@@ -54,7 +55,7 @@ namespace CK.Setup
             _configurator = configurator;
             _valueResolver = valueResolver;
             if( traceDependencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
-            if( traceDepedencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
+            if( traceDependencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
 
             AddWellKnownServices();
         }
@@ -74,14 +75,15 @@ namespace CK.Setup
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/> nor has the
         /// <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Front service).
+        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
         /// </summary>
         /// <param name="type">The type to register.</param>
-        /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
+        /// <param name="kind">
+        /// The kind of service. Must not be <see cref="AutoServiceKind.None"/> nor has the <see cref="AutoServiceKind.IsEndpointService"/> bit set.
+        /// </param>
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( Type type, AutoServiceKind kind )
         {
-            Throw.CheckNotNullArgument( type );
             if( _cc.RegisteredTypeCount > 0 )
             {
                 _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
@@ -89,6 +91,47 @@ namespace CK.Setup
             else if( _cc.KindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
             {
                  return true;
+            }
+            ++_registerFatalOrErrorCount;
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to set or extend the availability of a service to an endpoint.
+        /// <para>
+        /// This method is called by the assembly <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
+        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
+        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointType )
+        {
+            if( _cc.KindDetector.SetEndpointServiceAvailability( monitor, serviceType, endpointType ) )
+            {
+                return true;
+            }
+            ++_registerFatalOrErrorCount;
+            return false;
+        }
+
+        /// <summary>
+        /// Tries to define a service as a singleton managed by a <see cref="EndpointType"/>.
+        /// <para>
+        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
+        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointType"/>.</param>
+        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
+        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointType, bool exclusiveEndpoint )
+        {
+            if( _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointType, exclusiveEndpoint ) )
+            {
+                return true;
             }
             ++_registerFatalOrErrorCount;
             return false;
@@ -132,7 +175,7 @@ namespace CK.Setup
         /// <returns>The number of new discovered classes.</returns>
         public int RegisterAssemblyTypes( IReadOnlyCollection<string> assemblyNames )
         {
-            if( assemblyNames == null ) throw new ArgumentNullException( nameof( assemblyNames ) );
+            Throw.CheckNotNullArgument( assemblyNames );
             int totalRegistered = 0;
             using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
             using( _monitor.OpenTrace( $"Registering {assemblyNames.Count} assemblies." ) )
@@ -152,6 +195,16 @@ namespace CK.Setup
                         }
                         if( a != null )
                         {
+                            // Before registering types, we must handle the assembly attributes 
+                            // since once registered the Endpoint service info is often (not always) locked.
+                            foreach( var eA in a.GetCustomAttributes<EndpointServiceTypeAvailabilityAttribute>() )
+                            {
+                                SetEndpointServiceAvailability( _monitor, eA.ServiceType, eA.EndpointType );
+                            }
+                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
+                            {
+                                SetEndpointSingletonServiceOwner( _monitor, eA.ServiceType, eA.EndpointType, eA.ExclusiveEndpoint );
+                            }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( a.GetTypes() );
                             int delta = _cc.RegisteredTypeCount - nbAlready;
