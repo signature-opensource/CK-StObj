@@ -60,8 +60,11 @@ namespace CK.Setup
             /// <summary>
             /// Computes the final <see cref="AutoServiceKind"/>.
             /// This may fail (success is set to false) if the IEnumerable has been registered as a Singleton and one of the implementations is Scoped.
-            /// Another issue (the worst case) is when a recursion is detected: then the "worst type" for the IEnumerable
+            /// Another issue (the worst case) is when a recursion is detected: then the "worst kind" for the IEnumerable
             /// is chosen that is a non marshallable IsEndpointService|IsScoped.
+            /// <para>
+            /// The recursive "worst kind" is not a good choice. Handling this correctly is currently a complex unresolved issue.
+            /// </para>
             /// </summary>
             /// <param name="m">The monitor to use.</param>
             /// <param name="kindComputeFacade">The CKTypeCollector facade.</param>

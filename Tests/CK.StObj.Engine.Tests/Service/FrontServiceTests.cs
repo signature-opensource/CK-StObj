@@ -68,7 +68,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector();
             collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
             collector.RegisterType( TestHelper.Monitor, typeof( RealObjectAndAutoService ) );
-            TestHelper.GetFailedResult( collector, "is already registered as a 'IsAutoService|IsSingleton|IsRealObject [IsMarkerInterface]'. It can not be defined as IsProcessService [FrontType:External]." );
+            TestHelper.GetFailedResult( collector, "is already registered as a 'IsAutoService|IsSingleton|IsRealObject [IsMarkerInterface]'. It can not be defined as IsProcessService [ProcessService:External]." );
         }
 
         public class FrontDependentService1 : IAutoService

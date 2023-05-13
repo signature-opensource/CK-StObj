@@ -434,11 +434,11 @@ namespace CK.Setup
                 Debug.Assert( ConstructorParameters != null );
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    const AutoServiceKind FrontTypeMask = AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService;
+                    const AutoServiceKind EndpointProcessServiceMask = AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService;
                     HashSet<Type>? allMarshallableTypes = null;
-                    // If this service is not marshallable then all its parameters that are Front services must be marshallable
+                    // If this service is not marshallable then all its parameters that are Process services must be marshallable
                     // so that this service can be "normally" created as long as its required dependencies have been marshalled.
-                    // Lets's be optimistic: all parameters that are Front(Process) services (if any) will be marshallable, so this one
+                    // Lets's be optimistic: all parameters that are Process services (if any) will be marshallable, so this one
                     // can be used "on the other side" as if it was itself marshallable.
                     bool isAutomaticallyMarshallable = true;
 
@@ -512,13 +512,13 @@ namespace CK.Setup
                                 }
                                 // Handling EndPoint/Process propagation.
                                 // If the parameter is not a endpoint or a process service, we can safely ignore it: we don't care of a IsMarshallable only type.
-                                if( (kP & FrontTypeMask) == 0 ) continue;
+                                if( (kP & EndpointProcessServiceMask) == 0 ) continue;
 
-                                var newFinal = final | (kP & FrontTypeMask);
+                                var newFinal = final | (kP & EndpointProcessServiceMask);
                                 if( newFinal != final )
                                 {
                                     // Upgrades from None, Process to Endpoint...
-                                    m.Trace( $"Type '{ClassType}' must be {newFinal & FrontTypeMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
+                                    m.Trace( $"Type '{ClassType}' must be {newFinal & EndpointProcessServiceMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
                                     final = newFinal;
                                     // We don't have to worry about the EndpointService that implies the IsScoped flag since this is already handled
                                     // by the lifetime code above: if the current parameter is a EndpointService then it is also a Scoped and any conflict
@@ -791,7 +791,7 @@ namespace CK.Setup
             var kind = collector.KindDetector.GetRawKind( monitor, tParam );
             bool isMultipleService = (kind & CKTypeKind.IsMultipleService) != 0;
 
-            var conflictMsg = (kind & CKTypeKind.HasCombinationError) != 0 ? kind.GetCombinationError( tParam.IsClass ) : null;
+            var conflictMsg = (kind & CKTypeKind.HasError) != 0 ? kind.GetCombinationError( tParam.IsClass ) : null;
             if( conflictMsg == null )
             {
                 // Direct check here of the fact that a [IsMultiple] interface MUST NOT be a direct, single, parameter. 

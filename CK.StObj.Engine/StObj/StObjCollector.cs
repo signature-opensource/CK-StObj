@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using CK.Core;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 
 namespace CK.Setup
 {
@@ -68,19 +69,20 @@ namespace CK.Setup
         public bool RevertOrderingNames { get; set; }
 
         /// <summary>
-        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>) for a type.
+        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/> nor has the
+        /// <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Front service).
+        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
         /// </summary>
         /// <param name="type">The type to register.</param>
-        /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
+        /// <param name="kind">
+        /// The kind of service. Must not be <see cref="AutoServiceKind.None"/> nor has the <see cref="AutoServiceKind.IsEndpointService"/> bit set.
+        /// </param>
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, AutoServiceKind kind )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
             if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
-            Throw.CheckNotNullArgument( type );
-            Throw.CheckArgument( kind != AutoServiceKind.None );
             if( _cc.RegisteredTypeCount > 0 )
             {
                 Throw.InvalidOperationException( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
@@ -90,6 +92,39 @@ namespace CK.Setup
                  return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Tries to set or extend the availability of a service to an endpoint.
+        /// <para>
+        /// This method is called by the assembly <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
+        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
+        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointType )
+        {
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            return _cc.KindDetector.SetEndpointServiceAvailability( monitor, serviceType, endpointType );
+        }
+
+        /// <summary>
+        /// Tries to define a service as a singleton managed by a <see cref="EndpointType"/>.
+        /// <para>
+        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
+        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointType"/>.</param>
+        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
+        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointType, bool exclusiveEndpoint )
+        {
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            return _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointType, exclusiveEndpoint );
         }
 
         /// <summary>
@@ -152,6 +187,16 @@ namespace CK.Setup
                         }
                         if( a != null )
                         {
+                            // Before registering types, we must handle the assembly attributes 
+                            // since once registered the Endpoint service info is often (not always) locked.
+                            foreach( var eA in a.GetCustomAttributes<EndpointServiceTypeAvailabilityAttribute>() )
+                            {
+                                SetEndpointServiceAvailability( monitor, eA.ServiceType, eA.EndpointType );
+                            }
+                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
+                            {
+                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointType, eA.ExclusiveEndpoint );
+                            }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( monitor, a.GetTypes() );
                             int delta = _cc.RegisteredTypeCount - nbAlready;

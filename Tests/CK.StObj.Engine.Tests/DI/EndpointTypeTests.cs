@@ -1,3 +1,4 @@
+
 using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
+// Ignore Spelling: App Backdoor
 
 namespace CK.StObj.Engine.Tests.DI
 {
@@ -23,7 +25,6 @@ namespace CK.StObj.Engine.Tests.DI
         public class BackdoorEndpointType : EndpointType
         {
         }
-
 
         [Test]
         public void EndpointTypeManager_exposes_the_EndpointTypes()

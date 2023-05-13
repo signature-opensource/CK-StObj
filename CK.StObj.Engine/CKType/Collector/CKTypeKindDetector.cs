@@ -43,14 +43,14 @@ namespace CK.Setup
         // The lifetime reason is an external definition (applies to IsSingleton and IsScoped).
         const CKTypeKind IsLifetimeReasonExternal = (CKTypeKind)(PrivateStart << 7);
 
-        // The front type reason is an external definition (applies to IsMarshallable and IsFrontOnly).
-        const CKTypeKind IsFrontTypeReasonExternal = (CKTypeKind)(PrivateStart << 8);
+        // The IsProcessService reason is an external definition.
+        const CKTypeKind IsProcessServiceReasonExternal = (CKTypeKind)(PrivateStart << 8);
 
         // The IsMultiple reason is an external definition.
         const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(PrivateStart << 9);
 
         readonly Dictionary<Type, CKTypeKind> _cache;
-        readonly Dictionary<Type, EndpointServiceInfo> _endpointServices;
+        readonly Dictionary<Type, CKTypeEndpointServiceInfo> _endpointServices;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
 
         /// <summary>
@@ -60,8 +60,64 @@ namespace CK.Setup
         public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
-            _endpointServices = new Dictionary<Type, EndpointServiceInfo>();
+            _endpointServices = new Dictionary<Type, CKTypeEndpointServiceInfo>();
             _typeFilter = typeFilter;
+        }
+
+        /// <summary>
+        /// Tries to set or extend the availability of a service to an endpoint.
+        /// <para>
+        /// This method is called by the assembly <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
+        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
+        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointType )
+        {
+            CheckEndpointServiceParameters( serviceType, endpointType );
+            if( _endpointServices.TryGetValue( serviceType, out var exists ) )
+            {
+                return exists.AddAvailableEndpointType( monitor, endpointType );
+            }
+            // The type hasn't been registered yet. We DON'T register it here.
+            // We memorize the configuration that will be handled once the type is registered.
+            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, null, false, new List<Type> { endpointType } ) );
+            return true;
+        }
+
+        static void CheckEndpointServiceParameters( Type serviceType, Type endpointType )
+        {
+            Throw.CheckNotNullArgument( serviceType );
+            Throw.CheckArgument( (serviceType.IsInterface || serviceType.IsClass) && !typeof( IRealObject ).IsAssignableFrom( endpointType ) );
+            Throw.CheckArgument( typeof( EndpointType ).IsAssignableFrom( endpointType ) && endpointType != typeof( EndpointType ) );
+        }
+
+        /// <summary>
+        /// Tries to define a service as a singleton managed by a <see cref="EndpointType"/>.
+        /// <para>
+        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
+        /// <param name="endpointType">The <see cref="EndpointType"/>'s type.</param>
+        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointType"/>.</param>
+        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
+        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointType, bool exclusiveEndpoint )
+        {
+            CheckEndpointServiceParameters( serviceType, endpointType );
+
+            List<Type> endpoints = new List<Type> { endpointType };
+            if( _endpointServices.TryGetValue( serviceType, out var exists ) )
+            {
+                return exists.CombineWith( monitor, endpointType, exclusiveEndpoint, endpoints );
+            }
+            // The type hasn't been registered yet. We DON'T register it here.
+            // We memorize the configuration that will be handled once the type is registered.
+            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, endpointType, exclusiveEndpoint, endpoints ) );
+            return true;
         }
 
         /// <summary>
@@ -69,17 +125,18 @@ namespace CK.Setup
         /// the <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a endpoint service).
+        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
         /// </para>
         /// </summary>
-        /// <param name="m">The monitor.</param>
+        /// <param name="monitor">The monitor.</param>
         /// <param name="t">The type to register.</param>
         /// <param name="kind">
         /// The kind of service. Must not be <see cref="AutoServiceKind.None"/> nor has the <see cref="AutoServiceKind.IsEndpointService"/> bit set.
         /// </param>
         /// <returns>The type kind on success, null on error (errors - included combination ones - are logged).</returns>
-        public CKTypeKind? SetAutoServiceKind( IActivityMonitor m, Type t, AutoServiceKind kind )
+        public CKTypeKind? SetAutoServiceKind( IActivityMonitor monitor, Type t, AutoServiceKind kind )
         {
+            Throw.CheckNotNullArgument( t );
             Throw.CheckArgument( kind != AutoServiceKind.None );
             Throw.CheckArgument( (kind&AutoServiceKind.IsEndpointService) == 0 );
 
@@ -95,13 +152,13 @@ namespace CK.Setup
             string? error = k.GetCombinationError( t.IsClass );
             if( error != null )
             {
-                m.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t}'." );
+                monitor.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t}'." );
                 return null;
             }
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
-            if( hasProcess ) k |= IsFrontTypeReasonExternal;
-            return SetLifetimeOrFrontType( m, t, k );
+            if( hasProcess ) k |= IsProcessServiceReasonExternal;
+            return SetLifetimeOrFrontType( monitor, t, k );
         }
 
         /// <summary>
@@ -120,7 +177,7 @@ namespace CK.Setup
         CKTypeKind? SetLifetimeOrFrontType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
-            bool hasFrontType = (kind & CKTypeKind.FrontTypeMask) != 0;
+            bool hasFrontType = (kind & CKTypeKind.EndpointProcessServiceMask) != 0;
             bool isMultiple = (kind & CKTypeKind.IsMultipleService) != 0;
             bool isMarshallable = (kind & CKTypeKind.IsMarshallable) != 0;
 
@@ -150,7 +207,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Checks whether the type kind: <see cref="CKTypeKind.IsExcludedType"/> or <see cref="CKTypeKind.HasCombinationError"/> flag set.
+        /// Checks whether the type kind: <see cref="CKTypeKind.IsExcludedType"/> or <see cref="CKTypeKind.HasError"/> flag set.
         /// <para>
         /// Note that [CKTypeDefiner] and [CKTypeSuperDefiner] kind is always <see cref="CKTypeKind.None"/>.
         /// </para>
@@ -179,7 +236,7 @@ namespace CK.Setup
         public CKTypeKind GetValidKind( IActivityMonitor m, Type t )
         {
             var k = RawGet( m, t );
-            return (k & (IsDefiner | IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasCombinationError)) == 0
+            return (k & (IsDefiner | IsSuperDefiner | CKTypeKind.IsExcludedType | CKTypeKind.HasError)) == 0
                         ? k & MaskPublicInfo
                         : CKTypeKind.None;
         }
@@ -287,7 +344,10 @@ namespace CK.Setup
                     }
 
                     Debug.Assert( k == CKTypeKind.None || k == CKTypeKind.IsExcludedType );
-                    if( k == CKTypeKind.None && !hasEndpointServiceError )
+                    // Even if hasEndpointServiceError is true, we continue the process because:
+                    // - We choose a "detect as many errors as possible" rather than a "fail fast" philosophy years ago.
+                    // - If we have an external EndpointServiceInfo set, it's better to update is Kind that sates that is HasBeenProcessed.
+                    if( k == CKTypeKind.None )
                     {
                         isExcludedType |= _typeFilter != null && !_typeFilter( m, t );
 
@@ -305,7 +365,7 @@ namespace CK.Setup
                         // Since we analyze the ancestors (baseType and allInterfaces), we compute a inheritedEndpointInfo
                         // by combining all base information. When a base EndpointServiceInfo is used, it is locked: it cannot
                         // be extended anymore.
-                        EndpointServiceInfo? inheritedEndpointInfo = null;
+                        CKTypeEndpointServiceInfo? inheritedEndpointInfo = null;
 
                         if( hasDefiner )
                         {
@@ -412,24 +472,38 @@ namespace CK.Setup
                             k = RawGet( m, tGen );
                         }
                         // Applying the direct flags. Any inherited combination error is cleared.
-                        k &= ~CKTypeKind.HasCombinationError;
+                        k &= ~CKTypeKind.HasError;
                         if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                         if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
                         if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
-                        // If hasEndpointServiceError, let k be None (no more processing).
-                        if( hasEndpointServiceError ) k = CKTypeKind.None;
+                        // The "detect as many errors as possible" rather than a "fail fast" philosophy introduces 
+                        // a lot of complexity. For EndpointService error, we shortcut here.
+                        // If hasEndpointServiceError, we mark the potential external info as processed and stop.
+                        if( hasEndpointServiceError )
+                        {
+                            k |= CKTypeKind.HasError;
+                            if( _endpointServices.TryGetValue( t, out var exists ) )
+                            {
+                                exists.SetTypeProcessed( k );
+                            }
+                        }
                         else
                         {
-                            // No Endpoint service error at this level. IsEndpointService from above
-                            // has been propagated. If k has the bit set, we have at least one of our ancestor
+                            // No Endpoint service error at this level.
+                            // The final one (registered in the map) can be the inherited one, the currently existing one
+                            // (external configuration), a brand new one (from attributes) or null if this is not a a endpoint
+                            // service.
+                            CKTypeEndpointServiceInfo? final = null;
+
+                            // IsEndpointService from above has been propagated. If k has the bit set, we have at least one of our ancestor
                             // that is a endpoint service: we are a endpoint service and we have a inheritedEndpointInfo.
                             Debug.Assert( inheritedEndpointInfo == null || inheritedEndpointInfo.ServiceType == t );
                             Debug.Assert( (inheritedEndpointInfo == null) == ((k & CKTypeKind.IsEndpointService) == 0) );
 
-                            // We now have up to 2 source of EndPoint service information:
+                            // We now have up to 3 sources of EndPoint service information:
                             // - The inherited one (inheritedEndpointInfo).
-                            // - The attribute defined (in endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes).
-                            // - The external one in _endpointServices.
+                            // - The attribute defined (in locals endpointSingletonOwner, exclusiveEndpointSingletonOwner and endpointTypes).
+                            // - The external one in _endpointServices map.
                             //
                             // We first consider the attributes and infer what we can about the type kind.
                             if( endpointTypes != null )
@@ -446,13 +520,12 @@ namespace CK.Setup
                                     }
                                 }
                             }
-                            //
-                            EndpointServiceInfo? final = null;
                             // Then we consider the inherited information.
-                            // The inheritedEndpointInfo will become the final one: this enables us
-                            // to forbid here any IAutoService in inheritance.
+                            // The inheritedEndpointInfo is the final one: we combine it with attributes and external is any.
+                            // This enables us to forbid here any IAutoService in inheritance.
                             if( inheritedEndpointInfo != null )
                             {
+                                final = inheritedEndpointInfo;
                                 if( endpointTypes == null )
                                 {
                                     k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
@@ -485,11 +558,6 @@ namespace CK.Setup
                                     {
                                         m.Error( $"Inherited Endpoint service information conflicts with the one defined externally for type '{t}'." );
                                     }
-                                    else
-                                    {
-                                        // No error. This is fine.
-                                        final = inheritedEndpointInfo;
-                                    }
                                 }
                             }
                             else
@@ -497,17 +565,19 @@ namespace CK.Setup
                                 // We have no inherited info...
                                 if( !_endpointServices.TryGetValue( t, out var exists ) )
                                 {
-                                    // ...and no external info: final is provided by the attributes if any.
+                                    // ...and no external info: final is provided by the attributes if any
+                                    // or this is not an endpoint service at all and final remains null.
                                     if( endpointTypes != null )
                                     {
-                                        final = new EndpointServiceInfo( t, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes );
+                                        final = new CKTypeEndpointServiceInfo( t, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes );
                                     }
                                 }
                                 else
                                 {
-                                    // We have an external info.
-                                    // If we have no attribute, the external defines the kind.
-                                    // Else, if it can be combined with the attributes, its the final.
+                                    // We have an external info: it is the final.
+                                    // If we have no attribute, the external defines the kind else
+                                    // it is combined with the attributes (that already defined the kind).
+                                    final = exists;
                                     if( endpointTypes == null )
                                     {
                                         Debug.Assert( k == CKTypeKind.None && !hasEndpointServiceError );
@@ -526,55 +596,60 @@ namespace CK.Setup
                                     {
                                         hasEndpointServiceError |= !exists.CombineWith( m, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointTypes );
                                     }
-                                    if( hasEndpointServiceError )
-                                    {
-                                        final = exists;
-                                    }
                                 }
                             }
                             if( final != null )
                             {
                                 // We have a final. The kind has been set.
-                                Debug.Assert( (k & CKTypeKind.FrontTypeMask) == CKTypeKind.FrontTypeMask );
-                                // We won't allow now a change of the Singleton aspect.
-                                // If the final has a owner then we already are a singleton: this has been ensured above.
-                                Debug.Assert( final.Owner == null || (k & CKTypeKind.IsSingleton) != 0 );
-                                // But the reverse is not true, when no "EndpointSingleton" has been applied,
-                                // we can be anything. Why do we care?
-                                // If we are a pure IAutoService (no lifetime), it will be computed based on the most
-                                // specialized service constructor. And if we are not a auto service we will default to
-                                // scoped (this is the work of ComputeFinalTypeKind methods).
-                                // But, this is a Endpoint service: singletons are "special" (scoped services are simply not
-                                // available from non specified endpoints) because if it happens to be a singleton, we must
-                                // have a owner (the EndpointType that will be in charge of creating it and from
-                                // which the other ones will pick it up). We cannot randomly assigns it a owner... except the
-                                // DefaultEndpointType (with a non exclusive ownership). We really have no other choice and this
-                                // seems coherent.
-                                // If the lifetime is not yet specified, then we choose Scoped.
-                                // If the lifetime is already on error (Scoped & Singleton), we skip this and let the error be signaled below.
-                                if( (k & CKTypeKind.LifetimeMask) != CKTypeKind.LifetimeMask )
+                                Debug.Assert( (k & CKTypeKind.EndpointProcessServiceMask) == CKTypeKind.EndpointProcessServiceMask );
+                                if( hasEndpointServiceError )
                                 {
-                                    if( (k & CKTypeKind.LifetimeMask) == 0 )
+                                    k |= CKTypeKind.HasError;
+                                }
+                                else
+                                {
+                                    // We won't allow now a change of the Singleton aspect.
+                                    // If the final has a owner then we already are a singleton: this has been ensured above.
+                                    Debug.Assert( final.Owner == null || (k & CKTypeKind.IsSingleton) != 0 );
+                                    // But the reverse is not true, when no "EndpointSingleton" has been applied,
+                                    // we can be anything. Why do we care?
+                                    // If we are a pure IAutoService (no lifetime), it will be computed based on the most
+                                    // specialized service constructor. And if we are not a auto service we will default to
+                                    // scoped (this is the work of ComputeFinalTypeKind methods).
+                                    // But, this is a Endpoint service: singletons are "special" (scoped services are simply not
+                                    // available from non specified endpoints) because if it happens to be a singleton, we must
+                                    // have a owner (the EndpointType that will be in charge of creating it and from
+                                    // which the other ones will pick it up). We cannot randomly assigns it a owner... except the
+                                    // DefaultEndpointType (with a non exclusive ownership). We really have no other choice and this
+                                    // seems coherent.
+                                    // If the lifetime is not yet specified, then we choose Scoped.
+                                    // If the lifetime is already on error (Scoped & Singleton), we skip this and let the error be signaled below.
+                                    if( (k & CKTypeKind.LifetimeMask) != CKTypeKind.LifetimeMask )
                                     {
-                                        k |= CKTypeKind.IsScoped;
-                                        m.Info( $"Type '{t}' has no associated lifetime. Since it is a Endpoint service, its lifetime will be Scoped." );
-                                    }
-                                    else if( (k & CKTypeKind.IsSingleton) != 0 && final.Owner == null )
-                                    {
-                                        // Note that we cannot be here if we have inherited: this job has already been done above and we benefit from it,
-                                        // so the final EndpointServiceInfo is necessarily not locked yet.
-                                        Debug.Assert( !final.IsLocked );
-                                        m.Warn( $"Type '{t}' is a Singleton and an Endpoint service but no owner has been declared. The DefaultEndpointType will be the non exclusive owner." );
-                                        final.SetDefaultSingletonOwner();
+                                        if( (k & CKTypeKind.LifetimeMask) == 0 )
+                                        {
+                                            k |= CKTypeKind.IsScoped;
+                                            m.Info( $"Type '{t}' has no associated lifetime. Since it is a Endpoint service, its lifetime will be Scoped." );
+                                        }
+                                        else if( (k & CKTypeKind.IsSingleton) != 0 && final.Owner == null )
+                                        {
+                                            // Note that we cannot be here if we have inherited: this job has already been done above and we benefit from it,
+                                            // so the final EndpointServiceInfo is necessarily not locked yet.
+                                            Debug.Assert( !final.IsLocked );
+                                            m.Warn( $"Type '{t}' is a Singleton and an Endpoint service but no owner has been declared. The DefaultEndpointType will be the non exclusive owner." );
+                                            final.SetDefaultSingletonOwner();
+                                        }
                                     }
                                 }
                                 // This locks the owner/exclusive information but EndpointTypes may still be added if
                                 // the EndpointServiceInfo is not locked.
-                                final.SetTypeProcessed();
-                                _endpointServices[ t ] = final;
+                                final.SetTypeProcessed( k );
+                                // Adds or updates (it may already exist when inherited and external).
+                                _endpointServices[t] = final;
                             }
                         }
-                        // Check for errors and handle IMarshaller<> only if the type is not excluded.
+                        // Check for errors and handle IMarshaller<> only if the type is not excluded and here also
+                        // we shortcut the error path is hasEndpointServiceError is true.
                         if( k != CKTypeKind.None && !isExcludedType && !hasEndpointServiceError )
                         {
                             // Checking errors here that cannot be checked by the central GetCombinationError method.
@@ -595,7 +670,7 @@ namespace CK.Setup
                                 if( error != null )
                                 {
                                     m.Error( $"Invalid class '{t}' kind: {error}" );
-                                    k |= CKTypeKind.HasCombinationError;
+                                    k |= CKTypeKind.HasError;
                                 }
                                 else if( (k & CKTypeKind.IsAutoService) != 0 )
                                 {
@@ -629,7 +704,7 @@ namespace CK.Setup
                                 if( error != null )
                                 {
                                     m.Error( $"Invalid interface '{t}' kind: {error}" );
-                                    k |= CKTypeKind.HasCombinationError;
+                                    k |= CKTypeKind.HasError;
                                 }
                             }
                         }
@@ -713,9 +788,9 @@ namespace CK.Setup
         }
 
         bool BuildInheritedEndpointInfo( IActivityMonitor monitor,
-                                         ref EndpointServiceInfo? inheritedEndpointInfo,
+                                         ref CKTypeEndpointServiceInfo? inheritedEndpointInfo,
                                          Type serviceType,
-                                         EndpointServiceInfo baseInfo )
+                                         CKTypeEndpointServiceInfo baseInfo )
         {
             Debug.Assert( _cache.ContainsKey( baseInfo.ServiceType ) && ( _cache[baseInfo.ServiceType] & CKTypeKind.IsEndpointService) != 0,
                          "baseInfo.ServiceType must be registered as an IsEndpointService." );
@@ -723,7 +798,7 @@ namespace CK.Setup
             baseInfo.Lock( $"This has been used to initialize specialized '{serviceType.ToCSharpName()}' type." );
             if( inheritedEndpointInfo == null )
             {
-                inheritedEndpointInfo = new EndpointServiceInfo( serviceType, baseInfo );
+                inheritedEndpointInfo = new CKTypeEndpointServiceInfo( serviceType, baseInfo );
                 return true;
             }
             return inheritedEndpointInfo.CombineWith( monitor, baseInfo );
@@ -739,8 +814,8 @@ namespace CK.Setup
             if( (t & IsSingletonReasonReference) != 0 ) c += " [Lifetime:ReferencedBySingleton]";
             if( (t & IsSingletonReasonFinal) != 0 ) c += " [Lifetime:OpimizedAsSingleton]";
             if( (t & IsScopedReasonReference) != 0 ) c += " [Lifetime:UsesScoped]";
-            if( (t & IsMarshallableReasonMarshaller) != 0 ) c += " [FrontType:MarshallableSinceMarshallerExists]";
-            if( (t & IsFrontTypeReasonExternal) != 0 ) c += " [FrontType:External]";
+            if( (t & IsMarshallableReasonMarshaller) != 0 ) c += " [Marshallable:MarshallerExists]";
+            if( (t & IsProcessServiceReasonExternal) != 0 ) c += " [ProcessService:External]";
             if( (t & IsMultipleReasonExternal) != 0 ) c += " [Multiple:External]";
             return c;
         }
