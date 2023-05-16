@@ -7,14 +7,14 @@ namespace CK.Core
     /// the specified <see cref="EndpointDefinition"/>.
     /// </summary>
     [AttributeUsage( AttributeTargets.Assembly, AllowMultiple = true, Inherited = false )]
-    public sealed class EndpointServiceTypeAvailabilityAttribute : Attribute
+    public sealed class EndpointAvailableServiceTypeAttribute : Attribute
     {
         /// <summary>
-        /// Initialize a new <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// Initialize a new <see cref="EndpointAvailableServiceTypeAttribute"/>.
         /// </summary>
         /// <param name="serviceType">The type of the service that is a endpoint service.</param>
         /// <param name="endpointDefinition">The type that must be a <see cref="EndpointDefinition"/>.</param>
-        public EndpointServiceTypeAvailabilityAttribute( Type serviceType, Type endpointDefinition )
+        public EndpointAvailableServiceTypeAttribute( Type serviceType, Type endpointDefinition )
         {
             Throw.CheckNotNullArgument( serviceType );
             if( !typeof( EndpointDefinition ).IsAssignableFrom( endpointDefinition ) )

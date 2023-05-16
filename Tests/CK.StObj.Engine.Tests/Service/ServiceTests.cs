@@ -233,7 +233,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
-        // There is no need for an explicit Replacement here since the IDerived being an IAutoService,
+        // There is no need for an explicit Replacement here since the IDerived being a IAutoService,
         // it has to be satisfied and can be satisfied only by ODep.
         //[ReplaceAutoService(typeof(OBase))]
         public abstract class ODep : IRealObject, IDerived

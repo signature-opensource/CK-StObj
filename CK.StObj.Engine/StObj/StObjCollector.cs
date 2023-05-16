@@ -18,7 +18,13 @@ namespace CK.Setup
         readonly CKTypeCollector _cc;
         readonly IStObjStructuralConfigurator? _configurator;
         readonly IStObjValueResolver? _valueResolver;
-        readonly IActivityMonitor _monitor;
+
+        /// <summary>
+        /// No _ prefix to ease the merge and cherry picks into refactored branch "poco-refactoring"
+        /// where the monitor uses regular parameter injection.
+        /// </summary>
+        readonly IActivityMonitor monitor;
+
         readonly DynamicAssembly _tempAssembly;
         int _registerFatalOrErrorCount;
         bool _computedResult;
@@ -47,11 +53,11 @@ namespace CK.Setup
                                IEnumerable<string>? names = null )
         {
             Throw.CheckNotNullArgument( monitor );
-            _monitor = monitor;
+            this.monitor = monitor;
             _tempAssembly = new DynamicAssembly();
             Func<IActivityMonitor, Type, bool>? tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
-            _cc = new CKTypeCollector( _monitor, serviceProvider, _tempAssembly, tFilter, names );
+            _cc = new CKTypeCollector( this.monitor, serviceProvider, _tempAssembly, tFilter, names );
             _configurator = configurator;
             _valueResolver = valueResolver;
             if( traceDependencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
@@ -86,9 +92,9 @@ namespace CK.Setup
         {
             if( _cc.RegisteredTypeCount > 0 )
             {
-                _monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
+                monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            else if( _cc.KindDetector.SetAutoServiceKind( _monitor, type, kind ) != null )
+            else if( _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null )
             {
                  return true;
             }
@@ -99,7 +105,7 @@ namespace CK.Setup
         /// <summary>
         /// Tries to set or extend the availability of a service to an endpoint.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointAvailableServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -158,11 +164,11 @@ namespace CK.Setup
             }
             if( isOptional )
             {
-                _monitor.Warn( $"Type name '{typeName}' not found. It is ignored (SetAutoServiceKind: {kind})." );
+                monitor.Warn( $"Type name '{typeName}' not found. It is ignored (SetAutoServiceKind: {kind})." );
                 return true;
             }
             ++_registerFatalOrErrorCount;
-            _monitor.Error( $"Unable to resolve expected type named '{typeName}' (SetAutoServiceKind: {kind})." );
+            monitor.Error( $"Unable to resolve expected type named '{typeName}' (SetAutoServiceKind: {kind})." );
             return false;
         }
 
@@ -177,12 +183,12 @@ namespace CK.Setup
         {
             Throw.CheckNotNullArgument( assemblyNames );
             int totalRegistered = 0;
-            using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
-            using( _monitor.OpenTrace( $"Registering {assemblyNames.Count} assemblies." ) )
+            using( monitor.OnError( () => ++_registerFatalOrErrorCount ) )
+            using( monitor.OpenTrace( $"Registering {assemblyNames.Count} assemblies." ) )
             {
                 foreach( var one in assemblyNames )
                 {
-                    using( _monitor.OpenTrace( $"Registering assembly '{one}'." ) )
+                    using( monitor.OpenTrace( $"Registering assembly '{one}'." ) )
                     {
                         Assembly? a = null;
                         try
@@ -191,24 +197,24 @@ namespace CK.Setup
                         }
                         catch( Exception ex )
                         {
-                            _monitor.Error( $"Error while loading assembly '{one}'.", ex );
+                            monitor.Error( $"Error while loading assembly '{one}'.", ex );
                         }
                         if( a != null )
                         {
                             // Before registering types, we must handle the assembly attributes 
                             // since once registered the Endpoint service info is often (not always) locked.
-                            foreach( var eA in a.GetCustomAttributes<EndpointServiceTypeAvailabilityAttribute>() )
+                            foreach( var eA in a.GetCustomAttributes<EndpointAvailableServiceTypeAttribute>() )
                             {
-                                SetEndpointServiceAvailability( _monitor, eA.ServiceType, eA.EndpointDefinition );
+                                SetEndpointServiceAvailability( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
                             foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
                             {
-                                SetEndpointSingletonServiceOwner( _monitor, eA.ServiceType, eA.EndpointDefinition, eA.ExclusiveEndpoint );
+                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointDefinition, eA.ExclusiveEndpoint );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( a.GetTypes() );
                             int delta = _cc.RegisteredTypeCount - nbAlready;
-                            _monitor.CloseGroup( $"{delta} types(s) registered." );
+                            monitor.CloseGroup( $"{delta} types(s) registered." );
                             totalRegistered += delta;
                         }
                     }
@@ -224,7 +230,7 @@ namespace CK.Setup
         /// <param name="t">Type to register. Must not be null.</param>
         public void RegisterType( Type t )
         {
-            using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
+            using( monitor.OnError( () => ++_registerFatalOrErrorCount ) )
             {
                 try
                 {
@@ -232,7 +238,7 @@ namespace CK.Setup
                 }
                 catch( Exception ex )
                 {
-                    _monitor.Error( $"While registering type '{t.AssemblyQualifiedName}'.", ex );
+                    monitor.Error( $"While registering type '{t.AssemblyQualifiedName}'.", ex );
                 }
             }
         }
@@ -272,23 +278,23 @@ namespace CK.Setup
             if( defineExternalCall && _cc.RegisteredTypeCount > 0 )
             {
                 ++_registerFatalOrErrorCount;
-                _monitor.Error( $"External definition lifetime, cardinality or Front services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
+                monitor.Error( $"External definition lifetime, cardinality or Front services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
             else
             {
-                using( _monitor.OnError( () => ++_registerFatalOrErrorCount ) )
-                using( _monitor.OpenTrace( $"{registrationType}: handling {count} type(s)." ) )
+                using( monitor.OnError( () => ++_registerFatalOrErrorCount ) )
+                using( monitor.OpenTrace( $"{registrationType}: handling {count} type(s)." ) )
                 {
                     try
                     {
                         foreach( var t in types )
                         {
-                            a( _monitor, _cc, t );
+                            a( monitor, _cc, t );
                         }
                     }
                     catch( Exception ex )
                     {
-                        _monitor.Error( ex );
+                        monitor.Error( ex );
                     }
                 }
             }
@@ -322,6 +328,7 @@ namespace CK.Setup
                 _cc.RegisterClass( typeof( EndpointTypeManager ) );
                 _cc.RegisterClass( typeof( DefaultEndpointDefinition ) );
 
+                EndpointResult? endpoints = null;
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
                 if( orderedItems != null )
                 {
@@ -331,17 +338,27 @@ namespace CK.Setup
                     // But this would be a massive refactoring and this internal mutable state is, to be honest,
                     // quite convenient!
                     typeResult.SetFinalOrderedResults( orderedItems );
-                    if( !RegisterServices( typeResult ) )
+                    // Now that Real objects and core AutoServices are settled, creates the EndpointResult.
+                    // This doesn't need the full auto service resolution so we have the choice to do it before
+                    // or after services finalization.
+                    if( typeResult.Endpoints != null )
+                    {
+                        using( monitor.OpenInfo( "Endpoints handling." ) )
+                        {
+                            endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.Endpoints );
+                        }
+                    }
+                    if( !ServiceFinalHandling( typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
                         buildValueCollector = null;
                     }
                 }
-                return new StObjCollectorResult( typeResult, _tempAssembly, buildValueCollector );
+                return new StObjCollectorResult( typeResult, _tempAssembly, endpoints, buildValueCollector );
             }
             catch( Exception ex )
             {
-                _monitor.Fatal( ex );
+                monitor.Fatal( ex );
                 throw;
             }
         }
@@ -349,22 +366,24 @@ namespace CK.Setup
         (CKTypeCollectorResult, IReadOnlyList<MutableItem>?, BuildValueCollector?) CreateTypeAndObjectResults()
         {
             bool error = false;
-            using( _monitor.OnError( () => error = true ) )
+            using( monitor.OnError( () => error = true ) )
             {
                 CKTypeCollectorResult typeResult;
-                using( _monitor.OpenInfo( "Initializing object graph." ) )
+                using( monitor.OpenInfo( "Initializing object graph." ) )
                 {
-                    using( _monitor.OpenInfo( "Collecting Real Objects, Services, Type structure and Poco." ) )
+                    using( monitor.OpenInfo( "Collecting Real Objects, Services, Endpoints and Poco." ) )
                     {
                         typeResult = _cc.GetResult();
-                        typeResult.LogErrorAndWarnings( _monitor );
+                        typeResult.LogErrorAndWarnings( monitor );
                     }
-                    if( error || typeResult.HasFatalError ) return (typeResult, null, null);
-                    Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
-                    using( _monitor.OpenInfo( "Creating final objects and configuring items." ) )
+                    if( !error && !typeResult.HasFatalError )
                     {
-                        int nbItems = ConfigureMutableItems( typeResult.RealObjects );
-                        _monitor.CloseGroup( $"{nbItems} items configured." );
+                        Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
+                        using( monitor.OpenInfo( "Creating final objects and configuring items." ) )
+                        {
+                            int nbItems = ConfigureMutableItems( typeResult.RealObjects );
+                            monitor.CloseGroup( $"{nbItems} items configured." );
+                        }
                     }
                 }
                 if( error ) return (typeResult, null, null); 
@@ -372,21 +391,21 @@ namespace CK.Setup
                 StObjObjectEngineMap engineMap = typeResult.RealObjects.EngineMap;
                 IDependencySorterResult? sortResult = null;
                 BuildValueCollector valueCollector = new BuildValueCollector();
-                using( _monitor.OpenInfo( "Topological graph ordering." ) )
+                using( monitor.OpenInfo( "Topological graph ordering." ) )
                 {
                     bool noCycleDetected = true;
-                    using( _monitor.OpenInfo( "Preparing dependent items." ) )
+                    using( monitor.OpenInfo( "Preparing dependent items." ) )
                     {
                         // Transfers construct parameters type as requirements for the object, binds dependent
                         // types to their respective MutableItem, resolve generalization and container
                         // inheritance, and initializes StObjProperties.
                         foreach( MutableItem item in engineMap.FinalImplementations )
                         {
-                            noCycleDetected &= item.PrepareDependentItem( _monitor, valueCollector );
+                            noCycleDetected &= item.PrepareDependentItem( monitor, valueCollector );
                         }
                     }
                     if( error ) return (typeResult, null, null);
-                    using( _monitor.OpenInfo( "Resolving PreConstruct and PostBuild properties." ) )
+                    using( monitor.OpenInfo( "Resolving PreConstruct and PostBuild properties." ) )
                     {
                         // This is the last step before ordering the dependency graph: all mutable items have now been created and configured, they are ready to be sorted,
                         // except that we must first resolve AmbientProperties: computes TrackedAmbientProperties (and depending of the TrackAmbientPropertiesMode impact
@@ -396,12 +415,12 @@ namespace CK.Setup
                         // or to PostBuild collector in order to always set a correctly constructed object to a property.
                         foreach( MutableItem item in engineMap.FinalImplementations )
                         {
-                            item.ResolvePreConstructAndPostBuildProperties( _monitor, valueCollector, _valueResolver );
+                            item.ResolvePreConstructAndPostBuildProperties( monitor, valueCollector, _valueResolver );
                         }
                     }
                     if( error ) return (typeResult, null, null);
                     sortResult = DependencySorter.OrderItems(
-                                                   _monitor,
+                                                   monitor,
                                                    engineMap.RawMappings.Select( kv => kv.Value ),
                                                    null,
                                                    new DependencySorterOptions()
@@ -416,8 +435,8 @@ namespace CK.Setup
                     Debug.Assert( noCycleDetected || (sortResult.CycleDetected != null), "Cycle detected during item preparation => Cycle detected by the DependencySorter." );
                     if( !sortResult.IsComplete )
                     {
-                        sortResult.LogError( _monitor );
-                        _monitor.CloseGroup( "Ordering failed." );
+                        sortResult.LogError( monitor );
+                        monitor.CloseGroup( "Ordering failed." );
                         if( error ) return (typeResult, null, null);
                     }
                 }
@@ -425,9 +444,9 @@ namespace CK.Setup
                 Debug.Assert( sortResult != null );
                 // We now can setup the final ordered list of MutableItems (i.e. of IStObjResult).
                 List<MutableItem> ordered = new List<MutableItem>();
-                using( _monitor.OpenInfo( "Finalizing graph." ) )
+                using( monitor.OpenInfo( "Finalizing graph." ) )
                 {
-                    using( _monitor.OpenInfo( "Calling StObjConstruct." ) )
+                    using( monitor.OpenInfo( "Calling StObjConstruct." ) )
                     {
                         foreach( ISortedItem sorted in sortResult.SortedItems )
                         {
@@ -436,15 +455,15 @@ namespace CK.Setup
                             if( m.ItemKind == DependentItemKindSpec.Item || sorted.IsGroupHead )
                             {
                                 m.SetSorterData( ordered.Count, sorted.Requires, sorted.Children, sorted.Groups );
-                                using( _monitor.OpenTrace( $"Constructing '{m}'." ) )
+                                using( monitor.OpenTrace( $"Constructing '{m}'." ) )
                                 {
                                     try
                                     {
-                                        m.CallConstruct( _monitor, valueCollector, _valueResolver );
+                                        m.CallConstruct( monitor, valueCollector, _valueResolver );
                                     }
                                     catch( Exception ex )
                                     {
-                                        _monitor.Error( ex );
+                                        monitor.Error( ex );
                                     }
                                 }
                                 ordered.Add( m );
@@ -458,13 +477,13 @@ namespace CK.Setup
                         }
                     }
                     if( error ) return (typeResult, null, null);
-                    using( _monitor.OpenInfo( "Setting PostBuild properties and injected Objects." ) )
+                    using( monitor.OpenInfo( "Setting PostBuild properties and injected Objects." ) )
                     {
                         // Finalize construction by injecting Real Objects
                         // and PostBuild Ambient Properties on specializations.
                         foreach( MutableItem item in engineMap.FinalImplementations )
                         {
-                            item.SetPostBuildProperties( _monitor );
+                            item.SetPostBuildProperties( monitor );
                         }
                     }
                     if( error ) return (typeResult, null, null);
@@ -491,12 +510,12 @@ namespace CK.Setup
 
                 MutableItem specialization = pathTypes[pathTypes.Count - 1];
 
-                object? theObject = specialization.CreateStructuredObject( _monitor );
+                object? theObject = specialization.CreateStructuredObject( monitor );
                 // If we failed to create an instance, we ensure that an error is logged and
                 // continue the process.
                 if( theObject == null )
                 {
-                    _monitor.Error( $"Unable to create an instance of '{pathTypes[pathTypes.Count - 1].RealObjectType.Type.FullName}'." );
+                    monitor.Error( $"Unable to create an instance of '{pathTypes[pathTypes.Count - 1].RealObjectType.Type.FullName}'." );
                     continue;
                 }
                 // Finalize configuration by soliciting IStObjStructuralConfigurator.
@@ -510,8 +529,8 @@ namespace CK.Setup
                 MutableItem? m = generalization;
                 do
                 {
-                    m.ConfigureTopDown( _monitor, generalization );
-                    if( _configurator != null ) _configurator.Configure( _monitor, m );
+                    m.ConfigureTopDown( monitor, generalization );
+                    if( _configurator != null ) _configurator.Configure( monitor, m );
                 }
                 while( (m = m.Specialization) != null );
             }

@@ -16,7 +16,12 @@ namespace CK.Setup
     /// </summary>
     public partial class CKTypeCollector : IAutoServiceKindComputeFacade
     {
-        readonly IActivityMonitor _monitor;
+        /// <summary>
+        /// No _ prefix to ease the merge and cherry picks into refactored branch "poco-refactoring"
+        /// where the monitor uses regular parameter injection.
+        /// </summary>
+        readonly IActivityMonitor monitor;
+
         readonly IDynamicAssembly _tempAssembly;
         readonly IServiceProvider _serviceProvider;
         readonly PocoRegistrar _pocoRegistrar;
@@ -50,7 +55,7 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckNotNullArgument( serviceProvider );
             Throw.CheckNotNullArgument( tempAssembly );
-            _monitor = monitor;
+            this.monitor = monitor;
             _typeFilter = typeFilter ?? ((m,type) => type.FullName != null);
             _tempAssembly = tempAssembly;
             _serviceProvider = serviceProvider;
@@ -110,7 +115,7 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoRegistrar.RegisterInterface( _monitor, type ) )
+                    if( _pocoRegistrar.RegisterInterface( monitor, type ) )
                     {
                         RegisterAssembly( type );
                     }
@@ -157,7 +162,7 @@ namespace CK.Setup
                 Debug.Assert( t.BaseType != null, "Since t is not 'object'." );
                 DoRegisterClass( t.BaseType, out acParent, out sParent );
             }
-            CKTypeKind lt = KindDetector.GetRawKind( _monitor, t );
+            CKTypeKind lt = KindDetector.GetRawKind( monitor, t );
             if( (lt & CKTypeKind.HasError) == 0 )
             {
                 bool isExcluded = (lt & CKTypeKind.IsExcludedType) != 0;
@@ -169,7 +174,6 @@ namespace CK.Setup
                 if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
                 {
                     serviceInfo = RegisterServiceClassInfo( t, isExcluded, sParent, objectInfo );
-                    Debug.Assert( serviceInfo != null );
                 }
             }
             // Marks the type as a registered one and gives it a chance to carry
@@ -184,7 +188,7 @@ namespace CK.Setup
 
         RealObjectClassInfo RegisterObjectClassInfo( Type t, bool isExcluded, RealObjectClassInfo? parent )
         {
-            RealObjectClassInfo result = new RealObjectClassInfo( _monitor, parent, t, _serviceProvider, isExcluded, _alsoRegister );
+            RealObjectClassInfo result = new RealObjectClassInfo( monitor, parent, t, _serviceProvider, isExcluded, _alsoRegister );
             if( !result.IsExcluded )
             {
                 RegisterAssembly( t );
@@ -214,11 +218,11 @@ namespace CK.Setup
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                var c = TypeAttributesCache.CreateOnRegularType( _monitor, _serviceProvider, t, _alsoRegister );
+                var c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t, _alsoRegister );
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {
-                    _monitor.Trace( $"At least one bound attribute on '{t}' has been registered." );
+                    monitor.Trace( $"At least one bound attribute on '{t}' has been registered." );
                     RegisterAssembly( t );
                 }
             }
@@ -233,7 +237,7 @@ namespace CK.Setup
         {
             if( _alsoRegisteredTypes.Count > 0 )
             {
-                using( _monitor.OpenInfo( $"Also registering {_alsoRegisteredTypes.Count} types." ) )
+                using( monitor.OpenInfo( $"Also registering {_alsoRegisteredTypes.Count} types." ) )
                 {
                     // Uses index loop: new types can appear.
                     for( int i = 0; i < _alsoRegisteredTypes.Count; ++i )
@@ -242,12 +246,17 @@ namespace CK.Setup
                     }
                 }
             }
-            using( _monitor.OpenInfo( "Static Type analysis." ) )
+            IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? endpoints;
+            using( monitor.OpenInfo( $"Finalizing Endpoint discovery." ) )
+            {
+                endpoints = KindDetector.GetRegisteredEndpointServiceInfoMap( monitor );
+            }
+            using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoSupportResult? pocoSupport;
-                using( _monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
+                using( monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
-                    pocoSupport = _pocoRegistrar.Finalize( _tempAssembly, _monitor );
+                    pocoSupport = _pocoRegistrar.Finalize( _tempAssembly, monitor );
                     if( pocoSupport != null )
                     {
                         _tempAssembly.Memory.Add( typeof( IPocoSupportResult ), pocoSupport );
@@ -261,18 +270,18 @@ namespace CK.Setup
                     }
                     Debug.Assert( _tempAssembly.GetPocoSupportResult() == pocoSupport, "The extension method GetPocoSupportResult() provides it." );
                 }
-                RealObjectCollectorResult contracts;
-                using( _monitor.OpenInfo( "Real objects handling." ) )
+                RealObjectCollectorResult realObjects;
+                using( monitor.OpenInfo( "Real objects handling." ) )
                 {
-                    contracts = GetRealObjectResult();
-                    Debug.Assert( contracts != null );
+                    realObjects = GetRealObjectResult();
+                    Debug.Assert( realObjects != null );
                 }
                 AutoServiceCollectorResult services;
-                using( _monitor.OpenInfo( "Auto services handling." ) )
+                using( monitor.OpenInfo( "Auto services handling." ) )
                 {
-                    services = GetAutoServiceResult( contracts );
+                    services = GetAutoServiceResult( realObjects );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, contracts, services, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoSupport, realObjects, services, endpoints, _regularTypeCollector, this );
             }
         }
 
@@ -290,7 +299,7 @@ namespace CK.Setup
             foreach( RealObjectClassInfo newOne in _roots )
             {
                 deepestConcretes.Clear();
-                newOne.CreateMutableItemsPath( _monitor, _serviceProvider, engineMap, null, _tempAssembly, deepestConcretes, abstractTails );
+                newOne.CreateMutableItemsPath( monitor, _serviceProvider, engineMap, null, _tempAssembly, deepestConcretes, abstractTails );
                 if( deepestConcretes.Count == 1 )
                 {
                     MutableItem last = deepestConcretes[0].Item1;
@@ -322,7 +331,7 @@ namespace CK.Setup
             foreach( var path in concreteClasses )
             {
                 MutableItem finalType = path[path.Count - 1];
-                finalType.RealObjectType.InitializeInterfaces( _monitor, this );
+                finalType.RealObjectType.InitializeInterfaces( monitor, this );
                 foreach( var item in path )
                 {
                     foreach( Type itf in item.RealObjectType.ThisRealObjectInterfaces )

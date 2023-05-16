@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Net;
 using CK.CodeGen;
 using CK.Core;
 
@@ -16,15 +17,18 @@ namespace CK.Setup
     {
         readonly DynamicAssembly _tempAssembly;
         readonly BuildValueCollector? _valueCollector;
+        readonly EndpointResult? _endpointResult;
 
         internal StObjCollectorResult( CKTypeCollectorResult typeResult,
                                        DynamicAssembly tempAssembly,
+                                       EndpointResult? e,
                                        BuildValueCollector? valueCollector )
         {
             Debug.Assert( !typeResult.HasFatalError || valueCollector == null, "typeResult.HasFatalError ==> valueCollector == null (i.e. valueCollector != null ==> !typeResult.HasFatalError)" );
             CKTypeResult = typeResult;
             _tempAssembly = tempAssembly;
             _valueCollector = valueCollector;
+            _endpointResult = e;
             if( valueCollector != null )
             {
                 EngineMap = typeResult.RealObjects.EngineMap;
@@ -34,12 +38,18 @@ namespace CK.Setup
         /// <summary>
         /// True if a fatal error occurred. Result should be discarded.
         /// </summary>
-        public bool HasFatalError => _valueCollector == null;
+        public bool HasFatalError => _valueCollector == null || _endpointResult == null;
 
         /// <summary>
         /// Gets the result of the types discovery and analysis.
         /// </summary>
         public CKTypeCollectorResult CKTypeResult { get; }
+
+        /// <summary>
+        /// Gets the endpoint results if no error occurred during endpoint discovery and analysis,
+        /// null otherwise.
+        /// </summary>
+        public EndpointResult? EndpointResult => _endpointResult;
 
         /// <summary>
         /// Gets the final <see cref="IStObjEngineMap"/> if <see cref="HasFatalError"/> is false.

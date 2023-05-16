@@ -29,7 +29,7 @@ namespace CK.Core
         
         /// <summary>
         /// Initialize a new attribute on a class: <see cref="PropertyName"/> and <see cref="PropertyType"/> must 
-        /// be defined.
+        /// be defined (not null). There may not be any real property for it.
         /// </summary>
         /// <param name="propertyName">Name of the StObj property.</param>
         /// <param name="propertyType">Type of the StObj property.</param>

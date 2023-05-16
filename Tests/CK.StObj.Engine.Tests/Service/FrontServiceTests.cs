@@ -12,7 +12,7 @@ namespace CK.StObj.Engine.Tests.Service
     {
 
 
-        [EndpointServiceAvailability( typeof(DefaultEndpointDefinition) )]
+        [EndpointAvailableService( typeof(DefaultEndpointDefinition) )]
         public interface IEndpointService1 : IScopedAutoService
         {
         }
@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void simple_front_only_registration()
+        public void Endpoint_service_are_not_registered_as_auto_service()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( EndpointService1 ) );
@@ -30,14 +30,10 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( IEndpointService1 )];
-            descriptor.Should().BeSameAs( map.Services.SimpleMappings[typeof( EndpointService1 )] );
-
-            descriptor.IsScoped.Should().BeTrue();
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsProcessService | AutoServiceKind.IsScoped );
+            map.Services.SimpleMappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse();
         }
 
-        [EndpointServiceAvailability( typeof( DefaultEndpointDefinition ) )]
+        [EndpointAvailableService( typeof( DefaultEndpointDefinition ) )]
         public class Impossible0 : IRealObject
         {
         }
@@ -74,25 +70,25 @@ namespace CK.StObj.Engine.Tests.Service
             TestHelper.GetFailedResult( collector );
         }
 
-        public class FrontDependentService1 : IAutoService
+        public class EndpointDependentService1 : IAutoService
         {
-            public FrontDependentService1( IEndpointService1 f1 )
+            public EndpointDependentService1( IEndpointService1 f1 )
             {
             }
         }
 
         [Test]
-        public void an_impl_that_depends_on_a_front_service_is_a_Front_service()
+        public void Endpoint_services_only_propagate_their_lifetime_1()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( EndpointService1 ) );
-            collector.RegisterType( typeof( FrontDependentService1 ) );
+            collector.RegisterType( typeof( EndpointDependentService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( EndpointDependentService1 )];
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
         }
 
         public interface IFrontDependentService2 : IAutoService
@@ -101,71 +97,28 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class FrontDependentService2 : IFrontDependentService2
         {
-            public FrontDependentService2( FrontDependentService1 f1 )
+            public FrontDependentService2( EndpointDependentService1 f1 )
             {
             }
         }
 
         [Test]
-        public void Front_services_are_transitively_propagated_through_the_constructors()
+        public void Endpoint_services_only_propagate_their_lifetime_2()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.RegisterType( typeof( FrontDependentService2 ) );
-            collector.RegisterType( typeof( FrontDependentService1 ) );
+            collector.RegisterType( typeof( EndpointDependentService1 ) );
             collector.RegisterType( typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontDependentService2 )];
-            IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( FrontDependentService1 )];
-            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IEndpointService1 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( EndpointDependentService1 )];
+            map.Services.SimpleMappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse( "A Endpoint service is not an Automatic service." );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
         }
 
-        public class OneSingleton : ISingletonAutoService
-        {
-            public OneSingleton( IUnknwon dep ) { }
-        }
-
-        public interface IUnknwon : IAutoService { }
-
-        public class Unknwon : IUnknwon
-        {
-            public Unknwon( Scoped s ) { }
-        }
-
-        public class Scoped : IScopedAutoService { }
-
-        public class ServiceFreeLifetime : IAutoService
-        {
-            public ServiceFreeLifetime( IUnknwon dep ) { }
-        }
-
-        [Test]
-        public void propagation_through_an_intermediate_service_1()
-        {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknwon ) );
-            collector.RegisterType( typeof( OneSingleton ) );
-
-            TestHelper.GetFailedResult( collector );
-        }
-
-        [Test]
-        public void propagation_through_an_intermediate_service_2()
-        {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknwon ) );
-            collector.RegisterType( typeof( ServiceFreeLifetime ) );
-
-            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
-            map.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
-        }
     }
 }

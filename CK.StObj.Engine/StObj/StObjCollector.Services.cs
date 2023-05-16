@@ -388,10 +388,9 @@ namespace CK.Setup
             readonly IAutoServiceKindComputeFacade _kindComputeFacade;
             readonly Dictionary<AutoServiceClassInfo, BuildClassInfo> _infos;
 
-            public FinalRegistrar(
-                IActivityMonitor monitor,
-                StObjObjectEngineMap engineMap,
-                IAutoServiceKindComputeFacade kindComputeFacade )
+            public FinalRegistrar( IActivityMonitor monitor,
+                                   StObjObjectEngineMap engineMap,
+                                   IAutoServiceKindComputeFacade kindComputeFacade )
             {
                 _monitor = monitor;
                 _engineMap = engineMap;
@@ -486,10 +485,10 @@ namespace CK.Setup
         /// </summary>
         /// <param name="typeResult">The Ambient types discovery result.</param>
         /// <returns>True on success, false on error.</returns>
-        bool RegisterServices( CKTypeCollectorResult typeResult )
+        bool ServiceFinalHandling( CKTypeCollectorResult typeResult )
         {
             var engineMap = typeResult.RealObjects.EngineMap;
-            using( _monitor.OpenInfo( $"Service handling." ) )
+            using( monitor.OpenInfo( $"Services final handling." ) )
             {
                 try
                 {
@@ -498,17 +497,17 @@ namespace CK.Setup
                                         .Concat( typeResult.AutoServices.SubGraphRootClasses )
                                         .Select( c => c.MostSpecialized! );
                     Debug.Assert( allClasses.GroupBy( c => c ).All( g => g.Count() == 1 ) );
-                    IReadOnlyCollection<InterfaceFamily> families = InterfaceFamily.Build( _monitor, engineMap, allClasses );
+                    IReadOnlyCollection<InterfaceFamily> families = InterfaceFamily.Build( monitor, engineMap, allClasses );
                     if( families.Count == 0 )
                     {
-                        _monitor.Warn( "No IAuto Service interface found. Nothing can be mapped at the Service Interface level." );
+                        monitor.Warn( "No IAuto Service interface found. Nothing can be mapped at the Service Interface level." );
                     }
-                    else _monitor.Trace( $"{families.Count} Service families found." );
+                    else monitor.Trace( $"{families.Count} Service families found." );
                     bool success = true;
-                    var manuals = new FinalRegistrar( _monitor, engineMap, typeResult.KindComputeFacade );
+                    var manuals = new FinalRegistrar( monitor, engineMap, typeResult.KindComputeFacade );
                     foreach( var f in families )
                     {
-                        success &= f.Resolve( _monitor, manuals );
+                        success &= f.Resolve( monitor, manuals );
                     }
                     if( success )
                     {
@@ -518,7 +517,7 @@ namespace CK.Setup
                 }
                 catch( Exception ex )
                 {
-                    _monitor.Fatal( ex );
+                    monitor.Fatal( ex );
                     return false;
                 }
             }

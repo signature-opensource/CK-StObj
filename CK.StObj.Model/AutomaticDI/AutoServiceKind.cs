@@ -26,12 +26,11 @@ namespace CK.Core
         /// <summary>
         /// This is a service bound to a End Point: even inside this process, it may not be available
         /// (a typical example of such service is the IAuthenticationService that requires an HttpContext).
-        /// This flag implies <see cref="IsProcessService"/>.
         /// </summary>
         IsEndpointService = 2,
 
         /// <summary>
-        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> and <see cref="IsEndpointService"/>.
+        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> (at the flag level).
         /// </summary>
         IsMarshallable = 4,
 

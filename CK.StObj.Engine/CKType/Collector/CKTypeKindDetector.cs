@@ -52,6 +52,7 @@ namespace CK.Setup
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Dictionary<Type, CKTypeEndpointServiceInfo> _endpointServices;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
+        bool _hasEndpointServiceError;
 
         /// <summary>
         /// Initializes a new detector.
@@ -64,10 +65,24 @@ namespace CK.Setup
             _typeFilter = typeFilter;
         }
 
+        internal IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? GetRegisteredEndpointServiceInfoMap( IActivityMonitor monitor )
+        {
+            if( _hasEndpointServiceError ) return null;
+            foreach( var kv in _endpointServices )
+            {
+                if( !kv.Value.HasBeenProcessed )
+                {
+                    RawGet( monitor, kv.Key );
+                    Debug.Assert( kv.Value.HasBeenProcessed );
+                }
+            }
+            return _endpointServices;
+        }
+
         /// <summary>
         /// Tries to set or extend the availability of a service to an endpoint.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointAvailableServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -158,7 +173,7 @@ namespace CK.Setup
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
             if( hasProcess ) k |= IsProcessServiceReasonExternal;
-            return SetLifetimeOrFrontType( monitor, t, k );
+            return SetLifetimeOrProcessType( monitor, t, k );
         }
 
         /// <summary>
@@ -171,7 +186,7 @@ namespace CK.Setup
         /// <returns>The type kind on success, null on error.</returns>
         internal CKTypeKind? RestrictToScoped( IActivityMonitor m, Type t )
         {
-            return SetLifetimeOrFrontType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
+            return SetLifetimeOrProcessType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
         }
 
         /// <summary>
@@ -198,16 +213,18 @@ namespace CK.Setup
             return true;
         }
 
-        CKTypeKind? SetLifetimeOrFrontType( IActivityMonitor m, Type t, CKTypeKind kind  )
+        CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
+            Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
+            Debug.Assert( (kind & (CKTypeKind.IsEndpointService)) == 0, "No way! Endpoint service cannot be set by flag." );
+            Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
+
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
-            bool hasFrontType = (kind & CKTypeKind.EndpointProcessServiceMask) != 0;
+            bool isProcess = (kind & CKTypeKind.IsProcessService) != 0;
             bool isMultiple = (kind & CKTypeKind.IsMultipleService) != 0;
             bool isMarshallable = (kind & CKTypeKind.IsMarshallable) != 0;
 
-            Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
-            Debug.Assert( hasLifetime || hasFrontType || isMultiple || isMarshallable, "At least, something must be set." );
-            Debug.Assert( (kind&MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind&MaskPublicInfo).GetCombinationError( t.IsClass ) );
+            Debug.Assert( hasLifetime || isProcess || isMultiple || isMarshallable, "At least, something must be set." );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
@@ -307,7 +324,7 @@ namespace CK.Setup
                 {
                     Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
                     Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                    Debug.Assert( typeof( EndpointServiceAvailabilityAttribute ).Name == "EndpointServiceAvailabilityAttribute" );
+                    Debug.Assert( typeof( EndpointAvailableServiceAttribute ).Name == "EndpointServiceAvailabilityAttribute" );
                     Debug.Assert( typeof( EndpointSingletonServiceOwnerAttribute ).Name == "EndpointSingletonServiceOwnerAttribute" );
                     Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                     Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
@@ -514,16 +531,8 @@ namespace CK.Setup
                         if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                         // The "detect as many errors as possible" rather than a "fail fast" philosophy introduces 
                         // a lot of complexity. For EndpointService error, we shortcut here.
-                        // If hasEndpointServiceError, we mark the potential external info as processed and stop.
-                        if( hasEndpointServiceError )
-                        {
-                            k |= CKTypeKind.HasError;
-                            if( _endpointServices.TryGetValue( t, out var exists ) )
-                            {
-                                exists.SetTypeProcessed( k );
-                            }
-                        }
-                        else
+                        // If hasEndpointServiceError is already true, we totally skip processing endpoint.
+                        if( !hasEndpointServiceError )
                         {
                             // No Endpoint service error at this level.
                             // The final one (registered in the map) can be the inherited one, the currently existing one
@@ -544,7 +553,7 @@ namespace CK.Setup
                             // We first consider the attributes and infer what we can about the type kind.
                             if( endpointDefinitions != null )
                             {
-                                k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
+                                k |= CKTypeKind.IsEndpointService;
                                 m.Info( $"Type '{t}' is a Endpoint service because of a [EndpointSingletonServiceOwner] or [EndpointServiceAvailability] attribute." );
                                 if( endpointSingletonOwner != null )
                                 {
@@ -558,23 +567,16 @@ namespace CK.Setup
                             }
                             // Then we consider the inherited information.
                             // The inheritedEndpointInfo is the final one: we combine it with attributes and external is any.
-                            // This enables us to forbid here any IAutoService in inheritance.
                             if( inheritedEndpointInfo != null )
                             {
                                 final = inheritedEndpointInfo;
                                 if( endpointDefinitions == null )
                                 {
-                                    k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
+                                    k |= CKTypeKind.IsEndpointService;
                                     m.Info( $"Type '{t}' is a Endpoint service because it inherits from a Endpoint service." );
                                 }
                                 Debug.Assert( !inheritedEndpointInfo.IsLocked );
-                                // If we are on a IAutoService, we lock the inherited information: IAutoService if used for Endpoint service
-                                // must be homogeneous because they ultimately resolve to the same type.
-                                if( (k & CKTypeKind.IsAutoService) != 0 )
-                                {
-                                    inheritedEndpointInfo.Lock( $"This type is an IAutoService. IAutoService Endpoint services cannot be altered." );
-                                }
-                                // Now that the base is locked if it must be, try to combine with the attributes if any.
+                                // Try to combine with the attributes if any.
                                 if( endpointDefinitions != null )
                                 {
                                     hasEndpointServiceError |= !inheritedEndpointInfo.CombineWith( m, endpointSingletonOwner, exclusiveEndpointSingletonOwner, endpointDefinitions );
@@ -617,7 +619,7 @@ namespace CK.Setup
                                     if( endpointDefinitions == null )
                                     {
                                         Debug.Assert( k == CKTypeKind.None && !hasEndpointServiceError );
-                                        k |= CKTypeKind.IsEndpointService | CKTypeKind.IsProcessService;
+                                        k |= CKTypeKind.IsEndpointService;
                                         if( exists.Owner != null )
                                         {
                                             k |= CKTypeKind.IsSingleton;
@@ -634,48 +636,26 @@ namespace CK.Setup
                                     }
                                 }
                             }
-                            if( final != null )
+                            if( final != null && !hasEndpointServiceError )
                             {
                                 // We have a final. The kind has been set.
-                                Debug.Assert( (k & CKTypeKind.EndpointProcessServiceMask) == CKTypeKind.EndpointProcessServiceMask );
-                                if( hasEndpointServiceError )
+                                Debug.Assert( (k & CKTypeKind.IsEndpointService) != 0 );
+                                // Clears IAutoService flag: a EndpointService is no more a IAutoService.
+                                if( (k & CKTypeKind.IsAutoService) != 0 )
                                 {
-                                    k |= CKTypeKind.HasError;
+                                    k &= ~CKTypeKind.IsAutoService;
+                                    m.Warn( $"Type '{t}' is a endpoint service, it is not more considered to be a IAutoService." );
                                 }
-                                else
+                                // We won't allow now a change of the Singleton aspect.
+                                // If the final has a owner then we already are a singleton: this has been ensured above.
+                                Debug.Assert( final.Owner == null || (k & CKTypeKind.IsSingleton) != 0 );
+                                // But the reverse is not true, when no "EndpointSingleton" has been applied, we can still be anything
+                                // and we don't want that: endpoint services settle their lifetime. Here, if we have no owner then we are
+                                // a scoped service.
+                                if( final.Owner == null )
                                 {
-                                    // We won't allow now a change of the Singleton aspect.
-                                    // If the final has a owner then we already are a singleton: this has been ensured above.
-                                    Debug.Assert( final.Owner == null || (k & CKTypeKind.IsSingleton) != 0 );
-                                    // But the reverse is not true, when no "EndpointSingleton" has been applied,
-                                    // we can be anything. Why do we care?
-                                    // If we are a pure IAutoService (no lifetime), it will be computed based on the most
-                                    // specialized service constructor. And if we are not a auto service we will default to
-                                    // scoped (this is the work of ComputeFinalTypeKind methods).
-                                    // But, this is a Endpoint service: singletons are "special" (scoped services are simply not
-                                    // available from non specified endpoints) because if it happens to be a singleton, we must
-                                    // have a owner (the EndpointDefinition that will be in charge of creating it and from
-                                    // which the other ones will pick it up). We cannot randomly assigns it a owner... except the
-                                    // DefaultEndpointDefinition (with a non exclusive ownership). We really have no other choice and this
-                                    // seems coherent.
-                                    // If the lifetime is not yet specified, then we choose Scoped.
-                                    // If the lifetime is already on error (Scoped & Singleton), we skip this and let the error be signaled below.
-                                    if( (k & CKTypeKind.LifetimeMask) != CKTypeKind.LifetimeMask )
-                                    {
-                                        if( (k & CKTypeKind.LifetimeMask) == 0 )
-                                        {
-                                            k |= CKTypeKind.IsScoped;
-                                            m.Info( $"Type '{t}' has no associated lifetime. Since it is a Endpoint service, its lifetime will be Scoped." );
-                                        }
-                                        else if( (k & CKTypeKind.IsSingleton) != 0 && final.Owner == null )
-                                        {
-                                            // Note that we cannot be here if we have inherited: this job has already been done above and we benefit from it,
-                                            // so the final EndpointServiceInfo is necessarily not locked yet.
-                                            Debug.Assert( !final.IsLocked );
-                                            m.Warn( $"Type '{t}' is a Singleton and an Endpoint service but no owner has been declared. The DefaultEndpointDefinition will be the non exclusive owner." );
-                                            final.SetDefaultSingletonOwner();
-                                        }
-                                    }
+                                    m.Warn( $"Type '{t}' is a endpoint service with no singleton declaration: it is considered as a Scoped service." );
+                                    k |= CKTypeKind.IsScoped;
                                 }
                                 // This locks the owner/exclusive information but EndpointDefinitions may still be added if
                                 // the EndpointServiceInfo is not locked.
@@ -684,63 +664,81 @@ namespace CK.Setup
                                 _endpointServices[t] = final;
                             }
                         }
-                        // Check for errors and handle IMarshaller<> only if the type is not excluded and here also
-                        // we shortcut the error path is hasEndpointServiceError is true.
-                        if( k != CKTypeKind.None && !isExcludedType && !hasEndpointServiceError )
+                        // If hasEndpointServiceError is eventually true, we update the potential external configuration
+                        // with a kind HasError and sets the _hasEndpointServiceError flag: a null registered endpoint map
+                        // will be returned, no endpoint analysis will be done.
+                        if( hasEndpointServiceError )
                         {
-                            // Checking errors here that cannot be checked by the central GetCombinationError method.
-
-                            // A type MUST be public only if it is an IAutoService.
-                            // External services definitions are not concerned by public/private access!
-                            if( !t.Assembly.IsDynamic
-                                && (k & CKTypeKind.IsAutoService) != 0
-                                && !(t.IsPublic || t.IsNestedPublic) )
+                            _hasEndpointServiceError = true;
+                            k |= CKTypeKind.HasError;
+                            if( _endpointServices.TryGetValue( t, out var exists ) )
                             {
-                                m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                exists.SetTypeProcessed( k );
                             }
-                            if( t.IsClass )
+                        }
+                        else
+                        {
+                            // No endpoint service error:
+                            //  - If we are a endpoint service, IAutoService has been cleared and we may have IScoped & IsSingleton
+                            //    flags: this will be a combination error.
+                            //  - If we are not, we may be IAutoService or a IPoco or... whatever: any combination error will be detected.
+                            if( k != CKTypeKind.None && !isExcludedType )
                             {
-                                Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleAttribute targets interface only and is not propagated." );
-                                // Always use the central GetCombinationError() method when possible: this method concentrates all the checks.
-                                var error = (k & MaskPublicInfo).GetCombinationError( true );
-                                if( error != null )
-                                {
-                                    m.Error( $"Invalid class '{t}' kind: {error}" );
-                                    k |= CKTypeKind.HasError;
-                                }
-                                else if( (k & CKTypeKind.IsAutoService) != 0 )
-                                {
-                                    foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
-                                    {
-                                        Type marshallable = marshaller.GetGenericArguments()[0];
-                                        m.Info( $"Type '{marshallable}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t}' that is a IAutoService." );
-                                        SetLifetimeOrFrontType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
+                                // We check for errors here that cannot be checked by the central GetCombinationError method and handle
+                                // IMarshaller<> only if the type is not excluded.
 
-                                        // The marshaller interface (the closed generic) is promoted to be an IAutoService since it must be
-                                        // mapped (without ambiguities) on the currently registering class (that is itself an IAutoService).
-                                        var exists = RawGet( m, marshaller );
-                                        if( (exists & CKTypeKind.IsAutoService) == 0 )
+                                // A type MUST be public only if it is a IAutoService.
+                                // External services definitions are not concerned by public/private access!
+                                if( !t.Assembly.IsDynamic
+                                    && (k & CKTypeKind.IsAutoService) != 0
+                                    && !(t.IsPublic || t.IsNestedPublic) )
+                                {
+                                    m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                }
+                                if( t.IsClass )
+                                {
+                                    Debug.Assert( (k & CKTypeKind.IsMultipleService) == 0, "IsMultipleAttribute targets interface only and is not propagated." );
+                                    // Always use the central GetCombinationError() method when possible: this method concentrates all the checks.
+                                    var error = (k & MaskPublicInfo).GetCombinationError( true );
+                                    if( error != null )
+                                    {
+                                        m.Error( $"Invalid class '{t}' kind: {error}" );
+                                        k |= CKTypeKind.HasError;
+                                    }
+                                    else if( (k & CKTypeKind.IsAutoService) != 0 )
+                                    {
+                                        foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
                                         {
-                                            exists |= CKTypeKind.IsAutoService;
-                                            error = exists.GetCombinationError( false );
-                                            if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
-                                            else
+                                            Type marshallable = marshaller.GetGenericArguments()[0];
+                                            m.Info( $"Type '{marshallable}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t}' that is a IAutoService." );
+                                            SetLifetimeOrProcessType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
+
+                                            // The marshaller interface (the closed generic) is promoted to be a IAutoService since it must be
+                                            // mapped (without ambiguities) on the currently registering class (that is itself a IAutoService).
+                                            var exists = RawGet( m, marshaller );
+                                            if( (exists & CKTypeKind.IsAutoService) == 0 )
                                             {
-                                                m.Trace( $"Interface {marshaller.Name} is now an IAutoService." );
-                                                _cache[marshaller] = exists;
+                                                exists |= CKTypeKind.IsAutoService;
+                                                error = exists.GetCombinationError( false );
+                                                if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
+                                                else
+                                                {
+                                                    m.Trace( $"Interface {marshaller.Name} is now a IAutoService." );
+                                                    _cache[marshaller] = exists;
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
-                            else
-                            {
-                                Debug.Assert( t.IsInterface );
-                                var error = (k & MaskPublicInfo).GetCombinationError( false );
-                                if( error != null )
+                                else
                                 {
-                                    m.Error( $"Invalid interface '{t}' kind: {error}" );
-                                    k |= CKTypeKind.HasError;
+                                    Debug.Assert( t.IsInterface );
+                                    var error = (k & MaskPublicInfo).GetCombinationError( false );
+                                    if( error != null )
+                                    {
+                                        m.Error( $"Invalid interface '{t}' kind: {error}" );
+                                        k |= CKTypeKind.HasError;
+                                    }
                                 }
                             }
                         }

@@ -7,24 +7,18 @@ using System.Linq;
 namespace CK.Setup
 {
     /// <summary>
-    /// Captures <see cref="EndpointServiceAvailabilityAttribute"/>, <see cref="EndpointSingletonServiceOwnerAttribute"/>,
-    /// <see cref="EndpointServiceTypeAvailabilityAttribute"/> and <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>
+    /// Captures <see cref="EndpointAvailableServiceAttribute"/>, <see cref="EndpointSingletonServiceOwnerAttribute"/>,
+    /// <see cref="EndpointAvailableServiceTypeAttribute"/> and <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>
     /// attributes declaration.
     /// </summary>
-    sealed class CKTypeEndpointServiceInfo
+    public sealed class CKTypeEndpointServiceInfo
     {
         readonly Type _serviceType;
         readonly List<Type> _endpoints;
         Type? _owner;
         bool _exclusive;
         string? _lockedReason;
-        CKTypeKind _processedkind;
-
-        internal enum ExtendStatus
-        {
-            Full,
-            PromoteToExclusive,
-        }
+        CKTypeKind _kind;
 
         /// <summary>
         /// Gets the type that is a endpoint service.
@@ -46,6 +40,11 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyList<Type> Endpoints => _endpoints;
 
+        /// <summary>
+        /// Gets the type kind of <see cref="ServiceType"/>.
+        /// </summary>
+        public CKTypeKind Kind => _kind; 
+
         internal CKTypeEndpointServiceInfo( Type serviceType, Type? owner, bool exclusive, List<Type> endpoints )
         {
             Debug.Assert( owner == null || endpoints.Contains( owner ) );
@@ -66,12 +65,12 @@ namespace CK.Setup
 
         internal void SetTypeProcessed( CKTypeKind processedKind )
         {
-            Debug.Assert( _processedkind == CKTypeKind.None );
-            Debug.Assert( (processedKind & CKTypeKind.EndpointProcessServiceMask) == CKTypeKind.EndpointProcessServiceMask );
-            _processedkind = processedKind;
+            Debug.Assert( _kind == CKTypeKind.None );
+            Debug.Assert( (processedKind & CKTypeKind.IsEndpointService) != 0 );
+            _kind = processedKind;
         }
 
-        internal bool HasBeenProcessed => _processedkind != 0;
+        internal bool HasBeenProcessed => _kind != 0;
 
         internal bool IsLocked => _lockedReason != null;
 

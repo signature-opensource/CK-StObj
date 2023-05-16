@@ -8,13 +8,13 @@ namespace CK.Core
     /// the specified <see cref="EndpointDefinition"/>.
     /// </summary>
     [AttributeUsage( AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false )]
-    public sealed class EndpointServiceAvailabilityAttribute : Attribute
+    public sealed class EndpointAvailableServiceAttribute : Attribute
     {
         /// <summary>
-        /// Initialize a new <see cref="EndpointServiceAvailabilityAttribute"/>.
+        /// Initialize a new <see cref="EndpointAvailableServiceAttribute"/>.
         /// </summary>
         /// <param name="endpointDefinition">The type that must be a <see cref="EndpointDefinition"/>.</param>
-        public EndpointServiceAvailabilityAttribute( Type endpointDefinition )
+        public EndpointAvailableServiceAttribute( Type endpointDefinition )
         {
             if( !typeof( EndpointDefinition ).IsAssignableFrom( endpointDefinition ) )
             {
