@@ -14,7 +14,6 @@ namespace CK.Setup
     {
         readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpointServiceInfoMap;
         readonly IReadOnlyList<EndpointContext> _contexts;
-        readonly IReadOnlyDictionary<Type, (EndpointContext Owner, bool Exclusive)> _singletons;
 
         /// <summary>
         /// Gets all the <see cref="EndpointContext"/>. The first one is the <see cref="DefaultEndpointDefinition"/>.
@@ -33,21 +32,12 @@ namespace CK.Setup
         /// <returns>True if the type is a endpoint service, false otherwise.</returns>
         public bool IsEndpointService( Type type ) => _endpointServiceInfoMap.ContainsKey( type );
 
-        /// <summary>
-        /// Gets all the singleton endpoint services mapped to their owner and endpoint and whether it is
-        /// exclusive to the endpoint.
-        /// </summary>
-        public IReadOnlyDictionary<Type, (EndpointContext Owner, bool Exclusive)> Singletons => _singletons;
-
         EndpointResult( IReadOnlyList<EndpointContext> contexts,
-                        IReadOnlyDictionary<Type, (EndpointContext Owner, bool Exclusive)> singletons,
                         IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
         {
             _contexts = contexts;
-            _singletons = singletons;
             _endpointServiceInfoMap = endpointServiceInfoMap;
         }
-
 
         internal static EndpointResult? Create( IActivityMonitor monitor,
                                                 IStObjObjectEngineMap engineMap,                  
@@ -59,46 +49,61 @@ namespace CK.Setup
             bool hasError = false;
             foreach( var (type, info) in endpointServiceInfoMap )
             {
-                if( info.Owner != null )
+                // Easy: handles the scoped services.
+                if( info.IsScoped )
                 {
-                    var c = FindOrCreate( monitor, engineMap, contexts, info.Owner );
-                    if( c == null )
+                    foreach( var definition in info.Scoped )
                     {
-                        hasError = true;
-                        continue;
-                    }
-                    Debug.Assert( (info.Kind & CKTypeKind.IsSingleton) != 0 );
-                    var ownerAndExclusive = (c, info.Exclusive);
-                    singletons.Add( type, ownerAndExclusive );
-                    c._singletons.Add( (type, null) );
-                }
-                foreach( var e in info.Endpoints )
-                {
-                    if( e == info.Owner ) continue;
-                    var c = FindOrCreate( monitor, engineMap, contexts, e );
-                    if( c == null )
-                    {
-                        hasError = true;
-                        continue;
-                    }
-
-                    if( (info.Kind & CKTypeKind.IsSingleton) != 0 )
-                    {
-                        if( singletons.TryGetValue( type, out var ownerAndExclusive ) && ownerAndExclusive.Exclusive )
+                        var c = FindOrCreate( monitor, engineMap, contexts, definition );
+                        if( c == null )
                         {
-                            monitor.Error( $"Singleton endpoint service '{type}' is exclusively owned by '{ownerAndExclusive.Owner.Name}'. It cannot be exposed by '{c.Name}'." );
                             hasError = true;
                             continue;
                         }
-                        c._singletons.Add( (type, c) );
-                    }
-                    else
-                    {
+                        Debug.Assert( !c._scoped.Contains( type ), "Handled at registration time." );
                         c._scoped.Add( type );
                     }
                 }
+                else
+                {
+                    // Singletons require a check: there may be more than
+                    // one registration for the definition.
+                    foreach( var (tDefinition, tOwner) in info.Singletons )
+                    {
+                        var definition = FindOrCreate( monitor, engineMap, contexts, tDefinition );
+                        if( definition == null )
+                        {
+                            hasError = true;
+                            continue;
+                        }
+                        bool hasDup = definition._singletons.Any( e => e.Service == type );
+                        if( tOwner == null )
+                        {
+                            Debug.Assert( !hasDup, "No risk of duplicates: this has been handled at registration time." );
+                            definition._singletons.Add( (type, null) );
+                        }
+                        else
+                        {
+                            var owner = FindOrCreate( monitor, engineMap, contexts, tOwner );
+                            if( owner == null )
+                            {
+                                hasError = true;
+                                continue;
+                            }
+                            if( hasDup )
+                            {
+                                Debug.Assert( definition._singletons.Where( e => e.Service == type ).All( e => e.Owner != null ) );
+                                var duplicates = definition._singletons.Where( e => e.Service == type ).Select( c => c.Owner!.Name );
+                                monitor.Error( $"In endpoint '{definition.Name}', service '{type:C}' is declared to be owned by '{duplicates.Concatenate( "', '" )}' and '{owner.Name}'." );
+                                hasError = true;
+                            }
+                            definition._singletons.Add( (type, owner) );
+                        }
+                    }
+                }
+
             }
-            return hasError ? null : new EndpointResult( contexts, singletons, endpointServiceInfoMap );
+            return hasError ? null : new EndpointResult( contexts, endpointServiceInfoMap );
 
             static EndpointContext? FindOrCreate( IActivityMonitor monitor, IStObjObjectEngineMap engineMap, List<EndpointContext> contexts, Type t )
             {

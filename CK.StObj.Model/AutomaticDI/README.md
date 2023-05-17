@@ -316,16 +316,18 @@ the configuration.
 
 Let's remove it. This lead us to the 2 following attributes:
 - `[EndpointScopedService( Type endpointDefinition )]` is enough for scoped services.
-- For singletons, a single attribute with 2 constructors can do the job:
-  - `[EndpointSingletonService( Type ownerEndpointDefinition )]` defines a "regular" implementation
-    by a owning endpoint.
-  - `[EndpointSingletonService( Type endpointDefinition, Type ownerEndpointDefinition )]` defines a "reuse", a binding, to
-    the singleton owned by another endpoint.
+- `[EndpointSingletonService( Type ownerEndpointDefinition, Type? ownerEndpointDefinition = null )]`
+  - By default, when `ownerEndpointDefinition` is null, this defines a "regular" implementation by a owning endpoint.
+  - When the owner is specified, this defines a "reuse", a binding, to the singleton owned by another endpoint.
 
-The dual constructor can may be easily overlooked but introducing a `EndpointSingletonServiceOwner`
-and a `EndpointSingletonServiceFrom` (or `Reused`, `Binding`, `OwnedBy`, etc.) seems overkill: this part of the API is not
-for mundane developers. 
+And their `[assembly:EndpointScopedServiceType( Type serviceType, Type endpointDefinition )]` and 
+`[assembly:EndpointSingletonService( Type serviceType, Type ownerEndpointDefinition, Type? ownerEndpointDefinition = null )]`
+for assembly-level declaration.
 
+
+This is clearly not for mundane developers. But the funny thing is that this exactly what can be done with the basic DI...
+The [tests](../../Tests/CK.StObj.Engine.Tests/DI/ViolatingTrueSingletonRuleTests.cs) here shows how a service instance can
+be split in 2 parts.
 
 
 

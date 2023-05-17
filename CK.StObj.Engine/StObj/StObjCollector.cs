@@ -78,15 +78,19 @@ namespace CK.Setup
         public bool RevertOrderingNames { get; set; }
 
         /// <summary>
-        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/> nor has the
-        /// <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
+        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>.
+        /// <para>
+        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits mus be set
+        /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>) an the type
+        /// is registered as an endpoint service in the <see cref="DefaultEndpointDefinition"/>.
+        /// </para>
+        /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
+        /// </para>
         /// </summary>
         /// <param name="type">The type to register.</param>
-        /// <param name="kind">
-        /// The kind of service. Must not be <see cref="AutoServiceKind.None"/> nor has the <see cref="AutoServiceKind.IsEndpointService"/> bit set.
-        /// </param>
+        /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( Type type, AutoServiceKind kind )
         {
@@ -112,9 +116,9 @@ namespace CK.Setup
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointAvailableService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
+        public bool SetEndpointScopedService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
-            if( _cc.KindDetector.SetEndpointAvailableService( monitor, serviceType, endpointDefinition ) )
+            if( _cc.KindDetector.SetEndpointScopedService( monitor, serviceType, endpointDefinition ) )
             {
                 return true;
             }
@@ -131,11 +135,11 @@ namespace CK.Setup
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <param name="exclusive">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointDefinition"/>.</param>
+        /// <param name="ownerEndpointDefinition">Optional owner endpoint. When null, <paramref name="endpointDefinition"/> owns the service.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, bool exclusive = false )
+        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
         {
-            if( _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointDefinition, exclusive ) )
+            if( _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition, ownerEndpointDefinition ) )
             {
                 return true;
             }
@@ -201,15 +205,17 @@ namespace CK.Setup
                         }
                         if( a != null )
                         {
-                            // Before registering types, we must handle the assembly attributes 
-                            // since once registered the Endpoint service info is often (not always) locked.
+                            // Before registering types, we must handle the assembly Endpoint attributes 
+                            // regardless of the "convergence" of the endpoint configuration: the external
+                            // configuration must exist when a type is registered because it is registered
+                            // only once.
                             foreach( var eA in a.GetCustomAttributes<EndpointScopedServiceTypeAttribute>() )
                             {
-                                SetEndpointAvailableService( monitor, eA.ServiceType, eA.EndpointDefinition );
+                                SetEndpointScopedService( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
                             foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeAttribute>() )
                             {
-                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointDefinition, eA.Exclusive );
+                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition, eA.Owner );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( a.GetTypes() );

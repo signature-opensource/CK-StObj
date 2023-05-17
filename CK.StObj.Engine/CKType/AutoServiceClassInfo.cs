@@ -688,7 +688,12 @@ namespace CK.Setup
             if( _ctorBinding.HasValue ) return _ctorBinding.Value;
             bool success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
             var ctors = ClassType.GetConstructors();
-            if( ctors.Length > 1 ) m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relays to protected constructors for explicit initialization." );
+            if( ctors.Length > 1 )
+            {
+                m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relays to protected constructors for explicit initialization." );
+                success = false;
+            }
+            else
             {
                 if( ctors.Length == 0 )
                 {

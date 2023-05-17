@@ -17,35 +17,20 @@ namespace CK.Core
         /// Initializes a new <see cref="EndpointSingletonServiceTypeAttribute"/> that declares the ownership of a service.
         /// </summary>
         /// <param name="serviceType">The service type to expose.</param>
-        /// <param name="ownerEndpointDefinition">The endpoint type that creates, owns and exposes the decorated service.</param>
-        /// <param name="exclusive">
-        /// True to forbid other endpoint to expose the decorated singleton service, false to allow
-        /// the service instance to be exposed by other types of endpoint.
+        /// <param name="endpointDefinition">
+        /// The endpoint type that exposes the <see cref="ServiceType"/>. If <paramref name="ownerEndpointDefinition"/> is null,
+        /// the endpoint creates and owns the service.
         /// </param>
-        public EndpointSingletonServiceTypeAttribute( Type serviceType, Type ownerEndpointDefinition, bool exclusive )
-        {
-            Throw.CheckNotNullArgument( serviceType );
-            Throw.CheckArgument( typeof( EndpointDefinition ).IsAssignableFrom( ownerEndpointDefinition ) );
-            ServiceType = serviceType;
-            EndpointDefinition = ownerEndpointDefinition;
-            Exclusive = exclusive;
-        }
-
-        /// <summary>
-        /// Initializes a new <see cref="EndpointSingletonServiceTypeAttribute"/> that declares the exposure of a
-        /// service from another endpoint.
-        /// </summary>
-        /// <param name="serviceType">The service type to expose.</param>
-        /// <param name="endpointDefinition">The endpoint type that exposes the decorated service.</param>
-        /// <param name="ownerEndpointDefinition">The endpoint type that owns the service instance.</param>
-        public EndpointSingletonServiceTypeAttribute( Type serviceType, Type endpointDefinition, Type ownerEndpointDefinition )
+        /// <param name="ownerEndpointDefinition">
+        /// Optional other endpoint definition type from which the service will be retrieved.
+        /// </param>
+        public EndpointSingletonServiceTypeAttribute( Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition = null )
         {
             Throw.CheckNotNullArgument( serviceType );
             Throw.CheckArgument( typeof( EndpointDefinition ).IsAssignableFrom( endpointDefinition ) );
-            Throw.CheckArgument( typeof( EndpointDefinition ).IsAssignableFrom( ownerEndpointDefinition ) );
+            Throw.CheckArgument( ownerEndpointDefinition == null || typeof( EndpointDefinition ).IsAssignableFrom( ownerEndpointDefinition ) );
             ServiceType = serviceType;
             EndpointDefinition = endpointDefinition;
-            Owner = ownerEndpointDefinition;
         }
 
         /// <summary>
@@ -62,11 +47,5 @@ namespace CK.Core
         /// Gets the owner endpoint type if any.
         /// </summary>
         public Type? Owner { get; }
-
-        /// <summary>
-        /// Gets whether the <see cref="ServiceType"/> is exclusively exposed by the <see cref="EndpointDefinition"/> or can
-        /// also be exposed by other endpoint types. This is always false if there is a <see cref="Owner"/>.
-        /// </summary>
-        public bool Exclusive { get; }
     }
 }

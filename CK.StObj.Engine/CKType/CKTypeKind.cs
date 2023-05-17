@@ -198,6 +198,13 @@ namespace CK.Setup
             {
                 conflict = "An interface or an implementation cannot be both Scoped and Singleton";
             }
+            else if( isEndPoint )
+            {
+                if( !isScoped && !isSingleton )
+                {
+                    conflict = "A Endpoint service must be known to be Scoped or Singleton";
+                }
+            }
             if( isClass )
             {
                 if( (@this & CKTypeKind.IsMultipleService) != 0 ) conflict = "A class cannot be marked as a Multiple service: only interfaces can be IsMultiple.";
