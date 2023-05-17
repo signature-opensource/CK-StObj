@@ -1,5 +1,7 @@
 using CK.Core;
+using FluentAssertions;
 using NUnit.Framework;
+using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.DI
@@ -7,25 +9,40 @@ namespace CK.StObj.Engine.Tests.DI
     [TestFixture]
     public class EndpointServiceExtensionTests
     {
+        [EndpointDefinition]
         public class AnotherEndpointDefinition : EndpointDefinition
         {
         }
 
-        [EndpointServiceAvailability( typeof( DefaultEndpointDefinition ) )]
+        // We allow IScopedAutoService for the lifetime.
+        // This is no more a auto service because it is an endpoint service.
+        [EndpointScopedService( typeof( DefaultEndpointDefinition ) )]
         public interface IEPService1 : IScopedAutoService
         {
         }
 
-        [EndpointServiceAvailability( typeof( AnotherEndpointDefinition ) )]
+        [EndpointScopedService( typeof( AnotherEndpointDefinition ) )]
         public interface IEPService2 : IEPService1
         {
         }
 
         [Test]
-        public void IAutoService_Endpoint_services_cannot_extend_their_endpoints()
+        public void service_availability_does_not_propagate_through_inheritance()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IEPService1 ), typeof( IEPService2 ) );
-            TestHelper.GetFailedResult( c, "Endpoint definition failed because: 'This type is an IAutoService. IAutoService Endpoint services cannot be altered.': Extending Endpoint service 'CK.StObj.Engine.Tests.DI.EndpointServiceExtensionTests+IEPService2' availability to 'AnotherEndpointDefinition' endpoint is not possible." );
+            var c = TestHelper.CreateStObjCollector( typeof( AnotherEndpointDefinition ),
+                                                     typeof( IEPService1 ),
+                                                     typeof( IEPService2 ) );
+            var r = TestHelper.GetSuccessfulResult( c ).EndpointResult;
+            r.EndpointServices.Should().Contain( new[] { typeof( IEPService1 ), typeof( IEPService2 ) } );
+            r.EndpointContexts.Should().HaveCount( 2 );
+
+            r.EndpointContexts[0].EndpointDefinition.ClassType.Should().Be( typeof( DefaultEndpointDefinition ) );
+            r.EndpointContexts[0].ScopedServices.Should().HaveCount( 1 ).And.Contain( typeof( IEPService1 ) );
+
+            r.EndpointContexts[1].EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );
+            r.EndpointContexts[1].ScopedServices.Should().HaveCount( 1 ).And.Contain( new[] { typeof( IEPService2 ) } );
         }
+
+
     }
 }

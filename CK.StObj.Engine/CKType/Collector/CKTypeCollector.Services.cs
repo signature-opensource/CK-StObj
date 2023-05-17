@@ -5,6 +5,8 @@ using System.Diagnostics;
 using CK.Setup;
 using CK.Core;
 using System.Threading;
+using System.Reflection;
+using System.Data;
 
 #nullable enable
 
@@ -32,8 +34,54 @@ namespace CK.Setup
             return serviceInfo;
         }
 
+        bool HasEndpointServiceParameter( Type t, ParameterInfo[]? cParameters )
+        {
+            foreach( var p in cParameters )
+            {
+                var pType = p.ParameterType;
+                if( IsEndpointService( monitor, pType, KindDetector, t, p.Name ) )
+                {
+                    return true;
+                }
+                if( pType.IsGenericType )
+                {
+                    var tGen = pType.GetGenericTypeDefinition();
+                    if( tGen == typeof( IEnumerable<> ) )
+                    {
+                        var eT = pType.GetGenericArguments()[0];
+                        if( IsEndpointService( monitor, eT, KindDetector, t, p.Name ) )
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        // Also test the open generic definition.
+                        if( IsEndpointService( monitor, tGen, KindDetector, t, p.Name ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
 
-        bool IsAutoService( IActivityMonitor monitor, Type t ) => (KindDetector.GetRawKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
+            static bool IsEndpointService( IActivityMonitor monitor, Type p, CKTypeKindDetector kindDetector, Type serviceClass, string? parameterName )
+            {
+                var k = kindDetector.GetRawKind( monitor, p );
+                // We silently skip any error (it has been signaled) or excluded type.
+                if( (k & (CKTypeKind.HasError | CKTypeKind.IsExcludedType)) == 0
+                    && (k & (CKTypeKind.IsEndpointService)) != 0 )
+                {
+                    monitor.Info( $"AutoService class '{serviceClass:C}' depends on endpoint service '{p:C}' (constructor parameter '{parameterName}')."
+                                  + $" Is is not registered as an AutoService." );
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        bool IsAutoService( Type t ) => (KindDetector.GetRawKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
         internal AutoServiceClassInfo? FindServiceClassInfo( IActivityMonitor monitor, Type t )
         {
@@ -56,15 +104,14 @@ namespace CK.Setup
         AutoServiceInterfaceInfo? RegisterServiceInterface( IActivityMonitor monitor, Type t, CKTypeKind lt )
         {
             Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( monitor, t ) );
-            // Front service constraint is managed dynamically.
-            lt &= ~(CKTypeKind.EndpointProcessServiceMask|CKTypeKind.IsMarshallable);
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
             {
                 if( (lt & CKTypeKind.IsExcludedType) == 0 )
                 {
-                    Debug.Assert( lt == CKTypeKind.IsAutoService
-                                    || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
-                                    || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
+                    //Debug.Assert( lt == CKTypeKind.IsAutoService
+                    //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+                    //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped),
+                    //              "This interface cannot be something else, even an Endpoint service." );
 
                     var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false, _alsoRegister );
                     info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( monitor, t.GetInterfaces() ) );

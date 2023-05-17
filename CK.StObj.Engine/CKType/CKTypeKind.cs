@@ -23,21 +23,17 @@ namespace CK.Setup
         /// current process: it requires some sort of marshalling/configuration to be able to do its job
         /// remotely (out of this process).
         /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
-        /// <para>
-        /// This flag has to be set for <see cref="IsEndpointService"/> to be set.
-        /// </para>
         /// </summary>
         IsProcessService = 1,
 
         /// <summary>
-        /// Service is bound to a End Point. The service is necessarily bound to the front
-        /// process (<see cref="IsProcessService"/> is also set).
+        /// Service is bound to a End Point. Whether it is a <see cref="IsProcessService"/> or not is independent.
         /// </summary>
         IsEndpointService = 2,
 
         /// <summary>
         /// Marshallable service.
-        /// This is independent of <see cref="IsProcessService"/> and <see cref="IsEndpointService"/> flags.
+        /// This is independent of <see cref="IsProcessService"/> (but a process service must eventually be marshallable).
         /// </summary>
         IsMarshallable = 4,
 
@@ -78,11 +74,6 @@ namespace CK.Setup
         RealObject = IsSingleton | 256,
 
         /// <summary>
-        /// Simple bit mask on <see cref="IsEndpointService"/> | <see cref="IsProcessService"/>.
-        /// </summary>
-        EndpointProcessServiceMask = IsEndpointService | IsProcessService,
-
-        /// <summary>
         /// Simple bit mask on <see cref="IsScoped"/> | <see cref="IsSingleton"/>.
         /// </summary>
         LifetimeMask = IsScoped | IsSingleton,
@@ -107,21 +98,10 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the <see cref="AutoServiceKind"/> (masks the internal bits).
-        /// Note that a check of the "IsEndpointService => IsProcessService" rule
-        /// is made: an <see cref="ArgumentException"/> may be thrown.
         /// </summary>
         /// <param name="this">This type kind.</param>
         /// <returns>The Auto service kind.</returns>
-        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this )
-        {
-            if( (@this&CKTypeKind.IsEndpointService) != 0
-                &&
-                (@this & CKTypeKind.IsProcessService) == 0 )
-            {
-                Throw.ArgumentException( $"Invalid CKTypeKind: IsEndpointService must imply IsProcessService." );
-            }
-            return (AutoServiceKind)((int)@this & 63);
-        }
+        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this ) => (AutoServiceKind)((int)@this & 63);
 
         /// <summary>
         /// Returns a string that correctly handles flags and results to <see cref="GetCombinationError(CKTypeKind,bool)"/>
@@ -168,10 +148,6 @@ namespace CK.Setup
             bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
 
-            if( isEndPoint && !isProcess )
-            {
-                Throw.ArgumentException( "CKTypeKind value error: missing IsProcessService flag for IsEndpointService: " + @this.ToStringFlags() );
-            }
             if( isRealObject && !isSingleton )
             {
                 Throw.Exception( "CKTypeKind value error: missing IsSingleton flag to RealObject mask: " + @this.ToStringFlags() );
@@ -195,13 +171,12 @@ namespace CK.Setup
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
                     if( isScoped ) conflict = "RealObject cannot have a Scoped lifetime";
                     else if( isMultiple ) conflict = "IRealObject interface cannot be marked as a Multiple service";
-                    else if( isAuto && !isClass ) conflict = "IRealObject interface cannot be an IAutoService";
+                    else if( isAuto && !isClass ) conflict = "IRealObject interface cannot be a IAutoService";
                     if( isMarshallable )
                     {
                         if( conflict != null ) conflict += ", ";
                         conflict += "RealObject cannot be marked as Marshallable";
                     }
-                    // Always handle Front service.
                     if( isEndPoint | isProcess )
                     {
                         if( conflict != null ) conflict += ", ";
@@ -212,6 +187,13 @@ namespace CK.Setup
             else if( isScoped && isSingleton )
             {
                 conflict = "An interface or an implementation cannot be both Scoped and Singleton";
+            }
+            else if( isEndPoint )
+            {
+                if( !isScoped && !isSingleton )
+                {
+                    conflict = "A Endpoint service must be known to be Scoped or Singleton";
+                }
             }
             if( isClass )
             {

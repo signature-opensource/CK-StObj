@@ -170,7 +170,6 @@ namespace CK.Setup
                 if( sParent != null || (lt & CKTypeKind.IsAutoService) != 0 )
                 {
                     serviceInfo = RegisterServiceClassInfo( monitor, t, isExcluded, sParent, objectInfo );
-                    Debug.Assert( serviceInfo != null );
                 }
             }
             // Marks the type as a registered one and gives it a chance to carry
@@ -243,16 +242,12 @@ namespace CK.Setup
                     }
                 }
             }
+            IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? endpoints;
+            using( monitor.OpenInfo( $"Finalizing Endpoint discovery." ) )
             {
-                using( monitor.OpenInfo( $"Also registering {_alsoRegisteredTypes.Count} types." ) )
-                {
-                    // Uses index loop: new types can appear.
-                    for( int i = 0; i < _alsoRegisteredTypes.Count; ++i )
-                    {
-                        RegisterType( monitor, _alsoRegisteredTypes[i] );
-                    }
-                }
+                endpoints = KindDetector.GetRegisteredEndpointServiceInfoMap( monitor );
             }
+
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoDirectory? pocoDirectory;
@@ -282,18 +277,18 @@ namespace CK.Setup
                     _tempAssembly.Memory.Add( typeof( IPocoTypeSystem ), pocoTypeSystem );
                     Debug.Assert( _tempAssembly.GetPocoTypeSystem() == pocoTypeSystem, "The extension method GetPocoTypeSystem() provides it." );
                 }
-                RealObjectCollectorResult contracts;
+                RealObjectCollectorResult realObjects;
                 using( monitor.OpenInfo( "Real objects handling." ) )
                 {
-                    contracts = GetRealObjectResult( monitor );
-                    Debug.Assert( contracts != null );
+                    realObjects = GetRealObjectResult( monitor );
+                    Debug.Assert( realObjects != null );
                 }
                 AutoServiceCollectorResult services;
                 using( monitor.OpenInfo( "Auto services handling." ) )
                 {
-                    services = GetAutoServiceResult( monitor, contracts );
+                    services = GetAutoServiceResult( monitor, realObjects );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoDirectory, pocoTypeSystem, contracts, services, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoDirectory, pocoTypeSystem, realObjects, services, endpoints, _regularTypeCollector, this );
             }
         }
 

@@ -13,10 +13,10 @@ namespace CK.Setup
         /// <summary>
         /// Gets the enumerated interface type.
         /// </summary>
-        Type EnumeratedType { get; }
+        Type ItemType { get; }
 
         /// <summary>
-        /// Gets the <see cref="IEnumerable{T}"/> of <see cref="EnumeratedType"/> type.
+        /// Gets the <see cref="IEnumerable{T}"/> of <see cref="ItemType"/> type.
         /// </summary>
         Type EnumerableType { get; }
 
@@ -24,7 +24,7 @@ namespace CK.Setup
         /// Gets the types that must be marshalled for this enumeration to be marshallable.
         /// This is empty if this service is not marshallable.
         /// <para>
-        /// Note that it contains this <see cref="EnumeratedType"/> if the enumerated interface itself is marked with [IsMarshallable]
+        /// Note that it contains this <see cref="ItemType"/> if the enumerated interface itself is marked with [IsMarshallable]
         /// and is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available.
         /// </para>
         /// </summary>

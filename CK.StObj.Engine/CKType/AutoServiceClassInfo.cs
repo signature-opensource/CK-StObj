@@ -119,14 +119,15 @@ namespace CK.Setup
                                        AutoServiceClassInfo? parent,
                                        Type t,
                                        bool isExcluded,
-                                       RealObjectClassInfo? objectInfo,
+                                       RealObjectClassInfo? realObjectInfo,
                                        Action<Type> alsoRegister )
         {
-            Debug.Assert( objectInfo == null || objectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
-            if( objectInfo != null )
+            Debug.Assert( realObjectInfo == null || realObjectInfo.ServiceClass == null, "If we are the associated Service, we must be the only one." );
+            if( realObjectInfo != null )
             {
-                TypeInfo = objectInfo;
-                objectInfo.ServiceClass = this;
+                Debug.Assert( realObjectInfo.Type == t );
+                TypeInfo = realObjectInfo;
+                realObjectInfo.ServiceClass = this;
             }
             else
             {
@@ -237,14 +238,8 @@ namespace CK.Setup
         internal MutableItem? ContainerItem { get; private set; }
 
         /// <summary>
-        /// Gets the constructor. This may be null if any error occurred or
-        /// if this service is implemented by an Real object.
-        /// </summary>
-        public ConstructorInfo? ConstructorInfo { get; private set; }
-
-        /// <summary>
         /// Gets all the constructor parameters' <see cref="ParameterInfo"/> wrapped in <see cref="CtorParameter"/>.
-        /// This is empty (even for service implemented by Real object) as soon as the EnsureCtorBinding internal method has been called.
+        /// This is not null (even for service implemented by Real object) as soon as the EnsureCtorBinding internal method has been called.
         /// </summary>
         public IReadOnlyList<CtorParameter>? ConstructorParameters { get; private set; }
 
@@ -434,7 +429,6 @@ namespace CK.Setup
                 Debug.Assert( ConstructorParameters != null );
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    const AutoServiceKind EndpointProcessServiceMask = AutoServiceKind.IsProcessService | AutoServiceKind.IsEndpointService;
                     HashSet<Type>? allMarshallableTypes = null;
                     // If this service is not marshallable then all its parameters that are Process services must be marshallable
                     // so that this service can be "normally" created as long as its required dependencies have been marshalled.
@@ -510,19 +504,16 @@ namespace CK.Setup
                                         final |= AutoServiceKind.IsScoped;
                                     }
                                 }
-                                // Handling EndPoint/Process propagation.
+                                // Handling ProcessService propagation (EndpointService doesn't propagate).
                                 // If the parameter is not a endpoint or a process service, we can safely ignore it: we don't care of a IsMarshallable only type.
-                                if( (kP & EndpointProcessServiceMask) == 0 ) continue;
+                                if( (kP & AutoServiceKind.IsProcessService) == 0 ) continue;
 
-                                var newFinal = final | (kP & EndpointProcessServiceMask);
+                                var newFinal = final | (kP & AutoServiceKind.IsProcessService);
                                 if( newFinal != final )
                                 {
-                                    // Upgrades from None, Process to Endpoint...
-                                    m.Trace( $"Type '{ClassType}' must be {newFinal & EndpointProcessServiceMask}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
+                                    // Upgrades to ProcessService...
+                                    m.Trace( $"Type '{ClassType}' must be {newFinal & AutoServiceKind.IsProcessService}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
                                     final = newFinal;
-                                    // We don't have to worry about the EndpointService that implies the IsScoped flag since this is already handled
-                                    // by the lifetime code above: if the current parameter is a EndpointService then it is also a Scoped and any conflict
-                                    // with this being a singleton would have been handled.
                                 }
                                 // If this Service is marshallable at its level OR it is already known to be NOT automatically marshallable,
                                 // we don't have to worry anymore about the parameters marshalling.
@@ -698,12 +689,15 @@ namespace CK.Setup
         {
             Debug.Assert( IsIncluded && !IsRealObject );
             if( _ctorBinding.HasValue ) return _ctorBinding.Value;
-            bool success = false;
+            bool success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
             var ctors = ClassType.GetConstructors();
-            if( ctors.Length > 1 ) m.Error( $"Multiple public constructors found for '{ClassType.FullName}'. Only one must exist. Consider using factory methods that relays to protected constructors for explicit initialization." );
+            if( ctors.Length > 1 )
+            {
+                m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relays to protected constructors for explicit initialization." );
+                success = false;
+            }
             else
             {
-                success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
                 if( ctors.Length == 0 )
                 {
                     // There is no public constructor: if the class is abstract we cannot conclude anything since the
@@ -717,7 +711,7 @@ namespace CK.Setup
                     {
                         // The class is not abstract and has no public constructor. We can't do anything with it.
                         success = false;
-                        m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist since at least one non-public constructor exists." );
+                        m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist (since at least one non-public constructor exists)." );
                     }
                 }
                 else 
@@ -738,7 +732,6 @@ namespace CK.Setup
                         allCtorParameters[p.Position] = ctorParameter;
                     }
                     ConstructorParameters = allCtorParameters;
-                    ConstructorInfo = ctors[0];
                 }
             }
             _ctorBinding = success;
@@ -808,7 +801,7 @@ namespace CK.Setup
                     }
                     else if( tParam.IsInterface )
                     {
-                        conflictMsg += $" '{tParam.Name}' must be either an IAutoService marked with [IsMultiple] attribute or be externally declared as a AutoTypeKind.IsMultipleService.";
+                        conflictMsg += $" '{tParam.Name}' must be either a IAutoService marked with [IsMultiple] attribute or be externally declared as a AutoTypeKind.IsMultipleService.";
                     }
                     else
                     {
@@ -819,21 +812,17 @@ namespace CK.Setup
                     }
                 }
             }
-            if( conflictMsg == null )
-            {
-                // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
-                // look for a AutoServiceClassInfo or a AutoServiceInterfaceInfo: we are done.
-                // Note that it can be externally qualified with a AutoServiceKind but it is not meant to be analyzed like a true IAutoService.
-                if( (kind & CKTypeKind.IsAutoService) == 0 )
-                {
-                    return new CtorParameterData( true, null, null, isEnumerable, kind, tParam );
-                }
-            }
-            Debug.Assert( p.Member.DeclaringType != null );
             if( conflictMsg != null )
             {
-                monitor.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor: {conflictMsg}" );
+                m.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor: {conflictMsg}" );
                 return new CtorParameterData( false, null, null, false, kind, tParam );
+            }
+            // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
+            // look for a AutoServiceClassInfo or a AutoServiceInterfaceInfo: we are done.
+            // Note that it can be externally qualified with a AutoServiceKind but it is not meant to be analyzed like a true IAutoService.
+            if( (kind & CKTypeKind.IsAutoService) == 0 )
+            {
+                return new CtorParameterData( true, null, null, isEnumerable, kind, tParam );
             }
             Debug.Assert( conflictMsg == null && (kind & CKTypeKind.IsAutoService) != 0 );
             if( tParam.IsClass )
@@ -841,15 +830,15 @@ namespace CK.Setup
                 var sClass = collector.FindServiceClassInfo( monitor, tParam );
                 if( sClass == null )
                 {
-                    monitor.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor." );
+                    monitor.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 if( !sClass.IsIncluded )
                 {
                     var reason = sClass.TypeInfo.IsExcluded
                                     ? "excluded from registration"
-                                    : "abstract (and can not be concretized)";
-                    var prefix = $"Service type '{tParam}' is {reason}. Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
+                                    : "abstract (and cannot be concretized)";
+                    var prefix = $"Service type '{tParam}' is {reason}. Parameter '{p.Name}' in '{p.Member.DeclaringType.ToCSharpName()}' constructor ";
                     if( !p.HasDefaultValue )
                     {
                         monitor.Error( prefix + "can not be resolved." );
@@ -860,14 +849,12 @@ namespace CK.Setup
                 }
                 else if( TypeInfo.IsAssignableFrom( sClass.TypeInfo ) )
                 {
-                    var prefix = $"Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
-                    monitor.Error( prefix + "cannot be this class or one of its specializations." );
+                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor cannot be this class or one of its specializations." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 else if( sClass.TypeInfo.IsAssignableFrom( TypeInfo ) )
                 {
-                    var prefix = $"Parameter '{p.Name}' in '{p.Member.DeclaringType.FullName}' constructor ";
-                    monitor.Error( prefix + "cannot be one of its base class." );
+                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor cannot be one of its base class." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 return new CtorParameterData( true, sClass, null, isEnumerable, kind, tParam );

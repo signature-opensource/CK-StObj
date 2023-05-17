@@ -67,9 +67,9 @@ namespace CK.Setup
 
         internal AutoServiceInterfaceInfo( TypeAttributesCache type, CKTypeKind lt, IEnumerable<AutoServiceInterfaceInfo> baseInterfaces )
         {
-            Debug.Assert( lt == CKTypeKind.IsAutoService
-                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
-                            || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
+            //Debug.Assert( lt == CKTypeKind.IsAutoService
+            //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
+            //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             Attributes = type;
             InitialTypeKind = lt;
             AutoServiceInterfaceInfo[] bases = Array.Empty<AutoServiceInterfaceInfo>();

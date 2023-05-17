@@ -14,6 +14,7 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeCollectorResult
     {
+        readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? _endpoints;
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
         internal CKTypeCollectorResult( ISet<Assembly> assemblies,
@@ -21,6 +22,7 @@ namespace CK.Setup
                                         PocoTypeSystem pocoTypeSystem,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
+                                        IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? endpoints,
                                         IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
                                         IAutoServiceKindComputeFacade kindComputeFacade )
         {
@@ -29,6 +31,7 @@ namespace CK.Setup
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
+            _endpoints = endpoints;
             _regularTypes = regularTypes;
             KindComputeFacade = kindComputeFacade;
         }
@@ -59,6 +62,11 @@ namespace CK.Setup
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
+        /// Gets the raw endpoints configuration. This is null if an error occurred.
+        /// </summary>
+        public IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? Endpoints => _endpoints;
+
+        /// <summary>
         /// Gets the AutoServiceKind compute façade.
         /// </summary>
         internal IAutoServiceKindComputeFacade KindComputeFacade { get; }
@@ -75,7 +83,7 @@ namespace CK.Setup
         /// False to continue the process (only warnings - or error considered as 
         /// warning - occurred), true to stop remaining processes.
         /// </returns>
-        public bool HasFatalError => PocoDirectory == null || RealObjects.HasFatalError || AutoServices.HasFatalError;
+        public bool HasFatalError => PocoDirectory == null || RealObjects.HasFatalError || AutoServices.HasFatalError || _endpoints == null;
 
         /// <summary>
         /// Gets all the <see cref="ImplementableTypeInfo"/>: Abstract types that require a code generation
@@ -97,13 +105,15 @@ namespace CK.Setup
             }
         }
 
-
         /// <summary>
         /// Crappy hook...
         /// </summary>
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered )
         {
             // Compute the indexed AllTypesAttributesCache.
+            // This is a mess. This cache must be replaced by a truly reflection central cache.
+            // One should not need any update like this one that bind this SetFinalOrderedResults
+            // to the AutoService resolution!
             Debug.Assert( AutoServices.AllClasses.All( c => !c.TypeInfo.IsExcluded ) );
             Debug.Assert( AutoServices.AllClasses.All( c => c.TypeInfo.Attributes != null ) );
 

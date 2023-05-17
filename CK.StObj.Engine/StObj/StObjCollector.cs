@@ -69,15 +69,19 @@ namespace CK.Setup
         public bool RevertOrderingNames { get; set; }
 
         /// <summary>
-        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/> nor has the
-        /// <see cref="AutoServiceKind.IsEndpointService"/> bit set) for a type.
+        /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>.
+        /// <para>
+        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits mus be set
+        /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>) an the type
+        /// is registered as an endpoint service in the <see cref="DefaultEndpointDefinition"/>.
+        /// </para>
+        /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
+        /// </para>
         /// </summary>
         /// <param name="type">The type to register.</param>
-        /// <param name="kind">
-        /// The kind of service. Must not be <see cref="AutoServiceKind.None"/> nor has the <see cref="AutoServiceKind.IsEndpointService"/> bit set.
-        /// </param>
+        /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>True on success, false on error.</returns>
         public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, AutoServiceKind kind )
         {
@@ -97,42 +101,34 @@ namespace CK.Setup
         /// <summary>
         /// Tries to set or extend the availability of a service to an endpoint.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointServiceTypeAvailabilityAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointScopedServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
+        public bool SetEndpointScopedService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
-            return _cc.KindDetector.SetEndpointServiceAvailability( monitor, serviceType, endpointDefinition );
+            return _cc.KindDetector.SetEndpointScopedService( monitor, serviceType, endpointDefinition );
         }
 
         /// <summary>
         /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointDefinition"/>.</param>
+        /// <param name="ownerEndpointDefinition">Optional owner endpoint. When null, <paramref name="endpointDefinition"/> owns the service.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, bool exclusiveEndpoint )
+        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
-            return _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointDefinition, exclusiveEndpoint );
-        }
-
-        /// <summary>
-            {
-                return true;
-            }
-            ++_registerFatalOrErrorCount;
-            return false;
+            return _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition, exclusiveEndpoint );
         }
 
         /// <summary>
@@ -195,15 +191,17 @@ namespace CK.Setup
                         }
                         if( a != null )
                         {
-                            // Before registering types, we must handle the assembly attributes 
-                            // since once registered the Endpoint service info is often (not always) locked.
-                            foreach( var eA in a.GetCustomAttributes<EndpointServiceTypeAvailabilityAttribute>() )
+                            // Before registering types, we must handle the assembly Endpoint attributes 
+                            // regardless of the "convergence" of the endpoint configuration: the external
+                            // configuration must exist when a type is registered because it is registered
+                            // only once.
+                            foreach( var eA in a.GetCustomAttributes<EndpointScopedServiceTypeAttribute>() )
                             {
-                                SetEndpointServiceAvailability( monitor, eA.ServiceType, eA.EndpointDefinition );
+                                SetEndpointScopedService( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
-                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
+                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeAttribute>() )
                             {
-                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointDefinition, eA.ExclusiveEndpoint );
+                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition, eA.Owner );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( monitor, a.GetTypes() );
@@ -334,6 +332,7 @@ namespace CK.Setup
                 _cc.RegisterClass( monitor, typeof( EndpointTypeManager ) );
                 _cc.RegisterClass( monitor, typeof( DefaultEndpointDefinition ) );
 
+                EndpointResult? endpoints = null;
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
                 if( orderedItems != null )
                 {
@@ -343,13 +342,23 @@ namespace CK.Setup
                     // But this would be a massive refactoring and this internal mutable state is, to be honest,
                     // quite convenient!
                     typeResult.SetFinalOrderedResults( orderedItems );
-                    if( !RegisterServices( monitor, typeResult ) )
+                    // Now that Real objects and core AutoServices are settled, creates the EndpointResult.
+                    // This doesn't need the full auto service resolution so we have the choice to do it before
+                    // or after services finalization.
+                    if( typeResult.Endpoints != null )
+                    {
+                        using( monitor.OpenInfo( "Endpoints handling." ) )
+                        {
+                            endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.Endpoints );
+                        }
+                    }
+                    if( !ServiceFinalHandling( monitor, typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
                         buildValueCollector = null;
                     }
                 }
-                return new StObjCollectorResult( typeResult, _tempAssembly, buildValueCollector );
+                return new StObjCollectorResult( typeResult, _tempAssembly, endpoints, buildValueCollector );
             }
             catch( Exception ex )
             {
@@ -366,17 +375,19 @@ namespace CK.Setup
                 CKTypeCollectorResult typeResult;
                 using( monitor.OpenInfo( "Initializing object graph." ) )
                 {
-                    using( monitor.OpenInfo( "Collecting Real Objects, Services, Type structure and Poco." ) )
+                    using( monitor.OpenInfo( "Collecting Real Objects, Services, Endpoints and Poco." ) )
                     {
                         typeResult = _cc.GetResult( monitor );
                         typeResult.LogErrorAndWarnings( monitor );
                     }
-                    if( error || typeResult.HasFatalError ) return (typeResult, null, null);
-                    Debug.Assert( _tempAssembly.GetPocoDirectory() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
-                    using( monitor.OpenInfo( "Creating final objects and configuring items." ) )
+                    if( !error && !typeResult.HasFatalError )
                     {
-                        int nbItems = ConfigureMutableItems( monitor, typeResult.RealObjects );
-                        monitor.CloseGroup( $"{nbItems} items configured." );
+                        Debug.Assert( _tempAssembly.GetPocoDirectory() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
+                        using( monitor.OpenInfo( "Creating final objects and configuring items." ) )
+                        {
+                            int nbItems = ConfigureMutableItems( monitor, typeResult.RealObjects );
+                            monitor.CloseGroup( $"{nbItems} items configured." );
+                        }
                     }
                 }
                 if( error ) return (typeResult, null, null); 

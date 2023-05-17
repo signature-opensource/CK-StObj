@@ -326,6 +326,48 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
 
+        public class OneSingleton : ISingletonAutoService
+        {
+            public OneSingleton( IUnknown dep ) { }
+        }
+
+        public interface IUnknown : IAutoService { }
+
+        public class Unknown : IUnknown
+        {
+            public Unknown( Scoped s ) { }
+        }
+
+        public class Scoped : IScopedAutoService { }
+
+        public class ServiceFreeLifetime : IAutoService
+        {
+            public ServiceFreeLifetime( IUnknown dep ) { }
+        }
+
+        [Test]
+        public void propagation_through_an_intermediate_service_1()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( Scoped ) );
+            collector.RegisterType( typeof( Unknown ) );
+            collector.RegisterType( typeof( OneSingleton ) );
+
+            TestHelper.GetFailedResult( collector );
+        }
+
+        [Test]
+        public void propagation_through_an_intermediate_service_2()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( Scoped ) );
+            collector.RegisterType( typeof( Unknown ) );
+            collector.RegisterType( typeof( ServiceFreeLifetime ) );
+
+            var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
+            Debug.Assert( map != null, "No initialization error." );
+            map.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
+        }
 
 
     }

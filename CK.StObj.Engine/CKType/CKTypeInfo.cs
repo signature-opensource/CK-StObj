@@ -263,7 +263,7 @@ namespace CK.Setup
         /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
         /// The type t must not already be registered (it can, of course be mapped to other final types).
         /// </summary>
-        /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
+        /// <param name="t">The type that must be associated to this most specialized type.</param>
         /// <param name="k">The kind from the <see cref="CKTypeKindDetector"/>.</param>
         /// <param name="collector">The type collector.</param>
         internal void AddMultipleMapping( IActivityMonitor monitor, Type t, CKTypeKind k, CKTypeCollector collector )
@@ -276,10 +276,7 @@ namespace CK.Setup
             Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
             if( _multipleMappings == null ) _multipleMappings = new List<Type>();
             _multipleMappings.Add( t );
-            if( (k&(CKTypeKind.IsEndpointService|CKTypeKind.IsMarshallable)) != (CKTypeKind.IsEndpointService | CKTypeKind.IsMarshallable) )
-            {
-                collector.RegisterMultipleInterfaces( monitor, t, k, this );
-            }
+            collector.RegisterMultipleInterfaces( t, k, this );
         }
 
         /// <summary>

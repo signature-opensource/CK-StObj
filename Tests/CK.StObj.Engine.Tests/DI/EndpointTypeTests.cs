@@ -42,7 +42,7 @@ namespace CK.StObj.Engine.Tests.DI
         }
 
         [EndpointDefinition]
-        public abstract class NoWay1Definition : EndpointDefinition
+        public abstract class NoWay1Definition : BackdoorEndpointDefinition
         {
         }
 
@@ -51,12 +51,11 @@ namespace CK.StObj.Engine.Tests.DI
         {
         }
 
-
         [Test]
         public void EndpointDefinitions_cannot_be_specialized()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
-            TestHelper.GenerateCode( c1, null );
+            TestHelper.GetFailedResult( c1 );
             var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
             TestHelper.GetFailedResult( c2 );
         }

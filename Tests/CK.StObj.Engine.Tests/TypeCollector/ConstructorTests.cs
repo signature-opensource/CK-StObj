@@ -90,7 +90,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( TestHelper.Monitor, typeof( ServiceWithOneCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
-                c.ConstructorInfo.Should().NotBeNull();
                 Debug.Assert( c.ConstructorParameters != null );
                 c.ConstructorParameters.Should().HaveCount( 1 );
                 c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
@@ -102,7 +101,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( TestHelper.Monitor, typeof( ServiceWithDefaultCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
-                c.ConstructorInfo.Should().NotBeNull();
                 c.ConstructorParameters.Should().BeEmpty();
             }
             {
@@ -111,7 +109,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( TestHelper.Monitor, typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
-                c.ConstructorInfo.Should().BeNull();
                 c.ConstructorParameters.Should().BeEmpty();
             }
         }
@@ -154,7 +151,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             }
             r.AutoServices.RootClasses.Should().HaveCount( mode == "RegisteredDependentService" ? 2 : 1 );
             var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( Consumer1Service ) );
-            c.ConstructorInfo.Should().NotBeNull();
             c.ConstructorParameters.Should().HaveCount( 3 );
             Debug.Assert( c.ConstructorParameters != null );
             c.ConstructorParameters[0].Name.Should().Be( "normal" );

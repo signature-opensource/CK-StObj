@@ -224,7 +224,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         /// <summary>
-        /// This interface is NOT an IAutoService, just like IHostedService.
+        /// This interface is NOT a IAutoService, just like IHostedService.
         /// But it is declared as a AutoServiceKind.IsMultipleService.
         /// </summary>
         public interface IOfficialHostedService { }
@@ -236,7 +236,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void IsMutiple_works_on_external_interfaces_and_this_is_the_magic_for_IHostedService_auto_registering()
         {
-            // Here class HNot is a IOfficialHostedService but not an IAutoService and not explicitly registered: it is not automatically registered.
+            // Here class HNot is a IOfficialHostedService but not a IAutoService and not explicitly registered: it is not automatically registered.
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOfficialHostedService ), AutoServiceKind.IsMultipleService );

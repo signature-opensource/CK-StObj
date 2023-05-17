@@ -388,10 +388,9 @@ namespace CK.Setup
             readonly IAutoServiceKindComputeFacade _kindComputeFacade;
             readonly Dictionary<AutoServiceClassInfo, BuildClassInfo> _infos;
 
-            public FinalRegistrar(
-                IActivityMonitor monitor,
-                StObjObjectEngineMap engineMap,
-                IAutoServiceKindComputeFacade kindComputeFacade )
+            public FinalRegistrar( IActivityMonitor monitor,
+                                   StObjObjectEngineMap engineMap,
+                                   IAutoServiceKindComputeFacade kindComputeFacade )
             {
                 _monitor = monitor;
                 _engineMap = engineMap;
@@ -486,10 +485,10 @@ namespace CK.Setup
         /// </summary>
         /// <param name="typeResult">The Ambient types discovery result.</param>
         /// <returns>True on success, false on error.</returns>
-        bool RegisterServices( IActivityMonitor monitor, CKTypeCollectorResult typeResult )
+        bool ServiceFinalHandling( IActivityMonitor monitor, CKTypeCollectorResult typeResult )
         {
             var engineMap = typeResult.RealObjects.EngineMap;
-            using( monitor.OpenInfo( $"Service handling." ) )
+            using( monitor.OpenInfo( $"Services final handling." ) )
             {
                 try
                 {

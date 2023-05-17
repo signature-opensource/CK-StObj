@@ -2,29 +2,25 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Captures <see cref="EndpointServiceAvailabilityAttribute"/>, <see cref="EndpointSingletonServiceOwnerAttribute"/>,
-    /// <see cref="EndpointServiceTypeAvailabilityAttribute"/> and <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>
+    /// Captures <see cref="EndpointScopedServiceAttribute"/>, <see cref="EndpointSingletonServiceAttribute"/>,
+    /// <see cref="EndpointScopedServiceTypeAttribute"/> and <see cref="EndpointSingletonServiceTypeAttribute"/>
     /// attributes declaration.
     /// </summary>
-    sealed class CKTypeEndpointServiceInfo
+    public sealed class CKTypeEndpointServiceInfo
     {
         readonly Type _serviceType;
-        readonly List<Type> _endpoints;
-        Type? _owner;
-        bool _exclusive;
-        string? _lockedReason;
-        CKTypeKind _processedkind;
-
-        internal enum ExtendStatus
-        {
-            Full,
-            PromoteToExclusive,
-        }
+        // One of these is null.
+        readonly List<Type>? _scoped;
+        readonly List<(Type Definition, Type? Owner)>? _singletons;
+        // Final processed kind (may have CKTypeKind.HasError).
+        CKTypeKind _kind;
 
         /// <summary>
         /// Gets the type that is a endpoint service.
@@ -32,129 +28,102 @@ namespace CK.Setup
         public Type ServiceType => _serviceType;
 
         /// <summary>
-        /// Gets the <see cref="EndpointDefinition"/> owner if this service is a endpoint singleton.
+        /// Gets whether this is a scoped service.
         /// </summary>
-        public Type? Owner => _owner;
+        [MemberNotNullWhen( true, nameof( Scoped ) )]
+        [MemberNotNullWhen( false, nameof( Singletons ) )]
+        public bool IsScoped => _scoped != null;
 
         /// <summary>
-        /// Gets whether this service is a endpoint singleton that is exclusively owned by <see cref="Owner"/>.
+        /// Gets whether this is a singleton service.
         /// </summary>
-        public bool Exclusive => _exclusive;
+        [MemberNotNullWhen( true, nameof( Singletons ) )]
+        [MemberNotNullWhen( false, nameof( Scoped ) )]
+        public bool IsSingleton => _scoped == null;
 
         /// <summary>
-        /// Gets the set of endpoint type that expose this service.
+        /// Gets the endpoint types that expose this service as a scoped service (if <see cref="IsScoped"/> is true).
         /// </summary>
-        public IReadOnlyList<Type> Endpoints => _endpoints;
+        public IReadOnlyList<Type>? Scoped => _scoped;
 
-        internal CKTypeEndpointServiceInfo( Type serviceType, Type? owner, bool exclusive, List<Type> endpoints )
+        /// <summary>
+        /// Gets the endpoint types that expose this service as a singleton (if this service is singleton).
+        /// </summary>
+        public IReadOnlyList<(Type Definition, Type? Owner)>? Singletons => _singletons;
+
+        /// <summary>
+        /// Gets the type kind of <see cref="ServiceType"/>.
+        /// </summary>
+        public CKTypeKind Kind => _kind;
+
+        // New singleton.
+        internal CKTypeEndpointServiceInfo( Type serviceType, Type definition, Type? owner )
         {
-            Debug.Assert( owner == null || endpoints.Contains( owner ) );
-            Debug.Assert( !exclusive || owner != null, "exclusive => owner != null" );
+            Debug.Assert( owner == null || owner != definition, "null is the marker for owning definition." );
             _serviceType = serviceType;
-            _owner = owner;
-            _exclusive = exclusive;
-            _endpoints = endpoints;
+            _singletons = new List<(Type Definition, Type? Owner)>() { (definition, owner) };
         }
 
-        internal CKTypeEndpointServiceInfo( Type serviceType, CKTypeEndpointServiceInfo baseInfo )
+        // New scoped.
+        internal CKTypeEndpointServiceInfo( Type serviceType, Type definition )
         {
             _serviceType = serviceType;
-            _owner = baseInfo._owner;
-            _exclusive = baseInfo._exclusive;
-            _endpoints = new List<Type>( baseInfo._endpoints );
+            _scoped = new List<Type>() { definition };
         }
+
+        // Orphan constructor.
+        internal CKTypeEndpointServiceInfo( Type t, bool isScoped )
+        {
+            _serviceType = t;
+            if( isScoped ) _scoped = new List<Type>();
+            else _singletons = new List<(Type Definition, Type? Owner)>();
+        }
+
+        internal static ReadOnlySpan<char> DefinitionName( Type definition ) => definition.Name.AsSpan( 0, definition.Name.Length - 18 );
 
         internal void SetTypeProcessed( CKTypeKind processedKind )
         {
-            Debug.Assert( _processedkind == CKTypeKind.None );
-            Debug.Assert( (processedKind & CKTypeKind.EndpointProcessServiceMask) == CKTypeKind.EndpointProcessServiceMask );
-            _processedkind = processedKind;
+            Debug.Assert( _kind == CKTypeKind.None );
+            Debug.Assert( (processedKind & CKTypeKind.IsEndpointService) != 0 );
+            _kind = processedKind;
         }
 
-        internal bool HasBeenProcessed => _processedkind != 0;
+        internal bool HasBeenProcessed => _kind != 0;
 
-        internal bool IsLocked => _lockedReason != null;
-
-        internal void Lock( string reason ) => _lockedReason ??= reason;
-
-        internal bool CombineWith( IActivityMonitor monitor, Type? owner, bool exclusive, IReadOnlyList<Type> endpoints )
+        internal bool CombineScopedWith( IActivityMonitor monitor, Type definition )
         {
-            Debug.Assert( owner == null || endpoints.Contains( owner ) );
-            Debug.Assert( !exclusive || owner != null, "exclusive => owner != null" );
-            if( owner != null )
+            if( _scoped == null )
             {
-                if( _owner != null )
-                {
-                    if( _owner != owner )
-                    {
-                        monitor.Error( $"Singleton Endpoint service '{_serviceType}' is already owned by '{_owner.Name}', it cannot also be owned by {owner.Name}." );
-                        return false;
-                    }
-                    // Exclusive can only transition from false to true.
-                    if( Exclusive != exclusive )
-                    {
-                        _exclusive = true;
-                        if( exclusive )
-                        {
-                            if( HasBeenProcessed )
-                            {
-                                return ErrorTypeProcessed( monitor );
-                            }
-                            monitor.Warn( $"Singleton Endpoint service '{_serviceType}' owned by '{_owner.Name}' is now Exclusive." );
-                        }
-                        else
-                        {
-                            monitor.Warn( $"Singleton Endpoint service '{_serviceType}' is already exclusively owned by '{_owner.Name}'. The false exclusiveEndpoint is ignored." );
-                        }
-                    }
-                }
-                else
-                {
-                    if( HasBeenProcessed )
-                    {
-                        return ErrorTypeProcessed( monitor );
-                    }
-                    _owner = owner;
-                    _exclusive = exclusive;
-                }
+                monitor.Error( $"Endpoint service '{_serviceType}' has already been declared as a singleton, it cannot be scoped for '{DefinitionName(definition)}'." );
+                return false;
             }
-            foreach( Type type in endpoints )
-            {
-                if( !AddAvailableEndpointDefinition( monitor, type ) )  return false;
-            }
+            if( !_scoped.Contains( definition ) ) _scoped.Add( definition );
             return true;
         }
 
-        bool ErrorTypeProcessed( IActivityMonitor monitor )
+        internal bool CombineSingletonWith( IActivityMonitor monitor, Type definition, Type? owner )
         {
-            monitor.Error( $"Type '{_serviceType}' has been processed. Singleton ownership cannot be altered." );
-            return false;
-        }
-
-        internal bool AddAvailableEndpointDefinition( IActivityMonitor monitor, Type newEndpointDefinition )
-        {
-            if( !_endpoints.Contains( newEndpointDefinition ) )
+            Debug.Assert( owner == null || owner != definition, "null is the marker for owning definition." );
+            if( _singletons == null )
             {
-                if( _lockedReason != null )
-                {
-                    monitor.Error( $"Endpoint definition failed because: '{_lockedReason}': Extending Endpoint service '{_serviceType}' availability to '{newEndpointDefinition.Name}' endpoint is not possible." );
-                    return false;
-                }
-                _endpoints.Add( newEndpointDefinition );
+                monitor.Error( $"Endpoint service '{_serviceType}' has already been declared as a scoped, it cannot be singleton for '{DefinitionName( definition )}'." );
+                return false;
+            }
+            // We can coalesce the registrations here.
+            // First:
+            //  - If the exact same definition already exists, obviously we have nothing to do.
+            //  - If one exists with a null owner, whatever the specified owner is, it is weaker than the self owned declaration: we also
+            //    have nothing to do.
+            int existIdx = _singletons.IndexOf( e => e.Definition == definition && (e.Owner == owner || e.Owner == null) );
+            if( existIdx < 0 )
+            {
+                // No registration exists for this service OR some exist with another (not null) owner.
+                // - If the new owner is the null "absorbing" one, we clear all the previous bindings and add the definitive self owned registration.
+                // - Else, we append this new registration. At the end, if more than one binding exist, this will be an error.
+                if( owner == null ) _singletons.RemoveAll( e => e.Definition == definition );
+                _singletons.Add( (definition,owner) );
             }
             return true;
-        }
-
-        internal bool CombineWith( IActivityMonitor monitor, CKTypeEndpointServiceInfo baseInfo )
-        {
-            return CombineWith( monitor, baseInfo._owner, baseInfo._exclusive, baseInfo._endpoints );
-        }
-
-        internal void SetDefaultSingletonOwner()
-        {
-            Debug.Assert( _owner == null && !_exclusive && !HasBeenProcessed && _lockedReason == null );
-            _owner = typeof( DefaultEndpointDefinition );
-            if( !_endpoints.Contains( _owner ) ) _endpoints.Contains( _owner );
         }
     }
 
