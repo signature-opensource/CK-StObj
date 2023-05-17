@@ -82,7 +82,7 @@ namespace CK.Setup
         /// <summary>
         /// Tries to set or extend the availability of a service to an endpoint.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointAvailableServiceTypeAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointScopedServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -112,7 +112,7 @@ namespace CK.Setup
         /// <summary>
         /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -324,8 +324,8 @@ namespace CK.Setup
                 {
                     Debug.Assert( typeof( StObjGenAttribute ).Name == "StObjGenAttribute" );
                     Debug.Assert( typeof( ExcludeCKTypeAttribute ).Name == "ExcludeCKTypeAttribute" );
-                    Debug.Assert( typeof( EndpointAvailableServiceAttribute ).Name == "EndpointAvailableServiceAttribute" );
-                    Debug.Assert( typeof( EndpointSingletonServiceOwnerAttribute ).Name == "EndpointSingletonServiceOwnerAttribute" );
+                    Debug.Assert( typeof( EndpointScopedServiceAttribute ).Name == "EndpointAvailableServiceAttribute" );
+                    Debug.Assert( typeof( EndpointSingletonServiceAttribute ).Name == "EndpointSingletonServiceOwnerAttribute" );
                     Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                     Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                     Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );

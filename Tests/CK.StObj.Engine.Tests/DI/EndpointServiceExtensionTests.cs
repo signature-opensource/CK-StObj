@@ -20,12 +20,12 @@ namespace CK.StObj.Engine.Tests.DI
 
         // We allow IScopedAutoService for the lifetime. This is no more
         // a auto service because it is an endpoint service.
-        [EndpointAvailableService( typeof( DefaultEndpointDefinition ) )]
+        [EndpointScopedService( typeof( DefaultEndpointDefinition ) )]
         public interface IEPService1 : IScopedAutoService
         {
         }
 
-        [EndpointAvailableService( typeof( AnotherEndpointDefinition ) )]
+        [EndpointScopedService( typeof( AnotherEndpointDefinition ) )]
         public interface IEPService2 : IEPService1
         {
         }
@@ -52,10 +52,10 @@ namespace CK.StObj.Engine.Tests.DI
 
     public class ViolatingTrueSingletonRuleTests
     {
-        [EndpointSingletonServiceOwner( typeof( DefaultEndpointDefinition ), exclusive: false )]
+        [EndpointSingletonService( typeof( DefaultEndpointDefinition ), exclusive: false )]
         public interface ISomeService { }
 
-        [EndpointSingletonServiceOwner( typeof( AnotherEndpointDefinition ), exclusive: true )]
+        [EndpointSingletonService( typeof( AnotherEndpointDefinition ), exclusive: true )]
         public interface ISomeRefinedService : ISomeService { }
 
         // Test below simulates this attribute.

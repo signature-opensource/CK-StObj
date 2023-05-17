@@ -105,7 +105,7 @@ namespace CK.Setup
         /// <summary>
         /// Tries to set or extend the availability of a service to an endpoint.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointAvailableServiceTypeAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointScopedServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -125,7 +125,7 @@ namespace CK.Setup
         /// <summary>
         /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
         /// <para>
-        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>.
+        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeAttribute"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -203,13 +203,13 @@ namespace CK.Setup
                         {
                             // Before registering types, we must handle the assembly attributes 
                             // since once registered the Endpoint service info is often (not always) locked.
-                            foreach( var eA in a.GetCustomAttributes<EndpointAvailableServiceTypeAttribute>() )
+                            foreach( var eA in a.GetCustomAttributes<EndpointScopedServiceTypeAttribute>() )
                             {
                                 SetEndpointAvailableService( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
-                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
+                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeAttribute>() )
                             {
-                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointDefinition, eA.ExclusiveEndpoint );
+                                SetEndpointSingletonServiceOwner( monitor, eA.ServiceType, eA.EndpointDefinition, eA.Exclusive );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( a.GetTypes() );

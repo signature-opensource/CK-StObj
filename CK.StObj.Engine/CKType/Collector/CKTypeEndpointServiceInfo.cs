@@ -3,47 +3,22 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Captures <see cref="EndpointAvailableServiceAttribute"/>, <see cref="EndpointSingletonServiceOwnerAttribute"/>,
-    /// <see cref="EndpointAvailableServiceTypeAttribute"/> and <see cref="EndpointSingletonServiceTypeOwnerAttribute"/>
+    /// Captures <see cref="EndpointScopedServiceAttribute"/>, <see cref="EndpointSingletonServiceAttribute"/>,
+    /// <see cref="EndpointScopedServiceTypeAttribute"/> and <see cref="EndpointSingletonServiceTypeAttribute"/>
     /// attributes declaration.
     /// </summary>
     public sealed class CKTypeEndpointServiceInfo
     {
-        public enum EntryKind
-        {
-            Scoped,
-
-        }
-
-        /// <summary>
-        /// Captures a configuration entry.
-        /// </summary>
-        /// <param name="EndPoint">The endpoint in which this <see cref="ServiceType"/> is available.</param>
-        /// <param name="singletonExclusive">
-        /// <list type="bullet">
-        /// <item>
-        /// Null if <see cref="ServiceType"/> is scoped. All entries have necessarily also a null <paramref name="singletonExclusive"/>.
-        /// </item>
-        /// <item>
-        /// False if <see cref="ServiceType"/> is singleton and can be exposed by other <paramref name="EndPoint"/>.
-        /// 
-        /// </item>
-        /// </list>
-        /// Null if <see cref="ServiceType"/> is scoped in the <paramref name="EndPoint"/>,
-        /// </param>
-        public readonly record struct Entry( Type EndPoint, bool? singletonExclusive );
-
         readonly Type _serviceType;
-        readonly List<Entry> _entries;
-
-        readonly List<Type> _endpoints;
-        Type? _owner;
-        bool _exclusive;
-        string? _lockedReason;
+        // One of these is null.
+        readonly List<Type>? _scoped;
+        readonly List<(Type Definition, Type? Owner, bool Exclusive)>? _singletons;
+        // Final processed kind (may have CKTypeKind.HasError).
         CKTypeKind _kind;
 
         /// <summary>
@@ -52,44 +27,55 @@ namespace CK.Setup
         public Type ServiceType => _serviceType;
 
         /// <summary>
-        /// Gets the <see cref="EndpointDefinition"/> owner if this service is a endpoint singleton.
+        /// Gets whether this is a scoped service.
         /// </summary>
-        public Type? Owner => _owner;
+        public bool IsScoped => _scoped != null;
 
         /// <summary>
-        /// Gets whether this service is a endpoint singleton that is exclusively owned by <see cref="Owner"/>.
+        /// Gets whether this is a scoped service.
         /// </summary>
-        public bool Exclusive => _exclusive;
+        public bool IsSingleton => _scoped == null;
 
         /// <summary>
-        /// Gets the set of endpoint type that expose this service.
+        /// Gets the endpoint types that expose this service as a scoped service (if <see cref="IsScoped"/> is true).
         /// </summary>
-        public IReadOnlyList<Type> Endpoints => _endpoints;
+        public IReadOnlyList<Type>? Scoped => _scoped;
+
+        /// <summary>
+        /// Gets the endpoint types that expose this service as a singleton if this service is singleton.
+        /// </summary>
+        public IReadOnlyList<(Type Definition, Type? Owner, bool Exclusive)>? Singletons => _singletons;
 
         /// <summary>
         /// Gets the type kind of <see cref="ServiceType"/>.
         /// </summary>
-        public CKTypeKind Kind => _kind; 
+        public CKTypeKind Kind => _kind;
 
-        internal CKTypeEndpointServiceInfo( Type serviceType, Type? owner, bool exclusive, List<Type> endpoints )
+        // New singleton.
+        internal CKTypeEndpointServiceInfo( Type serviceType, Type definition, Type? owner, bool exclusive )
         {
-            Debug.Assert( owner == null || endpoints.Contains( owner ) );
             Debug.Assert( !exclusive || owner != null, "exclusive => owner != null" );
             _serviceType = serviceType;
-            _owner = owner;
-            _exclusive = exclusive;
-            _endpoints = endpoints;
+            _singletons = new List<(Type Definition, Type? Owner, bool Exclusive)>() { (definition, owner, exclusive) };
         }
 
-        /// <summary>
-        /// Orphan constructor.
-        /// </summary>
-        /// <param name="t">The service type.</param>
-        internal CKTypeEndpointServiceInfo( Type t )
+        // New scoped.
+        internal CKTypeEndpointServiceInfo( Type serviceType, Type definition )
+        {
+            _serviceType = serviceType;
+            _scoped = new List<Type>() { definition };
+        }
+
+        // Orphan constructor.
+        internal CKTypeEndpointServiceInfo( Type t, bool isScoped )
         {
             _serviceType = t;
-            _endpoints = new List<Type>();
+            if( isScoped ) _scoped = new List<Type>();
+            else _singletons = new List<(Type Definition, Type? Owner, bool Exclusive)>();
         }
+
+        static ReadOnlySpan<char> DefinitionName( Type definition ) => definition.Name.AsSpan( 0, definition.Name.Length - 18 );
+
 
         internal void SetTypeProcessed( CKTypeKind processedKind )
         {
@@ -100,9 +86,82 @@ namespace CK.Setup
 
         internal bool HasBeenProcessed => _kind != 0;
 
-        internal bool IsLocked => _lockedReason != null;
+        internal bool CombineWith( IActivityMonitor monitor, Type definition )
+        {
+            if( _scoped == null )
+            {
+                monitor.Error( $"Endpoint service '{_serviceType}' in has been declared as a singleton, it cannot be scoped for '{DefinitionName(definition)}'." );
+                return false;
+            }
+            if( !_scoped.Contains( definition ) ) _scoped.Add( definition );
+            return true;
+        }
 
-        internal void Lock( string reason ) => _lockedReason ??= reason;
+        internal bool CombineWith( IActivityMonitor monitor, Type definition, Type? owner, bool exclusive )
+        {
+            Debug.Assert( !exclusive || owner == null, "Exclusive => definition owns the service." );
+            if( _singletons == null )
+            {
+                monitor.Error( $"Endpoint service '{_serviceType}' has been declared as a scoped, it cannot be singleton for '{DefinitionName( definition )}'." );
+                return false;
+            }
+            // "Convergent configuration" implementation here.
+            // We want the final configuration to converge to the same result regardless of any difference in registration order.
+            // It means that we cannot take any decision based on this configuration state until the final result is built.
+            // A possible implementation is to capture all configurations and wait for the final resolution.
+            // 
+            // to be totally order independent 
+            // The mapping to a definition must be unique.
+            // If the definition is already registered, let's allow transitions that can be handled 
+            // - A previously borrowed registration (from another endpoint) can be replaced by a null: the
+            //   new registration states that the service is owned by the endpoint instead of being "stolen".
+            //   This is acceptable.
+            // - When owner is null, exclusive ownership can be strengthened: a previously exclusive: false (that is the default)
+            //   can be set to true.
+            int idx = _singletons.IndexOf( e => e.Definition == definition );
+            if( idx >= 0 )
+            {
+                var asArray = CollectionsMarshal.AsSpan( _singletons );
+                var exists = asArray[ idx ];
+                if( exists.Owner != owner )
+                {
+                    // Only allow null new owner if it differs.
+                    if( owner != null )
+                    {
+                        var ownedBy = exists.Owner != null ? $"'{DefinitionName( exists.Owner )}'" : "the definition itself";
+                        monitor.Error( $"Endpoint service '{_serviceType}' for '{DefinitionName( exists.Definition )}' is owned by {ownedBy}."
+                                       + $" It cannot also be owned by '{DefinitionName(owner)}'." );
+                        return false;
+                    }
+                    // Unconditionally accepts the exclusive that applies to the new owner.
+                    exists.Exclusive = exclusive;
+                    exists.Owner = owner;
+                }
+                else
+                {
+                    // Same owner. We cannot accept exclusive from true to false since we may have rejected bound registrations before.
+                    // We may accept the false to true, providing that we check all existing registrations.
+                    // BUT since we can change the owner, this check breaks convergence (behavior will differ depending on the registration ordering)
+                    // and we cannot accept that: we are stuck here: we cannot allow a change of ownership.
+                    var ownedBy = exists.Owner != null ? $"'{DefinitionName( exists.Owner )}'" : "the definition itself";
+                    monitor.Error( $"Endpoint service '{_serviceType}' for '{DefinitionName( exists.Definition )}' owned by {ownedBy} is exclusive,"
+                                    + $" it cannot be set to non exclusive." );
+                    return false;
+                }
+
+            }
+
+
+                // If a owner is specified, and this owner has already been registered, we check that it allows sharing.
+                if( owner == null )
+            {
+                if( _singletons.Any( e => e.Definition == owner && e.Owner == null && e.Exclusive ) )
+                {
+
+                }
+            }
+            _singletons.Add( (definition, owner, exclusive) );
+        }
 
         internal bool CombineWith( IActivityMonitor monitor, Type? owner, bool exclusive, IReadOnlyList<Type> endpoints )
         {

@@ -12,7 +12,7 @@ namespace CK.StObj.Engine.Tests.Service
     {
 
 
-        [EndpointAvailableService( typeof(DefaultEndpointDefinition) )]
+        [EndpointScopedService( typeof(DefaultEndpointDefinition) )]
         public interface IEndpointService1 : IScopedAutoService
         {
         }
@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests.Service
             map.Services.SimpleMappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse();
         }
 
-        [EndpointAvailableService( typeof( DefaultEndpointDefinition ) )]
+        [EndpointScopedService( typeof( DefaultEndpointDefinition ) )]
         public class Impossible0 : IRealObject
         {
         }

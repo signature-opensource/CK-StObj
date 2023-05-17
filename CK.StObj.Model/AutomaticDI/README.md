@@ -296,10 +296,28 @@ cannot state that YetAnotherEndpointDefinition wants to expose the `ISomeService
 
 It is better to rethink the attribute a little bit now that we have accepted "how much" endpoint services are not auto services
 (but at least settle the service's lifetime). Attributes should clearly express the lifetime and singleton attributes should
-express the owns vs. reuses from another endpoint aspect.
+express the "owns vs. reuses (as a kind of fallback) from another endpoint" aspect.
+
+This is the opportunity to question the "exclusive" aspect. Since we are "into the wild", this declarative aspect is a bit of an
+alien in the new landscape. Moreover, this simple boolean breaks (or at least imply questionable choices) a feature that is now
+possible for endpoint configuration: convergence.
+
+This part of the (not so) Automatic DI configuration can be totally independent of the registration order. Convergence (that can
+be seen as a kind of "Super Idempotence") is always a good thing, it annihilates any risk of misbehavior following a change in
+the architecture. We only have to decide how multiple configurations coalesce into the final one:
+- When multiple owners exist for a service type in one endpoint definition:
+  - If a null is in the candidates, it wins: the fact that a endpoint owns a service is stronger than reusing/exposing the service
+    managed by another endpoint.
+  - If there's no null in the candidates, this is an error.
+
+And that's it. This simple combination rule is enough. Supporting the "exclusive" here can be done but this flag will lose nearly
+all of its interest since a "true" can be replaced by a "false" (and vice-versa) depending on how you consider the "coalescing" of
+the configuration.
+
+Let's remove it. This lead us to the 2 following attributes:
 - `[EndpointScopedService( Type endpointDefinition )]` is enough for scoped services.
 - For singletons, a single attribute with 2 constructors can do the job:
-  - `[EndpointSingletonService( Type ownerEndpointDefinition, bool exclusive = false )]` defines a "regular" implementation
+  - `[EndpointSingletonService( Type ownerEndpointDefinition )]` defines a "regular" implementation
     by a owning endpoint.
   - `[EndpointSingletonService( Type endpointDefinition, Type ownerEndpointDefinition )]` defines a "reuse", a binding, to
     the singleton owned by another endpoint.
