@@ -128,6 +128,14 @@ namespace CK.Setup
         }
 
         /// <summary>
+            {
+                return true;
+            }
+            ++_registerFatalOrErrorCount;
+            return false;
+        }
+
+        /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination for a type: the type is always resolved (<see cref="SimpleTypeFinder.WeakResolver"/>).
         /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
         /// cannot be a Front service).
