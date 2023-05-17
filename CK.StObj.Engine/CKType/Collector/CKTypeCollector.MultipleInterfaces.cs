@@ -213,7 +213,7 @@ namespace CK.Setup
 
         MultipleImpl? IAutoServiceKindComputeFacade.GetMultipleInterfaceDescriptor( Type enumeratedType ) => _multipleMappings.GetValueOrDefault( enumeratedType );
 
-        internal void RegisterMultipleInterfaces( Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
+        internal void RegisterMultipleInterfaces( IActivityMonitor monitor, Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
         {
             if( !_multipleMappings.TryGetValue( tAbstraction, out var multiple ) )
             {

@@ -9,7 +9,6 @@ namespace CK.Core
     [CKTypeDefiner]
     public abstract class EndpointDefinition : IRealObject
     {
-
     }
 
 }

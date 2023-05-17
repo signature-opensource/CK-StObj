@@ -122,7 +122,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( ObjInvalid ) );
-                TestHelper.GetFailedResult( collector, "IRealObject interface cannot be an IAutoService (type is an interface)." );
+                TestHelper.GetFailedResult( collector, "IRealObject interface cannot be a IAutoService (type is an interface)." );
             }
         }
 

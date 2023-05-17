@@ -128,7 +128,7 @@ namespace CK.Setup
         public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
-            return _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition, exclusiveEndpoint );
+            return _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition, ownerEndpointDefinition );
         }
 
         /// <summary>

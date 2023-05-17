@@ -348,21 +348,15 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void propagation_through_an_intermediate_service_1()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknown ) );
-            collector.RegisterType( typeof( OneSingleton ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( Scoped ), typeof( Unknown ), typeof( OneSingleton ) );
 
-            TestHelper.GetFailedResult( collector );
+            TestHelper.GetFailedResult( collector, "OneSingleton' is marked as IsSingleton but parameter 'dep' of type 'IUnknown' in constructor is Scoped." );
         }
 
         [Test]
         public void propagation_through_an_intermediate_service_2()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknown ) );
-            collector.RegisterType( typeof( ServiceFreeLifetime ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( Scoped ), typeof( Unknown ), typeof( ServiceFreeLifetime ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );

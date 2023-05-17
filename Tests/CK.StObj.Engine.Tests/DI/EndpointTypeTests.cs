@@ -55,9 +55,9 @@ namespace CK.StObj.Engine.Tests.DI
         public void EndpointDefinitions_cannot_be_specialized()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
-            TestHelper.GetFailedResult( c1 );
+            TestHelper.GetFailedResult( c1 , "NoWay1Definition' cannot specialize another EndpointDefinition." );
             var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
-            TestHelper.GetFailedResult( c2 );
+            TestHelper.GetFailedResult( c2 , "plouf");
         }
 
     }

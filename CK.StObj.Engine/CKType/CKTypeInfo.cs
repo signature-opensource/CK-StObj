@@ -276,7 +276,7 @@ namespace CK.Setup
             Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
             if( _multipleMappings == null ) _multipleMappings = new List<Type>();
             _multipleMappings.Add( t );
-            collector.RegisterMultipleInterfaces( t, k, this );
+            collector.RegisterMultipleInterfaces( monitor, t, k, this );
         }
 
         /// <summary>

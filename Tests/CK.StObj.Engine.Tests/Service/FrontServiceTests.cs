@@ -24,8 +24,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Endpoint_service_are_not_registered_as_auto_service()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( EndpointService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -46,14 +45,12 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_Endpoint_or_Process_services()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
+                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a Endpoint or Process service (type is a class)." );
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( Impossible1 ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );
+                TestHelper.GetFailedResult( collector , "RealObject cannot be a Endpoint or Process service (type is a class)." );
             }
         }
 
@@ -65,9 +62,9 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_externally_defined_as_Process_services()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
-            collector.RegisterType( typeof( RealObjectAndAutoService ) );
-            TestHelper.GetFailedResult( collector );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
+            collector.RegisterType( TestHelper.Monitor, typeof( RealObjectAndAutoService ) );
+            TestHelper.GetFailedResult( collector, "RealObjectAndAutoService' is already registered as a 'IsAutoService|IsSingleton|IsRealObject [IsMarkerInterface]'. It can not be defined as IsProcessService [ProcessService:External]." );
         }
 
         public class EndpointDependentService1 : IAutoService
@@ -80,9 +77,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Endpoint_services_only_propagate_their_lifetime_1()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( EndpointService1 ) );
-            collector.RegisterType( typeof( EndpointDependentService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ), typeof( EndpointDependentService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
@@ -105,10 +100,9 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void Endpoint_services_only_propagate_their_lifetime_2()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( FrontDependentService2 ) );
-            collector.RegisterType( typeof( EndpointDependentService1 ) );
-            collector.RegisterType( typeof( EndpointService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( FrontDependentService2 ),
+                                                             typeof( EndpointDependentService1 ),
+                                                             typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
