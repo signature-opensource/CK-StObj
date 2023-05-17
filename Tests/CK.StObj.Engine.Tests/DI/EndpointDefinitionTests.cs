@@ -60,5 +60,29 @@ namespace CK.StObj.Engine.Tests.DI
             TestHelper.GetFailedResult( c2 );
         }
 
+
+        [EndpointDefinition]
+        public abstract class BadNameDefinition : EndpointDefinition
+        {
+        }
+
+        [Test]
+        public void EndpointDefinition_type_name_matters()
+        {
+            const string msg = "Invalid EndpointDefinition type 'EndpointDefinitionTests.BadNameDefinition': "
+                               + "EndpointDefinition type name must end with \"EndpointDefinition\" (the prefix becomes the simple endpoint name).";
+
+            var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
+            TestHelper.GetFailedResult( c1 );
+
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
+            {
+                var c2 = TestHelper.CreateStObjCollector();
+                c2.SetEndpointScopedService( TestHelper.Monitor, typeof( IActivityMonitor ), typeof( BadNameDefinition ) )
+                    .Should().BeFalse();
+                logs.Should().Contain( msg );
+            }
+        }
+
     }
 }

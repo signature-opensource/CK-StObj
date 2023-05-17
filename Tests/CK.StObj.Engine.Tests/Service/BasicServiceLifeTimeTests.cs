@@ -25,10 +25,9 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void class_scope_simple_tests()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SimpleClassSingleton ) );
-            collector.RegisterType( typeof( SimpleClassScoped ) );
-            collector.RegisterType( typeof( SimpleClassAmbient ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassSingleton ),
+                                                             typeof( SimpleClassScoped ),
+                                                             typeof( SimpleClassAmbient ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
@@ -42,8 +41,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_class_with_both_scopes_is_an_error()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( BuggyDoubleScopeClassAmbient ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( BuggyDoubleScopeClassAmbient ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 1 );
             TestHelper.GetFailedResult( collector );
         }
@@ -58,9 +56,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_singleton_that_depends_on_scoped_is_an_error()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SimpleClassScoped ) );
-            collector.RegisterType( typeof( LifetimeErrorClassAmbientBecauseOfScoped ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassScoped ),
+                                                             typeof( LifetimeErrorClassAmbientBecauseOfScoped ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             TestHelper.GetFailedResult( collector );
         }
@@ -75,10 +72,9 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void a_singleton_that_depends_on_an_unknwon_external_is_not_possible()
+        public void a_singleton_that_depends_on_an_unknown_external_is_not_possible()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( LifetimeOfExternalBoostToSingleton ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( LifetimeOfExternalBoostToSingleton ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             TestHelper.GetFailedResult( collector );
         }
@@ -111,9 +107,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_singleton_that_depends_on_singleton()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SimpleClassSingleton ) );
-            collector.RegisterType( typeof( SingletonThatDependsOnSingleton ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassSingleton ),
+                                                             typeof( SingletonThatDependsOnSingleton ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             TestHelper.GetSuccessfulResult( collector );
         }
@@ -128,9 +123,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_auto_service_that_depends_only_on_singleton_is_singleton()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SimpleClassSingleton ) );
-            collector.RegisterType( typeof( AmbientThatDependsOnSingleton ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassSingleton ),
+                                                             typeof( AmbientThatDependsOnSingleton ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
@@ -144,8 +138,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_auto_service_that_depends_on_nothing_is_singleton()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( AmbientThatDependsOnNothing ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( AmbientThatDependsOnNothing ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
@@ -163,8 +156,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void an_auto_service_that_depends_on_an_external_service_is_Scoped()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( AmbientThatDependsOnExternal ) );
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
@@ -380,16 +372,13 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void propagation_through_an_intermediate_service_2()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknown ) );
-            collector.RegisterType( typeof( ServiceFreeLifetime ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( Scoped ),
+                                                             typeof( Unknown ),
+                                                             typeof( ServiceFreeLifetime ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
         }
-
-
     }
 }
