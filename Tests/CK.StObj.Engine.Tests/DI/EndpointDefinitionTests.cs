@@ -55,9 +55,11 @@ namespace CK.StObj.Engine.Tests.DI
         public void EndpointDefinitions_cannot_be_specialized()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
-            TestHelper.GetFailedResult( c1 , "NoWay1Definition' cannot specialize another EndpointDefinition." );
+            TestHelper.GetFailedResult( c1 , "EndpointDefinition type 'EndpointDefinitionTests.NoWay1Definition' must directly specialize "
+                                             + "EndpointDefinition (base type is 'EndpointDefinitionTests.BackdoorEndpointDefinition')." );
             var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
-            TestHelper.GetFailedResult( c2 , "plouf");
+            TestHelper.GetFailedResult( c2 , "EndpointDefinition type 'EndpointDefinitionTests.NoWay2Definition' must directly specialize "
+                                             + "EndpointDefinition (base type is 'DefaultEndpointDefinition')." );
         }
 
 
@@ -73,7 +75,7 @@ namespace CK.StObj.Engine.Tests.DI
                                + "EndpointDefinition type name must end with \"EndpointDefinition\" (the prefix becomes the simple endpoint name).";
 
             var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
-            TestHelper.GetFailedResult( c1 );
+            TestHelper.GetFailedResult( c1, msg );
 
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {

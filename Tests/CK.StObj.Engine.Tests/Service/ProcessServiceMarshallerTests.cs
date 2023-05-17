@@ -159,9 +159,9 @@ namespace CK.StObj.Engine.Tests.Service
         public void real_objects_cannot_be_externally_defined_as_Process_services()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
-            collector.RegisterType( typeof( RealObjectAndAutoService ) );
-            TestHelper.GetFailedResult( collector );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
+            collector.RegisterType( TestHelper.Monitor, typeof( RealObjectAndAutoService ) );
+            TestHelper.GetFailedResult( collector, "RealObject cannot be a Endpoint or Process service (type is a class)." );
         }
 
     }
