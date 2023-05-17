@@ -68,7 +68,7 @@ It seems that we need either:
 
 Our need is NOT a multi-tenant management (like Orchard does). Our application is ONE application, an homogeneous
 Party that interacts with other parties. The DI we need is about Endpoints that connect the Application to the external
-world. We also want "Dynamic Endpoint" (endpoints can appear and disappear dynamically).
+world. We also want "Dynamic Endpoints" (endpoints can appear and disappear dynamically).
 What we have so far:
 - A Endpoint always creates a Scope to do its job (this is what does ASPNet for each HTTP request).
 - There is no issue about regular scoped services and regular singletons (true singletons) but we would like
@@ -80,10 +80,10 @@ What we have so far:
        scoped ones. For the scoped services, it is the responsibility of the endpoint to provide potentially configured
        service instances based on its configuration and/or the external world it is dealing with (a `IMQTTCallerInfo` scoped
        service can expose a RemoteAddress property for instance).
-- The "EndpointDefinition" is a perfect candidate to be a IRealObject that can give access to the IServiceProvider that must be used
-  by any of its endpoint instance (so that a Scope can be created from it).
+- The "EndpointDefinition" is a perfect candidate to be a IRealObject that can give access to the IServiceProvider (or a factory of)
+  that must be used by any of its endpoint instance (so that a Scope can be created from it).
 
-### Using the .Net "Conformant DI".
+### Using the .Net "Conformant DI": a journey to "Endpoint Services" implementation
 
 We decided to reuse the Microsoft DI container (and its philosophy). The issue now is to
 handle the configuration of these DI container and/vs. the "global/primary DI" that .Net Core hosts uses.
@@ -130,8 +130,8 @@ The idea of the process should look like:
   the Global DI won't be able to resolve these types.
 
 We must now consider the EndpointDefinition container initialization. To rely/reuse the Conformant DI infrastructure, we must
-reason only in terms of ServiceCollection configuration. Each container will be obtained through the BuildServiceProvider()
-method: once built, the container is sealed, it cannot be altered.
+reason only in terms of ServiceCollection configuration. Each container will be obtained through the `IServiceCollection.BuildServiceProvider()`
+extension method: once built, the container is sealed, it cannot be altered.
 
 A EndpointDefinition container must be able to return singletons:
  - from the global DI if the type is not a IsEndPointService or is a IsEndPointService that is not "specific".
@@ -145,7 +145,7 @@ And scoped services:
 Actually, singletons are also "parametrized" by the EndpointDefinition itself and this raises a question about a singleton shared 
 by 2 or more endpoints: somehow, the one who's in charge of its initialization "wins", the other ones have nothing to say about
 the properties/configuration of the service (necessarily stable because it's a singleton). This is problematic: we cannot
-trust the developer to ensure the coherency of different singleton initialization, it must be the same "by design", initialized
+trust the developer to ensure the coherency of different singleton initialization, it should be the same "by design", initialized
 by one and only one EndpointDefinition. Following this path leads to a simple conclusion: the "Global DI" is a container like the
 others, nothing makes it "special" or more "global" than any EndpointDefinition's container. However, if the "WebEndpointDefinition" exists,
 it is unfortunately not exactly the same as the other ones because its container is managed "above", by the application host
@@ -274,7 +274,7 @@ endpoint service:
 
 And that's all. For instance, this is legit:
 ```csharp
-[EndpointSingletonServiceOwner( typeof(DefaultEndpointDefinition), exclusive: true )]
+[EndpointSingletonServiceOwner( typeof(DefaultEndpointDefinition), exclusive: false )]
 public interface ISomeService { ... } 
 
 [EndpointSingletonServiceOwner( typeof(AnotherEndpointDefinition), exclusive: true )]
@@ -284,8 +284,30 @@ public interface ISomeRefinedService : ISomeService { ... }
 ```
 
 The `ISomeService` is a singleton (at least this cannot be changed by `ISomeRefinedService`), but `ISomeRefinedService` is
-a different singleton (a different instance) in AnotherEndpointDefinition that also expose `ISomeService`. This example is 
-a workaround of the "golden rule of true singleton"...
+a different singleton (a different instance) in AnotherEndpointDefinition that also expose the `ISomeService` **from** Default.
+The `ISomeRefinedService` is split in two: its base part implementation is provided by the singleton in Default and its
+specialized part is provided by the instance in Another. This is "normal" in the standard DI world. Some developers/architects
+may call this a feature, for us it is a recipe for disaster.
+
+This example raises a question about the name and semantics of the `EndpointAvailableService` attribute: it doesn't express
+the lifetime and, after some tests, this definitely introduces an ambiguity. Also, a serious issue appears in the previous example:
+we have here 2 instances of the `ISomeService` (one implementation in Default and one in Another) and the current set of attributes
+cannot state that YetAnotherEndpointDefinition wants to expose the `ISomeService` of `Default` (rather than the one in Another). 
+
+It is better to rethink the attribute a little bit now that we have accepted "how much" endpoint services are not auto services
+(but at least settle the service's lifetime). Attributes should clearly express the lifetime and singleton attributes should
+express the owns vs. reuses from another endpoint aspect.
+- `[EndpointScopedService( Type endpointDefinition )]` is enough for scoped services.
+- For singletons, a single attribute with 2 constructors can do the job:
+  - `[EndpointSingletonService( Type ownerEndpointDefinition, bool exclusive = false )]` defines a "regular" implementation
+    by a owning endpoint.
+  - `[EndpointSingletonService( Type endpointDefinition, Type ownerEndpointDefinition )]` defines a "reuse", a binding, to
+    the singleton owned by another endpoint.
+
+The dual constructor can may be easily overlooked but introducing a `EndpointSingletonServiceOwner`
+and a `EndpointSingletonServiceFrom` (or `Reused`, `Binding`, `OwnedBy`, etc.) seems overkill: this part of the API is not
+for mundane developers. 
+
 
 
 

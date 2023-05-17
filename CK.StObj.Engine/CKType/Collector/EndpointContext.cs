@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,7 +38,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the singletons service type exposed by this service mapped to their owner.
-        /// When the owner is null, this context is in charge of creating the service.
+        /// When the owner is null, it is this context that is in charge of the service.
         /// </summary>
         public IReadOnlyList<(Type Service, EndpointContext? Owner)> SingletonServices => _singletons;
 

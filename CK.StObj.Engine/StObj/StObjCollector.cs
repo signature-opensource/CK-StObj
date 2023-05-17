@@ -112,9 +112,9 @@ namespace CK.Setup
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointServiceAvailability( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
+        public bool SetEndpointAvailableService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
-            if( _cc.KindDetector.SetEndpointServiceAvailability( monitor, serviceType, endpointDefinition ) )
+            if( _cc.KindDetector.SetEndpointAvailableService( monitor, serviceType, endpointDefinition ) )
             {
                 return true;
             }
@@ -131,11 +131,11 @@ namespace CK.Setup
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <param name="exclusiveEndpoint">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointDefinition"/>.</param>
+        /// <param name="exclusive">True to exclusively expose the <paramref name="serviceType"/> from the <paramref name="endpointDefinition"/>.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, bool exclusiveEndpoint )
+        public bool SetEndpointSingletonServiceOwner( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, bool exclusive = false )
         {
-            if( _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointDefinition, exclusiveEndpoint ) )
+            if( _cc.KindDetector.SetEndpointSingletonServiceOwner( monitor, serviceType, endpointDefinition, exclusive ) )
             {
                 return true;
             }
@@ -205,7 +205,7 @@ namespace CK.Setup
                             // since once registered the Endpoint service info is often (not always) locked.
                             foreach( var eA in a.GetCustomAttributes<EndpointAvailableServiceTypeAttribute>() )
                             {
-                                SetEndpointServiceAvailability( monitor, eA.ServiceType, eA.EndpointDefinition );
+                                SetEndpointAvailableService( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
                             foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeOwnerAttribute>() )
                             {

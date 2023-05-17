@@ -13,7 +13,33 @@ namespace CK.Setup
     /// </summary>
     public sealed class CKTypeEndpointServiceInfo
     {
+        public enum EntryKind
+        {
+            Scoped,
+
+        }
+
+        /// <summary>
+        /// Captures a configuration entry.
+        /// </summary>
+        /// <param name="EndPoint">The endpoint in which this <see cref="ServiceType"/> is available.</param>
+        /// <param name="singletonExclusive">
+        /// <list type="bullet">
+        /// <item>
+        /// Null if <see cref="ServiceType"/> is scoped. All entries have necessarily also a null <paramref name="singletonExclusive"/>.
+        /// </item>
+        /// <item>
+        /// False if <see cref="ServiceType"/> is singleton and can be exposed by other <paramref name="EndPoint"/>.
+        /// 
+        /// </item>
+        /// </list>
+        /// Null if <see cref="ServiceType"/> is scoped in the <paramref name="EndPoint"/>,
+        /// </param>
+        public readonly record struct Entry( Type EndPoint, bool? singletonExclusive );
+
         readonly Type _serviceType;
+        readonly List<Entry> _entries;
+
         readonly List<Type> _endpoints;
         Type? _owner;
         bool _exclusive;
@@ -55,12 +81,14 @@ namespace CK.Setup
             _endpoints = endpoints;
         }
 
-        internal CKTypeEndpointServiceInfo( Type serviceType, CKTypeEndpointServiceInfo baseInfo )
+        /// <summary>
+        /// Orphan constructor.
+        /// </summary>
+        /// <param name="t">The service type.</param>
+        internal CKTypeEndpointServiceInfo( Type t )
         {
-            _serviceType = serviceType;
-            _owner = baseInfo._owner;
-            _exclusive = baseInfo._exclusive;
-            _endpoints = new List<Type>( baseInfo._endpoints );
+            _serviceType = t;
+            _endpoints = new List<Type>();
         }
 
         internal void SetTypeProcessed( CKTypeKind processedKind )
@@ -119,7 +147,7 @@ namespace CK.Setup
             }
             foreach( Type type in endpoints )
             {
-                if( !AddAvailableEndpointDefinition( monitor, type ) )  return false;
+                if( !AddAvailableEndpointDefinition( monitor, type ) ) return false;
             }
             return true;
         }
