@@ -91,7 +91,7 @@ namespace CK.Setup
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
         public bool SetEndpointScopedService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
-            CheckEndpointServiceParameters( serviceType, endpointDefinition );
+            if( !CheckEndpointServiceParameters( monitor, serviceType, endpointDefinition ) ) return false;
             if( _endpointServices.TryGetValue( serviceType, out var exists ) )
             {
                 return exists.CombineScopedWith( monitor, endpointDefinition );
@@ -116,9 +116,12 @@ namespace CK.Setup
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
         public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
         {
-            CheckEndpointServiceParameters( serviceType, endpointDefinition );
-            Throw.CheckArgument( ownerEndpointDefinition == null
-                                 || (typeof( EndpointDefinition ).IsAssignableFrom( ownerEndpointDefinition ) && ownerEndpointDefinition != typeof( EndpointDefinition )) );
+            if( !CheckEndpointServiceParameters( monitor, serviceType, endpointDefinition ) ) return false;
+            if( ownerEndpointDefinition != null
+                && !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, ownerEndpointDefinition ) )
+            {
+                return false;
+            }
             // The null is the marker.
             if( ownerEndpointDefinition == endpointDefinition ) ownerEndpointDefinition = null;
             if( _endpointServices.TryGetValue( serviceType, out var exists ) )
@@ -132,13 +135,19 @@ namespace CK.Setup
             return true;
         }
 
-        static void CheckEndpointServiceParameters( Type serviceType, Type endpointDefinition )
+        static bool CheckEndpointServiceParameters( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
             Throw.CheckNotNullArgument( serviceType );
-            Throw.CheckArgument( (serviceType.IsInterface || serviceType.IsClass)
-                                 && (serviceType.IsPublic || serviceType.IsNestedPublic) 
-                                 && !typeof( IRealObject ).IsAssignableFrom( serviceType ) );
-            Throw.CheckArgument( typeof( EndpointDefinition ).IsAssignableFrom( endpointDefinition ) && endpointDefinition != typeof( EndpointDefinition ) );
+            Throw.CheckNotNullArgument( endpointDefinition );
+            bool isValidType = (serviceType.IsInterface || serviceType.IsClass)
+                               && (serviceType.IsPublic || serviceType.IsNestedPublic)
+                               && !typeof( IRealObject ).IsAssignableFrom( serviceType );
+            if( !isValidType )
+            {
+                monitor.Error( $"Invalid EndpointType declaration: service type '{serviceType:C}' must be a public class or interface and not a IRealObject." );
+                return false;
+            }
+            return CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, endpointDefinition );
         }
 
         /// <summary>
@@ -601,12 +610,12 @@ namespace CK.Setup
                 monitor.Error( $"Invalid [EndpointScopedService( Type endpointDefinition )] on '{t:C}': expected a single argument (got {args.Count})." );
                 return false;
             }
-            if( args[0].Value is not Type tEndpointDefinition
-                || !typeof( EndpointDefinition ).IsAssignableFrom( tEndpointDefinition ) )
+            if( args[0].Value is not Type tEndpointDefinition )
             {
-                monitor.Error( $"Invalid [EndpointScopedService( Type endpointDefinition )] on '{t:C}': the endpointDefinition must be a EndpointDefinition (got '{args[0].Value}')." );
+                monitor.Error( $"Invalid [EndpointScopedService( Type endpointDefinition )] on '{t:C}': the endpointDefinition must be a EndpointDefinition type (got '{args[0].Value}')." );
                 return false;
             }
+            if( !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, tEndpointDefinition ) ) return false;
             if( final != null )
             {
                 if( !final.CombineScopedWith( monitor, tEndpointDefinition ) )
@@ -632,22 +641,22 @@ namespace CK.Setup
                 monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': expected 2 arguments (got {args.Count})." );
                 return false;
             }
-            if( args[0].Value is not Type tEndpointDefinition
-                || !typeof( EndpointDefinition ).IsAssignableFrom( tEndpointDefinition ) )
+            if( args[0].Value is not Type tEndpointDefinition )
             {
-                monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': first argument must be a EndpointDefinition (got '{args[0].Value}')." );
+                monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': first argument must be a EndpointDefinition type (got '{args[0].Value}')." );
                 return false;
             }
+            if( !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, tEndpointDefinition ) ) return false;
             Type? owner = null;
             var oArg = args[1].Value;
             if( oArg != null )
             {
-                if( oArg is not Type tOwner
-                    || !typeof( EndpointDefinition ).IsAssignableFrom( tOwner ) )
+                if( oArg is not Type tOwner )
                 {
-                    monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': second argument must be a EndpointDefinition (got '{oArg}')." );
+                    monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': second argument must be a EndpointDefinition type (got '{oArg}')." );
                     return false;
                 }
+                if( !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, tOwner ) ) return false;
                 owner = tOwner;
             }
             if( final != null )

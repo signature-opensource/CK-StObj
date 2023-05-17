@@ -39,9 +39,9 @@ namespace CK.StObj.Engine.Tests.Service
         {
         }
 
-        // A FrontProcessService can be singleton or scoped.
+        // A ProcessService can be singleton or scoped.
         [Test]
-        public void registering_a_Frontservice_with_its_AutoService_Marshaller_makes_it_marshallable()
+        public void registering_a_Processservice_with_its_AutoService_Marshaller_makes_it_marshallable()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ProcessService1 ), typeof( MService1 ) );
 
@@ -149,5 +149,20 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
             map.Services.SimpleMappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
         }
+
+
+        public class RealObjectAndAutoService : IRealObject, IAutoService
+        {
+        }
+
+        [Test]
+        public void real_objects_cannot_be_externally_defined_as_Process_services()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.SetAutoServiceKind( typeof( RealObjectAndAutoService ), AutoServiceKind.IsProcessService );
+            collector.RegisterType( typeof( RealObjectAndAutoService ) );
+            TestHelper.GetFailedResult( collector );
+        }
+
     }
 }

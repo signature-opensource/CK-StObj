@@ -13,7 +13,7 @@ namespace CK.Setup
     /// <see cref="EndpointScopedServiceTypeAttribute"/> and <see cref="EndpointSingletonServiceTypeAttribute"/>
     /// attributes declaration.
     /// </summary>
-    public sealed class CKTypeEndpointServiceInfo
+    public sealed partial class CKTypeEndpointServiceInfo
     {
         readonly Type _serviceType;
         // One of these is null.
@@ -78,8 +78,6 @@ namespace CK.Setup
             if( isScoped ) _scoped = new List<Type>();
             else _singletons = new List<(Type Definition, Type? Owner)>();
         }
-
-        internal static ReadOnlySpan<char> DefinitionName( Type definition ) => definition.Name.AsSpan( 0, definition.Name.Length - 18 );
 
         internal void SetTypeProcessed( CKTypeKind processedKind )
         {

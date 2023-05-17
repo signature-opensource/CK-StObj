@@ -61,11 +61,6 @@ namespace CK.Setup
             {
                 if( (lt & CKTypeKind.IsExcludedType) == 0 )
                 {
-                    //Debug.Assert( lt == CKTypeKind.IsAutoService
-                    //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
-                    //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped),
-                    //              "This interface cannot be something else, even an Endpoint service." );
-
                     var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false, _alsoRegister );
                     info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( monitor, t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;

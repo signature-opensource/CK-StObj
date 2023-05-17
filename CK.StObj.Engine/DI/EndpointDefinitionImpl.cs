@@ -14,9 +14,9 @@ namespace CK.Setup
     {
         readonly EndpointDefinitionAttribute _attr;
 
-        public EndpointDefinitionImpl( Type owner, EndpointDefinitionAttribute attr )
+        public EndpointDefinitionImpl( IActivityMonitor monitor, Type decorated, EndpointDefinitionAttribute attr )
         {
-            if( owner.BaseType != typeof( EndpointDefinition ) ) Throw.InvalidOperationException( $"Endpoint definition '{owner}' cannot specialize another EndpointDefinition." );
+            CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, decorated );
             _attr = attr;
         }
 

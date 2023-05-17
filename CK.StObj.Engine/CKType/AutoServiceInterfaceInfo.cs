@@ -13,7 +13,7 @@ namespace CK.Setup
     /// service type is like removing the <see cref="IAutoService"/> interface marker from
     /// its interfaces) and has at least one implementation that <see cref="AutoServiceClassInfo.IsIncluded"/>.
     /// </summary>
-    public class AutoServiceInterfaceInfo
+    public sealed class AutoServiceInterfaceInfo
     {
         /// <summary>
         /// The interface type.
@@ -67,9 +67,6 @@ namespace CK.Setup
 
         internal AutoServiceInterfaceInfo( TypeAttributesCache type, CKTypeKind lt, IEnumerable<AutoServiceInterfaceInfo> baseInterfaces )
         {
-            //Debug.Assert( lt == CKTypeKind.IsAutoService
-            //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsSingleton)
-            //                || lt == (CKTypeKind.IsAutoService | CKTypeKind.IsScoped) );
             Attributes = type;
             InitialTypeKind = lt;
             AutoServiceInterfaceInfo[] bases = Array.Empty<AutoServiceInterfaceInfo>();
