@@ -9,7 +9,10 @@ namespace CK.Core
     [CKTypeDefiner]
     public abstract class EndpointDefinition : IRealObject
     {
-
+        /// <summary>
+        /// Gets this endpoint name.
+        /// </summary>
+        public abstract string Name { get; }
     }
 
 }

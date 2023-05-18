@@ -10,7 +10,7 @@ namespace CK.Setup
     /// Captures the information about endpoint services: this is a reverse index of the
     /// <see cref="CKTypeEndpointServiceInfo"/>.
     /// </summary>
-    public sealed class EndpointResult
+    public sealed class EndpointResult : IEndpointResult
     {
         readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpointServiceInfoMap;
         readonly IReadOnlyList<EndpointContext> _contexts;
@@ -18,7 +18,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets all the <see cref="EndpointContext"/>. The first one is the <see cref="DefaultEndpointDefinition"/>.
         /// </summary>
-        public IReadOnlyList<EndpointContext> EndpointContexts => _contexts;
+        public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
 
         /// <summary>
         /// Gets all the endpoint service types.
@@ -40,7 +40,7 @@ namespace CK.Setup
         }
 
         internal static EndpointResult? Create( IActivityMonitor monitor,
-                                                IStObjObjectEngineMap engineMap,                  
+                                                IStObjObjectEngineMap engineMap,
                                                 IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
         {
             var defaultContext = new EndpointContext( engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )! );

@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
@@ -49,7 +49,7 @@ namespace CK.StObj.Engine.Tests.DI
             anotherContext.ScopedServices.Should().BeEmpty();
             anotherContext.SingletonServices
                 .Should().HaveCount( 2 )
-                .And.Contain( new (Type, EndpointContext?)[] { (typeof( ISomeRefinedService ), null), (typeof( ISomeService ), null) } );
+                .And.Contain( new (Type, IEndpointContext?)[] { (typeof( ISomeRefinedService ), null), (typeof( ISomeService ), null) } );
         }
 
         // Test below simulates this attribute.
@@ -86,7 +86,7 @@ namespace CK.StObj.Engine.Tests.DI
             anotherContext.ScopedServices.Should().BeEmpty();
             anotherContext.SingletonServices
                 .Should().HaveCount( 2 )
-                .And.Contain( new (Type, EndpointContext?)[] { (typeof( ISomeRefinedService ), null), (typeof( ISomeService ), defaultContext) } );
+                .And.Contain( new (Type, IEndpointContext?)[] { (typeof( ISomeRefinedService ), null), (typeof( ISomeService ), defaultContext) } );
         }
 
 

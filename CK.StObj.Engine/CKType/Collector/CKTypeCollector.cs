@@ -288,7 +288,7 @@ namespace CK.Setup
         RealObjectCollectorResult GetRealObjectResult()
         {
             List<MutableItem> allSpecializations = new List<MutableItem>( _roots.Count );
-            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _names, allSpecializations, KindDetector, _assemblies );
+            StObjObjectEngineMap engineMap = new StObjObjectEngineMap( _names, allSpecializations, _assemblies );
             List<List<MutableItem>> concreteClasses = new List<List<MutableItem>>();
             List<IReadOnlyList<Type>>? classAmbiguities = null;
             List<Type> abstractTails = new List<Type>();

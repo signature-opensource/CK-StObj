@@ -28,6 +28,11 @@ namespace CK.Setup
         new IStObjServiceEngineMap Services { get; }
 
         /// <summary>
+        /// Gets the endpoints informations.
+        /// </summary>
+        IEndpointResult EndpointResult { get; }
+
+        /// <summary>
         /// Gets all the type's <see cref="ITypeAttributesCache"/>.
         /// </summary>
         IReadOnlyDictionary<Type, ITypeAttributesCache> AllTypesAttributesCache { get; }

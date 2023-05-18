@@ -1,14 +1,13 @@
 using CK.Core;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace CK.StObj.Engine.Tests.DI
+namespace CK.StObj.Engine.Tests.DI.Conformant
 {
     [TestFixture]
-    public class ConformantDICompatibilityTests
+    public class FromTheOutsideIdeaTests
     {
         [IsMultiple]
         public interface IEndpointServiceResolver : ISingletonAutoService
@@ -170,7 +169,6 @@ namespace CK.StObj.Engine.Tests.DI
             //mqttScope.ServiceProvider.GetService<HttpRequest>().Should().BeNull();
             //mqttScope.ServiceProvider.GetService<MQTTServer>().Should().NotBeNull();
             //mqttScope.ServiceProvider.GetService<MQTTCaller>().Should().NotBeNull();
-
         }
     }
 }

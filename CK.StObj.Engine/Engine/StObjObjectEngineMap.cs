@@ -28,6 +28,7 @@ namespace CK.Setup
         // during Real objects processing.
         IReadOnlyList<MutableItem>? _orderedStObjs;
         Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
+        IEndpointResult? _endpointResult;
 
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
@@ -37,11 +38,9 @@ namespace CK.Setup
         /// Pre-dimensioned array that will be filled with actual
         /// mutable items by <see cref="StObjCollector.GetResult()"/>.
         /// </param>
-        /// <param name="typeKindDetector">The type kind detector.</param>
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
         internal StObjObjectEngineMap( IReadOnlyList<string> names,
                                        IReadOnlyList<MutableItem> allSpecializations,
-                                       CKTypeKindDetector typeKindDetector,
                                        IReadOnlyCollection<Assembly> assemblies )
         {
             Debug.Assert( names != null );
@@ -154,10 +153,15 @@ namespace CK.Setup
 
         IReadOnlyDictionary<Type, ITypeAttributesCache> IStObjEngineMap.AllTypesAttributesCache => (IReadOnlyDictionary<Type, ITypeAttributesCache>?)_allTypesAttributesCache ?? ImmutableDictionary<Type, ITypeAttributesCache>.Empty;
 
-        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type, ITypeAttributesCache> allTypesAttributesCache )
+        IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
+
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type,
+                                              ITypeAttributesCache> allTypesAttributesCache,
+                                              IEndpointResult? endpointResult )
         {
             _orderedStObjs = ordered;
             _allTypesAttributesCache = allTypesAttributesCache;
+            _endpointResult = endpointResult;
         }
 
         IStObj? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
