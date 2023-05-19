@@ -42,7 +42,7 @@ namespace CK.StObj.Engine.Tests.DI
             var anotherContext = r.EndpointContexts[1];
 
             defaultContext.EndpointDefinition.ClassType.Should().Be( typeof( DefaultEndpointDefinition ) );
-            defaultContext.ScopedServices.Should().BeEmpty();
+            defaultContext.ScopedServices.Should().HaveCount( 1 ).And.Contain( typeof( IActivityMonitor ) );
             defaultContext.SingletonServices.Should().HaveCount( 1 ).And.Contain( (typeof( ISomeService ), null) );
 
             anotherContext.EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );
@@ -79,7 +79,7 @@ namespace CK.StObj.Engine.Tests.DI
             var anotherContext = r.EndpointContexts[1];
 
             defaultContext.EndpointDefinition.ClassType.Should().Be( typeof( DefaultEndpointDefinition ) );
-            defaultContext.ScopedServices.Should().BeEmpty();
+            defaultContext.ScopedServices.Should().HaveCount( 1 ).And.Contain( typeof( IActivityMonitor ) );
             defaultContext.SingletonServices.Should().HaveCount( 1 ).And.Contain( (typeof( ISomeService ), null) );
 
             anotherContext.EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );

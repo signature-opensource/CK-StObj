@@ -36,9 +36,39 @@ namespace CK.Setup
             }
             else name = endpointContext.Name;
 
-            scope.Append( "public override string Name =>" ).AppendSourceString( name ).Append( ";" ).NewLine();
+            scope.Append( "public override string Name => " ).AppendSourceString( name ).Append( ";" ).NewLine();
+
+            WriteScopedAndSinglentonServices( scope, endpointContext );
             return CSCodeGenerationResult.Success;
         }
 
+        internal static void WriteScopedAndSinglentonServices( ITypeScope scope, IEndpointContext? endpointContext )
+        {
+            if( endpointContext != null )
+            {
+                scope.Append( "public override IReadOnlyList<Type> ScopedServices => " ).AppendArray( endpointContext.ScopedServices ).Append( ";" ).NewLine();
+                scope.Append( "public override IReadOnlyList<(Type,EndpointDefinition?)> SingletonServices => " );
+                if( endpointContext.SingletonServices.Count == 0 )
+                {
+                    scope.Append( "Array.Empty<(Type,EndpointDefinition?)>();" );
+                }
+                else
+                {
+                    scope.Append( "new (Type,EndpointDefinition?)[] { " );
+                    foreach( var e in endpointContext.SingletonServices )
+                    {
+                        scope.Append( "(" ).AppendTypeOf( e.Service ).Append( "," )
+                                           .Append( e.Owner?.EndpointDefinition.CodeInstanceAccessor ?? "null" )
+                                           .Append( ")," ).NewLine();
+                    }
+                    scope.Append( "};" ).NewLine();
+                }
+            }
+            else
+            {
+                scope.Append( "public override IReadOnlyList<Type> ScopedServices => Array.Empty<Type>();" ).NewLine()
+                     .Append( "public override IReadOnlyList<(Type,EndpointDefinition?)> SingletonServices => Array.Empty<(Type,EndpointDefinition?)>();" ).NewLine();
+            }
+        }
     }
 }

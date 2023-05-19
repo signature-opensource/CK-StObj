@@ -15,21 +15,16 @@ namespace CK.Setup
         readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpointServiceInfoMap;
         readonly IReadOnlyList<EndpointContext> _contexts;
 
-        /// <summary>
-        /// Gets all the <see cref="EndpointContext"/>. The first one is the <see cref="DefaultEndpointDefinition"/>.
-        /// </summary>
+        /// <inheritdoc />
+        public IEndpointContext DefaultEndpointContext => _contexts[0];
+
+        /// <inheritdoc />
         public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
 
-        /// <summary>
-        /// Gets all the endpoint service types.
-        /// </summary>
+        /// <inheritdoc />
         public IEnumerable<Type> EndpointServices => _endpointServiceInfoMap.Keys;
 
-        /// <summary>
-        /// Gets whether a type is a endpoint service.
-        /// </summary>
-        /// <param name="type">The type to test.</param>
-        /// <returns>True if the type is a endpoint service, false otherwise.</returns>
+        /// <inheritdoc />
         public bool IsEndpointService( Type type ) => _endpointServiceInfoMap.ContainsKey( type );
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,

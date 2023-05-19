@@ -6,12 +6,9 @@ namespace CK.Core
 {
     public sealed class EndpointDefinitionAttribute : ContextBoundDelegationAttribute
     {
-        public EndpointDefinitionAttribute( params Type[] handledTypes )
+        public EndpointDefinitionAttribute()
             : base( "CK.Setup.EndpointDefinitionImpl, CK.StObj.Engine" )
         {
-            HandledTypes = handledTypes;
         }
-
-        public IReadOnlyList<Type> HandledTypes { get; }
     }
 }

@@ -1,5 +1,7 @@
 using CK.Setup;
 using Microsoft.Extensions.Hosting;
+using System.Collections.Generic;
+using System;
 
 namespace CK.Core
 {
@@ -16,6 +18,7 @@ namespace CK.Core
         /// Gets "Default".
         /// </summary>
         public override string Name => "Default";
+
     }
 
 }

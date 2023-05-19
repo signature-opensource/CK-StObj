@@ -1,9 +1,11 @@
 using CK.Setup;
+using System;
+using System.Collections.Generic;
 
 namespace CK.Core
 {
     /// <summary>
-    /// Base class for a end point.
+    /// Base class for a endpoint.
     /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.
     /// </summary>
     [CKTypeDefiner]
@@ -11,8 +13,22 @@ namespace CK.Core
     {
         /// <summary>
         /// Gets this endpoint name.
+        /// This is automatically implemented.
         /// </summary>
         public abstract string Name { get; }
+
+        /// <summary>
+        /// Gets the scoped service types handled by this endpoint.
+        /// This is automatically implemented.
+        /// </summary>
+        public abstract IReadOnlyList<Type> ScopedServices { get; }
+
+        /// <summary>
+        /// Gets the singleton service types exposed by this service mapped to their owner.
+        /// When the owner is null, it is this endpoint that is in charge of the service.
+        /// This is automatically implemented.
+        /// </summary>
+        public abstract IReadOnlyList<(Type Service, EndpointDefinition? Owner)> SingletonServices { get; }
     }
 
 }
