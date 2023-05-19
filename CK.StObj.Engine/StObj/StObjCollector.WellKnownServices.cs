@@ -9,8 +9,8 @@ namespace CK.Setup
     {
         void AddWellKnownServices()
         {
-            // The IActivityMobitor is by design a scoped service. It is not Optional (since it necessarily exists).
-            SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
+            // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
+            SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService|AutoServiceKind.IsScoped );
 
             // The IServiceProvider itself is a Singleton.   
             SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );

@@ -171,7 +171,6 @@ namespace CK.Setup
         {
             Throw.CheckNotNullArgument( t );
             Throw.CheckArgument( kind != AutoServiceKind.None );
-            Throw.CheckArgument( (kind&AutoServiceKind.IsEndpointService) == 0 );
 
             bool hasProcess = (kind & AutoServiceKind.IsProcessService) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
@@ -242,7 +241,6 @@ namespace CK.Setup
         CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
-            Debug.Assert( (kind & (CKTypeKind.IsEndpointService)) == 0, "No way! Endpoint service cannot be set by flag." );
             Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
 
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
