@@ -5,9 +5,25 @@ namespace CK.Setup
 {
     public interface IEndpointContext
     {
-        IStObjResult EndpointDefinition { get; }
+        /// <summary>
+        /// Gets the endpoint name (this is the endpoint definition type name without "EndpointDefinition" suffix):
+        /// "Default" for <see cref="DefaultEndpointDefinition"/>.
+        /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// Gets the endpoint definition.
+        /// </summary>
+        IStObjResult EndpointDefinition { get; }
+
+        /// <summary>
+        /// Gets the scoped service types exposed by this endpoint.
+        /// </summary>
         IReadOnlyList<Type> ScopedServices { get; }
-        IReadOnlyList<(Type Service, IEndpointContext? Owner)> SingletonServices { get; }
+
+        /// <summary>
+        /// Gets the singletons service types exposed by this endpoint.
+        /// </summary>
+        IReadOnlyList<Type> SingletonServices { get; }
     }
 }

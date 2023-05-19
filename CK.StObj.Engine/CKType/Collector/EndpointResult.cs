@@ -44,56 +44,22 @@ namespace CK.Setup
             bool hasError = false;
             foreach( var (type, info) in endpointServiceInfoMap )
             {
-                // Easy: handles the scoped services.
-                if( info.IsScoped )
+                foreach( var definition in info.Services )
                 {
-                    foreach( var definition in info.Scoped )
+                    var c = FindOrCreate( monitor, engineMap, contexts, definition );
+                    if( c == null )
                     {
-                        var c = FindOrCreate( monitor, engineMap, contexts, definition );
-                        if( c == null )
-                        {
-                            hasError = true;
-                            continue;
-                        }
-                        Debug.Assert( !c._scoped.Contains( type ), "Handled at registration time." );
+                        hasError = true;
+                        continue;
+                    }
+                    Debug.Assert( !c._scoped.Contains( type ), "Handled at registration time." );
+                    if( info.IsScoped )
+                    {
                         c._scoped.Add( type );
                     }
-                }
-                else
-                {
-                    // Singletons require a check: there may be more than
-                    // one registration for the definition.
-                    foreach( var (tDefinition, tOwner) in info.Singletons )
+                    else
                     {
-                        var definition = FindOrCreate( monitor, engineMap, contexts, tDefinition );
-                        if( definition == null )
-                        {
-                            hasError = true;
-                            continue;
-                        }
-                        bool hasDup = definition._singletons.Any( e => e.Service == type );
-                        if( tOwner == null )
-                        {
-                            Debug.Assert( !hasDup, "No risk of duplicates: this has been handled at registration time." );
-                            definition._singletons.Add( (type, null) );
-                        }
-                        else
-                        {
-                            var owner = FindOrCreate( monitor, engineMap, contexts, tOwner );
-                            if( owner == null )
-                            {
-                                hasError = true;
-                                continue;
-                            }
-                            if( hasDup )
-                            {
-                                Debug.Assert( definition._singletons.Where( e => e.Service == type ).All( e => e.Owner != null ) );
-                                var duplicates = definition._singletons.Where( e => e.Service == type ).Select( c => c.Owner!.Name );
-                                monitor.Error( $"In endpoint '{definition.Name}', service '{type:C}' is declared to be owned by '{duplicates.Concatenate( "', '" )}' and '{owner.Name}'." );
-                                hasError = true;
-                            }
-                            definition._singletons.Add( (type, owner) );
-                        }
+                        c._singletons.Add( type );
                     }
                 }
 

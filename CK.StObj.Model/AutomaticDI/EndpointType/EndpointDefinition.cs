@@ -24,11 +24,10 @@ namespace CK.Core
         public abstract IReadOnlyList<Type> ScopedServices { get; }
 
         /// <summary>
-        /// Gets the singleton service types exposed by this service mapped to their owner.
-        /// When the owner is null, it is this endpoint that is in charge of the service.
+        /// Gets the singleton service types exposed by this endpoint.
         /// This is automatically implemented.
         /// </summary>
-        public abstract IReadOnlyList<(Type Service, EndpointDefinition? Owner)> SingletonServices { get; }
+        public abstract IReadOnlyList<Type> SingletonServices { get; }
     }
 
 }

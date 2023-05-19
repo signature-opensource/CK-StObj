@@ -47,27 +47,12 @@ namespace CK.Setup
             if( endpointContext != null )
             {
                 scope.Append( "public override IReadOnlyList<Type> ScopedServices => " ).AppendArray( endpointContext.ScopedServices ).Append( ";" ).NewLine();
-                scope.Append( "public override IReadOnlyList<(Type,EndpointDefinition?)> SingletonServices => " );
-                if( endpointContext.SingletonServices.Count == 0 )
-                {
-                    scope.Append( "Array.Empty<(Type,EndpointDefinition?)>();" );
-                }
-                else
-                {
-                    scope.Append( "new (Type,EndpointDefinition?)[] { " );
-                    foreach( var e in endpointContext.SingletonServices )
-                    {
-                        scope.Append( "(" ).AppendTypeOf( e.Service ).Append( "," )
-                                           .Append( e.Owner?.EndpointDefinition.CodeInstanceAccessor ?? "null" )
-                                           .Append( ")," ).NewLine();
-                    }
-                    scope.Append( "};" ).NewLine();
-                }
+                scope.Append( "public override IReadOnlyList<Type> SingletonServices => " ).AppendArray( endpointContext.SingletonServices ).Append( ";" ).NewLine();
             }
             else
             {
                 scope.Append( "public override IReadOnlyList<Type> ScopedServices => Array.Empty<Type>();" ).NewLine()
-                     .Append( "public override IReadOnlyList<(Type,EndpointDefinition?)> SingletonServices => Array.Empty<(Type,EndpointDefinition?)>();" ).NewLine();
+                     .Append( "public override IReadOnlyList<Type> SingletonServices => Array.Empty<Type>();" ).NewLine();
             }
         }
     }

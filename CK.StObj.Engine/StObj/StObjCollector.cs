@@ -135,11 +135,10 @@ namespace CK.Setup
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <param name="ownerEndpointDefinition">Optional owner endpoint. When null, <paramref name="endpointDefinition"/> owns the service.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
+        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
-            if( _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition, ownerEndpointDefinition ) )
+            if( _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition ) )
             {
                 return true;
             }
@@ -215,7 +214,7 @@ namespace CK.Setup
                             }
                             foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeAttribute>() )
                             {
-                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition, eA.Owner );
+                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( a.GetTypes() );
