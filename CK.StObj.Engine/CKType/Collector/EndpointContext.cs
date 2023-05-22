@@ -15,11 +15,9 @@ namespace CK.Setup
         internal readonly List<Type> _singletons;
         internal readonly List<Type> _scoped;
 
-        internal EndpointContext( IStObjResult endpointDefinition )
+        internal EndpointContext( IStObjResult endpointDefinition, string name )
         {
-            Debug.Assert( endpointDefinition.ClassType.Name.EndsWith( "EndpointDefinition" ) && "EndpointDefinition".Length == 18 );
-            string name = endpointDefinition.ClassType.Name;
-            _name = name.Substring( 0, name.Length - 18 );
+            _name = name;
             _endpointDefinition = endpointDefinition;
             _singletons = new List<Type>();
             _scoped = new List<Type>();

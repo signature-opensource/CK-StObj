@@ -28,6 +28,7 @@ namespace CK.Core
         /// This is automatically implemented.
         /// </summary>
         public abstract IReadOnlyList<Type> SingletonServices { get; }
+
     }
 
 }

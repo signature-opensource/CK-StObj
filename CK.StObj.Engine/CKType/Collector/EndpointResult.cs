@@ -38,7 +38,7 @@ namespace CK.Setup
                                                 IStObjObjectEngineMap engineMap,
                                                 IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
         {
-            var defaultContext = new EndpointContext( engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )! );
+            var defaultContext = new EndpointContext( engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )!, "Default" );
             var contexts = new List<EndpointContext>() { defaultContext };
             var singletons = new Dictionary<Type, (EndpointContext Owner, bool Exclusive)>();
             bool hasError = false;
@@ -77,7 +77,17 @@ namespace CK.Setup
                         monitor.Error( $"Expected EndpointDefinition type '{t}' is not registered in StObjMap." );
                         return null;
                     }
-                    c = new EndpointContext( r );
+                    // Check name unicity.
+                    Debug.Assert( t.Name.EndsWith( "EndpointDefinition" ) && "EndpointDefinition".Length == 18 );
+                    var rName = CKTypeEndpointServiceInfo.DefinitionName( t ).ToString();
+                    var sameName = contexts.FirstOrDefault( c => c.Name == rName );
+                    if( sameName != null )
+                    {
+                        monitor.Error( $"EndpointDefinition type '{t:C}' has Name = '{rName}' but type '{sameName.EndpointDefinition.ClassType:C}' has the same name." +
+                                       " Endpoint definition names must be different." );
+                        return null;
+                    }
+                    c = new EndpointContext( r, rName );
                     contexts.Add( c );
                 }
                 return c;

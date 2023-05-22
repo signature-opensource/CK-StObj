@@ -399,7 +399,7 @@ used as the "OnGlobalContainerBuild" hook, everything starts (at runtime) with t
 that captures the global DI container and the DefaultEndpointDefinition real object instance through its constructor.
 
 This `EndpointTypeManager` is a `IHostedService` with a no-op StartSync method: the constructor is enough (we don't need
-an sync context here), the hosted service is only here to trigger the type resolution from the global DI container as early as possible.
+an async context here), the hosted service is only here to trigger the type resolution from the global DI container as early as possible.
 
 The `EndpointTypeManager` constructor calls an internal `SetGlobalContainer( IServiceProvider )` method on the DefaultEndpointDefinition
 that memorizes the global container as its own one and relays the call to all the other existing EndpointDefinition that can now use the

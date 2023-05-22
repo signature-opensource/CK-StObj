@@ -16,7 +16,7 @@ namespace CK.Setup
             Debug.Assert( scope.FullName == "CK.Core.EndpointTypeManager_CK" );
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            // This CK.Core.EndpointTypeManager_CK statically exposes the default and all endpoint types.
+            // This CK.Core.EndpointTypeManager_CK statically exposes the default and all endpoint definitions.
             scope.Append( "public static readonly CK.Core.DefaultEndpointDefinition Default;" ).NewLine();
             scope.Append( "public static readonly CK.Core.EndpointDefinition[] Endpoints;" ).NewLine();
 
