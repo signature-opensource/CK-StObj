@@ -146,6 +146,7 @@ namespace CK.Core
                                 Register( mult, s.CreateInstance, s.IsScoped, allowMultipleRegistration: true );
                             }
                         }
+                        //map.ConfigureEndpointServices( this );
                     }
                     catch( Exception ex )
                     {

@@ -3,11 +3,15 @@
 using CK.Core;
 using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CK.Testing.StObjEngine
 {
+
     /// <summary>
     /// Captures the result of <see cref="IStObjEngineTestHelperCore.CreateAutomaticServices(StObjCollector, Func{StObjEngineConfiguration, StObjEngineConfiguration}?, SimpleServiceContainer?, Action{StObjContextRoot.ServiceRegister}?)"/>.
     /// </summary>

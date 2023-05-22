@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,9 +12,14 @@ namespace CK.Setup
         {
             // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
             SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
-
-            // The IServiceProvider itself is a Singleton.   
+            // The IServiceProvider is both a singleton and a scope: it is the container (whatever it is).
+            // By defining it as a singleton, we don't force a totally useless Scoped lifetime.
             SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
+            SetAutoServiceKind( typeof( IServiceScopeFactory ), AutoServiceKind.IsSingleton );
+            SetAutoServiceKind( typeof( IServiceProviderIsService ), AutoServiceKind.IsSingleton );
+
+            // The IAuthenticationInfo is a endpoint scoped service.
+            SetAutoServiceKind( "CK.Auth.Abstractions, CK.Auth.IAuthenticationInfo", AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped, isOptional: true );
 
             // Registration must be done from the most specific types to the basic ones: here we must
             // start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.

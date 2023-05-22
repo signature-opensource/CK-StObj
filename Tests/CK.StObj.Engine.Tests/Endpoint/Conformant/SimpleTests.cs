@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
-namespace CK.StObj.Engine.Tests.DI.Conformant
+namespace CK.StObj.Engine.Tests.Endpoint.DITests
 {
     [TestFixture]
     public class SimpleTests

@@ -2,12 +2,15 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
+using System.Threading;
 using System.Xml.Linq;
 using CK.Core;
 using CK.Setup;
 using CK.Testing.StObjEngine;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace CK.Testing
 {
@@ -152,6 +155,24 @@ namespace CK.Testing
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
             return reg;
+        }
+
+        async Task<ServiceProvider> IStObjEngineTestHelperCore.StartHostedServicesAsync( ServiceProvider services, CancellationToken cancellation )
+        {
+            foreach( var service in services.GetServices<IHostedService>() )
+            {
+                await service.StartAsync( cancellation );
+            }
+            return services;
+        }
+
+        async Task IStObjEngineTestHelperCore.StopHostedServicesAsync( ServiceProvider services, bool disposeServices, CancellationToken cancellation )
+        {
+            foreach( var service in services.GetServices<IHostedService>() )
+            {
+                await service.StopAsync( cancellation );
+            }
+            if( disposeServices ) await services.DisposeAsync();
         }
 
         /// <summary>

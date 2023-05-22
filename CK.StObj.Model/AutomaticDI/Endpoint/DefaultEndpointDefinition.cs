@@ -1,7 +1,4 @@
 using CK.Setup;
-using Microsoft.Extensions.Hosting;
-using System.Collections.Generic;
-using System;
 
 namespace CK.Core
 {

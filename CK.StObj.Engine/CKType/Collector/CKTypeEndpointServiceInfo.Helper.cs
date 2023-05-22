@@ -9,9 +9,11 @@ namespace CK.Setup
 
         internal static bool CheckEndPointDefinition( IActivityMonitor monitor, Type t )
         {
-            if( t.BaseType != typeof( EndpointDefinition ) )
+            if( t == typeof( DefaultEndpointDefinition ) ) return true;
+            var b = t.BaseType;
+            if( b == null || !b.IsGenericType || b.GetGenericTypeDefinition() != typeof( EndpointDefinition<> ) )
             {
-                monitor.Error( $"EndpointDefinition type '{t:C}' must directly specialize EndpointDefinition (base type is '{t.BaseType:C}')." );
+                monitor.Error( $"EndpointDefinition type '{t:C}' must directly specialize EndpointDefinition<TInstanceData> (not '{b:C}')." );
                 return false;
             }
             var n = t.Name;

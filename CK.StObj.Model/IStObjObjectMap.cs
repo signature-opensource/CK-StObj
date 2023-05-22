@@ -39,8 +39,8 @@ namespace CK.Core
 
         /// <summary>
         /// Enables Real Objects to participate in the configuration of the <see cref="IServiceCollection"/>.
-        /// If external services are required, then the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> can be configured
-        /// to expose those "external" services.
+        /// If startup services are required, then the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> can be configured
+        /// with these services that can configure the service configuration.
         /// <para>
         /// The first step calls all  <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods on all the <see cref="IStObj"/>, following
         /// the topological sort: during this step, startup services can be registered in the <see cref="ISimpleServiceContainer"/>) and/or used by
