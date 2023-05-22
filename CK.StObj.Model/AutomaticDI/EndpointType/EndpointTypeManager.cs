@@ -20,6 +20,7 @@ namespace CK.Core
         /// </summary>
         public abstract IReadOnlyList<EndpointDefinition> AllEndpointDefinitions { get; }
 
+        // Do not remove this!
         static void KeepTheMicrosoftExtensionsHostingAbstractionAssemblyRef( IHostedService service ) { }
     }
 

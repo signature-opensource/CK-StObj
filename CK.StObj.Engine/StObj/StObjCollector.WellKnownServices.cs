@@ -13,8 +13,7 @@ namespace CK.Setup
             Debug.Assert( !_wellKnownServiceKindRegistered );
             _wellKnownServiceKindRegistered = true;
 
-            // The IActivityMobitor is by design a scoped service. It is not Optional (since it necessarily exists).
-            SetAutoServiceKind( monitor, typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
+            SetAutoServiceKind( monitor, typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
 
             // The IServiceProvider itself is a Singleton.   
             SetAutoServiceKind( monitor, typeof( IServiceProvider ), AutoServiceKind.IsSingleton );

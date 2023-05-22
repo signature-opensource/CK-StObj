@@ -13,7 +13,14 @@ namespace CK.Setup
     {
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
+            if( c.ActualSourceCodeIsUseless ) return CSCodeGenerationResult.Success;
+
             scope.Definition.Modifiers |= Modifiers.Sealed;
+
+            var def = c.CurrentRun.EngineMap.EndpointResult.DefaultEndpointContext;
+
+            EndpointDefinitionImpl.WriteScopedAndSinglentonServices( scope, def );
+
             return CSCodeGenerationResult.Success;
         }
     }

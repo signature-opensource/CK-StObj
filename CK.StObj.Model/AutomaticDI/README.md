@@ -12,7 +12,7 @@ See https://github.com/Invenietis/CK-Core/tree/develop/CK.Core/AutomaticDI
 
 ## The "Endpoint" DI roots
 
-### Some background
+### Step 0 - Some background
 The notion of "IEndpointService singleton" doesn't currently exist (may 2323)... I've always considered
 "Endpoint services" (formerly called "Front services") to necessarily be scoped dependencies.
 That was a mistake (an overlook).
@@ -66,6 +66,8 @@ It seems that we need either:
   (which is perfectly normal) and requires hooks to be setup to be integrated with the "Conformant DI".
 - Continue to use the Conformant DI but take more control on it.
 
+### Step 1 - The Conformant DI choice 
+
 Our need is NOT a multi-tenant management (like Orchard does). Our application is ONE application, an homogeneous
 Party that interacts with other parties. The DI we need is about Endpoints that connect the Application to the external
 world. We also want "Dynamic Endpoints" (endpoints can appear and disappear dynamically).
@@ -83,7 +85,7 @@ What we have so far:
 - The "EndpointDefinition" is a perfect candidate to be a IRealObject that can give access to the IServiceProvider (or a factory of)
   that must be used by any of its endpoint instance (so that a Scope can be created from it).
 
-### Using the .Net "Conformant DI": a journey to "Endpoint Services" implementation
+### Step 2 - Conformant DI and endpoint services
 
 We decided to reuse the Microsoft DI container (and its philosophy). The issue now is to
 handle the configuration of these DI container and/vs. the "global/primary DI" that .Net Core hosts uses.
@@ -129,6 +131,8 @@ The idea of the process should look like:
 - When we AddStObjMap/AddCKDatabase, we remove any ServiceDescriptor with a "specific type" from the ServiceCollection:
   the Global DI won't be able to resolve these types.
 
+### Step 3 - Global DI is the "DefaultEndpointDefintion"
+
 We must now consider the EndpointDefinition container initialization. To rely/reuse the Conformant DI infrastructure, we must
 reason only in terms of ServiceCollection configuration. Each container will be obtained through the `IServiceCollection.BuildServiceProvider()`
 extension method: once built, the container is sealed, it cannot be altered.
@@ -160,6 +164,8 @@ that sets the host's final service provider on it. Unfortunately, there's no "On
 .Net Core DI and using a IHostedService is not a perfect option since even if StartAsync is called right after the container
 initialization there is no ordering constraints. It seems that we cannot model it, its handling must be specific.
 
+### Step 4 - We need IHostedService
+
 BUT! A EndpointDefinition must be able to configure its container to resolve a singleton from the global DI container
 with something like that:
 ```csharp
@@ -171,6 +177,8 @@ and the instantiation of this service must be triggered by someone: we are stuck
 EndpointDefinitions, we have no choice... So, we *can* model the "DefaultEndpointDefinition". If we do model it, it can describe its own specific
 endpoint services (like `IAuthenticationService` that requires a `HttpContext` to do its job), de facto removing it from the set of
 services of any other EndpointDefinition.
+
+### Step 5 - Reverting the definition with attributes on the services.
 
 BUT (again)! This `IAuthenticationService` must be preempted by the DefaultEndpointDefinition only if it exists, that is if the host is
 a web application. This would require a "late binding" approach of these services (based on the Assembly Qualified Name of the type,
@@ -216,7 +224,7 @@ and this requires a fix:
 - Declaring it to be available in any EndpointDefinition that can expose it (and do the job of actually supporting it in
   every possible EndpointDefinition).
 
-### Limitations
+### Step 6 - Endpoint services are NOT automatic services.
 A singleton marked with one or more `EndpointAvailableService` and no `EndpointSingletonServiceOwner`
 is an error (we have no owner for it). This first limitation breaks the `IAutoService` magic that automatically
 computes the lifetime based on the dependencies but this limitation concerns only singleton endpoint services.
@@ -289,6 +297,8 @@ The `ISomeRefinedService` is split in two: its base part implementation is provi
 specialized part is provided by the instance in Another. This is "normal" in the standard DI world. Some developers/architects
 may call this a feature, for us it is a recipe for disaster.
 
+### Step 7 - Attributes settle Lifetime and removing "exclusivity".
+
 This example raises a question about the name and semantics of the `EndpointAvailableService` attribute: it doesn't express
 the lifetime and, after some tests, this definitely introduces an ambiguity. Also, a serious issue appears in the previous example:
 we have here 2 instances of the `ISomeService` (one implementation in Default and one in Another) and the current set of attributes
@@ -324,10 +334,57 @@ And their `[assembly:EndpointScopedServiceType( Type serviceType, Type endpointD
 `[assembly:EndpointSingletonService( Type serviceType, Type ownerEndpointDefinition, Type? ownerEndpointDefinition = null )]`
 for assembly-level declaration.
 
-
 This is clearly not for mundane developers. But the funny thing is that this exactly what can be done with the basic DI...
 The [tests](../../Tests/CK.StObj.Engine.Tests/DI/ViolatingTrueSingletonRuleTests.cs) here shows how a service instance can
 be split in 2 parts.
+
+### Step 8 - Endpoint definition vs. instance: removing ownership.
+
+While implementing the current system as described above, it appeared that the ownership of singletons is not that
+interesting but most importantly, is not really bearable. The issue is between the "endpoint definition" and
+the "endpoint instance" notion. The definition captures the required work at the `IServiceCollection` level:
+what are the registered services and how they should be instantiated. This definition is, and must be, independent
+of the endpoint instance that will use this configuration to setup is DI container.
+
+We need endpoint instances that are NOT singletons (nor scope), their lifetime is totally independent: instances should be able to be created
+at any time with any specific state/configuration. One instance of the (non implemented) `AlternateHttpEndpointDefinition`
+may exist on port 4567 and another one may temporarily exist on a random port to support a temporary web
+application for instance. 
+
+With this mind, it seems obvious that the singleton ownership is not even possible: from which endpoint instance
+should the bound service be retrieved? The service that wants to expose the service must be able to select the
+right container, it must know "something" about the endpoint instance that owns the service to get it...
+It is not the "ownership/binding" idea that is false, it is its expression based on definition that is totally
+useless!
+
+If "singletons service binding" across container must be done, it is up to the definition to do it the way they
+want. The only thing we have to provide to a definition is a way to obtain any other endpoint definition they may
+need (this is easy because definitions are IRealObject) but also endpoint instances that are currently "alive"...
+This means that "alive endpoint instances" are referenced (globally in the `EndpointTypeManager` or by each
+`EndpointDefintion`). Doing this introduces an obvious point of failure: how the lifetime of the endpoint
+instances is managed? If a endpoint instance `A` exposes a service owned by another `B` instance, `B` must be
+alive until `A` dies, or (and this may often be the case), this service is stateless (or its state is somehow
+unrelated to the endpoint instance specific data). But how can we know? We cannot. Unless the service
+implementation (in a endpoint, not the service interface or abstract class) tells us its "lifetime regarding
+its endpoint" status that can be:
+- NotShareable
+- EndpointIndependent
+- EndpointDependent
+
+Whatever this declarative aspect is, it is the endpoint that expose the service that ultimately decides how
+the service is resolved and whether its lifetime is correctly managed. The only basic mechanism that can be
+implemented is way to "lock" and "unlock" another endpoint instance lifetime (typically using a reference
+counting). All of this can be implemented later: for the moment we simply remove the "owner" aspect from
+the singleton declaration.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -342,7 +399,7 @@ used as the "OnGlobalContainerBuild" hook, everything starts (at runtime) with t
 that captures the global DI container and the DefaultEndpointDefinition real object instance through its constructor.
 
 This `EndpointTypeManager` is a `IHostedService` with a no-op StartSync method: the constructor is enough (we don't need
-an sync context here), the hosted service is only here to trigger the type resolution from the global DI container as early as possible.
+an async context here), the hosted service is only here to trigger the type resolution from the global DI container as early as possible.
 
 The `EndpointTypeManager` constructor calls an internal `SetGlobalContainer( IServiceProvider )` method on the DefaultEndpointDefinition
 that memorizes the global container as its own one and relays the call to all the other existing EndpointDefinition that can now use the

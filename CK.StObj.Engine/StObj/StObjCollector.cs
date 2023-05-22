@@ -123,12 +123,11 @@ namespace CK.Setup
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <param name="ownerEndpointDefinition">Optional owner endpoint. When null, <paramref name="endpointDefinition"/> owns the service.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
+        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
         {
             using var errorTracker = monitor.OnError( _errorEntries.Add );
-            return _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition, ownerEndpointDefinition );
+            return _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition );
         }
 
         /// <summary>
@@ -201,7 +200,7 @@ namespace CK.Setup
                             }
                             foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeAttribute>() )
                             {
-                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition, eA.Owner );
+                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition );
                             }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( monitor, a.GetTypes() );
@@ -336,15 +335,10 @@ namespace CK.Setup
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
                 if( orderedItems != null )
                 {
-                    // This is far from elegant but simplifies the engine object model:
-                    // We set the final ordered results on the crappy mutable EngineMap (that should
-                    // not exist and be replaced with intermediate - functional-like - value results).
-                    // But this would be a massive refactoring and this internal mutable state is, to be honest,
-                    // quite convenient!
-                    typeResult.SetFinalOrderedResults( orderedItems );
                     // Now that Real objects and core AutoServices are settled, creates the EndpointResult.
                     // This doesn't need the full auto service resolution so we have the choice to do it before
-                    // or after services finalization.
+                    // or after services finalization: do it before because may be one day the final service
+                    // resolution may need it.
                     if( typeResult.Endpoints != null )
                     {
                         using( monitor.OpenInfo( "Endpoints handling." ) )
@@ -352,7 +346,13 @@ namespace CK.Setup
                             endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.Endpoints );
                         }
                     }
-                    if( !ServiceFinalHandling( monitor, typeResult ) )
+                    // This is far from elegant but simplifies the engine object model:
+                    // We set the final ordered results on the crappy mutable EngineMap (that should
+                    // not exist and be replaced with intermediate - functional-like - value results).
+                    // But this would be a massive refactoring and this internal mutable state is, to be honest,
+                    // quite convenient!
+                    typeResult.SetFinalOrderedResults( orderedItems, endpoints );
+                    if( !ServiceFinalHandling( typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
                         buildValueCollector = null;

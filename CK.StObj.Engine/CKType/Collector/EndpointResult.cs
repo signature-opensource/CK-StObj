@@ -10,26 +10,21 @@ namespace CK.Setup
     /// Captures the information about endpoint services: this is a reverse index of the
     /// <see cref="CKTypeEndpointServiceInfo"/>.
     /// </summary>
-    public sealed class EndpointResult
+    public sealed class EndpointResult : IEndpointResult
     {
         readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpointServiceInfoMap;
         readonly IReadOnlyList<EndpointContext> _contexts;
 
-        /// <summary>
-        /// Gets all the <see cref="EndpointContext"/>. The first one is the <see cref="DefaultEndpointDefinition"/>.
-        /// </summary>
-        public IReadOnlyList<EndpointContext> EndpointContexts => _contexts;
+        /// <inheritdoc />
+        public IEndpointContext DefaultEndpointContext => _contexts[0];
 
-        /// <summary>
-        /// Gets all the endpoint service types.
-        /// </summary>
+        /// <inheritdoc />
+        public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
+
+        /// <inheritdoc />
         public IEnumerable<Type> EndpointServices => _endpointServiceInfoMap.Keys;
 
-        /// <summary>
-        /// Gets whether a type is a endpoint service.
-        /// </summary>
-        /// <param name="type">The type to test.</param>
-        /// <returns>True if the type is a endpoint service, false otherwise.</returns>
+        /// <inheritdoc />
         public bool IsEndpointService( Type type ) => _endpointServiceInfoMap.ContainsKey( type );
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,
@@ -40,65 +35,31 @@ namespace CK.Setup
         }
 
         internal static EndpointResult? Create( IActivityMonitor monitor,
-                                                IStObjObjectEngineMap engineMap,                  
+                                                IStObjObjectEngineMap engineMap,
                                                 IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
         {
-            var defaultContext = new EndpointContext( engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )! );
+            var defaultContext = new EndpointContext( engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )!, "Default" );
             var contexts = new List<EndpointContext>() { defaultContext };
             var singletons = new Dictionary<Type, (EndpointContext Owner, bool Exclusive)>();
             bool hasError = false;
             foreach( var (type, info) in endpointServiceInfoMap )
             {
-                // Easy: handles the scoped services.
-                if( info.IsScoped )
+                foreach( var definition in info.Services )
                 {
-                    foreach( var definition in info.Scoped )
+                    var c = FindOrCreate( monitor, engineMap, contexts, definition );
+                    if( c == null )
                     {
-                        var c = FindOrCreate( monitor, engineMap, contexts, definition );
-                        if( c == null )
-                        {
-                            hasError = true;
-                            continue;
-                        }
-                        Debug.Assert( !c._scoped.Contains( type ), "Handled at registration time." );
+                        hasError = true;
+                        continue;
+                    }
+                    Debug.Assert( !c._scoped.Contains( type ), "Handled at registration time." );
+                    if( info.IsScoped )
+                    {
                         c._scoped.Add( type );
                     }
-                }
-                else
-                {
-                    // Singletons require a check: there may be more than
-                    // one registration for the definition.
-                    foreach( var (tDefinition, tOwner) in info.Singletons )
+                    else
                     {
-                        var definition = FindOrCreate( monitor, engineMap, contexts, tDefinition );
-                        if( definition == null )
-                        {
-                            hasError = true;
-                            continue;
-                        }
-                        bool hasDup = definition._singletons.Any( e => e.Service == type );
-                        if( tOwner == null )
-                        {
-                            Debug.Assert( !hasDup, "No risk of duplicates: this has been handled at registration time." );
-                            definition._singletons.Add( (type, null) );
-                        }
-                        else
-                        {
-                            var owner = FindOrCreate( monitor, engineMap, contexts, tOwner );
-                            if( owner == null )
-                            {
-                                hasError = true;
-                                continue;
-                            }
-                            if( hasDup )
-                            {
-                                Debug.Assert( definition._singletons.Where( e => e.Service == type ).All( e => e.Owner != null ) );
-                                var duplicates = definition._singletons.Where( e => e.Service == type ).Select( c => c.Owner!.Name );
-                                monitor.Error( $"In endpoint '{definition.Name}', service '{type:C}' is declared to be owned by '{duplicates.Concatenate( "', '" )}' and '{owner.Name}'." );
-                                hasError = true;
-                            }
-                            definition._singletons.Add( (type, owner) );
-                        }
+                        c._singletons.Add( type );
                     }
                 }
 
@@ -116,7 +77,17 @@ namespace CK.Setup
                         monitor.Error( $"Expected EndpointDefinition type '{t}' is not registered in StObjMap." );
                         return null;
                     }
-                    c = new EndpointContext( r );
+                    // Check name unicity.
+                    Debug.Assert( t.Name.EndsWith( "EndpointDefinition" ) && "EndpointDefinition".Length == 18 );
+                    var rName = CKTypeEndpointServiceInfo.DefinitionName( t ).ToString();
+                    var sameName = contexts.FirstOrDefault( c => c.Name == rName );
+                    if( sameName != null )
+                    {
+                        monitor.Error( $"EndpointDefinition type '{t:C}' has Name = '{rName}' but type '{sameName.EndpointDefinition.ClassType:C}' has the same name." +
+                                       " Endpoint definition names must be different." );
+                        return null;
+                    }
+                    c = new EndpointContext( r, rName );
                     contexts.Add( c );
                 }
                 return c;

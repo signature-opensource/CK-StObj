@@ -89,19 +89,7 @@ namespace CK.Setup
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointScopedService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
-        {
-            if( !CheckEndpointServiceParameters( monitor, serviceType, endpointDefinition ) ) return false;
-            if( _endpointServices.TryGetValue( serviceType, out var exists ) )
-            {
-                return exists.CombineScopedWith( monitor, endpointDefinition );
-            }
-            // The type hasn't been registered yet. We DON'T register it here.
-            // We memorize the configuration that will be handled once the type is registered.
-            monitor.Info( $"Endpoint service '{serviceType}' has a Scoped lifetime because of the external registration in '{CKTypeEndpointServiceInfo.DefinitionName( endpointDefinition )}'." );
-            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, endpointDefinition ) );
-            return true;
-        }
+        public bool SetEndpointScopedService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition ) => SetEndpointService( monitor, true, serviceType, endpointDefinition );
 
         /// <summary>
         /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
@@ -112,26 +100,20 @@ namespace CK.Setup
         /// <param name="monitor">The monitor.</param>
         /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
         /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <param name="ownerEndpointDefinition">Optional owner endpoint. When null, <paramref name="endpointDefinition"/> owns the service.</param>
         /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition, Type? ownerEndpointDefinition )
+        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition ) => SetEndpointService( monitor, false, serviceType, endpointDefinition );
+
+        bool SetEndpointService( IActivityMonitor monitor, bool isScoped, Type serviceType, Type endpointDefinition )
         {
             if( !CheckEndpointServiceParameters( monitor, serviceType, endpointDefinition ) ) return false;
-            if( ownerEndpointDefinition != null
-                && !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, ownerEndpointDefinition ) )
-            {
-                return false;
-            }
-            // The null is the marker.
-            if( ownerEndpointDefinition == endpointDefinition ) ownerEndpointDefinition = null;
             if( _endpointServices.TryGetValue( serviceType, out var exists ) )
             {
-                return exists.CombineSingletonWith( monitor, endpointDefinition, ownerEndpointDefinition );
+                return exists.CombineWith( monitor, isScoped, endpointDefinition );
             }
             // The type hasn't been registered yet. We DON'T register it here.
             // We memorize the configuration that will be handled once the type is registered.
-            monitor.Info( $"Endpoint service '{serviceType}' has a Singleton lifetime because of the external registration in '{CKTypeEndpointServiceInfo.DefinitionName( endpointDefinition )}'." );
-            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( serviceType, endpointDefinition, ownerEndpointDefinition ) );
+            monitor.Info( $"Endpoint service '{serviceType}' has a {(isScoped ? "Scoped" : "Singleton")} lifetime because of the external registration in '{CKTypeEndpointServiceInfo.DefinitionName( endpointDefinition )}'." );
+            _endpointServices.Add( serviceType, new CKTypeEndpointServiceInfo( isScoped, serviceType, endpointDefinition ) );
             return true;
         }
 
@@ -170,7 +152,6 @@ namespace CK.Setup
         {
             Throw.CheckNotNullArgument( t );
             Throw.CheckArgument( kind != AutoServiceKind.None );
-            Throw.CheckArgument( (kind&AutoServiceKind.IsEndpointService) == 0 );
 
             bool hasProcess = (kind & AutoServiceKind.IsProcessService) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
@@ -188,15 +169,7 @@ namespace CK.Setup
             if( hasProcess ) k |= IsProcessServiceReasonExternal;
             if( (kind & AutoServiceKind.IsEndpointService) != 0 )
             {
-                if( (kind & AutoServiceKind.IsScoped) != 0 )
-                {
-                    SetEndpointScopedService( monitor, t, typeof( DefaultEndpointDefinition ) );
-                }
-                else
-                {
-                    Debug.Assert( (kind & AutoServiceKind.IsSingleton) != 0 );
-                    SetEndpointSingletonService( monitor, t, typeof( DefaultEndpointDefinition ), null );
-                }
+                SetEndpointService( monitor, (kind & AutoServiceKind.IsScoped) != 0, t, typeof( DefaultEndpointDefinition ) );
             }
             return SetLifetimeOrProcessType( monitor, t, k );
         }
@@ -217,7 +190,6 @@ namespace CK.Setup
         CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
-            Debug.Assert( (kind & (CKTypeKind.IsEndpointService)) == 0, "No way! Endpoint service cannot be set by flag." );
             Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
 
             bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
@@ -368,12 +340,12 @@ namespace CK.Setup
                                 break;
                             case "EndpointScopedServiceAttribute":
                                 {
-                                    hasEndpointServiceError |= !ReadEndpointScopedService( m, t, a, ref final );
+                                    hasEndpointServiceError |= !ReadEndpointAttribute( m, t, true, a, ref final );
                                     break;
                                 }
                             case "EndpointSingletonServiceAttribute":
                                 {
-                                    hasEndpointServiceError |= !ReadEndpointSingletonService( m, t, a, ref final );
+                                    hasEndpointServiceError |= !ReadEndpointAttribute( m, t, false, a, ref final );
                                     break;
                                 }
                             case "CKTypeDefinerAttribute":
@@ -602,75 +574,32 @@ namespace CK.Setup
             return k;
         }
 
-        bool ReadEndpointScopedService( IActivityMonitor monitor, Type t, System.Reflection.CustomAttributeData a, ref CKTypeEndpointServiceInfo? final )
+        bool ReadEndpointAttribute( IActivityMonitor monitor, Type t, bool isScoped, System.Reflection.CustomAttributeData a, ref CKTypeEndpointServiceInfo? final )
         {
             var args = a.ConstructorArguments;
             if( args.Count != 1 )
             {
-                monitor.Error( $"Invalid [EndpointScopedService( Type endpointDefinition )] on '{t:C}': expected a single argument (got {args.Count})." );
+                monitor.Error( $"Invalid [{a.Constructor.Name}]( Type endpointDefinition )] on '{t:C}': expected a single argument (got {args.Count})." );
                 return false;
             }
             if( args[0].Value is not Type tEndpointDefinition )
             {
-                monitor.Error( $"Invalid [EndpointScopedService( Type endpointDefinition )] on '{t:C}': the endpointDefinition must be a EndpointDefinition type (got '{args[0].Value}')." );
+                monitor.Error( $"Invalid [{a.Constructor.Name}( Type endpointDefinition )] on '{t:C}': the endpointDefinition must be a EndpointDefinition type (got '{args[0].Value}')." );
                 return false;
             }
             if( !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, tEndpointDefinition ) ) return false;
             if( final != null )
             {
-                if( !final.CombineScopedWith( monitor, tEndpointDefinition ) )
+                if( !final.CombineWith( monitor, isScoped, tEndpointDefinition ) )
                 {
-                    monitor.Error( $"Attribute [EndpointScopedService( Type endpointDefinition )] on '{t:C}' has a lifetime conflict with previously declared lifetime for this endpoint service." );
+                    monitor.Error( $"Attribute [{a.Constructor.Name}( Type endpointDefinition )] on '{t:C}' has a lifetime conflict with previously declared lifetime for this endpoint service." );
                     return false;
                 }
             }
             else
             {
-                monitor.Info( $"Endpoint service '{t}' has a Scoped lifetime because of [EndpointScopedService('{CKTypeEndpointServiceInfo.DefinitionName( tEndpointDefinition )}')] attribute." );
-                final = new CKTypeEndpointServiceInfo( t, tEndpointDefinition );
-                _endpointServices.Add( t, final );
-            }
-            return true;
-        }
-
-        bool ReadEndpointSingletonService( IActivityMonitor monitor, Type t, System.Reflection.CustomAttributeData a, ref CKTypeEndpointServiceInfo? final )
-        {
-            var args = a.ConstructorArguments;
-            if( args.Count != 2 )
-            {
-                monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': expected 2 arguments (got {args.Count})." );
-                return false;
-            }
-            if( args[0].Value is not Type tEndpointDefinition )
-            {
-                monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': first argument must be a EndpointDefinition type (got '{args[0].Value}')." );
-                return false;
-            }
-            if( !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, tEndpointDefinition ) ) return false;
-            Type? owner = null;
-            var oArg = args[1].Value;
-            if( oArg != null )
-            {
-                if( oArg is not Type tOwner )
-                {
-                    monitor.Error( $"Invalid [EndpointSingletonService] on '{t:C}': second argument must be a EndpointDefinition type (got '{oArg}')." );
-                    return false;
-                }
-                if( !CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, tOwner ) ) return false;
-                owner = tOwner;
-            }
-            if( final != null )
-            {
-                if( !final.CombineSingletonWith( monitor, tEndpointDefinition, owner ) )
-                {
-                    monitor.Error( $"Attribute [EndpointSingletonService] on '{t:C}' has a lifetime conflict with previously declared lifetime for this endpoint service." );
-                    return false;
-                }
-            }
-            else
-            {
-                monitor.Info( $"Endpoint service '{t}' has a Singleton lifetime because of [EndpointSingletonService('{CKTypeEndpointServiceInfo.DefinitionName( tEndpointDefinition )}')] attribute." );
-                final = new CKTypeEndpointServiceInfo( t, tEndpointDefinition, owner );
+                monitor.Info( $"Endpoint service '{t}' has a {(isScoped ? "Scoped" : "Singleton")} lifetime because of [{a.Constructor.Name}('{CKTypeEndpointServiceInfo.DefinitionName( tEndpointDefinition )}')] attribute." );
+                final = new CKTypeEndpointServiceInfo( isScoped, t, tEndpointDefinition );
                 _endpointServices.Add( t, final );
             }
             return true;

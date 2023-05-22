@@ -1,5 +1,7 @@
 using CK.Setup;
 using Microsoft.Extensions.Hosting;
+using System.Collections.Generic;
+using System;
 
 namespace CK.Core
 {
@@ -12,6 +14,11 @@ namespace CK.Core
     [ContextBoundDelegation( "CK.Setup.DefaultEndpointDefinitionImpl, CK.StObj.Engine" )]
     public abstract class DefaultEndpointDefinition : EndpointDefinition
     {
+        /// <summary>
+        /// Gets "Default".
+        /// </summary>
+        public override string Name => "Default";
+
     }
 
 }
