@@ -352,7 +352,7 @@ namespace CK.Setup
                     // But this would be a massive refactoring and this internal mutable state is, to be honest,
                     // quite convenient!
                     typeResult.SetFinalOrderedResults( orderedItems, endpoints );
-                    if( !ServiceFinalHandling( typeResult ) )
+                    if( !ServiceFinalHandling( monitor, typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
                         buildValueCollector = null;
