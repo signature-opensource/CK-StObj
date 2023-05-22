@@ -1,13 +1,17 @@
-using CK.Setup;
 using System;
 using System.Collections.Generic;
 
 namespace CK.Core
 {
     /// <summary>
-    /// Base class for a endpoint.
-    /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.
+    /// Non generic endpoint definition.
+    /// <see cref="EndpointDefinition{TInstanceData}"/> must be used as the base class
+    /// for endpoint definition.
     /// </summary>
+    /// <remarks>
+    /// This cannot use a [<see cref="CKTypeSuperDefinerAttribute"/>] because <see cref="DefaultEndpointDefinition"/>
+    /// directly specializes this.
+    /// </remarks>
     [CKTypeDefiner]
     public abstract class EndpointDefinition : IRealObject
     {

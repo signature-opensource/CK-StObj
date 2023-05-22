@@ -39,5 +39,11 @@ namespace CK.Core
         /// </summary>
         IReadOnlyCollection<VFeature> Features { get; }
 
+        /// <summary>
+        /// Last step for service configuration. The <paramref name="serviceRegister"/> must contain the "Global" container
+        /// configuration. 
+        /// </summary>
+        /// <param name="serviceRegister">The global container configuration.</param>
+        //void ConfigureEndpointServices( StObjContextRoot.ServiceRegister serviceRegister );
     }
 }

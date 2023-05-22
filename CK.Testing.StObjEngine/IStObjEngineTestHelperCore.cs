@@ -2,8 +2,12 @@
 
 using CK.Core;
 using CK.Setup;
+using FluentAssertions.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CK.Testing.StObjEngine
 {
@@ -158,6 +162,23 @@ namespace CK.Testing.StObjEngine
         StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                                                   SimpleServiceContainer? startupServices = null );
+
+        /// <summary>
+        /// Starts any <see cref="IHostedService"/> in <paramref name="services"/>.
+        /// </summary>
+        /// <param name="services">The service provider.</param>
+        /// <param name="cancellation">Optional cancellation token.</param>
+        /// <returns>The <paramref name="services"/>.</returns>
+        Task<ServiceProvider> StartHostedServicesAsync( ServiceProvider services, CancellationToken cancellation = default );
+
+        /// <summary>
+        /// Stops any <see cref="IHostedService"/> in <paramref name="services"/> and optionally disposes the provider.
+        /// </summary>
+        /// <param name="services">The service provider.</param>
+        /// <param name="disposeServices">True to dispose the <paramref name="services"/>.</param>
+        /// <param name="cancellation">Optional cancellation token.</param>
+        /// <returns>The awaitable.</returns>
+        Task StopHostedServicesAsync( ServiceProvider services, bool disposeServices = false, CancellationToken cancellation = default );
 
     }
 }

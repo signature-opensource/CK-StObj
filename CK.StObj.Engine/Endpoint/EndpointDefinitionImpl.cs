@@ -39,6 +39,13 @@ namespace CK.Setup
             scope.Append( "public override string Name => " ).AppendSourceString( name ).Append( ";" ).NewLine();
 
             WriteScopedAndSinglentonServices( scope, endpointContext );
+
+            Debug.Assert( classType.BaseType != null );
+            var tData = classType.BaseType.GetGenericArguments()[0];
+            scope.Append( "protected override EndpointServiceProvider<" ).AppendCSharpName(tData, true, true, true).Append( "> CreateContainer()" ).OpenBlock();
+            scope.Append( "return null!;" ).NewLine();
+            scope.CloseBlock();
+
             return CSCodeGenerationResult.Success;
         }
 

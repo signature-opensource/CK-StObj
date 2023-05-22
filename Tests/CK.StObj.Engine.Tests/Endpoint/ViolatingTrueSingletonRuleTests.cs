@@ -1,16 +1,18 @@
 using CK.Core;
-using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-using System;
 using System.Diagnostics;
-using static CK.StObj.Engine.Tests.DI.EndpointServiceExtensionTests;
 using static CK.Testing.StObjEngineTestHelper;
 
-namespace CK.StObj.Engine.Tests.DI
+namespace CK.StObj.Engine.Tests.Endpoint
 {
     public class ViolatingTrueSingletonRuleTests
     {
+        [EndpointDefinition]
+        public abstract class AnotherEndpointDefinition : EndpointDefinition<object> 
+        {
+        }
+
         [EndpointSingletonService( typeof( DefaultEndpointDefinition ) )]
         public interface ISomeService { }
 

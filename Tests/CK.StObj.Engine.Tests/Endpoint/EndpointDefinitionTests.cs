@@ -3,84 +3,29 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.DI.Conformant.FromTheOutsideIdeaTests;
 using static CK.Testing.StObjEngineTestHelper;
 // Ignore Spelling: App Backdoor
 
-namespace CK.StObj.Engine.Tests.DI
+namespace CK.StObj.Engine.Tests.Endpoint
 {
-    [TestFixture]
-    public class SampleEndpointTests
-    {
-        public interface ICallerInfo : IScopedAutoService
-        {
-            string Address { get; }
-            string Protocol { get; }
-        }
-
-
-        public class CommandProcessor : IScopedAutoService
-        {
-            readonly IActivityMonitor _monitor;
-            readonly ICallerInfo _callerInfo;
-
-            public CommandProcessor( IActivityMonitor monitor, ICallerInfo info )
-            {
-                _monitor = monitor;
-                _callerInfo = info;
-            }
-
-            public void Process( object command )
-            {
-                _monitor.Info( $"Processed command '{command}' (coming from '{_callerInfo.Protocol}:{_callerInfo.Address}')." );
-            }
-        }
-
-
-        [EndpointDefinition]
-        public abstract class BackgroundEndpointDefinition : EndpointDefinition
-        {
-        }
-
-        public class BackgroundEndpoint : ISingletonAutoService
-        {
-            readonly BackgroundEndpointDefinition _definition;
-
-            public BackgroundEndpoint( BackgroundEndpointDefinition definition )
-            {
-                Debug.Assert( definition.Name == "Background" );
-                _definition = definition;
-            }
-
-            public void HandleCommand( object command )
-            {
-
-            }
-
-        }
-
-
-    }
-
     [TestFixture]
     public class EndpointDefinitionTests
     {
         [EndpointDefinition]
-        public abstract class AppIdentityEndpointDefinition : EndpointDefinition
+        public abstract class AppIdentityEndpointDefinition : EndpointDefinition<object>
         {
+            public override void ConfigureEndpointServices( IServiceCollection services )
+            {
+            }
         }
 
         [EndpointDefinition]
-        public abstract class BackdoorEndpointDefinition : EndpointDefinition
+        public abstract class BackdoorEndpointDefinition : EndpointDefinition<object>
         {
+            public override void ConfigureEndpointServices( IServiceCollection services )
+            {
+            }
         }
 
         [Test]
@@ -120,7 +65,7 @@ namespace CK.StObj.Engine.Tests.DI
 
 
         [EndpointDefinition]
-        public abstract class BadNameDefinition : EndpointDefinition
+        public abstract class BadNameDefinition : EndpointDefinition<object>
         {
         }
 

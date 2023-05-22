@@ -3,13 +3,13 @@ using FluentAssertions;
 using NUnit.Framework;
 using static CK.Testing.StObjEngineTestHelper;
 
-namespace CK.StObj.Engine.Tests.DI
+namespace CK.StObj.Engine.Tests.Endpoint
 {
     [TestFixture]
     public class EndpointServiceExtensionTests
     {
         [EndpointDefinition]
-        public abstract class AnotherEndpointDefinition : EndpointDefinition
+        public abstract class AnotherEndpointDefinition : EndpointDefinition<object> 
         {
         }
 

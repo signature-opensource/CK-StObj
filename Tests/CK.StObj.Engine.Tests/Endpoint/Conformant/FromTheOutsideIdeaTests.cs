@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace CK.StObj.Engine.Tests.DI.Conformant
+namespace CK.StObj.Engine.Tests.Endpoint.DITests
 {
     [TestFixture]
     public class FromTheOutsideIdeaTests
