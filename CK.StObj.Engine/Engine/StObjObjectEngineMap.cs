@@ -171,6 +171,11 @@ namespace CK.Setup
             throw new NotSupportedException( "ConfigureServices is not supported at build time." );
         }
 
+        void IStObjMap.ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister)
+        {
+            throw new NotSupportedException( "ConfigureEndpointServices is not supported at build time." );
+        }
+
         /// <summary>
         /// Dynamically projects <see cref="CKTypeCollectorResult.Assemblies"/> to their <see cref="VFeature"/>
         /// (ordered by <see cref="VFeature.Name"/> since by design there can not be multiple versions by feature).

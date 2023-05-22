@@ -44,6 +44,6 @@ namespace CK.Core
         /// configuration. 
         /// </summary>
         /// <param name="serviceRegister">The global container configuration.</param>
-        //void ConfigureEndpointServices( StObjContextRoot.ServiceRegister serviceRegister );
+        void ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister );
     }
 }

@@ -373,6 +373,15 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
             serviceGen.CreateConfigureServiceMethod( orderedStObjs );
 
+            rootType.Append( "public void ConfigureEndpointServices( in StObjContextRoot.ServiceRegister reg )" )
+                    .OpenBlock()
+                    .Append( "if( CK.Core.EndpointTypeManager_CK.Endpoints.Length == 1 ) return;" ).NewLine()
+                    .Append( "var relays = new Microsoft.Extensions.DependencyInjection.ServiceCollection();" ).NewLine()
+                    .Append( "foreach( var e in CK.Core.EndpointTypeManager_CK.Endpoints.Skip(1) )" )
+                    .OpenBlock()
+                    .CloseBlock()
+                    .CloseBlock();
+
             GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );
         }
 
