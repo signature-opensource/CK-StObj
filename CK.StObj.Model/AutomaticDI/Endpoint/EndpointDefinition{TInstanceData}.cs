@@ -3,6 +3,7 @@ using System;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// Base class for a endpoint definition.
     /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.

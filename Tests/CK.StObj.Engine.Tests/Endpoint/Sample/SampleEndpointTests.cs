@@ -1,8 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using System.Diagnostics.CodeAnalysis;
-using System.Net;
 using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 

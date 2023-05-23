@@ -1,5 +1,6 @@
 using CK.Setup;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.Collections.Generic;
 
 namespace CK.Core
@@ -19,6 +20,11 @@ namespace CK.Core
         /// Gets all the EndpointDefinition including the <see cref="DefaultEndpointDefinition"/> (that is the first one).
         /// </summary>
         public abstract IReadOnlyList<EndpointDefinition> AllEndpointDefinitions { get; }
+
+        /// <summary>
+        /// Gets all the service types that are declared as endpoint services.
+        /// </summary>
+        public abstract IReadOnlySet<Type> EndpointServices { get; }
 
         // Do not remove this!
         static void KeepTheMicrosoftExtensionsHostingAbstractionAssemblyRef( IHostedService service ) { }

@@ -8,6 +8,7 @@ using System.Reflection;
 
 namespace CK.Setup
 {
+
     class ServiceSupportCodeGenerator
     {
         const string _sourceServiceSupport = @"
