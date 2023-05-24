@@ -5,18 +5,18 @@ using System.Threading.Tasks;
 namespace CK.Core
 {
     /// <summary>
-    /// A endpoint service provider can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="CreateAsyncScope(TInstanceData)"/>.
+    /// A endpoint service provider can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="CreateAsyncScope(TScopeData)"/>.
     /// </summary>
-    /// <typeparam name="TInstanceData">Data specific to the endpoint from which endpoint scoped services can be derived.</typeparam>
-    public sealed class EndpointServiceProvider<TInstanceData> : IServiceProvider, IServiceProviderIsService, IDisposable, IAsyncDisposable
-        where TInstanceData : class
+    /// <typeparam name="TScopeData">Data specific to the endpoint from which endpoint scoped services can be derived.</typeparam>
+    public sealed class EndpointServiceProvider<TScopeData> : IServiceProvider, IServiceProviderIsService, IDisposable, IAsyncDisposable
+        where TScopeData : notnull
     {
         readonly ServiceProvider _serviceProvider;
         IServiceProviderIsService? _serviceProviderIsService;
 
         /// <summary>
-        /// Initializes a new <see cref="EndpointServiceProvider{TInstanceData}"/>.
-        /// The <paramref name="serviceProvider"/> must be configured to resolve a scoped <see cref="EndpointInstance{TInstanceData}"/>.
+        /// Initializes a new <see cref="EndpointServiceProvider{TScopeData}"/>.
+        /// The <paramref name="serviceProvider"/> must be configured to resolve a scoped <see cref="EndpointScopeData{TScopeData}"/>.
         /// This is not intended to be used directly, this supports the endpoint DI infrastructure.
         /// </summary>
         /// <param name="serviceProvider"></param>
@@ -30,10 +30,10 @@ namespace CK.Core
         /// </summary>
         /// <param name="scopedData">Endpoint instance specific data.</param>
         /// <returns>An <see cref="AsyncServiceScope"/> that can be used to resolve scoped services.</returns>
-        public AsyncServiceScope CreateAsyncScope( TInstanceData scopedData )
+        public AsyncServiceScope CreateAsyncScope( TScopeData scopedData )
         {
             var scope = _serviceProvider.CreateAsyncScope();
-            var d = scope.ServiceProvider.GetRequiredService<EndpointInstance<TInstanceData>>();
+            var d = scope.ServiceProvider.GetRequiredService<EndpointScopeData<TScopeData>>();
             d._data = scopedData;
             return scope;
         }
@@ -51,11 +51,10 @@ namespace CK.Core
         /// Implements <see cref="IServiceProviderIsService.IsService(Type)"/>.
         /// </summary>
         /// <param name="serviceType">The service to test.</param>
-        /// <returns>true if the specified service is a available, false if it is not.</returns>
+        /// <returns>True if the specified service is a available, false if it is not.</returns>
         public bool IsService( Type serviceType )
         {
-            var p = _serviceProviderIsService ?? _serviceProvider.GetService<IServiceProviderIsService>();
-            return p.IsService( serviceType );
+            return (_serviceProviderIsService ??= _serviceProvider.GetRequiredService<IServiceProviderIsService>()).IsService( serviceType );
         }
     }
 

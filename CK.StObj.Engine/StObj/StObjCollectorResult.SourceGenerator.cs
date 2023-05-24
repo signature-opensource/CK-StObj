@@ -341,12 +341,12 @@ IReadOnlyList<string> IStObjMap.Names => CK.StObj.SignatureAttribute.V.Names;
 SHA1Value IStObjMap.GeneratedSignature => CK.StObj.SignatureAttribute.V.Signature;
 IReadOnlyCollection<VFeature> IStObjMap.Features => _vFeatures;
 
-IStObj IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
-object IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
+IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
+object? IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
 IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finalStObjs;
 IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
 
-GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
+GFinalStObj? GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
 
 [Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.GenStObjs."", true )]
 internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;

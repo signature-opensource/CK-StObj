@@ -3,6 +3,8 @@ using System;
 using CK.Core;
 using System.Diagnostics;
 using System.Linq;
+using System.Collections.Generic;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.Setup
 {
@@ -17,41 +19,61 @@ namespace CK.Setup
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
             // This CK.Core.EndpointTypeManager_CK statically exposes the default and all endpoint definitions.
-            scope.Append( "internal static readonly CK.Core.DefaultEndpointDefinition _default;" ).NewLine();
-            scope.Append( "internal static readonly CK.Core.EndpointDefinition[] _endpoints;" ).NewLine();
+            // static (Real Objects)
+            scope.Append( "internal static readonly DefaultEndpointDefinition _default;" ).NewLine();
+            scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine();
             scope.Append( "internal static readonly IReadOnlySet<Type> _endpointServices;" ).NewLine();
+            // instance (bound to the DI world). 
+            scope.Append( "internal readonly CK.StObj.IEndpointTypeInternal[] _endpointTypes;" ).NewLine();
 
-            var cctor = scope.GeneratedByComment().NewLine()
-                            .CreateFunction( "static EndpointTypeManager_CK()" );
+            var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
 
-            StaticConstructor( cctor, c.CurrentRun.EngineMap );
+            StaticConstructor( scope, endpointResult );
+            InstanceConstructor( scope, endpointResult );
 
             scope.Append( "public override DefaultEndpointDefinition DefaultEndpointDefinition => _default;" ).NewLine()
                  .Append( "public override IReadOnlyList<EndpointDefinition> AllEndpointDefinitions => _endpoints;" ).NewLine()
-                 .Append( "public override IReadOnlySet<Type> EndpointServices => _endpointServices;" ).NewLine();
-
+                 .Append( "public override IReadOnlySet<Type> EndpointServices => _endpointServices;" ).NewLine()
+                 .Append( "public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;" ).NewLine();
+            
             return CSCodeGenerationResult.Success;
         }
 
-        static void StaticConstructor( IFunctionScope cctor, IStObjEngineMap engineMap )
+        static void InstanceConstructor( ITypeScope scope, IEndpointResult endpointResult )
         {
-            var def = engineMap.StObjs.ToLeaf( typeof( DefaultEndpointDefinition ) );
-            Debug.Assert( def != null, "Systematically registered by StObjCollector.GetResult()." );
+            scope.Append( "internal EndpointTypeManager_CK()" )
+                 .OpenBlock();
 
-            cctor.Append( "_default = (DefaultEndpointDefinition)" ).Append( def.CodeInstanceAccessor ).Append( ";" ).NewLine();
+            scope.Append( "_endpointTypes = new CK.StObj.IEndpointTypeInternal[] {" ).NewLine();
+            int i = 0;
+            foreach( var e in endpointResult.EndpointContexts.Skip( 1 ) )
+            {
+                var instanceTypeName = e.InstanceDataType.ToCSharpName();
+                scope.Append( "new CK.StObj.EndpointType<" )
+                    .Append( instanceTypeName )
+                    .Append( ">( (EndpointDefinition<" ).Append( instanceTypeName ).Append( ">)_endpoints[" ).Append( ++i ).Append( "] )," ).NewLine();
+            }
+            scope.Append( "};" ).NewLine();
 
-            var endpoints = engineMap.StObjs.FinalImplementations.Where( f => typeof( EndpointDefinition ).IsAssignableFrom( f.ClassType ) ).ToList();
-            cctor.Append( "_endpoints = new EndpointDefinition[" ).Append( endpoints.Count ).Append( "];" ).NewLine()
-                .Append( "_endpoints[0] = Default;" ).NewLine();
-            int i = 1;
+            scope.CloseBlock();
+        }
+
+        static void StaticConstructor( ITypeScope scope, IEndpointResult endpointResult )
+        {
+            scope.Append( "static EndpointTypeManager_CK()" )
+                 .OpenBlock();
+            // Exposes all the endpoint service types as a set.
+            scope.Append( "_endpointServices = new HashSet<Type>( " ).AppendArray( endpointResult.EndpointServices ).Append( " );" ).NewLine();
+
+            scope.Append( "_default = (DefaultEndpointDefinition)" ).Append( endpointResult.DefaultEndpointContext.EndpointDefinition.CodeInstanceAccessor ).Append( ";" ).NewLine();
+            var endpoints = endpointResult.EndpointContexts;
+            scope.Append( "_endpoints = new EndpointDefinition[" ).Append( endpoints.Count ).Append( "];" ).NewLine();
+            int i = 0;
             foreach( var e in endpoints )
             {
-                if( e != def )
-                {
-                    cctor.Append( "_endpoints[" ).Append( i++ ).Append( "] = (EndpointDefinition)" ).Append( e.CodeInstanceAccessor ).Append( ";" ).NewLine();
-                }
+                scope.Append( "_endpoints[" ).Append( i++ ).Append( "] = (EndpointDefinition)" ).Append( e.EndpointDefinition.CodeInstanceAccessor ).Append( ";" ).NewLine();
             }
-            cctor.Append( "_endpointServices = new HashSet<Type>( " ).AppendArray( engineMap.EndpointResult.EndpointServices ).Append( " );" ).NewLine();
+            scope.CloseBlock();
         }
     }
 }

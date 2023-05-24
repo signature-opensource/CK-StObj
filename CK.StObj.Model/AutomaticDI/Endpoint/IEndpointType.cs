@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 
 namespace CK.Core
 {
     /// <summary>
-    /// Non generic base for <see cref="IEndpointType{TInstanceData}"/>.
+    /// Non generic base for <see cref="IEndpointType{TScopeData}"/>.
     /// </summary>
-    [IsMultiple]
     public interface IEndpointType
     {
         /// <summary>
@@ -14,9 +13,15 @@ namespace CK.Core
         EndpointDefinition EndpointDefinition { get; }
 
         /// <summary>
-        /// Gets the type of the scoped instance data for this endpoint.
+        /// Gets this endpoint's name.
         /// </summary>
-        Type InstanceDataType { get; }
+        string Name { get; }
+
+        /// <summary>
+        /// Gets the type of the scope data type: the generic parameter of <see cref="EndpointDefinition{TScopeData}"/>
+        /// and <see cref="EndpointServiceProvider{TScopeData}"/>.
+        /// </summary>
+        Type ScopeDataType { get; }
     }
 
 }

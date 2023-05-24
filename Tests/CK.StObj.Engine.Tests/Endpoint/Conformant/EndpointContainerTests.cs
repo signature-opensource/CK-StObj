@@ -144,12 +144,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // This scoped must be bound to the B and the two A instance.
             global.AddScoped<Scoped>();
 
-            ServiceCollection endpoint = GeneratedEndpointContainerBuilder.CreateEndpointBaseServiceCollection( TestHelper.Monitor, global, _ => false );
             var g = global.BuildServiceProvider();
-            ServiceProvider e = GeneratedEndpointContainerBuilder.BuildEndpointServiceProvider( endpoint, g );
+            EndpointServiceProvider<object> e = FakeEndpointDefinition.CreateServiceProvider( global, g );
 
             using var scopedG = g.CreateScope();
-            using var scopedE = e.CreateScope();
+            using var scopedE = e.CreateAsyncScope( "Scoped data." );
 
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
@@ -180,7 +179,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             //
             using var scopedG2 = g.CreateScope();
-            using var scopedE2 = e.CreateScope();
+            using var scopedE2 = e.CreateAsyncScope( "Scoped Data." );
 
             var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
             var fromG2 = ResolveFrom( scopedG2.ServiceProvider );
@@ -220,11 +219,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddScoped<IMulti,Scop2>( sp => sp.GetRequiredService<Scop2>() );
             var g = global.BuildServiceProvider();
 
-            var endpoint = GeneratedEndpointContainerBuilder.CreateEndpointBaseServiceCollection( TestHelper.Monitor, global, _ => false );
-            var e = GeneratedEndpointContainerBuilder.BuildEndpointServiceProvider( endpoint, g );
+            EndpointServiceProvider<object> e = FakeEndpointDefinition.CreateServiceProvider( global, g );
 
             using var scopedG = g.CreateScope();
-            using var scopedE = e.CreateScope();
+            using var scopedE = e.CreateAsyncScope( "Scoped data." );
 
             // Both containers resolves to the same instance.
             var sing1 = CheckTrueSingleton<Sing1>( g, e, scopedG, scopedE );
@@ -266,7 +264,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             mG2.OfType<Scop1>().Single().Should().NotBeSameAs( mE2.OfType<Scop1>().Single() );
             mG2.OfType<Scop2>().Single().Should().NotBeSameAs( mE2.OfType<Scop2>().Single() );
 
-            static T CheckTrueSingleton<T>( ServiceProvider g, ServiceProvider e, IServiceScope scopedG, IServiceScope scopedE ) where T : notnull
+            static T CheckTrueSingleton<T>( ServiceProvider g, IServiceProvider e, IServiceScope scopedG, IServiceScope scopedE ) where T : notnull
             {
                 var sing1 = scopedG.ServiceProvider.GetRequiredService<T>();
                 scopedE.ServiceProvider.GetService( typeof( T ) ).Should().BeSameAs( sing1 );
@@ -298,11 +296,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 global.AddScoped<IMulti>( sp => sp.GetRequiredService<Scop1>() );
             }
 
-            var g = global.BuildServiceProvider();
-
-            var endpoint = GeneratedEndpointContainerBuilder.CreateEndpointBaseServiceCollection( TestHelper.Monitor, global, _ => false );
-            var e = GeneratedEndpointContainerBuilder.BuildEndpointServiceProvider( endpoint, g );
-            using var scopedE = e.CreateScope();
+            EndpointServiceProvider<object> e = FakeEndpointDefinition.CreateServiceProvider( global, global.BuildServiceProvider() );
+            using var scopedE = e.CreateAsyncScope( "Scoped data." );
 
             // The container works as usual.
             scopedE.ServiceProvider.GetServices<Sing1>().Should().NotBeNull();

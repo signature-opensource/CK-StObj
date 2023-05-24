@@ -4,6 +4,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
+    public interface IBackgroundEndpointType : IEndpointType<BackgroundEndpointDefinition.BackgroundData> { }
+
     [EndpointDefinition]
     public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.BackgroundData>
     {

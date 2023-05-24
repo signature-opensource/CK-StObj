@@ -1,6 +1,7 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
@@ -12,10 +13,12 @@ namespace CK.StObj.Engine.Tests.Endpoint
         readonly Channel<object?> _commands;
         readonly Task _runTask;
 
-        public BackgroundEndpoint( BackgroundEndpointDefinition definition )
+        public BackgroundEndpoint( EndpointTypeManager endpoints )
         {
-            Debug.Assert( definition.Name == "Background" );
-            _serviceProvider = definition.GetContainer();
+            _serviceProvider = endpoints.EndpointTypes
+                                        .OfType<IEndpointType<BackgroundEndpointDefinition.BackgroundData>>()
+                                        .First()
+                                        .GetContainer();
             _commands = Channel.CreateUnbounded<object?>();
             _runTask = Task.Run( RunAsync );
         }

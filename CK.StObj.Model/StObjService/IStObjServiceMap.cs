@@ -11,6 +11,14 @@ namespace CK.Core
     public interface IStObjServiceMap
     {
         /// <summary>
+        /// Gets the <see cref="IStObjFinalClass"/> that can be a <see cref="IStObjFinalImplementation"/> (if the service
+        /// is implemented by a real object) or a <see cref="IStObjServiceClassDescriptor"/> or null if no mapping exists.
+        /// </summary>
+        /// <param name="t">IAutoService type.</param>
+        /// <returns>The implementation or null if no mapping exists for this type.</returns>
+        IStObjFinalClass? ToLeaf( Type t );
+
+        /// <summary>
         /// Gets all the <see cref="IAutoService"/> types that are directly mapped to
         /// an already available Real Object.
         /// </summary>

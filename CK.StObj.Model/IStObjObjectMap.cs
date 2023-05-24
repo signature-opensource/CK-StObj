@@ -13,11 +13,11 @@ namespace CK.Core
     public interface IStObjObjectMap
     {
         /// <summary>
-        /// Gets the most specialized <see cref="IStObj"/> or null if no mapping exists.
+        /// Gets the <see cref="IStObjFinalImplementation"/> or null if no mapping exists.
         /// </summary>
         /// <param name="t">Key type.</param>
         /// <returns>Most specialized StObj or null if no mapping exists for this type.</returns>
-        IStObj? ToLeaf( Type t );
+        IStObjFinalImplementation? ToLeaf( Type t );
 
         /// <summary>
         /// Gets the real object final implementation or null if no mapping exists.

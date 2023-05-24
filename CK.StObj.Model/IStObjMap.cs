@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
 
 namespace CK.Core
@@ -29,6 +30,14 @@ namespace CK.Core
         IStObjServiceMap Services { get; }
 
         /// <summary>
+        /// Gets the <see cref="IStObjFinalClass"/> that can be a <see cref="IStObjFinalImplementation"/> or
+        /// a <see cref="IStObjServiceClassDescriptor"/> or null if no mapping exists.
+        /// </summary>
+        /// <param name="t">IAutoService or IRealObject type.</param>
+        /// <returns>The implementation or null if no mapping exists for this type.</returns>
+        IStObjFinalClass? ToLeaf( Type t );
+
+        /// <summary>
         /// Gets the names of this StObj map.
         /// Never empty, defaults to a single empty string.
         /// </summary>
@@ -44,6 +53,7 @@ namespace CK.Core
         /// configuration. 
         /// </summary>
         /// <param name="serviceRegister">The global container configuration.</param>
-        void ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister );
+        /// <returns>True on success, false on error. Errors have been logged to <see cref="StObjContextRoot.ServiceRegister.Monitor"/>.</returns>
+        bool ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister );
     }
 }

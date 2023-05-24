@@ -164,7 +164,7 @@ namespace CK.Setup
             _endpointResult = endpointResult;
         }
 
-        IStObj? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
+        IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
         void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
         {

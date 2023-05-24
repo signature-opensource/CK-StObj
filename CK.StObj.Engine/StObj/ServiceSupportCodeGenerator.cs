@@ -115,6 +115,15 @@ static readonly Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappin
 static readonly IStObjServiceClassFactory[] _manualServiceList;
 
 public IStObjServiceMap Services => this;
+IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t ) => ToServiceLeaf( t );
+
+IStObjFinalClass? ToServiceLeaf( Type t )
+{
+    return _simpleServiceMappings.TryGetValue( t, out var service )
+                                    ? service
+                                    : _objectServiceMappings.TryGetValue( t, out var realObject ) ? realObject : null;
+}
+public IStObjFinalClass? ToLeaf( Type t ) => ToServiceLeaf( t ) ?? GToLeaf( t );
 IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
 IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => _objectServiceMappingList;
 IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _simpleServiceMappings;

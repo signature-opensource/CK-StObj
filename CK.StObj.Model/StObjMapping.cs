@@ -25,8 +25,8 @@ namespace CK.Core
         /// <param name="i">The implementation.</param>
         public StObjMapping( IStObj o, IStObjFinalImplementation i )
         {
-            if( o == null ) throw new ArgumentNullException( nameof( o ) );
-            if( i == null ) throw new ArgumentNullException( nameof( i ) );
+            Throw.CheckNotNullArgument( o );
+            Throw.CheckNotNullArgument( i );
             StObj = o;
             FinalImplementation = i;
         }

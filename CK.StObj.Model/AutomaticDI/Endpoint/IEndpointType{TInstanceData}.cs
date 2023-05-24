@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace CK.Core
@@ -8,16 +8,16 @@ namespace CK.Core
     /// services world. It is available in the global container and provides a dedicated
     /// container for the endpoint.
     /// </summary>
-    /// <typeparam name="TInstanceData">Type of the scoped specific instance data.</typeparam>
-    public interface IEndpointType<TInstanceData> : IEndpointType
-         where TInstanceData : class
+    /// <typeparam name="TScopeData">Type of the scoped specific instance data.</typeparam>
+    public interface IEndpointType<TScopeData> : IEndpointType
+         where TScopeData : notnull
     {
         /// <summary>
         /// Gets the <see cref="IServiceProvider"/> for this endpoint definition that
-        /// can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="EndpointServiceProvider{TInstanceData}.CreateAsyncScope(TInstanceData)"/>.
+        /// can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="EndpointServiceProvider{TScopeData}.CreateAsyncScope(TScopeData)"/>.
         /// </summary>
         /// <returns>The endpoint service provider.</returns>
-        EndpointServiceProvider<TInstanceData> GetContainer();
+        EndpointServiceProvider<TScopeData> GetContainer();
     }
 
 }

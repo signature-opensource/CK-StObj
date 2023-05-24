@@ -1,9 +1,11 @@
 
-// This code is embedded in the generated code.
+// This code is embedded in the generated code but in the CK.StObj namespace
+// in its own namespace block so that the scoped "using" are only for this.
+//
 // It is the core of the endpoint container implementation.
 // If anything here is changed, it has to be manually reported in the code generation
 // (and vice versa).
-namespace CK.StObj
+namespace CK.StObj.Engine.Tests
 {
     using CK.Core;
     using Microsoft.Extensions.DependencyInjection;
@@ -12,15 +14,31 @@ namespace CK.StObj
     using System.Diagnostics;
     using System;
     using Microsoft.Extensions.DependencyInjection.Extensions;
+    using System.Linq;
 
-    sealed class EndPointType<TInstanceData> : IEndpointType<TInstanceData> where TInstanceData : class
+    sealed class GlobalHook
     {
-        readonly EndpointDefinition _definition;
+        [AllowNull]
+        public IServiceProvider Global { get; set; }
+    }
+
+    interface IEndpointTypeInternal : IEndpointType
+    {
+        bool ConfigureServices( IActivityMonitor monitor, IStObjMap stObjMap, IServiceCollection commonEndpointContainer );
+        void SetGlobalContainer( IServiceProvider global );
+    }
+
+    sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : notnull
+    {
+        internal EndpointServiceProvider<TScopeData>? _services;
+
+        readonly EndpointDefinition<TScopeData> _definition;
         internal ServiceCollection? _configuration;
-        internal EndpointServiceProvider<TInstanceData>? _services;
+        IServiceProvider? _global;
         readonly object _lock;
-;
-        public EndPointType( EndpointDefinition definition )
+        bool _initializationSuccess;
+
+        public EndpointType( EndpointDefinition<TScopeData> definition )
         {
             _definition = definition;
             _lock = new object();
@@ -28,32 +46,115 @@ namespace CK.StObj
 
         public EndpointDefinition EndpointDefinition => _definition;
 
-        public Type InstanceDataType => typeof(TInstanceData);
+        public Type ScopeDataType => typeof( TScopeData );
 
-        public EndpointServiceProvider<TInstanceData> GetContainer() => _services ?? DoCreateContainer();
+        public string Name => _definition.Name;
 
-        EndpointServiceProvider<TInstanceData> DoCreateContainer()
+        public EndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
+
+        EndpointServiceProvider<TScopeData> DoCreateContainer()
         {
             lock( _lock )
             {
-                return _services ?? CreateContainer();
+                if( _services == null )
+                {
+                    if( !_initializationSuccess ) Throw.InvalidOperationException( "Endpoint initialization failed. It cannot be used." );
+                    Debug.Assert( _configuration != null, "Initialization succeeded." );
+                    _services = new EndpointServiceProvider<TScopeData>( _configuration.BuildServiceProvider() );
+                    _services.GetRequiredService<GlobalHook>().Global = _global;
+                    // Release the configuration now that the endpoint container is built.
+                    _configuration = null;
+                }
+                return _services;
             }
         }
 
-        EndpointServiceProvider<TInstanceData> CreateContainer()
+        public bool ConfigureServices( IActivityMonitor monitor, IStObjMap stObjMap, IServiceCollection commonEndpointContainer )
         {
-            _configuration
+            var configuration = new ServiceCollection();
+            // Calls the ConfigureEndpointServices on the empty configuration.
+            _definition.ConfigureEndpointServices( configuration );
+            // Process the registrations to detect:
+            // - extra registrations: they must not be type mapped to IRealObject or IAutoService.
+            // - missing registrations from the definition.
+            if( CheckRegistrations( monitor, configuration, _definition, stObjMap ) )
+            {
+                configuration.AddRange( commonEndpointContainer );
+                _configuration = configuration;
+                return _initializationSuccess = true;
+            }
+            return false;
+
+            static bool CheckRegistrations( IActivityMonitor monitor, ServiceCollection configuration, EndpointDefinition definition, IStObjMap stObjMap )
+            {
+                var handledSingletons = new List<Type>( definition.SingletonServices );
+                var handledScoped = new List<Type>( definition.ScopedServices );
+                List<Type>? moreSingletons = null;
+                List<Type>? moreScoped = null;
+                foreach( var d in configuration )
+                {
+                    if( d.Lifetime == ServiceLifetime.Singleton )
+                    {
+                        if( !handledSingletons.Remove( d.ServiceType ) )
+                        {
+                            moreSingletons ??= new List<Type>();
+                            moreSingletons.Add( d.ServiceType );
+                        }
+                    }
+                    else
+                    {
+                        if( !handledScoped.Remove( d.ServiceType ) )
+                        {
+                            moreScoped ??= new List<Type>();
+                            moreScoped.Add( d.ServiceType );
+                        }
+                    }
+                }
+                bool success = ErrorUnhandledServices( monitor, definition, handledSingletons, ServiceLifetime.Singleton );
+                if( !ErrorUnhandledServices( monitor, definition, handledScoped, ServiceLifetime.Scoped ) ) success = false;
+                if( !ErrorNotEndpointAutoServices( monitor, definition, stObjMap, moreSingletons, ServiceLifetime.Singleton ) ) success = false;
+                if( !ErrorNotEndpointAutoServices( monitor, definition, stObjMap, moreScoped, ServiceLifetime.Scoped ) ) success = false;
+                return success;
+
+                static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, EndpointDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
+                {
+                    bool success = true;
+                    if( extra != null )
+                    {
+                        foreach( var s in extra )
+                        {
+                            var autoMap = stObjMap.ToLeaf( s );
+                            if( autoMap != null )
+                            {
+                                monitor.Error( $"Endpoint '{definition.Name}' configures the {lt} services: '{s:C}' that is automatically mapped to '{autoMap.ClassType:C}'. This is not allowed." );
+                                success = false;
+                            }
+                            else
+                            {
+                                monitor.Warn( $"Endpoint '{definition.Name}' supports the {lt} service '{s:C}' that is not declared as a endpoint service." );
+                            }
+                        }
+                    }
+                    return success;
+                }
+
+                static bool ErrorUnhandledServices( IActivityMonitor monitor, EndpointDefinition definition, List<Type> unhandled, ServiceLifetime lt )
+                {
+                    if( unhandled.Count > 0 )
+                    {
+                        monitor.Error( $"Endpoint '{definition.Name}' doesn't handles the declared {lt} services: '{unhandled.Select( s => s.ToCSharpName() ).Concatenate( "', '" )}'." );
+                        return false;
+                    }
+                    return true;
+                }
+            }
         }
+
+        public void SetGlobalContainer( IServiceProvider global ) => _global = global; 
     }
 
-    static class GeneratedEndpointContainerBuilder
+    static class EndpointHelper
     {
-        sealed class GlobalHook
-        {
-            [AllowNull]
-            public IServiceProvider Global { get; set; }
-        }
-
         enum SKind
         {
             AtLeastOneSingleton = 1,
@@ -61,9 +162,9 @@ namespace CK.StObj
             AtLeastOneScoped = 4
         }
 
-        internal static ServiceCollection CreateEndpointBaseServiceCollection( IActivityMonitor monitor,
-                                                                               IServiceCollection global,
-                                                                               Func<Type, bool> isEndpointService )
+        internal static IServiceCollection CreateCommonEndpointContainer( IActivityMonitor monitor,
+                                                                          IServiceCollection global,
+                                                                          Func<Type, bool> isEndpointService )
         {
             var kindMap = new Dictionary<Type, SKind>();
             ServiceCollection endpoint = new ServiceCollection();
@@ -236,13 +337,6 @@ namespace CK.StObj
                 Debug.Assert( typeArguments.Length == 2 );
                 return typeArguments[1];
             }
-        }
-
-        internal static ServiceProvider BuildEndpointServiceProvider( ServiceCollection endpoint, ServiceProvider global )
-        {
-            var e = endpoint.BuildServiceProvider();
-            e.GetRequiredService<GlobalHook>().Global = global;
-            return e;
         }
 
     }

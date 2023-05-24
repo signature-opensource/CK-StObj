@@ -33,6 +33,12 @@ namespace CK.Setup
             _serviceToObjectMap.Add( t, mapping );
         }
 
+        public IStObjFinalClass? ToLeaf( Type t )
+        {
+            if( _serviceSimpleMap.TryGetValue( t, out var service ) ) return service;
+            return _serviceToObjectMap.TryGetValue( t, out var realObject ) ? realObject : null;
+        }
+
         public IReadOnlyDictionary<Type, IStObjFinalImplementation> ObjectMappings => _serviceToObjectMapExposed;
 
         public IReadOnlyList<IStObjFinalImplementation> ObjectMappingList => _serviceRealObjects;
