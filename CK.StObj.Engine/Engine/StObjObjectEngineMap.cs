@@ -53,10 +53,6 @@ namespace CK.Setup
             _serviceSimpleList = new List<IStObjServiceFinalSimpleMapping>();
             _exposedServiceMap = _serviceSimpleMap.AsIReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping, IStObjServiceClassDescriptor>();
 
-            _serviceManualMap = new Dictionary<Type, IStObjServiceFinalManualMapping>();
-            _serviceManualList = new List<IStObjServiceFinalManualMapping>();
-            _exposedManualServiceMap =  _serviceManualMap.AsIReadOnlyDictionary<Type, IStObjServiceFinalManualMapping, IStObjServiceClassFactory>();
-
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
             _serviceRealObjects = new List<MutableItem>();
             _serviceToObjectMapExposed = _serviceToObjectMap.AsIReadOnlyDictionary<Type,MutableItem,IStObjFinalImplementation>();
@@ -93,8 +89,7 @@ namespace CK.Setup
 
         IStObjFinalClass? IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
                                                             ?? (IStObjFinalClass?)_serviceSimpleMap.GetValueOrDefault( t )
-                                                            ?? (IStObjFinalClass?)_serviceToObjectMap.GetValueOrDefault( t )
-                                                            ?? _serviceManualMap.GetValueOrDefault( t );
+                                                            ?? _serviceToObjectMap.GetValueOrDefault( t );
 
         /// <summary>
         /// Gets all the specialization. If there is no error, this list corresponds to the

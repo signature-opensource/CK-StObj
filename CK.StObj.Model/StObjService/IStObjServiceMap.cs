@@ -49,27 +49,5 @@ namespace CK.Core
         /// </summary>
         IReadOnlyList<IStObjServiceClassDescriptor> SimpleMappingList { get; }
 
-        /// <summary>
-        /// Gets all the <see cref="IAutoService"/> types to Service class mappings
-        /// that cannot be directly resolved by a DI container and require either
-        /// an adaptation based on the <see cref="IStObjServiceClassFactoryInfo"/> or
-        /// to simply use the provided <see cref="IStObjServiceClassFactory.CreateInstance(IServiceProvider)"/>
-        /// helper method.
-        /// <para>
-        /// Note that a <see cref="IStObjServiceClassFactory"/> is a <see cref="IStObjServiceClassDescriptor"/> (that
-        /// is the descriptor used by <see cref="SimpleMappings"/>).
-        /// </para>
-        /// <para>
-        /// Use <see cref="ManualMappingList"/> to have the final service factories list (without duplicates).
-        /// </para>
-        /// </summary>
-        IReadOnlyDictionary<Type, IStObjServiceClassFactory> ManualMappings { get; }
-
-        /// <summary>
-        /// Gets all the not so simple registered types. See <see cref="ManualMappings"/>.
-        /// duplicates). 
-        /// </summary>
-        IReadOnlyList<IStObjServiceClassFactory> ManualMappingList { get; }
-
     }
 }

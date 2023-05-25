@@ -136,18 +136,6 @@ namespace CK.Core
                                 Register( mult, s.FinalType, s.IsScoped, allowMultipleRegistration: true );
                             }
                         }
-                        foreach( var s in map.Services.ManualMappingList )
-                        {
-                            Register( s.ClassType, s.CreateInstance, s.IsScoped, allowMultipleRegistration: false );
-                            foreach( var u in s.UniqueMappings )
-                            {
-                                Register( u, s.CreateInstance, s.IsScoped, allowMultipleRegistration: false );
-                            }
-                            foreach( var mult in s.MultipleMappings )
-                            {
-                                Register( mult, s.CreateInstance, s.IsScoped, allowMultipleRegistration: true );
-                            }
-                        }
                         map.ConfigureEndpointServices( this );
                     }
                     catch( Exception ex )

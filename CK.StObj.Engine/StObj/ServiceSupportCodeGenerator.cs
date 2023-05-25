@@ -12,27 +12,6 @@ namespace CK.Setup
     class ServiceSupportCodeGenerator
     {
         const string _sourceServiceSupport = @"
-        sealed class StObjServiceParameterInfo : IStObjServiceParameterInfo
-        {
-            public StObjServiceParameterInfo( Type t, int p, string n, IReadOnlyList<Type> v, bool isEnum )
-            {
-                ParameterType = t;
-                Position = p;
-                Name = n;
-                Value = v;
-                IsEnumerated = isEnum;
-            }
-
-            public Type ParameterType { get; }
-
-            public int Position { get; }
-
-            public string Name { get; }
-
-            public bool IsEnumerated { get; }
-
-            public IReadOnlyList<Type> Value { get; }
-        }
 
         sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
         {
@@ -53,36 +32,6 @@ namespace CK.Setup
             public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
 
             public AutoServiceKind AutoServiceKind { get; }
-
-            public IReadOnlyCollection<Type> MarshallableTypes { get; }
-
-            public IReadOnlyCollection<Type> MultipleMappings { get; }
-
-            public IReadOnlyCollection<Type> UniqueMappings { get; }
-        }
-
-        sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
-        {
-            public StObjServiceClassFactoryInfo( Type t, Type finalType, IReadOnlyList<IStObjServiceParameterInfo> a, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
-            {
-                ClassType = t;
-                FinalType = finalType;
-                Assignments = a;
-                AutoServiceKind = k;
-                MarshallableTypes = marshallableTypes;
-                MultipleMappings = mult;
-                UniqueMappings = uniq;
-            }
-
-            public Type ClassType { get; }
-
-            public Type FinalType { get; }
-
-            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
-
-            public AutoServiceKind AutoServiceKind { get; }
-
-            public IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
 
             public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
@@ -111,8 +60,6 @@ static readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappin
 static readonly IStObjFinalImplementation[] _objectServiceMappingList;
 static readonly Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
 static readonly IStObjServiceClassDescriptor[] _simpleServiceList;
-static readonly Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappings;
-static readonly IStObjServiceClassFactory[] _manualServiceList;
 
 public IStObjServiceMap Services => this;
 IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t ) => ToServiceLeaf( t );
@@ -127,9 +74,7 @@ public IStObjFinalClass? ToLeaf( Type t ) => ToServiceLeaf( t ) ?? GToLeaf( t );
 IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
 IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => _objectServiceMappingList;
 IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _simpleServiceMappings;
-IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _simpleServiceList;
-IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMappings => _manualServiceMappings;
-IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _manualServiceList;" )
+IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _simpleServiceList;" )
                      .NewLine();
 
             // Object mappings.
@@ -198,29 +143,6 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                             .Append( ", " )
                             .Append( "_simpleServiceList[" ).Append( map.Value.SimpleMappingIndex ).Append("] );")
                             .NewLine();
-            }
-            // Service mappings (Not so Simple :)).
-            _rootCtor.Append( $"_manualServiceList = " );
-            AppendArrayDecl( _rootCtor, nameof( IStObjServiceClassFactory ), liftedMap.ManualMappingList.Count );
-
-            foreach( var serviceFactory in liftedMap.ManualMappingList )
-            {
-                CreateServiceClassFactory( serviceFactory );
-                _rootCtor.Append( "_manualServiceList[" ).Append( serviceFactory.ManualMappingIndex ).Append( "] = " )
-                    .Append( GetServiceClassFactoryDefaultPropertyName( serviceFactory ) ).Append( ";" ).NewLine();
-            }
-
-            _rootCtor.Append( $"_manualServiceMappings = new Dictionary<Type, IStObjServiceClassFactory>( {liftedMap.ManualMappings.Count} );" ).NewLine();
-            foreach( var map in liftedMap.ManualMappings )
-            {
-                _rootCtor.Append( $"_manualServiceMappings.Add( " )
-                       .AppendTypeOf( map.Key )
-                       .Append( ", " ).Append( GetServiceClassFactoryDefaultPropertyName( map.Value ) )
-                       .Append( " );" ).NewLine();
-            }
-            foreach( var serviceFactory in liftedMap.ManualMappingList )
-            {
-                CreateServiceClassFactory( serviceFactory );
             }
         }
 
@@ -337,109 +259,5 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                         """ );
         }
 
-
-        string GetServiceClassFactoryDefaultPropertyName( IStObjServiceFinalManualMapping f ) => $"SFInfo.S{f.ManualMappingIndex}.Default";
-
-        void CreateServiceClassFactory( IStObjServiceFinalManualMapping c )
-        {
-            var t = _infoType.GeneratedByComment().CreateType( $"class S{c.ManualMappingIndex} : StObjServiceClassFactoryInfo, IStObjServiceClassFactory" );
-
-            t.CreateFunction( ctor =>
-            {
-                ctor.Append( "public S" ).Append( c.ManualMappingIndex ).Append( "()" ).NewLine()
-                    .Append( ": base( " )
-                        .AppendTypeOf( c.ClassType ).Append( ", " ).NewLine()
-                        .AppendTypeOf( c.FinalType ).Append( ", " ).NewLine()
-                        .Append( x => GenerateStObjServiceFactoryInfoAssignments( x, c.Assignments ) )
-                        .Append( ", " ).NewLine()
-                        .Append( c.AutoServiceKind )
-                        .Append( ", " ).NewLine()
-                        .AppendArray( c.MarshallableTypes )
-                        .Append( ", " ).NewLine()
-                        .AppendArray( c.MultipleMappings )
-                        .Append( ")" );
-            } );
-
-            t.CreateFunction( func =>
-            {
-                func.Append( "public object CreateInstance( IServiceProvider p ) {" );
-                func.Append( "return new " ).AppendCSharpName( c.FinalType, true, true, true ).Append( "(" );
-                var ctor = c.GetSingleConstructor();
-                var parameters = ctor.GetParameters();
-                for( int i = 0; i < parameters.Length; ++i )
-                {
-                    var p = parameters[i];
-                    if( i > 0 ) func.Append( ", " );
-                    var mapped = c.Assignments.Where( a => a.Position == p.Position ).FirstOrDefault();
-                    if( mapped == null )
-                    {
-                        func.Append( "p.GetService( " ).AppendTypeOf( p.ParameterType ).Append( ")" );
-                    }
-                    else
-                    {
-                        if( mapped.Value == null )
-                        {
-                            func.Append( "null" );
-                        }
-                        else if( mapped.IsEnumerated )
-                        {
-                            func.Append( "new " ).AppendCSharpName( p.ParameterType, true, true, true ).Append( "[]{" );
-                            for( int idxType = 0; idxType < mapped.Value.Count; ++idxType )
-                            {
-                                if( idxType > 0 ) func.Append( ", " );
-                                func.Append( "p.GetService( " ).AppendTypeOf( mapped.Value[idxType] ).Append( ")" );
-                            }
-                            func.Append( "}" );
-                        }
-                        else
-                        {
-                            func.Append( "p.GetService( " ).AppendTypeOf( mapped.Value[0] ).Append( ")" );
-                        }
-                    }
-                }
-                func.Append( ");" ).NewLine();
-            } );
-            t.Append( "public static readonly IStObjServiceClassFactory Default = new S" ).Append( c.ManualMappingIndex ).Append( "();" ).NewLine();
-        }
-
-        void GenerateStObjServiceFactoryInfoAssignments( ICodeWriter b, IReadOnlyList<IStObjServiceParameterInfo> assignments )
-        {
-            if( assignments.Count == 0 )
-            {
-                b.Append( "Array.Empty<StObjServiceParameterInfo>()" );
-            }
-            else
-            {
-                b.Append( "new[]{" ).NewLine();
-                bool atLeastOne = false;
-                foreach( var a in assignments )
-                {
-                    if( atLeastOne ) b.Append( ", " );
-                    atLeastOne = true;
-                    b.Append( "new StObjServiceParameterInfo( " )
-                     .AppendTypeOf( a.ParameterType ).Append( ", " )
-                     .Append( a.Position ).Append( ", " )
-                     .AppendSourceString( a.Name ).Append( ", " );
-                    if( a.Value == null )
-                    {
-                        b.Append( "null" );
-                    }
-                    else
-                    {
-                        b.Append( "new Type[]{ " );
-                        for( int idxType = 0; idxType < a.Value.Count; ++idxType )
-                        {
-                            if( idxType > 0 ) b.Append( ", " );
-                            b.AppendTypeOf( a.Value[idxType] );
-                        }
-                        b.Append( "}" );
-                    }
-                    b.Append( ", " )
-                     .Append( a.IsEnumerated )
-                     .Append( ")" ).NewLine();
-                }
-                b.Append( '}' );
-            }
-        }
     }
 }

@@ -22,18 +22,5 @@ namespace CK.Setup
         /// (with index) instead of <see cref="IStObjServiceClassDescriptor"/> from model layer.
         /// </summary>
         new IReadOnlyList<IStObjServiceFinalSimpleMapping> SimpleMappingList { get; }
-
-        /// <summary>
-        /// Masks the <see cref="IStObjServiceMap.ManualMappings"/> to expose <see cref="IStObjServiceFinalManualMapping"/> (with index)
-        /// instead of <see cref="IStObjServiceClassFactory"/> from model layer.
-        /// </summary>
-        new IReadOnlyDictionary<Type, IStObjServiceFinalManualMapping> ManualMappings { get; }
-
-        /// <summary>
-        /// Gets all the not so simple registered types without duplicates as <see cref="IStObjServiceFinalManualMapping"/>
-        /// (with index) instead of <see cref="IStObjServiceClassFactory"/> from model layer.
-        /// See <see cref="ManualMappings"/>.
-        /// </summary>
-        new IReadOnlyList<IStObjServiceFinalManualMapping> ManualMappingList { get; }
     }
 }

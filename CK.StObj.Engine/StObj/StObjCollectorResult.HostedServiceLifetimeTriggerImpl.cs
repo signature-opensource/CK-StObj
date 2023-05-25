@@ -205,10 +205,7 @@ namespace CK.Setup
                 {
                     if( t == typeof( CancellationToken ) ) return 0;
                     // Uses static mapping first.
-                    t = _map.StObjs.ToLeaf( t )?.ClassType
-                            ?? _map.Services.SimpleMappings.GetValueOrDefault( t )?.ClassType
-                            ?? _map.Services.ManualMappings.GetValueOrDefault( t )?.ClassType
-                            ?? t;
+                    t = _map.ToLeaf( t )?.ClassType ?? t;
                     if( !_mapping.TryGetValue( t, out var e ) )
                     {
                         _mapping.Add( t, e = (_mapping.Count + 1, optional) );
