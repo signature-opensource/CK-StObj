@@ -34,7 +34,8 @@ namespace CK.Setup
             scope.Append( "public override DefaultEndpointDefinition DefaultEndpointDefinition => _default;" ).NewLine()
                  .Append( "public override IReadOnlyList<EndpointDefinition> AllEndpointDefinitions => _endpoints;" ).NewLine()
                  .Append( "public override IReadOnlySet<Type> EndpointServices => _endpointServices;" ).NewLine()
-                 .Append( "public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;" ).NewLine();
+                 .Append( "public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;" ).NewLine()
+                 .Append( "internal void SetGlobalContainer( IServiceProvider g ) => _global = g;" ).NewLine();
             
             return CSCodeGenerationResult.Success;
         }
@@ -48,7 +49,7 @@ namespace CK.Setup
             int i = 0;
             foreach( var e in endpointResult.EndpointContexts.Skip( 1 ) )
             {
-                var instanceTypeName = e.InstanceDataType.ToCSharpName();
+                var instanceTypeName = e.ScopeDataType.ToCSharpName();
                 scope.Append( "new CK.StObj.EndpointType<" )
                     .Append( instanceTypeName )
                     .Append( ">( (EndpointDefinition<" ).Append( instanceTypeName ).Append( ">)_endpoints[" ).Append( ++i ).Append( "] )," ).NewLine();

@@ -229,12 +229,10 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             _rootType.GeneratedByComment().NewLine();
             var configure = _rootType.CreateFunction( "void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )" );
 
-            configure.Append( "register.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( Microsoft.Extensions.Hosting.IHostedService ), typeof( HostedServiceLifetimeTrigger ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );" )
-                     .NewLine();
-            
             configure.Append( "register.StartupServices.Add( typeof(IStObjObjectMap), this );" ).NewLine()
                      .Append( "object[] registerParam = new object[]{ register.Monitor, register.StartupServices };" ).NewLine();
 
+            // Calls the RegisterStartupServices methods.
             foreach( MutableItem m in orderedStObjs ) 
             {
                 foreach( var reg in m.RealObjectType.AllRegisterStartupServices )
@@ -251,6 +249,8 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
 
                 }
             }
+
+            // Calls the ConfigureServices methods.
             foreach( MutableItem m in orderedStObjs )
             {
                 foreach( var parameters in m.RealObjectType.AllConfigureServicesParameters )

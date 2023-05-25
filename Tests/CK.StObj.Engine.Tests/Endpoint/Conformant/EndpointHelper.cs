@@ -10,22 +10,13 @@ namespace CK.StObj.Engine.Tests
     using CK.Core;
     using Microsoft.Extensions.DependencyInjection;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Diagnostics;
     using System;
     using Microsoft.Extensions.DependencyInjection.Extensions;
     using System.Linq;
 
-    sealed class GlobalHook
-    {
-        [AllowNull]
-        public IServiceProvider Global { get; set; }
-    }
-
     interface IEndpointTypeInternal : IEndpointType
     {
         bool ConfigureServices( IActivityMonitor monitor, IStObjMap stObjMap, IServiceCollection commonEndpointContainer );
-        void SetGlobalContainer( IServiceProvider global );
     }
 
     sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : notnull
@@ -34,7 +25,6 @@ namespace CK.StObj.Engine.Tests
 
         readonly EndpointDefinition<TScopeData> _definition;
         internal ServiceCollection? _configuration;
-        IServiceProvider? _global;
         readonly object _lock;
         bool _initializationSuccess;
 
@@ -59,9 +49,7 @@ namespace CK.StObj.Engine.Tests
                 if( _services == null )
                 {
                     if( !_initializationSuccess ) Throw.InvalidOperationException( "Endpoint initialization failed. It cannot be used." );
-                    Debug.Assert( _configuration != null, "Initialization succeeded." );
                     _services = new EndpointServiceProvider<TScopeData>( _configuration.BuildServiceProvider() );
-                    _services.GetRequiredService<GlobalHook>().Global = _global;
                     // Release the configuration now that the endpoint container is built.
                     _configuration = null;
                 }
@@ -75,11 +63,16 @@ namespace CK.StObj.Engine.Tests
             // Calls the ConfigureEndpointServices on the empty configuration.
             _definition.ConfigureEndpointServices( configuration );
             // Process the registrations to detect:
-            // - extra registrations: they must not be type mapped to IRealObject or IAutoService.
+            // - extra registrations: they must not be types mapped to IRealObject or IAutoService.
             // - missing registrations from the definition.
             if( CheckRegistrations( monitor, configuration, _definition, stObjMap ) )
             {
                 configuration.AddRange( commonEndpointContainer );
+                // Add the scoped data holder.
+                var scopedDataType = typeof( EndpointScopeData<TScopeData> );
+                configuration.Add( new ServiceDescriptor( scopedDataType, scopedDataType, ServiceLifetime.Scoped ) );
+                // Waiting for .Net 8.
+                // configuration.MakeReadOnly();
                 _configuration = configuration;
                 return _initializationSuccess = true;
             }
@@ -149,8 +142,6 @@ namespace CK.StObj.Engine.Tests
                 }
             }
         }
-
-        public void SetGlobalContainer( IServiceProvider global ) => _global = global; 
     }
 
     static class EndpointHelper
@@ -163,21 +154,27 @@ namespace CK.StObj.Engine.Tests
         }
 
         internal static IServiceCollection CreateCommonEndpointContainer( IActivityMonitor monitor,
-                                                                          IServiceCollection global,
-                                                                          Func<Type, bool> isEndpointService )
+                                                                            IServiceCollection global,
+                                                                            Func<Type, bool> isEndpointService )
         {
             var kindMap = new Dictionary<Type, SKind>();
             ServiceCollection endpoint = new ServiceCollection();
-            endpoint.AddSingleton( new GlobalHook() );
-            foreach( var d in global )
+            for( int i = 0; i < global.Count; ++i )
             {
-                // Skip any endpoint service.
-                if( isEndpointService( d.ServiceType ) ) continue;
-
+                var d = global[i];
                 var t = d.ServiceType;
+                // Skip any endpoint service.
+                if( isEndpointService( t ) ) continue;
+                // Removes the IAutoService mapping since the EndpointTypeManager_CK
+                // "super singleton" instance is directly injected.
+                if( t == typeof( EndpointTypeManager ) )
+                {
+                    global.RemoveAt( i-- );
+                    continue;
+                }
                 if( d.Lifetime == ServiceLifetime.Singleton )
                 {
-                    // If it's a singleton, we must only add the relay to the Global once.
+                    // If it's a singleton, we must add the relay to the Global only once.
                     if( kindMap.TryGetValue( t, out var kind ) )
                     {
                         // If multiple registrations exist, memorize it.
@@ -186,7 +183,7 @@ namespace CK.StObj.Engine.Tests
                     else
                     {
                         // Configure the relay to the last registered singleton.
-                        endpoint.AddSingleton( t, sp => sp.GetRequiredService<GlobalHook>().Global.GetService( t )! );
+                        endpoint.AddSingleton( t, sp => sp.GetRequiredService<EndpointTypeManager>().GlobalServiceProvider.GetService( t )! );
                         kindMap.Add( t, SKind.AtLeastOneSingleton );
                     }
                 }
@@ -215,7 +212,7 @@ namespace CK.StObj.Engine.Tests
                     // the resolution of its IEnumerable<T> through the hook otherwise
                     // we'll have a enumeration of n times the last singleton registration.
                     var eType = typeof( IEnumerable<> ).MakeGenericType( type );
-                    endpoint.AddSingleton( eType, sp => sp.GetRequiredService<GlobalHook>().Global.GetService( eType )! );
+                    endpoint.AddSingleton( eType, sp => sp.GetRequiredService<EndpointTypeManager>().GlobalServiceProvider.GetService( eType )! );
                 }
                 else if( (kind & ~SKind.MultiSingleton) == (SKind.AtLeastOneSingleton | SKind.AtLeastOneScoped) )
                 {
@@ -232,7 +229,7 @@ namespace CK.StObj.Engine.Tests
                     // rewritten by storing the descriptor list in the kindMap (that would not be a "kind"
                     // map anymore but a reversed map of registrations).
                     using( monitor.OpenWarn( $"Type '{type:C}' is registered more than once with Scoped and Singleton lifetime. " +
-                                             $"Handling its 'IEnumerable<{type:C}>' registration is unfortunately required." ) )
+                                                $"Handling its 'IEnumerable<{type:C}>' registration is unfortunately required." ) )
                     {
                         RegisterResolvedEnumerable( monitor, global, endpoint, type );
                     }
@@ -308,7 +305,7 @@ namespace CK.StObj.Engine.Tests
                     {
                         var a = Array.CreateInstance( type, aSing.Length + aScop.Length );
                         int i = 0;
-                        var g = sp.GetRequiredService<GlobalHook>().Global;
+                        var g = sp.GetRequiredService<EndpointTypeManager>().GlobalServiceProvider;
                         foreach( var t in aSing )
                         {
                             a.SetValue( g.GetService( t ), i++ );
@@ -332,9 +329,7 @@ namespace CK.StObj.Engine.Tests
                 {
                     return d.ImplementationInstance.GetType();
                 }
-                Debug.Assert( d.ImplementationFactory != null );
                 Type[]? typeArguments = d.ImplementationFactory.GetType().GenericTypeArguments;
-                Debug.Assert( typeArguments.Length == 2 );
                 return typeArguments[1];
             }
         }

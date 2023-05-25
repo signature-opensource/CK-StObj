@@ -101,7 +101,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, IStObjMap map, SimpleServiceContainer? startupServices = null )
         {
             var reg = new StObjContextRoot.ServiceRegister( monitor, services, startupServices );
-            if( !reg.AddStObjMap( map ) ) throw new CKException( "AddStObjMap failed. The logs contains detailed information." );
+            if( !reg.AddStObjMap( map ) ) Throw.CKException( "AddStObjMap failed. The logs contains detailed information." );
             return services;
         }
 

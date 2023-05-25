@@ -171,7 +171,7 @@ namespace CK.Setup
             throw new NotSupportedException( "ConfigureServices is not supported at build time." );
         }
 
-        void IStObjMap.ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister)
+        bool IStObjMap.ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister)
         {
             throw new NotSupportedException( "ConfigureEndpointServices is not supported at build time." );
         }

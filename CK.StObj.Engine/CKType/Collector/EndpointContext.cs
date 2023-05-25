@@ -33,6 +33,6 @@ namespace CK.Setup
 
         public IReadOnlyList<Type> ScopedServices => _scoped;
 
-        public Type? InstanceDataType => _instanceDataType;
+        public Type? ScopeDataType => _instanceDataType;
     }
 }

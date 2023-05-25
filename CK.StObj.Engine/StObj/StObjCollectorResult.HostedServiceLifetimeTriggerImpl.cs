@@ -112,8 +112,14 @@ namespace CK.Setup
             {
                 code.GeneratedByComment();
                 var c = code.CreateType( "sealed class HostedServiceLifetimeTrigger : Microsoft.Extensions.Hosting.IHostedService" )
-                            .Append( "readonly IServiceProvider _services;" ).NewLine()
-                            .Append( "public HostedServiceLifetimeTrigger( IServiceProvider s ) => _services = s;" ).NewLine();
+                            .Append( """
+                                     readonly IServiceProvider _services;
+                                     public HostedServiceLifetimeTrigger( IServiceProvider s )
+                                     {
+                                       _services = s;
+                                       ((EndpointTypeManager_CK)s.GetService( typeof(EndpointTypeManager) ))!.SetGlobalContainer( s );
+                                     }
+                                     """ );
                 var start = c.CreateFunction( "public Task StartAsync( System.Threading.CancellationToken cancel )" );
                 var stop = c.CreateFunction( "public Task StopAsync( System.Threading.CancellationToken cancel )" );
 

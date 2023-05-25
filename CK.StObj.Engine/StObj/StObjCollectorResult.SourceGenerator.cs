@@ -373,17 +373,7 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
             serviceGen.CreateConfigureServiceMethod( orderedStObjs );
 
-            if( EngineMap.EndpointResult.EndpointContexts.Count > 1 )
-            {
-                EndpointSourceCodeGenerator.GenerateEndpointCode( rootType, EngineMap.EndpointResult );
-            }
-            else
-            {
-                rootType.Append( "public void ConfigureEndpointServices( in StObjContextRoot.ServiceRegister reg )" )
-                        .OpenBlock()
-                        .Append( "(reg.Services as ServiceCollection)?.MakeReadOnly();" )
-                        .CloseBlock();
-            }
+            EndpointSourceCodeGenerator.GenerateEndpointCode( rootType, EngineMap.EndpointResult );
 
             GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );
         }

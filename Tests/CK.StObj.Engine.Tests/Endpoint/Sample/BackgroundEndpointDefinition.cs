@@ -24,8 +24,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public override void ConfigureEndpointServices( IServiceCollection services )
         {
-            services.AddScoped( sp => sp.GetRequiredService<BackgroundData>().Monitor );
-            services.AddScoped( sp => sp.GetRequiredService<BackgroundData>().Auth );
+            services.AddScoped( sp => sp.GetRequiredService<EndpointScopeData<BackgroundData>>().Data.Monitor );
+            services.AddScoped( sp => sp.GetRequiredService<EndpointScopeData<BackgroundData>>().Data.Auth );
         }
     }
 }

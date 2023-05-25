@@ -47,7 +47,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 using( var scope = _serviceProvider.CreateAsyncScope( data ) )
                 {
                     var executor = scope.ServiceProvider.GetRequiredService<SampleCommandProcessor>();
-                    executor.Process( o );
+                    executor.Process( cmd.Command );
                 }
             }
             monitor.MonitorEnd();

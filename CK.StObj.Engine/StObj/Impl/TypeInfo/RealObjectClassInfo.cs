@@ -516,6 +516,9 @@ namespace CK.Setup
 
         public readonly MethodInfo RegisterStartupServices;
 
+        /// <summary>
+        /// Gets the RegisterStartupServices methods top down to this final class.
+        /// </summary>
         public IEnumerable<MethodInfo> AllRegisterStartupServices
         {
             get

@@ -14,6 +14,13 @@ namespace CK.Core
     [ContextBoundDelegation( "CK.Setup.EndpointTypeManagerImpl, CK.StObj.Engine" )]
     public abstract class EndpointTypeManager : ISingletonAutoService
     {
+        protected IServiceProvider? _global;
+
+        /// <summary>
+        /// Gets the global service provider.
+        /// </summary>
+        public IServiceProvider GlobalServiceProvider => _global!;
+
         /// <summary>
         /// Gets the default EndpointDefinition.
         /// </summary>

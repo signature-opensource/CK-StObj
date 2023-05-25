@@ -27,8 +27,8 @@ namespace CK.Setup
         IReadOnlyList<Type> SingletonServices { get; }
 
         /// <summary>
-        ///  Gets the instance data type. This is null for <see cref="DefaultEndpointDefinition"/>.
+        ///  Gets the instance data type. This is null for the <see cref="DefaultEndpointDefinition"/>.
         /// </summary>
-        Type? InstanceDataType { get; }
+        Type? ScopeDataType { get; }
     }
 }
