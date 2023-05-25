@@ -297,6 +297,47 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             }
         }
 
+        public void CreateFillRealObjectMappingsMethod()
+        {
+            _rootType.GeneratedByComment().NewLine()
+                     .Append( """
+                        void FillRealObjectMappings( IActivityMonitor monitor,
+                                                     Microsoft.Extensions.DependencyInjection.IServiceCollection global,
+                                                     Microsoft.Extensions.DependencyInjection.IServiceCollection? commonEndpoint )
+                        {
+                            foreach( var o in _finalStObjs )
+                            {
+                                if( o.ClassType != o.FinalType )
+                                {
+                                    monitor.Trace( $"Registering real object '{o.ClassType.Name}' to its code generated implementation instance." );
+                                }
+                                else
+                                {
+                                    monitor.Trace( $"Registering real object '{o.ClassType.Name}' instance." );
+                                }
+                                var typeMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( o.ClassType, o.Implementation );
+                                global.Add( typeMapping );
+                                commonEndpoint?.Add( typeMapping );
+                                foreach( var unique in o.UniqueMappings )
+                                {
+                                    monitor.Trace( $"Registering unique mapping from '{unique.Name}' to real object '{o.ClassType.Name}' instance." );
+                                    var uMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( unique, o.Implementation );
+                                    global.Add( uMapping );
+                                    commonEndpoint?.Add( uMapping );
+                                }
+                                foreach( var multi in o.MultipleMappings )
+                                {
+                                    monitor.Trace( $"Registering multiple mapping from '{multi.Name}' to real object '{o.ClassType.Name}' instance." );
+                                    var mMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( multi, o.Implementation );
+                                    global.Add( mMapping );
+                                    commonEndpoint?.Add( mMapping );
+                                }
+                            }
+                        }
+                        """ );
+        }
+
+
         string GetServiceClassFactoryDefaultPropertyName( IStObjServiceFinalManualMapping f ) => $"SFInfo.S{f.ManualMappingIndex}.Default";
 
         void CreateServiceClassFactory( IStObjServiceFinalManualMapping c )

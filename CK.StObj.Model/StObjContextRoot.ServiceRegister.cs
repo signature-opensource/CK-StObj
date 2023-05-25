@@ -110,18 +110,20 @@ namespace CK.Core
                         Throw.CheckNotNullArgument( map );
                         DoRegisterSingletonInstance( typeof( IStObjMap ), map, isRealObject: true, isMultiple: false );
                         map.StObjs.ConfigureServices( this );
-                        foreach( var o in map.StObjs.FinalImplementations )
-                        {
-                            DoRegisterSingletonInstance( o.ClassType, o.Implementation, isRealObject: true, isMultiple: false );
-                            foreach( var u in o.UniqueMappings )
-                            {
-                                DoRegisterSingletonInstance( u, o.Implementation, isRealObject: true, isMultiple: false );
-                            }
-                            foreach( var mult in o.MultipleMappings )
-                            {
-                                DoRegisterSingletonInstance( mult, o.Implementation, isRealObject: true, true );
-                            }
-                        }
+                        //
+                        // No done by code generated FillRealObjectMappingsMethod().
+                        //foreach( var o in map.StObjs.FinalImplementations )
+                        //{
+                        //    DoRegisterSingletonInstance( o.ClassType, o.Implementation, isRealObject: true, isMultiple: false );
+                        //    foreach( var u in o.UniqueMappings )
+                        //    {
+                        //        DoRegisterSingletonInstance( u, o.Implementation, isRealObject: true, isMultiple: false );
+                        //    }
+                        //    foreach( var mult in o.MultipleMappings )
+                        //    {
+                        //        DoRegisterSingletonInstance( mult, o.Implementation, isRealObject: true, true );
+                        //    }
+                        //}
                         foreach( var s in map.Services.SimpleMappingList )
                         {
                             Register( s.ClassType, s.FinalType, s.IsScoped, allowMultipleRegistration: false );

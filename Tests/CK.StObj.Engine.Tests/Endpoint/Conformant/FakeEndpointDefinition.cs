@@ -65,6 +65,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 var descEPTM = new ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
                 reg.Services.Add( descEPTM );
                 common.Add( descEPTM );
+                FillRealObjectMappings( reg.Monitor, reg.Services, common );
                 // We can now close the global container. Waiting for .Net 8.
                 // (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                 bool success = true;
@@ -75,6 +76,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                     if( !e.ConfigureServices( reg.Monitor, this, common ) ) success = false;
                 }
                 return success;
+            }
+
+            // This is code generated method. The global and the endpoint blueprint are filled
+            // with the same ServiceDesctiptors objects that reference the "true" real objects instances.
+            // There is no intermediate list or array: the global and the common configuration (if one is
+            // needed) are directly configured.
+            void FillRealObjectMappings( IActivityMonitor monitor, IServiceCollection global, IServiceCollection? commonEndpoint )
+            {
             }
         }
 

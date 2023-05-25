@@ -377,6 +377,7 @@ implemented is way to "lock" and "unlock" another endpoint instance lifetime (ty
 counting). All of this can be implemented later: for the moment we simply remove the "owner" aspect from
 the singleton declaration.
 
+### Step 9 - The EndpointType and EndpointServiceProvider.
 
 
 

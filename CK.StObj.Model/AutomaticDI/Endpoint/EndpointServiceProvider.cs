@@ -33,8 +33,19 @@ namespace CK.Core
         public AsyncServiceScope CreateAsyncScope( TScopeData scopedData )
         {
             var scope = _serviceProvider.CreateAsyncScope();
-            var d = scope.ServiceProvider.GetRequiredService<EndpointScopeData<TScopeData>>();
-            d._data = scopedData;
+            scope.ServiceProvider.GetRequiredService<EndpointScopeData<TScopeData>>()._data = scopedData;
+            return scope;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="IServiceScope"/> that can be used to resolve endpoint scoped services.
+        /// </summary>
+        /// <param name="scopedData">Endpoint instance specific data.</param>
+        /// <returns>An <see cref="IServiceScope"/> that can be used to resolve scoped services.</returns>
+        public IServiceScope CreateScope( TScopeData scopedData )
+        {
+            var scope = _serviceProvider.CreateScope();
+            scope.ServiceProvider.GetRequiredService<EndpointScopeData<TScopeData>>()._data = scopedData;
             return scope;
         }
 

@@ -378,6 +378,7 @@ namespace CK.Setup
                                  var theEPTM = new EndpointTypeManager_CK();
                                  var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
                                  reg.Services.Add( descEPTM );
+                                 FillRealObjectMappings( reg.Monitor, reg.Services, common );
                                  // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                                  common.Add( descEPTM );
                                  bool success = true;
@@ -398,6 +399,7 @@ namespace CK.Setup
                                  var theEPTM = new EndpointTypeManager_CK();
                                  var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
                                  reg.Services.Add( descEPTM );
+                                 FillRealObjectMappings( reg.Monitor, reg.Services, null );
                                  // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                                  return true;
                              }                        
