@@ -49,8 +49,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 RealObjectConfigureServices( in reg );
 
                 //  - We build the blueprint of ServiceDescriptors from the globalConfiguration
-                //
-                var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains );
+                //    These registrations are:
+                //      - a relay to the global container for singletons.
+                //      - the same descriptor for scoped services.
+                //    This fills the ServiceType => ServiceDescriptor | List<ServiceDescriptor> map.
+                var externalMappings = new Dictionary<Type, object>();
+                var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains, externalMappings );
 
                 // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
                 //   containers don't need it. We don't do it here to avoid creating yet another fake implementation.
@@ -59,13 +63,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 //
 
                 //  - Then an instance of the special "super singleton" EndpointTypeManager is created.
-                //    It is the exact same instance that will be available from all the containers: the global and every endpoint containers.
+                //    It is the exact same instance that will be available from all the containers: the global and every endpoint containers, it is
+                //    the global hook, the relay to the global service provider for the endpoint containers.
                 var theEPTM = new EndpointTypeManager_CK();
                 var descEPTM = new ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
                 reg.Services.Add( descEPTM );
                 common.Add( descEPTM );
-                FillUniqueAndGlobalMultipleMappings( reg.Monitor, reg.Services, common );
-                FillMultipleEndpointMappings( reg.Monitor, common );
+                FillUniqueMappingsAndGlobalMultipleMappings( reg.Monitor, reg.Services, common );
+                FillMultipleEndpointMappings( reg.Monitor, common, externalMappings );
                 // We can now close the global container. Waiting for .Net 8.
                 // (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                 bool success = true;
@@ -103,14 +108,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // Multiple mappings are registered only in the global container by this method. Endpoint container configuration of multiple
             // registrations is done by FillMultipleEndpointMappings().
             //
-            void FillUniqueAndGlobalMultipleMappings( IActivityMonitor monitor, IServiceCollection global, IServiceCollection? commonEndpoint )
+            void FillUniqueMappingsAndGlobalMultipleMappings( IActivityMonitor monitor, IServiceCollection global, IServiceCollection? commonEndpoint )
             {
             }
 
             // This method is generated only if there are endpoints.
             // It relays singleton [IsMultiple] interface IEnumerable to the global container and
             // registers explicit arrays for the scoped (potentially hybrid) IEnumerable.
-            void FillMultipleEndpointMappings( IActivityMonitor monitor, IServiceCollection common )
+            void FillMultipleEndpointMappings( IActivityMonitor monitor, IServiceCollection common, Dictionary<Type, object> externalMappings )
             {
             }
         }

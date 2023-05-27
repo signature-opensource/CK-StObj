@@ -217,13 +217,13 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             }
         }
 
-        public void CreateFillUniqueAndGlobalMultipleMappingsMethod()
+        public void CreateFillUniqueMappingsAndGlobalMultipleMappingsMethod()
         {
             _rootType.GeneratedByComment().NewLine()
                      .Append( """
-                            void FillUniqueAndGlobalMultipleMappings( IActivityMonitor monitor,
-                                                                      Microsoft.Extensions.DependencyInjection.IServiceCollection global,
-                                                                      Microsoft.Extensions.DependencyInjection.IServiceCollection? commonEndpoint )
+                            void FillUniqueMappingsAndGlobalMultipleMappings( IActivityMonitor monitor,
+                                                                              Microsoft.Extensions.DependencyInjection.IServiceCollection global,
+                                                                              Microsoft.Extensions.DependencyInjection.IServiceCollection? commonEndpoint )
                             {
                                 var mapMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IStObjMap ), this );
                                 global.Add( mapMapping );
@@ -314,7 +314,8 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // we minimize the number of registrations to process.
             if( hasEndpoint )
             {
-                fScope.Append( "var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains );" )
+                fScope.Append( "var externalMappings = new Dictionary<Type, object>();" ).NewLine()
+                      .Append( "var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains, externalMappings );" )
                       .NewLine();
             }
             // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
@@ -332,7 +333,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             if( !hasEndpoint )
             {
                 // If there's no endpoint, we are done (and we have no common endpoint container).
-                fScope.Append( "FillUniqueAndGlobalMultipleMappings( reg.Monitor, reg.Services, null );" ).NewLine()
+                fScope.Append( "FillUniqueMappingsAndGlobalMultipleMappings( reg.Monitor, reg.Services, null );" ).NewLine()
                       .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
                       .Append( "return true;" );
                 return;
@@ -341,10 +342,10 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // We specifically handle the IEnumerable multiple mappings in the endpoint container and eventually enables
             // the endpoints to configure their endpoint services.
             fScope.Append( """
-                           FillUniqueAndGlobalMultipleMappings( reg.Monitor, reg.Services, common );
+                           FillUniqueMappingsAndGlobalMultipleMappings( reg.Monitor, reg.Services, common );
                            // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                            common.Add( descEPTM );
-                           FillMultipleEndpointMappings( reg.Monitor, common );
+                           FillMultipleEndpointMappings( reg.Monitor, common, externalMappings );
                            bool success = true;
                            foreach( var e in theEPTM._endpointTypes )
                            {
