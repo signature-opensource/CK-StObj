@@ -34,20 +34,18 @@ namespace CK.Core
         IReadOnlyList<IStObjFinalImplementation> ObjectMappingList { get; }
 
         /// <summary>
-        /// Gets all the <see cref="IAutoService"/> types to the final service class type
-        /// that can be directly resolved by any DI container.
+        /// Gets all the <see cref="IAutoService"/> types to the final service class type.
         /// <para>
-        /// Use <see cref="SimpleMappingList"/> to have the final service classes list (without
+        /// Use <see cref="MappingList"/> to have the final service classes list (without
         /// duplicates). 
         /// </para>
         /// </summary>
-        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> SimpleMappings { get; }
+        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> Mappings { get; }
 
         /// <summary>
-        /// Gets all the types (exposed by <see cref="IStObjFinalClass.ClassType"/>)
-        /// that can easily be resolved by any DI container.
+        /// Gets all the Auto service implementations.
         /// </summary>
-        IReadOnlyList<IStObjServiceClassDescriptor> SimpleMappingList { get; }
+        IReadOnlyList<IStObjServiceClassDescriptor> MappingList { get; }
 
     }
 }

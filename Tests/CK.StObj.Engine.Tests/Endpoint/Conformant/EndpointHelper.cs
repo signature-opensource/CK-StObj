@@ -159,17 +159,14 @@ namespace CK.StObj.Engine.Tests
         {
             var kindMap = new Dictionary<Type, SKind>();
             ServiceCollection endpoint = new ServiceCollection();
-            for( int i = 0; i < global.Count; ++i )
+            foreach( var d in global )
             {
-                var d = global[i];
                 var t = d.ServiceType;
-                // Skip any endpoint service.
-                if( isEndpointService( t ) ) continue;
-                // Removes the IAutoService mapping since the EndpointTypeManager_CK
-                // "super singleton" instance is directly injected.
-                if( t == typeof( EndpointTypeManager ) )
+                if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
+                // Skip any endpoint service and IHostedService.
+                if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
                 {
-                    global.RemoveAt( i-- );
+                    // There's no need to have the IHostedService multiple service in the endpoint containers.
                     continue;
                 }
                 if( d.Lifetime == ServiceLifetime.Singleton )
@@ -229,7 +226,7 @@ namespace CK.StObj.Engine.Tests
                     // rewritten by storing the descriptor list in the kindMap (that would not be a "kind"
                     // map anymore but a reversed map of registrations).
                     using( monitor.OpenWarn( $"Type '{type:C}' is registered more than once with Scoped and Singleton lifetime. " +
-                                                $"Handling its 'IEnumerable<{type:C}>' registration is unfortunately required." ) )
+                                                $"Handling its hybrid 'IEnumerable<{type:C}>' registration is unfortunately required." ) )
                     {
                         RegisterResolvedEnumerable( monitor, global, endpoint, type );
                     }

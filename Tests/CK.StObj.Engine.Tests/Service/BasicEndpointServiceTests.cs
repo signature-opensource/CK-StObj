@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.SimpleMappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse();
         }
 
         [EndpointScopedService( typeof( DefaultEndpointDefinition ) )]
@@ -67,7 +67,7 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor descriptor = map.Services.SimpleMappings[typeof( EndpointDependentService1 )];
+            IStObjServiceClassDescriptor descriptor = map.Services.Mappings[typeof( EndpointDependentService1 )];
             descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
         }
 
@@ -92,9 +92,9 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IEndpointDependentService2 )];
-            IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( EndpointDependentService1 )];
-            map.Services.SimpleMappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse( "A Endpoint service is not an Automatic service." );
+            IStObjServiceClassDescriptor dDep2 = map.Services.Mappings[typeof( IEndpointDependentService2 )];
+            IStObjServiceClassDescriptor dDep1 = map.Services.Mappings[typeof( EndpointDependentService1 )];
+            map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse( "A Endpoint service is not an Automatic service." );
             dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
             dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
         }

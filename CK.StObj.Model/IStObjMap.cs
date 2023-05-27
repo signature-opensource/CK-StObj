@@ -49,11 +49,43 @@ namespace CK.Core
         IReadOnlyCollection<VFeature> Features { get; }
 
         /// <summary>
-        /// Last step for service configuration. The <paramref name="serviceRegister"/> must contain the "Global" container
-        /// configuration. 
+        /// Configures the global <see cref="StObjContextRoot.ServiceRegister.Services"/> services collection.
+        /// <list type="number">
+        ///     <item>
+        ///     Real Objects can participate in the configuration of the global <see cref="IServiceCollection"/> thanks to the
+        ///     <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> that is a "shared memory/state" provided to 
+        ///     all the StObj <c>RegisterStartupServices</c> and <c>ConfigureServices</c> methods.
+        ///     It can initially be configured with any service that can help configuring the service configuration.
+        ///     <list type="bullet">
+        ///         <item>
+        ///         The first step calls all <c>RegisterStartupServices</c> methods on all the <see cref="IStObj"/>, following
+        ///         the topological dependency order: during this step, startup services can be registered in the <see cref="ISimpleServiceContainer"/>)
+        ///         and/or used by dependent StObj (as a kind of "shared memory/state").
+        ///         <para>
+        ///         <c>void RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer );</c>
+        ///         </para>
+        ///         </item>
+        ///         <item>
+        ///         Once all the <c>RegisterStartupServices</c> methods have ran, then all the <c>ConfigureServices</c> StObj methods are called:
+        ///         <para>
+        ///         <c>void ConfigureServices( in StObjContextRoot.ServiceRegister, ... any services previously registered in the ISimpleServiceContainer ... );</c>
+        ///         </para>
+        ///         </item>
+        ///     </list>
+        ///     </item>
+        ///     <item>
+        ///     If any <see cref="EndpointDefinition"/> exist, a common <see cref="IServiceProvider"/> blueprint for endpoint containers is created.
+        ///     </item>
+        ///     <item>
+        ///     The global and the common endpoint service collections are then configured with the real objects and auto services.
+        ///     </item>
+        ///     <item>
+        ///     Existing endpoints are initialized and build their own container, configured by their <see cref="EndpointDefinition{TScopeData}.ConfigureEndpointServices(IServiceCollection)"/>.
+        ///     </item>
+        /// </list>
         /// </summary>
         /// <param name="serviceRegister">The global container configuration.</param>
         /// <returns>True on success, false on error. Errors have been logged to <see cref="StObjContextRoot.ServiceRegister.Monitor"/>.</returns>
-        bool ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister );
+        bool ConfigureServices( in StObjContextRoot.ServiceRegister serviceRegister );
     }
 }

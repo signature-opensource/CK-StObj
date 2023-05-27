@@ -31,9 +31,9 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
-            r.Services.SimpleMappings[typeof( SimpleClassSingleton )].IsScoped.Should().BeFalse();
-            r.Services.SimpleMappings[typeof( SimpleClassScoped )].IsScoped.Should().BeTrue();
-            r.Services.SimpleMappings[typeof( SimpleClassAmbient )].IsScoped.Should().BeFalse();
+            r.Services.Mappings[typeof( SimpleClassSingleton )].IsScoped.Should().BeFalse();
+            r.Services.Mappings[typeof( SimpleClassScoped )].IsScoped.Should().BeTrue();
+            r.Services.Mappings[typeof( SimpleClassAmbient )].IsScoped.Should().BeFalse();
         }
 
         public class BuggyDoubleScopeClassAmbient : IScopedAutoService, Core.ISingletonAutoService { }
@@ -128,7 +128,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
-            r.Services.SimpleMappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
+            r.Services.Mappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
         }
 
         public interface IAmbientThatDependsOnNothing : IAutoService { }
@@ -142,8 +142,8 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
-            r.Services.SimpleMappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
-            r.Services.SimpleMappings[typeof( AmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
+            r.Services.Mappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
+            r.Services.Mappings[typeof( AmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
         }
 
         public class AmbientThatDependsOnExternal : IAutoService
@@ -160,7 +160,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
-            r.Services.SimpleMappings[typeof( AmbientThatDependsOnExternal )].IsScoped.Should().BeTrue();
+            r.Services.Mappings[typeof( AmbientThatDependsOnExternal )].IsScoped.Should().BeTrue();
         }
 
         public interface ISampleRealObject : IRealObject { }
@@ -204,7 +204,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
-            r.Services.SimpleMappings[typeof( AmbientThatDependsOnAllKindOfSingleton )].IsScoped.Should().BeFalse();
+            r.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingleton )].IsScoped.Should().BeFalse();
         }
 
         public interface IOtherExternalService { }
@@ -248,7 +248,7 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
-            bool isScoped = r.Services.SimpleMappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
+            bool isScoped = r.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
             isScoped.Should().Be( mode == "UnknwonLifetimeExternalService" );
         }
 
@@ -271,7 +271,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
+                r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsProcessService );
             }
             {
@@ -282,7 +282,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.SimpleMappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
+                r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsProcessService );
             }
         }
@@ -308,7 +308,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
+                r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
                                                                                         | AutoServiceKind.IsProcessService );
             }
             {
@@ -320,7 +320,7 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.SimpleMappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
+                r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
                                                                                         | AutoServiceKind.IsProcessService );
             }
         }
@@ -334,8 +334,8 @@ namespace CK.StObj.Engine.Tests.Service
             collector.RegisterType( typeof( CBase1 ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
-            map.Services.SimpleMappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
-            map.Services.SimpleMappings.ContainsKey( typeof( CBase2 ) ).Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
+            map.Services.Mappings.ContainsKey( typeof( CBase2 ) ).Should().BeFalse();
         }
 
 
@@ -378,7 +378,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
-            map.Services.SimpleMappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
+            map.Services.Mappings[typeof( ServiceFreeLifetime )].IsScoped.Should().BeTrue();
         }
     }
 }

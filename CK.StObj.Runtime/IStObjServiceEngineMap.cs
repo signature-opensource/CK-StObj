@@ -12,15 +12,15 @@ namespace CK.Setup
     public interface IStObjServiceEngineMap : IStObjServiceMap
     {
         /// <summary>
-        /// Masks the <see cref="IStObjServiceMap.SimpleMappings"/> to expose <see cref="IStObjServiceFinalSimpleMapping"/> (with index)
+        /// Masks the <see cref="IStObjServiceMap.Mappings"/> to expose <see cref="IStObjServiceFinalSimpleMapping"/> (with index)
         /// instead of <see cref="IStObjServiceClassDescriptor"/> from model layer.
         /// </summary>
-        new IReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping> SimpleMappings { get; }
+        new IReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping> Mappings { get; }
 
         /// <summary>
         /// Gets all the types without duplicates as <see cref="IStObjServiceFinalSimpleMapping"/>
         /// (with index) instead of <see cref="IStObjServiceClassDescriptor"/> from model layer.
         /// </summary>
-        new IReadOnlyList<IStObjServiceFinalSimpleMapping> SimpleMappingList { get; }
+        new IReadOnlyList<IStObjServiceFinalSimpleMapping> MappingList { get; }
     }
 }

@@ -136,9 +136,7 @@ namespace CK.Setup
             Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
 
             if( parent != null ) SpecializationDepth = parent.SpecializationDepth + 1;
-
-            // Used only when this service is eventually a simple one.
-            SimpleMappingListIndex = -1;
+            MappingListIndex = -1;
         }
 
         /// <summary>
@@ -477,7 +475,7 @@ namespace CK.Setup
                                     }
                                     else
                                     {
-                                        m.Info( $"Parameter '{p.Name}' is an external type '{paramTypeName}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
+                                        m.Warn( $"Parameter '{p.Name}' is an external type '{paramTypeName}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
                                         var update = kindComputeFacade.KindDetector.RestrictToScoped( m, p.ParameterType );
                                         if( update.HasValue ) kP = update.Value.ToAutoServiceKind();
                                         else success = false;
@@ -864,9 +862,9 @@ namespace CK.Setup
         /// and to track the final registration.
         /// Used at the very end of the process when the final StObjObjectEngineMap is built.
         /// </summary>
-        internal int SimpleMappingListIndex;
+        internal int MappingListIndex;
 
-        int IStObjServiceFinalSimpleMapping.SimpleMappingIndex => SimpleMappingListIndex;
+        int IStObjServiceFinalSimpleMapping.MappingIndex => MappingListIndex;
 
         /// <summary>
         /// Overridden to return the <see cref="CKTypeInfo.ToString()"/>.

@@ -12,8 +12,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Internal mutable implementation of <see cref="IStObjObjectEngineMap"/> that handles <see cref="MutableItem"/>.
-    /// The internal participants have write access to it. I'm not proud of this (there are definitely cleaner
-    /// ways to organize this) but it works...
+    /// The internal participants have write access to it. I'm not proud of this (this is a mess) but it works...
     /// The map is instantiated by CKTypeCollector.GetRealObjectResult and then
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
     /// can use (and fill) it.
@@ -26,9 +25,13 @@ namespace CK.Setup
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
         // during Real objects processing.
+        // This is awful.
+        // This is ugly.
+        // This sucks...
         IReadOnlyList<MutableItem>? _orderedStObjs;
         Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
         IEndpointResult? _endpointResult;
+        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor>? _multiplemappings;
 
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
@@ -150,25 +153,23 @@ namespace CK.Setup
 
         IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
 
+        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> IStObjEngineMap.Multiplemappings => _multiplemappings!;
+
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type,
                                               ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult? endpointResult )
+                                              IEndpointResult? endpointResult, IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
         {
             _orderedStObjs = ordered;
             _allTypesAttributesCache = allTypesAttributesCache;
             _endpointResult = endpointResult;
+            _multiplemappings = multipleMappings;
         }
 
         IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
-        void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
+        bool IStObjMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
         {
             throw new NotSupportedException( "ConfigureServices is not supported at build time." );
-        }
-
-        bool IStObjMap.ConfigureEndpointServices( in StObjContextRoot.ServiceRegister serviceRegister)
-        {
-            throw new NotSupportedException( "ConfigureEndpointServices is not supported at build time." );
         }
 
         /// <summary>

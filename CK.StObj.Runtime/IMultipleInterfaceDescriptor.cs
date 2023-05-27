@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 
@@ -5,11 +6,15 @@ namespace CK.Setup
 {
     /// <summary>
     /// Final information for IEnumerable&lt;T&gt; where T is an interface marked with [IsMultiple] attribute.
-    /// This is currently not exposed in the <see cref="IStObjObjectEngineMap"/> or <see cref="CK.Core.IStObjMap"/>
-    /// but it should be (at least on the EngineMap) to support code generation for marshallable services.
+    /// This is currently not exposed in the <see cref="IStObjMap"/>, it is exposed by the <see cref="IStObjEngineMap.MultipleMappings"/>.
     /// </summary>
     public interface IMultipleInterfaceDescriptor
     {
+        /// <summary>
+        /// Gets whether this enumeration must be scoped or can be registered as a singleton.
+        /// </summary>
+        bool IsScoped { get; }
+
         /// <summary>
         /// Gets the enumerated interface type.
         /// </summary>
@@ -29,5 +34,15 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         IReadOnlyCollection<Type> MarshallableTypes { get; }
+
+        /// <summary>
+        /// Gets the final real objects or auto services that this enumeration contains. 
+        /// </summary>
+        IEnumerable<IStObjFinalClass> Implementations { get; }
+
+        /// <summary>
+        /// Gets the count of <see cref="Implementations"/>.
+        /// </summary>
+        int ImplementationCount { get; }
     }
 }

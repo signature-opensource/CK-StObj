@@ -31,7 +31,7 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            var d = map.Services.SimpleMappings[typeof( TheService )];
+            var d = map.Services.Mappings[typeof( TheService )];
             d.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
             d.MultipleMappings.Should().Contain( typeof( IService ) );
         }

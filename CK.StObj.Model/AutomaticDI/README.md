@@ -382,7 +382,7 @@ the singleton declaration.
 
 
 
-
+We cannot use the standard `IServiceScopeFactory` because it doesn't support scoped data injection.
 
 Ubiquitous endpoint services are currently not managed. `IActivityMonitor` is one of them and it is up
 to each endpoint definition to handle it.

@@ -110,18 +110,18 @@ namespace CK.Setup
                 _classes = new Dictionary<AutoServiceClassInfo, SCRClass>();
             }
 
-            bool InitializeClasses( IActivityMonitor m )
+            bool InitializeClasses( IActivityMonitor monitor )
             {
                 Debug.Assert( Classes.Count > 0 );
                 bool success = true;
                 foreach( var c in Classes )
                 {
-                    success &= c.Initialize( m );
+                    success &= c.Initialize( monitor );
                 }
                 return success;
             }
 
-            public bool Resolve( IActivityMonitor m, FinalRegistrar _ )
+            public bool Resolve( IActivityMonitor monitor )
             {
                 bool success = true;
                 Debug.Assert( Classes.Count > 0 && Interfaces.Count > 0 );
@@ -131,20 +131,20 @@ namespace CK.Setup
                 }
                 else
                 {
-                    using( m.OpenInfo( $"Service resolution required for {ToString()}." ) )
+                    using( monitor.OpenInfo( $"Service resolution required for {ToString()}." ) )
                     {
-                        if( success = InitializeClasses( m ) )
+                        if( success = InitializeClasses( monitor ) )
                         {
                             var headCandidates = Classes.Where( c => c.IsHeadCandidate ).ToList();
                             var heads = headCandidates.Where( c => c.IsHead ).ToList();
                             if( headCandidates.Count == 0 )
                             {
-                                m.Error( $"No possible implementation found. A class that implements '{BaseInterfacesToString()}' interfaces is required." );
+                                monitor.Error( $"No possible implementation found. A class that implements '{BaseInterfacesToString()}' interfaces is required." );
                                 success = false;
                             }
                             else if( heads.Count == 0 )
                             {
-                                m.Error( $"Among '{headCandidates.Select( c => c.ToString() ).Concatenate( "', '" )}' possible implementations, none covers the whole set of other implementations. Use [ReplaceAutoService(...)] attribute to disambiguate." );
+                                monitor.Error( $"Among '{headCandidates.Select( c => c.ToString() ).Concatenate( "', '" )}' possible implementations, none covers the whole set of other implementations. Use [ReplaceAutoService(...)] attribute to disambiguate." );
                                 var couldUseStObjConstruct = headCandidates.Select( c => c.Class.TypeInfo )
                                                                    .OfType<RealObjectClassInfo>()
                                                                    .Where( c => c.ConstructParameters != null
@@ -155,23 +155,20 @@ namespace CK.Setup
 
                                 if( couldUseStObjConstruct != null )
                                 {
-                                    m.Error( $"Please note that RealObject.StObjConstruct parameters are irrelevant to Service resolution: for instance {couldUseStObjConstruct} is ignored. Use [ReplaceAutoService(...)] attribute." );
+                                    monitor.Error( $"Please note that RealObject.StObjConstruct parameters are irrelevant to Service resolution: for instance {couldUseStObjConstruct} is ignored. Use [ReplaceAutoService(...)] attribute." );
                                 }
                                 success = false;
                             }
                             else if( heads.Count > 1 )
                             {
-                                m.Error( $"Multiple possible implementations found: '{heads.Select( c => c.ToString() ).Concatenate( "', '" )}'. They must be unified." );
+                                monitor.Error( $"Multiple possible implementations found: '{heads.Select( c => c.ToString() ).Concatenate( "', '" )}'. They must be unified." );
                                 success = false;
                             }
                             else
                             {
-                                // Here comes the "dispatcher" handling and finalRegistrar must
-                                // register all BuildClassInfo required by special handling of
-                                // handled parameters (IReadOnlyCollection<IService>...).
                                 var r = heads[0].Class;
                                 Resolved = r;
-                                m.CloseGroup( $"Resolved to '{r}'." );
+                                monitor.CloseGroup( $"Resolved to '{r}'." );
                             }
                         }
                     }
@@ -186,10 +183,8 @@ namespace CK.Setup
                 return success;
             }
 
-            public static IReadOnlyCollection<InterfaceFamily> Build(
-                IActivityMonitor m,
-                StObjObjectEngineMap _,
-                IEnumerable<AutoServiceClassInfo> classes )
+            public static IReadOnlyCollection<InterfaceFamily> Build( IActivityMonitor m,
+                                                                      IEnumerable<AutoServiceClassInfo> classes )
             {
                 var families = new Dictionary<AutoServiceInterfaceInfo, InterfaceFamily>();
                 bool familiesHasBeenMerged = false;
@@ -262,80 +257,10 @@ namespace CK.Setup
             }
         }
 
-        sealed class FinalRegistrar
-        {
-            readonly StObjObjectEngineMap _engineMap;
-            readonly IAutoServiceKindComputeFacade _kindComputeFacade;
-
-            public FinalRegistrar( StObjObjectEngineMap engineMap,
-                                   IAutoServiceKindComputeFacade kindComputeFacade )
-            {
-                _engineMap = engineMap;
-                _kindComputeFacade = kindComputeFacade;
-            }
-
-            public bool FinalRegistration( IActivityMonitor monitor, AutoServiceCollectorResult typeResult, IEnumerable<InterfaceFamily> families )
-            {
-                using( monitor.OpenInfo( "Final Service registration." ) )
-                {
-                    bool success = true;
-                    foreach( var c in typeResult.RootClasses )
-                    {
-                        RegisterClassMapping( monitor, c, ref success );
-                    }
-                    foreach( var f in families )
-                    {
-                        Debug.Assert( f.Resolved != null );
-                        foreach( var i in f.Interfaces )
-                        {
-                            RegisterMapping( monitor, i.Type, f.Resolved, ref success );
-                        }
-                    }
-                    monitor.CloseGroup( $"Registered {_engineMap.ObjectMappings.Count} real objects and {_engineMap.SimpleMappings.Count} auto services mappings." );
-                    return success;
-                }
-            }
-
-            void RegisterClassMapping( IActivityMonitor monitor, AutoServiceClassInfo c, ref bool success )
-            {
-                if( !c.IsRealObject )
-                {
-                    Debug.Assert( c.MostSpecialized != null );
-                    RegisterMapping( monitor, c.ClassType, c.MostSpecialized, ref success );
-                    foreach( var s in c.Specializations )
-                    {
-                        RegisterClassMapping( monitor, s, ref success );
-                    }
-                }
-                else
-                {
-                    monitor.Debug( $"Skipping '{c}' Service class mapping since it is a Real object." );
-                }
-            }
-
-            void RegisterMapping( IActivityMonitor monitor, Type t, AutoServiceClassInfo final, ref bool success )
-            {
-                final.ComputeFinalTypeKind( monitor, _kindComputeFacade, new Stack<AutoServiceClassInfo>(), ref success );
-                if( success )
-                {
-                    monitor.Debug( $"Map '{t}' -> '{final}'." );
-                    if( final.IsRealObject )
-                    {
-                        _engineMap.RegisterServiceFinalObjectMapping( t, final.TypeInfo );
-                    }
-                    else
-                    {
-                        _engineMap.RegisterFinalSimpleMapping( t, final );
-                    }
-                    if( t != final.ClassType ) final.TypeInfo.AddUniqueMapping( t );
-                }
-            }
-        }
-
         /// <summary>
         /// Called once Mutable items have been created.
         /// </summary>
-        /// <param name="typeResult">The Ambient types discovery result.</param>
+        /// <param name="typeResult">The types discovery result.</param>
         /// <returns>True on success, false on error.</returns>
         bool ServiceFinalHandling( CKTypeCollectorResult typeResult )
         {
@@ -349,21 +274,20 @@ namespace CK.Setup
                                         .Concat( typeResult.AutoServices.SubGraphRootClasses )
                                         .Select( c => c.MostSpecialized! );
                     Debug.Assert( allClasses.GroupBy( c => c ).All( g => g.Count() == 1 ) );
-                    IReadOnlyCollection<InterfaceFamily> families = InterfaceFamily.Build( monitor, engineMap, allClasses );
+                    IReadOnlyCollection<InterfaceFamily> families = InterfaceFamily.Build( monitor, allClasses );
                     if( families.Count == 0 )
                     {
                         monitor.Warn( "No IAuto Service interface found. Nothing can be mapped at the Service Interface level." );
                     }
                     else monitor.Trace( $"{families.Count} Service families found." );
                     bool success = true;
-                    var manuals = new FinalRegistrar( engineMap, typeResult.KindComputeFacade );
                     foreach( var f in families )
                     {
-                        success &= f.Resolve( monitor, manuals );
+                        success &= f.Resolve( monitor );
                     }
                     if( success )
                     {
-                        success &= manuals.FinalRegistration( monitor, typeResult.AutoServices, families );
+                        success &= FinalRegistration( monitor, typeResult.AutoServices, engineMap, typeResult.KindComputeFacade, families );
                     }
                     return success;
                 }
@@ -373,6 +297,77 @@ namespace CK.Setup
                     return false;
                 }
             }
+
+            static bool FinalRegistration( IActivityMonitor monitor,
+                                           AutoServiceCollectorResult typeResult,
+                                           StObjObjectEngineMap engineMap,
+                                           IAutoServiceKindComputeFacade kindComputeFacade,
+                                           IEnumerable<InterfaceFamily> families )
+            {
+                using( monitor.OpenInfo( "Final Service registration." ) )
+                {
+                    bool success = true;
+                    foreach( var c in typeResult.RootClasses )
+                    {
+                        RegisterClassMapping( monitor, engineMap, kindComputeFacade, c, ref success );
+                    }
+                    foreach( var f in families )
+                    {
+                        Debug.Assert( f.Resolved != null );
+                        foreach( var i in f.Interfaces )
+                        {
+                            RegisterMapping( monitor, engineMap, kindComputeFacade, i.Type, f.Resolved, ref success );
+                        }
+                    }
+                    monitor.CloseGroup( $"Registered {engineMap.ObjectMappings.Count} real objects and {engineMap.Mappings.Count} auto services mappings." );
+                    return success;
+                }
+
+                static void RegisterClassMapping( IActivityMonitor monitor,
+                                                  StObjObjectEngineMap engineMap,
+                                                  IAutoServiceKindComputeFacade kindComputeFacade,
+                                                  AutoServiceClassInfo c,
+                                                  ref bool success )
+                {
+                    if( !c.IsRealObject )
+                    {
+                        Debug.Assert( c.MostSpecialized != null );
+                        RegisterMapping( monitor, engineMap, kindComputeFacade, c.ClassType, c.MostSpecialized, ref success );
+                        foreach( var s in c.Specializations )
+                        {
+                            RegisterClassMapping( monitor, engineMap, kindComputeFacade, s, ref success );
+                        }
+                    }
+                    else
+                    {
+                        monitor.Debug( $"Skipping '{c}' Service class mapping since it is a Real object." );
+                    }
+                }
+
+                static void RegisterMapping( IActivityMonitor monitor,
+                                             StObjObjectEngineMap engineMap,
+                                             IAutoServiceKindComputeFacade kindComputeFacade,
+                                             Type t,
+                                             AutoServiceClassInfo final,
+                                             ref bool success )
+                {
+                    final.ComputeFinalTypeKind( monitor, kindComputeFacade, new Stack<AutoServiceClassInfo>(), ref success );
+                    if( success )
+                    {
+                        monitor.Debug( $"Map '{t}' -> '{final}'." );
+                        if( final.IsRealObject )
+                        {
+                            engineMap.RegisterServiceFinalObjectMapping( t, final.TypeInfo );
+                        }
+                        else
+                        {
+                            engineMap.RegisterFinalSimpleMapping( t, final );
+                        }
+                        if( t != final.ClassType ) final.TypeInfo.AddUniqueMapping( t );
+                    }
+                }
+            }
+
         }
 
     }

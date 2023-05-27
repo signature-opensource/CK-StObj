@@ -36,25 +36,5 @@ namespace CK.Core
         /// This contains only classes, not <see cref="IRealObject"/> interfaces. 
         /// </summary>
         IEnumerable<StObjMapping> StObjs { get; }
-
-        /// <summary>
-        /// Enables Real Objects to participate in the configuration of the <see cref="IServiceCollection"/>.
-        /// If startup services are required, then the <see cref="StObjContextRoot.ServiceRegister.StartupServices"/> can be configured
-        /// with these services that can configure the service configuration.
-        /// <para>
-        /// The first step calls all  <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/> methods on all the <see cref="IStObj"/>, following
-        /// the topological sort: during this step, startup services can be registered in the <see cref="ISimpleServiceContainer"/>) and/or used by
-        /// dependent StObj (as a kind of "shared memory/state").
-        /// <c>void RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer );</c>
-        /// </para>
-        /// <para>
-        /// Once all the RegisterStartupServices( IActivityMonitor, ISimpleServiceContainer ) methods have ran, then
-        /// all the <see cref="StObjContextRoot.ConfigureServicesMethodName"/> StObj methods are called: 
-        /// <c>void ConfigureServices( in StObjContextRoot.ServiceRegister, ... any services previously registered in the ISimpleServiceContainer ... );</c>
-        /// </para>
-        /// </summary>
-        /// <param name="register">The service register.</param>
-        void ConfigureServices( in StObjContextRoot.ServiceRegister register );
-           
     }
 }

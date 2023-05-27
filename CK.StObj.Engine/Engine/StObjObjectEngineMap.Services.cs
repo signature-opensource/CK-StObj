@@ -87,24 +87,24 @@ namespace CK.Setup
         }
 
         /// <inheritdoc />
-        public IReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping> SimpleMappings => _serviceSimpleMap;
+        public IReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping> Mappings => _serviceSimpleMap;
 
         /// <inheritdoc />
-        public IReadOnlyList<IStObjServiceFinalSimpleMapping> SimpleMappingList => _serviceSimpleList;
+        public IReadOnlyList<IStObjServiceFinalSimpleMapping> MappingList => _serviceSimpleList;
 
         internal void RegisterFinalSimpleMapping( Type t, AutoServiceClassInfo c )
         {
-            if( c.SimpleMappingListIndex == -1 )
+            if( c.MappingListIndex == -1 )
             {
-                c.SimpleMappingListIndex = _serviceSimpleList.Count;
+                c.MappingListIndex = _serviceSimpleList.Count;
                 _serviceSimpleList.Add( c );
             }
             _serviceSimpleMap.Add( t, c );
         }
 
-        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _exposedServiceMap;
+        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => _exposedServiceMap;
 
-        IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _serviceSimpleList;
+        IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _serviceSimpleList;
 
         #endregion
 

@@ -44,8 +44,8 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.SimpleMappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
-            map.Services.SimpleMappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
+            map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService2 ) );
+            map.Services.Mappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
         }
 
         [Local.ReplaceAutoService( "CK.StObj.Engine.Tests.Service.ServiceTests+SampleService2, CK.StObj.Engine.Tests" )]
@@ -63,9 +63,9 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.SimpleMappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
-            map.Services.SimpleMappings[typeof( SampleService2 )].ClassType.Should().Be( typeof( SampleService2 ) );
-            map.Services.SimpleMappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
+            map.Services.Mappings[typeof( ISampleService )].ClassType.Should().Be( typeof( SampleService3 ) );
+            map.Services.Mappings[typeof( SampleService2 )].ClassType.Should().Be( typeof( SampleService2 ) );
+            map.Services.Mappings[typeof( SampleService )].ClassType.Should().Be( typeof( SampleService ) );
         }
 
 
@@ -334,9 +334,9 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( r.CollectorResult.EngineMap != null, "No initialization error." );
             try
             {
-                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( IB )].IsScoped.Should().BeTrue();
-                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( A )].IsScoped.Should().BeTrue();
-                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( IA )].IsScoped.Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.Mappings[typeof( IB )].IsScoped.Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.Mappings[typeof( A )].IsScoped.Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.Mappings[typeof( IA )].IsScoped.Should().BeTrue();
 
                 // The IServiceProvider is a Scope: it resolves and stores Scoped services at its (root) level.
                 var rootA = r.Services.GetRequiredService<A>();

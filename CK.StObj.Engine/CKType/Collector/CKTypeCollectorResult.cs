@@ -102,7 +102,9 @@ namespace CK.Setup
         /// <summary>
         /// Crappy hook...
         /// </summary>
-        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, IEndpointResult? endpointResult )
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
+                                              IEndpointResult? endpointResult,
+                                              IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
         {
             // Compute the indexed AllTypesAttributesCache.
             // This is a mess. This cache must be replaced by a truly reflection central cache.
@@ -118,7 +120,7 @@ namespace CK.Setup
 
             Debug.Assert( all.GroupBy( Util.FuncIdentity ).Where( g => g.Count() > 1 ).Any() == false, "No duplicates." );
 
-            RealObjects.EngineMap.SetFinalOrderedResults( ordered, all.ToDictionary( c => c.Type ), endpointResult );
+            RealObjects.EngineMap.SetFinalOrderedResults( ordered, all.ToDictionary( c => c.Type ), endpointResult, multipleMappings );
         }
 
         /// <summary>

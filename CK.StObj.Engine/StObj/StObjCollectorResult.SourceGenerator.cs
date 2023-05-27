@@ -371,10 +371,9 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootStaticCtor );
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
-            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
-            serviceGen.CreateFillRealObjectMappingsMethod();
-
-            EndpointSourceCodeGenerator.GenerateEndpointCode( rootType, EngineMap.EndpointResult );
+            serviceGen.CreateRealObjectConfigureServiceMethod( orderedStObjs );
+            serviceGen.CreateFillUniqueAndGlobalMultipleMappingsMethod();
+            serviceGen.CreateConfigureServiceMethod( EngineMap );
 
             GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );
         }
@@ -450,7 +449,6 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             InitializePostBuildProperties( rootCtor, orderedStObjs );
             CallInitializeMethods( rootCtor, orderedStObjs );
         }
-
 
         static void InitializePreConstructPropertiesAndCallConstruct( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {

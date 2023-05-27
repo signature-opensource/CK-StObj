@@ -1,4 +1,6 @@
 using CK.CodeGen;
+using System.Collections.Generic;
+using System;
 using System.Diagnostics;
 
 namespace CK.Setup
@@ -172,17 +174,14 @@ namespace CK.Setup
                 {
                     var kindMap = new Dictionary<Type, SKind>();
                     ServiceCollection endpoint = new ServiceCollection();
-                    for( int i = 0; i < global.Count; ++i )
+                    foreach( var d in global )
                     {
-                        var d = global[i];
                         var t = d.ServiceType;
-                        // Skip any endpoint service.
-                        if( isEndpointService( t ) ) continue;
-                        // Removes the IAutoService mapping since the EndpointTypeManager_CK
-                        // "super singleton" instance is directly injected.
-                        if( t == typeof( EndpointTypeManager ) )
+                        if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
+                        // Skip any endpoint service and IHostedService.
+                        if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
                         {
-                            global.RemoveAt( i-- );
+                            // There's no need to have the IHostedService multiple service in the endpoint containers.
                             continue;
                         }
                         if( d.Lifetime == ServiceLifetime.Singleton )
@@ -242,7 +241,7 @@ namespace CK.Setup
                             // rewritten by storing the descriptor list in the kindMap (that would not be a "kind"
                             // map anymore but a reversed map of registrations).
                             using( monitor.OpenWarn( $"Type '{type:C}' is registered more than once with Scoped and Singleton lifetime. " +
-                                                        $"Handling its 'IEnumerable<{type:C}>' registration is unfortunately required." ) )
+                                                        $"Handling its hybrid 'IEnumerable<{type:C}>' registration is unfortunately required." ) )
                             {
                                 RegisterResolvedEnumerable( monitor, global, endpoint, type );
                             }
@@ -349,14 +348,16 @@ namespace CK.Setup
             }
             """;
 
-        internal static void GenerateEndpointCode( ITypeScope rootType, IEndpointResult endpointResult )
+        /// <summary>
+        /// Always add the IEndpointTypeInternal (The EndpointTypeManager_CK needs it) but only
+        /// add CK.StObj.EndpointType<TScopeData>, and the static EndpointHelper if at least one
+        /// EndpointType exists.
+        /// </summary>
+        /// <param name="codeWorkspace">The code workspace.</param>
+        /// <param name="hasEndpoint">Whether at least one endpoint exists.</param>
+        internal static void GenerateSupportCode( ICodeWorkspace codeWorkspace, bool hasEndpoint )
         {
-            bool hasEndpoint = endpointResult.EndpointContexts.Count > 1;
-
-            // Always add the IEndpointTypeInternal (The EndpointTypeManager_CK needs it) but only
-            // add CK.StObj.EndpointType<TScopeData>, and the static EndpointHelper if at least one
-            // EndpointType exists.
-            var g = rootType.Workspace.Global;
+            var g = codeWorkspace.Global;
             g.Append( "namespace CK.StObj" )
              .OpenBlock()
              .Append( _localNamespaces )
@@ -367,44 +368,61 @@ namespace CK.Setup
                  .Append( _endpointHelper );
             }
             g.CloseBlock();
-
-            if( hasEndpoint )
-            {
-                rootType.Append( """
-                             public bool ConfigureEndpointServices( in StObjContextRoot.ServiceRegister reg )
-                             {
-                                 var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains );
-                                 reg.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( Microsoft.Extensions.Hosting.IHostedService ), typeof( HostedServiceLifetimeTrigger ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
-                                 var theEPTM = new EndpointTypeManager_CK();
-                                 var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
-                                 reg.Services.Add( descEPTM );
-                                 FillRealObjectMappings( reg.Monitor, reg.Services, common );
-                                 // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
-                                 common.Add( descEPTM );
-                                 bool success = true;
-                                 foreach( var e in theEPTM._endpointTypes )
-                                 {
-                                     if( !e.ConfigureServices( reg.Monitor, this, common ) ) success = false;
-                                 }
-                                 return success;
-                             }                        
-                             """ );
-            }
-            else
-            {
-                rootType.Append( """
-                             public bool ConfigureEndpointServices( in StObjContextRoot.ServiceRegister reg )
-                             {
-                                 reg.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( Microsoft.Extensions.Hosting.IHostedService ), typeof( HostedServiceLifetimeTrigger ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
-                                 var theEPTM = new EndpointTypeManager_CK();
-                                 var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
-                                 reg.Services.Add( descEPTM );
-                                 FillRealObjectMappings( reg.Monitor, reg.Services, null );
-                                 // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
-                                 return true;
-                             }                        
-                             """ );
-            }
         }
+
+        public static void CreateFillMultipleEndpointMappingsMethod( ITypeScope rootType, IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
+        {
+            var fScope = rootType.GeneratedByComment().NewLine()
+                                  .CreateFunction( "void FillMultipleEndpointMappings( IActivityMonitor monitor, Microsoft.Extensions.DependencyInjection.IServiceCollection commonEndpoint )" );
+            foreach( var mapping in multipleMappings.Values )
+            {
+                Debug.Assert( mapping.ImplementationCount > 0 );
+                if( mapping.IsScoped )
+                {
+                    // If all items are scoped, we can let the ServiceProvider implementation do its job (providing that we register
+                    // the sp => sp.GetService( mapped ) for each mapping) or we can take control and provide an explicit registration.
+                    // Since we have to do it for the hybrid case, let's always do it: this will avoid some reflection code from the
+                    // ServiceProvider implementation.
+                    fScope.Append( "commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
+                          .AppendTypeOf( mapping.EnumerableType )
+                          .Append( ", sp => {" ).NewLine()
+                          .Append( "var a = Array.CreateInstance( " )
+                          .AppendTypeOf( mapping.ItemType )
+                          .Append( ", " ).Append( mapping.ImplementationCount ).Append( ");" ).NewLine();
+                    int i = 0;
+                    bool atLeastOneSingleton = false;
+                    foreach( var impl in mapping.Implementations )
+                    {
+                        if( impl.IsScoped )
+                        {
+                            fScope.Append( "a.SetValue( sp.GetService( " ).AppendTypeOf( impl.ClassType ).Append( " ), " ).Append( i++ ).Append( " );" ).NewLine();
+                        }
+                        else
+                        {
+                            if( !atLeastOneSingleton )
+                            {
+                                fScope.Append( "var g = ((EndpointTypeManager)sp.GetService(typeof(EndpointTypeManager))).GlobalServiceProvider;" ).NewLine();
+                                atLeastOneSingleton = true;
+                            }
+                            fScope.Append( "a.SetValue( g.GetService( " ).AppendTypeOf( impl.ClassType ).Append(" ), i++ ),").NewLine();
+                        }
+                    }
+                    fScope.Append( "return a;" ).NewLine()
+                          .Append( "}, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ) );" );
+                }
+                else
+                {
+                    // For singletons, we register the resolution of its IEnumerable<T> through the hook otherwise
+                    // we'll have a enumeration of n times the last singleton registration.
+                    fScope.Append( "commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
+                          .AppendTypeOf( mapping.EnumerableType )
+                          .Append( ", sp => ((EndpointTypeManager)sp.GetService( typeof( EndpointTypeManager ) )).GlobalServiceProvider.GetService( " )
+                          .AppendTypeOf( mapping.EnumerableType )
+                          .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );" ).NewLine();
+                }
+            }
+
+        }
+
     }
 }

@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddStObjMap( this IServiceCollection services, IActivityMonitor monitor, Assembly stobjAssembly, SimpleServiceContainer? startupServices = null )
         {
             var map = StObjContextRoot.Load( stobjAssembly, monitor );
-            if( map == null ) throw new ArgumentException( $"The assembly {stobjAssembly.FullName} was not found or is not a valid generated assembly." );
+            if( map == null ) Throw.ArgumentException( $"The assembly {stobjAssembly.FullName} was not found or is not a valid generated assembly." );
             return AddStObjMap( services, monitor, map, startupServices );
         }
 
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Configures this <see cref="IServiceCollection"/> by registering the <see cref="IStObjMap.StObjs"/> and
         /// the <paramref name="map"/> itself as Singletons, by calling <see cref="StObjContextRoot.RegisterStartupServicesMethodName"/>
         /// and then <see cref="StObjContextRoot.ConfigureServicesMethodName"/> on all the <see cref="IStObjObjectMap.FinalImplementations"/> that expose
-        /// such methods and by registering the <see cref="IStObjServiceMap.SimpleMappings"/> and <see cref="IStObjServiceMap.ManualMappings"/> mappings.
+        /// such methods and by registering the <see cref="IStObjServiceMap.Mappings"/> and <see cref="IStObjServiceMap.ManualMappings"/> mappings.
         /// Any attempt to register an already registered service will be ignored and a warning will be emitted.
         /// <para>
         /// If the registration fails for any reason (file not found, type conflicts, etc.), a <see cref="CKException"/> is thrown.

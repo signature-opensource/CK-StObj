@@ -475,8 +475,6 @@ namespace CK.StObj.Engine.Tests.Service
             }
         }
 
-
-
         [Test]
         public void any_error_logged_during_Service_Configuration_make_AddStObjMap_returns_false()
         {

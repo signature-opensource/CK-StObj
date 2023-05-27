@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 namespace CK.Core
 {
     /// <summary>
-    /// A endpoint service provider can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="CreateAsyncScope(TScopeData)"/>.
+    /// A endpoint service provider can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="CreateAsyncScope(TScopeData)"/>
+    /// or <see cref="IServiceScopeFactory"/> .
     /// </summary>
     /// <typeparam name="TScopeData">Data specific to the endpoint from which endpoint scoped services can be derived.</typeparam>
     public sealed class EndpointServiceProvider<TScopeData> : IServiceProvider, IServiceProviderIsService, IDisposable, IAsyncDisposable

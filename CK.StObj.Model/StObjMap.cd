@@ -1,35 +1,89 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="NameAndType">
   <Struct Name="CK.Core.VFeature">
-    <Position X="2" Y="2.75" Width="2.25" />
+    <Position X="0.5" Y="4" Width="2.25" />
     <Compartments>
       <Compartment Name="Methods" Collapsed="true" />
     </Compartments>
     <TypeIdentifier>
-      <HashCode>IIAAAAAAAAAAAAQEgAgAAAQAAAAAAIAAAAAAAAAAAiA=</HashCode>
+      <HashCode>IIAAAAAAAAAAAAQEgAiAAgQAAAAAAIAAAAAAAAAAByA=</HashCode>
       <FileName>VFeature.cs</FileName>
     </TypeIdentifier>
-    <Lollipop Orientation="Left" Position="0.1" />
+    <Lollipop Position="0.374" />
+  </Struct>
+  <Struct Name="CK.Core.StObjMapping">
+    <Position X="9.25" Y="3" Width="3.5" />
+    <Members>
+      <Method Name="StObjMapping" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAg=</HashCode>
+      <FileName>StObjMapping.cs</FileName>
+    </TypeIdentifier>
   </Struct>
   <Interface Name="CK.Core.IStObjMap">
-    <Position X="1.25" Y="0.5" Width="3" />
+    <Position X="0.5" Y="0.5" Width="3" />
     <TypeIdentifier>
-      <HashCode>gAAAAAAAAAAAAAAAAAABAAAAABAAAAAAAAAAAAAAAAg=</HashCode>
+      <HashCode>gAAAgAAAAAAAACAAAAABAAAAAABAAAAQAAAAAAAAAAg=</HashCode>
       <FileName>IStObjMap.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Interface Name="CK.Core.IStObjServiceMap">
     <Position X="5" Y="0.5" Width="4.5" />
     <TypeIdentifier>
-      <HashCode>AAAAAAAAAAAIAAAAAAAAAQAAAKAAAAAAAAAAAAAAAQA=</HashCode>
+      <HashCode>AAAAAAAAAAAABCAAAAAAAAAAAKAAAAAAAAAAAAAAAQA=</HashCode>
       <FileName>StObjService\IStObjServiceMap.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Interface Name="CK.Core.IStObjObjectMap">
-    <Position X="5.75" Y="2.75" Width="4" />
+    <Position X="5" Y="2.75" Width="4" />
     <TypeIdentifier>
       <HashCode>AAAAAAAAAAAAACAAAIAAIAAAAAAAAAAAAAAACAAAAAg=</HashCode>
       <FileName>IStObjObjectMap.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.Core.IStObjFinalClass">
+    <Position X="3.75" Y="5.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAgQAAAAAAAACAAAAAAAAAQAAAAAAAAAAAACAAAAAA=</HashCode>
+      <FileName>IStObjFinalClass.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.Core.IStObjFinalImplementation">
+    <Position X="7.25" Y="7.75" Width="3" />
+    <InheritanceLine Type="CK.Core.IStObjFinalClass" FixedFromPoint="true">
+      <Path>
+        <Point X="5.75" Y="7.373" />
+        <Point X="5.75" Y="7.558" />
+        <Point X="8.75" Y="7.558" />
+        <Point X="8.75" Y="7.75" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAQAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>IStObjFinalImplementation.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.Core.IStObj">
+    <Position X="7.25" Y="5.5" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAQAAAQAAAAABAAAAAAAAAAAAIAAAAAAAAAAAAAEA=</HashCode>
+      <FileName>IStObj.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="CK.Core.IStObjServiceClassDescriptor">
+    <Position X="2.25" Y="7.75" Width="3" />
+    <InheritanceLine Type="CK.Core.IStObjFinalClass" FixedFromPoint="true">
+      <Path>
+        <Point X="5" Y="7.373" />
+        <Point X="5" Y="7.558" />
+        <Point X="3.75" Y="7.558" />
+        <Point X="3.75" Y="7.75" />
+      </Path>
+    </InheritanceLine>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAgAAAAABAAAAAAAAAAAA=</HashCode>
+      <FileName>StObjService\IStObjServiceClassDescriptor.cs</FileName>
     </TypeIdentifier>
   </Interface>
   <Font Name="Segoe UI" Size="9" />

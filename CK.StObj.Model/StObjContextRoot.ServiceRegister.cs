@@ -92,7 +92,8 @@ namespace CK.Core
             public bool AllowOverride { get; }
 
             /// <summary>
-            /// Registers the map, the Real objects, singleton services and scoped services.
+            /// Registers the map, the Real objects, singleton services, scoped services and initialize
+            /// any <see cref="IEndpointType{TScopeData}"/>.
             /// Caution: this never throws, instead any exception is logged and false is returned.
             /// </summary>
             /// <param name="map">The map to register. Must not be null.</param>
@@ -108,35 +109,7 @@ namespace CK.Core
                     try
                     {
                         Throw.CheckNotNullArgument( map );
-                        DoRegisterSingletonInstance( typeof( IStObjMap ), map, isRealObject: true, isMultiple: false );
-                        map.StObjs.ConfigureServices( this );
-                        //
-                        // No done by code generated FillRealObjectMappingsMethod().
-                        //foreach( var o in map.StObjs.FinalImplementations )
-                        //{
-                        //    DoRegisterSingletonInstance( o.ClassType, o.Implementation, isRealObject: true, isMultiple: false );
-                        //    foreach( var u in o.UniqueMappings )
-                        //    {
-                        //        DoRegisterSingletonInstance( u, o.Implementation, isRealObject: true, isMultiple: false );
-                        //    }
-                        //    foreach( var mult in o.MultipleMappings )
-                        //    {
-                        //        DoRegisterSingletonInstance( mult, o.Implementation, isRealObject: true, true );
-                        //    }
-                        //}
-                        foreach( var s in map.Services.SimpleMappingList )
-                        {
-                            Register( s.ClassType, s.FinalType, s.IsScoped, allowMultipleRegistration: false );
-                            foreach( var u in s.UniqueMappings )
-                            {
-                                Register( u, s.FinalType, s.IsScoped, allowMultipleRegistration: false );
-                            }
-                            foreach( var mult in s.MultipleMappings )
-                            {
-                                Register( mult, s.FinalType, s.IsScoped, allowMultipleRegistration: true );
-                            }
-                        }
-                        map.ConfigureEndpointServices( this );
+                        if( !map.ConfigureServices( this ) ) result = false;
                     }
                     catch( Exception ex )
                     {

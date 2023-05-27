@@ -45,9 +45,9 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( OnlyForS ) );
                 var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
-                map.Services.SimpleMappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
-                map.Services.SimpleMappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
-                map.Services.SimpleMappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );
+                map.Services.Mappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
+                map.Services.Mappings[typeof( IS2 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );
+                map.Services.Mappings[typeof( IOtherServiceBase )].ClassType.Should().BeSameAs( typeof( NotALinkBetweenFamilies ) );
             }
         }
 

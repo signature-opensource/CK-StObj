@@ -30,8 +30,8 @@ namespace CK.Core
 
         /// <summary>
         /// Gets all the mappings from <see cref="IAutoService"/> without duplicates. It is simply the
-        /// concatenation of <see cref="IStObjServiceMap.ObjectMappingList"/>, <see cref="IStObjServiceMap.SimpleMappingList"/>.
+        /// concatenation of <see cref="IStObjServiceMap.ObjectMappingList"/>, <see cref="IStObjServiceMap.MappingList"/>.
         /// </summary>
-        public static IEnumerable<IStObjFinalClass> GetAllMappings( this IStObjServiceMap @this ) => @this.ObjectMappingList.Cast<IStObjFinalClass>().Concat( @this.SimpleMappingList );
+        public static IEnumerable<IStObjFinalClass> GetAllMappings( this IStObjServiceMap @this ) => @this.ObjectMappingList.Cast<IStObjFinalClass>().Concat( @this.MappingList );
     }
 }

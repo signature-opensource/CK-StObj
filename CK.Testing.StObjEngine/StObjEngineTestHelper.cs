@@ -141,8 +141,8 @@ namespace CK.Testing
             var loadResult = DoCompileAndLoadStObjMap( c, engineConfigurator, true, true );
 
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
-            reg.AddStObjMap( loadResult.Map ).Should().BeTrue( "Service configuration succeed." );
             configureServices?.Invoke( reg );
+            reg.AddStObjMap( loadResult.Map ).Should().BeTrue( "Service configuration succeed." );
 
             return new AutomaticServicesResult( loadResult, reg, reg.Services.BuildServiceProvider() );
         }

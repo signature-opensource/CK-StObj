@@ -569,14 +569,13 @@ namespace CK.Setup
 
         internal IEnumerable<Type> ThisRealObjectInterfaces => Generalization != null ? _realObjectInterfaces.Except( Generalization._realObjectInterfaces ) : _realObjectInterfaces;
 
-        internal bool CreateMutableItemsPath(
-            IActivityMonitor monitor,
-            IServiceProvider services,
-            StObjObjectEngineMap engineMap,
-            MutableItem? generalization,
-            IDynamicAssembly tempAssembly,
-            List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
-            List<Type> abstractTails )
+        internal bool CreateMutableItemsPath( IActivityMonitor monitor,
+                                              IServiceProvider services,
+                                              StObjObjectEngineMap engineMap,
+                                              MutableItem? generalization,
+                                              IDynamicAssembly tempAssembly,
+                                              List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
+                                              List<Type> abstractTails )
         {
             Debug.Assert( tempAssembly != null );
             var item = new MutableItem( this, generalization, engineMap );
