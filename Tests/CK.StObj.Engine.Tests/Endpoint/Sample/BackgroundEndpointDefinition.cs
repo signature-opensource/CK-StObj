@@ -22,7 +22,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             internal IFakeAuthenticationInfo Auth { get; set; }
         }
 
-        public override void ConfigureEndpointServices( IServiceCollection services )
+        public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
         {
             services.AddScoped( sp => sp.GetRequiredService<EndpointScopeData<BackgroundData>>().Data.Monitor );
             services.AddScoped( sp => sp.GetRequiredService<EndpointScopeData<BackgroundData>>().Data.Auth );

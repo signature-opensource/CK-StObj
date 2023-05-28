@@ -57,12 +57,12 @@ namespace CK.Setup
             foreach( var root in r.Roots )
             {
                 // PocoFactory class.
-                var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+                var tFB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
                 tFB.Definition.Modifiers |= Modifiers.Sealed;
                 string factoryClassName = tFB.Definition.Name.Name;
 
                 // Poco class.
-                var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+                var tB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code

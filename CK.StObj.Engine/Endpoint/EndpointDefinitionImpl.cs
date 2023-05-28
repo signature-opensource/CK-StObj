@@ -8,7 +8,7 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements the EndpointTypeManager.
+    /// Implements a EndpointDefinition instance.
     /// </summary>
     public sealed class EndpointDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
     {
@@ -25,6 +25,7 @@ namespace CK.Setup
             if( c.ActualSourceCodeIsUseless ) return CSCodeGenerationResult.Success;
 
             scope.Definition.Modifiers |= Modifiers.Sealed;
+
             var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
             var e = endpointResult.EndpointContexts.First( c => c.EndpointDefinition.ClassType == classType );
 

@@ -7,7 +7,7 @@ using static CK.Testing.StObjEngineTestHelper;
 namespace CK.StObj.Engine.Tests.Service
 {
     [TestFixture]
-    public class BasicServiceLifeTimeTests
+    public class BasicServiceLifetimeTests
     {
         public interface IServiceRegistered : IScopedAutoService
         {

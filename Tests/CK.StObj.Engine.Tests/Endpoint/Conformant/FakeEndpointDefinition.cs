@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public override IReadOnlyList<Type> SingletonServices => Type.EmptyTypes;
 
         // This method is implemented by the developer of the Endpoint.
-        public override void ConfigureEndpointServices( IServiceCollection services )
+        public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
         {
         }
 
@@ -52,12 +52,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 //    These registrations are:
                 //      - a relay to the global container for singletons.
                 //      - the same descriptor for scoped services.
-                //    This fills the ServiceType => ServiceDescriptor | List<ServiceDescriptor> map.
-                var externalMappings = new Dictionary<Type, object>();
+                //    This fills the ServiceType => Mapping externalMappings.
+                var externalMappings = new Dictionary<Type, Mapping>();
                 var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains, externalMappings );
 
                 // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
-                //   containers don't need it. We don't do it here to avoid creating yet another fake implementation.
+                //   containers don't need it.
+                //   We don't do it here to avoid creating yet another fake implementation.
                 //   
                 // reg.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IHostedService ), typeof( HostedServiceLifetimeTrigger ), ServiceLifetime.Singleton ) );
                 //
@@ -70,7 +71,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 reg.Services.Add( descEPTM );
                 common.Add( descEPTM );
                 FillUniqueMappingsAndGlobalMultipleMappings( reg.Monitor, reg.Services, common );
-                FillMultipleEndpointMappings( reg.Monitor, common, externalMappings );
+                FillMultipleEndpointMappingsFromStObj( reg.Monitor, externalMappings );
                 // We can now close the global container. Waiting for .Net 8.
                 // (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                 bool success = true;
@@ -78,7 +79,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 //    descriptors and adding their own EndpointScopeData<TScopeData> scoped data holder. 
                 foreach( var e in theEPTM._endpointTypes )
                 {
-                    if( !e.ConfigureServices( reg.Monitor, this, common ) ) success = false;
+                    if( !e.ConfigureServices( reg.Monitor, this, common, externalMappings ) ) success = false;
                 }
                 return success;
             }
@@ -90,8 +91,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             }
 
             // This is a code generated method.
-            // For real objects, the global and the endpoint blueprint are filled
-            // with the same ServiceDesctiptors objects that reference the "true" real objects instances.
+            // For real objects, the global and the endpoint blueprint are filled with the
+            // same ServiceDesctiptors objects that reference the "true" real objects instances.
             // There is no intermediate list or array: the global and the common configuration (if one is
             // needed) are directly configured.
             // For auto services, it a little bit more complicated:
@@ -112,12 +113,15 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             {
             }
 
-            // This method is generated only if there are endpoints.
-            // It relays singleton [IsMultiple] interface IEnumerable to the global container and
-            // registers explicit arrays for the scoped (potentially hybrid) IEnumerable.
-            void FillMultipleEndpointMappings( IActivityMonitor monitor, IServiceCollection common, Dictionary<Type, object> externalMappings )
+            // This is a code generated method.
+            // Multiple StObj mappings are injected into the externalMappings: the injected ServiceDescriptors are
+            // only in this dictionary to allow the ExternalMultipleHelper to include the real objects and auto services
+            // in its work.
+            void FillMultipleEndpointMappingsFromStObj( IActivityMonitor monitor, Dictionary<Type, Mapping> externalMappings )
             {
             }
+
+
         }
 
         // The EndpointTypeManager is code generated.

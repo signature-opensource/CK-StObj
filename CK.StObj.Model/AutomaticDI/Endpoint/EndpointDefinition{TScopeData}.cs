@@ -18,7 +18,8 @@ namespace CK.Core
         /// necessarily available.
         /// </summary>
         /// <param name="services">Container to configure.</param>
-        public abstract void ConfigureEndpointServices( IServiceCollection services );
+        /// <param name="globalServiceExists">Provides a way to detect if a service is available.</param>
+        public abstract void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists );
     }
 
 }

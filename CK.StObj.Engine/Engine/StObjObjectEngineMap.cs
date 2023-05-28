@@ -153,7 +153,7 @@ namespace CK.Setup
 
         IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
 
-        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> IStObjEngineMap.Multiplemappings => _multiplemappings!;
+        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> IStObjEngineMap.MultipleMappings => _multiplemappings!;
 
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type,
                                               ITypeAttributesCache> allTypesAttributesCache,

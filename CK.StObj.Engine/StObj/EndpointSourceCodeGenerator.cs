@@ -17,6 +17,67 @@ namespace CK.Setup
             using System;
             using Microsoft.Extensions.DependencyInjection.Extensions;
             using System.Linq;
+            using System.Runtime.CompilerServices;
+            
+            """;
+
+        // Always injected.
+        const string _mapping =
+            """
+            sealed class Mapping
+            {
+                object? _global;
+                object? _endpoint;
+                bool _isScoped;
+
+                public Mapping( ServiceDescriptor? global, ServiceDescriptor? endpoint )
+                {
+                    _global = global;
+                    _endpoint = endpoint;
+                    _isScoped = true;
+                }
+
+                public void AddGlobal( ServiceDescriptor d )
+                {
+                    if( _global == null ) _global = d;
+                    else if( _global is List<ServiceDescriptor> l ) l.Add( d );
+                    else _global = new List<ServiceDescriptor>() { (ServiceDescriptor)_global, d };
+                }
+
+                public void AddEndpoint( ServiceDescriptor d )
+                {
+                    if( _endpoint == null ) _endpoint = d;
+                    else if( _endpoint is List<ServiceDescriptor> l ) l.Add( d );
+                    else _endpoint = new List<ServiceDescriptor>() { (ServiceDescriptor)_endpoint, d };
+                }
+
+                public bool IsEmpty => _global == null && _endpoint == null;
+
+                // We process the mapping only if there is at least 2 entries.
+                // A single item uses the standard Service provider implementation.
+                // Calling this clears the Endpoint: the mapping can be reused for the next
+                // endpoint to configure.
+                public bool ShouldProcess( out object? endpoint )
+                {
+                    endpoint = _endpoint;
+                    _endpoint = null;
+                    return endpoint is List<ServiceDescriptor>
+                                            || (_global != null && (endpoint != null || _global is List<ServiceDescriptor>));
+                }
+
+                public object? Global => _global;
+
+                public object? Endpoint => _endpoint;
+
+                // True by default: if the IEnumerable can be singleton, it will be.
+                // When LockAsSingleton() is called this is definitely false and no Scoped
+                // services can appear in the IEnumerable: this is used when a [IsMultiple] 
+                // multiple has been resolved to a singleton.
+                public bool IsScoped => _isScoped;
+
+                public void LockAsSingleton() => _isScoped = false;
+            }
+
             """;
 
         // Always injected.
@@ -24,36 +85,92 @@ namespace CK.Setup
             """
             interface IEndpointTypeInternal : IEndpointType
             {
-                bool ConfigureServices( IActivityMonitor monitor, IStObjMap stObjMap, IServiceCollection commonEndpointContainer );
-            }            
+                bool ConfigureServices( IActivityMonitor monitor,
+                                        IStObjMap stObjMap,
+                                        IEnumerable<ServiceDescriptor> commonEndpoint,
+                                        Dictionary<Type, Mapping> externalMappings );
+            }
             """;
 
-        // Injected only if there's at least one EndType.
+        // CreateCommonEndpointContainer is injected only if there's at least one EndpointType.
+        const string _createCommonEndpointContainer =
+            """
+            internal static IServiceCollection CreateCommonEndpointContainer( IActivityMonitor monitor,
+                                                                                IServiceCollection global,
+                                                                                Func<Type, bool> isEndpointService,
+                                                                                Dictionary<Type, Mapping> externalMappings )
+            {
+                ServiceCollection endpoint = new ServiceCollection();
+                foreach( var d in global )
+                {
+                    var t = d.ServiceType;
+                    if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
+                    // Skip any endpoint service and IHostedService.
+                    // There's no need to have the IHostedService multiple service in the endpoint containers.
+                    if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
+                    {
+                        continue;
+                    }
+                    if( d.Lifetime == ServiceLifetime.Singleton && d.ImplementationInstance == null )
+                    {
+                        // If it's a singleton with a type mapping, we must add the relay to the Global only once.
+                        if( !TrackMappings( externalMappings, t, d ) )
+                        {
+                            // Configure the relay to the last registered singleton.
+                            endpoint.AddSingleton( t, sp => GetGlobalProvider( sp ).GetService( t )! );
+                        }
+                    }
+                    else
+                    {
+                        // For scope and "true" singletons (the instance is provided), this is simple:
+                        // we reuse the service descriptor instance.
+                        endpoint.Add( d );
+                        // And we track duplicates to handle its IEnumerable<T> registration.
+                        TrackMappings( externalMappings, t, d );
+                    }
+                }
+                return endpoint;
+
+                static bool TrackMappings( Dictionary<Type, Mapping> globalMappings, Type t, ServiceDescriptor d )
+                {
+                    if( globalMappings.TryGetValue( t, out var exists ) )
+                    {
+                        exists.AddGlobal( d );
+                        return true;
+                    }
+                    globalMappings.Add( t, new Mapping( d, null ) );
+                    return false;
+                }
+            }
+            
+            """;
+
+        // Injected only if there's at least one EndpointType.
         const string _endpointType =
             """
             sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : notnull
             {
                 internal EndpointServiceProvider<TScopeData>? _services;
-            
+
                 readonly EndpointDefinition<TScopeData> _definition;
                 internal ServiceCollection? _configuration;
                 readonly object _lock;
                 bool _initializationSuccess;
-            
+
                 public EndpointType( EndpointDefinition<TScopeData> definition )
                 {
                     _definition = definition;
                     _lock = new object();
                 }
-            
+
                 public EndpointDefinition EndpointDefinition => _definition;
-            
+
                 public Type ScopeDataType => typeof( TScopeData );
-            
+
                 public string Name => _definition.Name;
-            
+
                 public EndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
-            
+
                 EndpointServiceProvider<TScopeData> DoCreateContainer()
                 {
                     lock( _lock )
@@ -68,29 +185,58 @@ namespace CK.Setup
                         return _services;
                     }
                 }
-            
-                public bool ConfigureServices( IActivityMonitor monitor, IStObjMap stObjMap, IServiceCollection commonEndpointContainer )
+
+                sealed class GlobalServiceExists : IServiceProviderIsService
                 {
-                    var configuration = new ServiceCollection();
-                    // Calls the ConfigureEndpointServices on the empty configuration.
-                    _definition.ConfigureEndpointServices( configuration );
+                    readonly IReadOnlyDictionary<Type, Mapping> _externalMappings;
+
+                    public GlobalServiceExists( IReadOnlyDictionary<Type, Mapping> externalMappings )
+                    {
+                        _externalMappings = externalMappings;
+                    }
+
+                    public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
+                }
+
+                public bool ConfigureServices( IActivityMonitor monitor,
+                                                IStObjMap stObjMap,
+                                                IEnumerable<ServiceDescriptor> commonEndpointContainer,
+                                                Dictionary<Type, Mapping> externalMappings )
+                {
+                    var endpoint = new ServiceCollection();
+                    // Calls the ConfigureEndpointServices on an empty configuration.
+                    _definition.ConfigureEndpointServices( endpoint, new GlobalServiceExists( externalMappings ) );
+
                     // Process the registrations to detect:
                     // - extra registrations: they must not be types mapped to IRealObject or IAutoService.
                     // - missing registrations from the definition.
-                    if( CheckRegistrations( monitor, configuration, _definition, stObjMap ) )
+                    // And updates the mappings with potential Mapping.Endpoint objects.
+                    if( CheckRegistrations( monitor, endpoint, _definition, stObjMap, externalMappings ) )
                     {
+                        var configuration = new ServiceCollection();
+                        // Prepends the common endpoint configuration.
                         configuration.AddRange( commonEndpointContainer );
+                        // Appends the endpoint configuration.
+                        configuration.AddRange( endpoint );
+                        // Generates the Multiple descriptors.
+                        var multipleHelper = new ExternalMultipleHelper( _definition.Name, externalMappings );
+                        multipleHelper.AddMultipleDescriptors( monitor, configuration );
                         // Add the scoped data holder.
                         var scopedDataType = typeof( EndpointScopeData<TScopeData> );
                         configuration.Add( new ServiceDescriptor( scopedDataType, scopedDataType, ServiceLifetime.Scoped ) );
                         // Waiting for .Net 8.
                         // configuration.MakeReadOnly();
                         _configuration = configuration;
+
                         return _initializationSuccess = true;
                     }
                     return false;
-            
-                    static bool CheckRegistrations( IActivityMonitor monitor, ServiceCollection configuration, EndpointDefinition definition, IStObjMap stObjMap )
+
+                    static bool CheckRegistrations( IActivityMonitor monitor,
+                                                    ServiceCollection configuration,
+                                                    EndpointDefinition definition,
+                                                    IStObjMap stObjMap,
+                                                    Dictionary<Type, Mapping> mappings )
                     {
                         var handledSingletons = new List<Type>( definition.SingletonServices );
                         var handledScoped = new List<Type>( definition.ScopedServices );
@@ -98,6 +244,12 @@ namespace CK.Setup
                         List<Type>? moreScoped = null;
                         foreach( var d in configuration )
                         {
+                            if( mappings.TryGetValue( d.ServiceType, out var exists ) )
+                            {
+                                exists.AddEndpoint( d );
+                            }
+                            else mappings.Add( d.ServiceType, new Mapping( null, d ) );
+
                             if( d.Lifetime == ServiceLifetime.Singleton )
                             {
                                 if( !handledSingletons.Remove( d.ServiceType ) )
@@ -120,7 +272,7 @@ namespace CK.Setup
                         if( !ErrorNotEndpointAutoServices( monitor, definition, stObjMap, moreSingletons, ServiceLifetime.Singleton ) ) success = false;
                         if( !ErrorNotEndpointAutoServices( monitor, definition, stObjMap, moreScoped, ServiceLifetime.Scoped ) ) success = false;
                         return success;
-            
+
                         static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, EndpointDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
                         {
                             bool success = true;
@@ -131,8 +283,16 @@ namespace CK.Setup
                                     var autoMap = stObjMap.ToLeaf( s );
                                     if( autoMap != null )
                                     {
-                                        monitor.Error( $"Endpoint '{definition.Name}' configures the {lt} services: '{s:C}' that is automatically mapped to '{autoMap.ClassType:C}'. This is not allowed." );
-                                        success = false;
+                                        if( autoMap is IStObjFinalImplementation realObject  )
+                                        {
+                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
+                                            success = false;
+                                        }
+                                        else
+                                        {
+                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}'." );
+                                            success = false;
+                                        }
                                     }
                                     else
                                     {
@@ -142,7 +302,7 @@ namespace CK.Setup
                             }
                             return success;
                         }
-            
+
                         static bool ErrorUnhandledServices( IActivityMonitor monitor, EndpointDefinition definition, List<Type> unhandled, ServiceLifetime lt )
                         {
                             if( unhandled.Count > 0 )
@@ -155,76 +315,293 @@ namespace CK.Setup
                     }
                 }
             }
+            
             """;
 
-        // Injected only if there's at least one EndType.
-        const string _endpointHelper =
+        // Injected only if there's at least one EndpointType.
+        const string _externalMultipleHelper =
             """
-            static class EndpointHelper
+            readonly struct ExternalMultipleHelper
             {
-                internal static IServiceCollection CreateCommonEndpointContainer( IActivityMonitor monitor,
-                                                                                  IServiceCollection global,
-                                                                                  Func<Type, bool> isEndpointService,
-                                                                                  Dictionary<Type, object> externalMappings )
+                readonly List<Type> _singGlobal;
+                readonly List<Type> _singLocal;
+                readonly List<object> _singInst;
+                readonly List<Type> _scopTypes;
+                readonly List<string> _typeMappedErrors;
+                readonly string _endpointName;
+                readonly IReadOnlyDictionary<Type, Mapping> _mappings;
+
+                public ExternalMultipleHelper( string endpointName,
+                                                IReadOnlyDictionary<Type, Mapping> mappings )
                 {
-                    ServiceCollection endpoint = new ServiceCollection();
-                    foreach( var d in global )
+                    _endpointName = endpointName;
+                    _mappings = mappings;
+                    _singGlobal = new List<Type>();
+                    _singLocal = new List<Type>();
+                    _singInst = new List<object>();
+                    _scopTypes = new List<Type>();
+                    _typeMappedErrors = new List<string>();
+                }
+
+                public record struct Result( bool IsPureGlobalSingleton,
+                                                Type[]? SingGlobal,
+                                                Type[]? SingLocal,
+                                                object[]? SingInst,
+                                                Type[]? ScopTypes,
+                                                int Count );
+
+                /// <summary>
+                /// Each call to ProcessMultipleMappedType removes the type processed from the initial externalMappings map.
+                /// The externalMappings that remains are then processed by this method to register the IEnumerable service
+                /// descriptor. Type mapped to a single registration are ignored.
+                /// </summary>
+                public void AddMultipleDescriptors( IActivityMonitor monitor, ServiceCollection endpoint )
+                {
+                    foreach( var (t, o) in _mappings )
                     {
-                        var t = d.ServiceType;
-                        if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
-                        // Skip any endpoint service and IHostedService.
-                        if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
+                        if( !o.ShouldProcess( out var mappingEndpoint ) ) continue;
+
+                        var r = ProcessType( monitor, t, o.IsScoped, o.Global, mappingEndpoint );
+
+                        var tEnum = typeof( IEnumerable<> ).MakeGenericType( t );
+                        if( r.ScopTypes != null )
                         {
-                            // There's no need to have the IHostedService multiple service in the endpoint containers.
-                            continue;
-                        }
-                        if( d.Lifetime == ServiceLifetime.Singleton )
-                        {
-                            // If it's a singleton, we must add the relay to the Global only once.
-                            if( !TrackMultiple( externalMappings, t, d ) )
+                            if( !AddErrorEndpoint( monitor, endpoint, tEnum, t, ServiceLifetime.Scoped ) )
                             {
-                                // Configure the relay to the last registered singleton.
-                                endpoint.AddSingleton( t, sp => sp.GetRequiredService<EndpointTypeManager>().GlobalServiceProvider.GetService( t )! );
+                                endpoint.Add( new ServiceDescriptor( tEnum,
+                                    sp =>
+                                    {
+                                        var a = Array.CreateInstance( t, r.Count );
+                                        int i = 0;
+                                        foreach( var scop in r.ScopTypes )
+                                        {
+                                            a.SetValue( sp.GetService( scop ), i++ );
+                                        }
+                                        if( r.SingInst != null )
+                                        {
+                                            foreach( var inst in r.SingInst )
+                                            {
+                                                a.SetValue( inst, i++ );
+                                            }
+                                        }
+                                        if( r.SingLocal != null )
+                                        {
+                                            foreach( var sing in r.SingLocal )
+                                            {
+                                                a.SetValue( sp.GetService( sing ), i++ );
+                                            }
+                                        }
+                                        if( r.SingGlobal != null )
+                                        {
+                                            var g = EndpointHelper.GetGlobalProvider( sp );
+                                            foreach( var sing in r.SingGlobal )
+                                            {
+                                                a.SetValue( g.GetService( sing ), i++ );
+                                            }
+                                        }
+                                        return a;
+                                    }, ServiceLifetime.Scoped ) );
                             }
                         }
                         else
                         {
-                            // For scope, this is simple: we reuse the service descriptor instance.
-                            endpoint.Add( d );
-                            // And we track duplicates to handle its IEnumerable<T> registration.
-                            TrackMultiple( externalMappings, t, d );
+                            if( r.IsPureGlobalSingleton )
+                            {
+                                // For homogeneous singletons from global, we register the resolution of its IEnumerable<T>
+                                // through the hook otherwise we'll have a enumeration of n times the last singleton registration.
+                                endpoint.Add( new ServiceDescriptor( tEnum, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( tEnum )!, ServiceLifetime.Singleton ) );
+                            }
+                            else
+                            {
+                                if( !AddErrorEndpoint( monitor, endpoint, tEnum, t, ServiceLifetime.Singleton ) )
+                                {
+                                    endpoint.Add( new ServiceDescriptor( tEnum,
+                                        sp =>
+                                        {
+                                            var a = Array.CreateInstance( t, r.Count );
+                                            int i = 0;
+                                            if( r.SingInst != null )
+                                            {
+                                                foreach( var inst in r.SingInst )
+                                                {
+                                                    a.SetValue( inst, i++ );
+                                                }
+                                            }
+                                            if( r.SingLocal != null )
+                                            {
+                                                foreach( var sing in r.SingLocal )
+                                                {
+                                                    a.SetValue( sp.GetService( sing ), i++ );
+                                                }
+                                            }
+                                            if( r.SingGlobal != null )
+                                            {
+                                                var g = EndpointHelper.GetGlobalProvider( sp );
+                                                foreach( var sing in r.SingGlobal )
+                                                {
+                                                    a.SetValue( g.GetService( sing ), i++ );
+                                                }
+                                            }
+                                            return a;
+                                        }, ServiceLifetime.Singleton ) );
+                                }
+                            }
                         }
-                    }
-                    return endpoint;
-
-                    static bool TrackMultiple( Dictionary<Type, object> externalMultiple, Type t, ServiceDescriptor d )
-                    {
-                        if( externalMultiple.TryGetValue( t, out var exists ) )
-                        {
-                            // If multiple registrations exist, memorize the service descriptor.
-                            if( exists is List<ServiceDescriptor> l ) l.Add( d );
-                            else externalMultiple[t] = new List<ServiceDescriptor>() { (ServiceDescriptor)exists, d };
-                            return true;
-                        }
-                        externalMultiple.Add( t, d );
-                        return false;
                     }
                 }
 
-                internal static Type GetImplementationType( ServiceDescriptor d )
+                /// <summary>
+                /// When true is returned, this emits only warnings: this does not prevent the StObjMap to
+                /// be registered: only if the IEnumerable is resolved, a InvalidOperationException is raised.
+                /// </summary>
+                bool AddErrorEndpoint( IActivityMonitor monitor, ServiceCollection endpoint, Type tEnum, Type tItem, ServiceLifetime lt )
                 {
-                    if( d.ImplementationType != null )
+                    var exceptionMessage = HandleTypeMappedErrors( monitor, tItem );
+                    if( exceptionMessage != null )
                     {
-                        return d.ImplementationType;
+                        endpoint.Add( new ServiceDescriptor( tEnum, sp => Throw.InvalidOperationException<object>( exceptionMessage ), lt ) );
+                        return true;
                     }
-                    else if( d.ImplementationInstance != null )
-                    {
-                        return d.ImplementationInstance.GetType();
-                    }
-                    Type[]? typeArguments = d.ImplementationFactory.GetType().GenericTypeArguments;
-                    return typeArguments[1];
+                    return false;
                 }
+
+                string? HandleTypeMappedErrors( IActivityMonitor monitor, Type t )
+                {
+                    string? exceptionMessage = null;
+                    if( _typeMappedErrors.Count > 0 )
+                    {
+                        exceptionMessage = $"The 'IEnumerable<{t.ToCSharpName()}>' cannot be used from endpoint '{_endpointName}'.";
+                        using( monitor.OpenWarn( $"{exceptionMessage} Using it will throw a InvalidOperationException." ) )
+                        {
+                            foreach( var e in _typeMappedErrors ) monitor.Warn( e );
+                        }
+                    }
+                    return exceptionMessage;
+                }
+
+                Result ProcessType( IActivityMonitor monitor, Type t, bool isScoped, object? global, object? endpoint )
+                {
+                    _singGlobal.Clear();
+                    _singLocal.Clear();
+                    _scopTypes.Clear();
+                    _typeMappedErrors.Clear();
+                    if( global != null )
+                    {
+                        Handle( global, _singGlobal, _singInst, _scopTypes, _typeMappedErrors );
+                    }
+                    if( endpoint != null )
+                    { 
+                        Handle( endpoint, _singLocal, _singInst, _scopTypes, _typeMappedErrors );
+                    }
+                    int count = 0;
+                    Type[]? singGlobal = null;
+                    if( _singGlobal.Count > 0 )
+                    {
+                        singGlobal = _singGlobal.ToArray();
+                        count = singGlobal.Length;
+                    }
+                    Type[]? singLocal = null;
+                    if( _singLocal.Count > 0 )
+                    {
+                        singLocal = _singLocal.ToArray();
+                        count += singLocal.Length;
+                    }
+                    object[]? singInst = null;
+                    if( _singInst.Count > 0 )
+                    {
+                        singInst = _singInst.ToArray();
+                        count += singInst.Length;
+                    }
+                    if( !isScoped && _singLocal.Count == 0 && _scopTypes.Count == 0 )
+                    {
+                        return new Result( true, singGlobal, null, singInst, null, _singGlobal.Count + _singInst.Count );
+                    }
+                    Type[]? scopTypes = null;
+                    if( _scopTypes.Count > 0 )
+                    {
+                        if( !isScoped )
+                        {
+                            // The [IsMultiple] has been resolved as a singleton. It cannot contain a scope: this is an
+                            // error that prevent the StObjMap to be registered, we use monitor.Fatal to signal this fatal
+                            // error.
+                            monitor.Fatal( $"The IEnumerable<{t:C}> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint '{_endpointName}'): " +
+                                            $"'{_scopTypes.Select( t => t.ToCSharpName() ).Concatenate( "', '" )}'." );
+                            // Don't bother here: we return an empty result.
+                            return new Result( false, null, null, null, null, 0 );
+                        }
+                        scopTypes = _scopTypes.ToArray();
+                        count += scopTypes.Length;
+                    }
+
+                    return new Result( false, singGlobal, singLocal, singInst, scopTypes, count );
+
+                    static void Handle( object o, List<Type> singType, List<object> singInst, List<Type> scopTypes, List<string> typeMappedErrors )
+                    {
+                        if( o is List<ServiceDescriptor> l )
+                        {
+                            foreach( var d in l ) Handle( d, singType, singInst, scopTypes, typeMappedErrors );
+                        }
+                        else Handle( (ServiceDescriptor)o, singType, singInst, scopTypes, typeMappedErrors );
+
+                        static void Handle( ServiceDescriptor ext, List<Type> singTypes, List<object> singInst, List<Type> scopTypes, List<string> typeMappedErrors )
+                        {
+                            if( ext.Lifetime == ServiceLifetime.Singleton )
+                            {
+                                if( ext.ImplementationInstance != null )
+                                {
+                                    singInst.Add( ext.ImplementationInstance );
+                                }
+                                else
+                                {
+                                    HandleImplementationType( ext, ServiceLifetime.Singleton, singTypes, typeMappedErrors );
+                                }
+                            }
+                            else
+                            {
+                                HandleImplementationType( ext, ServiceLifetime.Scoped, scopTypes, typeMappedErrors );
+                            }
+
+                            static void HandleImplementationType( ServiceDescriptor ext,
+                                                                    ServiceLifetime lt,
+                                                                    List<Type> list,
+                                                                    List<string> mappedTypeError )
+                            {
+                                var implType = GetImplementationType( ext );
+                                if( implType == ext.ServiceType || implType == typeof( object ) )
+                                {
+                                    mappedTypeError.Add( $"Unable to analyze {lt} '{ext.ServiceType.ToCSharpName()}' type: its registration doesn't capture the target implementation type." );
+                                }
+                                else if( list.Contains( implType ) )
+                                {
+                                    mappedTypeError.Add( $"Duplicate mapping from {lt} '{ext.ServiceType.ToCSharpName()}' to '{implType:C}' type." );
+                                }
+                                else
+                                {
+                                    list.Add( implType );
+                                }
+
+                                static Type GetImplementationType( ServiceDescriptor d )
+                                {
+                                    if( d.ImplementationType != null )
+                                    {
+                                        return d.ImplementationType;
+                                    }
+                                    else if( d.ImplementationInstance != null )
+                                    {
+                                        return d.ImplementationInstance.GetType();
+                                    }
+                                    Type[]? typeArguments = d.ImplementationFactory!.GetType().GenericTypeArguments;
+                                    return typeArguments[1];
+                                }
+
+                            }
+                        }
+                    }
+
+                }
+
             }
+            
             """;
 
         /// <summary>
@@ -240,312 +617,56 @@ namespace CK.Setup
             g.Append( "namespace CK.StObj" )
              .OpenBlock()
              .Append( _localNamespaces )
+             .Append( "static class EndpointHelper" )
+             .OpenBlock()
+                .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;" )
+                .NewLine()
+                .CreatePart( out var helperExtension )
+             .CloseBlock()
+             .Append( _mapping )
              .Append( _endpointTypeInternal );
             if( hasEndpoint )
             {
+                helperExtension.Append( _createCommonEndpointContainer );
                 g.Append( _endpointType )
-                 .Append( _endpointHelper );
+                 .Append( _externalMultipleHelper );
             }
             g.CloseBlock();
         }
 
-        public static void CreateFillMultipleEndpointMappingsMethod( ITypeScope rootType, IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
+        public static void CreateFillMultipleEndpointMappingsFromStObjMethod( ITypeScope rootType,
+                                                                              IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
         {
-            // Handling external mappings AND auto service mappings at the same time is hard...
-            // For each auto service mapping, if one or more external registration exist, we merge their resolution.
-            // There is one serious error case to consider: when the auto service IEnumerable is singleton and an
-            // external scoped registration exists, we are stuck.
-            // To avoid keeping the ServiceDecriptor in the closure and avoid resolving the implementation
-            // type each time, we compute 2 arrays of implementation types, one for the singletons (to be
-            // resolved by the global hook) and one for the scoped services.
-            // Analyzing the external mappings is done by the ExternalMultipleHelper.
-
-            rootType.GeneratedByComment().NewLine()
-                    .Append( """
-                             readonly struct ExternalMultipleHelper
-                             {
-                                 readonly List<Type> _singTypes;
-                                 readonly List<Type> _scopTypes;
-                                 readonly Dictionary<Type, object> _externalMappings;
-
-                                 public ExternalMultipleHelper( Dictionary<Type, object> externalMappings )
-                                 {
-                                     _externalMappings = externalMappings;
-                                     _singTypes = new List<Type>();
-                                     _scopTypes = new List<Type>();
-                                 }
-
-                                 /// <summary>
-                                 /// Processes a service type that is a [IsMultiple] interface with auto services or real objects mappings.
-                                 /// If this abstract type is also mapped externally, this returns the singletons and scoped implementation
-                                 /// types that must be included in the IEnumerable mapping.
-                                 /// </summary>
-                                 public (Type[]? ImplSing, Type[]? ImplScop, int ExtCount, string? ExceptionMessage) ProcessMultipleMappedType( IActivityMonitor monitor, Type t, bool isScoped )
-                                 {
-                                     if( !_externalMappings.Remove( t, out var ext ) ) return (null, null, 0, null);
-                                     _singTypes.Clear();
-                                     _scopTypes.Clear();
-                                     string? exceptionMessage = null;
-                                     if( ext is List<ServiceDescriptor> l )
-                                     {
-                                         foreach( var d in l ) Handle( monitor, t, d, ref exceptionMessage );
-                                     }
-                                     else Handle( monitor, t, (ServiceDescriptor)ext, ref exceptionMessage );
-                                     if( exceptionMessage != null ) return (null, null, 0, exceptionMessage);
-                                     Type[]? implSing = null;
-                                     Type[]? implScop = null;
-                                     int extCount = 0;
-                                     if( _singTypes.Count > 0 )
-                                     {
-                                         if( isScoped )
-                                         {
-                                             monitor.Info( $"The IEnumerable<{t:C}> of [IsMultiple] is Scoped and contains Singletons: {_singTypes.Select( t => t.ToCSharpName() ).Concatenate()}." );
-                                         }
-                                         implSing = _singTypes.ToArray();
-                                         extCount = implSing.Length;
-                                     }
-                                     if( _scopTypes.Count > 0 )
-                                     {
-                                         if( !isScoped )
-                                         {
-                                             // The [IsMultiple] has been resolved as a singleton. It cannot contain a scope: this is an
-                                             // error that prevent the StObjMap to be registered, we use monitor.Error to signal this fatal
-                                             // error.
-                                             var msg = OnError( monitor, t, ref exceptionMessage );
-                                             monitor.Error( $"The IEnumerable<{t:C}> of [IsMultiple] that is Singleton contains externally defined Scoped mappings: " +
-                                                             $"{_scopTypes.Select( t => t.ToCSharpName() ).Concatenate()}. {msg}" );
-                                         }
-                                         implScop = _scopTypes.ToArray();
-                                         extCount += implScop.Length;
-                                     }
-                                     return (implSing, implScop, extCount, exceptionMessage);
-                                 }
-
-                                 internal (List<Type> singTypes, List<Type> scopedTypes, string? errorMessage) ProcessRemainder( IActivityMonitor monitor, Type t, object o )
-                                 {
-                                     _singTypes.Clear();
-                                     _scopTypes.Clear();
-                                     string? exceptionMessage = null;
-                                     if( o is List<ServiceDescriptor> l )
-                                     {
-                                         foreach( var d in l ) Handle( monitor, t, d, ref exceptionMessage );
-                                     }
-                                     else Handle( monitor, t, (ServiceDescriptor)o, ref exceptionMessage );
-                                     return (_singTypes, _scopTypes, exceptionMessage);
-                                 }
-
-                                 // This only emits warnings: the StObjMap registration is not on error but using the IEnumerable will
-                                 // raise an exception.
-                                 void Handle( IActivityMonitor monitor, Type type, ServiceDescriptor ext, ref string? exceptionMessage )
-                                 {
-                                     var implType = GetImplementationType( ext );
-                                     if( implType == type )
-                                     {
-                                         var msg = OnError( monitor, type, ref exceptionMessage );
-                                         monitor.Warn( $"Unable to analyze a mapped type. {msg}" );
-                                     }
-                                     else if( ext.Lifetime == ServiceLifetime.Singleton )
-                                     {
-                                         if( _singTypes.Contains( implType ) )
-                                         {
-                                             var msg = OnError( monitor, type, ref exceptionMessage );
-                                             monitor.Warn( $"Duplicate mapping to '{implType:C}' (singleton). {msg}" );
-                                         }
-                                         else
-                                         {
-                                             _singTypes.Add( implType );
-                                         }
-                                     }
-                                     else
-                                     {
-                                         if( _scopTypes.Contains( implType ) )
-                                         {
-                                             var msg = OnError( monitor, type, ref exceptionMessage );
-                                             monitor.Warn( $"Duplicate mapping to '{implType:C}' (scoped). {msg}" );
-                                         }
-                                         else
-                                         {
-                                             _scopTypes.Add( implType );
-                                         }
-                                     }
-                                 }
-
-                                 static string OnError( IActivityMonitor monitor, Type type, ref string? exceptionMessage )
-                                 {
-                                     exceptionMessage ??= $"This hybrid Scoped/Singleton 'IEnumerable<{type.ToCSharpName()}>' from endpoint containers is invalid.";
-                                     return $"{exceptionMessage} Using it will throw an InvalidOperationException.";
-                                 }
-
-
-                                 static Type GetImplementationType( ServiceDescriptor d )
-                                 {
-                                     if( d.ImplementationType != null )
-                                     {
-                                         return d.ImplementationType;
-                                     }
-                                     else if( d.ImplementationInstance != null )
-                                     {
-                                         return d.ImplementationInstance.GetType();
-                                     }
-                                     Type[]? typeArguments = d.ImplementationFactory.GetType().GenericTypeArguments;
-                                     return typeArguments[1];
-                                 }
-
-                             }
-                             """ );
-
             var fScope = rootType.GeneratedByComment().NewLine()
-                                  .CreateFunction( """
-                                                   void FillMultipleEndpointMappings( IActivityMonitor monitor,
-                                                                                      Microsoft.Extensions.DependencyInjection.IServiceCollection commonEndpoint,
-                                                                                      Dictionary<Type,object> externalMappings )
-                                                   """ );
-            // Shared variables reused for each mapping.
-            fScope.Append( """
-                           Type[]? extSingTypes = null;
-                           Type[]? extScopedTypes = null;
-                           int extCount;
-                           string? errorMessage = null;
-                           var multiHelper = new ExternalMultipleHelper( externalMappings );                          
-                           """ );
-            foreach( var mapping in multipleMappings.Values )
+                         .CreateFunction( "static void FillMultipleEndpointMappingsFromStObj( IActivityMonitor monitor, Dictionary<Type, Mapping> mappings )" );
+            foreach( var (type,mapping) in multipleMappings )
             {
-                Debug.Assert( mapping.ImplementationCount > 0 );
-                fScope.Append( "(extSingTypes, extScopedTypes, extCount, errorMessage) = multiHelper.ProcessMultipleMappedType( monitor, " )
-                      .AppendTypeOf( mapping.ItemType ).Append( ", " ).Append( mapping.IsScoped ).Append( " );" ).NewLine()
-                      .Append( "if( errorMessage != null )" )
-                      .OpenBlock()
-                          .Append( "commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(" )
-                          .AppendTypeOf( mapping.EnumerableType )
-                          .Append( ", sp => Throw.InvalidOperationException<object>( errorMessage ), Microsoft.Extensions.DependencyInjection.ServiceLifetime." )
-                          .Append( mapping.IsScoped ? "Scoped" : "Singleton" ).Append( " ) );" )
-                      .CloseBlock()
-                      .Append( "else" )
-                      .OpenBlock();
-                HandleOneMapping( fScope, mapping );
-                fScope.CloseBlock();
-            }
-            // The [IsMultiple] mappings have been handled. We now process what is left in the externalMappings: the purely
-            // external mappings.
-            fScope.Append( """
-                           foreach( var (t, o) in externalMappings )
-                           {
-                               var (singTypes, scopedTypes, error) = multiHelper.ProcessRemainder( monitor, t, o );
-                               int count = singTypes.Count + scopedTypes.Count;
-                               if( count > 1 )
-                               {
-                                   var tEnum = typeof( IEnumerable<> ).MakeGenericType( t );
-                                   if( scopedTypes.Count > 0 )
-                                   {
-                                       var scopA = scopedTypes.ToArray();
-                                       var singA = singTypes.Count > 0 ? singTypes.ToArray() : null;
-                                       commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( tEnum,
-                                           sp =>
-                                           {
-                                               var a = Array.CreateInstance( t, count );
-                                               int i = 0;
-                                               foreach( var scop in scopA )
-                                               {
-                                                   a.SetValue( sp.GetService( scop ), i++ );
-                                               }
-                                               if( singA != null )
-                                               {
-                                                   var g = ((EndpointTypeManager)sp.GetService( typeof( EndpointTypeManager ) )).GlobalServiceProvider;
-                                                   foreach( var sing in singA )
-                                                   {
-                                                       a.SetValue( g.GetService( sing ), i++ );
-                                                   }
-                                               }
-                                               return a;
-                                           }, ServiceLifetime.Scoped ) );
-                                   }
-                                   else
-                                   {
-                                       commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( tEnum,
-                                           sp => ((EndpointTypeManager)sp.GetService( typeof( EndpointTypeManager ) )).GlobalServiceProvider.GetService( tEnum),
-                                           Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
-                                   }
-                               }
-                           }
-                           """ );
-
-            // AddExternals helper.
-            fScope.Append( """
-                           static void AddExternals( IServiceProvider sp, Type[] singTypes, Type[] scopTypes, Array a, int i, IServiceProvider? g )
-                           {
-                               if( scopTypes != null )
-                               {
-                                   foreach( var t in scopTypes )
-                                   {
-                                       a.SetValue( sp.GetService( t ), i++ );
-                                   }
-                               }
-                               if( singTypes != null )
-                               {
-                                   g ??= ((EndpointTypeManager)sp.GetService( typeof( EndpointTypeManager ) )).GlobalServiceProvider;
-                                   foreach( var t in singTypes )
-                                   {
-                                       a.SetValue( g.GetService( t ), i++ );
-                                   }
-                               }
-                           }                           
-                           """ );
-
-            static void HandleOneMapping( IFunctionScope fScope, IMultipleInterfaceDescriptor mapping )
-            {
-                if( mapping.IsScoped )
+                fScope.Append( "if( !mappings.TryGetValue( " ).AppendTypeOf( type ).Append( ", out var m ) )" )
+                    .OpenBlock()
+                      .Append( "mappings.Add( " ).AppendTypeOf( type ).Append( ", m = new Mapping( null, null ) );" )
+                    .CloseBlock();
+                if( !mapping.IsScoped ) fScope.Append( "m.LockAsSingleton();" );
+                foreach( var c in mapping.Implementations )
                 {
-                    // If all items are scoped, we can let the ServiceProvider implementation do its job (providing that we register
-                    // the sp => sp.GetService( mapped ) for each mapping) or we can take control and provide an explicit registration.
-                    // Since we have to do it for the hybrid case, let's always do it: this will avoid some reflection code from the
-                    // ServiceProvider implementation... Moreover, because we took the road of the "external service merge", we would
-                    // have the choice to let the ServiceProvider implementation do its job only if we have NO [IsMultiple] to handle 
-                    // (this is handled below) but here we have no choice.
+                    fScope.Append( "m.AddGlobal( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(" ).AppendTypeOf( type ).Append( ", " );
 
-                    // Closed variables by the registration lambda.
-                    fScope.Append( "var singTypes = extSingTypes;" ).NewLine()
-                          .Append( "var scopTypes = extScopedTypes;" ).NewLine()
-                          .Append( "var count = extCount;" ).NewLine();
-                    fScope.Append( "commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
-                          .AppendTypeOf( mapping.EnumerableType )
-                          .Append( ", sp => {" ).NewLine()
-                          .Append( "var a = Array.CreateInstance( " )
-                          .AppendTypeOf( mapping.ItemType )
-                          .Append( ", count+" ).Append( mapping.ImplementationCount ).Append( ");" ).NewLine();
-                    // Handle our mapping first. 
-                    int i = 0;
-                    bool atLeastOneSingleton = false;
-                    foreach( var impl in mapping.Implementations )
+                    if( c.IsScoped )
                     {
-                        if( impl.IsScoped )
+                        fScope.AppendTypeOf( c.ClassType ).Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped" );
+                    }
+                    else
+                    {
+                        if( c is IStObjFinalImplementationResult realObject )
                         {
-                            fScope.Append( "a.SetValue( sp.GetService( " ).AppendTypeOf( impl.ClassType ).Append( " ), " ).Append( i++ ).Append( " );" ).NewLine();
+                            fScope.Append( realObject.CodeInstanceAccessor );
                         }
                         else
                         {
-                            if( !atLeastOneSingleton )
-                            {
-                                fScope.Append( "var g = ((EndpointTypeManager)sp.GetService(typeof(EndpointTypeManager))).GlobalServiceProvider;" ).NewLine();
-                                atLeastOneSingleton = true;
-                            }
-                            fScope.Append( "a.SetValue( g.GetService( " ).AppendTypeOf( impl.ClassType ).Append( " ), i++ )," ).NewLine();
+                            fScope.AppendTypeOf( c.ClassType );
                         }
+                        fScope.Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton" );
                     }
-                    // Now handle the external registration.
-                    fScope.Append( "AddExternals( sp, singTypes, scopTypes, a, " )
-                          .Append( mapping.ImplementationCount ).Append( ", " ).Append( atLeastOneSingleton ? "g" : null ).Append( " );" ).NewLine();
-                    fScope.Append( "return a;" ).NewLine()
-                          .Append( "}, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ) );" );
-                }
-                else
-                {
-                    // For singletons, we register the resolution of its IEnumerable<T> through the hook otherwise
-                    // we'll have a enumeration of n times the last singleton registration.
-                    fScope.Append( "commonEndpoint.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
-                          .AppendTypeOf( mapping.EnumerableType )
-                          .Append( ", sp => ((EndpointTypeManager)sp.GetService( typeof( EndpointTypeManager ) )).GlobalServiceProvider.GetService( " )
-                          .AppendTypeOf( mapping.EnumerableType )
-                          .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );" ).NewLine();
+                    fScope.Append( " ) );" ).NewLine();
                 }
             }
         }

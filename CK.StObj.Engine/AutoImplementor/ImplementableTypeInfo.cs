@@ -233,7 +233,7 @@ namespace CK.Setup
         {
             if( _stubType == null ) Throw.InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
-            ITypeScope cB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, _stubType );
+            ITypeScope cB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, _stubType );
 
             // Calls all Type level implementors first.
             foreach( var impl in TypeImplementors )

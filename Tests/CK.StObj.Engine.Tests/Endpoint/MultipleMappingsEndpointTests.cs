@@ -40,7 +40,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class FirstEndpointDefinition : EndpointDefinition<string>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services )
+            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
             {
             }
         }
@@ -48,7 +48,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class SecondEndpointDefinition : EndpointDefinition<int>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services )
+            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
             {
             }
         }
