@@ -104,7 +104,7 @@ namespace CK.Setup
         /// </summary>
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
                                               IEndpointResult? endpointResult,
-                                              IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
+                                              IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             // Compute the indexed AllTypesAttributesCache.
             // This is a mess. This cache must be replaced by a truly reflection central cache.

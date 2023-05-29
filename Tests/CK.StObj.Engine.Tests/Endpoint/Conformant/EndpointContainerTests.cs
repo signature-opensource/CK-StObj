@@ -136,8 +136,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             ServiceCollection global = new ServiceCollection();
             // B is "normal".
-            global.AddSingleton<B>( new B( "B instance" ) );
-            global.AddSingleton<IB>( sp => sp.GetRequiredService<B>() );
+            global.AddSingleton( new B( "B instance" ) );
+            global.AddSingleton<IB,B>( sp => sp.GetRequiredService<B>() );
             // A is registered twice.
             global.AddSingleton( new A( "A instance" ) );
             global.AddSingleton( sp => new A( "A instance by factory" ) );
@@ -274,8 +274,21 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             }
         }
 
-        [TestCase( "hidden singleton" )]
+
+        // We cannot apply to global singletons what we do for scoped services.
+        // If we do, we impact the direct instance registration capability...
+        // The undetected edge case (where we cannot throw an exception) is when only one (badly)
+        // type mapped singleton is registered... So we can live with that but this clearly
+        // shows the limits of the current "Conformant DI".
+        //
+        // Note: The root cause is that there is a fundamental ambiguity between the registration
+        //       of a type mapping and a multiple type mapping.
+        //       Adding a "bool IsMultiple" or, better, an explicit "Type? MultiTargetType" on ServiceDescriptor would
+        //       be enough to disambiguate the registrations.
+        //
         [TestCase( "hidden scoped" )]
+        [TestCase( "hidden singleton (undetectable bug)" )]
+        [TestCase( "hidden singleton (miraculous good registration order)" )]
         public void when_hybrid_lifetime_multiple_registrations_fails_the_IEnumerable_must_NOT_be_used( string mode )
         {
             var global = new ServiceCollection();
@@ -283,17 +296,24 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddSingleton<Sing1>();
             global.AddScoped<Scop1>();
 
-            if( mode == "hidden singleton" )
+            if( mode == "hidden scoped" )
+            {
+                global.AddSingleton<IMulti,Sing1>( sp => sp.GetRequiredService<Sing1>() );
+                // Invalid registration (ImplementationType is not discoverable).
+                global.AddScoped<IMulti>( sp => sp.GetRequiredService<Scop1>() );
+            }
+            else if( mode == "hidden singleton (undetectable bug)" )
             {
                 // Invalid registration (ImplementationType is not discoverable).
                 global.AddSingleton<IMulti>( sp => sp.GetRequiredService<Sing1>() );
                 global.AddScoped<IMulti, Scop1>( sp => sp.GetRequiredService<Scop1>() );
             }
-            else if( mode == "hidden scoped" )
+            else
             {
-                global.AddSingleton<IMulti,Sing1>( sp => sp.GetRequiredService<Sing1>() );
+                // Miraculous good registration order...
+                global.AddScoped<IMulti, Scop1>( sp => sp.GetRequiredService<Scop1>() );
                 // Invalid registration (ImplementationType is not discoverable).
-                global.AddScoped<IMulti>( sp => sp.GetRequiredService<Scop1>() );
+                global.AddSingleton<IMulti>( sp => sp.GetRequiredService<Sing1>() );
             }
 
             EndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeEndpointDefinition.CreateServiceProvider( TestHelper.Monitor, global, out _ );
@@ -301,12 +321,30 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data() );
 
             // The container works as usual.
-            scopedE.ServiceProvider.GetServices<Sing1>().Should().NotBeNull();
-            scopedE.ServiceProvider.GetServices<Scop1>().Should().NotBeNull();
+            IEnumerable<Sing1> eSing1 = scopedE.ServiceProvider.GetServices<Sing1>();
+            eSing1.Single().Should().BeOfType<Sing1>();
+            IEnumerable<Scop1> eScop1 = scopedE.ServiceProvider.GetServices<Scop1>();
+            eScop1.Single().Should().BeOfType<Scop1>();
 
-            // Except if the IEnumerable is requested.
-            FluentActions.Invoking( () => scopedE.ServiceProvider.GetServices<IMulti>() )
-                .Should().Throw<InvalidOperationException>();
+            if( mode == "hidden scoped" )
+            {
+                // Except if the IEnumerable is requested.
+                FluentActions.Invoking( () => scopedE.ServiceProvider.GetServices<IMulti>() )
+                    .Should().Throw<InvalidOperationException>();
+            }
+            else
+            {
+                var m = scopedE.ServiceProvider.GetServices<IMulti>();
+                if( mode == "hidden singleton (undetectable bug)" )
+                {
+                    m.Select( o => o.GetType() ).Should().BeEquivalentTo( new[] { typeof( Scop1 ), typeof( Scop1 ) } );
+                }
+                else
+                {
+                    // Miraculous good registration order...
+                    m.Select( o => o.GetType() ).Should().BeEquivalentTo( new[] { typeof( Scop1 ), typeof( Sing1 ) } );
+                }
+            }
         }
 
     }

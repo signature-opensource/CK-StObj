@@ -67,7 +67,7 @@ namespace CK.Setup
             _serviceRoots = new List<AutoServiceClassInfo>();
             _serviceInterfaces = new Dictionary<Type, AutoServiceInterfaceInfo?>();
             _multipleMappings = new Dictionary<Type, MultipleImpl>();
-            _exposedMultipleMappings = _multipleMappings.AsIReadOnlyDictionary<Type, MultipleImpl, IMultipleInterfaceDescriptor>();
+            _exposedMultipleMappings = _multipleMappings.AsIReadOnlyDictionary<Type, MultipleImpl, IStObjMultipleInterface>();
 
             KindDetector = new CKTypeKindDetector( typeFilter );
             _pocoRegistrar = new PocoRegistrar( ( m, t ) => (KindDetector.GetValidKind( m, t ) & CKTypeKind.IsPoco) != 0, typeFilter: _typeFilter );

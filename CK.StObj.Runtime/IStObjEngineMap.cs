@@ -33,11 +33,6 @@ namespace CK.Setup
         IEndpointResult EndpointResult { get; }
 
         /// <summary>
-        /// Gets the [IsMultiple] interfaces IEnumerable mappings.
-        /// </summary>
-        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> MultipleMappings { get; }
-
-        /// <summary>
         /// Gets all the type's <see cref="ITypeAttributesCache"/>.
         /// </summary>
         IReadOnlyDictionary<Type, ITypeAttributesCache> AllTypesAttributesCache { get; }

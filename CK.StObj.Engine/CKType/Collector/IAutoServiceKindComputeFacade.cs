@@ -31,7 +31,7 @@ namespace CK.Setup
         /// This has absolutely nothing to do here :(.
         /// This is used to set this on the engine StObjMap... This is awful.
         /// </summary>
-        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> MultipleMappings { get; }
+        IReadOnlyDictionary<Type, IStObjMultipleInterface> MultipleMappings { get; }
 
         /// <summary>
         /// Once all AutoServiceClassInfo have successfully called

@@ -2,13 +2,12 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 
-namespace CK.Setup
+namespace CK.Core
 {
     /// <summary>
     /// Final information for IEnumerable&lt;T&gt; where T is an interface marked with [IsMultiple] attribute.
-    /// This is currently not exposed in the <see cref="IStObjMap"/>, it is exposed by the <see cref="IStObjEngineMap.MultipleMappings"/>.
     /// </summary>
-    public interface IMultipleInterfaceDescriptor
+    public interface IStObjMultipleInterface
     {
         /// <summary>
         /// Gets whether this enumeration must be scoped or can be registered as a singleton.
@@ -26,23 +25,20 @@ namespace CK.Setup
         Type EnumerableType { get; }
 
         /// <summary>
+        /// Gets the final real objects or auto services that this enumeration contains.
+        /// </summary>
+        IReadOnlyCollection<IStObjFinalClass> Implementations { get; }
+
+        /// <summary>
         /// Gets the types that must be marshalled for this enumeration to be marshallable.
         /// This is empty if this service is not marshallable.
         /// <para>
-        /// Note that it contains this <see cref="ItemType"/> if the enumerated interface itself is marked with [IsMarshallable]
-        /// and is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available.
+        /// Note that it contains this <see cref="EnumerableType"/> if the enumerated interface itself is marked with [IsMarshallable]
+        /// and is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available and contains the <see cref="ItemType"/>
+        /// if it is the IsMultiple interface that is declared marshallable. Both of these are strange, but who knows...
         /// </para>
         /// </summary>
         IReadOnlyCollection<Type> MarshallableTypes { get; }
 
-        /// <summary>
-        /// Gets the final real objects or auto services that this enumeration contains. 
-        /// </summary>
-        IEnumerable<IStObjFinalClass> Implementations { get; }
-
-        /// <summary>
-        /// Gets the count of <see cref="Implementations"/>.
-        /// </summary>
-        int ImplementationCount { get; }
     }
 }

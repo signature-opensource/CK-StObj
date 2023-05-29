@@ -49,6 +49,12 @@ namespace CK.Core
         IReadOnlyCollection<VFeature> Features { get; }
 
         /// <summary>
+        /// Gets the [IsMultiple] interfaces IEnumerable mappings.
+        /// The key is the [IsMultiple] interface type.
+        /// </summary>
+        IReadOnlyDictionary<Type, IStObjMultipleInterface> MultipleMappings { get; }
+
+        /// <summary>
         /// Configures the global <see cref="StObjContextRoot.ServiceRegister.Services"/> services collection.
         /// <list type="number">
         ///     <item>

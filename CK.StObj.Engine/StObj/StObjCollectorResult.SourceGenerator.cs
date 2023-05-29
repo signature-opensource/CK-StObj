@@ -372,7 +372,6 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootStaticCtor );
             serviceGen.CreateServiceSupportCode( EngineMap.Services );
             serviceGen.CreateRealObjectConfigureServiceMethod( orderedStObjs );
-            serviceGen.CreateFillUniqueMappingsAndGlobalMultipleMappingsMethod();
             serviceGen.CreateConfigureServiceMethod( monitor, EngineMap );
 
             GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );

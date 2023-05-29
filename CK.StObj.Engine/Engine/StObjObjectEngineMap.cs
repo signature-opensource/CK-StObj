@@ -31,7 +31,7 @@ namespace CK.Setup
         IReadOnlyList<MutableItem>? _orderedStObjs;
         Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
         IEndpointResult? _endpointResult;
-        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor>? _multiplemappings;
+        IReadOnlyDictionary<Type, IStObjMultipleInterface>? _multiplemappings;
 
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
@@ -153,11 +153,11 @@ namespace CK.Setup
 
         IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
 
-        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> IStObjEngineMap.MultipleMappings => _multiplemappings!;
+        IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
 
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type,
                                               ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult? endpointResult, IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> multipleMappings )
+                                              IEndpointResult? endpointResult, IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             _orderedStObjs = ordered;
             _allTypesAttributesCache = allTypesAttributesCache;

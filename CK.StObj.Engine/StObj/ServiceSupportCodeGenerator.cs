@@ -217,94 +217,12 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             }
         }
 
-        public void CreateFillUniqueMappingsAndGlobalMultipleMappingsMethod()
-        {
-            _rootType.GeneratedByComment().NewLine()
-                     .Append( """
-                            void FillUniqueMappingsAndGlobalMultipleMappings( IActivityMonitor monitor,
-                                                                              Microsoft.Extensions.DependencyInjection.IServiceCollection global,
-                                                                              Microsoft.Extensions.DependencyInjection.IServiceCollection? commonEndpoint )
-                            {
-                                var mapMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IStObjMap ), this );
-                                global.Add( mapMapping );
-                                commonEndpoint?.Add( mapMapping );
-                                foreach( var o in _finalStObjs )
-                                {
-                                    var typeMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( o.ClassType, o.Implementation );
-                                    global.Add( typeMapping );
-                                    commonEndpoint?.Add( typeMapping );
-                                    foreach( var unique in o.UniqueMappings )
-                                    {
-                                        var uMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( unique, o.Implementation );
-                                        global.Add( uMapping );
-                                        commonEndpoint?.Add( uMapping );
-                                    }
-                                    foreach( var multi in o.MultipleMappings )
-                                    {
-                                        var mMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( multi, o.Implementation );
-                                        global.Add( mMapping );
-                                    }
-                                }
-                                foreach( var m in _serviceMappingList )
-                                {
-                                    if( m.IsScoped )
-                                    {
-                                        var typeMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( m.ClassType, m.FinalType, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped );
-                                        global.Add( typeMapping );
-                                        commonEndpoint?.Add( typeMapping );
-                                        foreach( var unique in m.UniqueMappings )
-                                        {
-                                            var uMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( unique, sp => sp.GetService( m.ClassType ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped );
-                                            global.Add( uMapping );
-                                            commonEndpoint?.Add( uMapping );
-                                        }
-                                        foreach( var multi in m.MultipleMappings )
-                                        {
-                                            var mMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( multi, sp => sp.GetService( m.ClassType ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped );
-                                            global.Add( mMapping );
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if( m.ClassType == typeof( EndpointTypeManager ) ) continue;
-                                        var gMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( m.ClassType, m.FinalType, Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton );
-                                        global.Add( gMapping );
-                                        if( commonEndpoint != null )
-                                        {
-                                            var eMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( m.ClassType, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( m.ClassType ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton );
-                                            commonEndpoint.Add( eMapping );
-                                        }
-                                        foreach( var unique in m.UniqueMappings )
-                                        {
-                                            var guMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( unique, sp => sp.GetService( m.ClassType ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton );
-                                            global.Add( guMapping );
-                                            if( commonEndpoint != null )
-                                            {
-                                                var euMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( unique, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( m.ClassType ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton );
-                                                commonEndpoint?.Add( euMapping );
-                                            }
-                                        }
-                                        foreach( var multi in m.MultipleMappings )
-                                        {
-                                            var mMapping = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( multi, sp => sp.GetService( m.ClassType ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton );
-                                            global.Add( mMapping );
-                                        }
-                                    }
-                                }
-                            }
-                            """ );
-        }
-
         public void CreateConfigureServiceMethod( IActivityMonitor monitor, IStObjEngineMap engineMap )
         {
             var endpointResult = engineMap.EndpointResult;
             bool hasEndpoint = endpointResult.EndpointContexts.Count > 1;
 
             EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
-            if( hasEndpoint )
-            {
-                EndpointSourceCodeGenerator.CreateFillMultipleEndpointMappingsFromStObjMethod( _rootType, engineMap.MultipleMappings );
-            }
 
             var fScope = _rootType.CreateFunction( "public bool ConfigureServices( in StObjContextRoot.ServiceRegister reg )" );
 
@@ -314,9 +232,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // we minimize the number of registrations to process.
             if( hasEndpoint )
             {
-                fScope.Append( "var externalMappings = new Dictionary<Type, Mapping>();" ).NewLine()
-                      .Append( "var common = EndpointHelper.CreateCommonEndpointContainer( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains, externalMappings );" )
-                      .NewLine();
+                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains );" ).NewLine();
             }
             // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
             // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.
@@ -332,8 +248,8 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                            """ ).NewLine();
             if( !hasEndpoint )
             {
-                // If there's no endpoint, we are done (and we have no common endpoint container).
-                fScope.Append( "FillUniqueMappingsAndGlobalMultipleMappings( reg.Monitor, reg.Services, null );" ).NewLine()
+                // If there's no endpoint, we are done (and we have no mappings for endpoint container).
+                fScope.Append( "EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, null );" ).NewLine()
                       .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
                       .Append( "return true;" );
                 return;
@@ -342,14 +258,12 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // We specifically handle the IEnumerable multiple mappings in the endpoint container and eventually enables
             // the endpoints to configure their endpoint services.
             fScope.Append( """
-                           FillUniqueMappingsAndGlobalMultipleMappings( reg.Monitor, reg.Services, common );
+                           EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, mappings );
                            // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
-                           common.Add( descEPTM );
-                           FillMultipleEndpointMappingsFromStObj( reg.Monitor, externalMappings );
                            bool success = true;
                            foreach( var e in theEPTM._endpointTypes )
                            {
-                               if( !e.ConfigureServices( reg.Monitor, this, common, externalMappings ) ) success = false;
+                              if( !e.ConfigureServices( reg.Monitor, this, mappings, descEPTM ) ) success = false;
                            }
                            return success;
                            """ ).NewLine();

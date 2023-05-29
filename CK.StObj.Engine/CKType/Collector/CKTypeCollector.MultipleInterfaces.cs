@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using CK.Setup;
 using CK.Core;
+using System.Collections;
 
 #nullable enable annotations
 
@@ -12,13 +13,13 @@ namespace CK.Setup
     public partial class CKTypeCollector
     {
         readonly Dictionary<Type, MultipleImpl> _multipleMappings;
-        readonly IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> _exposedMultipleMappings;
+        readonly IReadOnlyDictionary<Type, IStObjMultipleInterface> _exposedMultipleMappings;
 
         /// <summary>
         /// To support IEnumerable&lt;T&gt; where T is [IsMultiple] with constraint propagations, we need to
         /// analyze the final implementations of the multiple interface.
         /// </summary>
-        internal class MultipleImpl : IMultipleInterfaceDescriptor
+        internal class MultipleImpl : IStObjMultipleInterface, IReadOnlyCollection<IStObjFinalClass>
         {
             readonly List<CKTypeInfo> _rawImpls;
             readonly Type _enumType;
@@ -41,17 +42,24 @@ namespace CK.Setup
                 _rawImpls = new List<CKTypeInfo> { first };
             }
 
-            Type IMultipleInterfaceDescriptor.ItemType => _itemType;
+            Type IStObjMultipleInterface.ItemType => _itemType;
 
-            Type IMultipleInterfaceDescriptor.EnumerableType => _enumType;
+            Type IStObjMultipleInterface.EnumerableType => _enumType;
 
-            IReadOnlyCollection<Type> IMultipleInterfaceDescriptor.MarshallableTypes => _marshallableTypes!;
+            IReadOnlyCollection<Type> IStObjMultipleInterface.MarshallableTypes => _marshallableTypes!;
 
-            bool IMultipleInterfaceDescriptor.IsScoped => (_finalKind & AutoServiceKind.IsScoped) != 0;
+            bool IStObjMultipleInterface.IsScoped => (_finalKind & AutoServiceKind.IsScoped) != 0;
 
-            IEnumerable<IStObjFinalClass> IMultipleInterfaceDescriptor.Implementations => _rawImpls.Select( r => r is IStObjFinalClass c ? c : r.ServiceClass! );
+            IReadOnlyCollection<IStObjFinalClass> IStObjMultipleInterface.Implementations => this;
 
-            int IMultipleInterfaceDescriptor.ImplementationCount => _rawImpls.Count;
+            int IReadOnlyCollection<IStObjFinalClass>.Count => _rawImpls.Count;
+
+            public IEnumerator<IStObjFinalClass> GetEnumerator()
+            {
+                return _rawImpls.Select( r => r is IStObjFinalClass c ? c : r.ServiceClass! ).GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             /// <summary>
             /// Computes the final <see cref="AutoServiceKind"/>.
@@ -104,8 +112,8 @@ namespace CK.Setup
                 bool isScoped = (initial & AutoServiceKind.IsScoped) != 0;
                 HashSet<Type>? allMarshallableTypes = null;
                 // If it is [IsMarshallable], the marshaller must handle the marshalling of any implementations
-                // (this is strange... but who knows?).
-                bool isInterfaceMarshallable = (initial & AutoServiceKind.IsMarshallable) != 0;
+                // (this is strange... but who knows?). Same for the IsMultiple item interface... and same weirdness...
+                bool isInterfaceOrItemMarshallable = (initial & AutoServiceKind.IsMarshallable) != 0 || (_itemKind & CKTypeKind.IsMarshallable) != 0;
 
                 // If isInterfaceMarshallable is false (regular case), then for this IEnumerable to be marshallable, all its
                 // implementations that are Process services must be marshallable so that it can be resolved as long as its
@@ -158,7 +166,7 @@ namespace CK.Setup
                         }
                         // If the enumerated Service is marshallable at its level OR it is already known to be NOT automatically marshallable,
                         // we don't have to worry anymore about the subsequent implementations marshalling.
-                        if( isInterfaceMarshallable || !isAutomaticallyMarshallable ) continue;
+                        if( isInterfaceOrItemMarshallable || !isAutomaticallyMarshallable ) continue;
 
                         if( (k & AutoServiceKind.IsMarshallable) == 0 )
                         {
@@ -186,10 +194,18 @@ namespace CK.Setup
                         _finalKind |= AutoServiceKind.IsScoped;
                     }
                     // Conclude about Front aspect.
-                    if( isInterfaceMarshallable )
+                    if( isInterfaceOrItemMarshallable )
                     {
-                        _marshallableTypes = new[] { _itemType };
-                        Debug.Assert( (_finalKind & AutoServiceKind.IsMarshallable) != 0 );
+                        if( (_itemKind & CKTypeKind.IsMarshallable) == 0 )
+                        {
+                            _marshallableTypes = new[] { _enumType };
+                            Debug.Assert( (_finalKind & AutoServiceKind.IsMarshallable) != 0 );
+                        }
+                        else
+                        {
+                            _marshallableTypes = new[] { _itemType };
+                            _finalKind |= AutoServiceKind.IsMarshallable;
+                        }
                     }
                     else
                     {
@@ -241,7 +257,7 @@ namespace CK.Setup
 
         MultipleImpl? IAutoServiceKindComputeFacade.GetMultipleInterfaceDescriptor( Type enumeratedType ) => _multipleMappings.GetValueOrDefault( enumeratedType );
 
-        IReadOnlyDictionary<Type, IMultipleInterfaceDescriptor> IAutoServiceKindComputeFacade.MultipleMappings => _exposedMultipleMappings;
+        IReadOnlyDictionary<Type, IStObjMultipleInterface> IAutoServiceKindComputeFacade.MultipleMappings => _exposedMultipleMappings;
 
         bool IAutoServiceKindComputeFacade.EnsureMultipleComputedKind( IActivityMonitor monitor )
         {
