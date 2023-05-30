@@ -33,7 +33,7 @@ namespace CK.Setup
             _serviceToObjectMap.Add( t, mapping );
         }
 
-        public IStObjFinalClass? ToLeaf( Type t )
+        IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t )
         {
             if( _serviceSimpleMap.TryGetValue( t, out var service ) ) return service;
             return _serviceToObjectMap.TryGetValue( t, out var realObject ) ? realObject : null;

@@ -284,12 +284,11 @@ namespace CK.Setup
         /// for instance).
         /// This is simpler here since there is no split in type info (no MutableItem layer).
         /// </summary>
-        internal bool InitializePath(
-                        IActivityMonitor monitor,
-                        CKTypeCollector collector,
-                        IDynamicAssembly tempAssembly,
-                        List<AutoServiceClassInfo> lastConcretes,
-                        ref List<Type>? abstractTails )
+        internal bool InitializePath( IActivityMonitor monitor,
+                                      CKTypeCollector collector,
+                                      IDynamicAssembly tempAssembly,
+                                      List<AutoServiceClassInfo> lastConcretes,
+                                      ref List<Type>? abstractTails )
         {
             Debug.Assert( tempAssembly != null );
             Debug.Assert( !TypeInfo.IsExcluded );
@@ -809,7 +808,7 @@ namespace CK.Setup
             }
             if( conflictMsg != null )
             {
-                m.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor: {conflictMsg}" );
+                m.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor: {conflictMsg}" );
                 return new CtorParameterData( false, null, null, false, kind, tParam );
             }
             // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
@@ -825,7 +824,7 @@ namespace CK.Setup
                 var sClass = collector.FindServiceClassInfo( tParam );
                 if( sClass == null )
                 {
-                    m.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor." );
+                    m.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 if( !sClass.IsIncluded )
@@ -844,12 +843,12 @@ namespace CK.Setup
                 }
                 else if( TypeInfo.IsAssignableFrom( sClass.TypeInfo ) )
                 {
-                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor cannot be this class or one of its specializations." );
+                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be this class or one of its specializations." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 else if( sClass.TypeInfo.IsAssignableFrom( TypeInfo ) )
                 {
-                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor cannot be one of its base class." );
+                    m.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be one of its base class." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 return new CtorParameterData( true, sClass, null, isEnumerable, kind, tParam );

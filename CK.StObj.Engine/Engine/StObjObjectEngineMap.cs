@@ -90,9 +90,9 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyList<string> Names { get; }
 
-        IStObjFinalClass? IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
-                                                            ?? (IStObjFinalClass?)_serviceSimpleMap.GetValueOrDefault( t )
-                                                            ?? _serviceToObjectMap.GetValueOrDefault( t );
+        public IStObjFinalClass? ToLeaf( Type t ) => _map.GetValueOrDefault( t )
+                                                     ?? (IStObjFinalClass?)_serviceSimpleMap.GetValueOrDefault( t )
+                                                     ?? _serviceToObjectMap.GetValueOrDefault( t );
 
         /// <summary>
         /// Gets all the specialization. If there is no error, this list corresponds to the
@@ -185,5 +185,6 @@ namespace CK.Setup
             var v = InformationalVersion.ReadFromAssembly( a ).Version;
             return new VFeature( a.GetName().Name!, v != null && v.IsValid ? v : SVersion.ZeroVersion );
         }
+
     }
 }

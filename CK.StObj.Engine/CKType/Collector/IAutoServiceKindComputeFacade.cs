@@ -39,7 +39,8 @@ namespace CK.Setup
         /// this is called to ensure that all IEnumerable of IsMultiple interfaces lifetime is computed.
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
+        /// <param name="toLeaf">Mapper from type to final real object or auto service.</param>
         /// <returns>True on success, false on error.</returns>
-        bool EnsureMultipleComputedKind( IActivityMonitor monitor );
+        bool FinalizeMultipleMappings( IActivityMonitor monitor, Func<Type, IStObjFinalClass?> toLeaf );
     }
 }

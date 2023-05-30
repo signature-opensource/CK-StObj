@@ -76,7 +76,7 @@ namespace CK.Setup
             /// <summary>
             /// Useless to store it at each level.
             /// </summary>
-            public string CodeInstanceAccessor => _codeInstanceAccessor ??= $"CK.StObj.GeneratedRootContext.GenStObjs[{LeafSpecialization.IndexOrdered}].FinalImplementation.Implementation";
+            public string CodeInstanceAccessor => _codeInstanceAccessor ??= $"CK.StObj.GeneratedRootContext.RealObjects[{LeafSpecialization.IndexOrdered}].FinalImplementation.Implementation";
 
             internal object CreateStructuredObject( Type typeIfNotImplementable )
             {

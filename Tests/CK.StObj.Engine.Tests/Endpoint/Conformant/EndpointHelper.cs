@@ -91,8 +91,8 @@ namespace CK.StObj.Engine.Tests
 
     sealed class TypedServiceDescriptor : ServiceDescriptor
     {
-        TypedServiceDescriptor( Type serviceType, Func<IServiceProvider,object> factory, Type implementationType )
-            : base( serviceType, factory )
+        TypedServiceDescriptor( Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lt, Type implementationType )
+            : base( serviceType, factory, lt )
         {
             ImplementationType = implementationType;
         }
@@ -104,7 +104,7 @@ namespace CK.StObj.Engine.Tests
             Debug.Assert( o.ImplementationInstance == null, "Instance singleton doesn't need this." );
             Debug.Assert( o.ImplementationType == null, "Mapped type descriptor doesn't need this." );
             Debug.Assert( o.ImplementationFactory != null );
-            return new TypedServiceDescriptor( o.ServiceType, o.ImplementationFactory, implementationType );
+            return new TypedServiceDescriptor( o.ServiceType, o.ImplementationFactory, o.Lifetime, implementationType );
         }
     }
 
@@ -170,7 +170,17 @@ namespace CK.StObj.Engine.Tests
                 {
                     var mMapping = new ServiceDescriptor( multi, o.Implementation );
                     global.Add( mMapping );
-                    m?.AddGlobal( mMapping );
+                    if( mappings != null )
+                    {
+                        if( mappings.TryGetValue( multi, out var mm ) )
+                        {
+                            mm.AddGlobal( mMapping );
+                        }
+                        else
+                        {
+                            mappings.Add( multi, new Mapping( mMapping, null ) );
+                        }
+                    }
                 }
             }
             // For services it's less trivial: the mappings must be able to resolve the descriptor's implementation type
@@ -189,6 +199,18 @@ namespace CK.StObj.Engine.Tests
                 {
                     if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
                     AddServiceMapping( global, mappings, s, ServiceLifetime.Singleton );
+                }
+            }
+
+            if( mappings != null )
+            {
+                // Locking the IsMultiple optimized to be singleton: this prevents
+                // any multiple registration of the type with a scope lifetime.
+                // If it happens (either by global configuration or by a endpoint configuration),
+                // the StObjMap registration fails.
+                foreach( var multiple in stObjMap.MultipleMappings.Values )
+                {
+                    if( !multiple.IsScoped ) mappings[multiple.ItemType].LockAsSingleton();
                 }
             }
 
@@ -216,7 +238,18 @@ namespace CK.StObj.Engine.Tests
                 {
                     var mMapping = new ServiceDescriptor( multi, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                     global.Add( mMapping );
-                    m?.AddGlobal( TypedServiceDescriptor.Create( mMapping, s.ClassType ) );
+                    if( mappings != null )
+                    {
+                        mMapping = TypedServiceDescriptor.Create( mMapping, s.ClassType );
+                        if( mappings.TryGetValue( multi, out var mm ) )
+                        {
+                            mm.AddGlobal( mMapping );
+                        }
+                        else
+                        {
+                            mappings.Add( multi, new Mapping( mMapping, null ) );
+                        }
+                    }
                 }
             }
         }
@@ -253,6 +286,7 @@ namespace CK.StObj.Engine.Tests
                 if( _services == null )
                 {
                     if( !_initializationSuccess ) Throw.InvalidOperationException( "Endpoint initialization failed. It cannot be used." );
+                    Debug.Assert( _configuration != null );
                     _services = new EndpointServiceProvider<TScopeData>( _configuration.BuildServiceProvider() );
                     // Release the configuration now that the endpoint container is built.
                     _configuration = null;

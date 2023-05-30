@@ -362,7 +362,7 @@ namespace CK.Setup
                     {
                         using( monitor.OpenInfo( "Checking remaining IEnumerable<> lifetime of IsMultiple interfaces." ) )
                         {
-                            if( !typeResult.KindComputeFacade.EnsureMultipleComputedKind( monitor ) )
+                            if( !typeResult.KindComputeFacade.FinalizeMultipleMappings( monitor, typeResult.RealObjects.EngineMap.ToLeaf ) )
                             {
                                 buildValueCollector = null;
                             }

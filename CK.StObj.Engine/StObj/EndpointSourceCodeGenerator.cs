@@ -21,8 +21,31 @@ namespace CK.Setup
             using System.Diagnostics;
             
             """;
+        // Injected only if there's at least one EndpointType.
+        const string _typedServiceDescriptor =
+            """
+            sealed class TypedServiceDescriptor : ServiceDescriptor
+            {
+                TypedServiceDescriptor( Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lt, Type implementationType )
+                    : base( serviceType, factory, lt )
+                {
+                    ImplementationType = implementationType;
+                }
 
-        // Always injected.
+                public new Type ImplementationType { get; }
+
+                public static TypedServiceDescriptor Create( ServiceDescriptor o, Type implementationType )
+                {
+                    Debug.Assert( o.ImplementationInstance == null, "Instance singleton doesn't need this." );
+                    Debug.Assert( o.ImplementationType == null, "Mapped type descriptor doesn't need this." );
+                    Debug.Assert( o.ImplementationFactory != null );
+                    return new TypedServiceDescriptor( o.ServiceType, o.ImplementationFactory, o.Lifetime, implementationType );
+                }
+            }
+                        
+            """;
+
+        // Always injected in EndpointHelper.
         const string _mapping =
             """
             sealed class Mapping
@@ -90,74 +113,7 @@ namespace CK.Setup
             
             """;
 
-        // Always injected.
-        const string _endpointTypeInternal =
-            """
-            interface IEndpointTypeInternal : IEndpointType
-            {
-                bool ConfigureServices( IActivityMonitor monitor,
-                                        IStObjMap stObjMap,
-                                        Dictionary<Type,Mapping> mappings,
-                                        ServiceDescriptor endpointTypeManager );
-            }
-            """;
-
-        // Injected only if there's at least one EndpointType.
-        const string _typedServiceDescriptor =
-            """
-            sealed class TypedServiceDescriptor : ServiceDescriptor
-            {
-                TypedServiceDescriptor( Type serviceType, Func<IServiceProvider,object> factory, Type implementationType )
-                    : base( serviceType, factory )
-                {
-                    ImplementationType = implementationType;
-                }
-
-                public new Type ImplementationType { get; }
-
-                public static TypedServiceDescriptor Create( ServiceDescriptor o, Type implementationType )
-                {
-                    Debug.Assert( o.ImplementationInstance == null, "Instance singleton doesn't need this." );
-                    Debug.Assert( o.ImplementationType == null, "Mapped type descriptor doesn't need this." );
-                    Debug.Assert( o.ImplementationFactory != null );
-                    return new TypedServiceDescriptor( o.ServiceType, o.ImplementationFactory, implementationType );
-                }
-            }
-            
-            """;
-        // CreateInitialMapping and FillStObjMappings are injected in EndpointHelper
-        // only if there's at least one EndpointType.
-        const string _createInitialMapping =
-            """
-            internal static Dictionary<Type, Mapping> CreateInitialMapping( IActivityMonitor monitor,
-                                                                            IServiceCollection global,
-                                                                            Func<Type, bool> isEndpointService )
-            {
-                Dictionary<Type, Mapping> mappings = new Dictionary<Type, Mapping>();
-                foreach( var d in global )
-                {
-                    var t = d.ServiceType;
-                    if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
-                    // Skip any endpoint service and IHostedService.
-                    // There's no need to have the IHostedService multiple service in the endpoint containers.
-                    if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
-                    {
-                        continue;
-                    }
-                    if( mappings.TryGetValue( t, out var exists ) )
-                    {
-                        exists.AddGlobal( d );
-                    }
-                    else
-                    {
-                        mappings.Add( t, new Mapping( d, null ) );
-                    }
-                }
-                return mappings;
-            }
-            
-            """;
-
+        // Always injected in EndpointHelper.
         const string _fillStObjMappings =
             """
             internal static void FillStObjMappings( IActivityMonitor monitor,
@@ -191,7 +147,17 @@ namespace CK.Setup
                     {
                         var mMapping = new ServiceDescriptor( multi, o.Implementation );
                         global.Add( mMapping );
-                        m?.AddGlobal( mMapping );
+                        if( mappings != null )
+                        {
+                            if( mappings.TryGetValue( multi, out var mm ) )
+                            {
+                                mm.AddGlobal( mMapping );
+                            }
+                            else
+                            {
+                                mappings.Add( multi, new Mapping( mMapping, null ) );
+                            }
+                        }
                     }
                 }
                 // For services it's less trivial: the mappings must be able to resolve the descriptor's implementation type
@@ -210,6 +176,18 @@ namespace CK.Setup
                     {
                         if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
                         AddServiceMapping( global, mappings, s, ServiceLifetime.Singleton );
+                    }
+                }
+
+                if( mappings != null )
+                {
+                    // Locking the IsMultiple optimized to be singleton: this prevents
+                    // any multiple registration of the type with a scope lifetime.
+                    // If it happens (either by global configuration or by a endpoint configuration),
+                    // the StObjMap registration fails.
+                    foreach( var multiple in stObjMap.MultipleMappings.Values )
+                    {
+                        if( !multiple.IsScoped ) mappings[multiple.ItemType].LockAsSingleton();
                     }
                 }
 
@@ -237,9 +215,65 @@ namespace CK.Setup
                     {
                         var mMapping = new ServiceDescriptor( multi, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                         global.Add( mMapping );
-                        m?.AddGlobal( TypedServiceDescriptor.Create( mMapping, s.ClassType ) );
+                        if( mappings != null )
+                        {
+                            mMapping = TypedServiceDescriptor.Create( mMapping, s.ClassType );
+                            if( mappings.TryGetValue( multi, out var mm ) )
+                            {
+                                mm.AddGlobal( mMapping );
+                            }
+                            else
+                            {
+                                mappings.Add( multi, new Mapping( mMapping, null ) );
+                            }
+                        }
                     }
                 }
+            }
+                        
+            """;
+
+        // Always injected.
+        const string _endpointTypeInternal =
+            """
+            interface IEndpointTypeInternal : IEndpointType
+            {
+                bool ConfigureServices( IActivityMonitor monitor,
+                                        IStObjMap stObjMap,
+                                        Dictionary<Type,Mapping> mappings,
+                                        ServiceDescriptor endpointTypeManager );
+            }
+            """;
+
+        // CreateInitialMapping is injected in EndpointHelper
+        // only if there's at least one EndpointType.
+        const string _createInitialMapping =
+            """
+            internal static Dictionary<Type, Mapping> CreateInitialMapping( IActivityMonitor monitor,
+                                                                            IServiceCollection global,
+                                                                            Func<Type, bool> isEndpointService )
+            {
+                Dictionary<Type, Mapping> mappings = new Dictionary<Type, Mapping>();
+                foreach( var d in global )
+                {
+                    var t = d.ServiceType;
+                    if( t == typeof( EndpointTypeManager ) ) Throw.ArgumentException( "EndpointTypeManager must not be configured." );
+                    // Skip any endpoint service and IHostedService.
+                    // There's no need to have the IHostedService multiple service in the endpoint containers.
+                    if( isEndpointService( t ) || t == typeof( Microsoft.Extensions.Hosting.IHostedService ) )
+                    {
+                        continue;
+                    }
+                    if( mappings.TryGetValue( t, out var exists ) )
+                    {
+                        exists.AddGlobal( d );
+                    }
+                    else
+                    {
+                        mappings.Add( t, new Mapping( d, null ) );
+                    }
+                }
+                return mappings;
             }
             
             """;
@@ -735,26 +769,29 @@ namespace CK.Setup
         internal static void GenerateSupportCode( ICodeWorkspace codeWorkspace, bool hasEndpoint )
         {
             var g = codeWorkspace.Global;
-            g.Append( "namespace CK.StObj" )
-             .OpenBlock()
-             .Append( _localNamespaces )
-             .Append( "static class EndpointHelper" )
-             .OpenBlock()
-                .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;" )
-                .NewLine()
-                .CreatePart( out var helperExtension )
-             .CloseBlock()
-             .Append( _mapping )
-             .Append( _endpointTypeInternal );
-            if( hasEndpoint )
+            using( g.Region() )
             {
-                helperExtension.Append( _createInitialMapping )
-                               .Append( _fillStObjMappings );
-                g.Append( _typedServiceDescriptor )
-                 .Append( _endpointType )
-                 .Append( _finalConfigurationBuilder );
+                g.Append( "namespace CK.StObj" )
+                 .OpenBlock()
+                 .Append( _localNamespaces )
+                 .Append( _typedServiceDescriptor )
+                 .Append( "static class EndpointHelper" )
+                 .OpenBlock()
+                    .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;" )
+                    .NewLine()
+                    .Append( _fillStObjMappings )
+                    .CreatePart( out var helperExtension )
+                 .CloseBlock()
+                 .Append( _mapping )
+                 .Append( _endpointTypeInternal );
+                if( hasEndpoint )
+                {
+                    helperExtension.Append( _createInitialMapping );
+                    g.Append( _endpointType )
+                     .Append( _finalConfigurationBuilder );
+                }
+                g.CloseBlock();
             }
-            g.CloseBlock();
         }
     }
 }

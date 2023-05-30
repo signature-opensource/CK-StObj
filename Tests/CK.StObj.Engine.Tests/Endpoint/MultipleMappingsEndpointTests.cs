@@ -21,7 +21,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public class ManySingleton : IMany, ISingletonAutoService { }
         // Will be singleton.
         public class ManyAuto : IMany, IAutoService { }
-        // Will be scoped.
+        // Will be scoped when registered by the StObjCollector
+        // Can be anything when registered in the global or an endpoint.
         public class ManyNothing : IMany { }
 
         public class ManyScoped2 : IMany, IScopedAutoService { }
@@ -167,11 +168,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [Test]
-        public async Task multiple_scoped_with_external_service_Async()
+        public async Task global_can_register_multiple_services_Async()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ManyScoped ),
                                                              typeof( ManyScoped2 ),
-                                                             typeof( ManyNothing ),
                                                              typeof( ManyConsumer ),
                                                              typeof( FirstEndpointDefinition ),
                                                              typeof( SecondEndpointDefinition ) );
@@ -221,6 +221,80 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 await result.Services.DisposeAsync();
             }
         }
+
+
+        // IMany will be resolved as Singleton because the auto services ManySingleton is registered.
+        // This Buggy endpoint declares a IMany scoped service: this will fail when registering the StObjMap.
+        [EndpointDefinition]
+        public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<string>
+        {
+            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+            {
+                services.AddScoped<ManyNothing>();
+                services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+            }
+        }
+
+        [Test]
+        public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_endpoint_services()
+        {
+            var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
+                                                             typeof( ManyConsumer ),
+                                                             typeof( ManyAsScopedEndpointDefinition ) );
+            TestHelper.GetFailedAutomaticServicesConfiguration( collector );
+        }
+
+
+        // This one will be fine.
+        [EndpointDefinition]
+        public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<int>
+        {
+            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+            {
+                services.AddSingleton<ManyNothing>();
+                services.AddSingleton<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+            }
+        }
+
+        public async Task endpoints_can_register_multiple_singletons_when_the_multiple_has_been_auto_computed_as_singleton_Async()
+        {
+            var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton),
+                                                             typeof( ManyConsumer ),
+                                                             typeof( ManyAsSingletonEndpointDefinition ) );
+            var result = TestHelper.CreateAutomaticServices( collector );
+            await TestHelper.StartHostedServicesAsync( result.Services );
+            try
+            {
+                result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
+
+                var e = result.Services.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
+                using var s1 = e.GetContainer().CreateScope( "Scoped Data" );
+
+                var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
+                var m1Auto = s1.ServiceProvider.GetRequiredService<ManySingleton>();
+                var m1Endpoint = s1.ServiceProvider.GetRequiredService<ManyNothing>();
+                m1.All.Should().Contain( new IMany[] { m1Auto, m1Endpoint } );
+            }
+            finally
+            {
+                await result.Services.DisposeAsync();
+            }
+        }
+
+        [Test]
+        public void multiple_with_a_auto_computed_singleton_lifetime_cannot_be_scoped_by_global()
+        {
+            var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
+                                                             typeof( ManyConsumer ),
+                                                             typeof( ManyAsScopedEndpointDefinition ) );
+            var result = TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                                                                             configureServices: s =>
+                                                                             {
+                                                                                 s.Services.AddScoped<ManyNothing>();
+                                                                                 s.Services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
+                                                                             } );
+        }
+
 
     }
 }

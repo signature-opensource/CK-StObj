@@ -174,7 +174,7 @@ namespace CK.Setup
                         body.Append( "await (" ).Append( m.M.ReturnType == typeof( ValueTask ) ? "(ValueTask)" : "(Task)" );
                     }
                     body.AppendTypeOf( m.T.ClassType ).Append( ".GetMethod( " ).AppendSourceString( m.M.Name ).Append( " , BindingFlags.Instance | BindingFlags.NonPublic )" )
-                                                      .Append( ".Invoke( CK.StObj.GeneratedRootContext.GenStObjs[" ).Append( m.T.IndexOrdered ).Append( "].FinalImplementation.Implementation, " )
+                                                      .Append( ".Invoke( CK.StObj.GeneratedRootContext.RealObjects[" ).Append( m.T.IndexOrdered ).Append( "].FinalImplementation.Implementation, " )
                                                       .Append( requiredTypes.GetParametersArray( m.M.GetParameters() ) ).Append( " )" );
                     if( isAsync )
                     {

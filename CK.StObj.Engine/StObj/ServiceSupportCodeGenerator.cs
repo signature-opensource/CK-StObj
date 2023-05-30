@@ -50,104 +50,130 @@ namespace CK.Setup
             _rootCtor = rootCtor;
         }
 
-        public void CreateServiceSupportCode( IStObjServiceEngineMap serviceMap )
+        public void CreateServiceSupportCode( IStObjEngineMap engineMap )
         {
+            var serviceMap = engineMap.Services;
             _rootType.Namespace.Append( _sourceServiceSupport );
 
-            _rootType.GeneratedByComment().Append( @"
+            using( _rootType.Region() )
+            {
+                _rootType.Append( @"
 static readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
 static readonly IStObjFinalImplementation[] _objectServiceMappingList;
 static readonly Dictionary<Type, IStObjServiceClassDescriptor> _serviceMappings;
 static readonly IStObjServiceClassDescriptor[] _serviceMappingList;
+static readonly Dictionary<Type,IStObjMultipleInterface> _multipleMappings;
 
-public IStObjServiceMap Services => this;
-IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t ) => ToServiceLeaf( t );
-
-IStObjFinalClass? ToServiceLeaf( Type t )
+// Direct static access to the IStObjServiceClassDescriptor services.
+// - (TODO: Unify MappingIndex on a GFinalRealObjectWithAutoService or something like that an rename this static AutoServices) The GenServices list indexed by IStObjServiceClassDescriptor.MappingIndex.
+// - The ToServiceLeaf (IStObjServiceMap.ToLeaf) that returns a IStObjServiceClassDescriptor or a real object only if the Type is a Auto service.
+// - The ToLeaf (IStObjMap.ToLeaf) that returns any real object or a IStObjServiceClassDescriptor.
+public static IReadOnlyList<IStObjServiceClassDescriptor> GenServices => _serviceMappingList;
+public static IStObjFinalClass? ToServiceLeaf( Type t )
 {
     return _serviceMappings.TryGetValue( t, out var service )
                                     ? service
                                     : _objectServiceMappings.TryGetValue( t, out var realObject ) ? realObject : null;
 }
-public IStObjFinalClass? ToLeaf( Type t ) => ToServiceLeaf( t ) ?? GToLeaf( t );
+public static IStObjFinalClass? ToLeaf( Type t ) => ToServiceLeaf( t ) ?? ToRealObjectLeaf( t );
+
+IStObjServiceMap IStObjMap.Services => this;
+IReadOnlyDictionary<Type,IStObjMultipleInterface> IStObjMap.MultipleMappings => _multipleMappings;
+IStObjFinalClass? IStObjMap.ToLeaf( Type t ) => ToServiceLeaf( t ) ?? ToRealObjectLeaf( t );
+
+IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t ) => ToServiceLeaf( t );
 IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
 IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => _objectServiceMappingList;
 IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => _serviceMappings;
 IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _serviceMappingList;" )
-                     .NewLine();
-
-            // Object mappings.
-            _rootCtor.GeneratedByComment().NewLine()
-                     .Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({serviceMap.ObjectMappings.Count});" ).NewLine();
-            foreach( var map in serviceMap.ObjectMappings )
-            {
-                _rootCtor.Append( "_objectServiceMappings.Add( " )
-                       .AppendTypeOf( map.Key )
-                       .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].FinalImplementation );" )
-                       .NewLine();
+                         .NewLine();
             }
-            if( serviceMap.ObjectMappingList.Count > 0 )
+
+            using( _rootCtor.Region() )
             {
-                _rootCtor.Append( $"_objectServiceMappingList = new IStObjFinalImplementation[] {{" ).NewLine();
-                foreach( var o in serviceMap.ObjectMappingList )
+                // Object mappings.
+                _rootCtor.Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({serviceMap.ObjectMappings.Count});" ).NewLine();
+                foreach( var map in serviceMap.ObjectMappings )
                 {
-                    _rootCtor.NewLine().Append( "_stObjs[" ).Append( o.IndexOrdered ).Append( "].FinalImplementation," );
+                    _rootCtor.Append( "_objectServiceMappings.Add( " )
+                           .AppendTypeOf( map.Key )
+                           .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].FinalImplementation );" )
+                           .NewLine();
                 }
-                _rootCtor.NewLine().Append( "};" ).NewLine();
-            }
-            else
-            {
-                _rootCtor.Append( $"_objectServiceMappingList = Array.Empty<IStObjFinalImplementation>();" ).NewLine();
-            }
-            // 
-
-            static void AppendArrayDecl( IFunctionScope f, string typeName, int count )
-            {
-                if( count > 0 )
+                if( serviceMap.ObjectMappingList.Count > 0 )
                 {
-                    f.Append( "new " ).Append( typeName ).Append( "[" ).Append( count ).Append( "];" ).NewLine();
+                    _rootCtor.Append( "_objectServiceMappingList = new IStObjFinalImplementation[] {" ).NewLine();
+                    foreach( var o in serviceMap.ObjectMappingList )
+                    {
+                        _rootCtor.Append( "_stObjs[" ).Append( o.IndexOrdered ).Append( "].FinalImplementation," ).NewLine();
+                    }
+                    _rootCtor.Append( "};" ).NewLine();
                 }
                 else
                 {
-                    f.Append( "Array.Empty<" ).Append( typeName ).Append( ">();" ).NewLine();
+                    _rootCtor.Append( $"_objectServiceMappingList = Array.Empty<IStObjFinalImplementation>();" ).NewLine();
                 }
-            }
+                // Service mappings.
+                _rootCtor.Append( "_serviceMappingList = new IStObjServiceClassDescriptor[] {" ).NewLine();
+                foreach( var d in serviceMap.MappingList )
+                {
+                    Debug.Assert( d.MappingIndex >= 0 );
+                    _rootCtor.Append( "new StObjServiceClassDescriptor(" )
+                                .AppendTypeOf( d.ClassType )
+                                .Append( ", " )
+                                .AppendTypeOf( d.FinalType )
+                                .Append( ", " )
+                                .Append( d.AutoServiceKind )
+                                .Append( ", " )
+                                .AppendArray( d.MarshallableTypes )
+                                .Append( ", " )
+                                .AppendArray( d.MultipleMappings )
+                                .Append( ", " )
+                                .AppendArray( d.UniqueMappings )
+                                .Append( ")," ).NewLine();
+                }
+                _rootCtor.Append( "};" ).NewLine();
 
-            // Service mappings (Simple).
-            _rootCtor.Append( $"_serviceMappingList = " );
-            AppendArrayDecl( _rootCtor, nameof( IStObjServiceClassDescriptor ), serviceMap.MappingList.Count );
-            foreach( var d in serviceMap.MappingList )
-            {
-                Debug.Assert( d.MappingIndex >= 0 );
-                _rootCtor.Append( "_serviceMappingList[" ).Append( d.MappingIndex ).Append( "] = new StObjServiceClassDescriptor(" )
-                            .AppendTypeOf( d.ClassType )
-                            .Append( ", " )
-                            .AppendTypeOf( d.FinalType )
-                            .Append( ", " )
-                            .Append( d.AutoServiceKind )
-                            .Append( ", " )
-                            .AppendArray( d.MarshallableTypes )
-                            .Append( ", " )
-                            .AppendArray( d.MultipleMappings )
-                            .Append( ", " )
-                            .AppendArray( d.UniqueMappings )
-                            .Append( ");" ).NewLine();
-            }
-
-            _rootCtor.Append( $"_serviceMappings = new Dictionary<Type, IStObjServiceClassDescriptor>({serviceMap.Mappings.Count});" ).NewLine();
-            foreach( var map in serviceMap.Mappings )
-            {
-                _rootCtor.Append( $"_serviceMappings.Add( " )
-                            .AppendTypeOf( map.Key )
-                            .Append( ", " )
-                            .Append( "_serviceMappingList[" ).Append( map.Value.MappingIndex ).Append("] );")
-                            .NewLine();
+                _rootCtor.Append( $"_serviceMappings = new Dictionary<Type, IStObjServiceClassDescriptor>({serviceMap.Mappings.Count});" ).NewLine();
+                foreach( var map in serviceMap.Mappings )
+                {
+                    _rootCtor.Append( $"_serviceMappings.Add( " )
+                                .AppendTypeOf( map.Key )
+                                .Append( ", " )
+                                .Append( "_serviceMappingList[" ).Append( map.Value.MappingIndex ).Append( "] );" )
+                                .NewLine();
+                }
+                _rootCtor.Append( $"_multipleMappings = new Dictionary<Type, IStObjMultipleInterface>({engineMap.MultipleMappings.Count});" ).NewLine();
+                foreach( var (t,m) in engineMap.MultipleMappings )
+                {
+                    _rootCtor.Append( "_multipleMappings.Add(" ).AppendTypeOf( t )
+                             .Append( ", new GMultiple( " )
+                             .Append( m.IsScoped ).Append( ", " ).NewLine()
+                             .Append( m.ItemType ).Append( ", " ).NewLine()
+                             .Append( m.EnumerableType ).Append( ", " ).NewLine()
+                             .Append( "new IStObjFinalClass[] {" );
+                    foreach( var i in m.Implementations )
+                    {
+                        if( i is IStObjFinalImplementationResult realObject )
+                        {
+                            _rootCtor.Append( "_stObjs[" ).Append( realObject.IndexOrdered ).Append( "].FinalImplementation" );
+                        }
+                        else
+                        {
+                            Debug.Assert( i is IStObjServiceFinalSimpleMapping );
+                            _rootCtor.Append( "_serviceMappingList[" ).Append( ((IStObjServiceFinalSimpleMapping)i).MappingIndex ).Append( "]" );
+                        }
+                        _rootCtor.Append( ", " );
+                    }
+                    _rootCtor.Append( "}, " ).NewLine()
+                             .AppendArray( m.MarshallableTypes ).Append( ") );" ).NewLine();
+                }
             }
         }
 
         public void CreateRealObjectConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            _rootType.GeneratedByComment().NewLine();
+            using var region = _rootType.Region();
             var configure = _rootType.CreateFunction( "void RealObjectConfigureServices( in StObjContextRoot.ServiceRegister register )" );
 
             configure.Append( "register.StartupServices.Add( typeof(IStObjObjectMap), this );" ).NewLine()
@@ -175,7 +201,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             {
                 foreach( var parameters in m.RealObjectType.AllConfigureServicesParameters )
                 {
-                    configure.AppendOnce( "GStObj s;" ).NewLine();
+                    configure.AppendOnce( "GRealObject s;" ).NewLine();
                     configure.AppendOnce( "MethodInfo m;" ).NewLine();
 
                     configure.Append( $"s = _stObjs[{m.IndexOrdered}];" ).NewLine();
@@ -225,9 +251,9 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
 
             var fScope = _rootType.CreateFunction( "public bool ConfigureServices( in StObjContextRoot.ServiceRegister reg )" );
+            using var region = fScope.Region();
 
             fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine();
-
             // Common endpoint container configuration is done on the global, externally configured services so that
             // we minimize the number of registrations to process.
             if( hasEndpoint )
@@ -238,35 +264,35 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.
             // The "true" singleton EndpointTypeManager is registered: it is the relay from endpoint containers to the global one.
             fScope.Append( """
-                           reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(
-                                    typeof( Microsoft.Extensions.Hosting.IHostedService ),
-                                    typeof( HostedServiceLifetimeTrigger ),
-                                    Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
-                           var theEPTM = new EndpointTypeManager_CK();
-                           var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
-                           reg.Services.Add( descEPTM );
-                           """ ).NewLine();
+                        reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(
+                                typeof( Microsoft.Extensions.Hosting.IHostedService ),
+                                typeof( HostedServiceLifetimeTrigger ),
+                                Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
+                        var theEPTM = new EndpointTypeManager_CK();
+                        var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
+                        reg.Services.Add( descEPTM );
+                        """ ).NewLine();
             if( !hasEndpoint )
             {
                 // If there's no endpoint, we are done (and we have no mappings for endpoint container).
                 fScope.Append( "EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, null );" ).NewLine()
-                      .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
-                      .Append( "return true;" );
+                        .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
+                        .Append( "return true;" );
                 return;
             }
             // Fills both the global and the common endpoint containers with the real objects (true singletons) and the auto services registrations.
             // We specifically handle the IEnumerable multiple mappings in the endpoint container and eventually enables
             // the endpoints to configure their endpoint services.
             fScope.Append( """
-                           EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, mappings );
-                           // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
-                           bool success = true;
-                           foreach( var e in theEPTM._endpointTypes )
-                           {
-                              if( !e.ConfigureServices( reg.Monitor, this, mappings, descEPTM ) ) success = false;
-                           }
-                           return success;
-                           """ ).NewLine();
+                        EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, mappings );
+                        // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
+                        bool success = true;
+                        foreach( var e in theEPTM._endpointTypes )
+                        {
+                            if( !e.ConfigureServices( reg.Monitor, this, mappings, descEPTM ) ) success = false;
+                        }
+                        return success;
+                        """ ).NewLine();
         }
 
     }

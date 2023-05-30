@@ -149,10 +149,12 @@ namespace CK.Testing
 
         StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
-                                                                                                             SimpleServiceContainer? startupServices )
+                                                                                                             SimpleServiceContainer? startupServices,
+                                                                                                             Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
-            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, false, useEmbeddedStObjMapIfPossible: false ).Map;
+            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, true, true ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
+            configureServices?.Invoke( reg );
             reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
             return reg;
         }

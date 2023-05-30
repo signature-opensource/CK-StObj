@@ -19,7 +19,7 @@ namespace CK.Setup
         /// To support IEnumerable&lt;T&gt; where T is [IsMultiple] with constraint propagations, we need to
         /// analyze the final implementations of the multiple interface.
         /// </summary>
-        internal class MultipleImpl : IStObjMultipleInterface, IReadOnlyCollection<IStObjFinalClass>
+        internal class MultipleImpl : IStObjMultipleInterface
         {
             readonly List<CKTypeInfo> _rawImpls;
             readonly Type _enumType;
@@ -27,8 +27,9 @@ namespace CK.Setup
             readonly Type _itemType;
             readonly CKTypeKind _itemKind;
             // _marshallableTypes property is null until ComputeFinalTypeKind is called.
-            // (Offensive) I prefer assuming this nullity here rather than setting empty arrays.
             IReadOnlyCollection<Type>? _marshallableTypes;
+            // Null until FinalizeMappings has been called.
+            IStObjFinalClass[]? _finalImpl;
             AutoServiceKind _finalKind;
             bool _isComputed;
             bool _isComputing;
@@ -50,16 +51,7 @@ namespace CK.Setup
 
             bool IStObjMultipleInterface.IsScoped => (_finalKind & AutoServiceKind.IsScoped) != 0;
 
-            IReadOnlyCollection<IStObjFinalClass> IStObjMultipleInterface.Implementations => this;
-
-            int IReadOnlyCollection<IStObjFinalClass>.Count => _rawImpls.Count;
-
-            public IEnumerator<IStObjFinalClass> GetEnumerator()
-            {
-                return _rawImpls.Select( r => r is IStObjFinalClass c ? c : r.ServiceClass! ).GetEnumerator();
-            }
-
-            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            IReadOnlyCollection<IStObjFinalClass> IStObjMultipleInterface.Implementations => _finalImpl!;
 
             /// <summary>
             /// Computes the final <see cref="AutoServiceKind"/>.
@@ -230,6 +222,21 @@ namespace CK.Setup
             }
 
             internal void AddImpl( CKTypeInfo final ) => _rawImpls.Add( final );
+
+            internal void FinalizeMappings( IActivityMonitor monitor, CKTypeCollector typeCollector, Func<Type, IStObjFinalClass?> toLeaf, ref bool success )
+            {
+                if( !_isComputed ) ComputeFinalTypeKind( monitor, typeCollector, ref success );
+                if( success )
+                {
+                    _finalImpl = new IStObjFinalClass[_rawImpls.Count];
+                    for( int i = 0; i < _finalImpl.Length; ++i )
+                    {
+                        var f = toLeaf( _rawImpls[i].Type );
+                        Debug.Assert( f != null );
+                        _finalImpl[i] = f;
+                    }
+                }
+            }
         }
 
         internal void RegisterMultipleInterfaces( Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
@@ -259,12 +266,12 @@ namespace CK.Setup
 
         IReadOnlyDictionary<Type, IStObjMultipleInterface> IAutoServiceKindComputeFacade.MultipleMappings => _exposedMultipleMappings;
 
-        bool IAutoServiceKindComputeFacade.EnsureMultipleComputedKind( IActivityMonitor monitor )
+        bool IAutoServiceKindComputeFacade.FinalizeMultipleMappings( IActivityMonitor monitor, Func<Type, IStObjFinalClass?> toLeaf )
         {
             bool success = true;
             foreach( var multi in _multipleMappings.Values )
             {
-                multi.ComputeFinalTypeKind( monitor, this, ref success );
+                multi.FinalizeMappings( monitor, this, toLeaf, ref success );
             }
             return success;
         }
