@@ -81,7 +81,7 @@ namespace CK.Setup
         {
             get
             {
-                if( IsSpecialized ) Throw.InvalidOperationException( $"Must be called on the most specialized type." );
+                Throw.CheckState( !IsSpecialized );
                 return (IReadOnlyCollection<Type>?)_uniqueMappings ?? Type.EmptyTypes;
             }
         }
@@ -94,7 +94,7 @@ namespace CK.Setup
         {
             get
             {
-                if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
+                Throw.CheckState( !IsSpecialized );
                 return (IReadOnlyCollection<Type>?)_multipleMappings ?? Type.EmptyTypes;
             }
         }
@@ -274,7 +274,7 @@ namespace CK.Setup
             Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Multiple mapping '{t}' already registered in {ToString()}." );
             Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Multiple mapping '{t}' already registered in UNIQUE mappings of {ToString()}." );
             Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
-            if( _multipleMappings == null ) _multipleMappings = new List<Type>();
+            _multipleMappings ??= new List<Type>();
             _multipleMappings.Add( t );
             collector.RegisterMultipleInterfaces( monitor, t, k, this );
         }

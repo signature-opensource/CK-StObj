@@ -136,9 +136,7 @@ namespace CK.Setup
             Debug.Assert( parent == null || ReferenceEquals( TypeInfo.Generalization, parent.TypeInfo ), $"Gen={TypeInfo.Generalization}/Par={parent?.TypeInfo}" );
 
             if( parent != null ) SpecializationDepth = parent.SpecializationDepth + 1;
-
-            // Used only when this service is eventually a simple one.
-            SimpleMappingListIndex = -1;
+            MappingListIndex = -1;
         }
 
         /// <summary>
@@ -480,7 +478,7 @@ namespace CK.Setup
                                     }
                                     else
                                     {
-                                        m.Info( $"Parameter '{p.Name}' is an external type '{paramTypeName}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
+                                        m.Warn( $"Parameter '{p.Name}' is an external type '{paramTypeName}': unknown lifetime is considered Scoped. Type set to {kP | AutoServiceKind.IsScoped}." );
                                         var update = kindComputeFacade.KindDetector.RestrictToScoped( m, p.ParameterType );
                                         if( update.HasValue ) kP = update.Value.ToAutoServiceKind();
                                         else success = false;
@@ -814,7 +812,7 @@ namespace CK.Setup
             }
             if( conflictMsg != null )
             {
-                monitor.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor: {conflictMsg}" );
+                monitor.Error( $"Type '{tParam.FullName}' for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor: {conflictMsg}" );
                 return new CtorParameterData( false, null, null, false, kind, tParam );
             }
             // If the parameter type is not marked with a I(Scoped/Singleton)AutoService, we don't
@@ -830,7 +828,7 @@ namespace CK.Setup
                 var sClass = collector.FindServiceClassInfo( monitor, tParam );
                 if( sClass == null )
                 {
-                    monitor.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor." );
+                    monitor.Error( $"Unable to resolve '{tParam.FullName}' service type for parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 if( !sClass.IsIncluded )
@@ -849,12 +847,12 @@ namespace CK.Setup
                 }
                 else if( TypeInfo.IsAssignableFrom( sClass.TypeInfo ) )
                 {
-                    monitor.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor cannot be this class or one of its specializations." );
+                    monitor.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be this class or one of its specializations." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 else if( sClass.TypeInfo.IsAssignableFrom( TypeInfo ) )
                 {
-                    monitor.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType:C}' constructor cannot be one of its base class." );
+                    monitor.Error( $"Parameter '{p.Name}' in '{p.Member.DeclaringType!:C}' constructor cannot be one of its base class." );
                     return new CtorParameterData( false, null, null, isEnumerable, kind, tParam );
                 }
                 return new CtorParameterData( true, sClass, null, isEnumerable, kind, tParam );
@@ -867,9 +865,9 @@ namespace CK.Setup
         /// and to track the final registration.
         /// Used at the very end of the process when the final StObjObjectEngineMap is built.
         /// </summary>
-        internal int SimpleMappingListIndex;
+        internal int MappingListIndex;
 
-        int IStObjServiceFinalSimpleMapping.SimpleMappingIndex => SimpleMappingListIndex;
+        int IStObjServiceFinalSimpleMapping.MappingIndex => MappingListIndex;
 
         /// <summary>
         /// Overridden to return the <see cref="CKTypeInfo.ToString()"/>.

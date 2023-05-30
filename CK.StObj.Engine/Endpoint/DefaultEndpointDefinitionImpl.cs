@@ -19,7 +19,7 @@ namespace CK.Setup
 
             var def = c.CurrentRun.EngineMap.EndpointResult.DefaultEndpointContext;
 
-            EndpointDefinitionImpl.WriteScopedAndSinglentonServices( scope, def );
+            EndpointDefinitionImpl.WriteScopedAndSingletonServices( scope, def );
 
             return CSCodeGenerationResult.Success;
         }

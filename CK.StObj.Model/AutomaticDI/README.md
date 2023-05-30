@@ -366,7 +366,7 @@ instances is managed? If a endpoint instance `A` exposes a service owned by anot
 alive until `A` dies, or (and this may often be the case), this service is stateless (or its state is somehow
 unrelated to the endpoint instance specific data). But how can we know? We cannot. Unless the service
 implementation (in a endpoint, not the service interface or abstract class) tells us its "lifetime regarding
-its endpoint" status that can be:
+its endpoint" status that can be for instance:
 - NotShareable
 - EndpointIndependent
 - EndpointDependent
@@ -377,10 +377,15 @@ implemented is way to "lock" and "unlock" another endpoint instance lifetime (ty
 counting). All of this can be implemented later: for the moment we simply remove the "owner" aspect from
 the singleton declaration.
 
+### Step 9 - The EndpointType and EndpointServiceProvider.
 
 
 
 
+We cannot use the standard `IServiceScopeFactory` because it doesn't support scoped data injection.
+
+Ubiquitous endpoint services are currently not managed. `IActivityMonitor` is one of them and it is up
+to each endpoint definition to handle it.
 
 
 

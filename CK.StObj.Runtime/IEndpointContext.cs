@@ -25,5 +25,10 @@ namespace CK.Setup
         /// Gets the singletons service types exposed by this endpoint.
         /// </summary>
         IReadOnlyList<Type> SingletonServices { get; }
+
+        /// <summary>
+        ///  Gets the instance data type. This is null for the <see cref="DefaultEndpointDefinition"/>.
+        /// </summary>
+        Type? ScopeDataType { get; }
     }
 }

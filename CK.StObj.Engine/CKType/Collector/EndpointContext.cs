@@ -12,12 +12,14 @@ namespace CK.Setup
     {
         readonly IStObjResult _endpointDefinition;
         readonly string _name;
+        readonly Type? _instanceDataType;
         internal readonly List<Type> _singletons;
         internal readonly List<Type> _scoped;
 
-        internal EndpointContext( IStObjResult endpointDefinition, string name )
+        internal EndpointContext( IStObjResult endpointDefinition, string name, Type? instanceDataType )
         {
             _name = name;
+            _instanceDataType = instanceDataType;
             _endpointDefinition = endpointDefinition;
             _singletons = new List<Type>();
             _scoped = new List<Type>();
@@ -30,5 +32,7 @@ namespace CK.Setup
         public IReadOnlyList<Type> SingletonServices => _singletons;
 
         public IReadOnlyList<Type> ScopedServices => _scoped;
+
+        public Type? ScopeDataType => _instanceDataType;
     }
 }

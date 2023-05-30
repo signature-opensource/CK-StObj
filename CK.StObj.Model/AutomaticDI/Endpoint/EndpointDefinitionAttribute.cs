@@ -3,7 +3,7 @@ using CK.Setup;
 namespace CK.Core
 {
     /// <summary>
-    /// Required attribute for <see cref="EndpointDefinition{TInstanceData}"/>.
+    /// Required attribute for <see cref="EndpointDefinition{TScopeData}"/>.
     /// This triggers code generation of endpoint definitions.
     /// </summary>
     public sealed class EndpointDefinitionAttribute : ContextBoundDelegationAttribute

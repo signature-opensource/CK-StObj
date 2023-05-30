@@ -37,7 +37,7 @@ namespace CK.Setup.Json
         /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
-            var pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            var pocoDirectory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
             var jsonCodeGen = new JsonSerializationCodeGen( monitor, pocoDirectory );
             // Exposes this as a service to others.
             monitor.Info( "Exposing JsonSerializationCodeGen in CurrentRun services." );
@@ -143,7 +143,7 @@ namespace CK.Setup.Json
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Families )
             {
-                var factory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+                var factory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
                 foreach( var i in root.Interfaces )
                 {
                     var interfaceName = i.PocoInterface.ToCSharpName();
@@ -157,7 +157,7 @@ namespace CK.Setup.Json
                 }
                 factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r, options );" ).NewLine();
 
-                var pocoClass = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+                var pocoClass = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
 
                 // Generates the Poco class Read and Write methods.
                 // UnionTypes on properties are registered.

@@ -8,7 +8,7 @@ using System.Reflection;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implements the EndpointTypeManager.
+    /// Implements a EndpointDefinition instance.
     /// </summary>
     public sealed class EndpointDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
     {
@@ -25,42 +25,21 @@ namespace CK.Setup
             if( c.ActualSourceCodeIsUseless ) return CSCodeGenerationResult.Success;
 
             scope.Definition.Modifiers |= Modifiers.Sealed;
+
             var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
-            var endpointContext = endpointResult.EndpointContexts.FirstOrDefault( c => c.EndpointDefinition.ClassType == classType );
+            var e = endpointResult.EndpointContexts.First( c => c.EndpointDefinition.ClassType == classType );
 
-            string name;
-            if( endpointContext == null )
-            {
-                name = CKTypeEndpointServiceInfo.DefinitionName( classType ).ToString();
-                monitor.Warn( $"Useless endpoint definition type '{classType:C}': no specific endpoint services are declared for it." );
-            }
-            else name = endpointContext.Name;
+            scope.Append( "public override string Name => " ).AppendSourceString( e.Name ).Append( ";" ).NewLine();
 
-            scope.Append( "public override string Name => " ).AppendSourceString( name ).Append( ";" ).NewLine();
-
-            WriteScopedAndSinglentonServices( scope, endpointContext );
-
-            Debug.Assert( classType.BaseType != null );
-            var tData = classType.BaseType.GetGenericArguments()[0];
-            scope.Append( "protected override EndpointServiceProvider<" ).AppendCSharpName(tData, true, true, true).Append( "> CreateContainer()" ).OpenBlock();
-            scope.Append( "return null!;" ).NewLine();
-            scope.CloseBlock();
+            WriteScopedAndSingletonServices( scope, e );
 
             return CSCodeGenerationResult.Success;
         }
 
-        internal static void WriteScopedAndSinglentonServices( ITypeScope scope, IEndpointContext? endpointContext )
+        internal static void WriteScopedAndSingletonServices( ITypeScope scope, IEndpointContext endpointContext )
         {
-            if( endpointContext != null )
-            {
-                scope.Append( "public override IReadOnlyList<Type> ScopedServices => " ).AppendArray( endpointContext.ScopedServices ).Append( ";" ).NewLine();
-                scope.Append( "public override IReadOnlyList<Type> SingletonServices => " ).AppendArray( endpointContext.SingletonServices ).Append( ";" ).NewLine();
-            }
-            else
-            {
-                scope.Append( "public override IReadOnlyList<Type> ScopedServices => Array.Empty<Type>();" ).NewLine()
-                     .Append( "public override IReadOnlyList<Type> SingletonServices => Array.Empty<Type>();" ).NewLine();
-            }
+            scope.Append( "public override IReadOnlyList<Type> ScopedServices => " ).AppendArray( endpointContext.ScopedServices ).Append( ";" ).NewLine();
+            scope.Append( "public override IReadOnlyList<Type> SingletonServices => " ).AppendArray( endpointContext.SingletonServices ).Append( ";" ).NewLine();
         }
     }
 }

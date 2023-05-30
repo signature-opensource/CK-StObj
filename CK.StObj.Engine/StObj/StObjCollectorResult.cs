@@ -61,6 +61,5 @@ namespace CK.Setup
         /// Gets the dynamic assembly for this context.
         /// </summary>
         public IDynamicAssembly DynamicAssembly => _tempAssembly;
-
     }
 }

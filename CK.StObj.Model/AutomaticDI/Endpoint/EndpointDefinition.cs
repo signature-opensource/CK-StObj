@@ -5,7 +5,7 @@ namespace CK.Core
 {
     /// <summary>
     /// Non generic endpoint definition.
-    /// <see cref="EndpointDefinition{TInstanceData}"/> must be used as the base class
+    /// <see cref="EndpointDefinition{TScopeData}"/> must be used as the base class
     /// for endpoint definition.
     /// </summary>
     /// <remarks>

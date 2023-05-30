@@ -12,8 +12,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Internal mutable implementation of <see cref="IStObjObjectEngineMap"/> that handles <see cref="MutableItem"/>.
-    /// The internal participants have write access to it. I'm not proud of this (there are definitely cleaner
-    /// ways to organize this) but it works...
+    /// The internal participants have write access to it. I'm not proud of this (this is a mess) but it works...
     /// The map is instantiated by CKTypeCollector.GetRealObjectResult and then
     /// then internally exposed by the RealObjectCollectorResult so that CKTypeCollector.GetAutoServiceResult(RealObjectCollectorResult)
     /// can use (and fill) it.
@@ -26,9 +25,13 @@ namespace CK.Setup
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
         // during Real objects processing.
+        // This is awful.
+        // This is ugly.
+        // This sucks...
         IReadOnlyList<MutableItem>? _orderedStObjs;
         Dictionary<Type, ITypeAttributesCache>? _allTypesAttributesCache;
         IEndpointResult? _endpointResult;
+        IReadOnlyDictionary<Type, IStObjMultipleInterface>? _multiplemappings;
 
         /// <summary>
         /// Initializes a new <see cref="StObjObjectEngineMap"/>.
@@ -52,10 +55,6 @@ namespace CK.Setup
             _serviceSimpleMap = new Dictionary<Type, IStObjServiceFinalSimpleMapping>();
             _serviceSimpleList = new List<IStObjServiceFinalSimpleMapping>();
             _exposedServiceMap = _serviceSimpleMap.AsIReadOnlyDictionary<Type, IStObjServiceFinalSimpleMapping, IStObjServiceClassDescriptor>();
-
-            _serviceManualMap = new Dictionary<Type, IStObjServiceFinalManualMapping>();
-            _serviceManualList = new List<IStObjServiceFinalManualMapping>();
-            _exposedManualServiceMap =  _serviceManualMap.AsIReadOnlyDictionary<Type, IStObjServiceFinalManualMapping, IStObjServiceClassFactory>();
 
             _serviceToObjectMap = new Dictionary<Type, MutableItem>();
             _serviceRealObjects = new List<MutableItem>();
@@ -91,10 +90,9 @@ namespace CK.Setup
         /// </summary>
         public IReadOnlyList<string> Names { get; }
 
-        IStObjFinalClass? IStObjEngineMap.Find( Type t ) => _map.GetValueOrDefault( t )
-                                                            ?? (IStObjFinalClass?)_serviceSimpleMap.GetValueOrDefault( t )
-                                                            ?? (IStObjFinalClass?)_serviceToObjectMap.GetValueOrDefault( t )
-                                                            ?? _serviceManualMap.GetValueOrDefault( t );
+        public IStObjFinalClass? ToLeaf( Type t ) => _map.GetValueOrDefault( t )
+                                                     ?? (IStObjFinalClass?)_serviceSimpleMap.GetValueOrDefault( t )
+                                                     ?? _serviceToObjectMap.GetValueOrDefault( t );
 
         /// <summary>
         /// Gets all the specialization. If there is no error, this list corresponds to the
@@ -155,18 +153,21 @@ namespace CK.Setup
 
         IEndpointResult IStObjEngineMap.EndpointResult => _endpointResult!;
 
+        IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
+
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type,
                                               ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult? endpointResult )
+                                              IEndpointResult? endpointResult, IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             _orderedStObjs = ordered;
             _allTypesAttributesCache = allTypesAttributesCache;
             _endpointResult = endpointResult;
+            _multiplemappings = multipleMappings;
         }
 
-        IStObj? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
+        IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => _map.GetValueOrDefault( t );
 
-        void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
+        bool IStObjMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )
         {
             throw new NotSupportedException( "ConfigureServices is not supported at build time." );
         }
@@ -184,5 +185,6 @@ namespace CK.Setup
             var v = InformationalVersion.ReadFromAssembly( a ).Version;
             return new VFeature( a.GetName().Name!, v != null && v.IsValid ? v : SVersion.ZeroVersion );
         }
+
     }
 }

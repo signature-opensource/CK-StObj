@@ -109,7 +109,7 @@ namespace CK.Setup
                         .CloseBlock();
 
                     // Generates the StObjContextRoot implementation.
-                    GenerateStObjContextRootSource( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
+                    CreateGeneratedRootContext( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
                     using( monitor.OpenTrace( "Calls all ICSCodeGenerator items." ) )
                     {
@@ -262,13 +262,13 @@ namespace CK.Setup
                                                             ? configurationGroup.GeneratedAssembly.Path
                                                             : default;
                 using( monitor.OpenInfo( codeGenContext.CompileOption == CompileOption.Compile
-                                            ? $"Compiling source code (using C# v9.0 language version) and saving to '{targetPath}'."
-                                            : "Only parsing source code, using C# v9.0 language version (skipping compilation)." ) )
+                                            ? $"Compiling source code (using C# v10.0 language version) and saving to '{targetPath}'."
+                                            : "Only parsing source code, using C# v10.0 language version (skipping compilation)." ) )
                 {
                     var result = CodeGenerator.Generate( code,
                                                          targetPath.IsEmptyPath ? null : targetPath,
                                                          ws.AssemblyReferences,
-                                                         new CSharpParseOptions( LanguageVersion.CSharp9 ) );
+                                                         new CSharpParseOptions( LanguageVersion.CSharp10 ) );
 
                     result.LogResult( monitor );
                     if( result.Success )
@@ -294,63 +294,90 @@ namespace CK.Setup
             }
         }
 
-        const string _sourceGStObj = @"
-class GStObj : IStObj
-{
-    public GStObj( Type t, IStObj g, int idx )
-    {
-        ClassType = t;
-        Generalization = g;
-        IndexOrdered = idx;
-    }
+        const string _gStObj = """
+            class GRealObject : IStObj
+            {
+                public GRealObject( Type t, IStObj g, int idx )
+                {
+                    ClassType = t;
+                    Generalization = g;
+                    IndexOrdered = idx;
+                }
 
-    public Type ClassType { get; }
+                public Type ClassType { get; }
 
-    public IStObj Generalization { get; }
+                public IStObj Generalization { get; }
 
-    public IStObj Specialization { get; internal set; }
+                public IStObj Specialization { get; internal set; }
 
-    public IStObjFinalImplementation FinalImplementation { get; internal set; }
+                public IStObjFinalImplementation FinalImplementation { get; internal set; }
 
-    public int IndexOrdered { get; }
+                public int IndexOrdered { get; }
 
-    internal StObjMapping AsMapping => new StObjMapping( this, FinalImplementation );
-}";
-        const string _sourceFinalGStObj = @"
-sealed class GFinalStObj : GStObj, IStObjFinalImplementation
-{
-    public GFinalStObj( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, int idx )
-            : base( t, g, idx )
-    {
-        FinalImplementation = this;
-        Implementation = impl;
-        MultipleMappings = mult;
-        UniqueMappings = uniq;
-    }
+                internal StObjMapping AsMapping => new StObjMapping( this, FinalImplementation );
+            }
+            """;
+        const string _gFinalStObj = """
+            sealed class GFinalRealObject : GRealObject, IStObjFinalImplementation
+            {
+                public GFinalRealObject( object impl, Type actualType, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq, Type t, IStObj g, int idx )
+                        : base( t, g, idx )
+                {
+                    FinalImplementation = this;
+                    Implementation = impl;
+                    MultipleMappings = mult;
+                    UniqueMappings = uniq;
+                }
 
-    public object Implementation { get; }
+                public object Implementation { get; }
 
-    public Type FinalType => ClassType;
+                public Type FinalType => ClassType;
 
-    public bool IsScoped => false;
+                public bool IsScoped => false;
 
-    public IReadOnlyCollection<Type> MultipleMappings { get; }
+                public IReadOnlyCollection<Type> MultipleMappings { get; }
 
-    public IReadOnlyCollection<Type> UniqueMappings { get; }
-}";
-        void GenerateStObjContextRootSource( IActivityMonitor monitor, INamespaceScope ns, IReadOnlyList<IStObjResult> orderedStObjs )
+                public IReadOnlyCollection<Type> UniqueMappings { get; }
+            }
+            """;
+        const string _gMultiple = """
+            sealed class GMultiple : IStObjMultipleInterface
+            {
+                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im, Type[] m )
+                {
+                    IsScoped = s;
+                    ItemType = i;
+                    EnumerableType = e;
+                    Implementations = im;
+                    MarshallableTypes = m;
+                }
+
+                public bool IsScoped { get; }
+
+                public Type ItemType { get; }
+
+                public Type EnumerableType { get; }
+
+                public IReadOnlyCollection<IStObjFinalClass> Implementations { get; }
+
+                public IReadOnlyCollection<Type> MarshallableTypes { get; }
+            }
+            """;
+
+        void CreateGeneratedRootContext( IActivityMonitor monitor, INamespaceScope ns, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             Debug.Assert( EngineMap != null );
 
-            ns.GeneratedByComment().NewLine()
-              .Append( _sourceGStObj ).NewLine()
-              .Append( _sourceFinalGStObj ).NewLine();
+            using var rootRegion = ns.Region();
+            ns.Append( _gStObj ).NewLine()
+              .Append( _gFinalStObj ).NewLine()
+              .Append( _gMultiple ).NewLine();
 
             var rootType = ns.CreateType( "sealed class " + StObjContextRoot.RootContextTypeName + " : IStObjMap, IStObjObjectMap, IStObjServiceMap" );
 
-            rootType.Append( "static readonly GStObj[] _stObjs;" ).NewLine()
-                    .Append( "static readonly GFinalStObj[] _finalStObjs;" ).NewLine()
-                    .Append( "static readonly Dictionary<Type,GFinalStObj> _map;" ).NewLine()
+            rootType.Append( "static readonly GRealObject[] _stObjs;" ).NewLine()
+                    .Append( "static readonly GFinalRealObject[] _finalStObjs;" ).NewLine()
+                    .Append( "static readonly Dictionary<Type,GFinalRealObject> _map;" ).NewLine()
                     .Append( "static readonly IReadOnlyCollection<VFeature> _vFeatures;" ).NewLine()
                     .Append( "static int _intializeOnce;" ).NewLine();
 
@@ -361,27 +388,29 @@ IReadOnlyList<string> IStObjMap.Names => CK.StObj.SignatureAttribute.V.Names;
 SHA1Value IStObjMap.GeneratedSignature => CK.StObj.SignatureAttribute.V.Signature;
 IReadOnlyCollection<VFeature> IStObjMap.Features => _vFeatures;
 
-IStObj IStObjObjectMap.ToLeaf( Type t ) => GToLeaf( t );
-object IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
+IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => ToRealObjectLeaf( t );
+object? IStObjObjectMap.Obtain( Type t ) => _map.TryGetValue( t, out var s ) ? s.Implementation : null;
 IReadOnlyList<IStObjFinalImplementation> IStObjObjectMap.FinalImplementations => _finalStObjs;
 IEnumerable<StObjMapping> IStObjObjectMap.StObjs => _stObjs.Select( s => s.AsMapping );
 
-GFinalStObj GToLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
-
-[Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.GenStObjs."", true )]
+[Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.RealObjects."", true )]
 internal IReadOnlyList<IStObj> InternalRealObjects => _stObjs;
-[Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.GenFinalStObjs."", true )]
+[Obsolete( ""Now that StObj are static, there is no need to rely on the DI and cast into GeneratedRootContext. Simply use CK.StObj.GeneratedRootContext.FinalRealObjects."", true )]
 internal IReadOnlyList<IStObjFinalImplementation> InternalFinalRealObjects => _finalStObjs;
 
-// Direct static access to the StObjs and the FinalStObjs for generated code.
-public static IReadOnlyList<IStObj> GenStObjs => _stObjs;
-public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalStObjs;
+// Direct static access to the RealObjects and the FinalRealObjects for generated code.
+public static IReadOnlyList<IStObj> RealObjects => _stObjs;
+public static IReadOnlyList<IStObjFinalImplementation> FinalRealObjects => _finalStObjs;
+public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
 " );
-            var rootStaticCtor = rootType.GeneratedByComment().NewLine()
-                                         .CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
+            var rootStaticCtor = rootType.CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
             SetupObjectsGraph( rootStaticCtor, orderedStObjs, CKTypeResult.RealObjects.EngineMap );
 
             // Construct and Initialize methods takes a monitor and the context instance: we need the instance constructor.
+            // We ensure that this StObjMap can be initialized once and only once (static bool _intializeOnce).
+            // This doesn't mean that this StObjMap can be registered in a ServiceCollection only once: services registration
+            // (including endpoints) are on the "run" side (the EndpointType<TScopedData> is a pure service that manages the 
+            // services as opposed to the real object EndpointDefinition).
             GenerateInstanceConstructor( rootType, orderedStObjs );
 
             // Ignores null (error) return here: we always generate the code.
@@ -390,18 +419,20 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             hostedServiceLifetimeTrigger?.GenerateHostedServiceLifetimeTrigger( monitor, EngineMap, rootType );
 
             var serviceGen = new ServiceSupportCodeGenerator( rootType, rootStaticCtor );
-            serviceGen.CreateServiceSupportCode( EngineMap.Services );
-            serviceGen.CreateConfigureServiceMethod( orderedStObjs );
+            serviceGen.CreateServiceSupportCode( EngineMap );
+            serviceGen.CreateRealObjectConfigureServiceMethod( orderedStObjs );
+            serviceGen.CreateConfigureServiceMethod( monitor, EngineMap );
 
             GenerateVFeatures( monitor, rootStaticCtor, rootType, EngineMap.Features );
         }
 
         static void SetupObjectsGraph( IFunctionScope rootStaticCtor, IReadOnlyList<IStObjResult> orderedStObjs, StObjObjectEngineMap map )
         {
-            rootStaticCtor.GeneratedByComment().NewLine()
-                          .Append( $"_stObjs = new GStObj[{orderedStObjs.Count}];" ).NewLine()
-                          .Append( $"_finalStObjs = new GFinalStObj[{map.FinalImplementations.Count}];" ).NewLine()
-                          .Append( $"_map = new Dictionary<Type,GFinalStObj>();" ).NewLine();
+            using var region = rootStaticCtor.Region();
+            rootStaticCtor.NewLine()
+                          .Append( $"_stObjs = new GRealObject[{orderedStObjs.Count}];" ).NewLine()
+                          .Append( $"_finalStObjs = new GFinalRealObject[{map.FinalImplementations.Count}];" ).NewLine()
+                          .Append( $"_map = new Dictionary<Type,GFinalRealObject>();" ).NewLine();
             int iStObj = 0;
             int iImplStObj = 0;
             foreach( var m in orderedStObjs )
@@ -411,13 +442,13 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
                 rootStaticCtor.Append( $"_stObjs[{iStObj++}] = " );
                 if( m.Specialization == null )
                 {
-                    rootStaticCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalStObj( new " )
+                    rootStaticCtor.Append( "_finalStObjs[" ).Append( iImplStObj++ ).Append( "] = new GFinalRealObject( new " )
                                   .AppendCSharpName( m.FinalImplementation.FinalType, true, true, true ).Append( "(), " )
                                   .AppendTypeOf( m.FinalImplementation.FinalType ).Append( ", " ).NewLine()
                                   .AppendArray( m.FinalImplementation.MultipleMappings ).Append( ", " ).NewLine()
                                   .AppendArray( m.FinalImplementation.UniqueMappings ).Append( ", " ).NewLine();
                 }
-                else rootStaticCtor.Append( "new GStObj(" );
+                else rootStaticCtor.Append( "new GRealObject(" );
 
                 rootStaticCtor.AppendTypeOf( m.ClassType ).Append( ", " )
                               .Append( generalization )
@@ -431,7 +462,7 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             foreach( var e in allMappings.Where( e => e.Key is Type ) )
             {
                 rootStaticCtor.Append( $"_map.Add( " ).AppendTypeOf( (Type)e.Key )
-                              .Append( ", (GFinalStObj)_stObjs[" ).Append( e.Value.IndexOrdered ).Append( "] );" ).NewLine();
+                              .Append( ", (GFinalRealObject)_stObjs[" ).Append( e.Value.IndexOrdered ).Append( "] );" ).NewLine();
             }
             if( orderedStObjs.Count > 0 )
             {
@@ -439,13 +470,13 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
                               .Append( "while( --iStObj >= 0 ) {" ).NewLine()
                               .Append( " var o = _stObjs[iStObj];" ).NewLine()
                               .Append( " if( o.Specialization == null ) {" ).NewLine()
-                              .Append( "  var oF = (GFinalStObj)o;" ).NewLine()
-                              .Append( "  GStObj g = (GStObj)o.Generalization;" ).NewLine()
+                              .Append( "  var oF = (GFinalRealObject)o;" ).NewLine()
+                              .Append( "  GRealObject g = (GRealObject)o.Generalization;" ).NewLine()
                               .Append( "  while( g != null ) {" ).NewLine()
                               .Append( "   g.Specialization = o;" ).NewLine()
                               .Append( "   g.FinalImplementation = oF;" ).NewLine()
                               .Append( "   o = g;" ).NewLine()
-                              .Append( "   g = (GStObj)o.Generalization;" ).NewLine()
+                              .Append( "   g = (GRealObject)o.Generalization;" ).NewLine()
                               .Append( "  }" ).NewLine()
                               .Append( " }" ).NewLine()
                               .Append( "}" ).NewLine();
@@ -454,7 +485,8 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
 
         static void GenerateInstanceConstructor( ITypeScope rootType, IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            var rootCtor = rootType.GeneratedByComment().NewLine()
+            using var region = rootType.Region();
+            var rootCtor = rootType.NewLine()
                            .CreateFunction( $"public {StObjContextRoot.RootContextTypeName}( IActivityMonitor monitor )" );
 
             rootCtor.Append( @"if( System.Threading.Interlocked.CompareExchange( ref _intializeOnce, 1, 0 ) != 0 )" )
@@ -468,10 +500,9 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
             CallInitializeMethods( rootCtor, orderedStObjs );
         }
 
-
         static void InitializePreConstructPropertiesAndCallConstruct( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            rootCtor.GeneratedByComment().NewLine();
+            using var region = rootCtor.Region();
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
             foreach( MutableItem m in orderedStObjs )
             {
@@ -545,7 +576,7 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
 
         static void InitializePostBuildProperties( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            rootCtor.GeneratedByComment().NewLine();
+            using var region = rootCtor.Region();
             foreach( MutableItem m in orderedStObjs )
             {
                 if( m.PostBuildProperties != null )
@@ -566,7 +597,7 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
 
         static void CallInitializeMethods( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            rootCtor.GeneratedByComment().NewLine();
+            using var region = rootCtor.Region();
             foreach( MutableItem m in orderedStObjs )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
@@ -586,10 +617,10 @@ public static IReadOnlyList<IStObjFinalImplementation> GenFinalStObjs => _finalS
 
         static void GenerateVFeatures( IActivityMonitor monitor, IFunctionScope rootStaticCtor, ITypeScope rootType, IReadOnlyCollection<VFeature> features )
         {
+            using var region = rootStaticCtor.Region();
             monitor.Info( $"Generating VFeatures: {features.Select( f => f.ToString()).Concatenate()}." );
 
-            rootStaticCtor.GeneratedByComment().NewLine()
-                          .Append( "_vFeatures = new VFeature[]{ " );
+            rootStaticCtor.Append( "_vFeatures = new VFeature[]{ " );
             bool atLeastOne = false;
             foreach( var f in features )
             {

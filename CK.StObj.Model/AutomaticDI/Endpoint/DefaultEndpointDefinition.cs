@@ -15,7 +15,6 @@ namespace CK.Core
         /// Gets "Default".
         /// </summary>
         public override string Name => "Default";
-
     }
 
 }

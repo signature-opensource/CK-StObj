@@ -4,34 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 
 namespace CK.Setup
 {
+
     class ServiceSupportCodeGenerator
     {
         const string _sourceServiceSupport = @"
-        sealed class StObjServiceParameterInfo : IStObjServiceParameterInfo
-        {
-            public StObjServiceParameterInfo( Type t, int p, string n, IReadOnlyList<Type> v, bool isEnum )
-            {
-                ParameterType = t;
-                Position = p;
-                Name = n;
-                Value = v;
-                IsEnumerated = isEnum;
-            }
-
-            public Type ParameterType { get; }
-
-            public int Position { get; }
-
-            public string Name { get; }
-
-            public bool IsEnumerated { get; }
-
-            public IReadOnlyList<Type> Value { get; }
-        }
 
         sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
         {
@@ -59,172 +40,146 @@ namespace CK.Setup
 
             public IReadOnlyCollection<Type> UniqueMappings { get; }
         }
-
-        sealed class StObjServiceClassFactoryInfo : IStObjServiceClassFactoryInfo
-        {
-            public StObjServiceClassFactoryInfo( Type t, Type finalType, IReadOnlyList<IStObjServiceParameterInfo> a, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
-            {
-                ClassType = t;
-                FinalType = finalType;
-                Assignments = a;
-                AutoServiceKind = k;
-                MarshallableTypes = marshallableTypes;
-                MultipleMappings = mult;
-                UniqueMappings = uniq;
-            }
-
-            public Type ClassType { get; }
-
-            public Type FinalType { get; }
-
-            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
-
-            public AutoServiceKind AutoServiceKind { get; }
-
-            public IReadOnlyList<IStObjServiceParameterInfo> Assignments { get; }
-
-            public IReadOnlyCollection<Type> MarshallableTypes { get; }
-
-            public IReadOnlyCollection<Type> MultipleMappings { get; }
-
-            public IReadOnlyCollection<Type> UniqueMappings { get; }
-        }
 ";
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
-        readonly ITypeScope _infoType;
 
         public ServiceSupportCodeGenerator( ITypeScope rootType, IFunctionScope rootCtor )
         {
             _rootType = rootType;
-            _infoType = rootType.Namespace.CreateType( "public static class SFInfo" );
             _rootCtor = rootCtor;
         }
 
-        public void CreateServiceSupportCode( IStObjServiceEngineMap liftedMap )
+        public void CreateServiceSupportCode( IStObjEngineMap engineMap )
         {
-            _infoType.Namespace.Append( _sourceServiceSupport );
+            var serviceMap = engineMap.Services;
+            _rootType.Namespace.Append( _sourceServiceSupport );
 
-            _rootType.GeneratedByComment().Append( @"
+            using( _rootType.Region() )
+            {
+                _rootType.Append( @"
 static readonly Dictionary<Type, IStObjFinalImplementation> _objectServiceMappings;
 static readonly IStObjFinalImplementation[] _objectServiceMappingList;
-static readonly Dictionary<Type, IStObjServiceClassDescriptor> _simpleServiceMappings;
-static readonly IStObjServiceClassDescriptor[] _simpleServiceList;
-static readonly Dictionary<Type, IStObjServiceClassFactory> _manualServiceMappings;
-static readonly IStObjServiceClassFactory[] _manualServiceList;
+static readonly Dictionary<Type, IStObjServiceClassDescriptor> _serviceMappings;
+static readonly IStObjServiceClassDescriptor[] _serviceMappingList;
+static readonly Dictionary<Type,IStObjMultipleInterface> _multipleMappings;
 
-public IStObjServiceMap Services => this;
+// Direct static access to the IStObjServiceClassDescriptor services.
+// - (TODO: Unify MappingIndex on a GFinalRealObjectWithAutoService or something like that an rename this static AutoServices) The GenServices list indexed by IStObjServiceClassDescriptor.MappingIndex.
+// - The ToServiceLeaf (IStObjServiceMap.ToLeaf) that returns a IStObjServiceClassDescriptor or a real object only if the Type is a Auto service.
+// - The ToLeaf (IStObjMap.ToLeaf) that returns any real object or a IStObjServiceClassDescriptor.
+public static IReadOnlyList<IStObjServiceClassDescriptor> GenServices => _serviceMappingList;
+public static IStObjFinalClass? ToServiceLeaf( Type t )
+{
+    return _serviceMappings.TryGetValue( t, out var service )
+                                    ? service
+                                    : _objectServiceMappings.TryGetValue( t, out var realObject ) ? realObject : null;
+}
+public static IStObjFinalClass? ToLeaf( Type t ) => ToServiceLeaf( t ) ?? ToRealObjectLeaf( t );
+
+IStObjServiceMap IStObjMap.Services => this;
+IReadOnlyDictionary<Type,IStObjMultipleInterface> IStObjMap.MultipleMappings => _multipleMappings;
+IStObjFinalClass? IStObjMap.ToLeaf( Type t ) => ToServiceLeaf( t ) ?? ToRealObjectLeaf( t );
+
+IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t ) => ToServiceLeaf( t );
 IReadOnlyDictionary<Type, IStObjFinalImplementation> IStObjServiceMap.ObjectMappings => _objectServiceMappings;
 IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => _objectServiceMappingList;
-IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappings => _simpleServiceMappings;
-IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.SimpleMappingList => _simpleServiceList;
-IReadOnlyDictionary<Type, IStObjServiceClassFactory> IStObjServiceMap.ManualMappings => _manualServiceMappings;
-IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _manualServiceList;" )
-                     .NewLine();
-
-            // Object mappings.
-            _rootCtor.GeneratedByComment().NewLine()
-                     .Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({liftedMap.ObjectMappings.Count});" ).NewLine();
-            foreach( var map in liftedMap.ObjectMappings )
-            {
-                _rootCtor.Append( "_objectServiceMappings.Add( " )
-                       .AppendTypeOf( map.Key )
-                       .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].FinalImplementation );" )
-                       .NewLine();
+IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => _serviceMappings;
+IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _serviceMappingList;" )
+                         .NewLine();
             }
-            if( liftedMap.ObjectMappingList.Count > 0 )
+
+            using( _rootCtor.Region() )
             {
-                _rootCtor.Append( $"_objectServiceMappingList = new IStObjFinalImplementation[] {{" ).NewLine();
-                foreach( var o in liftedMap.ObjectMappingList )
+                // Object mappings.
+                _rootCtor.Append( $"_objectServiceMappings = new Dictionary<Type, IStObjFinalImplementation>({serviceMap.ObjectMappings.Count});" ).NewLine();
+                foreach( var map in serviceMap.ObjectMappings )
                 {
-                    _rootCtor.NewLine().Append( "_stObjs[" ).Append( o.IndexOrdered ).Append( "].FinalImplementation," );
+                    _rootCtor.Append( "_objectServiceMappings.Add( " )
+                           .AppendTypeOf( map.Key )
+                           .Append( ", _stObjs[" ).Append( map.Value.IndexOrdered ).Append( "].FinalImplementation );" )
+                           .NewLine();
                 }
-                _rootCtor.NewLine().Append( "};" ).NewLine();
-            }
-            else
-            {
-                _rootCtor.Append( $"_objectServiceMappingList = Array.Empty<IStObjFinalImplementation>();" ).NewLine();
-            }
-            // 
-
-            static void AppendArrayDecl( IFunctionScope f, string typeName, int count )
-            {
-                if( count > 0 )
+                if( serviceMap.ObjectMappingList.Count > 0 )
                 {
-                    f.Append( "new " ).Append( typeName ).Append( "[" ).Append( count ).Append( "];" ).NewLine();
+                    _rootCtor.Append( "_objectServiceMappingList = new IStObjFinalImplementation[] {" ).NewLine();
+                    foreach( var o in serviceMap.ObjectMappingList )
+                    {
+                        _rootCtor.Append( "_stObjs[" ).Append( o.IndexOrdered ).Append( "].FinalImplementation," ).NewLine();
+                    }
+                    _rootCtor.Append( "};" ).NewLine();
                 }
                 else
                 {
-                    f.Append( "Array.Empty<" ).Append( typeName ).Append( ">();" ).NewLine();
+                    _rootCtor.Append( $"_objectServiceMappingList = Array.Empty<IStObjFinalImplementation>();" ).NewLine();
                 }
-            }
+                // Service mappings.
+                _rootCtor.Append( "_serviceMappingList = new IStObjServiceClassDescriptor[] {" ).NewLine();
+                foreach( var d in serviceMap.MappingList )
+                {
+                    Debug.Assert( d.MappingIndex >= 0 );
+                    _rootCtor.Append( "new StObjServiceClassDescriptor(" )
+                                .AppendTypeOf( d.ClassType )
+                                .Append( ", " )
+                                .AppendTypeOf( d.FinalType )
+                                .Append( ", " )
+                                .Append( d.AutoServiceKind )
+                                .Append( ", " )
+                                .AppendArray( d.MarshallableTypes )
+                                .Append( ", " )
+                                .AppendArray( d.MultipleMappings )
+                                .Append( ", " )
+                                .AppendArray( d.UniqueMappings )
+                                .Append( ")," ).NewLine();
+                }
+                _rootCtor.Append( "};" ).NewLine();
 
-            // Service mappings (Simple).
-            _rootCtor.Append( $"_simpleServiceList = " );
-            AppendArrayDecl( _rootCtor, nameof( IStObjServiceClassDescriptor ), liftedMap.SimpleMappingList.Count );
-            foreach( var d in liftedMap.SimpleMappingList )
-            {
-                Debug.Assert( d.SimpleMappingIndex >= 0 );
-                _rootCtor.Append( "_simpleServiceList[" ).Append( d.SimpleMappingIndex ).Append( "] = new StObjServiceClassDescriptor(" )
-                            .AppendTypeOf( d.ClassType )
-                            .Append( ", " )
-                            .AppendTypeOf( d.FinalType )
-                            .Append( ", " )
-                            .Append( d.AutoServiceKind )
-                            .Append( ", " )
-                            .AppendArray( d.MarshallableTypes )
-                            .Append( ", " )
-                            .AppendArray( d.MultipleMappings )
-                            .Append( ", " )
-                            .AppendArray( d.UniqueMappings )
-                            .Append( ");" ).NewLine();
-            }
-
-            _rootCtor.Append( $"_simpleServiceMappings = new Dictionary<Type, IStObjServiceClassDescriptor>({liftedMap.SimpleMappings.Count});" ).NewLine();
-            foreach( var map in liftedMap.SimpleMappings )
-            {
-                _rootCtor.Append( $"_simpleServiceMappings.Add( " )
-                            .AppendTypeOf( map.Key )
-                            .Append( ", " )
-                            .Append( "_simpleServiceList[" ).Append( map.Value.SimpleMappingIndex ).Append("] );")
-                            .NewLine();
-            }
-            // Service mappings (Not so Simple :)).
-            _rootCtor.Append( $"_manualServiceList = " );
-            AppendArrayDecl( _rootCtor, nameof( IStObjServiceClassFactory ), liftedMap.ManualMappingList.Count );
-
-            foreach( var serviceFactory in liftedMap.ManualMappingList )
-            {
-                CreateServiceClassFactory( serviceFactory );
-                _rootCtor.Append( "_manualServiceList[" ).Append( serviceFactory.ManualMappingIndex ).Append( "] = " )
-                    .Append( GetServiceClassFactoryDefaultPropertyName( serviceFactory ) ).Append( ";" ).NewLine();
-            }
-
-            _rootCtor.Append( $"_manualServiceMappings = new Dictionary<Type, IStObjServiceClassFactory>( {liftedMap.ManualMappings.Count} );" ).NewLine();
-            foreach( var map in liftedMap.ManualMappings )
-            {
-                _rootCtor.Append( $"_manualServiceMappings.Add( " )
-                       .AppendTypeOf( map.Key )
-                       .Append( ", " ).Append( GetServiceClassFactoryDefaultPropertyName( map.Value ) )
-                       .Append( " );" ).NewLine();
-            }
-            foreach( var serviceFactory in liftedMap.ManualMappingList )
-            {
-                CreateServiceClassFactory( serviceFactory );
+                _rootCtor.Append( $"_serviceMappings = new Dictionary<Type, IStObjServiceClassDescriptor>({serviceMap.Mappings.Count});" ).NewLine();
+                foreach( var map in serviceMap.Mappings )
+                {
+                    _rootCtor.Append( $"_serviceMappings.Add( " )
+                                .AppendTypeOf( map.Key )
+                                .Append( ", " )
+                                .Append( "_serviceMappingList[" ).Append( map.Value.MappingIndex ).Append( "] );" )
+                                .NewLine();
+                }
+                _rootCtor.Append( $"_multipleMappings = new Dictionary<Type, IStObjMultipleInterface>({engineMap.MultipleMappings.Count});" ).NewLine();
+                foreach( var (t,m) in engineMap.MultipleMappings )
+                {
+                    _rootCtor.Append( "_multipleMappings.Add(" ).AppendTypeOf( t )
+                             .Append( ", new GMultiple( " )
+                             .Append( m.IsScoped ).Append( ", " ).NewLine()
+                             .Append( m.ItemType ).Append( ", " ).NewLine()
+                             .Append( m.EnumerableType ).Append( ", " ).NewLine()
+                             .Append( "new IStObjFinalClass[] {" );
+                    foreach( var i in m.Implementations )
+                    {
+                        if( i is IStObjFinalImplementationResult realObject )
+                        {
+                            _rootCtor.Append( "_stObjs[" ).Append( realObject.IndexOrdered ).Append( "].FinalImplementation" );
+                        }
+                        else
+                        {
+                            Debug.Assert( i is IStObjServiceFinalSimpleMapping );
+                            _rootCtor.Append( "_serviceMappingList[" ).Append( ((IStObjServiceFinalSimpleMapping)i).MappingIndex ).Append( "]" );
+                        }
+                        _rootCtor.Append( ", " );
+                    }
+                    _rootCtor.Append( "}, " ).NewLine()
+                             .AppendArray( m.MarshallableTypes ).Append( ") );" ).NewLine();
+                }
             }
         }
 
-        public void CreateConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs )
+        public void CreateRealObjectConfigureServiceMethod( IReadOnlyList<IStObjResult> orderedStObjs )
         {
-            _rootType.GeneratedByComment().NewLine();
-            var configure = _rootType.CreateFunction( "void IStObjObjectMap.ConfigureServices( in StObjContextRoot.ServiceRegister register )" );
+            using var region = _rootType.Region();
+            var configure = _rootType.CreateFunction( "void RealObjectConfigureServices( in StObjContextRoot.ServiceRegister register )" );
 
-            configure.Append( "register.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( Microsoft.Extensions.Hosting.IHostedService ), typeof( HostedServiceLifetimeTrigger ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );" )
-                     .NewLine();
-            
             configure.Append( "register.StartupServices.Add( typeof(IStObjObjectMap), this );" ).NewLine()
                      .Append( "object[] registerParam = new object[]{ register.Monitor, register.StartupServices };" ).NewLine();
 
+            // Calls the RegisterStartupServices methods.
             foreach( MutableItem m in orderedStObjs ) 
             {
                 foreach( var reg in m.RealObjectType.AllRegisterStartupServices )
@@ -238,14 +193,15 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
                              .NewLine();
                     configure.Append( $".Invoke( _stObjs[{m.IndexOrdered}].FinalImplementation.Implementation, registerParam );" )
                              .NewLine();
-
                 }
             }
+
+            // Calls the ConfigureServices methods.
             foreach( MutableItem m in orderedStObjs )
             {
                 foreach( var parameters in m.RealObjectType.AllConfigureServicesParameters )
                 {
-                    configure.AppendOnce( "GStObj s;" ).NewLine();
+                    configure.AppendOnce( "GRealObject s;" ).NewLine();
                     configure.AppendOnce( "MethodInfo m;" ).NewLine();
 
                     configure.Append( $"s = _stObjs[{m.IndexOrdered}];" ).NewLine();
@@ -287,108 +243,57 @@ IReadOnlyList<IStObjServiceClassFactory> IStObjServiceMap.ManualMappingList => _
             }
         }
 
-        string GetServiceClassFactoryDefaultPropertyName( IStObjServiceFinalManualMapping f ) => $"SFInfo.S{f.ManualMappingIndex}.Default";
-
-        void CreateServiceClassFactory( IStObjServiceFinalManualMapping c )
+        public void CreateConfigureServiceMethod( IActivityMonitor monitor, IStObjEngineMap engineMap )
         {
-            var t = _infoType.GeneratedByComment().CreateType( $"class S{c.ManualMappingIndex} : StObjServiceClassFactoryInfo, IStObjServiceClassFactory" );
+            var endpointResult = engineMap.EndpointResult;
+            bool hasEndpoint = endpointResult.EndpointContexts.Count > 1;
 
-            t.CreateFunction( ctor =>
-            {
-                ctor.Append( "public S" ).Append( c.ManualMappingIndex ).Append( "()" ).NewLine()
-                    .Append( ": base( " )
-                        .AppendTypeOf( c.ClassType ).Append( ", " ).NewLine()
-                        .AppendTypeOf( c.FinalType ).Append( ", " ).NewLine()
-                        .Append( x => GenerateStObjServiceFactoryInfoAssignments( x, c.Assignments ) )
-                        .Append( ", " ).NewLine()
-                        .Append( c.AutoServiceKind )
-                        .Append( ", " ).NewLine()
-                        .AppendArray( c.MarshallableTypes )
-                        .Append( ", " ).NewLine()
-                        .AppendArray( c.MultipleMappings )
-                        .Append( ")" );
-            } );
+            EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
 
-            t.CreateFunction( func =>
+            var fScope = _rootType.CreateFunction( "public bool ConfigureServices( in StObjContextRoot.ServiceRegister reg )" );
+            using var region = fScope.Region();
+
+            fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine();
+            // Common endpoint container configuration is done on the global, externally configured services so that
+            // we minimize the number of registrations to process.
+            if( hasEndpoint )
             {
-                func.Append( "public object CreateInstance( IServiceProvider p ) {" );
-                func.Append( "return new " ).AppendCSharpName( c.FinalType, true, true, true ).Append( "(" );
-                var ctor = c.GetSingleConstructor();
-                var parameters = ctor.GetParameters();
-                for( int i = 0; i < parameters.Length; ++i )
-                {
-                    var p = parameters[i];
-                    if( i > 0 ) func.Append( ", " );
-                    var mapped = c.Assignments.Where( a => a.Position == p.Position ).FirstOrDefault();
-                    if( mapped == null )
-                    {
-                        func.Append( "p.GetService( " ).AppendTypeOf( p.ParameterType ).Append( ")" );
-                    }
-                    else
-                    {
-                        if( mapped.Value == null )
+                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains );" ).NewLine();
+            }
+            // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
+            // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.
+            // The "true" singleton EndpointTypeManager is registered: it is the relay from endpoint containers to the global one.
+            fScope.Append( """
+                        reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(
+                                typeof( Microsoft.Extensions.Hosting.IHostedService ),
+                                typeof( HostedServiceLifetimeTrigger ),
+                                Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
+                        var theEPTM = new EndpointTypeManager_CK();
+                        var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
+                        reg.Services.Add( descEPTM );
+                        """ ).NewLine();
+            if( !hasEndpoint )
+            {
+                // If there's no endpoint, we are done (and we have no mappings for endpoint container).
+                fScope.Append( "EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, null );" ).NewLine()
+                        .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
+                        .Append( "return true;" );
+                return;
+            }
+            // Fills both the global and the common endpoint containers with the real objects (true singletons) and the auto services registrations.
+            // We specifically handle the IEnumerable multiple mappings in the endpoint container and eventually enables
+            // the endpoints to configure their endpoint services.
+            fScope.Append( """
+                        EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, mappings );
+                        // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
+                        bool success = true;
+                        foreach( var e in theEPTM._endpointTypes )
                         {
-                            func.Append( "null" );
+                            if( !e.ConfigureServices( reg.Monitor, this, mappings, descEPTM ) ) success = false;
                         }
-                        else if( mapped.IsEnumerated )
-                        {
-                            func.Append( "new " ).AppendCSharpName( p.ParameterType, true, true, true ).Append( "[]{" );
-                            for( int idxType = 0; idxType < mapped.Value.Count; ++idxType )
-                            {
-                                if( idxType > 0 ) func.Append( ", " );
-                                func.Append( "p.GetService( " ).AppendTypeOf( mapped.Value[idxType] ).Append( ")" );
-                            }
-                            func.Append( "}" );
-                        }
-                        else
-                        {
-                            func.Append( "p.GetService( " ).AppendTypeOf( mapped.Value[0] ).Append( ")" );
-                        }
-                    }
-                }
-                func.Append( ");" ).NewLine();
-            } );
-            t.Append( "public static readonly IStObjServiceClassFactory Default = new S" ).Append( c.ManualMappingIndex ).Append( "();" ).NewLine();
+                        return success;
+                        """ ).NewLine();
         }
 
-        void GenerateStObjServiceFactoryInfoAssignments( ICodeWriter b, IReadOnlyList<IStObjServiceParameterInfo> assignments )
-        {
-            if( assignments.Count == 0 )
-            {
-                b.Append( "Array.Empty<StObjServiceParameterInfo>()" );
-            }
-            else
-            {
-                b.Append( "new[]{" ).NewLine();
-                bool atLeastOne = false;
-                foreach( var a in assignments )
-                {
-                    if( atLeastOne ) b.Append( ", " );
-                    atLeastOne = true;
-                    b.Append( "new StObjServiceParameterInfo( " )
-                     .AppendTypeOf( a.ParameterType ).Append( ", " )
-                     .Append( a.Position ).Append( ", " )
-                     .AppendSourceString( a.Name ).Append( ", " );
-                    if( a.Value == null )
-                    {
-                        b.Append( "null" );
-                    }
-                    else
-                    {
-                        b.Append( "new Type[]{ " );
-                        for( int idxType = 0; idxType < a.Value.Count; ++idxType )
-                        {
-                            if( idxType > 0 ) b.Append( ", " );
-                            b.AppendTypeOf( a.Value[idxType] );
-                        }
-                        b.Append( "}" );
-                    }
-                    b.Append( ", " )
-                     .Append( a.IsEnumerated )
-                     .Append( ")" ).NewLine();
-                }
-                b.Append( '}' );
-            }
-        }
     }
 }

@@ -13,7 +13,7 @@ namespace CK.Setup
             var b = t.BaseType;
             if( b == null || !b.IsGenericType || b.GetGenericTypeDefinition() != typeof( EndpointDefinition<> ) )
             {
-                monitor.Error( $"EndpointDefinition type '{t:C}' must directly specialize EndpointDefinition<TInstanceData> (not '{b:C}')." );
+                monitor.Error( $"EndpointDefinition type '{t:C}' must directly specialize EndpointDefinition<TScopeData> (not '{b:C}')." );
                 return false;
             }
             var n = t.Name;

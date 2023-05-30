@@ -78,12 +78,12 @@ namespace CK.Setup
             foreach( var family in pocoDirectory.Families )
             {
                 // PocoFactory class.
-                var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, family.PocoFactoryClass );
+                var tFB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, family.PocoFactoryClass );
                 tFB.Definition.Modifiers |= Modifiers.Sealed;
                 string factoryClassName = tFB.Definition.Name.Name;
 
                 // Poco class.
-                var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, family.PocoClass );
+                var tB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, family.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
                 var fieldPart = tB.CreatePart();

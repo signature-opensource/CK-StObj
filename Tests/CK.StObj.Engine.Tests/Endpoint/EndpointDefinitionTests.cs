@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class AppIdentityEndpointDefinition : EndpointDefinition<object>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services )
+            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
             {
             }
         }
@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class BackdoorEndpointDefinition : EndpointDefinition<object>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services )
+            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
             {
             }
         }

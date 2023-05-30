@@ -349,13 +349,22 @@ namespace CK.Setup
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should
                     // not exist and be replaced with intermediate - functional-like - value results).
-                    // But this would be a massive refactoring and this internal mutable state is, to be honest,
-                    // quite convenient!
-                    typeResult.SetFinalOrderedResults( orderedItems, endpoints );
+                    // This is awful!
+                    typeResult.SetFinalOrderedResults( orderedItems, endpoints, typeResult.KindComputeFacade.MultipleMappings );
                     if( !ServiceFinalHandling( monitor, typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
                         buildValueCollector = null;
+                    }
+                    else
+                    {
+                        using( monitor.OpenInfo( "Checking remaining IEnumerable<> lifetime of IsMultiple interfaces." ) )
+                        {
+                            if( !typeResult.KindComputeFacade.FinalizeMultipleMappings( monitor, typeResult.RealObjects.EngineMap.ToLeaf ) )
+                            {
+                                buildValueCollector = null;
+                            }
+                        }
                     }
                 }
                 return new StObjCollectorResult( typeResult, _tempAssembly, endpoints, buildValueCollector );

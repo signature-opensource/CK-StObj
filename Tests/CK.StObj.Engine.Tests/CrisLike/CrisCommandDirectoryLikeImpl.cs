@@ -47,7 +47,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
             int idx = 0;
             foreach( var e in commandPocos )
             {
-                var f = c.Assembly.FindOrCreateAutoImplementedClass( monitor, e.PocoFactoryClass );
+                var f = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, e.PocoFactoryClass );
                 f.Definition.BaseTypes.Add( new ExtendedTypeName( "ICommandModel" ) );
                 f.Append( "public Type CommandType => PocoClassType;" ).NewLine()
                  .Append( "public int CommandIdx => " ).Append( idx++ ).Append( ";" ).NewLine()
@@ -55,7 +55,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
                  .Append( "ICommand ICommandModel.Create() => (ICommand)Create();" ).NewLine();
 
                 // The CommandModel is the _factory field.
-                var p = c.Assembly.FindOrCreateAutoImplementedClass( monitor, e.PocoClass );
+                var p = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, e.PocoClass );
                 p.Append( "public ICommandModel CommandModel => _factory;" ).NewLine();
 
                 scope.Append( p.FullName ).Append( "._factory," ).NewLine();

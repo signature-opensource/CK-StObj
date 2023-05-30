@@ -3,12 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace CK.Setup
 {
     /// <summary>
     /// Captures the information about endpoint services: this is a reverse index of the
-    /// <see cref="CKTypeEndpointServiceInfo"/>.
+    /// <see cref="CKTypeEndpointServiceInfo"/> based on existing <see cref="EndpointDefinition"/>.
     /// </summary>
     public sealed class EndpointResult : IEndpointResult
     {
@@ -38,15 +39,28 @@ namespace CK.Setup
                                                 IStObjObjectEngineMap engineMap,
                                                 IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
         {
-            var defaultContext = new EndpointContext( engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )!, "Default" );
+            var def = engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )!;
+            var defaultContext = new EndpointContext( def, "Default", null );
             var contexts = new List<EndpointContext>() { defaultContext };
-            var singletons = new Dictionary<Type, (EndpointContext Owner, bool Exclusive)>();
+            foreach( var d in engineMap.FinalImplementations.Where( d => d != def && typeof( EndpointDefinition ).IsAssignableFrom( d.ClassType ) ) )
+            {
+                var rName = CKTypeEndpointServiceInfo.DefinitionName( d.ClassType ).ToString();
+                var sameName = contexts.FirstOrDefault( c => c.Name == rName );
+                if( sameName != null )
+                {
+                    monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' has Name = '{rName}' but type '{sameName.EndpointDefinition.ClassType:C}' has the same name." +
+                                   " Endpoint definition names must be different." );
+                    return null;
+                }
+                contexts.Add( new EndpointContext( d, rName, d.ClassType.BaseType!.GetGenericArguments()[0] ) );
+            }
+
             bool hasError = false;
             foreach( var (type, info) in endpointServiceInfoMap )
             {
                 foreach( var definition in info.Services )
                 {
-                    var c = FindOrCreate( monitor, engineMap, contexts, definition );
+                    var c = Find( monitor, engineMap, contexts, definition );
                     if( c == null )
                     {
                         hasError = true;
@@ -62,33 +76,16 @@ namespace CK.Setup
                         c._singletons.Add( type );
                     }
                 }
-
             }
             return hasError ? null : new EndpointResult( contexts, endpointServiceInfoMap );
 
-            static EndpointContext? FindOrCreate( IActivityMonitor monitor, IStObjObjectEngineMap engineMap, List<EndpointContext> contexts, Type t )
+            static EndpointContext? Find( IActivityMonitor monitor, IStObjObjectEngineMap engineMap, List<EndpointContext> contexts, Type t )
             {
                 var c = contexts.FirstOrDefault( c => c.EndpointDefinition.ClassType == t );
                 if( c == null )
                 {
-                    var r = engineMap.ToLeaf( t );
-                    if( r == null )
-                    {
-                        monitor.Error( $"Expected EndpointDefinition type '{t}' is not registered in StObjMap." );
-                        return null;
-                    }
-                    // Check name unicity.
-                    Debug.Assert( t.Name.EndsWith( "EndpointDefinition" ) && "EndpointDefinition".Length == 18 );
-                    var rName = CKTypeEndpointServiceInfo.DefinitionName( t ).ToString();
-                    var sameName = contexts.FirstOrDefault( c => c.Name == rName );
-                    if( sameName != null )
-                    {
-                        monitor.Error( $"EndpointDefinition type '{t:C}' has Name = '{rName}' but type '{sameName.EndpointDefinition.ClassType:C}' has the same name." +
-                                       " Endpoint definition names must be different." );
-                        return null;
-                    }
-                    c = new EndpointContext( r, rName );
-                    contexts.Add( c );
+                    monitor.Error( $"Expected EndpointDefinition type '{t:C}' is not registered in StObjMap." );
+                    return null;
                 }
                 return c;
             }

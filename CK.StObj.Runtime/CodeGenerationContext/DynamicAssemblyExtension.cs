@@ -24,7 +24,19 @@ namespace CK.Setup
         /// <param name="this">This Dynamic assembly.</param>
         /// <param name="type">The base or stub type.</param>
         /// <returns>The stub or generated type name.</returns>
-        public static string GetAutoImplementedTypeName( this IDynamicAssembly @this, Type type )
+        public static string GetAutoImplementedTypeName( this IDynamicAssembly @this, Type type ) => DoGetAutoImplementedTypeName( type );
+
+        /// <summary>
+        /// Gets a type name in the same namespace as the provided type (the <paramref name="this"/> parameter is not used).
+        /// This method is idempotent, it simply ensures that the returned name ends with "_CK":
+        /// it can safely be called on the generated Stub type itself.
+        /// </summary>
+        /// <param name="this">Any namespace scope: the returned full name is independent of the calling namespace.</param>
+        /// <param name="type">The base or stub type.</param>
+        /// <returns>The stub or generated type name.</returns>
+        public static string GetAutoImplementedTypeName( this INamespaceScope @this, Type type ) => DoGetAutoImplementedTypeName( type );
+
+        static string DoGetAutoImplementedTypeName( Type type )
         {
             Throw.CheckNotNullOrEmptyArgument( type.FullName );
             var n = type.FullName;
@@ -34,34 +46,34 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets or creates the <see cref="ITypeScope"/> builder from an interface, the direct base type or from
-        /// an already stub type that is named with <see cref="GetAutoImplementedTypeName(IDynamicAssembly, Type)"/> (its
+        /// an already stub type that is named with <see cref="GetAutoImplementedTypeName(INamespaceScope, Type)"/> (its
         /// name ends with "_CK").
         /// <para>
         /// Public constructors of the <see cref="Type.BaseType"/> if it exists are automatically replicated: protected
         /// constructors are to be called by generated code if needed. 
         /// </para>
         /// </summary>
-        /// <param name="this">This Dynamic assembly.</param>
+        /// <param name="this">Any namespace scope: the returned <see cref="ITypeScope"/> is in the namespace of the type.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="type">The base or stub type. Can be an interface.</param>
         /// <returns>Th generated class builder.</returns>
-        public static ITypeScope FindOrCreateAutoImplementedClass( this IDynamicAssembly @this, IActivityMonitor monitor, Type type ) => FindOrCreateAutoImplementedClass( @this, monitor, type, out bool _ );
+        public static ITypeScope FindOrCreateAutoImplementedClass( this INamespaceScope @this, IActivityMonitor monitor, Type type ) => FindOrCreateAutoImplementedClass( @this, monitor, type, out bool _ );
 
         /// <summary>
         /// Gets or creates the <see cref="ITypeScope"/> builder from an interface, the direct base type or from
-        /// an already stub type that is named with <see cref="GetAutoImplementedTypeName(IDynamicAssembly, Type)"/> (its
+        /// an already stub type that is named with <see cref="GetAutoImplementedTypeName(INamespaceScope, Type)"/> (its
         /// name ends with "_CK").
         /// <para>
         /// Public constructors of the <see cref="Type.BaseType"/> if it exists are automatically replicated: protected
         /// constructors are to be called by generated code if needed. 
         /// </para>
         /// </summary>
-        /// <param name="this">This Dynamic assembly.</param>
+        /// <param name="this">Any namespace scope: the returned <see cref="ITypeScope"/> is in the namespace of the type.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="type">The base or stub type. Can be an interface.</param>
         /// <param name="created">True if the type scope has been created. False if it was already defined.</param>
         /// <returns>Th generated class builder.</returns>
-        public static ITypeScope FindOrCreateAutoImplementedClass( this IDynamicAssembly @this, IActivityMonitor monitor, Type type, out bool created )
+        public static ITypeScope FindOrCreateAutoImplementedClass( this INamespaceScope @this, IActivityMonitor monitor, Type type, out bool created )
         {
             Throw.CheckNotNullArgument( type );
             Type? baseType;
@@ -75,7 +87,11 @@ namespace CK.Setup
                 baseType = type;
                 name += "_CK";
             }
-            var ns = @this.Code.Global.FindOrCreateNamespace( type.Namespace ?? String.Empty );
+            var g = @this;
+            INamespaceScope? p;
+            while( (p = g.Parent) != null ) { g = p; p = g.Parent; }
+
+            var ns = g.FindOrCreateNamespace( type.Namespace ?? String.Empty );
 
             ITypeScope? tB = ns.FindType( name );
             if( created = (tB == null) )

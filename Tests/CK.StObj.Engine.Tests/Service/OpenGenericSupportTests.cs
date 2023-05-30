@@ -39,9 +39,9 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-            map.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
-            map.Services.SimpleMappings[typeof( ClassService )].IsScoped.Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+            map.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+            map.Services.Mappings[typeof( ClassService )].IsScoped.Should().BeFalse();
         }
 
         public interface InterfaceService : IMyServiceTemplate<int>
@@ -65,11 +65,11 @@ namespace CK.StObj.Engine.Tests.Service
 
             try
             {
-                r.CollectorResult.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
-                r.CollectorResult.EngineMap.Services.SimpleMappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
+                r.CollectorResult.EngineMap.Services.Mappings.ContainsKey( typeof( IUsefulService<int> ) ).Should().BeFalse( "The SuperDefiner." );
+                r.CollectorResult.EngineMap.Services.Mappings.ContainsKey( typeof( IMyServiceTemplate<int> ) ).Should().BeFalse( "The Definer." );
 
-                r.CollectorResult.EngineMap.Services.SimpleMappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
-                r.CollectorResult.EngineMap.Services.SimpleMappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo(
+                r.CollectorResult.EngineMap.Services.Mappings.ContainsKey( typeof( InterfaceService ) ).Should().BeTrue();
+                r.CollectorResult.EngineMap.Services.Mappings[typeof( ClassFromInterfaceService )].UniqueMappings.Should().BeEquivalentTo(
                     new[] { typeof( InterfaceService ) } );
 
                 r.Services.GetService<InterfaceService>().Should().Be( r.Services.GetService<ClassFromInterfaceService>() );
