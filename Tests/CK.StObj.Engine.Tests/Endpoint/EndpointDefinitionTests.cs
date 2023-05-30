@@ -57,10 +57,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
             TestHelper.GetFailedResult( c1 , "EndpointDefinition type 'EndpointDefinitionTests.NoWay1Definition' must directly specialize "
-                                             + "EndpointDefinition (base type is 'EndpointDefinitionTests.BackdoorEndpointDefinition')." );
+                                             + "EndpointDefinition<TScopeData> (not 'EndpointDefinitionTests.BackdoorEndpointDefinition')." );
             var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
             TestHelper.GetFailedResult( c2 , "EndpointDefinition type 'EndpointDefinitionTests.NoWay2Definition' must directly specialize "
-                                             + "EndpointDefinition (base type is 'DefaultEndpointDefinition')." );
+                                             + "EndpointDefinition<TScopeData> (not 'DefaultEndpointDefinition')." );
         }
 
 

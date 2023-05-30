@@ -359,7 +359,8 @@ namespace CK.StObj.Engine.Tests.Service
             // Failed (while Configuring Services): TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem is missing.
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ) );
-                TestHelper.GetFailedAutomaticServicesConfiguration( collector );
+                TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                                                                    "No service for type 'CK.StObj.Engine.Tests.Service.FullServiceTests+TotallyExternalStartupServiceThatActAsAConfiguratorOfTheWholeSystem' has been registered" );
             }
         }
 
@@ -466,7 +467,9 @@ namespace CK.StObj.Engine.Tests.Service
 
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
-                TestHelper.GetFailedAutomaticServicesConfiguration( collector, null, startupServices );
+                TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                                                                    "But SuperStartupService has been told to fail miserably.",
+                                                                    startupServices: startupServices );
 
                 entries.Should().Contain( e => e.MaskedLevel >= LogLevel.Error );
                 entries.Should().Contain( e => e.Text == "SuperStartupService is talking to you." );

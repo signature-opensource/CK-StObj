@@ -6,6 +6,7 @@ using FluentAssertions.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -50,7 +51,7 @@ namespace CK.Testing.StObjEngine
         /// </summary>
         /// <param name="c">The collector.</param>
         /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
-        /// <param name="otherMessages">Optional fatal messages substring that must be emitted.</param>
+        /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <returns>The failed collector result or null if the error prevented its creation.</returns>
         StObjCollectorResult? GetFailedResult( StObjCollector c, string message, params string[] otherMessages );
 
@@ -145,6 +146,8 @@ namespace CK.Testing.StObjEngine
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
+        /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <param name="engineConfigurator">
         /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
@@ -160,6 +163,8 @@ namespace CK.Testing.StObjEngine
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <returns>The (failed) service register.</returns>
         StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                  string message,
+                                                                                  IEnumerable<string>? otherMessages = null,
                                                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                                                   SimpleServiceContainer? startupServices = null,
                                                                                   Action<StObjContextRoot.ServiceRegister>? configureServices = null );

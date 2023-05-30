@@ -10,13 +10,14 @@ namespace CK.Setup.PocoJson
     {
         public void GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext ctx, IPrimaryPocoType type )
         {
-            var pocoClass = ctx.Assembly.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
+            var pocoClass = ctx.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
             Debug.Assert( type.FamilyInfo.PocoClass.Name == pocoClass.Name );
             ImplementFactorySupport( monitor, ctx, type, pocoClass.Name );
 
+            using var region = pocoClass.Region();
+
             // The constructor is a helper that calls the ReadJson method.
-            pocoClass.GeneratedByComment()
-                     .Append( "public " )
+            pocoClass.Append( "public " )
                      .Append( pocoClass.Name )
                      .Append( "(ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx ):this()=>" )
                      .Append( "ReadJson(ref r,rCtx);" )
@@ -88,7 +89,7 @@ if( isDef )
 
             static void ImplementFactorySupport( IActivityMonitor monitor, ICSCodeGenerationContext ctx, IPrimaryPocoType type, string pocoTypeName )
             {
-                var factory = ctx.Assembly.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoFactoryClass );
+                var factory = ctx.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoFactoryClass );
                 foreach( var i in type.FamilyInfo.Interfaces )
                 {
                     var readerName = $"PocoJsonImportSupport.IFactoryReader<{i.CSharpName}>";

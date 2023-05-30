@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
-            map.Services.SimpleMappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
         }
 
         public class MService1 : MService1NoAutoService, IAutoService
@@ -50,8 +50,8 @@ namespace CK.StObj.Engine.Tests.Service
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
-            IStObjServiceClassDescriptor dI = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
-            IStObjServiceClassDescriptor dC = map.Services.SimpleMappings[typeof( FrontProcessService1 )];
+            IStObjServiceClassDescriptor dI = map.Services.Mappings[typeof( IFrontProcessService1 )];
+            IStObjServiceClassDescriptor dC = map.Services.Mappings[typeof( FrontProcessService1 )];
             dI.Should().BeSameAs( dC );
             dI.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
@@ -66,8 +66,8 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            var dM = map.Services.SimpleMappings[typeof( MService1 )];
-            var dMi = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontProcessService1> )];
+            var dM = map.Services.Mappings[typeof( MService1 )];
+            var dMi = map.Services.Mappings[typeof( Model.IMarshaller<FrontProcessService1> )];
             dM.Should().NotBeNull();
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
             dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
@@ -84,16 +84,16 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
+            IStObjServiceClassDescriptor d1 = map.Services.Mappings[typeof( IFrontProcessService1 )];
             d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
-            var dM = map.Services.SimpleMappings[typeof( MService1 )];
-            var dMClass = map.Services.SimpleMappings[typeof( Model.IMarshaller<FrontProcessService1> )];
+            var dM = map.Services.Mappings[typeof( MService1 )];
+            var dMClass = map.Services.Mappings[typeof( Model.IMarshaller<FrontProcessService1> )];
             dM.Should().NotBeNull();
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
             dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
             dMClass.Should().BeSameAs( dM );
-            map.Services.SimpleMappings.ContainsKey( typeof( Model.IMarshaller<IFrontProcessService1> ) )
+            map.Services.Mappings.ContainsKey( typeof( Model.IMarshaller<IFrontProcessService1> ) )
                 .Should().BeFalse( "Marshalling the IService MUST be explicitly supported by the marshaller implementation." );
         }
 
@@ -128,11 +128,11 @@ namespace CK.StObj.Engine.Tests.Service
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            IStObjServiceClassDescriptor d1 = map.Services.SimpleMappings[typeof( IFrontProcessService1 )];
+            IStObjServiceClassDescriptor d1 = map.Services.Mappings[typeof( IFrontProcessService1 )];
             d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
-            IStObjServiceClassDescriptor dDep2 = map.Services.SimpleMappings[typeof( IFrontProcessDependentService2 )];
-            IStObjServiceClassDescriptor dDep1 = map.Services.SimpleMappings[typeof( IFrontProcessDependentService2 )];
+            IStObjServiceClassDescriptor dDep2 = map.Services.Mappings[typeof( IFrontProcessDependentService2 )];
+            IStObjServiceClassDescriptor dDep1 = map.Services.Mappings[typeof( IFrontProcessDependentService2 )];
             dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
             dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
@@ -158,7 +158,7 @@ namespace CK.StObj.Engine.Tests.Service
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
-            map.Services.SimpleMappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( IAmNotAService ) ).Should().BeFalse();
         }
     }
 }

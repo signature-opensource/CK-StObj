@@ -163,58 +163,61 @@ namespace CK.Setup.PocoJson
             void GeneratePocoWriteMethod( IActivityMonitor monitor, ICSCodeGenerationContext generationContext, IPrimaryPocoType type )
             {
                 // Each Poco class is a PocoJsonExportSupport.IWriter.
-                var pocoClass = generationContext.Assembly.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
+                var pocoClass = generationContext.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
                 pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "PocoJsonExportSupport.IWriter" ) );
 
-                // The Write method.
-                pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx, bool withType )" )
-                         .OpenBlock()
-                         .GeneratedByComment().NewLine()
-                         .Append( "if( withType )" )
-                         .OpenBlock()
-                         .Append( "w.WriteStartArray();" ).NewLine()
-                         .Append( writer => GenerateTypeHeader( writer, type, honorOption: false ) )
-                         .CloseBlock()
-                         .Append( "WriteJson( w, wCtx );" ).NewLine()
-                         .Append( "if( withType )" )
-                         .OpenBlock()
-                         .Append( "w.WriteEndArray();" ).NewLine()
-                         .CloseBlock()
-                         .CloseBlock();
+                using( pocoClass.Region() )
+                {
+                    // The Write method.
+                    pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx, bool withType )" )
+                             .OpenBlock()
+                             .Append( "if( withType )" )
+                             .OpenBlock()
+                             .Append( "w.WriteStartArray();" ).NewLine()
+                             .Append( writer => GenerateTypeHeader( writer, type, honorOption: false ) )
+                             .CloseBlock()
+                             .Append( "WriteJson( w, wCtx );" ).NewLine()
+                             .Append( "if( withType )" )
+                             .OpenBlock()
+                             .Append( "w.WriteEndArray();" ).NewLine()
+                             .CloseBlock()
+                             .CloseBlock();
 
-                pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
-                         .OpenBlock()
-                         .GeneratedByComment().NewLine()
-                         .Append( "w.WriteStartObject();" ).NewLine()
-                         .Append( writer =>
-                         {
-                             foreach( var f in type.Fields )
+                    pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
+                             .OpenBlock()
+                             .Append( "w.WriteStartObject();" ).NewLine()
+                             .Append( writer =>
                              {
-                                 if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                                 foreach( var f in type.Fields )
                                  {
-                                     GenerateWritePropertyName( writer, f.Name );
-                                     GenerateWrite( writer, f.Type, f.PrivateFieldName );
+                                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                                     {
+                                         GenerateWritePropertyName( writer, f.Name );
+                                         GenerateWrite( writer, f.Type, f.PrivateFieldName );
+                                     }
                                  }
-                             }
-                         } )
-                         .Append( "w.WriteEndObject();" ).NewLine()
-                         .CloseBlock();
-
+                             } )
+                             .Append( "w.WriteEndObject();" ).NewLine()
+                             .CloseBlock();
+                }
                 var toString = FunctionDefinition.Parse( "public override string ToString()" );
                 if( pocoClass.FindFunction( toString.Key, false ) == null )
                 {
-                    pocoClass
-                        .CreateFunction( toString )
-                        .GeneratedByComment().NewLine()
-                        .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
-                        .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
-                        .OpenBlock()
-                        .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext(CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault);" ).NewLine()
-                        .Append( "WriteJson( w, wCtx );" ).NewLine()
-                        .Append( "w.Flush();" ).NewLine()
-                        .CloseBlock()
-                        .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
+                    using( pocoClass.Region() )
+                    {
+                        pocoClass
+                            .CreateFunction( toString )
+                            .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
+                            .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
+                            .OpenBlock()
+                            .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext(CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault);" ).NewLine()
+                            .Append( "WriteJson( w, wCtx );" ).NewLine()
+                            .Append( "w.Flush();" ).NewLine()
+                            .CloseBlock()
+                            .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
+                    }
                 }
+
 
             }
         }
