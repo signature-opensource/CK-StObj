@@ -41,16 +41,22 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class FirstEndpointDefinition : EndpointDefinition<string>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+            public override void ConfigureEndpointServices( IServiceCollection services,
+                                                            Func<IServiceProvider, string> scopeData,
+                                                            IServiceProviderIsService globalServiceExists )
             {
+                services.AddScoped<IActivityMonitor, ActivityMonitor>();
             }
         }
 
         [EndpointDefinition]
         public abstract class SecondEndpointDefinition : EndpointDefinition<int>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+            public override void ConfigureEndpointServices( IServiceCollection services,
+                                                            Func<IServiceProvider, int> scopeData,
+                                                            IServiceProviderIsService globalServiceExists )
             {
+                services.AddScoped<IActivityMonitor, ActivityMonitor>();
             }
         }
 
@@ -228,7 +234,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<string>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+            public override void ConfigureEndpointServices( IServiceCollection services,
+                                                            Func<IServiceProvider, string> scopeData,
+                                                            IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<ManyNothing>();
                 services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
@@ -250,7 +258,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<int>
         {
-            public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+            public override void ConfigureEndpointServices( IServiceCollection services,
+                                                            Func<IServiceProvider, int> scopeData,
+                                                            IServiceProviderIsService globalServiceExists )
             {
                 services.AddSingleton<ManyNothing>();
                 services.AddSingleton<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );

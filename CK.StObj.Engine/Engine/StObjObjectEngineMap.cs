@@ -155,9 +155,10 @@ namespace CK.Setup
 
         IReadOnlyDictionary<Type, IStObjMultipleInterface> IStObjMap.MultipleMappings => _multiplemappings!;
 
-        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered, Dictionary<Type,
-                                              ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult? endpointResult, IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
+        internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
+                                              Dictionary<Type,ITypeAttributesCache> allTypesAttributesCache,
+                                              IEndpointResult? endpointResult,
+                                              IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             _orderedStObjs = ordered;
             _allTypesAttributesCache = allTypesAttributesCache;

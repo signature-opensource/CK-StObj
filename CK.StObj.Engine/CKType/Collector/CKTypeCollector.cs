@@ -244,11 +244,10 @@ namespace CK.Setup
                     }
                 }
             }
-            IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? endpoints;
-            using( monitor.OpenInfo( $"Finalizing Endpoint discovery." ) )
-            {
-                endpoints = KindDetector.GetRegisteredEndpointServiceInfoMap( monitor );
-            }
+
+            // Finalizing endpoints: ensures that externally defined types are registered.
+            var endpoints = KindDetector.GetRegisteredEndpointServiceInfoMap( monitor );
+
 
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {

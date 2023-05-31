@@ -15,6 +15,7 @@ namespace CK.Setup
             _wellKnownServiceKindRegistered = true;
 
             // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
+            // It is actually more than that: it is the only ubiquitous endpoint service (all endpoints must support it).
             SetAutoServiceKind( monitor, typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
 
             // The IServiceProvider is both a singleton and a scope: it is the container (whatever it is).

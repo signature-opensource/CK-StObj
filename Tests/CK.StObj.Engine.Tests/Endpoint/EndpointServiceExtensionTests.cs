@@ -39,7 +39,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             r.EndpointContexts[0].ScopedServices.Should().HaveCount( 2 ).And.Contain( new[] { typeof( IActivityMonitor ), typeof( IEPService1 ) } );
 
             r.EndpointContexts[1].EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );
-            r.EndpointContexts[1].ScopedServices.Should().HaveCount( 1 ).And.Contain( new[] { typeof( IEPService2 ) } );
+            r.EndpointContexts[1].ScopedServices.Should().HaveCount( 2 ).And.Contain( new[] { typeof( IActivityMonitor ), typeof( IEPService2 ) } );
         }
 
 
@@ -67,7 +67,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             r.EndpointContexts[0].ScopedServices.Should().HaveCount( 2 ).And.Contain( new[] { typeof( IActivityMonitor ), typeof( AEPService1 ) } );
 
             r.EndpointContexts[1].EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );
-            r.EndpointContexts[1].ScopedServices.Should().HaveCount( 1 ).And.Contain( new[] { typeof( AEPService2 ) } );
+            r.EndpointContexts[1].ScopedServices.Should().HaveCount( 2 ).And.Contain( new[] { typeof( IActivityMonitor ), typeof( AEPService2 ) } );
         }
 
     }

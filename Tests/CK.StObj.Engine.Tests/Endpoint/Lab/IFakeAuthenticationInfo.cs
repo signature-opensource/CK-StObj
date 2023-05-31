@@ -7,7 +7,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
     /// </summary>
     public interface IFakeAuthenticationInfo
     {
+        sealed class Anon : IFakeAuthenticationInfo
+        {
+            public string UserName => "";
+
+            public int ActorId => 0;
+        }
+
+        public static readonly IFakeAuthenticationInfo Anonymous = new Anon();
+
         int ActorId { get; }
+
         string UserName { get; }
     }
 }

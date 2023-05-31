@@ -52,7 +52,15 @@ namespace CK.Setup
                                    " Endpoint definition names must be different." );
                     return null;
                 }
-                contexts.Add( new EndpointContext( d, rName, d.ClassType.BaseType!.GetGenericArguments()[0] ) );
+                var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
+                var sameType = contexts.FirstOrDefault( c => c.ScopeDataType == scopeDataType );
+                if( sameType != null )
+                {
+                    monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' declares the same ScopeData as '{sameType.EndpointDefinition.ClassType:C}'." +
+                                   " Endpoint definition ScopeData must be different." );
+                    return null;
+                }
+                contexts.Add( new EndpointContext( d, rName, scopeDataType ) );
             }
 
             bool hasError = false;
