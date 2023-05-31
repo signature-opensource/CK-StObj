@@ -262,11 +262,14 @@ namespace CK.StObj.Engine.Tests
 
         readonly EndpointDefinition<TScopeData> _definition;
         internal ServiceCollection? _configuration;
+        Type[] _specificSingletons;
+        Type[] _specificScoped;
         readonly object _lock;
         bool _initializationSuccess;
 
         public EndpointType( EndpointDefinition<TScopeData> definition )
         {
+            _specificSingletons = _specificScoped = Type.EmptyTypes;
             _definition = definition;
             _lock = new object();
         }
@@ -280,6 +283,10 @@ namespace CK.StObj.Engine.Tests
         public EndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
 
         public bool IsService( Type serviceType ) => GetContainer().IsService( serviceType );
+
+        public IReadOnlyCollection<Type> SpecificSingletonServices => _specificSingletons;
+
+        public IReadOnlyCollection<Type> SpecificScopedServices => _specificScoped;
 
         EndpointServiceProvider<TScopeData> DoCreateContainer()
         {
@@ -310,9 +317,9 @@ namespace CK.StObj.Engine.Tests
         }
 
         public bool ConfigureServices( IActivityMonitor monitor,
-                                       IStObjMap stObjMap,
-                                       Dictionary<Type, Mapping> mappings,
-                                       ServiceDescriptor endpointTypeManager )
+                                        IStObjMap stObjMap,
+                                        Dictionary<Type, Mapping> mappings,
+                                        ServiceDescriptor endpointTypeManager )
         {
             var endpoint = new ServiceCollection();
             // Calls the ConfigureEndpointServices on an empty configuration.
@@ -322,7 +329,7 @@ namespace CK.StObj.Engine.Tests
             // - extra registrations: there must not be any type mapped to IRealObject or IAutoService.
             // - missing registrations from the definition.
             // And updates the mappings with potential Mapping.Endpoint objects.
-            if( CheckRegistrations( monitor, endpoint, _definition, stObjMap, mappings ) )
+            if( CheckRegistrations( monitor, endpoint, stObjMap, mappings ) )
             {
                 var configuration = new ServiceCollection();
                 // Generates the Multiple descriptors.
@@ -343,14 +350,13 @@ namespace CK.StObj.Engine.Tests
             }
             return false;
 
-            static bool CheckRegistrations( IActivityMonitor monitor,
-                                            ServiceCollection configuration,
-                                            EndpointDefinition definition,
-                                            IStObjMap stObjMap,
-                                            Dictionary<Type, Mapping> mappings )
+            bool CheckRegistrations( IActivityMonitor monitor,
+                                        ServiceCollection configuration,
+                                        IStObjMap stObjMap,
+                                        Dictionary<Type, Mapping> mappings )
             {
-                var handledSingletons = new List<Type>( definition.SingletonServices );
-                var handledScoped = new List<Type>( definition.ScopedServices );
+                var handledSingletons = new List<Type>( _definition.SingletonServices );
+                var handledScoped = new List<Type>( _definition.ScopedServices );
                 List<Type>? moreSingletons = null;
                 List<Type>? moreScoped = null;
                 foreach( var d in configuration )
@@ -378,10 +384,12 @@ namespace CK.StObj.Engine.Tests
                         }
                     }
                 }
-                bool success = ErrorUnhandledServices( monitor, definition, handledSingletons, ServiceLifetime.Singleton );
-                if( !ErrorUnhandledServices( monitor, definition, handledScoped, ServiceLifetime.Scoped ) ) success = false;
-                if( !ErrorNotEndpointAutoServices( monitor, definition, stObjMap, moreSingletons, ServiceLifetime.Singleton ) ) success = false;
-                if( !ErrorNotEndpointAutoServices( monitor, definition, stObjMap, moreScoped, ServiceLifetime.Scoped ) ) success = false;
+                bool success = ErrorUnhandledServices( monitor, _definition, handledSingletons, ServiceLifetime.Singleton );
+                if( !ErrorUnhandledServices( monitor, _definition, handledScoped, ServiceLifetime.Scoped ) ) success = false;
+                if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, moreSingletons, ServiceLifetime.Singleton ) ) success = false;
+                if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, moreScoped, ServiceLifetime.Scoped ) ) success = false;
+                if( moreScoped != null ) _specificScoped = moreScoped.ToArray();
+                if( moreSingletons != null ) _specificSingletons = moreSingletons.ToArray();
                 return success;
 
                 static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, EndpointDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
