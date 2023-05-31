@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace CK.Core
@@ -5,7 +6,7 @@ namespace CK.Core
     /// <summary>
     /// Non generic base for <see cref="IEndpointType{TScopeData}"/>.
     /// </summary>
-    public interface IEndpointType
+    public interface IEndpointType : IServiceProviderIsService
     {
         /// <summary>
         /// Gets the endpoint definition.

@@ -279,6 +279,8 @@ namespace CK.StObj.Engine.Tests
 
         public EndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
 
+        public bool IsService( Type serviceType ) => GetContainer().IsService( serviceType );
+
         EndpointServiceProvider<TScopeData> DoCreateContainer()
         {
             lock( _lock )
@@ -308,9 +310,9 @@ namespace CK.StObj.Engine.Tests
         }
 
         public bool ConfigureServices( IActivityMonitor monitor,
-                                        IStObjMap stObjMap,
-                                        Dictionary<Type, Mapping> mappings,
-                                        ServiceDescriptor endpointTypeManager )
+                                       IStObjMap stObjMap,
+                                       Dictionary<Type, Mapping> mappings,
+                                       ServiceDescriptor endpointTypeManager )
         {
             var endpoint = new ServiceCollection();
             // Calls the ConfigureEndpointServices on an empty configuration.
