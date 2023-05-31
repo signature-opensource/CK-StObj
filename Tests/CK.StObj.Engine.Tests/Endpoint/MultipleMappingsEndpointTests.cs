@@ -238,7 +238,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             Func<IServiceProvider, string> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
-                services.AddScoped<IActivityMonitor,ActivityMonitor>();
+                services.AddScoped<IActivityMonitor, ActivityMonitor>();
                 services.AddScoped<ManyNothing>();
                 services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
             }
