@@ -131,7 +131,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void EndpointDefinitions_cannot_use_the_same_ScopeData_type()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( Dup1EndpointDefinition ), typeof( Dup2EndpointDefinition ) );
-            TestHelper.GetFailedResult( c1 );
+            TestHelper.GetFailedResult( c1, "Endpoint definition ScopeData must be different." );
         }
 
 
