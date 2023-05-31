@@ -47,7 +47,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             defaultContext.SingletonServices.Should().HaveCount( 1 ).And.Contain( typeof( ISomeService ) );
 
             anotherContext.EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );
-            anotherContext.ScopedServices.Should().BeEmpty();
+            anotherContext.ScopedServices.Should().HaveCount( 1 ).And.Contain( typeof( IActivityMonitor ) );
             anotherContext.SingletonServices
                 .Should().HaveCount( 2 )
                 .And.Contain( new[] { typeof( ISomeRefinedService ), typeof( ISomeService ) } );

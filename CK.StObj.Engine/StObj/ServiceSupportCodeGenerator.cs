@@ -12,35 +12,34 @@ namespace CK.Setup
 
     class ServiceSupportCodeGenerator
     {
-        const string _sourceServiceSupport = @"
+        const string _stObjServiceClassDescriptor = """
+                    sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
+                    {
+                        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
+                        {
+                            ClassType = t;
+                            FinalType = finalType;
+                            AutoServiceKind = k;
+                            MarshallableTypes = marshallableTypes;
+                            MultipleMappings = mult;
+                            UniqueMappings = uniq;
+                       }
 
-        sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
-        {
-            public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
-            {
-                ClassType = t;
-                FinalType = finalType;
-                AutoServiceKind = k;
-                MarshallableTypes = marshallableTypes;
-                MultipleMappings = mult;
-                UniqueMappings = uniq;
-           }
+                        public Type ClassType { get; }
 
-            public Type ClassType { get; }
+                        public Type FinalType { get; }
 
-            public Type FinalType { get; }
+                        public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
 
-            public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
+                        public AutoServiceKind AutoServiceKind { get; }
 
-            public AutoServiceKind AutoServiceKind { get; }
+                        public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
-            public IReadOnlyCollection<Type> MarshallableTypes { get; }
+                        public IReadOnlyCollection<Type> MultipleMappings { get; }
 
-            public IReadOnlyCollection<Type> MultipleMappings { get; }
-
-            public IReadOnlyCollection<Type> UniqueMappings { get; }
-        }
-";
+                        public IReadOnlyCollection<Type> UniqueMappings { get; }
+                    }
+                    """;
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
 
@@ -53,7 +52,7 @@ namespace CK.Setup
         public void CreateServiceSupportCode( IStObjEngineMap engineMap )
         {
             var serviceMap = engineMap.Services;
-            _rootType.Namespace.Append( _sourceServiceSupport );
+            _rootType.Namespace.Append( _stObjServiceClassDescriptor );
 
             using( _rootType.Region() )
             {
@@ -269,13 +268,13 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                                 typeof( HostedServiceLifetimeTrigger ),
                                 Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
                         var theEPTM = new EndpointTypeManager_CK();
-                        var descEPTM = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), theEPTM );
-                        reg.Services.Add( descEPTM );
+                        var trueSingletons = theEPTM.CreateTrueSingletons( this );
+                        reg.Services.AddRange( trueSingletons );
                         """ ).NewLine();
             if( !hasEndpoint )
             {
                 // If there's no endpoint, we are done (and we have no mappings for endpoint container).
-                fScope.Append( "EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, null );" ).NewLine()
+                fScope.Append( "EndpointHelper.FillStObjMappingsNoEndpoint( reg.Monitor, this, reg.Services );" ).NewLine()
                         .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
                         .Append( "return true;" );
                 return;
@@ -284,12 +283,12 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // We specifically handle the IEnumerable multiple mappings in the endpoint container and eventually enables
             // the endpoints to configure their endpoint services.
             fScope.Append( """
-                        EndpointHelper.FillStObjMappings( reg.Monitor, this, reg.Services, mappings );
+                        EndpointHelper.FillStObjMappingsWithEndpoints( reg.Monitor, this, reg.Services, mappings );
                         // Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
                         bool success = true;
                         foreach( var e in theEPTM._endpointTypes )
                         {
-                            if( !e.ConfigureServices( reg.Monitor, this, mappings, descEPTM ) ) success = false;
+                            if( !e.ConfigureServices( reg.Monitor, this, mappings, trueSingletons ) ) success = false;
                         }
                         return success;
                         """ ).NewLine();

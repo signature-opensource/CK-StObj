@@ -1,10 +1,10 @@
-﻿using CK.Core;
+using CK.Core;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    public sealed class SampleCommandHistory : ISingletonAutoService
+    public sealed class SampleCommandMemory : ISingletonAutoService
     {
         ConcurrentBag<string> _executionTrace = new ConcurrentBag<string>();
 

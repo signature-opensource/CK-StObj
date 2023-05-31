@@ -16,8 +16,9 @@ namespace CK.Core
     public abstract class EndpointDefinition : IRealObject
     {
         /// <summary>
-        /// Gets this endpoint name.
-        /// This is automatically implemented.
+        /// Gets this endpoint name that must be unique.
+        /// This is automatically implemented as the prefix of the implementing type name:
+        /// "XXX" for "XXXEndpointDefinition".
         /// </summary>
         public abstract string Name { get; }
 

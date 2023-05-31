@@ -10,15 +10,15 @@ namespace CK.Core
     /// container for the endpoint.
     /// </summary>
     /// <typeparam name="TScopeData">Type of the scoped specific instance data.</typeparam>
-    public interface IEndpointType<TScopeData> : IEndpointType
+    public interface IEndpointType<TScopeData> : IEndpointType, ISingletonAutoService
          where TScopeData : notnull
     {
         /// <summary>
         /// Gets the <see cref="IServiceProvider"/> for this endpoint definition that
-        /// can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="EndpointServiceProvider{TScopeData}.CreateAsyncScope(TScopeData)"/>.
+        /// can create configured <see cref="AsyncServiceScope"/> thanks to <see cref="IEndpointServiceProvider{TScopeData}.CreateAsyncScope(TScopeData)"/>.
         /// </summary>
         /// <returns>The endpoint service provider.</returns>
-        EndpointServiceProvider<TScopeData> GetContainer();
+        IEndpointServiceProvider<TScopeData> GetContainer();
     }
 
 }

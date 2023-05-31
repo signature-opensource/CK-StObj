@@ -7,18 +7,15 @@ using System.Threading.Tasks;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    public class BackgroundEndpoint : ISingletonAutoService
+    public class BackgroundExecutor : ISingletonAutoService
     {
-        readonly EndpointServiceProvider<BackgroundEndpointDefinition.BackgroundData> _serviceProvider;
+        readonly IEndpointServiceProvider<BackgroundEndpointDefinition.BackgroundData> _serviceProvider;
         readonly Channel<object?> _commands;
         readonly Task _runTask;
 
-        public BackgroundEndpoint( EndpointTypeManager endpoints )
+        public BackgroundExecutor( IEndpointType<BackgroundEndpointDefinition.BackgroundData> endpoint )
         {
-            _serviceProvider = endpoints.EndpointTypes
-                                        .OfType<IEndpointType<BackgroundEndpointDefinition.BackgroundData>>()
-                                        .First()
-                                        .GetContainer();
+            _serviceProvider = endpoint.GetContainer();
             _commands = Channel.CreateUnbounded<object?>();
             _runTask = Task.Run( RunAsync );
         }

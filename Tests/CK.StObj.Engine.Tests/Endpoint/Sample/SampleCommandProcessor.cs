@@ -11,10 +11,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public sealed class SampleCommandProcessor : IScopedAutoService
     {
         readonly IActivityMonitor _monitor;
-        readonly SampleCommandHistory _commandHistory;
+        readonly SampleCommandMemory _commandHistory;
         readonly IFakeAuthenticationInfo _userInfo;
 
-        public SampleCommandProcessor( IActivityMonitor monitor, SampleCommandHistory commandHistory, IFakeAuthenticationInfo info )
+        public SampleCommandProcessor( IActivityMonitor monitor, SampleCommandMemory commandHistory, IFakeAuthenticationInfo info )
         {
             _monitor = monitor;
             _commandHistory = commandHistory;

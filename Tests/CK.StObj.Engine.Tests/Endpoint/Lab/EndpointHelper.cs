@@ -17,6 +17,18 @@ namespace CK.StObj.Engine.Tests
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Threading.Tasks;
+
+    // This one is always required because EndpointTypeManager_CK holds an array of
+    // IEndpointTypeInternal (even if it is empty).
+    interface IEndpointTypeInternal : IEndpointType
+    {
+        bool ConfigureServices( IActivityMonitor monitor,
+                                IStObjMap stObjMap,
+                                Dictionary<Type,Mapping> mappings,
+                                ServiceDescriptor[] trueSingletons );
+    }
 
     sealed class Mapping
     {
@@ -81,14 +93,6 @@ namespace CK.StObj.Engine.Tests
         public void LockAsSingleton() => _isScoped = false;
     }
 
-    interface IEndpointTypeInternal : IEndpointType
-    {
-        bool ConfigureServices( IActivityMonitor monitor,
-                                IStObjMap stObjMap,
-                                Dictionary<Type,Mapping> mappings,
-                                ServiceDescriptor endpointTypeManager );
-    }
-
     sealed class TypedServiceDescriptor : ServiceDescriptor
     {
         TypedServiceDescriptor( Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lt, Type implementationType )
@@ -108,6 +112,7 @@ namespace CK.StObj.Engine.Tests
         }
     }
 
+    // Always injected.
     static class EndpointHelper
     {
         internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;
@@ -139,13 +144,10 @@ namespace CK.StObj.Engine.Tests
             return mappings;
         }
 
-        internal static void FillStObjMappings( IActivityMonitor monitor,
-                                                IStObjMap stObjMap,
-                                                IServiceCollection global,
-                                                Dictionary<Type, Mapping>? mappings )
+        internal static void FillStObjMappingsNoEndpoint( IActivityMonitor monitor,
+                                                          IStObjMap stObjMap,
+                                                          IServiceCollection global )
         {
-            var mapMapping = new ServiceDescriptor( typeof( IStObjMap ), stObjMap );
-            global.Add( mapMapping );
             // We have no real issues for real objects: we simply create singleton descriptors
             // with the true singleton instance and add them to the global container and
             // to the mappings (if there are endpoints).
@@ -153,33 +155,87 @@ namespace CK.StObj.Engine.Tests
             {
                 var typeMapping = new ServiceDescriptor( o.ClassType, o.Implementation );
                 global.Add( typeMapping );
-                Mapping? m = null;
-                if( mappings != null )
-                {
-                    m = new Mapping( typeMapping, null );
-                    // Use Add: no external configuration must register a IRealObject.
-                    mappings.Add( o.ClassType, m );
-                }
                 foreach( var unique in o.UniqueMappings )
                 {
                     var uMapping = new ServiceDescriptor( unique, o.Implementation );
                     global.Add( uMapping );
-                    m?.AddGlobal( uMapping );
                 }
                 foreach( var multi in o.MultipleMappings )
                 {
                     var mMapping = new ServiceDescriptor( multi, o.Implementation );
                     global.Add( mMapping );
-                    if( mappings != null )
+                }
+            }
+            // For services it's less trivial: the mappings must be able to resolve the descriptor's implementation type
+            // so that multiple can be handled.
+            // One way would be to create a typed lambda where sp => sp.GetService( s.ClassType ) is used
+            // so that the returned type of Func<IServiceProvider,s.ClassType> can be inspected.
+            // The other one introduces the TypedServiceDescriptor : ServiceDescriptor specialization that
+            // capture the implementation type. 
+            foreach( var s in stObjMap.Services.MappingList )
+            {
+                if( s.IsScoped )
+                {
+                    AddServiceMapping( global, s, ServiceLifetime.Scoped );
+                }
+                else
+                {
+                    if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                    AddServiceMapping( global, s, ServiceLifetime.Singleton );
+                }
+            }
+
+            static void AddServiceMapping( IServiceCollection global, IStObjServiceClassDescriptor s, ServiceLifetime lt )
+            {
+                var typeMapping = new ServiceDescriptor( s.ClassType, s.FinalType, lt );
+                global.Add( typeMapping );
+                // Same delegate used for all the mappings (if any). 
+                Func<IServiceProvider, object>? shared = null;
+                foreach( var unique in s.UniqueMappings )
+                {
+                    var uMapping = new ServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
+                    global.Add( uMapping );
+                }
+                foreach( var multi in s.MultipleMappings )
+                {
+                    var mMapping = new ServiceDescriptor( multi, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
+                    global.Add( mMapping );
+                }
+            }
+        }
+
+        internal static void FillStObjMappingsWithEndpoints( IActivityMonitor monitor,
+                                                             IStObjMap stObjMap,
+                                                             IServiceCollection global,
+                                                             Dictionary<Type, Mapping> mappings )
+        {
+            // We have no real issues for real objects: we simply create singleton descriptors
+            // with the true singleton instance and add them to the global container and
+            // to the endpoint mappings.
+            foreach( var o in stObjMap.StObjs.FinalImplementations )
+            {
+                var typeMapping = new ServiceDescriptor( o.ClassType, o.Implementation );
+                global.Add( typeMapping );
+                Mapping? m = new Mapping( typeMapping, null );
+                // Use Add: no external configuration must register a IRealObject.
+                mappings.Add( o.ClassType, m );
+                foreach( var unique in o.UniqueMappings )
+                {
+                    var uMapping = new ServiceDescriptor( unique, o.Implementation );
+                    global.Add( uMapping );
+                    m.AddGlobal( uMapping );
+                }
+                foreach( var multi in o.MultipleMappings )
+                {
+                    var mMapping = new ServiceDescriptor( multi, o.Implementation );
+                    global.Add( mMapping );
+                    if( mappings.TryGetValue( multi, out var mm ) )
                     {
-                        if( mappings.TryGetValue( multi, out var mm ) )
-                        {
-                            mm.AddGlobal( mMapping );
-                        }
-                        else
-                        {
-                            mappings.Add( multi, new Mapping( mMapping, null ) );
-                        }
+                        mm.AddGlobal( mMapping );
+                    }
+                    else
+                    {
+                        mappings.Add( multi, new Mapping( mMapping, null ) );
                     }
                 }
             }
@@ -214,16 +270,12 @@ namespace CK.StObj.Engine.Tests
                 }
             }
 
-            static void AddServiceMapping( IServiceCollection global, Dictionary<Type, Mapping>? mappings, IStObjServiceClassDescriptor s, ServiceLifetime lt )
+            static void AddServiceMapping( IServiceCollection global, Dictionary<Type, Mapping> mappings, IStObjServiceClassDescriptor s, ServiceLifetime lt )
             {
                 var typeMapping = new ServiceDescriptor( s.ClassType, s.FinalType, lt );
                 global.Add( typeMapping );
-                Mapping? m = null;
-                if( mappings != null )
-                {
-                    m = new Mapping( typeMapping, null );
-                    mappings.Add( s.ClassType, m );
-                }
+                Mapping m = new Mapping( typeMapping, null );
+                mappings.Add( s.ClassType, m );
                 // Same delegate used for all the mappings (if any). 
                 Func<IServiceProvider, object>? shared = null;
                 foreach( var unique in s.UniqueMappings )
@@ -232,33 +284,29 @@ namespace CK.StObj.Engine.Tests
                     global.Add( uMapping );
                     // We don't need a TypedServiceDescriptor here: this is a unique mapping, no
                     // multiple is allowed by design.
-                    m?.AddGlobal( uMapping );
+                    m.AddGlobal( uMapping );
                 }
                 foreach( var multi in s.MultipleMappings )
                 {
                     var mMapping = new ServiceDescriptor( multi, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                     global.Add( mMapping );
-                    if( mappings != null )
+                    mMapping = TypedServiceDescriptor.Create( mMapping, s.ClassType );
+                    if( mappings.TryGetValue( multi, out var mm ) )
                     {
-                        mMapping = TypedServiceDescriptor.Create( mMapping, s.ClassType );
-                        if( mappings.TryGetValue( multi, out var mm ) )
-                        {
-                            mm.AddGlobal( mMapping );
-                        }
-                        else
-                        {
-                            mappings.Add( multi, new Mapping( mMapping, null ) );
-                        }
+                        mm.AddGlobal( mMapping );
+                    }
+                    else
+                    {
+                        mappings.Add( multi, new Mapping( mMapping, null ) );
                     }
                 }
             }
         }
-
     }
 
     sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : notnull
     {
-        internal EndpointServiceProvider<TScopeData>? _services;
+        internal IEndpointServiceProvider<TScopeData>? _services;
 
         readonly EndpointDefinition<TScopeData> _definition;
         internal ServiceCollection? _configuration;
@@ -280,7 +328,7 @@ namespace CK.StObj.Engine.Tests
 
         public string Name => _definition.Name;
 
-        public EndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
+        public IEndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
 
         public bool IsService( Type serviceType ) => GetContainer().IsService( serviceType );
 
@@ -288,7 +336,7 @@ namespace CK.StObj.Engine.Tests
 
         public IReadOnlyCollection<Type> SpecificScopedServices => _specificScoped;
 
-        EndpointServiceProvider<TScopeData> DoCreateContainer()
+        IEndpointServiceProvider<TScopeData> DoCreateContainer()
         {
             lock( _lock )
             {
@@ -296,7 +344,7 @@ namespace CK.StObj.Engine.Tests
                 {
                     if( !_initializationSuccess ) Throw.InvalidOperationException( "Endpoint initialization failed. It cannot be used." );
                     Debug.Assert( _configuration != null );
-                    _services = new EndpointServiceProvider<TScopeData>( _configuration.BuildServiceProvider() );
+                    _services = new Provider( _configuration.BuildServiceProvider() );
                     // Release the configuration now that the endpoint container is built.
                     _configuration = null;
                 }
@@ -316,14 +364,59 @@ namespace CK.StObj.Engine.Tests
             public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
         }
 
+        sealed class ScopeDataHolder
+        {
+            [AllowNull]
+            internal TScopeData _data;
+        }
+
+        sealed class Provider : IEndpointServiceProvider<TScopeData>
+        {
+            readonly ServiceProvider _serviceProvider;
+            IServiceProviderIsService? _serviceProviderIsService;
+
+            public Provider( ServiceProvider serviceProvider )
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public AsyncServiceScope CreateAsyncScope( TScopeData scopedData )
+            {
+                var scope = _serviceProvider.CreateAsyncScope();
+                scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
+                return scope;
+            }
+
+            public IServiceScope CreateScope( TScopeData scopedData )
+            {
+                var scope = _serviceProvider.CreateScope();
+                scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
+                return scope;
+            }
+
+            public object? GetService( Type serviceType ) => _serviceProvider.GetService( serviceType );
+
+            public void Dispose() => _serviceProvider.Dispose();
+
+            public ValueTask DisposeAsync() => _serviceProvider.DisposeAsync();
+
+            public bool IsService( Type serviceType )
+            {
+                return (_serviceProviderIsService ??= _serviceProvider.GetRequiredService<IServiceProviderIsService>()).IsService( serviceType );
+            }
+        }
+
+
+        static TScopeData GetScopeData( IServiceProvider sp ) => Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data;
+
         public bool ConfigureServices( IActivityMonitor monitor,
                                         IStObjMap stObjMap,
                                         Dictionary<Type, Mapping> mappings,
-                                        ServiceDescriptor endpointTypeManager )
+                                        ServiceDescriptor[] trueSingletons )
         {
             var endpoint = new ServiceCollection();
             // Calls the ConfigureEndpointServices on an empty configuration.
-            _definition.ConfigureEndpointServices( endpoint, new GlobalServiceExists( mappings ) );
+            _definition.ConfigureEndpointServices( endpoint, GetScopeData, new GlobalServiceExists( mappings ) );
 
             // Process the endpoint specific registrations to detect:
             // - extra registrations: there must not be any type mapped to IRealObject or IAutoService.
@@ -336,12 +429,11 @@ namespace CK.StObj.Engine.Tests
                 var builder = new FinalConfigurationBuilder( _definition.Name, mappings );
                 builder.FinalConfigure( monitor, configuration );
                 // Add the scoped data holder.
-                var scopedDataType = typeof( EndpointScopeData<TScopeData> );
+                var scopedDataType = typeof( ScopeDataHolder );
                 configuration.Add( new ServiceDescriptor( scopedDataType, scopedDataType, ServiceLifetime.Scoped ) );
-                // Adds the endpointTypeManager that is the relay to the global services.
-                configuration.Add( endpointTypeManager );
-                // Adds the StObjMap singleton.
-                configuration.Add( new ServiceDescriptor( typeof(IStObjMap), stObjMap ) );
+                // Add the StObjMap, the EndpointTypeManager, all the IEndpointType<TScopeData> and the
+                // IEnumerable<IEndpoint>.
+                configuration.AddRange( trueSingletons );
                 // Waiting for .Net 8.
                 // configuration.MakeReadOnly();
                 _configuration = configuration;

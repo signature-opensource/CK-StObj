@@ -103,7 +103,7 @@ namespace CK.Setup
         /// Crappy hook...
         /// </summary>
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
-                                              IEndpointResult endpointResult,
+                                              IEndpointResult? endpointResult,
                                               IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             // Compute the indexed AllTypesAttributesCache.

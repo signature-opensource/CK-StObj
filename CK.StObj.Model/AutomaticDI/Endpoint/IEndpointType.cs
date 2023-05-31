@@ -5,8 +5,9 @@ using System.Collections.Generic;
 namespace CK.Core
 {
     /// <summary>
-    /// Non generic base for <see cref="IEndpointType{TScopeData}"/>.
+    /// Non generic and multiple base for <see cref="IEndpointType{TScopeData}"/>.
     /// </summary>
+    [IsMultiple]
     public interface IEndpointType : IServiceProviderIsService
     {
         /// <summary>

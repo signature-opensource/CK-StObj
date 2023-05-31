@@ -157,7 +157,7 @@ namespace CK.Setup
 
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
                                               Dictionary<Type,ITypeAttributesCache> allTypesAttributesCache,
-                                              IEndpointResult endpointResult,
+                                              IEndpointResult? endpointResult,
                                               IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             _orderedStObjs = ordered;

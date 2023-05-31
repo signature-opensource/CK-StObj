@@ -1,11 +1,10 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    public interface IBackgroundEndpointType : IEndpointType<BackgroundEndpointDefinition.BackgroundData> { }
-
     [EndpointDefinition]
     public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.BackgroundData>
     {
@@ -22,10 +21,12 @@ namespace CK.StObj.Engine.Tests.Endpoint
             internal IFakeAuthenticationInfo Auth { get; set; }
         }
 
-        public override void ConfigureEndpointServices( IServiceCollection services, IServiceProviderIsService globalServiceExists )
+        public override void ConfigureEndpointServices( IServiceCollection services,
+                                                        Func<IServiceProvider, BackgroundData> scopeData,
+                                                        IServiceProviderIsService globalServiceExists )
         {
-            services.AddScoped( sp => sp.GetRequiredService<EndpointScopeData<BackgroundData>>().Data.Monitor );
-            services.AddScoped( sp => sp.GetRequiredService<EndpointScopeData<BackgroundData>>().Data.Auth );
+            services.AddScoped( sp => scopeData( sp ).Monitor );
+            services.AddScoped( sp => scopeData( sp ).Auth );
         }
     }
 }
