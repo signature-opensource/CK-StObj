@@ -53,7 +53,6 @@ namespace CK.Setup
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Dictionary<Type, CKTypeEndpointServiceInfo> _endpointServices;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
-        bool _hasEndpointServiceError;
 
         /// <summary>
         /// Initializes a new detector.
@@ -66,18 +65,20 @@ namespace CK.Setup
             _typeFilter = typeFilter;
         }
 
-        internal IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? GetRegisteredEndpointServiceInfoMap( IActivityMonitor monitor )
+        internal IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> GetRegisteredEndpointServiceInfoMap( IActivityMonitor monitor )
         {
-            if( _hasEndpointServiceError ) return null;
-            foreach( var kv in _endpointServices )
+            using( monitor.OpenInfo( $"Finalizing Endpoint discovery." ) )
             {
-                if( !kv.Value.HasBeenProcessed )
+                foreach( var kv in _endpointServices )
                 {
-                    RawGet( monitor, kv.Key );
-                    Debug.Assert( kv.Value.HasBeenProcessed );
+                    if( !kv.Value.HasBeenProcessed )
+                    {
+                        RawGet( monitor, kv.Key );
+                        Debug.Assert( kv.Value.HasBeenProcessed );
+                    }
                 }
+                return _endpointServices;
             }
-            return _endpointServices;
         }
 
         /// <summary>

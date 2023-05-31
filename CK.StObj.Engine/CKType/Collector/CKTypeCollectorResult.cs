@@ -14,14 +14,14 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeCollectorResult
     {
-        readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? _endpoints;
+        readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpoints;
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
         internal CKTypeCollectorResult( ISet<Assembly> assemblies,
                                         IPocoSupportResult? pocoSupport,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
-                                        IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? endpoints,
+                                        IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpoints,
                                         IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
                                         IAutoServiceKindComputeFacade kindComputeFacade )
         {
@@ -56,9 +56,9 @@ namespace CK.Setup
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
-        /// Gets the raw endpoints configuration. This is null if an error occurred.
+        /// Gets the raw endpoints configuration.
         /// </summary>
-        public IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo>? Endpoints => _endpoints;
+        public IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> Endpoints => _endpoints;
 
         /// <summary>
         /// Gets the AutoServiceKind compute façade.
@@ -103,7 +103,7 @@ namespace CK.Setup
         /// Crappy hook...
         /// </summary>
         internal void SetFinalOrderedResults( IReadOnlyList<MutableItem> ordered,
-                                              IEndpointResult? endpointResult,
+                                              IEndpointResult endpointResult,
                                               IReadOnlyDictionary<Type, IStObjMultipleInterface> multipleMappings )
         {
             // Compute the indexed AllTypesAttributesCache.

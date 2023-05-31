@@ -438,6 +438,7 @@ namespace CK.Setup
                     else
                     {
                         path.Push( this );
+                        Debug.Assert( ConstructorParameters != null );
                         foreach( var p in ConstructorParameters )
                         {
                             AutoServiceClassInfo? pC = null;

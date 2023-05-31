@@ -341,12 +341,9 @@ namespace CK.Setup
                     // This doesn't need the full auto service resolution so we have the choice to do it before
                     // or after services finalization: do it before because may be one day the final service
                     // resolution may need it.
-                    if( typeResult.Endpoints != null )
+                    using( monitor.OpenInfo( "Endpoints handling." ) )
                     {
-                        using( monitor.OpenInfo( "Endpoints handling." ) )
-                        {
-                            endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.Endpoints );
-                        }
+                        endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.Endpoints );
                     }
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should

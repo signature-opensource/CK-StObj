@@ -8,6 +8,9 @@ namespace CK.Setup
 {
     partial class PocoRegistrar
     {
+        /// <summary>
+        /// Obsolete (PocoClass don't exist in poco-refactoring).
+        /// </summary>
         class PocoClassInfo : IPocoClassInfo
         {
             AnnotationSetImpl _annotations;
@@ -20,8 +23,7 @@ namespace CK.Setup
 
             public bool IsDefaultNewable { get; }
 
-            List<IPocoClassInfo>? _specializations;
-            IReadOnlyList<IPocoClassInfo> IPocoClassInfo.Specializations => _specializations ?? (IReadOnlyList<IPocoClassInfo>)Array.Empty<IPocoClassInfo>();
+            IReadOnlyList<IPocoClassInfo> IPocoClassInfo.Specializations => Array.Empty<IPocoClassInfo>();
 
             public readonly Dictionary<string, PocoClassPropertyInfo> Properties;
             readonly IReadOnlyDictionary<string, IPocoClassPropertyInfo> _exposedProperties;
