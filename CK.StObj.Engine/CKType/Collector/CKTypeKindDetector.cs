@@ -107,8 +107,8 @@ namespace CK.Setup
 
         bool SetEndpointService( IActivityMonitor monitor, bool isScoped, Type serviceType, Type endpointDefinition )
         {
-            // IActivityMonitor is the only ubiquitous endpoint service.
-            if( serviceType == typeof( IActivityMonitor ) ) return true;
+            // IActivityMonitor and IParallelLogger are the only ubiquitous endpoint services.
+            if( serviceType == typeof( IActivityMonitor ) || serviceType == typeof(IParallelLogger) ) return true;
             if( !CheckEndpointServiceParameters( monitor, serviceType, endpointDefinition ) ) return false;
             if( _endpointServices.TryGetValue( serviceType, out var exists ) )
             {

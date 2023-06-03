@@ -117,6 +117,7 @@ namespace CK.StObj.Engine.Tests
     {
         internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;
 
+        // Injected only if there are endpoints.
         internal static Dictionary<Type, Mapping> CreateInitialMapping( IActivityMonitor monitor,
                                                                         IServiceCollection global,
                                                                         Func<Type, bool> isEndpointService )
