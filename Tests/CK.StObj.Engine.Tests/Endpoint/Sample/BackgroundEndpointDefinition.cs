@@ -10,7 +10,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     {
         public sealed class BackgroundData
         {
-            internal BackgroundData( ActivityMonitor monitor )
+            internal BackgroundData( IActivityMonitor monitor )
             {
                 Monitor = monitor;
             }
@@ -26,6 +26,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                         IServiceProviderIsService globalServiceExists )
         {
             services.AddScoped( sp => scopeData( sp ).Monitor );
+            services.AddScoped( sp => scopeData( sp ).Monitor.ParallelLogger );
             services.AddScoped( sp => scopeData( sp ).Auth );
         }
     }

@@ -777,9 +777,9 @@ namespace CK.StObj.Engine.Tests
                     }
 
                     static void HandleImplementationType( ServiceDescriptor d,
-                                                            ServiceLifetime lt,
-                                                            List<Type> list,
-                                                            List<string> mappedTypeError )
+                                                          ServiceLifetime lt,
+                                                          List<Type> list,
+                                                          List<string> mappedTypeError )
                     {
                         var implType = GetImplementationType( d );
                         if( implType == typeof( object ) )

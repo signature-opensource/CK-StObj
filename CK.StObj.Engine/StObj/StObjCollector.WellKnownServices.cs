@@ -10,9 +10,19 @@ namespace CK.Setup
     {
         void AddWellKnownServices()
         {
-            // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
+            // The ActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
             // It is actually more than that: it is the only ubiquitous endpoint service (all endpoints must support it).
+            // Note: The right way to inject a monitor is:
+            //
+            //    services.AddScoped<IActivityMonitor,ActivityMonitor>();
+            //    services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+            //
+
+            // For safety, declares also the ActivityMonitor type to be an endpoint service even if it should not appear
+            // in a container.
+            SetAutoServiceKind( typeof( ActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
             SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            SetAutoServiceKind( typeof( IParallelLogger ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
 
             // The IServiceProvider is both a singleton and a scope: it is the container (whatever it is).
             // By defining it as a singleton, we don't force a totally useless Scoped lifetime.

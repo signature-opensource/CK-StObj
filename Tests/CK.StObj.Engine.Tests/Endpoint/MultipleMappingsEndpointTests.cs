@@ -46,6 +46,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
+                services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             }
         }
 
@@ -57,6 +58,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
+                services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             }
         }
 
@@ -239,6 +241,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
+                services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
                 services.AddScoped<ManyNothing>();
                 services.AddScoped<IMany, ManyNothing>( sp => sp.GetRequiredService<ManyNothing>() );
             }

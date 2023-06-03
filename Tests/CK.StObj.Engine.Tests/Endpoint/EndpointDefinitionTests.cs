@@ -22,7 +22,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             Func<IServiceProvider, string> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
-                services.AddScoped<IActivityMonitor, ActivityMonitor>();
+                services.AddScoped<IActivityMonitor,ActivityMonitor>();
+                services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             }
         }
 
@@ -34,6 +35,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
+                services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             }
         }
 

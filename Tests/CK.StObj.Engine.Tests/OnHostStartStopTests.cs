@@ -109,6 +109,7 @@ namespace CK.StObj.Engine.Tests.Service
             using var services = TestHelper.CreateAutomaticServices( collector, configureServices: services =>
             {
                 services.Services.AddScoped( sp => TestHelper.Monitor );
+                services.Services.AddScoped( sp => TestHelper.Monitor.ParallelLogger );
             } ).Services;
             Debug.Assert( services != null );
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Info ) )

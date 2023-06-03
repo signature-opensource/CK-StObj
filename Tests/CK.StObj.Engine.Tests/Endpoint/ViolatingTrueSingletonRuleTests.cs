@@ -43,7 +43,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var anotherContext = r.EndpointContexts[1];
 
             defaultContext.EndpointDefinition.ClassType.Should().Be( typeof( DefaultEndpointDefinition ) );
-            defaultContext.ScopedServices.Should().HaveCount( 1 ).And.Contain( typeof( IActivityMonitor ) );
+            defaultContext.ScopedServices.Should().HaveCount( 3 ).And.Contain( new[] { typeof( IActivityMonitor ), typeof( IParallelLogger ) } );
             defaultContext.SingletonServices.Should().HaveCount( 1 ).And.Contain( typeof( ISomeService ) );
 
             anotherContext.EndpointDefinition.ClassType.Should().Be( typeof( AnotherEndpointDefinition ) );
