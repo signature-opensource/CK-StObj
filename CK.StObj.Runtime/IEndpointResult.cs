@@ -1,3 +1,5 @@
+using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 
@@ -20,15 +22,8 @@ namespace CK.Setup
         IReadOnlyList<IEndpointContext> EndpointContexts { get; }
 
         /// <summary>
-        /// Gets all the endpoint service types.
+        /// Gets all the endpoint service types and their kind (they are not necessarily <see cref="IAutoService"/>).
         /// </summary>
-        IEnumerable<Type> EndpointServices { get; }
-
-        /// <summary>
-        /// Gets whether a type is a endpoint service.
-        /// </summary>
-        /// <param name="type">The type to test.</param>
-        /// <returns>True if the type is a endpoint service, false otherwise.</returns>
-        bool IsEndpointService( Type type );
+        IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices { get; }
     }
 }

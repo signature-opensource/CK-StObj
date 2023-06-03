@@ -9,7 +9,6 @@ namespace CK.Setup
 
         internal static bool CheckEndPointDefinition( IActivityMonitor monitor, Type t )
         {
-            if( t == typeof( DefaultEndpointDefinition ) ) return true;
             var b = t.BaseType;
             if( b == null || !b.IsGenericType || b.GetGenericTypeDefinition() != typeof( EndpointDefinition<> ) )
             {

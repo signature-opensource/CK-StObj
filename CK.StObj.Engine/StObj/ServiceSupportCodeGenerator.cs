@@ -245,7 +245,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
         public void CreateConfigureServiceMethod( IActivityMonitor monitor, IStObjEngineMap engineMap )
         {
             var endpointResult = engineMap.EndpointResult;
-            bool hasEndpoint = endpointResult.EndpointContexts.Count > 1;
+            bool hasEndpoint = endpointResult.EndpointContexts.Count > 0;
 
             EndpointSourceCodeGenerator.GenerateSupportCode( _rootType.Workspace, hasEndpoint );
 
@@ -257,7 +257,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             // we minimize the number of registrations to process.
             if( hasEndpoint )
             {
-                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.Contains );" ).NewLine();
+                fScope.Append( "var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );" ).NewLine();
             }
             // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
             // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.

@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,6 +56,7 @@ namespace CK.Setup
 
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
+        readonly Dictionary<Type, AutoServiceKind> _endpointServices;
 
         /// <summary>
         /// Initializes a new detector.
@@ -63,8 +65,14 @@ namespace CK.Setup
         public CKTypeKindDetector( Func<IActivityMonitor, Type, bool>? typeFilter = null )
         {
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
+            _endpointServices = new Dictionary<Type, AutoServiceKind>();
             _typeFilter = typeFilter;
         }
+
+        /// <summary>
+        /// Gets all the types that have been declared as endpoint services.
+        /// </summary>
+        public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
 
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
@@ -153,8 +161,9 @@ namespace CK.Setup
             bool isProcess = (kind & CKTypeKind.IsProcessService) != 0;
             bool isMultiple = (kind & CKTypeKind.IsMultipleService) != 0;
             bool isMarshallable = (kind & CKTypeKind.IsMarshallable) != 0;
+            bool isEndpoint = (kind & CKTypeKind.IsEndpointService) != 0;
 
-            Debug.Assert( hasLifetime || isProcess || isMultiple || isMarshallable, "At least, something must be set." );
+            Debug.Assert( hasLifetime || isProcess || isMultiple || isMarshallable || isMarshallable, "At least, something must be set." );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
@@ -171,7 +180,13 @@ namespace CK.Setup
                 m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as {ToStringFull( kind )}. Error: {error}" );
                 return null;
             }
+
             _cache[t] = updated;
+            if( (updated & CKTypeKind.IsEndpointService) != 0 )
+            {
+                _endpointServices[t] = updated.ToAutoServiceKind();
+            }
+
             Debug.Assert( (updated & (IsDefiner | IsSuperDefiner)) == 0 );
             Debug.Assert( CKTypeKindExtension.GetCombinationError( (updated & MaskPublicInfo), t.IsClass ) == null );
             return updated & MaskPublicInfo;
@@ -250,10 +265,6 @@ namespace CK.Setup
                 // So, "internal interfaces" are leaves, we don't need to handle "holes" in the interface hierarchy and implementations are free to
                 // define and use them.
                 //
-                // We have an issue on Endpoint registration: we must not accept an internal endpoint service: this is done in
-                // the SetEndpointXXX methods. So we can be sure here that if we are on a skipped interface, then we have no endpoint
-                // registration to update.
-                //
                 bool isInternalInterface = t.IsInterface && !t.IsPublic && !t.IsNestedPublic;
                 if( k == CKTypeKind.None && !isInternalInterface )
                 {
@@ -319,9 +330,6 @@ namespace CK.Setup
                     }
 
                     Debug.Assert( k == CKTypeKind.None || k == CKTypeKind.IsExcludedType );
-                    // Even if hasEndpointServiceError is true, we continue the process because:
-                    // - We choose a "detect as many errors as possible" rather than a "fail fast" philosophy years ago.
-                    // - If we have an external EndpointServiceInfo set, it's better to update its Kind that sates that is HasBeenProcessed.
                     if( k == CKTypeKind.None )
                     {
                         isExcludedType |= _typeFilter != null && !_typeFilter( m, t );
@@ -488,6 +496,10 @@ namespace CK.Setup
                                     m.Error( $"Invalid interface '{t}' kind: {error}" );
                                     k |= CKTypeKind.HasError;
                                 }
+                            }
+                            if( (k & CKTypeKind.IsEndpointService) != 0 )
+                            {
+                                _endpointServices.Add( t, k.ToAutoServiceKind() );
                             }
                         }
                     }

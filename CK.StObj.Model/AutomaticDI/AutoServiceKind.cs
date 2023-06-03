@@ -49,6 +49,11 @@ namespace CK.Core
         /// This is applicable only to interfaces. It states that the service is not unique: interfaces marked with this flag must all
         /// be registered, associated to each of their implementation.
         /// </summary>
-        IsMultipleService = 32
+        IsMultipleService = 32,
+
+        /// <summary>
+        /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
+        /// </summary>
+        IsAutoService = 64
     }
 }

@@ -344,14 +344,14 @@ namespace CK.Setup
 
                 readonly EndpointDefinition<TScopeData> _definition;
                 internal ServiceCollection? _configuration;
-                Type[] _specificSingletons;
-                Type[] _specificScoped;
+                Type[] _singletons;
+                Type[] _scoped;
                 readonly object _lock;
                 bool _initializationSuccess;
 
                 public EndpointType( EndpointDefinition<TScopeData> definition )
                 {
-                    _specificSingletons = _specificScoped = Type.EmptyTypes;
+                    _singletons = _scoped = Type.EmptyTypes;
                     _definition = definition;
                     _lock = new object();
                 }
@@ -366,9 +366,9 @@ namespace CK.Setup
 
                 public bool IsService( Type serviceType ) => GetContainer().IsService( serviceType );
 
-                public IReadOnlyCollection<Type> SpecificSingletonServices => _specificSingletons;
+                public IReadOnlyCollection<Type> SpecificSingletonServices => _singletons;
 
-                public IReadOnlyCollection<Type> SpecificScopedServices => _specificScoped;
+                public IReadOnlyCollection<Type> SpecificScopedServices => _scoped;
 
                 IEndpointServiceProvider<TScopeData> DoCreateContainer()
                 {
@@ -481,10 +481,8 @@ namespace CK.Setup
                                                 IStObjMap stObjMap,
                                                 Dictionary<Type, Mapping> mappings )
                     {
-                        var handledSingletons = new List<Type>( _definition.SingletonServices );
-                        var handledScoped = new List<Type>( _definition.ScopedServices );
-                        List<Type>? moreSingletons = null;
-                        List<Type>? moreScoped = null;
+                        List<Type>? singletons = null;
+                        List<Type>? scoped = null;
                         foreach( var d in configuration )
                         {
                             if( mappings.TryGetValue( d.ServiceType, out var exists ) )
@@ -495,27 +493,20 @@ namespace CK.Setup
 
                             if( d.Lifetime == ServiceLifetime.Singleton )
                             {
-                                if( !handledSingletons.Remove( d.ServiceType ) )
-                                {
-                                    moreSingletons ??= new List<Type>();
-                                    moreSingletons.Add( d.ServiceType );
-                                }
+                                singletons ??= new List<Type>();
+                                singletons.Add( d.ServiceType );
                             }
                             else
                             {
-                                if( !handledScoped.Remove( d.ServiceType ) )
-                                {
-                                    moreScoped ??= new List<Type>();
-                                    moreScoped.Add( d.ServiceType );
-                                }
+                                scoped ??= new List<Type>();
+                                scoped.Add( d.ServiceType );
                             }
                         }
-                        bool success = ErrorUnhandledServices( monitor, _definition, handledSingletons, ServiceLifetime.Singleton );
-                        if( !ErrorUnhandledServices( monitor, _definition, handledScoped, ServiceLifetime.Scoped ) ) success = false;
-                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, moreSingletons, ServiceLifetime.Singleton ) ) success = false;
-                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, moreScoped, ServiceLifetime.Scoped ) ) success = false;
-                        if( moreScoped != null ) _specificScoped = moreScoped.ToArray();
-                        if( moreSingletons != null ) _specificSingletons = moreSingletons.ToArray();
+                        bool success = true;
+                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, singletons, ServiceLifetime.Singleton ) ) success = false;
+                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, scoped, ServiceLifetime.Scoped ) ) success = false;
+                        if( scoped != null ) _scoped = scoped.ToArray();
+                        if( singletons != null ) _singletons = singletons.ToArray();
                         return success;
 
                         static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, EndpointDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
@@ -528,14 +519,17 @@ namespace CK.Setup
                                     var autoMap = stObjMap.ToLeaf( s );
                                     if( autoMap != null )
                                     {
-                                        if( autoMap is IStObjFinalImplementation realObject )
+                                        if( autoMap is IStObjServiceClassDescriptor service )
                                         {
-                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
-                                            success = false;
+                                            if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
+                                            {
+                                                monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
+                                                success = false;
+                                            }
                                         }
                                         else
                                         {
-                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}'." );
+                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
                                             success = false;
                                         }
                                     }
@@ -547,20 +541,10 @@ namespace CK.Setup
                             }
                             return success;
                         }
-
-                        static bool ErrorUnhandledServices( IActivityMonitor monitor, EndpointDefinition definition, List<Type> unhandled, ServiceLifetime lt )
-                        {
-                            if( unhandled.Count > 0 )
-                            {
-                                monitor.Error( $"Endpoint '{definition.Name}' doesn't handles the declared {lt} services: '{unhandled.Select( s => s.ToCSharpName() ).Concatenate( "', '" )}'." );
-                                return false;
-                            }
-                            return true;
-                        }
                     }
                 }
             }
-            
+                        
             """;
 
         // Injected only if there are endpoints.

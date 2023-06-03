@@ -10,7 +10,7 @@ namespace CK.StObj.Engine.Tests.Service
     [TestFixture]
     public class BasicEndpointServiceTests
     {
-        [EndpointScopedService( typeof(DefaultEndpointDefinition) )]
+        [EndpointScopedService]
         public interface IEndpointService1 : IScopedAutoService
         {
         }
@@ -20,17 +20,17 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void Endpoint_service_are_not_registered_as_auto_service()
+        public void Endpoint_service_can_be_registered_as_auto_service()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
-            map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse();
+            map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeTrue();
         }
 
-        [EndpointScopedService( typeof( DefaultEndpointDefinition ) )]
+        [EndpointScopedService]
         public class Impossible0 : IRealObject
         {
         }
@@ -60,7 +60,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void Endpoint_services_only_propagate_their_lifetime_1()
+        public void currently_Endpoint_services_only_propagate_their_lifetime_1()
         {
             var collector = TestHelper.CreateStObjCollector( typeof(EndpointService1), typeof( EndpointDependentService1 ) );
 
@@ -68,7 +68,7 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor descriptor = map.Services.Mappings[typeof( EndpointDependentService1 )];
-            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
+            descriptor.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
         }
 
         public interface IEndpointDependentService2 : IAutoService
@@ -83,7 +83,7 @@ namespace CK.StObj.Engine.Tests.Service
         }
 
         [Test]
-        public void Endpoint_services_only_propagate_their_lifetime_2()
+        public void currently_Endpoint_services_only_propagate_their_lifetime_2()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( EndpointDependentService2 ),
                                                              typeof( EndpointDependentService1 ),
@@ -94,9 +94,9 @@ namespace CK.StObj.Engine.Tests.Service
 
             IStObjServiceClassDescriptor dDep2 = map.Services.Mappings[typeof( IEndpointDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.Mappings[typeof( EndpointDependentService1 )];
-            map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeFalse( "A Endpoint service is not an Automatic service." );
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
+            map.Services.Mappings.ContainsKey( typeof( IEndpointService1 ) ).Should().BeTrue( "A Endpoint service can be an Automatic service." );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
         }
 
     }

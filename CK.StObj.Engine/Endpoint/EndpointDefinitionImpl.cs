@@ -31,15 +31,7 @@ namespace CK.Setup
 
             scope.Append( "public override string Name => " ).AppendSourceString( e.Name ).Append( ";" ).NewLine();
 
-            WriteScopedAndSingletonServices( scope, e );
-
             return CSCodeGenerationResult.Success;
-        }
-
-        internal static void WriteScopedAndSingletonServices( ITypeScope scope, IEndpointContext endpointContext )
-        {
-            scope.Append( "public override IReadOnlyList<Type> ScopedServices => " ).AppendArray( endpointContext.ScopedServices ).Append( ";" ).NewLine();
-            scope.Append( "public override IReadOnlyList<Type> SingletonServices => " ).AppendArray( endpointContext.SingletonServices ).Append( ";" ).NewLine();
         }
     }
 }

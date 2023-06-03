@@ -25,10 +25,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         public override string Name => "Fake";
 
-        public override IReadOnlyList<Type> ScopedServices => Type.EmptyTypes;
-
-        public override IReadOnlyList<Type> SingletonServices => Type.EmptyTypes;
-
         // This method is implemented by the developer of the Endpoint.
         public override void ConfigureEndpointServices( IServiceCollection services,
                                                         Func<IServiceProvider,Data> scopeData,

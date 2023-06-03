@@ -271,8 +271,9 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsProcessService );
+                r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
+                                                                                 | AutoServiceKind.IsScoped
+                                                                                 | AutoServiceKind.IsProcessService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -282,8 +283,9 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsProcessService );
+                r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
+                                                                                 | AutoServiceKind.IsScoped
+                                                                                 | AutoServiceKind.IsProcessService );
             }
         }
 
@@ -308,8 +310,9 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsScoped
-                                                                                        | AutoServiceKind.IsProcessService );
+                r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
+                                                                                  | AutoServiceKind.IsScoped
+                                                                                  | AutoServiceKind.IsProcessService );
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
@@ -320,13 +323,14 @@ namespace CK.StObj.Engine.Tests.Service
                 collector.RegisterType( typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
-                r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton
-                                                                                        | AutoServiceKind.IsProcessService );
+                r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
+                                                                                  | AutoServiceKind.IsSingleton
+                                                                                  | AutoServiceKind.IsProcessService );
             }
         }
 
         [Test]
-        public void SetAutoServiceKind_a_class_doesnt_mean_registering_it()
+        public void SetAutoServiceKind_a_class_does_not_mean_registering_it()
         {
             var collector = TestHelper.CreateStObjCollector();
             collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );

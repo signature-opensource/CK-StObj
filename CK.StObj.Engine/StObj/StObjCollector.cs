@@ -107,46 +107,6 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Tries to set or extend the availability of a service to an endpoint.
-        /// <para>
-        /// This method is called by the assembly <see cref="EndpointScopedServiceTypeAttribute"/>.
-        /// </para>
-        /// </summary>
-        /// <param name="monitor">The monitor.</param>
-        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
-        /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointScopedService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
-        {
-            if( _cc.KindDetector.SetEndpointScopedService( monitor, serviceType, endpointDefinition ) )
-            {
-                return true;
-            }
-            ++_registerFatalOrErrorCount;
-            return false;
-        }
-
-        /// <summary>
-        /// Tries to define a service as a singleton managed by a <see cref="EndpointDefinition"/>.
-        /// <para>
-        /// This method is called by the assembly <see cref="EndpointSingletonServiceTypeAttribute"/>.
-        /// </para>
-        /// </summary>
-        /// <param name="monitor">The monitor.</param>
-        /// <param name="serviceType">The type of the service. Must be an interface or a class and not a <see cref="IRealObject"/> nor an open generic.</param>
-        /// <param name="endpointDefinition">The <see cref="EndpointDefinition"/>'s type.</param>
-        /// <returns>True on success, false on error (logged into <paramref name="monitor"/>).</returns>
-        public bool SetEndpointSingletonService( IActivityMonitor monitor, Type serviceType, Type endpointDefinition )
-        {
-            if( _cc.KindDetector.SetEndpointSingletonService( monitor, serviceType, endpointDefinition ) )
-            {
-                return true;
-            }
-            ++_registerFatalOrErrorCount;
-            return false;
-        }
-
-        /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination for a type: the type is always resolved (<see cref="SimpleTypeFinder.WeakResolver"/>).
         /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
         /// cannot be a Front service).
@@ -204,18 +164,6 @@ namespace CK.Setup
                         }
                         if( a != null )
                         {
-                            // Before registering types, we must handle the assembly Endpoint attributes 
-                            // regardless of the "convergence" of the endpoint configuration: the external
-                            // configuration must exist when a type is registered because it is registered
-                            // only once.
-                            foreach( var eA in a.GetCustomAttributes<EndpointScopedServiceTypeAttribute>() )
-                            {
-                                SetEndpointScopedService( monitor, eA.ServiceType, eA.EndpointDefinition );
-                            }
-                            foreach( var eA in a.GetCustomAttributes<EndpointSingletonServiceTypeAttribute>() )
-                            {
-                                SetEndpointSingletonService( monitor, eA.ServiceType, eA.EndpointDefinition );
-                            }
                             int nbAlready = _cc.RegisteredTypeCount;
                             _cc.RegisterTypes( a.GetTypes() );
                             int delta = _cc.RegisteredTypeCount - nbAlready;
@@ -328,10 +276,9 @@ namespace CK.Setup
             _computedResult = true;
             try
             {
-                // Systematically registers the EndpointTypeManager and DefaultEndpointDefinition.
+                // Systematically registers the EndpointTypeManager.
                 // (Note that the PocoDirectory is registered by the CKTypeCollector.
                 _cc.RegisterClass( typeof( EndpointTypeManager ) );
-                _cc.RegisterClass( typeof( DefaultEndpointDefinition ) );
 
                 EndpointResult? endpoints = null;
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
@@ -343,7 +290,7 @@ namespace CK.Setup
                     // resolution may need it.
                     using( monitor.OpenInfo( "Endpoints handling." ) )
                     {
-                        endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.Endpoints );
+                        endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.KindComputeFacade.KindDetector.EndpointServices );
                     }
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should

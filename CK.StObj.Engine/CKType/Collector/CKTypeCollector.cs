@@ -279,7 +279,7 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( realObjects );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoSupport, realObjects, services, endpoints, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoSupport, realObjects, services, _regularTypeCollector, this );
             }
         }
 

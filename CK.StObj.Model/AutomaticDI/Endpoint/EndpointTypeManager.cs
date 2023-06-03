@@ -22,22 +22,17 @@ namespace CK.Core
         public IServiceProvider GlobalServiceProvider => _global!;
 
         /// <summary>
-        /// Gets the default EndpointDefinition.
+        /// Gets all the EndpointDefinition.
         /// </summary>
-        public abstract DefaultEndpointDefinition DefaultEndpointDefinition { get; }
+        public abstract IReadOnlyList<EndpointDefinition> EndpointDefinitions { get; }
 
         /// <summary>
-        /// Gets all the EndpointDefinition including the <see cref="DefaultEndpointDefinition"/> (that is the first one).
+        /// Gets all the service types that are declared as endpoint services and their kind.
         /// </summary>
-        public abstract IReadOnlyList<EndpointDefinition> AllEndpointDefinitions { get; }
+        public abstract IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices { get; }
 
         /// <summary>
-        /// Gets all the service types that are declared as endpoint services.
-        /// </summary>
-        public abstract IReadOnlySet<Type> EndpointServices { get; }
-
-        /// <summary>
-        /// Gets the available <see cref="IEndpointType"/>. This doesn't contain the default endpoint.
+        /// Gets the available <see cref="IEndpointType"/>.
         /// </summary>
         public abstract IReadOnlyList<IEndpointType> EndpointTypes { get; }
 

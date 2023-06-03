@@ -46,8 +46,7 @@ namespace CK.Setup
         public CKTypeCollectorResult CKTypeResult { get; }
 
         /// <summary>
-        /// Gets the endpoint results if no error occurred during endpoint discovery and analysis,
-        /// null otherwise.
+        /// Gets the endpoint results if no error occurred during analysis, null otherwise.
         /// </summary>
         public EndpointResult? EndpointResult => _endpointResult;
 

@@ -46,11 +46,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
 
             var manager = s.GetRequiredService<EndpointTypeManager>();
-            manager.DefaultEndpointDefinition.Should().NotBeNull();
-            manager.AllEndpointDefinitions.Should().HaveCount( 3 );
-            manager.AllEndpointDefinitions[0].Should().BeSameAs( manager.DefaultEndpointDefinition );
-            manager.AllEndpointDefinitions.Skip(1).Should().Contain( e => e is AppIdentityEndpointDefinition )
-                                                       .And.Contain( e => e is BackdoorEndpointDefinition );
+            manager.EndpointDefinitions.Should().HaveCount( 2 );
+            manager.EndpointDefinitions.Should().Contain( e => e is AppIdentityEndpointDefinition )
+                                                .And.Contain( e => e is BackdoorEndpointDefinition );
         }
 
         [Test]
@@ -103,18 +101,11 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
         }
 
-        [EndpointDefinition]
-        public abstract class NoWay2Definition : DefaultEndpointDefinition
-        {
-        }
-
         [Test]
         public void EndpointDefinitions_cannot_be_specialized()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
             TestHelper.GetFailedResult( c1 );
-            var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
-            TestHelper.GetFailedResult( c2 );
         }
 
         [EndpointDefinition]
@@ -146,14 +137,11 @@ namespace CK.StObj.Engine.Tests.Endpoint
             const string msg = "Invalid EndpointDefinition type 'EndpointDefinitionTests.BadNameDefinition': "
                                + "EndpointDefinition type name must end with \"EndpointDefinition\" (the prefix becomes the simple endpoint name).";
 
-            var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
-            TestHelper.GetFailedResult( c1 );
-
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                var c2 = TestHelper.CreateStObjCollector();
-                c2.SetEndpointScopedService( TestHelper.Monitor, typeof( ICKBinaryReader ), typeof( BadNameDefinition ) )
-                    .Should().BeFalse();
+                var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
+                TestHelper.GetFailedResult( c1 );
+
                 logs.Should().Contain( msg );
             }
         }

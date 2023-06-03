@@ -14,14 +14,12 @@ namespace CK.Setup
     /// </summary>
     public class CKTypeCollectorResult
     {
-        readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpoints;
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
         internal CKTypeCollectorResult( ISet<Assembly> assemblies,
                                         IPocoSupportResult? pocoSupport,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
-                                        IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpoints,
                                         IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
                                         IAutoServiceKindComputeFacade kindComputeFacade )
         {
@@ -29,7 +27,6 @@ namespace CK.Setup
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
-            _endpoints = endpoints;
             _regularTypes = regularTypes;
             KindComputeFacade = kindComputeFacade;
         }
@@ -56,11 +53,6 @@ namespace CK.Setup
         public AutoServiceCollectorResult AutoServices { get; }
 
         /// <summary>
-        /// Gets the raw endpoints configuration.
-        /// </summary>
-        public IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> Endpoints => _endpoints;
-
-        /// <summary>
         /// Gets the AutoServiceKind compute façade.
         /// </summary>
         internal IAutoServiceKindComputeFacade KindComputeFacade { get; }
@@ -77,7 +69,7 @@ namespace CK.Setup
         /// False to continue the process (only warnings - or error considered as 
         /// warning - occurred), true to stop remaining processes.
         /// </returns>
-        public bool HasFatalError => PocoSupport == null || RealObjects.HasFatalError || AutoServices.HasFatalError || _endpoints == null;
+        public bool HasFatalError => PocoSupport == null || RealObjects.HasFatalError || AutoServices.HasFatalError;
 
         /// <summary>
         /// Gets all the <see cref="ImplementableTypeInfo"/>: Abstract types that require a code generation

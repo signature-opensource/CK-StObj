@@ -43,7 +43,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             RealObjectConfigureServices( in reg );
 
             // - We build a mapping of ServiceType -> ServiceDescriptors from the global configuration (only if there are endpoints).
-            var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, FakeEndpointTypeManager_CK._endpointServices.Contains );
+            var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, FakeEndpointTypeManager_CK._endpointServices.ContainsKey );
 
             // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
             //   containers don't need it.

@@ -11,17 +11,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
         // EndpointDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
-        // Here we fake it with a null default and our FakeEndpointDefinition.
-        static readonly DefaultEndpointDefinition _default;
         static readonly EndpointDefinition[] _endpoints;
-        internal static HashSet<Type> _endpointServices;
+        internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal readonly IEndpointTypeInternal[] _endpointTypes;
 
         static FakeEndpointTypeManager_CK()
         {
-            _default = null!;
-            _endpointServices = new HashSet<Type>();
-            _endpoints = new EndpointDefinition[] { _default, new FakeEndpointDefinition() };
+            _endpointServices = new Dictionary<Type, AutoServiceKind>();
+            _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition() };
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
@@ -34,11 +31,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
         }
 
-        public override DefaultEndpointDefinition DefaultEndpointDefinition => _default;
+        public override IReadOnlyList<EndpointDefinition> EndpointDefinitions => _endpoints;
 
-        public override IReadOnlyList<EndpointDefinition> AllEndpointDefinitions => _endpoints;
-
-        public override IReadOnlySet<Type> EndpointServices => _endpointServices;
+        public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;
 
         public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
 
