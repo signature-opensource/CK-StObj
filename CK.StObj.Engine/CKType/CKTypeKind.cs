@@ -27,7 +27,7 @@ namespace CK.Setup
         IsProcessService = 1,
 
         /// <summary>
-        /// Service is bound to a End Point. Whether it is a <see cref="IsProcessService"/> or not is independent.
+        /// Service can be overridden by an endpoint. Whether it is a <see cref="IsProcessService"/> or not is independent.
         /// </summary>
         IsEndpointService = 2,
 

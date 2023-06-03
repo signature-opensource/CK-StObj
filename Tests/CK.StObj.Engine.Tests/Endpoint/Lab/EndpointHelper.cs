@@ -495,14 +495,17 @@ namespace CK.StObj.Engine.Tests
                             var autoMap = stObjMap.ToLeaf( s );
                             if( autoMap != null )
                             {
-                                if( autoMap is IStObjFinalImplementation realObject )
+                                if( autoMap is IStObjServiceClassDescriptor service )
                                 {
-                                    monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
-                                    success = false;
+                                    if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
+                                    {
+                                        monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
+                                        success = false;
+                                    }
                                 }
                                 else
                                 {
-                                    monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}'." );
+                                    monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
                                     success = false;
                                 }
                             }

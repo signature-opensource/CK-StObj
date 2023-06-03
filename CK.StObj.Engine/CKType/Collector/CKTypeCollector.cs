@@ -249,9 +249,6 @@ namespace CK.Setup
                 }
             }
 
-            // Finalizing endpoints: ensures that externally defined types are registered.
-            var endpoints = KindDetector.GetRegisteredEndpointServiceInfoMap( monitor );
-
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoSupportResult? pocoSupport;
