@@ -21,6 +21,16 @@ namespace CK.Core
         /// <code>
         /// services.AddScoped&lt;IMySpecificService&gt;( sp => scopeData( sp ).MySpecificService );
         /// </code>
+        /// Note that if the endpoint doesn't get a scoped monitor from the scoped data, the right registration is:
+        /// <code>
+        /// services.AddScoped&lt;IActivityMonitor,ActivityMonitor&gt;();
+        /// services.AddScoped( sp => sp.GetRequiredService&lt;IActivityMonitor&gt;().ParallelLogger );
+        /// </code>
+        /// If the monitor is provided, this becomes:
+        /// <code>
+        /// services.AddScoped&lt;IActivityMonitor&gt;( sp => scopeData( sp ).Monitor );
+        /// services.AddScoped( sp => sp.GetRequiredService&lt;IActivityMonitor&gt;().ParallelLogger );
+        /// </code>
         /// </summary>
         /// <param name="services">Container to configure.</param>
         /// <param name="globalServiceExists">Provides a way to detect if a service is available.</param>

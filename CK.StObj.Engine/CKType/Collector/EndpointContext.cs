@@ -22,8 +22,8 @@ namespace CK.Setup
             _instanceDataType = instanceDataType;
             _endpointDefinition = endpointDefinition;
             _singletons = new List<Type>();
-            // IActivityMonitor is the only ubiquitous service: every endpoint MUST support it!
-            _scoped = new List<Type>() { typeof( IActivityMonitor ) };
+            // IActivityMonitor and IParallelLogger are the only ubiquitous endpoint services.: every endpoint MUST support them!
+            _scoped = new List<Type>() { typeof( IActivityMonitor ), typeof( IParallelLogger ) };
         }
 
         public IStObjResult EndpointDefinition => _endpointDefinition;
