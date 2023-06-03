@@ -41,7 +41,7 @@ namespace CK.StObj.Engine.Tests.Service
 
         // A ProcessService can be singleton or scoped.
         [Test]
-        public void registering_a_Processservice_with_its_AutoService_Marshaller_makes_it_marshallable()
+        public void registering_a_ProcessService_with_its_AutoService_Marshaller_makes_it_marshallable()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( ProcessService1 ), typeof( MService1 ) );
 
@@ -50,7 +50,7 @@ namespace CK.StObj.Engine.Tests.Service
             IStObjServiceClassDescriptor dI = map.Services.Mappings[typeof( IProcessService1 )];
             IStObjServiceClassDescriptor dC = map.Services.Mappings[typeof( ProcessService1 )];
             dI.Should().BeSameAs( dC );
-            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dI.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace CK.StObj.Engine.Tests.Service
             var dMi = map.Services.Mappings[typeof( Model.IMarshaller<ProcessService1> )];
             dM.Should().NotBeNull();
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
-            dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
+            dM.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
             dMi.Should().BeSameAs( dM );
         }
 
@@ -78,13 +78,13 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor d1 = map.Services.Mappings[typeof( IProcessService1 )];
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
             var dM = map.Services.Mappings[typeof( MService1 )];
             var dMClass = map.Services.Mappings[typeof( Model.IMarshaller<ProcessService1> )];
             dM.Should().NotBeNull();
             dM.IsScoped.Should().BeFalse( "Nothing prevents the marshaller to be singleton." );
-            dM.AutoServiceKind.Should().Be( AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
+            dM.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton, "A marshaller is not a Front service." );
             dMClass.Should().BeSameAs( dM );
             map.Services.Mappings.ContainsKey( typeof( Model.IMarshaller<IProcessService1> ) )
                 .Should().BeFalse( "Marshalling the IService MUST be explicitly supported by the marshaller implementation." );
@@ -120,12 +120,12 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             IStObjServiceClassDescriptor d1 = map.Services.Mappings[typeof( IProcessService1 )];
-            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            d1.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
 
             IStObjServiceClassDescriptor dDep2 = map.Services.Mappings[typeof( IProcessDependentService2 )];
             IStObjServiceClassDescriptor dDep1 = map.Services.Mappings[typeof( IProcessDependentService2 )];
-            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
-            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep2.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
+            dDep1.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsProcessService | AutoServiceKind.IsMarshallable | AutoServiceKind.IsSingleton );
         }
 
 
