@@ -1,5 +1,4 @@
 using CK.Setup;
-using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,9 +34,6 @@ namespace CK.Core
         /// Gets the available <see cref="IEndpointType"/>.
         /// </summary>
         public abstract IReadOnlyList<IEndpointType> EndpointTypes { get; }
-
-        // Do not remove this!
-        static void KeepTheMicrosoftExtensionsHostingAbstractionAssemblyRef( IHostedService service ) { }
     }
 
 }

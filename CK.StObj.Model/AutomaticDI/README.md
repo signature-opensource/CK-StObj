@@ -1,70 +1,15 @@
 # Automatic DI
 
 This folder contains types that will eventually be defined in CK.Core.
-"Front/Process context" for services and marshalling is not finalized yet: we should be able to model
-"endpoint adherence" of front services (there's more than one endpoint) and marshaller may not be able to work across
-all contexts.
+"Process context" for services and marshalling is not finalized yet.
 
-CK.Core defines: IRealObject, IAutoService, IScopedAutoService, ISingletonAutoService, IsMultipleAttribute, ReplaceAutoServiceAttribute,
-CKTypeDefinerAttribute and CKTypeSuperDefinerAttribute.
+CK.Core defines: `IRealObject`, `IAutoService`, `IScopedAutoService`, `ISingletonAutoService`,
+`EndpointScopedServiceAttribute`, `EndpointSingletonServiceAttribute` `IsMultipleAttribute`,
+`ReplaceAutoServiceAttribute`, `CKTypeDefinerAttribute` and `CKTypeSuperDefinerAttribute`.
 
 See https://github.com/Invenietis/CK-Core/tree/develop/CK.Core/AutomaticDI
 
-## The "Endpoint" DI roots
-
-### Step 0 - Some background
-The notion of "IEndpointService singleton" doesn't currently exist (may 2323)... I've always considered
-"Endpoint services" (formerly called "Front services") to necessarily be scoped dependencies.
-That was a mistake (an overlook).
-One of the first idea was to hook the service resolution with a configurable scoped service:
-
-```csharp
-[IsMultiple]
-public interface IEndpointServiceResolver : ISingletonAutoService
-{
-    object? GetService( IServiceProvider scope, Type serviceType );
-}
-
-public sealed class ServiceHook : IScopedAutoService
-{
-    readonly IServiceProvider _scoped;
-    IEndpointServiceResolver? _resolver;
-    readonly Dictionary<Type, object?> _resolved;
-
-    public ServiceHook( IServiceProvider scoped )
-    {
-        _resolved = new Dictionary<Type, object?>();
-        _scoped = scoped;
-    }
-
-    public void SetResolver( IEndpointServiceResolver resolver )
-    {
-        Throw.CheckState( _resolver == null );
-        _resolver = resolver;
-    }
-
-    public object? GetService( Type t )
-    {
-        Throw.CheckState( _resolver != null );
-        if( !_resolved.TryGetValue( t, out object? o ) )
-        {
-           o = _resolver.GetService( _scoped, t );
-           _resolved.Add( t, o );
-           return o;
-        }
-    }
-}
-```
-We cannot register a "IEndpointService singleton" as a singleton and resolves it through from a scoped hook
-because of an optimization in the .Net Core DI where registered singleton are directly resolved to the root
-(resolving from the requesting scope is short-circuited). To be able to hook the resolution we must register them as
-Scoped. But by doing this, they are no more singletons. Anyway, this simply cannot work at all because of the inherent
-recursion on the scoped container and hook.
-
-It seems that we need either:
-- A more powerful DI engine (Autofac) and use its capabilities but it comes with a fair amount of complexities
-  (which is perfectly normal) and requires hooks to be setup to be integrated with the "Conformant DI".
-- Continue to use the Conformant DI but take more control on it.
+## The "Endpoint" DI containers
 
 ### Step 1 - The Conformant DI choice 
 
