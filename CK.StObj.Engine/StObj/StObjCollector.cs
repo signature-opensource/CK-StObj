@@ -276,9 +276,10 @@ namespace CK.Setup
             _computedResult = true;
             try
             {
-                // Systematically registers the EndpointTypeManager.
+                // Systematically registers the EndpointTypeManager and the EndpointUbiquitousInfo: unit tests don't have to do it.
                 // (Note that the PocoDirectory is registered by the CKTypeCollector.
                 _cc.RegisterClass( typeof( EndpointTypeManager ) );
+                _cc.RegisterClass( typeof( EndpointUbiquitousInfo ) );
 
                 EndpointResult? endpoints = null;
                 var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
@@ -290,7 +291,7 @@ namespace CK.Setup
                     // resolution may need it.
                     using( monitor.OpenInfo( "Endpoints handling." ) )
                     {
-                        endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.KindComputeFacade.KindDetector.EndpointServices );
+                        endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.KindComputeFacade.KindDetector );
                     }
                     // This is far from elegant but simplifies the engine object model:
                     // We set the final ordered results on the crappy mutable EngineMap (that should

@@ -69,7 +69,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //  - Then all the endpointType instances create their own ServiceCollection by processing the 
             //    descriptors from the mappings and adding their own EndpointScopeData<TScopeData> scoped data holder
             //    and the true instance singletons IStObjMap, EndpointTypeManager, the EndpointType and the IEnumerable<IEndpointType>. 
-            foreach( var e in theEPTM._endpointTypes )
+            foreach( IEndpointTypeInternal e in theEPTM._endpointTypes )
             {
                 if( !e.ConfigureServices( reg.Monitor, this, mappings, trueSingletons ) ) success = false;
             }

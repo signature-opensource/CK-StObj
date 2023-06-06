@@ -61,12 +61,22 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddSingleton( sp => new A( "A instance by factory" ) );
             // This scoped must be bound to the B and the two A instance.
             global.AddScoped<Scoped>();
+            // This is required to handle the ubiquitous endpoint scoped services.
+            // (This is done automatically since this is a IScopedAutoService.
+            global.AddScoped<EndpointUbiquitousInfo>();
+            // Here we are working with 3 fake ubiquitous services:
+            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
+            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
 
             IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( IFakeAuthenticationInfo.Anonymous ) );
+            // From the global, obtains a EndpointUbiquitousInfo.
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
 
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
@@ -97,7 +107,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             //
             using var scopedG2 = g.CreateScope();
-            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
 
             var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
             var fromG2 = ResolveFrom( scopedG2.ServiceProvider );
@@ -143,6 +153,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // in the container but this cannot be analyzed and the final mapped type
             // is lost.
             services.AddSingleton<IMultiSing>( sp => sp.GetRequiredService<Sing2>() );
+            // This is required to handle the ubiquitous endpoint scoped services.
+            // (This is done automatically since this is a IScopedAutoService.
+            services.AddScoped<EndpointUbiquitousInfo>();
+            // Here we are working with 3 fake ubiquitous services:
+            services.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
+            services.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+            services.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+
             var g = services.BuildServiceProvider();
             using var scopedG = g.CreateScope();
 
@@ -201,11 +219,20 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddScoped<Scop2>();
             global.AddScoped<IMulti, Scop2>( sp => sp.GetRequiredService<Scop2>() );
 
+            // This is required to handle the ubiquitous endpoint scoped services.
+            // (This is done automatically since this is a IScopedAutoService.
+            global.AddScoped<EndpointUbiquitousInfo>();
+            // Here we are working with 3 fake ubiquitous services:
+            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
+            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+
             IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( IFakeAuthenticationInfo.Anonymous ) );
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
 
             // Both containers resolves to the same instance.
             var sing1 = CheckTrueSingleton<Sing1>( g, e, scopedG, scopedE );
@@ -298,10 +325,20 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 // Invalid registration (ImplementationType is not discoverable).
                 global.AddSingleton<IMulti>( sp => sp.GetRequiredService<Sing1>() );
             }
+            // This is required to handle the ubiquitous endpoint scoped services.
+            // (This is done automatically since this is a IScopedAutoService.
+            global.AddScoped<EndpointUbiquitousInfo>();
+            // Here we are working with 3 fake ubiquitous services:
+            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
+            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
 
-            IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out _ );
+            IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null );
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( IFakeAuthenticationInfo.Anonymous ) );
+
+            using var scopedG = g.CreateScope();
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
 
             // The container works as usual.
             IEnumerable<Sing1> eSing1 = scopedE.ServiceProvider.GetServices<Sing1>();
@@ -327,6 +364,73 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                     // Miraculous good registration order...
                     m.Select( o => o.GetType() ).Should().BeEquivalentTo( new[] { typeof( Scop1 ), typeof( Sing1 ) } );
                 }
+            }
+        }
+
+
+        [Test]
+        public void ubiquitous_services_test()
+        {
+            ServiceCollection global = new ServiceCollection();
+            global.AddScoped<EndpointUbiquitousInfo>();
+            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
+            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+
+            IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
+            Debug.Assert( e != null && g != null );
+
+            using var scopedG = g.CreateScope();
+            // From the global, obtains a EndpointUbiquitousInfo.
+            var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
+
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+
+            (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
+            (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
+            fromE = ResolveFrom( scopedE.ServiceProvider );
+            fromG = ResolveFrom( scopedG.ServiceProvider );
+
+            fromE.A.Should().BeSameAs( fromG.A );
+            fromE.B.Should().BeSameAs( fromG.B );
+            fromE.MultiA.Should().NotBeSameAs( fromG.MultiA, "Unfortunately... But its content is okay, and anyway, see below: " +
+                                                             "instances are always different for resolved IEnumerable<>." );
+            fromE.MultiA.Select( a => a.Name ).Should().BeEquivalentTo( new[] { "A instance", "A instance by factory" } );
+            fromE.MultiA.ElementAt( 0 ).Should().BeSameAs( fromG.MultiA.ElementAt( 0 ) );
+            fromE.MultiA.ElementAt( 1 ).Should().BeSameAs( fromG.MultiA.ElementAt( 1 ) );
+
+            fromE.S.Should().NotBeSameAs( fromG.S, "Scoped are obviously different instances." );
+            fromE.S.B.Should().BeSameAs( fromG.S.B ).And.BeSameAs( fromG.B );
+            fromE.S.MultipleA.Should().BeSameAs( fromE.MultiA );
+            fromG.S.MultipleA.Should().NotBeSameAs( fromG.MultiA, "Each resolution of IEnumerable<> leads to a different instance." );
+
+            // When we ask for IEnumerable<B>, we always have a different (single) enumeration.
+            var gB = scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>();
+            gB.Should().NotBeSameAs( scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>() );
+            var eB = scopedG.ServiceProvider.GetRequiredService<IEnumerable<B>>();
+            eB.Should().NotBeSameAs( scopedE.ServiceProvider.GetRequiredService<IEnumerable<B>>() );
+
+            gB.Should().HaveCount( 1 ).And.Contain( new[] { e.GetRequiredService<B>() } );
+            eB.Should().HaveCount( 1 ).And.Contain( new[] { e.GetRequiredService<B>() } );
+
+            //
+            using var scopedG2 = g.CreateScope();
+            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+
+            var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
+            var fromG2 = ResolveFrom( scopedG2.ServiceProvider );
+
+            fromG2.A.Should().BeSameAs( fromG.A );
+            fromG2.B.Should().BeSameAs( fromG.B );
+            fromG2.S.Should().NotBeSameAs( fromG.S );
+
+            fromE2.A.Should().BeSameAs( fromE.A ).And.BeSameAs( fromG.A );
+            fromE2.B.Should().BeSameAs( fromE.B ).And.BeSameAs( fromG.B );
+            fromE2.S.Should().NotBeSameAs( fromE.S );
+
+            static (A A, B B, IEnumerable<A> MultiA, Scoped S) ResolveFrom( IServiceProvider sp )
+            {
+                return (sp.GetRequiredService<A>(), sp.GetRequiredService<B>(), sp.GetRequiredService<IEnumerable<A>>(), sp.GetRequiredService<Scoped>());
             }
         }
 

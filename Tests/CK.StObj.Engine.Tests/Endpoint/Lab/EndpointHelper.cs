@@ -19,6 +19,7 @@ namespace CK.StObj.Engine.Tests
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
+    using CK.StObj.Engine.Tests.Endpoint.Conformant;
 
     // This one is always required because EndpointTypeManager_CK holds an array of
     // IEndpointTypeInternal (even if it is empty).
@@ -305,7 +306,7 @@ namespace CK.StObj.Engine.Tests
         }
     }
 
-    sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : notnull
+    sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : EndpointDefinition.ScopedData
     {
         internal IEndpointServiceProvider<TScopeData>? _services;
 
@@ -407,7 +408,6 @@ namespace CK.StObj.Engine.Tests
             }
         }
 
-
         static TScopeData GetScopeData( IServiceProvider sp ) => Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data;
 
         public bool ConfigureServices( IActivityMonitor monitor,
@@ -419,10 +419,9 @@ namespace CK.StObj.Engine.Tests
             // Calls the ConfigureEndpointServices on an empty configuration.
             _definition.ConfigureEndpointServices( endpoint, GetScopeData, new GlobalServiceExists( mappings ) );
 
-            // Process the endpoint specific registrations to detect:
-            // - extra registrations: there must not be any type mapped to IRealObject or IAutoService.
-            // - missing registrations from the definition.
-            // And updates the mappings with potential Mapping.Endpoint objects.
+            // Process the endpoint specific registrations to detect extra registrations: there must not be any type
+            // mapped to IRealObject or IAutoService or ubiquitous scoped endpoint services.
+            // This also updates the mappings with potential Mapping.Endpoint objects.
             if( CheckRegistrations( monitor, endpoint, stObjMap, mappings ) )
             {
                 var configuration = new ServiceCollection();
@@ -435,6 +434,11 @@ namespace CK.StObj.Engine.Tests
                 // Add the StObjMap, the EndpointTypeManager, all the IEndpointType<TScopeData> and the
                 // IEnumerable<IEndpoint>.
                 configuration.AddRange( trueSingletons );
+
+                // We must also register the ubiquitous services. Since the code depends on the
+                // EndpointDefinition (because of the possibility to shortcut the EndpointUbiquitousInfo) we
+                // 
+                FakeEndpointTypeManager_CK.
                 // Waiting for .Net 8.
                 // configuration.MakeReadOnly();
                 _configuration = configuration;

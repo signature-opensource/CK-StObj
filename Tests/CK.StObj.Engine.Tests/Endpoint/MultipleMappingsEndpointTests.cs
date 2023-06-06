@@ -39,10 +39,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class FirstEndpointDefinition : EndpointDefinition<string>
+        public abstract class FirstEndpointDefinition : EndpointDefinition<FirstEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, string> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -51,10 +59,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class SecondEndpointDefinition : EndpointDefinition<int>
+        public abstract class SecondEndpointDefinition : EndpointDefinition<SecondEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, int> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -234,10 +250,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         // IMany will be resolved as Singleton because the auto services ManySingleton is registered.
         // This Buggy endpoint declares a IMany scoped service: this will fail when registering the StObjMap.
         [EndpointDefinition]
-        public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<string>
+        public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<ManyAsScopedEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, string> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -259,10 +283,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         // This one will be fine.
         [EndpointDefinition]
-        public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<int>
+        public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<ManyAsSingletonEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, int> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddSingleton<ManyNothing>();

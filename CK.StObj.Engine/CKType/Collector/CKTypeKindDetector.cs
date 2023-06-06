@@ -57,6 +57,7 @@ namespace CK.Setup
         readonly Dictionary<Type, CKTypeKind> _cache;
         readonly Func<IActivityMonitor, Type, bool>? _typeFilter;
         readonly Dictionary<Type, AutoServiceKind> _endpointServices;
+        readonly List<Type> _ubiquitousInfoServices;
 
         /// <summary>
         /// Initializes a new detector.
@@ -67,12 +68,18 @@ namespace CK.Setup
             _cache = new Dictionary<Type, CKTypeKind>( 1024 );
             _endpointServices = new Dictionary<Type, AutoServiceKind>();
             _typeFilter = typeFilter;
+            _ubiquitousInfoServices = new List<Type>();
         }
 
         /// <summary>
         /// Gets all the types that have been declared as endpoint services.
         /// </summary>
         public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
+
+        /// <summary>
+        /// Gets the ubiquitous types.
+        /// </summary>
+        public IReadOnlyList<Type> UbiquitousInfoServices => _ubiquitousInfoServices;
 
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>).
@@ -128,42 +135,13 @@ namespace CK.Setup
             return SetLifetimeOrProcessType( m, t, CKTypeKind.IsScoped | IsScopedReasonReference );
         }
 
-        /// <summary>
-        /// Tries to set the <see cref="CKTypeKind.IsPocoClass"/> flag for a type (that must be a class).
-        /// This fails if the type is already registered as another kind of type.
-        /// </summary>
-        /// <param name="m">The monitor to use.</param>
-        /// <param name="t">The type to configure.</param>
-        /// <returns>True on success, false on error.</returns>
-        internal bool SetPocoClass( IActivityMonitor m, Type t )
-        {
-            Debug.Assert( t.IsClass );
-            var exist = RawGet( m, t );
-            if( exist == CKTypeKind.None )
-            {
-                m.Trace( $"Type '{t}' is now defined as a PocoClass." );
-                _cache[t] = CKTypeKind.IsPocoClass;
-            }
-            else if( exist != CKTypeKind.IsPocoClass )
-            {
-                m.Error( $"Type '{t}' is already registered as a '{ToStringFull( exist )}'. It can not be defined as a PocoClass." );
-                return false;
-            }
-            return true;
-        }
-
         CKTypeKind? SetLifetimeOrProcessType( IActivityMonitor m, Type t, CKTypeKind kind  )
         {
             Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
             Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
 
-            bool hasLifetime = (kind & CKTypeKind.LifetimeMask) != 0;
-            bool isProcess = (kind & CKTypeKind.IsProcessService) != 0;
-            bool isMultiple = (kind & CKTypeKind.IsMultipleService) != 0;
-            bool isMarshallable = (kind & CKTypeKind.IsMarshallable) != 0;
-            bool isEndpoint = (kind & CKTypeKind.IsEndpointService) != 0;
-
-            Debug.Assert( hasLifetime || isProcess || isMultiple || isMarshallable || isMarshallable, "At least, something must be set." );
+            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsProcessService | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.UbiquitousInfo) != 0,
+                            "At least, something must be set." );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
@@ -185,6 +163,11 @@ namespace CK.Setup
             if( (updated & CKTypeKind.IsEndpointService) != 0 )
             {
                 _endpointServices[t] = updated.ToAutoServiceKind();
+                if( (updated & CKTypeKind.UbiquitousInfo) == CKTypeKind.UbiquitousInfo
+                    && !_ubiquitousInfoServices.Contains( t ) )
+                {
+                    _ubiquitousInfoServices.Add( t );
+                }
             }
 
             Debug.Assert( (updated & (IsDefiner | IsSuperDefiner)) == 0 );
@@ -284,6 +267,7 @@ namespace CK.Setup
                     bool isPocoClass = false;
                     bool isExcludedType = false;
                     bool isEndpointScoped = false;
+                    bool isUbiquitousServiceInfo = false;
                     bool isEndpointSingleton = false;
 
                     // Now process the attributes of the type. This sets the variables above
@@ -306,7 +290,9 @@ namespace CK.Setup
                                 isExcludedType = true;
                                 break;
                             case "EndpointScopedServiceAttribute":
+                            case "TEMPEndpointScopedServiceAttribute":
                                 isEndpointScoped = true;
+                                isUbiquitousServiceInfo = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b;
                                 break;
                             case "EndpointSingletonServiceAttribute":
                                 isEndpointSingleton = true;
@@ -357,7 +343,6 @@ namespace CK.Setup
                             {
                                 var kI = RawGet( m, i ) & ~(IsDefiner | IsSuperDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | IsReasonMarker);
                                 k |= kI;
-                                Debug.Assert( (k & CKTypeKind.IsPocoClass) == 0, "PocoClass attribute can only be on class." );
                             }
                             k |= IsDefiner;
                             if( hasSuperDefiner ) k |= IsSuperDefiner;
@@ -380,7 +365,7 @@ namespace CK.Setup
                             {
                                 // IsMarshallable and IsPocoClass is not propagated.
                                 // "Weak Exclusion": an excluded (or filtered) base type doesn't exclude it specializations.
-                                var kBase = RawGet( m, baseType ) & ~(CKTypeKind.IsMarshallable | CKTypeKind.IsPocoClass | CKTypeKind.IsExcludedType | IsReasonMarker) ;
+                                var kBase = RawGet( m, baseType ) & ~(CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType | IsReasonMarker) ;
                                 Debug.Assert( (kBase & CKTypeKind.IsMultipleService) == 0, "IsMultipleService is for interfaces only." );
                                 if( (kBase & IsSuperDefiner) != 0 )
                                 {
@@ -432,10 +417,10 @@ namespace CK.Setup
                         k &= ~CKTypeKind.HasError;
                         if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                         if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
-                        if( isPocoClass ) k |= CKTypeKind.IsPocoClass;
                         if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
-                        if( isEndpointScoped ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
                         if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
+                        if( isUbiquitousServiceInfo ) k |= CKTypeKind.UbiquitousInfo;
+                        else if( isEndpointScoped ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsScoped;
 
                         // Final check if the type filter has not excluded the type.
                         // We may be IAutoService or a IPoco or... whatever: any combination error will be detected.
@@ -500,6 +485,7 @@ namespace CK.Setup
                             if( (k & CKTypeKind.IsEndpointService) != 0 )
                             {
                                 _endpointServices.Add( t, k.ToAutoServiceKind() );
+                                _ubiquitousInfoServices.Add( t );
                             }
                         }
                     }

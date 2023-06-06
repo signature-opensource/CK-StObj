@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -28,6 +29,7 @@ namespace CK.Setup
             StaticConstructor( scope, endpointResult );
             InstanceConstructor( scope, endpointResult );
             CreateTrueSingletons( scope, endpointResult );
+            GetInitialEndpointUbiquitousInfo( scope, endpointResult );
 
             scope.Append( "public override IReadOnlyList<EndpointDefinition> EndpointDefinitions => _endpoints;" ).NewLine()
                  .Append( "public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;" ).NewLine()
@@ -98,6 +100,28 @@ namespace CK.Setup
                      .Append( "> ), _endpointTypes[" ).Append( i++ ).Append( "] )," ).NewLine();
             }
             scope.Append( "};" )
+                 .CloseBlock();
+        }
+
+        static void GetInitialEndpointUbiquitousInfo( ITypeScope scope, IEndpointResult endpointResult )
+        {
+            scope.Append( "protected override object GetInitialEndpointUbiquitousInfo( IServiceProvider services )" )
+                 .OpenBlock()
+                 .Append( "return new Dictionary<Type, object> {" ).NewLine();
+            foreach( var t in endpointResult.UbiquitousInfoServices )
+            {
+                scope.Append( "{ " ).AppendTypeOf( t )
+                     .Append( ", (" ).AppendTypeOf( t ).Append( ")Required( services, " ).AppendTypeOf( t ).Append( " ) }," ).NewLine();
+            }
+            scope.Append( "};").NewLine()
+                 .Append( """
+                          static object Required( IServiceProvider services, Type type )
+                          {
+                              var o = services.GetService( type );
+                              if( o != null ) return o;
+                              return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
+                          }
+                          """ )
                  .CloseBlock();
         }
 

@@ -9,15 +9,15 @@ namespace CK.StObj.Engine.Tests.Endpoint
 {
     public class BackgroundExecutor : ISingletonAutoService
     {
-        readonly IEndpointServiceProvider<BackgroundEndpointDefinition.BackgroundData> _serviceProvider;
         readonly Channel<object?> _commands;
         readonly Task _runTask;
+        readonly IEndpointType<BackgroundEndpointDefinition.BackgroundData> _endpoint;
 
         public BackgroundExecutor( IEndpointType<BackgroundEndpointDefinition.BackgroundData> endpoint )
         {
-            _serviceProvider = endpoint.GetContainer();
             _commands = Channel.CreateUnbounded<object?>();
             _runTask = Task.Run( RunAsync );
+            _endpoint = endpoint;
         }
 
         public void Push( IFakeAuthenticationInfo? info, object command )
@@ -34,14 +34,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
         async Task RunAsync()
         {
             var monitor = new ActivityMonitor( "Background Executor." );
-            // We want any command executed by this loop to use the same monitor.
-            var data = new BackgroundEndpointDefinition.BackgroundData( monitor );
             object? o;
             while( (o = await _commands.Reader.ReadAsync()) != null )
             {
                 var cmd = (RunCommand)o;
-                data.Auth = cmd.Auth;
-                using( var scope = _serviceProvider.CreateAsyncScope( data ) )
+                // We want any command executed by this loop to use the same monitor.
+                var data = new BackgroundEndpointDefinition.BackgroundData( _endpoint, monitor, cmd.Auth ?? IFakeAuthenticationInfo.Anonymous );
+                using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
                 {
                     var executor = scope.ServiceProvider.GetRequiredService<SampleCommandProcessor>();
                     executor.Process( cmd.Command );

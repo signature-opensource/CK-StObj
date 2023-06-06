@@ -8,17 +8,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
     [EndpointDefinition]
     public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.BackgroundData>
     {
-        public sealed class BackgroundData
+        public sealed class BackgroundData : ScopedData
         {
-            internal BackgroundData( IActivityMonitor monitor )
+            internal BackgroundData( IEndpointType<BackgroundData> _endpoint, IActivityMonitor monitor, IFakeAuthenticationInfo auth )
+                : base( null )
             {
                 Monitor = monitor;
+                Auth = auth;
             }
 
             internal IActivityMonitor Monitor { get; }
 
             [AllowNull]
-            internal IFakeAuthenticationInfo Auth { get; set; }
+            internal IFakeAuthenticationInfo Auth { get; }
         }
 
         public override void ConfigureEndpointServices( IServiceCollection services,

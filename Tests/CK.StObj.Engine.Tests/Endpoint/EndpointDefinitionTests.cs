@@ -16,10 +16,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public class EndpointDefinitionTests
     {
         [EndpointDefinition]
-        public abstract class AppIdentityEndpointDefinition : EndpointDefinition<string>
+        public abstract class AppIdentityEndpointDefinition : EndpointDefinition<AppIdentityEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, string> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor,ActivityMonitor>();
@@ -28,10 +36,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class BackdoorEndpointDefinition : EndpointDefinition<object>
+        public abstract class BackdoorEndpointDefinition : EndpointDefinition<BackdoorEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, object> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -109,12 +125,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class Dup1EndpointDefinition : EndpointDefinition<object>
+        public abstract class Dup1EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
         }
 
         [EndpointDefinition]
-        public abstract class Dup2EndpointDefinition : EndpointDefinition<object>
+        public abstract class Dup2EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
         }
 
@@ -127,8 +150,16 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
         [EndpointDefinition]
-        public abstract class BadNameDefinition : EndpointDefinition<object>
+        public abstract class BadNameDefinition : EndpointDefinition<BadNameDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
         }
 
         [Test]

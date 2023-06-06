@@ -14,20 +14,22 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         static readonly EndpointDefinition[] _endpoints;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal readonly IEndpointTypeInternal[] _endpointTypes;
+        // To avoid polluting the EndpointDefinition with another public generated method,
+        // we hide the 
 
         static FakeEndpointTypeManager_CK()
         {
             _endpointServices = new Dictionary<Type, AutoServiceKind>();
-            _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition() };
+            _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition(), new Fake2EndpointDefinition() };
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
-        // (There is no EndpointType for the DefaultEndpointDefinition.)
         public FakeEndpointTypeManager_CK()
         {
             _endpointTypes = new IEndpointTypeInternal[]
             {
-                    new EndpointType<FakeEndpointDefinition.Data>( new FakeEndpointDefinition() )
+                    new EndpointType<FakeEndpointDefinition.Data>( new FakeEndpointDefinition() ),
+                    new EndpointType<Fake2EndpointDefinition.Data>( new Fake2EndpointDefinition() ),
             };
         }
 
@@ -37,6 +39,25 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
 
+        // Creates a EndpointUbiquitousInfo initial content with the instances from the provided
+        // container.
+        protected override object GetInitialEndpointUbiquitousInfo( IServiceProvider services )
+        {
+            return new Dictionary<Type, object>
+            {
+                { typeof(IFakeAuthenticationInfo), (IFakeAuthenticationInfo)Required( services, typeof(IFakeAuthenticationInfo) ) },
+                { typeof(IFakeTenantInfo), (IFakeTenantInfo)Required( services, typeof(IFakeTenantInfo) ) },
+                { typeof(FakeCultureInfo), (FakeCultureInfo)Required(services, typeof(FakeCultureInfo) ) },
+            };
+
+            static object Required( IServiceProvider services, Type type )
+            {
+                var o = services.GetService( type );
+                if( o != null ) return o;
+                return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
+            }
+        }
+
         internal ServiceDescriptor[] CreateTrueSingletons( IStObjMap stObjMap )
         {
             return new ServiceDescriptor[]
@@ -45,8 +66,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 new ServiceDescriptor( typeof( EndpointTypeManager ), this ),
                 // The StObjMap singleton.
                 new ServiceDescriptor( typeof( IStObjMap ), stObjMap ),
+
                 // The IEndpointType<TScopeData> are true singletons. (Done for each EndpoitType.)
                 new ServiceDescriptor( typeof( IEndpointType<FakeEndpointDefinition.Data> ), _endpointTypes[0] ),
+                new ServiceDescriptor( typeof( IEndpointType<Fake2EndpointDefinition.Data> ), _endpointTypes[1] ),
+
                 // ...as well as the IEnumerable<IEndpointType>.
                 new ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )
             };

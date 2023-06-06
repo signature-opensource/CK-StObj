@@ -25,5 +25,10 @@ namespace CK.Setup
         /// Gets all the endpoint service types and their kind (they are not necessarily <see cref="IAutoService"/>).
         /// </summary>
         IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices { get; }
+
+        /// <summary>
+        /// Gets the ubiquitous information service types.
+        /// </summary>
+        IReadOnlyList<Type> UbiquitousInfoServices { get; }
     }
 }
