@@ -1,4 +1,3 @@
-using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +9,7 @@ namespace CK.Core
     /// Gives access to all the existing <see cref="EndpointDefinition"/>.
     /// This is a singleton service that is available from all endpoint container.
     /// </summary>
-    [ContextBoundDelegation( "CK.Setup.EndpointTypeManagerImpl, CK.StObj.Engine" )]
+    [Setup.ContextBoundDelegation( "CK.Setup.EndpointTypeManagerImpl, CK.StObj.Engine" )]
     public abstract class EndpointTypeManager : ISingletonAutoService
     {
         protected IServiceProvider? _global;

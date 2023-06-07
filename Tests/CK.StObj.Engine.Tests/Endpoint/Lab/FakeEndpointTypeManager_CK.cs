@@ -14,14 +14,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         static readonly EndpointDefinition[] _endpoints;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal readonly IEndpointTypeInternal[] _endpointTypes;
-        // To avoid polluting the EndpointDefinition with another public generated method,
-        // we handle the routing to the generated 
-        internal static Action<IServiceProvider> _configureUbiquitousEndpointInfoServices[];
 
         static FakeEndpointTypeManager_CK()
         {
             _endpointServices = new Dictionary<Type, AutoServiceKind>();
-            _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition(), new Fake2EndpointDefinition() };
+            _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition_CK() };
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
@@ -29,8 +26,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             _endpointTypes = new IEndpointTypeInternal[]
             {
-                    new EndpointType<FakeEndpointDefinition.Data>( new FakeEndpointDefinition() ),
-                    new EndpointType<Fake2EndpointDefinition.Data>( new Fake2EndpointDefinition() ),
+                    new EndpointType<FakeEndpointDefinition.Data>( new FakeEndpointDefinition_CK() )
             };
         }
 
@@ -70,7 +66,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
                 // The IEndpointType<TScopeData> are true singletons. (Done for each EndpoitType.)
                 new ServiceDescriptor( typeof( IEndpointType<FakeEndpointDefinition.Data> ), _endpointTypes[0] ),
-                new ServiceDescriptor( typeof( IEndpointType<Fake2EndpointDefinition.Data> ), _endpointTypes[1] ),
 
                 // ...as well as the IEnumerable<IEndpointType>.
                 new ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )

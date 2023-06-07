@@ -19,14 +19,6 @@ namespace CK.Core
         /// </summary>
         public abstract string Name { get; }
 
-        /// <summary>
-        /// Gets the set of ubiquitous information service types that this endpoint explicitly handles.
-        /// <para>
-        /// This is automatically implemented based on the <see cref="ScopedData"/> constructor parameters.
-        /// </para>
-        /// </summary>
-        public abstract IReadOnlyList<Type> OverriddenEndpointUbiquitousInfoServices { get; }
-
         // The only allowed specialization is EndpointDefinition<TScopeData>
         internal EndpointDefinition()
         {

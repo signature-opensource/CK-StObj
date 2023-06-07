@@ -76,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // From the global, obtains a EndpointUbiquitousInfo.
             var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
 
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
@@ -107,7 +107,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             //
             using var scopedG2 = g.CreateScope();
-            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
             var fromG2 = ResolveFrom( scopedG2.ServiceProvider );
@@ -232,7 +232,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             using var scopedG = g.CreateScope();
             var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             // Both containers resolves to the same instance.
             var sing1 = CheckTrueSingleton<Sing1>( g, e, scopedG, scopedE );
@@ -338,7 +338,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             using var scopedG = g.CreateScope();
             var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             // The container works as usual.
             IEnumerable<Sing1> eSing1 = scopedE.ServiceProvider.GetServices<Sing1>();
@@ -384,7 +384,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // From the global, obtains a EndpointUbiquitousInfo.
             var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
 
-            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromE;
             (A A, B B, IEnumerable<A> MultiA, Scoped S) fromG;
@@ -415,7 +415,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             //
             using var scopedG2 = g.CreateScope();
-            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor, IFakeAuthenticationInfo.Anonymous ) );
+            using var scopedE2 = e.CreateAsyncScope( new FakeEndpointDefinition.Data( ubiq, TestHelper.Monitor ) );
 
             var fromE2 = ResolveFrom( scopedE2.ServiceProvider );
             var fromG2 = ResolveFrom( scopedG2.ServiceProvider );

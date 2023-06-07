@@ -37,15 +37,6 @@ namespace CK.Core
         public abstract void ConfigureEndpointServices( IServiceCollection services,
                                                         Func<IServiceProvider,TScopeData> scopeData,     
                                                         IServiceProviderIsService globalServiceExists );
-
-        /// <summary>
-        /// Infrastructure artifact not intended to be called directly.
-        /// This is called before calling <see cref="ConfigureEndpointServices(IServiceCollection, Func{IServiceProvider, TScopeData}, IServiceProviderIsService)"/>
-        /// to register the ubiquitous endpoint services.
-        /// </summary>
-        /// <param name="services">The services to configure.</param>
-        public abstract void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services );
-
     }
 
 }

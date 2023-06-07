@@ -10,10 +10,25 @@ namespace CK.Core
     /// service provider so they can be overridden and marshalled to other <see cref="IEndpointType{TScopeData}"/>
     /// containers through the <see cref="EndpointDefinition.ScopedData"/>.
     /// </summary>
-    public sealed class EndpointUbiquitousInfo : IScopedAutoService
+    [Setup.ContextBoundDelegation( "CK.Setup.EndpointUbiquitousInfoImpl, CK.StObj.Engine" )]
+    public abstract class EndpointUbiquitousInfo : IScopedAutoService
     {
-        readonly Dictionary<Type, object> _initial;
-        readonly Dictionary<Type, object> _registrations;
+        protected readonly struct Entry
+        {
+            public readonly Type ServiceType;
+            public readonly int Index;
+        }
+        protected struct Mapper
+        {
+            public readonly object Initial;
+            public object Current;
+            public readonly bool IsDirty => Initial != Current;
+            internal void Restore() => Current = Initial;
+        }
+        [AllowNull]
+        static readonly Entry[] _entries;
+        readonly Mapper[] _mappers;
+
 
         /// <summary>
         /// Initializes a new <see cref="EndpointUbiquitousInfo"/> from a current context.
@@ -21,56 +36,127 @@ namespace CK.Core
         /// <param name="services">The current service provider (must be a scoped container).</param>
         public EndpointUbiquitousInfo( IServiceProvider services )
         {
-            _initial = _registrations = (Dictionary<Type, object>)services.GetRequiredService<EndpointTypeManager>().GetInitialEndpointUbiquitousInfo( services );
+            _mappers = Initialize( services );
         }
 
-        EndpointUbiquitousInfo( Dictionary<Type, object> initial, Dictionary<Type, object> r )
+        /// <summary>
+        /// Code generated.
+        /// </summary>
+        /// <param name="services">The current service provider (must be a scoped container).</param>
+        /// <returns>The initial mapped values.</returns>
+        protected abstract Mapper[] Initialize( IServiceProvider services );
+
+        /// <summary>
+        /// Gets the value retrieved from the originating DI container for a type (that must be a ubiquitous service type).
+        /// </summary>
+        /// <param name="t">The ubiquitous service type.</param>
+        /// <returns>The initial value.</returns>
+        public object GetInitialValue( Type t ) => Get( t ).Initial;
+
+        /// <summary>
+        /// Gets the current value for a type (that must be a ubiquitous service type).
+        /// </summary>
+        /// <param name="t">The ubiquitous service type.</param>
+        /// <returns>The initial value.</returns>
+        public object GetCurrentValue( Type t ) => Get( t ).Current;
+
+        /// <summary>
+        /// Gets whether at least one value is overridden.
+        /// </summary>
+        public bool IsDirty
         {
-            _initial = initial;
-            _registrations = r;
+            get
+            {
+                for( int i = 0; i < _mappers.Length; ++i )
+                {
+                    if( _mappers[i].IsDirty ) return true;
+                }
+                return false;
+            }
         }
 
         /// <summary>
-        /// Gets the values retrieved from the originating DI container.
+        /// Restores all overrides to their initial values.
         /// </summary>
-        public IReadOnlyDictionary<Type,object> InitialValues => _initial;
-
-        /// <summary>
-        /// Gets whether this ubiquitous information has been overridden or contains the <see cref="InitialValues"/>.
-        /// </summary>
-        public bool IsCopy => _initial != _registrations;
+        public void RestoreInitialValues()
+        {
+            for( int i = 0; i < _mappers.Length; ++i )
+            {
+                _mappers[i].Restore();
+            }
+        }
 
         /// <summary>
         /// Overrides a ubiquitous resolution with an explicit instance.
         /// </summary>
         /// <typeparam name="T">The instance type. Must be a endpoint ubiquitous type.</typeparam>
         /// <param name="instance">The instance that must replace the default instance from the originating container.</param>
-        /// <returns>This info if <see cref="IsCopy"/> is already true, or a copy of the initial configuration.</returns>
-        public EndpointUbiquitousInfo Override<T>( T instance ) where T : notnull => DoOverride( typeof(T), instance );
-
-        public EndpointUbiquitousInfo Override<TScopeData, T>( Func<TScopeData, T> factory ) where T : class => DoOverride( typeof( T ), factory );
-
-        public EndpointUbiquitousInfo Override<T>( Func<IServiceProvider, T> factory ) where T : class => DoOverride( typeof( T ), Tuple.Create( factory ) );
-
-        EndpointUbiquitousInfo DoOverride( Type t, object o )
+        public void Override<T>( T instance ) where T : class
         {
-            Throw.CheckNotNullArgument( o, nameof( o ) );
-            if( _initial == _registrations )
-            {
-                var r = new Dictionary<Type, object>( _initial );
-                r[t] = o;
-                return new EndpointUbiquitousInfo( _initial, r );
-            }
-            _registrations[t] = o;
-            return this;
+            Throw.CheckNotNullArgument( instance );
+            Override( typeof( T ), instance );
         }
 
         /// <summary>
-        /// Infrastructure artifact not intended to be called directly.
+        /// Overrides a ubiquitous resolution with an explicit instance.
         /// </summary>
-        /// <param name="t">Must be the type of a endpoint ubiquitous information service.</param>
-        /// <returns>An opaque object.</returns>
-        public object GetMapping( Type t ) => _registrations[t];
+        /// <param name="type">The instance type that must be a endpoint ubiquitous type.</param>
+        /// <param name="instance">The instance that must replace the default instance from the originating container.</param>
+        public void Override( Type type, object instance )
+        {
+            Throw.CheckNotNullArgument( type );
+            Throw.CheckNotNullArgument( instance );
+            Throw.CheckArgument( type.IsAssignableFrom( instance.GetType() ) );
+            DoOverride( type, instance );
+        }
+
+        ref Mapper Get( Type t )
+        {
+            return ref _mappers[_entries[GetTypeIndex( t )].Index];
+        }
+
+        static int GetTypeIndex( Type t )
+        {
+            for( int i = 0; i < _entries.Length; ++i )
+            {
+                if( _entries[i].ServiceType == t ) return i;
+            }
+            return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ubiquitous service." );
+        }
+
+        void DoOverride( Type type, object instance )
+        {
+            int i = GetTypeIndex( type );
+            var tInstance = instance.GetType();
+            if( tInstance != type )
+            {
+                CheckSpecialization( i, tInstance );
+            }
+            _mappers[_entries[i].Index].Current = instance;
+
+            // This concerns only IAutoService.
+            // Regular (non IAutoService) have no mappings.
+            static void CheckSpecialization( int i, Type tInstance )
+            {
+                int iIndex = _entries[i].Index;
+                int iImpl = i;
+                int iNextImpl = i + 1;
+                while( iNextImpl < _entries.Length && _entries[iNextImpl].Index == iIndex )
+                {
+                    iImpl = iNextImpl;
+                    iNextImpl++;
+                }
+                // Lyskov here: the runtime type is allowed to be more specialized
+                // than the ones we know.
+                if( iImpl != i )
+                {
+                    if( !_entries[iImpl].ServiceType.IsAssignableFrom( tInstance ) )
+                    {
+                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].ServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
+                    }
+                }
+            }
+        }
 
     }
 

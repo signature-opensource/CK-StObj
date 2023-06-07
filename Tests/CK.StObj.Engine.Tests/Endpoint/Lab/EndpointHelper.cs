@@ -366,7 +366,7 @@ namespace CK.StObj.Engine.Tests
             public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
         }
 
-        sealed class ScopedDataHolder
+        sealed class ScopeDataHolder
         {
             [AllowNull]
             internal TScopedData _data;
@@ -385,14 +385,14 @@ namespace CK.StObj.Engine.Tests
             public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateAsyncScope();
-                scope.ServiceProvider.GetRequiredService<ScopedDataHolder>()._data = scopedData;
+                scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
 
             public IServiceScope CreateScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateScope();
-                scope.ServiceProvider.GetRequiredService<ScopedDataHolder>()._data = scopedData;
+                scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
 
@@ -408,24 +408,7 @@ namespace CK.StObj.Engine.Tests
             }
         }
 
-        static TScopedData GetScopedData( IServiceProvider sp ) => Unsafe.As<ScopedDataHolder>( sp.GetService( typeof( ScopedDataHolder ) )! )._data;
-
-        internal static object ResolveFromUbiquitous( Type t, IServiceProvider sp )
-        {
-            var data = GetScopedData( sp );
-            var map = data.UbiquitousInfo.GetMapping( t );
-            if( map is ITuple spMap )
-            {
-                return ((Func<IServiceProvider, object>)spMap[0]!).Invoke( sp );
-            }
-            if( map is Delegate )
-            {
-                // Use a regular cast: we don't control user mismatch of ScopedData. If it's wrong, we want a
-                // proper cast exception (not a hard engine crash).
-                return ((Func<TScopedData, object>)map).Invoke( data );
-            }
-            return map;
-        }
+        static TScopedData GetScopedData( IServiceProvider sp ) => Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data;
 
         public bool ConfigureServices( IActivityMonitor monitor,
                                        IStObjMap stObjMap,
@@ -446,16 +429,11 @@ namespace CK.StObj.Engine.Tests
                 var builder = new FinalConfigurationBuilder( _definition.Name, mappings );
                 builder.FinalConfigure( monitor, configuration );
                 // Add the scoped data holder.
-                var scopedDataType = typeof( ScopedDataHolder );
+                var scopedDataType = typeof( ScopeDataHolder );
                 configuration.Add( new ServiceDescriptor( scopedDataType, scopedDataType, ServiceLifetime.Scoped ) );
                 // Add the StObjMap, the EndpointTypeManager, all the IEndpointType<TScopeData> and the
                 // IEnumerable<IEndpoint>.
                 configuration.AddRange( trueSingletons );
-
-                // We must also register the ubiquitous services. Since the code depends on the
-                // EndpointDefinition (because of the possibility to shortcut the EndpointUbiquitousInfo) we
-                // 
-                FakeEndpointTypeManager_CK.
                 // Waiting for .Net 8.
                 // configuration.MakeReadOnly();
                 _configuration = configuration;
