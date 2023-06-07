@@ -7,7 +7,7 @@
 // (and vice versa).
 //
 // File: CK.StObj.Engine\StObj\EndpointSourceCodeGenerator.cs
-namespace CK.StObj.Engine.Tests
+namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
     using CK.Core;
     using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +19,6 @@ namespace CK.StObj.Engine.Tests
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using CK.StObj.Engine.Tests.Endpoint.Conformant;
 
     // This one is always required because EndpointTypeManager_CK holds an array of
     // IEndpointTypeInternal (even if it is empty).
@@ -28,9 +27,9 @@ namespace CK.StObj.Engine.Tests
         bool ConfigureServices( IActivityMonitor monitor,
                                 IStObjMap stObjMap,
                                 Dictionary<Type,Mapping> mappings,
-                                ServiceDescriptor[] trueSingletons );
+                                ServiceDescriptor[] commonDescriptors );
     }
-
+    
     sealed class Mapping
     {
         object? _global;
@@ -306,6 +305,31 @@ namespace CK.StObj.Engine.Tests
         }
     }
 
+    // Non generic here: it's up to the EndpointType<TScopedData> to cast.
+    sealed class ScopeDataHolder
+    {
+        [AllowNull]
+        internal EndpointDefinition.ScopedData _data;
+
+        internal static object GetUbiquitous( IServiceProvider sp, int index )
+        {
+            return Unsafe.As<EndpointUbiquitousInfo_CK>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data.UbiquitousInfo ).At( index );
+        }
+
+    }
+
+    sealed class GlobalServiceExists : IServiceProviderIsService
+    {
+        readonly IReadOnlyDictionary<Type, Mapping> _externalMappings;
+
+        public GlobalServiceExists( IReadOnlyDictionary<Type, Mapping> externalMappings )
+        {
+            _externalMappings = externalMappings;
+        }
+
+        public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
+    }
+
     sealed class EndpointType<TScopedData> : IEndpointType<TScopedData>, IEndpointTypeInternal where TScopedData : EndpointDefinition.ScopedData
     {
         internal IEndpointServiceProvider<TScopedData>? _services;
@@ -354,24 +378,6 @@ namespace CK.StObj.Engine.Tests
             }
         }
 
-        sealed class GlobalServiceExists : IServiceProviderIsService
-        {
-            readonly IReadOnlyDictionary<Type, Mapping> _externalMappings;
-
-            public GlobalServiceExists( IReadOnlyDictionary<Type, Mapping> externalMappings )
-            {
-                _externalMappings = externalMappings;
-            }
-
-            public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
-        }
-
-        sealed class ScopeDataHolder
-        {
-            [AllowNull]
-            internal TScopedData _data;
-        }
-
         sealed class Provider : IEndpointServiceProvider<TScopedData>
         {
             readonly ServiceProvider _serviceProvider;
@@ -385,6 +391,7 @@ namespace CK.StObj.Engine.Tests
             public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateAsyncScope();
+                scopedData.UbiquitousInfo.Lock();
                 scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
@@ -392,6 +399,7 @@ namespace CK.StObj.Engine.Tests
             public IServiceScope CreateScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateScope();
+                scopedData.UbiquitousInfo.Lock();
                 scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
@@ -408,14 +416,18 @@ namespace CK.StObj.Engine.Tests
             }
         }
 
-        static TScopedData GetScopedData( IServiceProvider sp ) => Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data;
+        static TScopedData GetScopedData( IServiceProvider sp )
+        {
+            return Unsafe.As<TScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data );
+        }
 
         public bool ConfigureServices( IActivityMonitor monitor,
                                        IStObjMap stObjMap,
                                        Dictionary<Type, Mapping> mappings,
-                                       ServiceDescriptor[] trueSingletons )
+                                       ServiceDescriptor[] commonDescriptors )
         {
             var endpoint = new ServiceCollection();
+
             // Calls the ConfigureEndpointServices on an empty configuration.
             _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
 
@@ -428,12 +440,10 @@ namespace CK.StObj.Engine.Tests
                 // Generates the Multiple descriptors.
                 var builder = new FinalConfigurationBuilder( _definition.Name, mappings );
                 builder.FinalConfigure( monitor, configuration );
-                // Add the scoped data holder.
-                var scopedDataType = typeof( ScopeDataHolder );
-                configuration.Add( new ServiceDescriptor( scopedDataType, scopedDataType, ServiceLifetime.Scoped ) );
-                // Add the StObjMap, the EndpointTypeManager, all the IEndpointType<TScopeData> and the
-                // IEnumerable<IEndpoint>.
-                configuration.AddRange( trueSingletons );
+                configuration.Add( new ServiceDescriptor( typeof( ScopeDataHolder ), typeof( ScopeDataHolder ), ServiceLifetime.Scoped ) );
+                // Add the scoped ScopeDataHolder and the true singletons StObjMap, EndpointTypeManager, all the
+                // IEndpointType<TScopeData> and the IEnumerable<IEndpoint>.
+                configuration.AddRange( commonDescriptors );
                 // Waiting for .Net 8.
                 // configuration.MakeReadOnly();
                 _configuration = configuration;
@@ -443,9 +453,9 @@ namespace CK.StObj.Engine.Tests
             return false;
 
             bool CheckRegistrations( IActivityMonitor monitor,
-                                        ServiceCollection configuration,
-                                        IStObjMap stObjMap,
-                                        Dictionary<Type, Mapping> mappings )
+                                     ServiceCollection configuration,
+                                     IStObjMap stObjMap,
+                                     Dictionary<Type, Mapping> mappings )
             {
                 List<Type>? singletons = null;
                 List<Type>? scoped = null;

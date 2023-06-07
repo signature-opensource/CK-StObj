@@ -1,5 +1,6 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -30,6 +31,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => throw new NotImplementedException();
 
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => throw new NotImplementedException();
+
+        IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => throw new NotImplementedException();
+
+        object? IStObjObjectMap.Obtain( Type t ) => throw new NotImplementedException();
 
         IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => Array.Empty<IStObjServiceClassDescriptor>();
 
@@ -62,6 +67,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // ServiceDescriptors are created from the EngineStObjMap and added to the global configuration
             // and to the mappings.
             EndpointHelper.FillStObjMappingsWithEndpoints( reg.Monitor, this, reg.Services, mappings );
+            // Our StObjMap is empty, but it should have at least the EndpointUbiquitousInfo => EndpointUbiquitousInfo_CK
+            // since EndpointUbiquitousInfo is a IScopedAutoService that uses code generation.
+            // So, this is what FillStObjMappingsWithEndpoints would do:
+            reg.Services.AddScoped<EndpointUbiquitousInfo, EndpointUbiquitousInfo_CK>();
 
             // We can now close the global container. Waiting for .Net 8.
             // (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
@@ -82,14 +91,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
         }
 
-        IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t )
-        {
-            throw new NotImplementedException();
-        }
 
-        object? IStObjObjectMap.Obtain( Type t )
-        {
-            throw new NotImplementedException();
-        }
     }
 }

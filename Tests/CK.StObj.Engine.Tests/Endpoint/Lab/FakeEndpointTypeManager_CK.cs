@@ -68,7 +68,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 new ServiceDescriptor( typeof( IEndpointType<FakeEndpointDefinition.Data> ), _endpointTypes[0] ),
 
                 // ...as well as the IEnumerable<IEndpointType>.
-                new ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )
+                new ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes ),
+
+                // And our fundamental scoped that holds the endpoint specific scoped Data.
+                new ServiceDescriptor( typeof( ScopeDataHolder ), typeof( ScopeDataHolder ), ServiceLifetime.Scoped )
             };
         }
 

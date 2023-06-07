@@ -16,8 +16,8 @@ namespace CK.Setup
     public sealed class EndpointResult : IEndpointResult
     {
         readonly IReadOnlyDictionary<Type, AutoServiceKind> _endpointServices;
-        readonly IReadOnlyList<Type> _ubiquitousServices;
         readonly IReadOnlyList<EndpointContext> _contexts;
+        readonly IReadOnlyList<Type> _ubiquitousServices;
 
         /// <inheritdoc />
         public IEndpointContext DefaultEndpointContext => _contexts[0];
@@ -49,36 +49,16 @@ namespace CK.Setup
             {
                 var rName = EndpointContext.DefinitionName( d.ClassType ).ToString();
                 var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
-                Type[] overriddenUbiquitousServices;
                 var nestedDataType = d.ClassType.GetNestedType( "Data" );
                 if( nestedDataType == null )
                 {
                     monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must define a nested 'public class Data : ScopedData' class." );
                     return null;
                 }
-                if( nestedDataType.BaseType != typeof( EndpointDefinition<>.ScopedData ) )
+                if( nestedDataType.BaseType != typeof( EndpointDefinition.ScopedData ) )
                 {
                     monitor.Error( $"Type '{d.ClassType:C}.Data' must specialize ScopedData class (not {nestedDataType.BaseType:C})." );
                     return null;
-                }
-                var ctors = nestedDataType.GetConstructors();
-                if( ctors.Length > 1 )
-                {
-                    monitor.Error( $"Type '{d.ClassType:C}.Data' can have one and only one constructor (found {ctors.Length})." );
-                    return null;
-                }
-                // Should handle auto services mapping here: if IMoreAuthInfo : IAuthInfo and IAuthInfo is a IAutoService, both must be
-                // handled. TODO: fix this (but currently the ubiquitous registrations are not controlled anyway).
-                var parameters = ctors[0].GetParameters().Where( p => kindDetector.UbiquitousInfoServices.Contains( p.ParameterType ) );
-                if( parameters.Any() )
-                {
-                    // Should consider nullability info of parameter here: a nullable parameter optionally overrides!
-                    monitor.Info( $"Endpoint '{rName}' overrides ubiquitous endpoint services: {parameters.Select( p => p.ParameterType.ToCSharpName()).Concatenate()}." );
-                    overriddenUbiquitousServices = parameters.Select( p => p.ParameterType ).ToArray();
-                }
-                else
-                {
-                    overriddenUbiquitousServices = Type.EmptyTypes;
                 }
                 if( contexts != null )
                 {
@@ -98,7 +78,7 @@ namespace CK.Setup
                     }
                 }
                 else contexts = new List<EndpointContext>();
-                contexts.Add( new EndpointContext( d, rName, scopeDataType, overriddenUbiquitousServices ) );
+                contexts.Add( new EndpointContext( d, rName, scopeDataType ) );
             }
             return new EndpointResult( (IReadOnlyList<EndpointContext>?)contexts ?? Array.Empty<EndpointContext>(),
                                        kindDetector.EndpointServices,

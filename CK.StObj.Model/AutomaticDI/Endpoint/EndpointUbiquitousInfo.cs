@@ -15,20 +15,31 @@ namespace CK.Core
     {
         protected readonly struct Entry
         {
-            public readonly Type ServiceType;
+            public readonly Type Type;
             public readonly int Index;
+
+            public Entry( Type type, int index ) : this()
+            {
+                Type = type;
+                Index = index;
+            }
         }
         protected struct Mapper
         {
             public readonly object Initial;
             public object Current;
             public readonly bool IsDirty => Initial != Current;
-            internal void Restore() => Current = Initial;
+
+            public Mapper( object initial )
+            {
+                Initial = initial;
+                Current = initial;
+            }
         }
         [AllowNull]
-        static readonly Entry[] _entries;
-        readonly Mapper[] _mappers;
-
+        protected static Entry[] _entries;
+        protected readonly Mapper[] _mappers;
+        bool _locked;
 
         /// <summary>
         /// Initializes a new <see cref="EndpointUbiquitousInfo"/> from a current context.
@@ -37,6 +48,15 @@ namespace CK.Core
         public EndpointUbiquitousInfo( IServiceProvider services )
         {
             _mappers = Initialize( services );
+        }
+
+        /// <summary>
+        /// Called by generated code.
+        /// </summary>
+        /// <param name="mappers">Ready to use clean mappers.</param>
+        protected EndpointUbiquitousInfo( Mapper[] mappers )
+        {
+            _mappers = mappers;
         }
 
         /// <summary>
@@ -76,29 +96,41 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Restores all overrides to their initial values.
+        /// Locks these informations: this is called by <see cref="IEndpointServiceProvider{TScopeData}.CreateScope(TScopeData)"/>
+        /// so that instances cannot be changed anymore (Override throws).
+        /// If this must be reused for another endpoint, use <see cref="CleanClone()"/>.
         /// </summary>
-        public void RestoreInitialValues()
-        {
-            for( int i = 0; i < _mappers.Length; ++i )
-            {
-                _mappers[i].Restore();
-            }
-        }
+        public void Lock() => _locked = true;
+
+        /// <summary>
+        /// Gets whether <see cref="Lock"/> has been called.
+        /// </summary>
+        public bool IsLocked => _locked;
+
+        /// <summary>
+        /// Gets an unlocked clone with no overridden values.
+        /// </summary>
+        public abstract EndpointUbiquitousInfo CleanClone();
 
         /// <summary>
         /// Overrides a ubiquitous resolution with an explicit instance.
+        /// <para>
+        /// This throws a <see cref="InvalidOperationException"/> if <see cref="IsLocked"/> is true.
+        /// </para>
         /// </summary>
         /// <typeparam name="T">The instance type. Must be a endpoint ubiquitous type.</typeparam>
         /// <param name="instance">The instance that must replace the default instance from the originating container.</param>
         public void Override<T>( T instance ) where T : class
         {
             Throw.CheckNotNullArgument( instance );
-            Override( typeof( T ), instance );
+            DoOverride( typeof( T ), instance );
         }
 
         /// <summary>
         /// Overrides a ubiquitous resolution with an explicit instance.
+        /// <para>
+        /// This throws a <see cref="InvalidOperationException"/> if <see cref="IsLocked"/> is true.
+        /// </para>
         /// </summary>
         /// <param name="type">The instance type that must be a endpoint ubiquitous type.</param>
         /// <param name="instance">The instance that must replace the default instance from the originating container.</param>
@@ -119,13 +151,14 @@ namespace CK.Core
         {
             for( int i = 0; i < _entries.Length; ++i )
             {
-                if( _entries[i].ServiceType == t ) return i;
+                if( _entries[i].Type == t ) return i;
             }
             return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ubiquitous service." );
         }
 
         void DoOverride( Type type, object instance )
         {
+            Throw.CheckState( !IsLocked );
             int i = GetTypeIndex( type );
             var tInstance = instance.GetType();
             if( tInstance != type )
@@ -150,9 +183,9 @@ namespace CK.Core
                 // than the ones we know.
                 if( iImpl != i )
                 {
-                    if( !_entries[iImpl].ServiceType.IsAssignableFrom( tInstance ) )
+                    if( !_entries[iImpl].Type.IsAssignableFrom( tInstance ) )
                     {
-                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].ServiceType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
+                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].Type.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
                     }
                 }
             }

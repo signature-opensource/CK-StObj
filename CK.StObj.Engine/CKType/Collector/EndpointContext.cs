@@ -13,13 +13,11 @@ namespace CK.Setup
         readonly IStObjResult _endpointDefinition;
         readonly string _name;
         readonly Type? _instanceDataType;
-        readonly Type[] _overriddenUbiquitousServices;
 
-        internal EndpointContext( IStObjResult endpointDefinition, string name, Type? instanceDataType, Type[] overriddenUbiquitousServices )
+        internal EndpointContext( IStObjResult endpointDefinition, string name, Type? instanceDataType )
         {
             _name = name;
             _instanceDataType = instanceDataType;
-            _overriddenUbiquitousServices = overriddenUbiquitousServices;
             _endpointDefinition = endpointDefinition;
         }
 
@@ -28,8 +26,6 @@ namespace CK.Setup
         public string Name => _name;
 
         public Type? ScopeDataType => _instanceDataType;
-
-        public IReadOnlyList<Type> OverriddenUbiquitousServices => _overriddenUbiquitousServices;
 
         internal static ReadOnlySpan<char> DefinitionName( Type definition ) => definition.Name.AsSpan( 0, definition.Name.Length - 18 );
 

@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
@@ -7,6 +7,18 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
     static class FakeHost
     {
+        public static void ConfigureGlobal( ServiceCollection global )
+        {
+            // Here we are working with 3 fake ubiquitous services.
+            // None of them have code generation (but they could).
+            // These simulate resolution from a request token, query parameter or other mean
+            // of deducing these informations for the global context.
+            global.AddScoped<IFakeAuthenticationInfo, FakeAuthenticationInfo>( sp => new FakeAuthenticationInfo( "Bob", 42 ) );
+            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
+            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+        }
+
+
         // Mimics the code executed at startup based on the Fake objects.
         public static IEndpointServiceProvider<FakeEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
                                                                                                     IServiceCollection globalConfiguration,

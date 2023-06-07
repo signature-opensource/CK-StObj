@@ -53,6 +53,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public void relay_to_global_DI_explained()
         {
             ServiceCollection global = new ServiceCollection();
+            FakeHost.ConfigureGlobal( global );
+
             // B is "normal".
             global.AddSingleton( new B( "B instance" ) );
             global.AddSingleton<IB, B>( sp => sp.GetRequiredService<B>() );
@@ -61,13 +63,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddSingleton( sp => new A( "A instance by factory" ) );
             // This scoped must be bound to the B and the two A instance.
             global.AddScoped<Scoped>();
-            // This is required to handle the ubiquitous endpoint scoped services.
-            // (This is done automatically since this is a IScopedAutoService.
-            global.AddScoped<EndpointUbiquitousInfo>();
-            // Here we are working with 3 fake ubiquitous services:
-            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
-            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
-            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+
 
             IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
@@ -144,6 +140,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public void multiple_registrations_with_relay_work( bool fromRoot )
         {
             var services = new ServiceCollection();
+            FakeHost.ConfigureGlobal( services );
+
             services.AddSingleton<Sing1>();
             // This is how a multiple registration should be done: with the
             // service type and the final type mapping.
@@ -153,13 +151,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // in the container but this cannot be analyzed and the final mapped type
             // is lost.
             services.AddSingleton<IMultiSing>( sp => sp.GetRequiredService<Sing2>() );
-            // This is required to handle the ubiquitous endpoint scoped services.
-            // (This is done automatically since this is a IScopedAutoService.
-            services.AddScoped<EndpointUbiquitousInfo>();
-            // Here we are working with 3 fake ubiquitous services:
-            services.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
-            services.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
-            services.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
 
             var g = services.BuildServiceProvider();
             using var scopedG = g.CreateScope();
@@ -203,6 +194,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public void hybrid_lifetime_multiple_registrations_in_endpoint_containers()
         {
             var global = new ServiceCollection();
+            FakeHost.ConfigureGlobal( global );
+
             global.AddSingleton<Sing1>();
             // This is the ONLY way to register a multiple mapping:
             // The returned type of the lambda can be used to determine the ImplementationType.
@@ -218,14 +211,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             global.AddScoped<IMulti, Scop1>( sp => sp.GetRequiredService<Scop1>() );
             global.AddScoped<Scop2>();
             global.AddScoped<IMulti, Scop2>( sp => sp.GetRequiredService<Scop2>() );
-
-            // This is required to handle the ubiquitous endpoint scoped services.
-            // (This is done automatically since this is a IScopedAutoService.
-            global.AddScoped<EndpointUbiquitousInfo>();
-            // Here we are working with 3 fake ubiquitous services:
-            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
-            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
-            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
 
             IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
@@ -302,6 +287,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public void when_hybrid_lifetime_multiple_registrations_fails_the_IEnumerable_must_NOT_be_used( string mode )
         {
             var global = new ServiceCollection();
+            FakeHost.ConfigureGlobal( global );
             // 
             global.AddSingleton<Sing1>();
             global.AddScoped<Scop1>();
@@ -325,13 +311,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 // Invalid registration (ImplementationType is not discoverable).
                 global.AddSingleton<IMulti>( sp => sp.GetRequiredService<Sing1>() );
             }
-            // This is required to handle the ubiquitous endpoint scoped services.
-            // (This is done automatically since this is a IScopedAutoService.
-            global.AddScoped<EndpointUbiquitousInfo>();
-            // Here we are working with 3 fake ubiquitous services:
-            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
-            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
-            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
 
             IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null );
@@ -372,10 +351,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public void ubiquitous_services_test()
         {
             ServiceCollection global = new ServiceCollection();
-            global.AddScoped<EndpointUbiquitousInfo>();
-            global.AddScoped<IFakeAuthenticationInfo>( sp => IFakeAuthenticationInfo.Anonymous );
-            global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
-            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+            FakeHost.ConfigureGlobal( global );
 
             IEndpointServiceProvider<FakeEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
             Debug.Assert( e != null && g != null );
