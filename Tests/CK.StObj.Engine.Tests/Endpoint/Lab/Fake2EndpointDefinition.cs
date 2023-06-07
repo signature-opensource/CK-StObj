@@ -21,15 +21,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         #region Generated code
         public override string Name => "Fake2";
 
-        public override void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services,
-                                                                      Func<IServiceProvider, Data> scopeData )
+        public override void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services )
         {
-            services.AddScoped( sp => (IFakeAuthenticationInfo)ResolveFromUbiquitous( typeof( IFakeAuthenticationInfo ), sp, scopeData ) );
-            services.AddScoped( sp => (FakeCultureInfo)ResolveFromUbiquitous( typeof( FakeCultureInfo ), sp, scopeData ) );
-            services.AddScoped( sp => (IFakeTenantInfo)ResolveFromUbiquitous( typeof( IFakeTenantInfo ), sp, scopeData ) );
+            services.AddScoped( sp => (IFakeAuthenticationInfo)ResolveFromUbiquitous( typeof( IFakeAuthenticationInfo ), sp ) );
+            services.AddScoped( sp => (FakeCultureInfo)ResolveFromUbiquitous( typeof( FakeCultureInfo ), sp ) );
+            services.AddScoped( sp => (IFakeTenantInfo)ResolveFromUbiquitous( typeof( IFakeTenantInfo ), sp ) );
         }
 
-        static object ResolveFromUbiquitous( Type t, IServiceProvider sp, Func<IServiceProvider, Data> scopeData )
+        static object ResolveFromUbiquitous( Type t, IServiceProvider sp )
         {
             var data = scopeData( sp );
             var map = data.UbiquitousInfo.GetMapping( t );

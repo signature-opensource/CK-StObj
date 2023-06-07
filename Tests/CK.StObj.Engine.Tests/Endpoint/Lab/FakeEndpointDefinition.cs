@@ -47,30 +47,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         //
         // And this is not the same for all endpoint definition because of the specific Data type and the fact that
         // we can skip registrations based on the Data constructor's parameters.
-        public override void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services,
-                                                                      Func<IServiceProvider, Data> scopeData )
+        public override void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services )
         {
             // We know that the IFakeAuthenticationInfo must be handled by the manual ConfigureServices because it appears in the Data constructor parameters.
-            //services.AddScoped( sp => (IFakeAuthenticationInfo)ResolveFromUbiquitous( typeof( IFakeAuthenticationInfo ), sp, scopeData ) );
-            services.AddScoped( sp => (FakeCultureInfo)ResolveFromUbiquitous( typeof( FakeCultureInfo ), sp, scopeData ) );
-            services.AddScoped( sp => (IFakeTenantInfo)ResolveFromUbiquitous( typeof( IFakeTenantInfo ), sp, scopeData ) );
-        }
-
-        static object ResolveFromUbiquitous( Type t, IServiceProvider sp, Func<IServiceProvider, Data> scopeData )
-        {
-            var data = GetScopedData( sp );
-            var map = data.UbiquitousInfo.GetMapping( t );
-            if( map is ITuple spMap )
-            {
-                return ((Func<IServiceProvider, object>)spMap[0]!).Invoke( sp );
-            }
-            if( map is Delegate )
-            {
-                // Use a regular cast: we don't control user mismatch of ScopedData. If it's wrong, we want a
-                // proper cast exception (not a hard engine crash).
-                return ((Func<Data, object>)map).Invoke( data );
-            }
-            return map;
+            //services.AddScoped( sp => (IFakeAuthenticationInfo)ResolveFromUbiquitous( typeof( IFakeAuthenticationInfo ), sp ) );
+            services.AddScoped( sp => (FakeCultureInfo)EndpointType<Data>.ResolveFromUbiquitous( typeof( FakeCultureInfo ), sp ) );
+            services.AddScoped( sp => (IFakeTenantInfo)ResolveFromUbiquitous( typeof( IFakeTenantInfo ), sp ) );
         }
 
         #endregion

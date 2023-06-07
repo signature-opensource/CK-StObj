@@ -19,7 +19,18 @@ namespace CK.Core
         /// </summary>
         public abstract string Name { get; }
 
-        internal EndpointDefinition() { }
+        /// <summary>
+        /// Gets the set of ubiquitous information service types that this endpoint explicitly handles.
+        /// <para>
+        /// This is automatically implemented based on the <see cref="ScopedData"/> constructor parameters.
+        /// </para>
+        /// </summary>
+        public abstract IReadOnlyList<Type> OverriddenEndpointUbiquitousInfoServices { get; }
+
+        // The only allowed specialization is EndpointDefinition<TScopeData>
+        internal EndpointDefinition()
+        {
+        }
 
         /// <summary>
         /// Base endpoint scoped data that enables ubiquitous scoped service informations
@@ -35,15 +46,18 @@ namespace CK.Core
             /// It is required to provide the endpoint definition instance here so that
             /// the ubiquitous marshaller can be configured with the existing ubiquitous
             /// endpoint services.
+            /// <para>
+            /// Extra parameters can be freely defined (typically the <see cref="IActivityMonitor"/> that must be used in the scope),
+            /// including ones that are ubiquitous information services: this is the explicit and type safe way to inject ubiquitous
+            /// informations that is both more explicit and efficient that using <see cref="EndpointUbiquitousInfo.Override{T}(T)"/>
+            /// methods.
+            /// </para>
             /// </summary>
             protected ScopedData( EndpointUbiquitousInfo ubiquitousInfo )
             {
                 Throw.CheckNotNullArgument( ubiquitousInfo );
-                UbiquitousEndpointInfoMarshaller = new Dictionary<Type, Func<IServiceProvider, object>>();
                 _ubiquitousInfo = ubiquitousInfo;
             }
-
-            public IReadOnlyDictionary<Type, Func<IServiceProvider, object>> UbiquitousEndpointInfoMarshaller { get; }
 
             /// <summary>
             /// Gets the ubiquitous information.

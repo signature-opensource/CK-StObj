@@ -44,8 +44,7 @@ namespace CK.Core
         /// to register the ubiquitous endpoint services.
         /// </summary>
         /// <param name="services">The services to configure.</param>
-        /// <param name="scopeData">The scoped data accessor.</param>
-        public abstract void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services, Func<IServiceProvider, TScopeData> scopeData );
+        public abstract void ConfigureUbiquitousEndpointInfoServices( IServiceCollection services );
 
     }
 

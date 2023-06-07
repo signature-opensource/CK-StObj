@@ -15,7 +15,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal readonly IEndpointTypeInternal[] _endpointTypes;
         // To avoid polluting the EndpointDefinition with another public generated method,
-        // we hide the 
+        // we handle the routing to the generated 
+        internal static Action<IServiceProvider> _configureUbiquitousEndpointInfoServices[];
 
         static FakeEndpointTypeManager_CK()
         {
