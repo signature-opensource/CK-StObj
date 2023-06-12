@@ -10,7 +10,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
         }
 
-        static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;
+        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;
 
         static EndpointUbiquitousInfo_CK()
         {
@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             }
         }
 
-        internal object At( int index ) => _mappers[index];
+        internal object At( int index ) => _mappers[index].Current;
 
         EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers ) { }
 

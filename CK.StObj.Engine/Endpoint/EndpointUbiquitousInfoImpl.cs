@@ -20,6 +20,7 @@ namespace CK.Setup
             // We build the mappings here. We only need it here.
             List<(Type, int)> mappings = BuildMappings( c.CurrentRun.EngineMap );
 
+            scope.Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;" ).NewLine();
 
             scope.GeneratedByComment( "Static constructor" )
                  .Append( "static EndpointUbiquitousInfo_CK()" )
@@ -37,7 +38,7 @@ namespace CK.Setup
                 entries.Append( "new Entry( " ).AppendTypeOf( type ).Append( ", " ).Append( index ).Append( " )," ).NewLine();
                 descriptors.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
                            .AppendTypeOf( type )
-                           .Append( ", sp => UntypedScopeDataHolder.GetUbiquitous( sp, " ).Append(index)
+                           .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append(index)
                            .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
 
@@ -54,10 +55,18 @@ namespace CK.Setup
                 scope.Append( "new Mapper( Required( services, " ).AppendTypeOf( type ).Append( " ) )," ).NewLine();
             }
             scope.Append( "};" ).NewLine()
-                 .CloseBlock();
+                 .Append( """
+                          static object Required( IServiceProvider services, Type type )
+                          {
+                              var o = services.GetService( type );
+                              if( o != null ) return o;
+                              return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
+                          }
+                          """ )
+               .CloseBlock();
 
             scope.Append( """
-                           internal object At( int index ) => _mappers[index];
+                           internal object At( int index ) => _mappers[index].Current;
 
                            EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers ) { }
 
@@ -97,11 +106,8 @@ namespace CK.Setup
                         ubiquitousTypes.Remove( m );
                     }
                 }
-                else
-                {
-                    mappings.Add( (t, current) );
-                    ubiquitousTypes.RemoveAt( ubiquitousTypes.Count - 1 );
-                }
+                mappings.Add( (t, current) );
+                ubiquitousTypes.RemoveAt( ubiquitousTypes.Count - 1 );
                 ++current;
             }
             return mappings;

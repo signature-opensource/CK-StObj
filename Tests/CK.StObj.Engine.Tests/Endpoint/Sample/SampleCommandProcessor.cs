@@ -12,19 +12,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
     {
         readonly IActivityMonitor _monitor;
         readonly SampleCommandMemory _commandHistory;
-        readonly IFakeAuthenticationInfo _userInfo;
+        readonly IFakeTenantInfo _tenantInfo;
 
-        public SampleCommandProcessor( IActivityMonitor monitor, SampleCommandMemory commandHistory, IFakeAuthenticationInfo info )
+        public SampleCommandProcessor( IActivityMonitor monitor, SampleCommandMemory commandHistory, IFakeTenantInfo info )
         {
             _monitor = monitor;
             _commandHistory = commandHistory;
-            _userInfo = info;
+            _tenantInfo = info;
         }
 
         public void Process( object command )
         {
-            _commandHistory.Trace( $"{command} - {_userInfo.UserName} - {_userInfo.ActorId}" );
-            _monitor.Info( $"Processed command '{command}' (for user '{_userInfo.UserName}' ({_userInfo.ActorId})." );
+            _commandHistory.Trace( $"{command} - {_tenantInfo.Name}" );
+            _monitor.Info( $"Processed command '{command}' (in tenant '{_tenantInfo.Name}'." );
         }
     }
 }

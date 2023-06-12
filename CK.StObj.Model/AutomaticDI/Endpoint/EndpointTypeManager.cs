@@ -34,12 +34,6 @@ namespace CK.Core
         /// </summary>
         public abstract IReadOnlyList<IEndpointType> EndpointTypes { get; }
 
-        /// <summary>
-        /// Infrastructure artifact not intended to be called directly.
-        /// </summary>
-        /// <param name="services">The current service provider. Must be a scoped container.</param>
-        /// <returns>An opaque object.</returns>
-        internal protected abstract object GetInitialEndpointUbiquitousInfo( IServiceProvider services );
     }
 
 }

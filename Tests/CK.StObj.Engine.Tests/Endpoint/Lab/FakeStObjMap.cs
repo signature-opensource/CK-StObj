@@ -48,7 +48,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             RealObjectConfigureServices( in reg );
 
             // - We build a mapping of ServiceType -> ServiceDescriptors from the global configuration (only if there are endpoints).
-            var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, FakeEndpointTypeManager_CK._endpointServices.ContainsKey );
+            var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );
 
             // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
             //   containers don't need it.
@@ -60,9 +60,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //  - Then an instance of the special "super singleton" EndpointTypeManager is created.
             //    It is the exact same instance that will be available from all the containers: the global and every endpoint containers, it is
             //    the global hook, the relay to the global service provider for the endpoint containers.
-            var theEPTM = new FakeEndpointTypeManager_CK();
-            var trueSingletons = theEPTM.CreateTrueSingletons( this );
-            reg.Services.AddRange( trueSingletons );
+            var theEPTM = new EndpointTypeManager_CK();
+            var commonDescriptors = theEPTM.CreateCommonDescriptors( this );
+            reg.Services.AddRange( commonDescriptors );
 
             // ServiceDescriptors are created from the EngineStObjMap and added to the global configuration
             // and to the mappings.
@@ -80,7 +80,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //    and the true instance singletons IStObjMap, EndpointTypeManager, the EndpointType and the IEnumerable<IEndpointType>. 
             foreach( IEndpointTypeInternal e in theEPTM._endpointTypes )
             {
-                if( !e.ConfigureServices( reg.Monitor, this, mappings, trueSingletons ) ) success = false;
+                if( !e.ConfigureServices( reg.Monitor, this, mappings, commonDescriptors ) ) success = false;
             }
             return success;
         }

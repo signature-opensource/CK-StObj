@@ -75,8 +75,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             // From the root (singleton) container.
             var o1 = GetEndpointsAndOtherTrueSingletons( s );
-            var backdoor = s.GetRequiredService<IEndpointType<object>>();
-            var appIdentity = s.GetRequiredService<IEndpointType<string>>();
+            var backdoor = s.GetRequiredService<IEndpointType<BackdoorEndpointDefinition.Data>>();
+            var appIdentity = s.GetRequiredService<IEndpointType<AppIdentityEndpointDefinition.Data>>();
 
             using var sScope = s.CreateScope();
             var o2 = GetEndpointsAndOtherTrueSingletons( sScope.ServiceProvider );
@@ -87,8 +87,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var o3 = GetEndpointsAndOtherTrueSingletons( sB );
             var o4 = GetEndpointsAndOtherTrueSingletons( sA );
 
-            using var sScopeA = sA.CreateScope( "" );
-            using var sScopeB = sB.CreateScope( this );
+            using var sScopeA = sA.CreateScope();
+            using var sScopeB = sB.CreateScope();
 
             var o5 = GetEndpointsAndOtherTrueSingletons( sScopeA.ServiceProvider );
             var o6 = GetEndpointsAndOtherTrueSingletons( sScopeB.ServiceProvider );
@@ -104,9 +104,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var endpoints = s.GetRequiredService<IEnumerable<IEndpointType>>();
             endpoints.Should().HaveCount( 2 );
-            var appIdentity = s.GetRequiredService<IEndpointType<string>>();
+            var appIdentity = s.GetRequiredService<IEndpointType<AppIdentityEndpointDefinition.Data>>();
             appIdentity.Name.Should().Be( "AppIdentity" );
-            var backdoor = s.GetRequiredService<IEndpointType<object>>();
+            var backdoor = s.GetRequiredService<IEndpointType<BackdoorEndpointDefinition.Data>>();
             backdoor.Name.Should().Be( "Backdoor" );
             endpoints.Should().Contain( appIdentity ).And.Contain( backdoor );
             return new object[] { endpoints, appIdentity, backdoor, s.GetRequiredService<EndpointTypeManager>(), s.GetRequiredService<IStObjMap>() }; 

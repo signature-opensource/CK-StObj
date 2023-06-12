@@ -13,9 +13,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // None of them have code generation (but they could).
             // These simulate resolution from a request token, query parameter or other mean
             // of deducing these informations for the global context.
-            global.AddScoped<IFakeAuthenticationInfo, FakeAuthenticationInfo>( sp => new FakeAuthenticationInfo( "Bob", 42 ) );
+            global.AddScoped<FakeAuthenticationInfo>( sp => new FakeAuthenticationInfo( "Bob", 42 ) );
+            global.AddScoped<IFakeAuthenticationInfo>( sp => sp.GetRequiredService<FakeAuthenticationInfo>() );
+
             global.AddScoped<FakeCultureInfo>( sp => new FakeCultureInfo( "fr" ) );
-            global.AddScoped<IFakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+
+            global.AddScoped<FakeTenantInfo>( sp => new FakeTenantInfo( "MyFavoriteTenant" ) );
+            global.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<FakeTenantInfo>() );
         }
 
 
@@ -41,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             globalServiceProvider = globalConfiguration.BuildServiceProvider();
 
             // HostedServiceLifetimeTrigger constructor.
-            var theEPTM = ((FakeEndpointTypeManager_CK)globalServiceProvider.GetRequiredService<EndpointTypeManager>());
+            var theEPTM = ((EndpointTypeManager_CK)globalServiceProvider.GetRequiredService<EndpointTypeManager>());
             theEPTM.SetGlobalContainer( globalServiceProvider );
 
             // 3 - From now on, on demand (this is lazily initialized), the endpoints are able to expose their

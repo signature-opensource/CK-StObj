@@ -8,18 +8,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
     /// declared as a EndpointService | IsScoped by StObjCollector.WellKnownServices AND as a
     /// ubiquitous endpoint info.
     /// </summary>
-    //[EndpointScopedService( isUbiquitousEndpointInfo: true )]
+    [TEMPEndpointScopedService( isUbiquitousEndpointInfo: true )]
     public interface IFakeAuthenticationInfo
     {
-        sealed class Anon : IFakeAuthenticationInfo
-        {
-            public string UserName => "";
-
-            public int ActorId => 0;
-        }
-
-        public static readonly IFakeAuthenticationInfo Anonymous = new Anon();
-
         int ActorId { get; }
 
         string UserName { get; }

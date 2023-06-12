@@ -2,12 +2,11 @@ using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using static CK.StObj.Engine.Tests.Service.TypeCollector.CKTypeKindDetectorTests;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
     // The EndpointTypeManager is code generated.
-    sealed class FakeEndpointTypeManager_CK : EndpointTypeManager
+    sealed class EndpointTypeManager_CK : EndpointTypeManager
     {
         // EndpointDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
@@ -15,14 +14,23 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal readonly IEndpointTypeInternal[] _endpointTypes;
 
-        static FakeEndpointTypeManager_CK()
+        static EndpointTypeManager_CK()
         {
-            _endpointServices = new Dictionary<Type, AutoServiceKind>();
+            _endpointServices = new Dictionary<Type, AutoServiceKind>()
+            {
+                { typeof(IActivityMonitor), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IParallelLogger), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(FakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IFakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+            };
             _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition_CK() };
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
-        public FakeEndpointTypeManager_CK()
+        public EndpointTypeManager_CK()
         {
             _endpointTypes = new IEndpointTypeInternal[]
             {
@@ -36,26 +44,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
 
-        // Creates a EndpointUbiquitousInfo initial content with the instances from the provided
-        // container.
-        protected override object GetInitialEndpointUbiquitousInfo( IServiceProvider services )
-        {
-            return new Dictionary<Type, object>
-            {
-                { typeof(IFakeAuthenticationInfo), (IFakeAuthenticationInfo)Required( services, typeof(IFakeAuthenticationInfo) ) },
-                { typeof(IFakeTenantInfo), (IFakeTenantInfo)Required( services, typeof(IFakeTenantInfo) ) },
-                { typeof(FakeCultureInfo), (FakeCultureInfo)Required(services, typeof(FakeCultureInfo) ) },
-            };
 
-            static object Required( IServiceProvider services, Type type )
-            {
-                var o = services.GetService( type );
-                if( o != null ) return o;
-                return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
-            }
-        }
-
-        internal ServiceDescriptor[] CreateTrueSingletons( IStObjMap stObjMap )
+        internal ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )
         {
             return new ServiceDescriptor[]
             {

@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace CK.StObj.Engine.Tests.Endpoint
 {
     /// <summary>
@@ -14,8 +16,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
             ActorId = id;
         }
         public int ActorId { get; }
-
         public string UserName { get; }
+
+        public override string ToString() => $"{UserName} ({ActorId})";
 
     }
 }

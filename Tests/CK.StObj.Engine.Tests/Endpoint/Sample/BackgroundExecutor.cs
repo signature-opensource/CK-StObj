@@ -10,26 +10,31 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public class BackgroundExecutor : ISingletonAutoService
     {
         readonly Channel<object?> _commands;
-        readonly Task _runTask;
-        readonly IEndpointType<BackgroundEndpointDefinition.BackgroundData> _endpoint;
+        readonly IEndpointType<BackgroundEndpointDefinition.Data> _endpoint;
+        Task _runTask;
 
-        public BackgroundExecutor( IEndpointType<BackgroundEndpointDefinition.BackgroundData> endpoint )
+        public BackgroundExecutor( IEndpointType<BackgroundEndpointDefinition.Data> endpoint )
         {
             _commands = Channel.CreateUnbounded<object?>();
-            _runTask = Task.Run( RunAsync );
+            _runTask = Task.CompletedTask;
             _endpoint = endpoint;
         }
 
-        public void Push( IFakeAuthenticationInfo? info, object command )
+        public void Push( EndpointUbiquitousInfo info, object command )
         {
             _commands.Writer.TryWrite( new RunCommand( info, command ) );
         }
+
+        /// <summary>
+        /// Absolutely no protection here. This is JUST for tests!
+        /// </summary>
+        public void Start() => _runTask = Task.Run( RunAsync );
 
         public void Stop() => _commands.Writer.TryWrite( null );
 
         public Task WaitForTerminationAsync() => _runTask;
 
-        sealed record class RunCommand( IFakeAuthenticationInfo? Auth, object Command );
+        sealed record class RunCommand( EndpointUbiquitousInfo UbiquitousInfo, object Command );
 
         async Task RunAsync()
         {
@@ -39,7 +44,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
                 var cmd = (RunCommand)o;
                 // We want any command executed by this loop to use the same monitor.
-                var data = new BackgroundEndpointDefinition.BackgroundData( _endpoint, monitor, cmd.Auth ?? IFakeAuthenticationInfo.Anonymous );
+                var data = new BackgroundEndpointDefinition.Data( cmd.UbiquitousInfo, monitor );
                 using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
                 {
                     var executor = scope.ServiceProvider.GetRequiredService<SampleCommandProcessor>();

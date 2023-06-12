@@ -54,6 +54,13 @@ namespace CK.Core
         /// <summary>
         /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
         /// </summary>
-        IsAutoService = 64
+        IsAutoService = 64,
+
+        /// <summary>
+        /// Ubiquitous info is a scoped endpoint service (and optionally a auto service) that must be available in all
+        /// containers. The instance must be directly marshallable (should be immutable or at least thread safe and
+        /// be independent of any other service). See <see cref="EndpointScopedServiceAttribute"/>.
+        /// </summary>
+        UbiquitousInfo = 128 | IsEndpointService | IsScoped
     }
 }

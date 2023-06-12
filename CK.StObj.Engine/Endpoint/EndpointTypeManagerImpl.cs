@@ -28,8 +28,7 @@ namespace CK.Setup
 
             StaticConstructor( scope, endpointResult );
             InstanceConstructor( scope, endpointResult );
-            CreateTrueSingletons( scope, endpointResult );
-            GetInitialEndpointUbiquitousInfo( scope, endpointResult );
+            CreateCommonDescriptors( scope, endpointResult );
 
             scope.Append( "public override IReadOnlyList<EndpointDefinition> EndpointDefinitions => _endpoints;" ).NewLine()
                  .Append( "public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;" ).NewLine()
@@ -84,14 +83,15 @@ namespace CK.Setup
             scope.CloseBlock();
         }
 
-        static void CreateTrueSingletons( ITypeScope scope, IEndpointResult endpointResult )
+        static void CreateCommonDescriptors( ITypeScope scope, IEndpointResult endpointResult )
         {
-            scope.Append( "internal Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] CreateTrueSingletons( IStObjMap stObjMap )" )
+            scope.Append( "internal Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )" )
                  .OpenBlock()
                  .Append( "return new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine()
                  .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), this )," ).NewLine()
                  .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IStObjMap ), stObjMap )," ).NewLine()
-                 .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )," ).NewLine();
+                 .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )," ).NewLine()
+                 .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( CK.StObj.ScopeDataHolder ), typeof( CK.StObj.ScopeDataHolder ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             int i = 0;
             foreach( var e in endpointResult.EndpointContexts )
             {
@@ -100,28 +100,6 @@ namespace CK.Setup
                      .Append( "> ), _endpointTypes[" ).Append( i++ ).Append( "] )," ).NewLine();
             }
             scope.Append( "};" )
-                 .CloseBlock();
-        }
-
-        static void GetInitialEndpointUbiquitousInfo( ITypeScope scope, IEndpointResult endpointResult )
-        {
-            scope.Append( "protected override object GetInitialEndpointUbiquitousInfo( IServiceProvider services )" )
-                 .OpenBlock()
-                 .Append( "return new Dictionary<Type, object> {" ).NewLine();
-            foreach( var t in endpointResult.UbiquitousInfoServices )
-            {
-                scope.Append( "{ " ).AppendTypeOf( t )
-                     .Append( ", (" ).AppendTypeOf( t ).Append( ")Required( services, " ).AppendTypeOf( t ).Append( " ) }," ).NewLine();
-            }
-            scope.Append( "};").NewLine()
-                 .Append( """
-                          static object Required( IServiceProvider services, Type type )
-                          {
-                              var o = services.GetService( type );
-                              if( o != null ) return o;
-                              return Throw.InvalidOperationException<object>( $"Ubiquitous service '{type}' not registered! This type must always be resolvable." );
-                          }
-                          """ )
                  .CloseBlock();
         }
 

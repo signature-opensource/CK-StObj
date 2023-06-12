@@ -261,19 +261,21 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             }
             // No one else can register the purely code generated HostedServiceLifetimeTrigger hosted service: we do it here.
             // We insert it at the start of the global container: it will be the very first Hosted service to be instantiated.
-            // The "true" singleton EndpointTypeManager is registered: it is the relay from endpoint containers to the global one.
+            // The common descriptors are then injected: the "true" singleton EndpointTypeManager is registered is the relay from endpoint containers
+            // to the global one and the ScopedDataHolder is also registered.
             fScope.Append( """
                         reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor(
-                                typeof( Microsoft.Extensions.Hosting.IHostedService ),
-                                typeof( HostedServiceLifetimeTrigger ),
-                                Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
+                                                        typeof( Microsoft.Extensions.Hosting.IHostedService ),
+                                                        typeof( HostedServiceLifetimeTrigger ),
+                                                        Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton ) );
                         var theEPTM = new EndpointTypeManager_CK();
-                        var trueSingletons = theEPTM.CreateTrueSingletons( this );
-                        reg.Services.AddRange( trueSingletons );
+                        var commonDescriptors = theEPTM.CreateCommonDescriptors( this );
+                        reg.Services.AddRange( commonDescriptors );
                         """ ).NewLine();
             if( !hasEndpoint )
             {
-                // If there's no endpoint, we are done (and we have no mappings for endpoint container).
+                // If there's no endpoint, we must only register the StObjMap (real objects and auto services) and we are done
+                // (we have no mappings for endpoint container).
                 fScope.Append( "EndpointHelper.FillStObjMappingsNoEndpoint( reg.Monitor, this, reg.Services );" ).NewLine()
                         .Append( "// Waiting for .Net 8: (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();" ).NewLine()
                         .Append( "return true;" );
@@ -288,7 +290,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                         bool success = true;
                         foreach( var e in theEPTM._endpointTypes )
                         {
-                            if( !e.ConfigureServices( reg.Monitor, this, mappings, trueSingletons ) ) success = false;
+                            if( !e.ConfigureServices( reg.Monitor, this, mappings, commonDescriptors ) ) success = false;
                         }
                         return success;
                         """ ).NewLine();

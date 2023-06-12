@@ -64,7 +64,7 @@ namespace CK.Setup
         IsAutoService = 64,
 
         /// <summary>
-        /// Ubiquitous info is a scoped endpoint service (and only that) that must be available in all
+        /// Ubiquitous info is a scoped endpoint service (and optionally a auto service) that must be available in all
         /// containers. The instance must be directly marshallable (should be immutable or at least thread safe and
         /// be independent of any other service). See <see cref="EndpointScopedServiceAttribute"/>.
         /// </summary>
@@ -108,7 +108,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="this">This type kind.</param>
         /// <returns>The Auto service kind.</returns>
-        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this ) => (AutoServiceKind)((int)@this & 127);
+        public static AutoServiceKind ToAutoServiceKind( this CKTypeKind @this ) => (AutoServiceKind)((int)@this & 255);
 
         /// <summary>
         /// Returns a string that correctly handles flags and results to <see cref="GetCombinationError(CKTypeKind,bool)"/>
@@ -188,9 +188,9 @@ namespace CK.Setup
             }
             if( isUbiquitous )
             {
-                if( @this != CKTypeKind.UbiquitousInfo )
+                if( @this != CKTypeKind.UbiquitousInfo && @this != (CKTypeKind.UbiquitousInfo|CKTypeKind.IsAutoService) )
                 {
-                    AddConflict( "an ubiquitous info can only be a endpoint scoped service." );
+                    AddConflict( "an ubiquitous info can only be a endpoint scoped service (and optionally a IScopedAutoService)." );
                 }
             }
             else if( isEndPoint )

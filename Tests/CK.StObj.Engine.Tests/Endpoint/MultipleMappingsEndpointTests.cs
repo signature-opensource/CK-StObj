@@ -92,10 +92,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var g = result.Services;
-                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.GetRequiredService<ManyConsumer>();
                 mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>() } );
@@ -129,10 +129,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var g = result.Services;
-                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.GetRequiredService<ManyConsumer>();
                 mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>(),
@@ -166,10 +166,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
                 var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
@@ -211,10 +211,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
                 var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
@@ -314,8 +314,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
 
-                var e = result.Services.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                using var s1 = e.GetContainer().CreateScope( "Scoped Data" );
+                var e = result.Services.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<ManyAsSingletonEndpointDefinition.Data>>().Single();
+                using var s1 = e.GetContainer().CreateScope();
 
                 var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
                 var m1Auto = s1.ServiceProvider.GetRequiredService<ManySingleton>();

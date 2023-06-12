@@ -320,8 +320,7 @@ namespace CK.StObj.Engine.Tests
                           // is also registered.
                           .Where( t => !typeof( PocoDirectory ).IsAssignableFrom( t )
                                        && !typeof( EndpointTypeManager ).IsAssignableFrom( t )
-                                       // This filters both the EndpointDefinition of the DefaultEndpointDefinition types.
-                                       && !typeof( EndpointDefinition ).IsAssignableFrom( t ) )
+                                       && !typeof( EndpointUbiquitousInfo ).IsAssignableFrom( t ) )
                           .Should().BeEquivalentTo( new[] { typeof( S6 ), typeof( IServiceWithAttributeOnMember ) } );
 
             r.EngineMap.AllTypesAttributesCache.Values
