@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -18,9 +19,8 @@ namespace CK.Setup
 
             // This CK.Core.EndpointTypeManager_CK statically exposes the default and all endpoint definitions.
             // static (Real Objects)
-            scope.Append( "internal static readonly DefaultEndpointDefinition _default;" ).NewLine();
             scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine();
-            scope.Append( "internal static readonly IReadOnlySet<Type> _endpointServices;" ).NewLine();
+            scope.Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine();
             // instance (bound to the DI world). 
             scope.Append( "internal readonly CK.StObj.IEndpointTypeInternal[] _endpointTypes;" ).NewLine();
 
@@ -28,11 +28,10 @@ namespace CK.Setup
 
             StaticConstructor( scope, endpointResult );
             InstanceConstructor( scope, endpointResult );
-            CreateTrueSingletons( scope, endpointResult );
+            CreateCommonDescriptors( scope, endpointResult );
 
-            scope.Append( "public override DefaultEndpointDefinition DefaultEndpointDefinition => _default;" ).NewLine()
-                 .Append( "public override IReadOnlyList<EndpointDefinition> AllEndpointDefinitions => _endpoints;" ).NewLine()
-                 .Append( "public override IReadOnlySet<Type> EndpointServices => _endpointServices;" ).NewLine()
+            scope.Append( "public override IReadOnlyList<EndpointDefinition> EndpointDefinitions => _endpoints;" ).NewLine()
+                 .Append( "public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;" ).NewLine()
                  .Append( "public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;" ).NewLine()
                  .Append( "internal void SetGlobalContainer( IServiceProvider g ) => _global = g;" ).NewLine();
             
@@ -43,18 +42,21 @@ namespace CK.Setup
         {
             scope.Append( "static EndpointTypeManager_CK()" )
                  .OpenBlock();
-            // Exposes all the endpoint service types as a set.
-            scope.Append( "_endpointServices = new HashSet<Type>( " ).AppendArray( endpointResult.EndpointServices ).Append( " );" ).NewLine();
+            scope.Append( "_endpointServices = new Dictionary<Type,AutoServiceKind>() {" );
+            foreach( var kv in endpointResult.EndpointServices )
+            {
+                scope.Append( "{" ).Append( kv.Key ).Append( "," ).Append( kv.Value ).Append( "}," ).NewLine();
+            }
+            scope.Append( " };" ).NewLine();
 
-            scope.Append( "_default = (DefaultEndpointDefinition)" ).Append( endpointResult.DefaultEndpointContext.EndpointDefinition.CodeInstanceAccessor ).Append( ";" ).NewLine();
             var endpoints = endpointResult.EndpointContexts;
-            scope.Append( "_endpoints = new EndpointDefinition[" ).Append( endpoints.Count ).Append( "];" ).NewLine();
-            int i = 0;
+            scope.Append( "_endpoints = new EndpointDefinition[] {" ).NewLine();
             foreach( var e in endpoints )
             {
-                scope.Append( "_endpoints[" ).Append( i++ ).Append( "] = (EndpointDefinition)" ).Append( e.EndpointDefinition.CodeInstanceAccessor ).Append( ";" ).NewLine();
+                scope.Append( "(EndpointDefinition)" ).Append( e.EndpointDefinition.CodeInstanceAccessor ).Append( "," ).NewLine();
             }
-            scope.CloseBlock();
+            scope.Append("};")
+                 .CloseBlock();
         }
 
         static void InstanceConstructor( ITypeScope scope, IEndpointResult endpointResult )
@@ -64,33 +66,34 @@ namespace CK.Setup
 
             scope.Append( "_endpointTypes = new CK.StObj.IEndpointTypeInternal[] {" ).NewLine();
             int i = 0;
-            foreach( var e in endpointResult.EndpointContexts.Skip( 1 ) )
+            foreach( var e in endpointResult.EndpointContexts )
             {
                 // The EndpointTypeManager_CK directly and immediately instantiates the EndpointType<> objects.
                 // These are singletons just like this EndpointTypeManager. They are registered
                 // as singleton instances in the global container (and, as global singleton instances,
                 // also in endpoint containers). The IEnumerable<IEndpointType> is also explicitly
                 // registered: that is the _endpointTypes array.
-                var scopeDataTypeName = e.ScopeDataType.ToCSharpName();
+                var scopeDataTypeName = e.ScopeDataType.ToGlobalTypeName();
                 scope.Append( "new CK.StObj.EndpointType<" )
                     .Append( scopeDataTypeName )
-                    .Append( ">( (EndpointDefinition<" ).Append( scopeDataTypeName ).Append( ">)_endpoints[" ).Append( ++i ).Append( "] )," ).NewLine();
+                    .Append( ">( (EndpointDefinition<" ).Append( scopeDataTypeName ).Append( ">)_endpoints[" ).Append( i++ ).Append( "] )," ).NewLine();
             }
             scope.Append( "};" ).NewLine();
 
             scope.CloseBlock();
         }
 
-        static void CreateTrueSingletons( ITypeScope scope, IEndpointResult endpointResult )
+        static void CreateCommonDescriptors( ITypeScope scope, IEndpointResult endpointResult )
         {
-            scope.Append( "internal Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] CreateTrueSingletons( IStObjMap stObjMap )" )
+            scope.Append( "internal Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )" )
                  .OpenBlock()
                  .Append( "return new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine()
                  .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( EndpointTypeManager ), this )," ).NewLine()
                  .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IStObjMap ), stObjMap )," ).NewLine()
-                 .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )," ).NewLine();
+                 .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes )," ).NewLine()
+                 .Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( CK.StObj.ScopeDataHolder ), typeof( CK.StObj.ScopeDataHolder ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             int i = 0;
-            foreach( var e in endpointResult.EndpointContexts.Skip( 1 ) )
+            foreach( var e in endpointResult.EndpointContexts )
             {
                 scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IEndpointType<" )
                      .Append( e.ScopeDataType.ToCSharpName() )

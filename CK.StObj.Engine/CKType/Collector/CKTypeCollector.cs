@@ -245,9 +245,6 @@ namespace CK.Setup
                 }
             }
 
-            // Finalizing endpoints: ensures that externally defined types are registered.
-            var endpoints = KindDetector.GetRegisteredEndpointServiceInfoMap( monitor );
-
 
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
@@ -289,7 +286,7 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( monitor, realObjects );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoDirectory, pocoTypeSystem, realObjects, services, endpoints, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoDirectory, pocoTypeSystem, realObjects, services, _regularTypeCollector, this );
             }
         }
 

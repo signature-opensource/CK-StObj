@@ -1,5 +1,6 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -31,6 +32,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => throw new NotImplementedException();
 
+        IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => throw new NotImplementedException();
+
+        object? IStObjObjectMap.Obtain( Type t ) => throw new NotImplementedException();
+
         IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => Array.Empty<IStObjServiceClassDescriptor>();
 
         public IStObjFinalClass? ToLeaf( Type t ) => null;
@@ -43,7 +48,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             RealObjectConfigureServices( in reg );
 
             // - We build a mapping of ServiceType -> ServiceDescriptors from the global configuration (only if there are endpoints).
-            var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, FakeEndpointTypeManager_CK._endpointServices.Contains );
+            var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );
 
             // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
             //   containers don't need it.
@@ -55,13 +60,17 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //  - Then an instance of the special "super singleton" EndpointTypeManager is created.
             //    It is the exact same instance that will be available from all the containers: the global and every endpoint containers, it is
             //    the global hook, the relay to the global service provider for the endpoint containers.
-            var theEPTM = new FakeEndpointTypeManager_CK();
-            var trueSingletons = theEPTM.CreateTrueSingletons( this );
-            reg.Services.AddRange( trueSingletons );
+            var theEPTM = new EndpointTypeManager_CK();
+            var commonDescriptors = theEPTM.CreateCommonDescriptors( this );
+            reg.Services.AddRange( commonDescriptors );
 
             // ServiceDescriptors are created from the EngineStObjMap and added to the global configuration
             // and to the mappings.
             EndpointHelper.FillStObjMappingsWithEndpoints( reg.Monitor, this, reg.Services, mappings );
+            // Our StObjMap is empty, but it should have at least the EndpointUbiquitousInfo => EndpointUbiquitousInfo_CK
+            // since EndpointUbiquitousInfo is a IScopedAutoService that uses code generation.
+            // So, this is what FillStObjMappingsWithEndpoints would do:
+            reg.Services.AddScoped<EndpointUbiquitousInfo, EndpointUbiquitousInfo_CK>();
 
             // We can now close the global container. Waiting for .Net 8.
             // (reg.Services as Microsoft.Extensions.DependencyInjection.ServiceCollection)?.MakeReadOnly();
@@ -69,9 +78,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //  - Then all the endpointType instances create their own ServiceCollection by processing the 
             //    descriptors from the mappings and adding their own EndpointScopeData<TScopeData> scoped data holder
             //    and the true instance singletons IStObjMap, EndpointTypeManager, the EndpointType and the IEnumerable<IEndpointType>. 
-            foreach( var e in theEPTM._endpointTypes )
+            foreach( IEndpointTypeInternal e in theEPTM._endpointTypes )
             {
-                if( !e.ConfigureServices( reg.Monitor, this, mappings, trueSingletons ) ) success = false;
+                if( !e.ConfigureServices( reg.Monitor, this, mappings, commonDescriptors ) ) success = false;
             }
             return success;
         }
@@ -82,14 +91,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
         }
 
-        IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t )
-        {
-            throw new NotImplementedException();
-        }
 
-        object? IStObjObjectMap.Obtain( Type t )
-        {
-            throw new NotImplementedException();
-        }
     }
 }

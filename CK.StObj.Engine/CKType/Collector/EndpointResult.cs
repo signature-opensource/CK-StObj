@@ -1,8 +1,10 @@
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Xml.Linq;
 
 namespace CK.Setup
@@ -13,8 +15,9 @@ namespace CK.Setup
     /// </summary>
     public sealed class EndpointResult : IEndpointResult
     {
-        readonly IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> _endpointServiceInfoMap;
+        readonly IReadOnlyDictionary<Type, AutoServiceKind> _endpointServices;
         readonly IReadOnlyList<EndpointContext> _contexts;
+        readonly IReadOnlyList<Type> _ubiquitousServices;
 
         /// <inheritdoc />
         public IEndpointContext DefaultEndpointContext => _contexts[0];
@@ -23,80 +26,63 @@ namespace CK.Setup
         public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
 
         /// <inheritdoc />
-        public IEnumerable<Type> EndpointServices => _endpointServiceInfoMap.Keys;
+        public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
 
         /// <inheritdoc />
-        public bool IsEndpointService( Type type ) => _endpointServiceInfoMap.ContainsKey( type );
+        public IReadOnlyList<Type> UbiquitousInfoServices => _ubiquitousServices;
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,
-                        IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
+                        IReadOnlyDictionary<Type, AutoServiceKind> endpointServices,
+                        IReadOnlyList<Type> ubiquitousServices )
         {
             _contexts = contexts;
-            _endpointServiceInfoMap = endpointServiceInfoMap;
+            _endpointServices = endpointServices;
+            _ubiquitousServices = ubiquitousServices;
         }
 
         internal static EndpointResult? Create( IActivityMonitor monitor,
                                                 IStObjObjectEngineMap engineMap,
-                                                IReadOnlyDictionary<Type, CKTypeEndpointServiceInfo> endpointServiceInfoMap )
+                                                CKTypeKindDetector kindDetector )
         {
-            var def = engineMap.ToLeaf( typeof( DefaultEndpointDefinition ) )!;
-            var defaultContext = new EndpointContext( def, "Default", null );
-            var contexts = new List<EndpointContext>() { defaultContext };
-            foreach( var d in engineMap.FinalImplementations.Where( d => d != def && typeof( EndpointDefinition ).IsAssignableFrom( d.ClassType ) ) )
+            List<EndpointContext>? contexts = null;
+            foreach( var d in engineMap.FinalImplementations.Where( d => typeof( EndpointDefinition ).IsAssignableFrom( d.ClassType ) ) )
             {
-                var rName = CKTypeEndpointServiceInfo.DefinitionName( d.ClassType ).ToString();
-                var sameName = contexts.FirstOrDefault( c => c.Name == rName );
-                if( sameName != null )
-                {
-                    monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' has Name = '{rName}' but type '{sameName.EndpointDefinition.ClassType:C}' has the same name." +
-                                   " Endpoint definition names must be different." );
-                    return null;
-                }
+                var rName = EndpointContext.DefinitionName( d.ClassType ).ToString();
                 var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
-                var sameType = contexts.FirstOrDefault( c => c.ScopeDataType == scopeDataType );
-                if( sameType != null )
+                var nestedDataType = d.ClassType.GetNestedType( "Data" );
+                if( nestedDataType == null )
                 {
-                    monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' declares the same ScopeData as '{sameType.EndpointDefinition.ClassType:C}'." +
-                                   " Endpoint definition ScopeData must be different." );
+                    monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must define a nested 'public class Data : ScopedData' class." );
                     return null;
                 }
+                if( nestedDataType.BaseType != typeof( EndpointDefinition.ScopedData ) )
+                {
+                    monitor.Error( $"Type '{d.ClassType:C}.Data' must specialize ScopedData class (not {nestedDataType.BaseType:C})." );
+                    return null;
+                }
+                if( contexts != null )
+                {
+                    var sameName = contexts.FirstOrDefault( c => c.Name == rName );
+                    if( sameName != null )
+                    {
+                        monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' has Name = '{rName}' but type '{sameName.EndpointDefinition.ClassType:C}' has the same name." +
+                                       " Endpoint definition names must be different." );
+                        return null;
+                    }
+                    var sameType = contexts.FirstOrDefault( c => c.ScopeDataType == scopeDataType );
+                    if( sameType != null )
+                    {
+                        monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' declares the same ScopeData as '{sameType.EndpointDefinition.ClassType:C}'." +
+                                       " Endpoint definition ScopeData must be different." );
+                        return null;
+                    }
+                }
+                else contexts = new List<EndpointContext>();
                 contexts.Add( new EndpointContext( d, rName, scopeDataType ) );
             }
-
-            bool hasError = false;
-            foreach( var (type, info) in endpointServiceInfoMap )
-            {
-                foreach( var definition in info.Services )
-                {
-                    var c = Find( monitor, engineMap, contexts, definition );
-                    if( c == null )
-                    {
-                        hasError = true;
-                        continue;
-                    }
-                    Debug.Assert( !c._scoped.Contains( type ), "Handled at registration time." );
-                    if( info.IsScoped )
-                    {
-                        c._scoped.Add( type );
-                    }
-                    else
-                    {
-                        c._singletons.Add( type );
-                    }
-                }
-            }
-            return hasError ? null : new EndpointResult( contexts, endpointServiceInfoMap );
-
-            static EndpointContext? Find( IActivityMonitor monitor, IStObjObjectEngineMap engineMap, List<EndpointContext> contexts, Type t )
-            {
-                var c = contexts.FirstOrDefault( c => c.EndpointDefinition.ClassType == t );
-                if( c == null )
-                {
-                    monitor.Error( $"Expected EndpointDefinition type '{t:C}' is not registered in StObjMap." );
-                    return null;
-                }
-                return c;
-            }
+            return new EndpointResult( (IReadOnlyList<EndpointContext>?)contexts ?? Array.Empty<EndpointContext>(),
+                                       kindDetector.EndpointServices,
+                                       kindDetector.UbiquitousInfoServices );
         }
     }
 }

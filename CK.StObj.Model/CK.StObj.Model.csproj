@@ -9,12 +9,11 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CSemVer" Version="11.0.1" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="18.0.1--0030-develop" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="18.0.1--0032-develop" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
     <PackageReference Include="OneOf" Version="3.0.223" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="MSBuild/CK.StObj.Model.props">
       <Pack>true</Pack>
@@ -25,5 +24,4 @@
       <PackagePath>buildTransitive\CK.StObj.Model.targets</PackagePath>
     </Content>
   </ItemGroup>
-  
 </Project>

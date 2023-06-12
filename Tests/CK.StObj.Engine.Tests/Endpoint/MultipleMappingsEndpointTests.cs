@@ -39,10 +39,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class FirstEndpointDefinition : EndpointDefinition<string>
+        public abstract class FirstEndpointDefinition : EndpointDefinition<FirstEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, string> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -51,10 +59,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class SecondEndpointDefinition : EndpointDefinition<int>
+        public abstract class SecondEndpointDefinition : EndpointDefinition<SecondEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, int> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -76,10 +92,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var g = result.Services;
-                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.GetRequiredService<ManyConsumer>();
                 mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>() } );
@@ -113,10 +129,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeFalse( "Resolved as Singleton." );
 
                 var g = result.Services;
-                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.GetRequiredService<ManyConsumer>();
                 mG.All.Should().BeEquivalentTo( new IMany[] { g.GetRequiredService<ManyAuto>(),
@@ -150,10 +166,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
                 var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
@@ -195,10 +211,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Scoped." );
 
                 using var g = result.Services.CreateScope();
-                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<int>>().Single();
-                using var s1 = e1.GetContainer().CreateScope( "Scoped Data" );
-                using var s2 = e2.GetContainer().CreateScope( 3712 );
+                var e1 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<FirstEndpointDefinition.Data>>().Single();
+                var e2 = g.ServiceProvider.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<SecondEndpointDefinition.Data>>().Single();
+                using var s1 = e1.GetContainer().CreateScope();
+                using var s2 = e2.GetContainer().CreateScope();
 
                 var mG = g.ServiceProvider.GetRequiredService<ManyConsumer>();
                 var gScoped = g.ServiceProvider.GetRequiredService<ManyScoped>();
@@ -234,10 +250,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         // IMany will be resolved as Singleton because the auto services ManySingleton is registered.
         // This Buggy endpoint declares a IMany scoped service: this will fail when registering the StObjMap.
         [EndpointDefinition]
-        public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<string>
+        public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<ManyAsScopedEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, string> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -260,10 +284,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         // This one will be fine.
         [EndpointDefinition]
-        public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<int>
+        public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<ManyAsSingletonEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, int> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddSingleton<ManyNothing>();
@@ -282,8 +315,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
                 result.Map.Services.Mappings[typeof( ManyConsumer )].IsScoped.Should().BeTrue( "Resolved as Singleton." );
 
-                var e = result.Services.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<string>>().Single();
-                using var s1 = e.GetContainer().CreateScope( "Scoped Data" );
+                var e = result.Services.GetRequiredService<EndpointTypeManager>().EndpointTypes.OfType<IEndpointType<ManyAsSingletonEndpointDefinition.Data>>().Single();
+                using var s1 = e.GetContainer().CreateScope();
 
                 var m1 = s1.ServiceProvider.GetRequiredService<ManyConsumer>();
                 var m1Auto = s1.ServiceProvider.GetRequiredService<ManySingleton>();

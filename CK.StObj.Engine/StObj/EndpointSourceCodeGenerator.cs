@@ -126,8 +126,8 @@ namespace CK.Setup
         const string _fillStObjMappingsNoEndpoint =
             """
             internal static void FillStObjMappingsNoEndpoint( IActivityMonitor monitor,
-                                                              IStObjMap stObjMap,
-                                                              IServiceCollection global )
+                                                                IStObjMap stObjMap,
+                                                                IServiceCollection global )
             {
                 // We have no real issues for real objects: we simply create singleton descriptors
                 // with the true singleton instance and add them to the global container and
@@ -155,14 +155,17 @@ namespace CK.Setup
                 // capture the implementation type. 
                 foreach( var s in stObjMap.Services.MappingList )
                 {
-                    if( s.IsScoped )
+                    if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
                     {
-                        AddServiceMapping( global, s, ServiceLifetime.Scoped );
-                    }
-                    else
-                    {
-                        if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
-                        AddServiceMapping( global, s, ServiceLifetime.Singleton );
+                        if( s.IsScoped )
+                        {
+                            AddServiceMapping( global, s, ServiceLifetime.Scoped );
+                        }
+                        else
+                        {
+                            if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                            AddServiceMapping( global, s, ServiceLifetime.Singleton );
+                        }
                     }
                 }
 
@@ -184,7 +187,7 @@ namespace CK.Setup
                     }
                 }
             }
-                                    
+                                                
             """;
 
         // Injected in EndpointHelper if there are endpoints.
@@ -202,7 +205,7 @@ namespace CK.Setup
         // Injected in EndpointHelper if there are endpoints.
         const string _fillStObjMappingsWithEndpoints =
             """
-                        internal static void FillStObjMappingsWithEndpoints( IActivityMonitor monitor,
+            internal static void FillStObjMappingsWithEndpoints( IActivityMonitor monitor,
                                                                     IStObjMap stObjMap,
                                                                     IServiceCollection global,
                                                                     Dictionary<Type, Mapping> mappings )
@@ -242,30 +245,29 @@ namespace CK.Setup
                 // One way would be to create a typed lambda where sp => sp.GetService( s.ClassType ) is used
                 // so that the returned type of Func<IServiceProvider,s.ClassType> can be inspected.
                 // The other one introduces the TypedServiceDescriptor : ServiceDescriptor specialization that
-                // capture the implementation type. 
+                // capture the implementation type.
                 foreach( var s in stObjMap.Services.MappingList )
                 {
-                    if( s.IsScoped )
+                    if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
                     {
-                        AddServiceMapping( global, mappings, s, ServiceLifetime.Scoped );
-                    }
-                    else
-                    {
-                        if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
-                        AddServiceMapping( global, mappings, s, ServiceLifetime.Singleton );
+                        if( s.IsScoped )
+                        {
+                            AddServiceMapping( global, mappings, s, ServiceLifetime.Scoped );
+                        }
+                        else
+                        {
+                            if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                            AddServiceMapping( global, mappings, s, ServiceLifetime.Singleton );
+                        }
                     }
                 }
-
-                if( mappings != null )
+                // Locking the IsMultiple optimized to be singleton: this prevents
+                // any multiple registration of the type with a scope lifetime.
+                // If it happens (either by global configuration or by a endpoint configuration),
+                // the StObjMap registration fails.
+                foreach( var multiple in stObjMap.MultipleMappings.Values )
                 {
-                    // Locking the IsMultiple optimized to be singleton: this prevents
-                    // any multiple registration of the type with a scope lifetime.
-                    // If it happens (either by global configuration or by a endpoint configuration),
-                    // the StObjMap registration fails.
-                    foreach( var multiple in stObjMap.MultipleMappings.Values )
-                    {
-                        if( !multiple.IsScoped ) mappings[multiple.ItemType].LockAsSingleton();
-                    }
+                    if( !multiple.IsScoped ) mappings[multiple.ItemType].LockAsSingleton();
                 }
 
                 static void AddServiceMapping( IServiceCollection global, Dictionary<Type, Mapping> mappings, IStObjServiceClassDescriptor s, ServiceLifetime lt )
@@ -300,7 +302,7 @@ namespace CK.Setup
                     }
                 }
             }
-            
+                        
             """;
 
         // Injected in EndpointHelper if there are endpoints.
@@ -336,41 +338,75 @@ namespace CK.Setup
             """;
 
         // Injected only if there are endpoints.
+        const string _scopedDataHolder =
+            """
+            // Always injected and non generic here to be able to always obtain the EndpointUbiquitousInfo even if no
+            // endpoints exist.
+            // It's up to the EndpointType<TScopedData> to downcast to obtain the endpoint definition typed scope data.
+            sealed class ScopeDataHolder
+            {
+                [AllowNull]
+                internal EndpointDefinition.ScopedData _data;
+
+                internal static object GetUbiquitous( IServiceProvider sp, int index )
+                {
+                    return Unsafe.As<EndpointUbiquitousInfo_CK>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data.UbiquitousInfo ).At( index );
+                }
+            }
+            """;
+
+        // Used by EndpointType. Injected only if there are endpoints.
+        const string _globalServices = """
+            sealed class GlobalServiceExists : IServiceProviderIsService
+            {
+                readonly IReadOnlyDictionary<Type, Mapping> _externalMappings;
+
+                public GlobalServiceExists( IReadOnlyDictionary<Type, Mapping> externalMappings )
+                {
+                    _externalMappings = externalMappings;
+                }
+
+                public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
+            }
+            
+            """;
+
+        // Injected only if there are endpoints.
         const string _endpointType =
             """
-            sealed class EndpointType<TScopeData> : IEndpointType<TScopeData>, IEndpointTypeInternal where TScopeData : notnull
+            sealed class EndpointType<TScopedData> : IEndpointType<TScopedData>, IEndpointTypeInternal where TScopedData : EndpointDefinition.ScopedData
             {
-                internal IEndpointServiceProvider<TScopeData>? _services;
+                internal IEndpointServiceProvider<TScopedData>? _services;
 
-                readonly EndpointDefinition<TScopeData> _definition;
+                readonly EndpointDefinition<TScopedData> _definition;
                 internal ServiceCollection? _configuration;
-                Type[] _specificSingletons;
-                Type[] _specificScoped;
+                Type[] _singletons;
+                Type[] _scoped;
                 readonly object _lock;
                 bool _initializationSuccess;
 
-                public EndpointType( EndpointDefinition<TScopeData> definition )
+                public EndpointType( EndpointDefinition<TScopedData> definition )
                 {
-                    _specificSingletons = _specificScoped = Type.EmptyTypes;
+                    _singletons = _scoped = Type.EmptyTypes;
                     _definition = definition;
                     _lock = new object();
                 }
 
                 public EndpointDefinition EndpointDefinition => _definition;
 
-                public Type ScopeDataType => typeof( TScopeData );
+                public Type ScopeDataType => typeof( TScopedData );
 
                 public string Name => _definition.Name;
 
-                public IEndpointServiceProvider<TScopeData> GetContainer() => _services ?? DoCreateContainer();
+                public IEndpointServiceProvider<TScopedData> GetContainer() => _services ?? DoCreateContainer();
 
                 public bool IsService( Type serviceType ) => GetContainer().IsService( serviceType );
 
-                public IReadOnlyCollection<Type> SpecificSingletonServices => _specificSingletons;
+                public IReadOnlyCollection<Type> SpecificSingletonServices => _singletons;
 
-                public IReadOnlyCollection<Type> SpecificScopedServices => _specificScoped;
+                public IReadOnlyCollection<Type> SpecificScopedServices => _scoped;
 
-                IEndpointServiceProvider<TScopeData> DoCreateContainer()
+                IEndpointServiceProvider<TScopedData> DoCreateContainer()
                 {
                     lock( _lock )
                     {
@@ -386,25 +422,7 @@ namespace CK.Setup
                     }
                 }
 
-                sealed class GlobalServiceExists : IServiceProviderIsService
-                {
-                    readonly IReadOnlyDictionary<Type, Mapping> _externalMappings;
-
-                    public GlobalServiceExists( IReadOnlyDictionary<Type, Mapping> externalMappings )
-                    {
-                        _externalMappings = externalMappings;
-                    }
-
-                    public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
-                }
-
-                sealed class ScopeDataHolder
-                {
-                    [AllowNull]
-                    internal TScopeData _data;
-                }
-
-                sealed class Provider : IEndpointServiceProvider<TScopeData>
+                sealed class Provider : IEndpointServiceProvider<TScopedData>
                 {
                     readonly ServiceProvider _serviceProvider;
                     IServiceProviderIsService? _serviceProviderIsService;
@@ -414,16 +432,18 @@ namespace CK.Setup
                         _serviceProvider = serviceProvider;
                     }
 
-                    public AsyncServiceScope CreateAsyncScope( TScopeData scopedData )
+                    public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
                     {
                         var scope = _serviceProvider.CreateAsyncScope();
+                        scopedData.UbiquitousInfo.Lock();
                         scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                         return scope;
                     }
 
-                    public IServiceScope CreateScope( TScopeData scopedData )
+                    public IServiceScope CreateScope( TScopedData scopedData )
                     {
                         var scope = _serviceProvider.CreateScope();
+                        scopedData.UbiquitousInfo.Lock();
                         scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                         return scope;
                     }
@@ -440,34 +460,35 @@ namespace CK.Setup
                     }
                 }
 
-
-                static TScopeData GetScopeData( IServiceProvider sp ) => Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data;
+                static TScopedData GetScopedData( IServiceProvider sp )
+                {
+                    return Unsafe.As<TScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data );
+                }
 
                 public bool ConfigureServices( IActivityMonitor monitor,
                                                 IStObjMap stObjMap,
                                                 Dictionary<Type, Mapping> mappings,
-                                                ServiceDescriptor[] trueSingletons )
+                                                ServiceDescriptor[] commonDescriptors )
                 {
                     var endpoint = new ServiceCollection();
-                    // Calls the ConfigureEndpointServices on an empty configuration.
-                    _definition.ConfigureEndpointServices( endpoint, GetScopeData, new GlobalServiceExists( mappings ) );
 
-                    // Process the endpoint specific registrations to detect:
-                    // - extra registrations: there must not be any type mapped to IRealObject or IAutoService.
-                    // - missing registrations from the definition.
-                    // And updates the mappings with potential Mapping.Endpoint objects.
-                    if( CheckRegistrations( monitor, endpoint, stObjMap, mappings ) )
+                    // Calls the user configuration.
+                    _definition.ConfigureEndpointServices( endpoint, GetScopedData, new GlobalServiceExists( mappings ) );
+
+                    // Process the endpoint specific registrations to detect extra registrations: there must not be any type
+                    // mapped to IRealObject or IAutoService.
+                    // This also updates the mappings with potential Mapping.Endpoint objects.
+                    // Also check that a explicitly supported ubiquitous service is registered no more than once and if
+                    // it is not, registers the resolution from the EndpointUbiquitousInfo object.
+                    if( CheckRegistrations( monitor, endpoint, stObjMap, mappings, EndpointUbiquitousInfo_CK._descriptors ) )
                     {
                         var configuration = new ServiceCollection();
                         // Generates the Multiple descriptors.
                         var builder = new FinalConfigurationBuilder( _definition.Name, mappings );
                         builder.FinalConfigure( monitor, configuration );
-                        // Add the scoped data holder.
-                        var scopedDataType = typeof( ScopeDataHolder );
-                        configuration.Add( new ServiceDescriptor( scopedDataType, scopedDataType, ServiceLifetime.Scoped ) );
-                        // Add the StObjMap, the EndpointTypeManager, all the IEndpointType<TScopeData> and the
-                        // IEnumerable<IEndpoint>.
-                        configuration.AddRange( trueSingletons );
+                        // Add the scoped ScopeDataHolder and the true singletons StObjMap, EndpointTypeManager, all the
+                        // IEndpointType<TScopeData> and the IEnumerable<IEndpoint>.
+                        configuration.AddRange( commonDescriptors );
                         // Waiting for .Net 8.
                         // configuration.MakeReadOnly();
                         _configuration = configuration;
@@ -479,43 +500,67 @@ namespace CK.Setup
                     bool CheckRegistrations( IActivityMonitor monitor,
                                                 ServiceCollection configuration,
                                                 IStObjMap stObjMap,
-                                                Dictionary<Type, Mapping> mappings )
+                                                Dictionary<Type, Mapping> mappings,
+                                                ServiceDescriptor[] ubiquitousServicesDescriptors )
                     {
-                        var handledSingletons = new List<Type>( _definition.SingletonServices );
-                        var handledScoped = new List<Type>( _definition.ScopedServices );
-                        List<Type>? moreSingletons = null;
-                        List<Type>? moreScoped = null;
+                        List<Type>? singletons = null;
+                        List<Type>? scoped = null;
+                        bool success = true;
                         foreach( var d in configuration )
                         {
                             if( mappings.TryGetValue( d.ServiceType, out var exists ) )
                             {
+                                if( ubiquitousServicesDescriptors.Any( uD => uD.ServiceType == d.ServiceType ) )
+                                {
+                                    monitor.Error( $"EndpointDefinition '{_definition.Name}' duplicates the registration of ubiquitous service '{d.ServiceType:C}'." +
+                                                    $" This is not allowed: explicitly supported ubiquitous services must be registered once and only once." );
+                                    success = false;
+                                }
                                 exists.AddEndpoint( d );
                             }
                             else mappings.Add( d.ServiceType, new Mapping( null, d ) );
 
                             if( d.Lifetime == ServiceLifetime.Singleton )
                             {
-                                if( !handledSingletons.Remove( d.ServiceType ) )
-                                {
-                                    moreSingletons ??= new List<Type>();
-                                    moreSingletons.Add( d.ServiceType );
-                                }
+                                singletons ??= new List<Type>();
+                                singletons.Add( d.ServiceType );
                             }
                             else
                             {
-                                if( !handledScoped.Remove( d.ServiceType ) )
-                                {
-                                    moreScoped ??= new List<Type>();
-                                    moreScoped.Add( d.ServiceType );
-                                }
+                                scoped ??= new List<Type>();
+                                scoped.Add( d.ServiceType );
                             }
                         }
-                        bool success = ErrorUnhandledServices( monitor, _definition, handledSingletons, ServiceLifetime.Singleton );
-                        if( !ErrorUnhandledServices( monitor, _definition, handledScoped, ServiceLifetime.Scoped ) ) success = false;
-                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, moreSingletons, ServiceLifetime.Singleton ) ) success = false;
-                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, moreScoped, ServiceLifetime.Scoped ) ) success = false;
-                        if( moreScoped != null ) _specificScoped = moreScoped.ToArray();
-                        if( moreSingletons != null ) _specificSingletons = moreSingletons.ToArray();
+                        // TODO: we can be a bit more clever here.
+                        //       - First we could check that for IAutoServices, all the UniqueMappings
+                        //         are mapped (to the same resolution).
+                        //       - Second we could detect whether a EndpointDefinition cover ALL the ubiquitous services.
+                        //         If yes, then it is a "Front Endpoint" (just like the global one) that can be root of "request".
+                        //
+                        //         Currently:
+                        //          - If a EndpointDefinition is unable to resolve a Ubiquitous service, then it should register a
+                        //            sensible default for it (actually a factory that returns the default).
+                        //          - The worst case is when a EndpointDefinition is unaware of the Ubiquitous service (independent package):
+                        //            the Ubiquitous service will not be available and everything will work until this missing service will
+                        //            be needed (this includes a EndpointUbiquitousInfo resolution).
+                        //            To handle this, one may consider for each ubiquitous service a singleton default provider (a Func<IUbiquitousService>
+                        //            may do the job, then we'll be able to automatically "fill the holes": any endpoint would then be a "Front Endpoint".
+                        //
+                        foreach( var d in ubiquitousServicesDescriptors )
+                        {
+                            if( mappings.ContainsKey( d.ServiceType ) )
+                            {
+                                monitor.Info( $"Endpoint '{_definition.Name}' explicitly supports the ubiquitous service '{d.ServiceType:C}'." );
+                            }
+                            else
+                            {
+                                mappings.Add( d.ServiceType, new Mapping( null, d ) );
+                            }
+                        }
+                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, singletons, ServiceLifetime.Singleton ) ) success = false;
+                        if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, scoped, ServiceLifetime.Scoped ) ) success = false;
+                        if( scoped != null ) _scoped = scoped.ToArray();
+                        if( singletons != null ) _singletons = singletons.ToArray();
                         return success;
 
                         static bool ErrorNotEndpointAutoServices( IActivityMonitor monitor, EndpointDefinition definition, IStObjMap stObjMap, List<Type>? extra, ServiceLifetime lt )
@@ -528,14 +573,17 @@ namespace CK.Setup
                                     var autoMap = stObjMap.ToLeaf( s );
                                     if( autoMap != null )
                                     {
-                                        if( autoMap is IStObjFinalImplementation realObject )
+                                        if( autoMap is IStObjServiceClassDescriptor service )
                                         {
-                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
-                                            success = false;
+                                            if( (service.AutoServiceKind & AutoServiceKind.IsEndpointService) == 0 )
+                                            {
+                                                monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}' that is not declared to be a Endpoint service." );
+                                                success = false;
+                                            }
                                         }
                                         else
                                         {
-                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is a {(autoMap.IsScoped ? "Scoped" : "Singleton")} automatic service mapped to '{autoMap.ClassType:C}'." );
+                                            monitor.Error( $"Endpoint '{definition.Name}' cannot configure the {lt} '{s:C}': it is mapped to the real object '{autoMap.ClassType:C}'." );
                                             success = false;
                                         }
                                     }
@@ -546,16 +594,6 @@ namespace CK.Setup
                                 }
                             }
                             return success;
-                        }
-
-                        static bool ErrorUnhandledServices( IActivityMonitor monitor, EndpointDefinition definition, List<Type> unhandled, ServiceLifetime lt )
-                        {
-                            if( unhandled.Count > 0 )
-                            {
-                                monitor.Error( $"Endpoint '{definition.Name}' doesn't handles the declared {lt} services: '{unhandled.Select( s => s.ToCSharpName() ).Concatenate( "', '" )}'." );
-                                return false;
-                            }
-                            return true;
                         }
                     }
                 }
@@ -892,8 +930,9 @@ namespace CK.Setup
                     .Append( "internal static IServiceProvider GetGlobalProvider( IServiceProvider sp ) => Unsafe.As<EndpointTypeManager>( sp.GetService( typeof( EndpointTypeManager ) )! ).GlobalServiceProvider;" )
                     .NewLine()
                     .CreatePart( out var helperExtension )
-                 .CloseBlock();
-
+                 .CloseBlock()
+                 .Append( _scopedDataHolder )
+;
                 if( !hasEndpoint )
                 {
                     g.Append( _endpointTypeInternalNoEndpoint );
@@ -904,6 +943,7 @@ namespace CK.Setup
                     g.Append( _endpointTypeInternalWithEndpoints )
                      .Append( _mapping )
                      .Append( _typedServiceDescriptor )
+                     .Append( _globalServices )
                      .Append( _endpointType )
                      .Append( _finalConfigurationBuilder );
                     helperExtension.Append( _createInitialMapping )

@@ -1,9 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 
 namespace CK.Core
 {
-
     /// <summary>
     /// Base class for a endpoint definition.
     /// The specialized class must be decorated with <see cref="EndpointDefinitionAttribute"/>.
@@ -13,7 +13,7 @@ namespace CK.Core
     /// <typeparam name="TScopeData">Type of the scoped data that is injected in <see cref="IEndpointServiceProvider{TScopeData}"/>.</typeparam>
     [CKTypeDefiner]
     public abstract class EndpointDefinition<TScopeData> : EndpointDefinition
-        where TScopeData : notnull
+        where TScopeData : EndpointDefinition.ScopedData
     {
         /// <summary>
         /// Must be implemented to configure the endpoint services.
@@ -21,7 +21,7 @@ namespace CK.Core
         /// <code>
         /// services.AddScoped&lt;IMySpecificService&gt;( sp => scopeData( sp ).MySpecificService );
         /// </code>
-        /// Note that if the endpoint doesn't get a scoped monitor from the scoped data, the right registration is:
+        /// Note that if the endpoint doesn't get a scoped IActivityMonitor from the scoped data, the right registration is:
         /// <code>
         /// services.AddScoped&lt;IActivityMonitor,ActivityMonitor&gt;();
         /// services.AddScoped( sp => sp.GetRequiredService&lt;IActivityMonitor&gt;().ParallelLogger );

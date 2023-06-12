@@ -1,78 +1,50 @@
 using CK.Core;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using static CK.Testing.StObjEngineTestHelper;
+using System.Runtime.CompilerServices;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
-
-    sealed class FakeEndpointDefinition : EndpointDefinition<FakeEndpointDefinition.Data>
+    /// <summary>
+    /// Sample specific singleton service that will be available only from the Fake endpoint.
+    /// </summary>
+    public sealed class SpecificSingletonOfTheFakeEndpoint
     {
-        public sealed class Data
-        {
-            public Data( IFakeAuthenticationInfo info )
-            {
-                AuthInfo = info;
-            }
+    }
 
-            public IFakeAuthenticationInfo AuthInfo { get; }
+    abstract class FakeEndpointDefinition : EndpointDefinition<FakeEndpointDefinition.Data>
+    {
+        // Required definition of the specialized ScopedData type.
+        // This can typically define internal fields used to exchange data from the external
+        // to the internal world.
+        // Here we have decided to explicitly provide the IActivityMonitor. This supposes that
+        // it is "reserved" to work on this side in the scoped service container!
+        public sealed class Data : ScopedData
+        {
+            internal readonly IActivityMonitor _monitor;
+
+            public Data( EndpointUbiquitousInfo info, IActivityMonitor monitor )
+                : base( info )
+            {
+                _monitor = monitor;
+            }
         }
 
-        public override string Name => "Fake";
-
-        public override IReadOnlyList<Type> ScopedServices => Type.EmptyTypes;
-
-        public override IReadOnlyList<Type> SingletonServices => Type.EmptyTypes;
-
         // This method is implemented by the developer of the Endpoint.
+        // The services collection only contains the work of the code generated ConfigureUbiquitousEndpointInfoServices
+        // but the globalServiceExists can be used to challenge the existence of a service in the global container
+        // and adapt the behavior (if you like pain).
+        // This enables the endpoint to inject new service types or override registrations of existing
+        // services registered in the endpoint container.
         public override void ConfigureEndpointServices( IServiceCollection services,
                                                         Func<IServiceProvider,Data> scopeData,
                                                         IServiceProviderIsService globalServiceExists )
         {
-            services.AddScoped( sp => scopeData(sp).AuthInfo );
-        }
+            // When registering a monitor, don't forget to register its ParallelLogger.
+            services.AddScoped( sp => scopeData( sp )._monitor );
+            services.AddScoped( sp => scopeData( sp )._monitor.ParallelLogger );
 
-    }
-
-    static class FakeHost
-    {
-        // Mimics the code executed at startup based on the Fake objects.
-        public static IEndpointServiceProvider<FakeEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
-                                                                                                    IServiceCollection globalConfiguration,
-                                                                                                     out IServiceProvider? globalServiceProvider )
-        {
-            // 1 - This is the AddStObjMap work. The StObjMap is from the StObj assembly or it's an embedded map:
-            //     anyway, we have an instance.
-            FakeStObjMap stObjMap = new FakeStObjMap();
-            var reg = new StObjContextRoot.ServiceRegister( monitor, globalConfiguration );
-            if( !stObjMap.ConfigureServices( reg ) )
-            {
-                globalServiceProvider = null;
-                return null;
-            }
-            // 2 - Once the global DI container is built, the code generated HostedServiceLifetimeTrigger sets the global
-            //     container on THE EndpointTypeManager from its constructor: the HostedServiceLifetimeTrigger
-            //     is a regular IHostedService, ISingletonAutoService that takes the global IServiceProvider in its constructor.
-
-            // This is done by the application host.
-            globalServiceProvider = globalConfiguration.BuildServiceProvider();
-
-            // HostedServiceLifetimeTrigger constructor.
-            var theEPTM = ((FakeEndpointTypeManager_CK)globalServiceProvider.GetRequiredService<EndpointTypeManager>());
-            theEPTM.SetGlobalContainer( globalServiceProvider );
-
-            // 3 - From now on, on demand (this is lazily initialized), the endpoints are able to expose their
-            //     own DI container.
-            var endpointType = globalServiceProvider.GetRequiredService<EndpointTypeManager>()
-                                .EndpointTypes
-                                .OfType<EndpointType<FakeEndpointDefinition.Data>>()
-                                .Single();
-            return endpointType.GetContainer();
+            services.AddSingleton( new SpecificSingletonOfTheFakeEndpoint() );
         }
 
     }

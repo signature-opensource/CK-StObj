@@ -7,17 +7,16 @@ using System.Reflection;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// Implements a EndpointDefinition instance.
+    /// There is only the Name to generate here...
     /// </summary>
     public sealed class EndpointDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
     {
-        readonly EndpointDefinitionAttribute _attr;
-
         public EndpointDefinitionImpl( IActivityMonitor monitor, Type decorated, EndpointDefinitionAttribute attr )
         {
-            CKTypeEndpointServiceInfo.CheckEndPointDefinition( monitor, decorated );
-            _attr = attr;
+            EndpointContext.CheckEndPointDefinition( monitor, decorated );
         }
 
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
@@ -31,15 +30,7 @@ namespace CK.Setup
 
             scope.Append( "public override string Name => " ).AppendSourceString( e.Name ).Append( ";" ).NewLine();
 
-            WriteScopedAndSingletonServices( scope, e );
-
             return CSCodeGenerationResult.Success;
-        }
-
-        internal static void WriteScopedAndSingletonServices( ITypeScope scope, IEndpointContext endpointContext )
-        {
-            scope.Append( "public override IReadOnlyList<Type> ScopedServices => " ).AppendArray( endpointContext.ScopedServices ).Append( ";" ).NewLine();
-            scope.Append( "public override IReadOnlyList<Type> SingletonServices => " ).AppendArray( endpointContext.SingletonServices ).Append( ";" ).NewLine();
         }
     }
 }

@@ -6,28 +6,26 @@ using System.Diagnostics.CodeAnalysis;
 namespace CK.StObj.Engine.Tests.Endpoint
 {
     [EndpointDefinition]
-    public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.BackgroundData>
+    public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.Data>
     {
-        public sealed class BackgroundData
+        public sealed class Data : ScopedData
         {
-            internal BackgroundData( IActivityMonitor monitor )
+            internal Data( EndpointUbiquitousInfo ubiquitousInfo, IActivityMonitor monitor )
+                : base( ubiquitousInfo )
             {
                 Monitor = monitor;
             }
 
             internal IActivityMonitor Monitor { get; }
 
-            [AllowNull]
-            internal IFakeAuthenticationInfo Auth { get; set; }
         }
 
         public override void ConfigureEndpointServices( IServiceCollection services,
-                                                        Func<IServiceProvider, BackgroundData> scopeData,
+                                                        Func<IServiceProvider, Data> scopeData,
                                                         IServiceProviderIsService globalServiceExists )
         {
             services.AddScoped( sp => scopeData( sp ).Monitor );
             services.AddScoped( sp => scopeData( sp ).Monitor.ParallelLogger );
-            services.AddScoped( sp => scopeData( sp ).Auth );
         }
     }
 }

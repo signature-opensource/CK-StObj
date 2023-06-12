@@ -16,10 +16,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
     public class EndpointDefinitionTests
     {
         [EndpointDefinition]
-        public abstract class AppIdentityEndpointDefinition : EndpointDefinition<string>
+        public abstract class AppIdentityEndpointDefinition : EndpointDefinition<AppIdentityEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, string> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor,ActivityMonitor>();
@@ -28,10 +36,18 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
         [EndpointDefinition]
-        public abstract class BackdoorEndpointDefinition : EndpointDefinition<object>
+        public abstract class BackdoorEndpointDefinition : EndpointDefinition<BackdoorEndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
             public override void ConfigureEndpointServices( IServiceCollection services,
-                                                            Func<IServiceProvider, object> scopeData,
+                                                            Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
                 services.AddScoped<IActivityMonitor, ActivityMonitor>();
@@ -46,11 +62,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
 
             var manager = s.GetRequiredService<EndpointTypeManager>();
-            manager.DefaultEndpointDefinition.Should().NotBeNull();
-            manager.AllEndpointDefinitions.Should().HaveCount( 3 );
-            manager.AllEndpointDefinitions[0].Should().BeSameAs( manager.DefaultEndpointDefinition );
-            manager.AllEndpointDefinitions.Skip(1).Should().Contain( e => e is AppIdentityEndpointDefinition )
-                                                       .And.Contain( e => e is BackdoorEndpointDefinition );
+            manager.EndpointDefinitions.Should().HaveCount( 2 );
+            manager.EndpointDefinitions.Should().Contain( e => e is AppIdentityEndpointDefinition )
+                                                .And.Contain( e => e is BackdoorEndpointDefinition );
         }
 
         [Test]
@@ -61,8 +75,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             // From the root (singleton) container.
             var o1 = GetEndpointsAndOtherTrueSingletons( s );
-            var backdoor = s.GetRequiredService<IEndpointType<object>>();
-            var appIdentity = s.GetRequiredService<IEndpointType<string>>();
+            var backdoor = s.GetRequiredService<IEndpointType<BackdoorEndpointDefinition.Data>>();
+            var appIdentity = s.GetRequiredService<IEndpointType<AppIdentityEndpointDefinition.Data>>();
 
             using var sScope = s.CreateScope();
             var o2 = GetEndpointsAndOtherTrueSingletons( sScope.ServiceProvider );
@@ -73,8 +87,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var o3 = GetEndpointsAndOtherTrueSingletons( sB );
             var o4 = GetEndpointsAndOtherTrueSingletons( sA );
 
-            using var sScopeA = sA.CreateScope( "" );
-            using var sScopeB = sB.CreateScope( this );
+            using var sScopeA = sA.CreateScope();
+            using var sScopeB = sB.CreateScope();
 
             var o5 = GetEndpointsAndOtherTrueSingletons( sScopeA.ServiceProvider );
             var o6 = GetEndpointsAndOtherTrueSingletons( sScopeB.ServiceProvider );
@@ -90,9 +104,9 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
             var endpoints = s.GetRequiredService<IEnumerable<IEndpointType>>();
             endpoints.Should().HaveCount( 2 );
-            var appIdentity = s.GetRequiredService<IEndpointType<string>>();
+            var appIdentity = s.GetRequiredService<IEndpointType<AppIdentityEndpointDefinition.Data>>();
             appIdentity.Name.Should().Be( "AppIdentity" );
-            var backdoor = s.GetRequiredService<IEndpointType<object>>();
+            var backdoor = s.GetRequiredService<IEndpointType<BackdoorEndpointDefinition.Data>>();
             backdoor.Name.Should().Be( "Backdoor" );
             endpoints.Should().Contain( appIdentity ).And.Contain( backdoor );
             return new object[] { endpoints, appIdentity, backdoor, s.GetRequiredService<EndpointTypeManager>(), s.GetRequiredService<IStObjMap>() }; 
@@ -103,29 +117,29 @@ namespace CK.StObj.Engine.Tests.Endpoint
         {
         }
 
-        [EndpointDefinition]
-        public abstract class NoWay2Definition : DefaultEndpointDefinition
-        {
-        }
-
         [Test]
         public void EndpointDefinitions_cannot_be_specialized()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( NoWay1Definition ) );
             TestHelper.GetFailedResult( c1 , "EndpointDefinition type 'EndpointDefinitionTests.NoWay1Definition' must directly specialize "
                                              + "EndpointDefinition<TScopeData> (not 'EndpointDefinitionTests.BackdoorEndpointDefinition')." );
-            var c2 = TestHelper.CreateStObjCollector( typeof( NoWay2Definition ) );
-            TestHelper.GetFailedResult( c2 , "EndpointDefinition type 'EndpointDefinitionTests.NoWay2Definition' must directly specialize "
-                                             + "EndpointDefinition<TScopeData> (not 'DefaultEndpointDefinition')." );
+
         }
 
         [EndpointDefinition]
-        public abstract class Dup1EndpointDefinition : EndpointDefinition<object>
+        public abstract class Dup1EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
         }
 
         [EndpointDefinition]
-        public abstract class Dup2EndpointDefinition : EndpointDefinition<object>
+        public abstract class Dup2EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
         }
 
@@ -138,8 +152,16 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
         [EndpointDefinition]
-        public abstract class BadNameDefinition : EndpointDefinition<object>
+        public abstract class BadNameDefinition : EndpointDefinition<BadNameDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
         }
 
         [Test]

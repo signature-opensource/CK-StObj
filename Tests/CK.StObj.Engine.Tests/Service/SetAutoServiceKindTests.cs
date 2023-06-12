@@ -32,7 +32,7 @@ namespace CK.StObj.Engine.Tests.Service
             Debug.Assert( map != null, "No initialization error." );
 
             var d = map.Services.Mappings[typeof( TheService )];
-            d.AutoServiceKind.Should().Be( AutoServiceKind.IsScoped );
+            d.AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped );
             d.MultipleMappings.Should().Contain( typeof( IService ) );
         }
 

@@ -24,13 +24,14 @@ namespace CK.Core
         IsProcessService = 1,
 
         /// <summary>
-        /// This is a service bound to a End Point: even inside this process, it may not be available
-        /// (a typical example of such service is the IAuthenticationService that requires an HttpContext).
+        /// This is a service bound to a endpoint: it may not be available in endpoint (a typical example of such service is the
+        /// IAuthenticationService that requires an HttpContext) and may not be available in the global DI container (a service
+        /// can be specific to a given endpoint or a family of endpoints but cannot live in the global application scope).
         /// </summary>
         IsEndpointService = 2,
 
         /// <summary>
-        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> (at the flag level).
+        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> or <see cref="IsEndpointService"/>.
         /// </summary>
         IsMarshallable = 4,
 
@@ -48,6 +49,18 @@ namespace CK.Core
         /// This is applicable only to interfaces. It states that the service is not unique: interfaces marked with this flag must all
         /// be registered, associated to each of their implementation.
         /// </summary>
-        IsMultipleService = 32
+        IsMultipleService = 32,
+
+        /// <summary>
+        /// Auto service flag. This flag is set if and only if the type is marked with a <see cref="IAutoService"/> interface marker.
+        /// </summary>
+        IsAutoService = 64,
+
+        /// <summary>
+        /// Ubiquitous info is a scoped endpoint service (and optionally a auto service) that must be available in all
+        /// containers. The instance must be directly marshallable (should be immutable or at least thread safe and
+        /// be independent of any other service). See <see cref="EndpointScopedServiceAttribute"/>.
+        /// </summary>
+        UbiquitousInfo = 128 | IsEndpointService | IsScoped
     }
 }

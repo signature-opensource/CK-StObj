@@ -20,7 +20,7 @@ namespace CK.Core
 
         /// <summary>
         /// Gets all the <see cref="IAutoService"/> types that are directly mapped to
-        /// an already available Real Object.
+        /// a Real Object.
         /// </summary>
         /// <para>
         /// Use <see cref="ObjectMappingList"/> to have the final real object classes list (without
