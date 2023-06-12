@@ -29,7 +29,6 @@ namespace CK.Setup
 
         // The type is singleton because it is used as a:
         // - ctor parameter of a Singleton Service.
-        // - property or StObjConstruct/StObjFinalize parameter of a Real Object.
         const CKTypeKind IsSingletonReasonReference = (CKTypeKind)(PrivateStart << 3);
 
         // The type is a singleton because nothing prevents it to be a singleton.

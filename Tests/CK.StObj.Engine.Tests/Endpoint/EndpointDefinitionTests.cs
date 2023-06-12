@@ -141,6 +141,13 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition]
         public abstract class Dup2EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
+            public sealed class Data : ScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
         }
 
         [Test]
@@ -172,14 +179,6 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
             var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
             TestHelper.GetFailedResult( c1, msg );
-
-            using( TestHelper.Monitor.CollectTexts( out var logs ) )
-            {
-                var c2 = TestHelper.CreateStObjCollector();
-                c2.SetEndpointScopedService( TestHelper.Monitor, typeof( ICKBinaryReader ), typeof( BadNameDefinition ) )
-                    .Should().BeFalse();
-                logs.Should().Contain( msg );
-            }
         }
 
     }

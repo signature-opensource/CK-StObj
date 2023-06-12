@@ -236,11 +236,12 @@ namespace CK.Setup
                                              || (i == 3 && (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0)
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
                                              || (i == 5 && isUbiquitous)
-                                             || (i == 6 && (@this & CKTypeKind.IsProcessService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsMarshallable) != 0)
-                                             || (i == 8 && (@this & CKTypeKind.IsMultipleService) != 0)
-                                             || (i == 9 && (@this & CKTypeKind.IsExcludedType) != 0)
-                                             || (i == 10 && (@this & CKTypeKind.HasError) != 0) );
+                                             || (i == 6 && (@this & CKTypeKind.IsEndpointService) != 0)
+                                             || (i == 7 && (@this & CKTypeKind.IsProcessService) != 0)
+                                             || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
+                                             || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
+                                             || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
+                                             || (i == 11 && (@this & CKTypeKind.HasError) != 0) );
             return String.Join( "|", f );
         }
     }
