@@ -531,21 +531,6 @@ namespace CK.Setup
                                 scoped.Add( d.ServiceType );
                             }
                         }
-                        // TODO: we can be a bit more clever here.
-                        //       - First we could check that for IAutoServices, all the UniqueMappings
-                        //         are mapped (to the same resolution).
-                        //       - Second we could detect whether a EndpointDefinition cover ALL the ubiquitous services.
-                        //         If yes, then it is a "Front Endpoint" (just like the global one) that can be root of "request".
-                        //
-                        //         Currently:
-                        //          - If a EndpointDefinition is unable to resolve a Ubiquitous service, then it should register a
-                        //            sensible default for it (actually a factory that returns the default).
-                        //          - The worst case is when a EndpointDefinition is unaware of the Ubiquitous service (independent package):
-                        //            the Ubiquitous service will not be available and everything will work until this missing service will
-                        //            be needed (this includes a EndpointUbiquitousInfo resolution).
-                        //            To handle this, one may consider for each ubiquitous service a singleton default provider (a Func<IUbiquitousService>
-                        //            may do the job, then we'll be able to automatically "fill the holes": any endpoint would then be a "Front Endpoint".
-                        //
                         foreach( var d in ubiquitousServicesDescriptors )
                         {
                             if( mappings.ContainsKey( d.ServiceType ) )

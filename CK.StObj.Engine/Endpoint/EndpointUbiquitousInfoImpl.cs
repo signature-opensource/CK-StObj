@@ -25,9 +25,7 @@ namespace CK.Setup
             scope.GeneratedByComment( "Static constructor" )
                  .Append( "static EndpointUbiquitousInfo_CK()" )
                  .OpenBlock()
-                 .Append( "_entries = new Entry[] {" )
-                 .CreatePart( out var entries )
-                 .Append( "};" ).NewLine()
+                 .Append( "_entries = EndpointTypeManager_CK._ubiquitousMappings;" ).NewLine()
                  .Append( "_descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" )
                  .CreatePart( out var descriptors )
                  .Append( "};" ).NewLine()
@@ -35,7 +33,6 @@ namespace CK.Setup
 
             foreach( var (type, index) in mappings )
             {
-                entries.Append( "new Entry( " ).AppendTypeOf( type ).Append( ", " ).Append( index ).Append( " )," ).NewLine();
                 descriptors.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
                            .AppendTypeOf( type )
                            .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append(index)

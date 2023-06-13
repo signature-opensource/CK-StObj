@@ -9,18 +9,6 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-
-    sealed class EndpointInfo : IStObjEndpointServiceInfo
-    {
-        public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => throw new NotImplementedException();
-
-        public bool HasUbiquitousInfoServices => throw new NotImplementedException();
-
-        public IReadOnlyList<IStObjEndpointServiceInfo.UbiquitousMapping> UbiquitousMappings => throw new NotImplementedException();
-
-        public IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => throw new NotImplementedException();
-    }
-
     class ServiceSupportCodeGenerator
     {
         const string _stObjServiceClassDescriptor = """
@@ -52,7 +40,6 @@ namespace CK.Setup
                     }
                     """;
 
-
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
 
@@ -77,7 +64,7 @@ static readonly IStObjServiceClassDescriptor[] _serviceMappingList;
 static readonly Dictionary<Type,IStObjMultipleInterface> _multipleMappings;
 
 // Direct static access to the IStObjServiceClassDescriptor services.
-// - (TODO: Unify MappingIndex on a GFinalRealObjectWithAutoService or something like that an rename this static AutoServices) The GenServices list indexed by IStObjServiceClassDescriptor.MappingIndex.
+// - (TODO: Unify MappingIndex on a GFinalRealObjectWithAutoService or something like that and rename this static AutoServices) The GenServices list indexed by IStObjServiceClassDescriptor.MappingIndex.
 // - The ToServiceLeaf (IStObjServiceMap.ToLeaf) that returns a IStObjServiceClassDescriptor or a real object only if the Type is a Auto service.
 // - The ToLeaf (IStObjMap.ToLeaf) that returns any real object or a IStObjServiceClassDescriptor.
 public static IReadOnlyList<IStObjServiceClassDescriptor> GenServices => _serviceMappingList;

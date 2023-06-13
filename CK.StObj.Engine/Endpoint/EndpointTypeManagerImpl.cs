@@ -19,8 +19,10 @@ namespace CK.Setup
 
             // This CK.Core.EndpointTypeManager_CK statically exposes the default and all endpoint definitions.
             // static (Real Objects)
-            scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine();
-            scope.Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine();
+            scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine()
+                 .Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine()
+                 .Append( "internal static readonly UbiquitousMapping[] _ubiquitousMappings;" ).NewLine()
+                 .Append( "internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;" ).NewLine();
             // instance (bound to the DI world). 
             scope.Append( "internal readonly CK.StObj.IEndpointTypeInternal[] _endpointTypes;" ).NewLine();
 
@@ -33,6 +35,8 @@ namespace CK.Setup
             scope.Append( "public override IReadOnlyList<EndpointDefinition> EndpointDefinitions => _endpoints;" ).NewLine()
                  .Append( "public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;" ).NewLine()
                  .Append( "public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;" ).NewLine()
+                 .Append( "public override IReadOnlyList<UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;" ).NewLine()
+                 .Append( "public override IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => _defaultUbiquitousValueProviders;" ).NewLine()
                  .Append( "internal void SetGlobalContainer( IServiceProvider g ) => _global = g;" ).NewLine();
             
             return CSCodeGenerationResult.Success;
@@ -49,14 +53,28 @@ namespace CK.Setup
             }
             scope.Append( " };" ).NewLine();
 
-            var endpoints = endpointResult.EndpointContexts;
             scope.Append( "_endpoints = new EndpointDefinition[] {" ).NewLine();
-            foreach( var e in endpoints )
+            foreach( var e in endpointResult.EndpointContexts )
             {
                 scope.Append( "(EndpointDefinition)" ).Append( e.EndpointDefinition.CodeInstanceAccessor ).Append( "," ).NewLine();
             }
-            scope.Append("};")
-                 .CloseBlock();
+            scope.Append("};").NewLine();
+
+            scope.Append( "_ubiquitousMappings = new UbiquitousMapping[] {" ).NewLine();
+            foreach( var e in endpointResult.UbiquitousMappings )
+            {
+                scope.Append( "new UbiquitousMapping( " ).AppendTypeOf( e.UbiquitousType ).Append( "," ).Append( e.MappingIndex ).Append( ")," ).NewLine();
+            }
+            scope.Append( "};" ).NewLine();
+
+            scope.Append( "_defaultUbiquitousValueProviders = new IStObjFinalClass[] {" ).NewLine();
+            foreach( var e in endpointResult.DefaultUbiquitousValueProviders )
+            {
+                scope.Append( "GeneratedRootContext.ToLeaf( " ).AppendTypeOf( e.ClassType ).Append( ")," ).NewLine();
+            }
+            scope.Append( "};" ).NewLine();
+
+            scope.CloseBlock();
         }
 
         static void InstanceConstructor( ITypeScope scope, IEndpointResult endpointResult )

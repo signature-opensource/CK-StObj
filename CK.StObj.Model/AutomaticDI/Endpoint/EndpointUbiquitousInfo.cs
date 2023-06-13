@@ -13,17 +13,6 @@ namespace CK.Core
     [Setup.ContextBoundDelegation( "CK.Setup.EndpointUbiquitousInfoImpl, CK.StObj.Engine" )]
     public abstract class EndpointUbiquitousInfo : IScopedAutoService
     {
-        protected readonly struct Entry
-        {
-            public readonly Type Type;
-            public readonly int Index;
-
-            public Entry( Type type, int index ) : this()
-            {
-                Type = type;
-                Index = index;
-            }
-        }
         protected struct Mapper
         {
             public readonly object Initial;
@@ -37,7 +26,7 @@ namespace CK.Core
             }
         }
         [AllowNull]
-        protected static Entry[] _entries;
+        protected static EndpointTypeManager.UbiquitousMapping[] _entries;
         protected readonly Mapper[] _mappers;
         bool _locked;
 
@@ -145,14 +134,14 @@ namespace CK.Core
 
         ref Mapper Get( Type t )
         {
-            return ref _mappers[_entries[GetTypeIndex( t )].Index];
+            return ref _mappers[_entries[GetTypeIndex( t )].MappingIndex];
         }
 
         static int GetTypeIndex( Type t )
         {
             for( int i = 0; i < _entries.Length; ++i )
             {
-                if( _entries[i].Type == t ) return i;
+                if( _entries[i].UbiquitousType == t ) return i;
             }
             return Throw.ArgumentException<int>( $"Type '{t.ToCSharpName()}' must be a Ubiquitous service." );
         }
@@ -166,16 +155,16 @@ namespace CK.Core
             {
                 CheckSpecialization( i, tInstance );
             }
-            _mappers[_entries[i].Index].Current = instance;
+            _mappers[_entries[i].MappingIndex].Current = instance;
 
             // This concerns only IAutoService.
             // Regular (non IAutoService) have no mappings.
             static void CheckSpecialization( int i, Type tInstance )
             {
-                int iIndex = _entries[i].Index;
+                int iIndex = _entries[i].MappingIndex;
                 int iImpl = i;
                 int iNextImpl = i + 1;
-                while( iNextImpl < _entries.Length && _entries[iNextImpl].Index == iIndex )
+                while( iNextImpl < _entries.Length && _entries[iNextImpl].MappingIndex == iIndex )
                 {
                     iImpl = iNextImpl;
                     iNextImpl++;
@@ -184,9 +173,9 @@ namespace CK.Core
                 // than the ones we know.
                 if( iImpl != i )
                 {
-                    if( !_entries[iImpl].Type.IsAssignableFrom( tInstance ) )
+                    if( !_entries[iImpl].UbiquitousType.IsAssignableFrom( tInstance ) )
                     {
-                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].Type.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
+                        Throw.ArgumentException( $"Instance must be a specialization of '{_entries[iImpl].UbiquitousType.ToCSharpName()}' (its type is '{tInstance.ToCSharpName()}')." );
                     }
                 }
             }

@@ -2,6 +2,8 @@ using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using static CK.Core.ActivityMonitorSimpleCollector;
+using static CK.Core.EndpointTypeManager;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
@@ -11,7 +13,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // EndpointDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
         static readonly EndpointDefinition[] _endpoints;
+        internal static readonly UbiquitousMapping[] _ubiquitousMappings;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
+        internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;
+
         internal readonly IEndpointTypeInternal[] _endpointTypes;
 
         static EndpointTypeManager_CK()
@@ -27,6 +32,21 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
             };
             _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition_CK() };
+            _ubiquitousMappings = new UbiquitousMapping[]
+            {
+                new UbiquitousMapping( typeof(IFakeTenantInfo), 0 ),
+                new UbiquitousMapping( typeof(FakeTenantInfo), 0 ),
+                new UbiquitousMapping( typeof(IFakeAuthenticationInfo), 1 ),
+                new UbiquitousMapping( typeof(FakeAuthenticationInfo), 2 ),
+                new UbiquitousMapping( typeof(FakeCultureInfo), 3 )
+            };
+            _defaultUbiquitousValueProviders = new IStObjFinalClass[]
+            {
+                GeneratedRootContext.ToLeaf( typeof(DefaultTenantProvider ) )!,
+                GeneratedRootContext.ToLeaf( typeof(DefaultAuthenticationInfoProvider) )!,
+                GeneratedRootContext.ToLeaf( typeof(DefaultAuthenticationInfoProvider) )!,
+                GeneratedRootContext.ToLeaf( typeof(DefaultCultureProvider) )!
+            };
         }
 
         // The instance constructor initializes the endpoint type from the definitions.
@@ -44,6 +64,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
 
+        public override IReadOnlyList<UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
+
+        public override IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => throw new NotImplementedException();
 
         internal ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )
         {

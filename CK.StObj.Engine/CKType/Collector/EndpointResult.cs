@@ -20,7 +20,7 @@ namespace CK.Setup
         readonly IReadOnlyDictionary<Type, AutoServiceKind> _endpointServices;
         readonly IReadOnlyList<EndpointContext> _contexts;
         readonly IReadOnlyList<Type> _rawUbiquitousServices;
-        readonly List<IEndpointResult.UbiquitousMapping> _ubiquitousMappings;
+        readonly List<EndpointTypeManager.UbiquitousMapping> _ubiquitousMappings;
         readonly List<IStObjFinalClass> _defaultUbiquitousProviders;
 
         /// <inheritdoc />
@@ -32,8 +32,10 @@ namespace CK.Setup
         /// <inheritdoc />
         public bool HasUbiquitousInfoServices => _rawUbiquitousServices.Count > 0;
 
-        public IReadOnlyList<IEndpointResult.UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
+        /// <inheritdoc />
+        public IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
 
+        /// <inheritdoc />
         public IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => _defaultUbiquitousProviders;
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,
@@ -43,7 +45,7 @@ namespace CK.Setup
             _contexts = contexts;
             _endpointServices = endpointServices;
             _rawUbiquitousServices = ubiquitousServices;
-            _ubiquitousMappings = new List<IEndpointResult.UbiquitousMapping>();
+            _ubiquitousMappings = new List<EndpointTypeManager.UbiquitousMapping>();
             _defaultUbiquitousProviders = new List<IStObjFinalClass>();
         }
 
@@ -113,11 +115,11 @@ namespace CK.Setup
                     // from most abstract to leaf type here.
                     foreach( var m in auto.UniqueMappings )
                     {
-                        _ubiquitousMappings.Add( new IEndpointResult.UbiquitousMapping( m, current) );
+                        _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( m, current) );
                         ubiquitousTypes.Remove( m );
                         if( !FindSameDefaultProvider( monitor, services, m, ref defaultProvider ) ) success = false;
                     }
-                    _ubiquitousMappings.Add( new IEndpointResult.UbiquitousMapping(auto.ClassType, current) );
+                    _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping(auto.ClassType, current) );
                     ubiquitousTypes.Remove( auto.ClassType );
                     if( defaultProvider == null )
                     {
@@ -142,7 +144,7 @@ namespace CK.Setup
                     {
                         success = false;
                     }
-                    _ubiquitousMappings.Add( new IEndpointResult.UbiquitousMapping( t, current) );
+                    _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( t, current) );
                     ubiquitousTypes.RemoveAt( ubiquitousTypes.Count - 1 );
                 }
                 ++current;

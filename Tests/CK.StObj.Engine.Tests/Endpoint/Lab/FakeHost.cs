@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             // 1 - This is the AddStObjMap work. The StObjMap is from the StObj assembly or it's an embedded map:
             //     anyway, we have an instance.
-            FakeStObjMap stObjMap = new FakeStObjMap();
+            GeneratedRootContext stObjMap = new GeneratedRootContext();
             var reg = new StObjContextRoot.ServiceRegister( monitor, globalConfiguration );
             if( !stObjMap.ConfigureServices( reg ) )
             {
