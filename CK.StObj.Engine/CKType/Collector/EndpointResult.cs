@@ -24,9 +24,6 @@ namespace CK.Setup
         readonly List<IStObjFinalClass> _defaultUbiquitousProviders;
 
         /// <inheritdoc />
-        public IEndpointContext DefaultEndpointContext => _contexts[0];
-
-        /// <inheritdoc />
         public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
 
         /// <inheritdoc />

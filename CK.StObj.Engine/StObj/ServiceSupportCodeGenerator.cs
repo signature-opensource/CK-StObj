@@ -10,6 +10,17 @@ using System.Reflection;
 namespace CK.Setup
 {
 
+    sealed class EndpointInfo : IStObjEndpointServiceInfo
+    {
+        public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => throw new NotImplementedException();
+
+        public bool HasUbiquitousInfoServices => throw new NotImplementedException();
+
+        public IReadOnlyList<IStObjEndpointServiceInfo.UbiquitousMapping> UbiquitousMappings => throw new NotImplementedException();
+
+        public IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => throw new NotImplementedException();
+    }
+
     class ServiceSupportCodeGenerator
     {
         const string _stObjServiceClassDescriptor = """
@@ -40,6 +51,8 @@ namespace CK.Setup
                         public IReadOnlyCollection<Type> UniqueMappings { get; }
                     }
                     """;
+
+
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
 

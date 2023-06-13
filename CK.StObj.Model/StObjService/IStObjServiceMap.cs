@@ -47,11 +47,5 @@ namespace CK.Core
         /// Gets all the Auto service implementations.
         /// </summary>
         IReadOnlyList<IStObjServiceClassDescriptor> MappingList { get; }
-
-        /// <summary>
-        /// Gets endpoint services informations.
-        /// </summary>
-        IStObjEndpointServiceInfo EndpointInfo { get; }
-
     }
 }

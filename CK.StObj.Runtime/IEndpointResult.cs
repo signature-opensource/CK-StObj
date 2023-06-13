@@ -14,13 +14,13 @@ namespace CK.Setup
     public interface IEndpointResult : IStObjEndpointServiceInfo
     {
         /// <summary>
-        /// Gets the default context.
-        /// </summary>
-        IEndpointContext DefaultEndpointContext { get; }
-
-        /// <summary>
         /// Gets all the <see cref="EndpointContext"/>. The first one is the <see cref="DefaultEndpointContext"/>.
         /// </summary>
         IReadOnlyList<IEndpointContext> EndpointContexts { get; }
+
+        /// <summary>
+        /// Gets whether at least one ubiquitous information service type exists.
+        /// </summary>
+        bool HasUbiquitousInfoServices { get; }
     }
 }
