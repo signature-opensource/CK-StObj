@@ -9,7 +9,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 {
 
     [TestFixture]
-    public partial class SampleEndpointTests
+    public partial class BackgroundEndpointTests
     {
         [EndpointScopedService]
         public sealed class TenantResolutionService : IScopedAutoService
@@ -29,10 +29,11 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                      typeof( BackgroundExecutor ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( TenantResolutionService ),
-                                                     typeof( FakeTenantInfo ) );
+                                                     typeof( FakeTenantInfo ),
+                                                     typeof( DefaultTenantProvider ) );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
-                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor() );
+                services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
                 services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
                 services.Services.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
                 services.Services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
@@ -43,10 +44,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
             // In-line execution of a request.
             using( var scoped = services.CreateScope() )
             {
-                scoped.ServiceProvider.GetRequiredService<SampleCommandProcessor>().Process( "Inline" );
+                scoped.ServiceProvider.GetRequiredService<SampleCommandProcessor>().Process( "In-line" );
             }
-            // BackgroundExecutor is a singleton. We can retrieve it from the root services.
 
+            // BackgroundExecutor is a singleton. We can retrieve it from the root services.
             var backExecutor = services.GetRequiredService<BackgroundExecutor>();
             backExecutor.Start();
 
@@ -54,7 +55,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             using( var scoped = services.CreateScope() )
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
-                backExecutor.Push( ubiq, "Background" );
+                backExecutor.Push( TestHelper.Monitor, ubiq, "Background" );
             }
 
             // Background execution of a request with an overridden tenant.
@@ -62,14 +63,16 @@ namespace CK.StObj.Engine.Tests.Endpoint
             {
                 var ubiq = scoped.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();
                 ubiq.Override( new FakeTenantInfo( "AntotherTenant" ) );
-                backExecutor.Push( ubiq, "Background" );
+                backExecutor.Push( TestHelper.Monitor, ubiq, "Background" );
             }
 
             backExecutor.Stop();
             await backExecutor.WaitForTerminationAsync();
 
             var history = services.GetRequiredService<SampleCommandMemory>();
-            history.ExecutionTrace.Should().HaveCount( 3 ).And.Contain( "Inline - AcmeCorp", "Background - AcmeCorp", "Background - AnotherTenant" );
+            history.ExecutionTrace.Should().HaveCount( 3 ).And.Contain( "In-line - AcmeCorp - Request monitor",
+                                                                        "Background - AcmeCorp - Runner monitor",
+                                                                        "Background - AnotherTenant - Runner monitor" );
         }
     }
 }

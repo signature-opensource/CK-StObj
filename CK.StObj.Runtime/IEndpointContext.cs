@@ -6,8 +6,7 @@ namespace CK.Setup
     public interface IEndpointContext
     {
         /// <summary>
-        /// Gets the endpoint name (this is the endpoint definition type name without "EndpointDefinition" suffix):
-        /// "Default" for <see cref="CK.Core.DefaultEndpointDefinition"/>.
+        /// Gets the endpoint name (this is the endpoint definition type name without "EndpointDefinition" suffix).
         /// </summary>
         string Name { get; }
 
@@ -17,7 +16,7 @@ namespace CK.Setup
         IStObjResult EndpointDefinition { get; }
 
         /// <summary>
-        ///  Gets the instance data type. This is null for the <see cref="DefaultEndpointDefinition"/>.
+        ///  Gets the instance data type.
         /// </summary>
         Type? ScopeDataType { get; }
     }

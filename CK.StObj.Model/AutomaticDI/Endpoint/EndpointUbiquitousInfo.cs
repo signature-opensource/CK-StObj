@@ -60,13 +60,6 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Code generated.
-        /// </summary>
-        /// <param name="services">The current service provider (must be a scoped container).</param>
-        /// <returns>The initial mapped values.</returns>
-        protected abstract Mapper[] Initialize( IServiceProvider services );
-
-        /// <summary>
         /// Gets the value retrieved from the originating DI container for a type (that must be a ubiquitous service type).
         /// </summary>
         /// <param name="t">The ubiquitous service type.</param>
@@ -141,6 +134,14 @@ namespace CK.Core
             Throw.CheckArgument( type.IsAssignableFrom( instance.GetType() ) );
             DoOverride( type, instance );
         }
+
+
+        /// <summary>
+        /// Code generated.
+        /// </summary>
+        /// <param name="services">The current service provider (must be a scoped container).</param>
+        /// <returns>The initial mapped values.</returns>
+        protected abstract Mapper[] Initialize( IServiceProvider services );
 
         ref Mapper Get( Type t )
         {

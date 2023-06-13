@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// Exposes Service Types (interfaces and classes) to Service class mappings.
     /// This is exposed by <see cref="IStObjMap.Services"/> and is the result of the setup: its implementation
@@ -46,6 +47,11 @@ namespace CK.Core
         /// Gets all the Auto service implementations.
         /// </summary>
         IReadOnlyList<IStObjServiceClassDescriptor> MappingList { get; }
+
+        /// <summary>
+        /// Gets endpoint services informations.
+        /// </summary>
+        IStObjEndpointServiceInfo EndpointInfo { get; }
 
     }
 }

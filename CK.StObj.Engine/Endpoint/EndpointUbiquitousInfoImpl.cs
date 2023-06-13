@@ -18,7 +18,7 @@ namespace CK.Setup
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
             // We build the mappings here. We only need it here.
-            List<(Type, int)> mappings = BuildMappings( c.CurrentRun.EngineMap );
+            var mappings = c.CurrentRun.EngineMap.EndpointResult.UbiquitousMappings;
 
             scope.Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;" ).NewLine();
 
@@ -84,33 +84,6 @@ namespace CK.Setup
                            """ );
 
             return CSCodeGenerationResult.Success;
-        }
-
-        static List<(Type, int)> BuildMappings( IStObjEngineMap engineMap )
-        {
-            // Use list and not hash set (no volume here).
-            var ubiquitousTypes = new List<Type>( engineMap.EndpointResult.UbiquitousInfoServices );
-            var mappings = new List<(Type, int)>();
-            int current = 0;
-            while( ubiquitousTypes.Count > 0 )
-            {
-                var t = ubiquitousTypes[ubiquitousTypes.Count - 1];
-                var auto = engineMap.Services.ToLeaf( t );
-                if( auto != null )
-                {
-                    // We (heavily) rely on the fact that the UniqueMappings are ordered
-                    // from most abstract to leaf type here.
-                    foreach( var m in auto.UniqueMappings )
-                    {
-                        mappings.Add( (m, current) );
-                        ubiquitousTypes.Remove( m );
-                    }
-                }
-                mappings.Add( (t, current) );
-                ubiquitousTypes.RemoveAt( ubiquitousTypes.Count - 1 );
-                ++current;
-            }
-            return mappings;
         }
     }
 }

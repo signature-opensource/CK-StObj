@@ -20,9 +20,10 @@ namespace CK.StObj.Engine.Tests.Endpoint
             _endpoint = endpoint;
         }
 
-        public void Push( EndpointUbiquitousInfo info, object command )
+        public void Push( IActivityMonitor monitor, EndpointUbiquitousInfo info, object command )
         {
-            _commands.Writer.TryWrite( new RunCommand( info, command ) );
+            var correlationId = monitor.CreateToken();
+            _commands.Writer.TryWrite( new RunCommand( correlationId, info, command ) );
         }
 
         /// <summary>
@@ -34,21 +35,24 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public Task WaitForTerminationAsync() => _runTask;
 
-        sealed record class RunCommand( EndpointUbiquitousInfo UbiquitousInfo, object Command );
+        sealed record class RunCommand( ActivityMonitor.Token CorrelationId, EndpointUbiquitousInfo UbiquitousInfo, object Command );
 
         async Task RunAsync()
         {
-            var monitor = new ActivityMonitor( "Background Executor." );
+            var monitor = new ActivityMonitor( "Runner monitor." );
             object? o;
             while( (o = await _commands.Reader.ReadAsync()) != null )
             {
                 var cmd = (RunCommand)o;
                 // We want any command executed by this loop to use the same monitor.
-                var data = new BackgroundEndpointDefinition.Data( cmd.UbiquitousInfo, monitor );
-                using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
+                using( monitor.StartDependentActivity( cmd.CorrelationId, alwaysOpenGroup: true ) )
                 {
-                    var executor = scope.ServiceProvider.GetRequiredService<SampleCommandProcessor>();
-                    executor.Process( cmd.Command );
+                    var data = new BackgroundEndpointDefinition.Data( cmd.UbiquitousInfo, monitor );
+                    using( var scope = _endpoint.GetContainer().CreateAsyncScope( data ) )
+                    {
+                        var executor = scope.ServiceProvider.GetRequiredService<SampleCommandProcessor>();
+                        executor.Process( cmd.Command );
+                    }
                 }
             }
             monitor.MonitorEnd();

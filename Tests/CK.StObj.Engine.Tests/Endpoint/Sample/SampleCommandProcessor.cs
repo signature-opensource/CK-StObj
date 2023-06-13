@@ -23,7 +23,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         public void Process( object command )
         {
-            _commandHistory.Trace( $"{command} - {_tenantInfo.Name}" );
+            _commandHistory.Trace( $"{command} - {_tenantInfo.Name} - {_monitor.Topic}" );
             _monitor.Info( $"Processed command '{command}' (in tenant '{_tenantInfo.Name}'." );
         }
     }
