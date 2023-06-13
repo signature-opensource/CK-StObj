@@ -1,9 +1,11 @@
 using CK.Core;
+using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using static CK.Core.ActivityMonitorSimpleCollector;
 using static CK.Core.EndpointTypeManager;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
@@ -16,6 +18,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         internal static readonly UbiquitousMapping[] _ubiquitousMappings;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;
+        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;
+        internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;
 
         internal readonly IEndpointTypeInternal[] _endpointTypes;
 
@@ -31,7 +35,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
                 { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
             };
-            _endpoints = new EndpointDefinition[] { new FakeEndpointDefinition_CK() };
+            _endpoints = new EndpointDefinition[] { new FakeBackEndpointDefinition_CK() };
             _ubiquitousMappings = new UbiquitousMapping[]
             {
                 new UbiquitousMapping( typeof(IFakeTenantInfo), 0 ),
@@ -40,6 +44,31 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 new UbiquitousMapping( typeof(FakeAuthenticationInfo), 2 ),
                 new UbiquitousMapping( typeof(FakeCultureInfo), 3 )
             };
+            _ubiquitousBackDescriptors = new ServiceDescriptor[] {
+                    new ServiceDescriptor( typeof(IFakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof(FakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof(IFakeAuthenticationInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 1 ), ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof(FakeAuthenticationInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 2 ), ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof(FakeCultureInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 3 ), ServiceLifetime.Scoped ),
+            };
+            _ubiquitousFrontDescriptors = new ServiceDescriptor[] {
+                    new ServiceDescriptor( typeof(IFakeTenantInfo),
+                                           sp => ((DefaultTenantProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultTenantProvider) )!).Default,
+                                           ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof(FakeTenantInfo),
+                                           sp => ((DefaultTenantProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultTenantProvider) )!).Default,
+                                           ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof(IFakeAuthenticationInfo),
+                                           sp => ((DefaultAuthenticationInfoProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default,
+                                           ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof(FakeAuthenticationInfo),
+                                           sp => ((DefaultAuthenticationInfoProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default,
+                                           ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof(FakeCultureInfo),
+                                           sp => ((DefaultCultureProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultCultureProvider) )!).Default,
+                                           ServiceLifetime.Singleton ),
+            };
+
             _defaultUbiquitousValueProviders = new IStObjFinalClass[]
             {
                 GeneratedRootContext.ToLeaf( typeof(DefaultTenantProvider ) )!,
@@ -54,7 +83,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
             _endpointTypes = new IEndpointTypeInternal[]
             {
-                    new EndpointType<FakeEndpointDefinition.Data>( new FakeEndpointDefinition_CK() )
+                    new EndpointType<FakeBackEndpointDefinition.Data>( new FakeBackEndpointDefinition_CK() )
             };
         }
 
@@ -78,7 +107,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 new ServiceDescriptor( typeof( IStObjMap ), stObjMap ),
 
                 // The IEndpointType<TScopeData> are true singletons. (Done for each EndpoitType.)
-                new ServiceDescriptor( typeof( IEndpointType<FakeEndpointDefinition.Data> ), _endpointTypes[0] ),
+                new ServiceDescriptor( typeof( IEndpointType<FakeBackEndpointDefinition.Data> ), _endpointTypes[0] ),
 
                 // ...as well as the IEnumerable<IEndpointType>.
                 new ServiceDescriptor( typeof( IEnumerable<IEndpointType> ), _endpointTypes ),

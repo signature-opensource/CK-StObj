@@ -44,7 +44,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         static GeneratedRootContext()
         {
             // For this sample we only need those 3 ServiceClassDescriptor to
-            // be able to resolve the default value of ubiquitous info services.
+            // be able to resolve the default value of ubiquitous info services for front endpoints.
             // In real life, there would be the other auto services here.
             _serviceMappings = new Dictionary<Type, IStObjServiceClassDescriptor>()
             {

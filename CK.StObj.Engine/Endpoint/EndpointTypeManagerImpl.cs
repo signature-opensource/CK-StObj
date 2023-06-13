@@ -22,7 +22,9 @@ namespace CK.Setup
             scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine()
                  .Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine()
                  .Append( "internal static readonly UbiquitousMapping[] _ubiquitousMappings;" ).NewLine()
-                 .Append( "internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;" ).NewLine();
+                 .Append( "internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;" ).NewLine()
+                 .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;" ).NewLine()
+                 .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;" ).NewLine();
             // instance (bound to the DI world). 
             scope.Append( "internal readonly CK.StObj.IEndpointTypeInternal[] _endpointTypes;" ).NewLine();
 
@@ -64,6 +66,26 @@ namespace CK.Setup
             foreach( var e in endpointResult.UbiquitousMappings )
             {
                 scope.Append( "new UbiquitousMapping( " ).AppendTypeOf( e.UbiquitousType ).Append( "," ).Append( e.MappingIndex ).Append( ")," ).NewLine();
+            }
+            scope.Append( "};" ).NewLine();
+
+            scope.Append( "_ubiquitousBackDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
+            foreach( var e in endpointResult.UbiquitousMappings )
+            {
+                scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
+                     .AppendTypeOf( e.UbiquitousType )
+                     .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append( e.MappingIndex )
+                     .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
+            }
+            scope.Append( "};" ).NewLine();
+
+            scope.Append( "_ubiquitousFrontDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
+            foreach( var e in endpointResult.UbiquitousMappings )
+            {
+                scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
+                     .AppendTypeOf( e.UbiquitousType )
+                     .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append( e.MappingIndex )
+                     .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
             scope.Append( "};" ).NewLine();
 
@@ -114,7 +136,7 @@ namespace CK.Setup
             foreach( var e in endpointResult.EndpointContexts )
             {
                 scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IEndpointType<" )
-                     .Append( e.ScopeDataType.ToCSharpName() )
+                     .AppendGlobalTypeName( e.ScopeDataType )
                      .Append( "> ), _endpointTypes[" ).Append( i++ ).Append( "] )," ).NewLine();
             }
             scope.Append( "};" )

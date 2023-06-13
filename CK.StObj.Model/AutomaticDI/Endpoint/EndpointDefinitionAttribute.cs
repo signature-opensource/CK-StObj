@@ -8,9 +8,20 @@ namespace CK.Core
     /// </summary>
     public sealed class EndpointDefinitionAttribute : ContextBoundDelegationAttribute
     {
-        public EndpointDefinitionAttribute()
+        /// <summary>
+        /// Initializes a new <see cref="EndpointDefinitionAttribute"/>.
+        /// </summary>
+        /// <param name="kind">The required kind of endpoint.</param>
+        public EndpointDefinitionAttribute( EndpointKind kind )
             : base( "CK.Setup.EndpointDefinitionImpl, CK.StObj.Engine" )
         {
+            Kind = kind;
         }
+
+        /// <summary>
+        /// Gets whether this is a <see cref="EndpointKind.Front"/> or <see cref="EndpointKind.Back"/>
+        /// endpoint.
+        /// </summary>
+        public EndpointKind Kind { get; }
     }
 }

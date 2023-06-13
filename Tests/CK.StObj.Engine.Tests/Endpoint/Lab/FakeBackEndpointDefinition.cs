@@ -12,7 +12,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     {
     }
 
-    abstract class FakeEndpointDefinition : EndpointDefinition<FakeEndpointDefinition.Data>
+    [EndpointDefinition( EndpointKind.Back )]
+    abstract class FakeBackEndpointDefinition : EndpointDefinition<FakeBackEndpointDefinition.Data>
     {
         // Required definition of the specialized ScopedData type.
         // This can typically define internal fields used to exchange data from the external
@@ -31,9 +32,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         }
 
         // This method is implemented by the developer of the Endpoint.
-        // The services collection only contains the work of the code generated ConfigureUbiquitousEndpointInfoServices
-        // but the globalServiceExists can be used to challenge the existence of a service in the global container
-        // and adapt the behavior (if you like pain).
+        // The services collection is initially empty but the globalServiceExists can be used
+        // to challenge the existence of a service in the global container and adapt the behavior
+        // (if you like pain).
         // This enables the endpoint to inject new service types or override registrations of existing
         // services registered in the endpoint container.
         public override void ConfigureEndpointServices( IServiceCollection services,

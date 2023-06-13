@@ -59,6 +59,12 @@ namespace CK.Setup
                 var rName = EndpointContext.DefinitionName( d.ClassType ).ToString();
                 var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
                 var nestedDataType = d.ClassType.GetNestedType( "Data" );
+                var attr = d.Attributes.GetTypeCustomAttributes<EndpointDefinitionAttribute>().FirstOrDefault();
+                if( attr == null )
+                {
+                    monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must be decorated with a [EndpointDefinition( EndpointKind.XXX )] attribute." );
+                    return null;
+                }
                 if( nestedDataType == null )
                 {
                     monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must define a nested 'public class Data : ScopedData' class." );
@@ -87,7 +93,7 @@ namespace CK.Setup
                     }
                 }
                 else contexts = new List<EndpointContext>();
-                contexts.Add( new EndpointContext( d, rName, scopeDataType ) );
+                contexts.Add( new EndpointContext( d, rName, attr.Kind, scopeDataType ) );
             }
             return new EndpointResult( (IReadOnlyList<EndpointContext>?)contexts ?? Array.Empty<EndpointContext>(),
                                        kindDetector.EndpointServices,

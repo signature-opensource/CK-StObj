@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
 
         // Mimics the code executed at startup based on the Fake objects.
-        public static IEndpointServiceProvider<FakeEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
+        public static IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
                                                                                                     IServiceCollection globalConfiguration,
                                                                                                      out IServiceProvider? globalServiceProvider )
         {
@@ -52,7 +52,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             //     own DI container.
             var endpointType = globalServiceProvider.GetRequiredService<EndpointTypeManager>()
                                 .EndpointTypes
-                                .OfType<EndpointType<FakeEndpointDefinition.Data>>()
+                                .OfType<EndpointType<FakeBackEndpointDefinition.Data>>()
                                 .Single();
             return endpointType.GetContainer();
         }

@@ -17,7 +17,6 @@ namespace CK.Setup
             Debug.Assert( scope.FullName == "CK.Core.EndpointUbiquitousInfo_CK" );
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            // We build the mappings here. We only need it here.
             var mappings = c.CurrentRun.EngineMap.EndpointResult.UbiquitousMappings;
 
             scope.Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;" ).NewLine();

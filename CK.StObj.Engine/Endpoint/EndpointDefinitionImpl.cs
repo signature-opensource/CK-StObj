@@ -14,9 +14,12 @@ namespace CK.Setup
     /// </summary>
     public sealed class EndpointDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
     {
+        readonly EndpointDefinitionAttribute _attr;
+
         public EndpointDefinitionImpl( IActivityMonitor monitor, Type decorated, EndpointDefinitionAttribute attr )
         {
             EndpointContext.CheckEndPointDefinition( monitor, decorated );
+            _attr = attr;
         }
 
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
@@ -28,7 +31,8 @@ namespace CK.Setup
             var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
             var e = endpointResult.EndpointContexts.First( c => c.EndpointDefinition.ClassType == classType );
 
-            scope.Append( "public override string Name => " ).AppendSourceString( e.Name ).Append( ";" ).NewLine();
+            scope.Append( "public override string Name => " ).AppendSourceString( e.Name ).Append( ";" ).NewLine()
+                 .Append( "public override EndpointKind Kind => EndpointKind." ).Append( _attr.Kind.ToString() ).Append( ";" ).NewLine();
 
             return CSCodeGenerationResult.Success;
         }
