@@ -11,32 +11,34 @@ namespace CK.StObj.Engine.Tests.Endpoint
     [TestFixture]
     public partial class BackgroundEndpointTests
     {
-        [EndpointScopedService]
-        public sealed class TenantResolutionService : IScopedAutoService
-        {
-            public IFakeTenantInfo GetTenantFromRequest( /*HttpContext ctx*/ )
-            {
-                // var tenantId = ctx.Request.QueryString["TenanId"];
-                return new FakeTenantInfo( "AcmeCorp" );
-            }
-        }
 
-        [Test]
-        public async Task Background_execution_Async()
+        // Because IFakeTenantInfo/FakeTenantInfo is a IAutoService, registering the resolution
+        // of one of it is enough (but both can be registered).
+        [TestCase( "Register IFakeTenantInfo" )]
+        [TestCase( "Register FakeTenantInfo" )]
+        [TestCase( "Register both" )]
+        public async Task Background_execution_Async( string mode )
         {
             var c = TestHelper.CreateStObjCollector( typeof( SampleCommandProcessor ),
                                                      typeof( BackgroundEndpointDefinition ),
                                                      typeof( BackgroundExecutor ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( TenantResolutionService ),
+                                                     typeof( IFakeTenantInfo ),
                                                      typeof( FakeTenantInfo ),
                                                      typeof( DefaultTenantProvider ) );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
                 services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
                 services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
-                services.Services.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
-                services.Services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
+                if( mode != "Register IFakeTenantInfo" )
+                {
+                    services.Services.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
+                }
+                if( mode != "Register FakeTenantInfo" )
+                {
+                    services.Services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
+                }
             } ).Services;
 
             await TestHelper.StartHostedServicesAsync( services );

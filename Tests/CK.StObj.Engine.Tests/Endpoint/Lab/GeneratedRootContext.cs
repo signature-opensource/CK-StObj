@@ -119,9 +119,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
             // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
             //   containers don't need it.
+            //   We inject it at the 0 index: it will be the first one to be triggered.
             //   We don't do it here to avoid creating yet another fake implementation.
             //   
-            // reg.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IHostedService ), typeof( HostedServiceLifetimeTrigger ), ServiceLifetime.Singleton ) );
+            // reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IHostedService ), typeof( HostedServiceLifetimeTrigger ), ServiceLifetime.Singleton ) );
             //
 
             //  - Then an instance of the special "super singleton" EndpointTypeManager is created.

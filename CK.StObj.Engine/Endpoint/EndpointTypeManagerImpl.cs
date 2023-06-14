@@ -22,7 +22,6 @@ namespace CK.Setup
             scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine()
                  .Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine()
                  .Append( "internal static readonly UbiquitousMapping[] _ubiquitousMappings;" ).NewLine()
-                 .Append( "internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;" ).NewLine()
                  .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;" ).NewLine()
                  .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;" ).NewLine();
             // instance (bound to the DI world). 
@@ -30,7 +29,7 @@ namespace CK.Setup
 
             var endpointResult = c.CurrentRun.EngineMap.EndpointResult;
 
-            StaticConstructor( scope, endpointResult );
+            StaticConstructor( scope, c.CurrentRun.EngineMap );
             InstanceConstructor( scope, endpointResult );
             CreateCommonDescriptors( scope, endpointResult );
 
@@ -38,14 +37,15 @@ namespace CK.Setup
                  .Append( "public override IReadOnlyDictionary<Type,AutoServiceKind> EndpointServices => _endpointServices;" ).NewLine()
                  .Append( "public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;" ).NewLine()
                  .Append( "public override IReadOnlyList<UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;" ).NewLine()
-                 .Append( "public override IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => _defaultUbiquitousValueProviders;" ).NewLine()
                  .Append( "internal void SetGlobalContainer( IServiceProvider g ) => _global = g;" ).NewLine();
             
             return CSCodeGenerationResult.Success;
         }
 
-        static void StaticConstructor( ITypeScope scope, IEndpointResult endpointResult )
+        static void StaticConstructor( ITypeScope scope, IStObjEngineMap engineMap )
         {
+            var endpointResult = engineMap.EndpointResult;
+
             scope.Append( "static EndpointTypeManager_CK()" )
                  .OpenBlock();
             scope.Append( "_endpointServices = new Dictionary<Type,AutoServiceKind>() {" );
@@ -69,30 +69,41 @@ namespace CK.Setup
             }
             scope.Append( "};" ).NewLine();
 
+            var sharedPart = scope.CreatePart();
             scope.Append( "_ubiquitousBackDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
             foreach( var e in endpointResult.UbiquitousMappings )
             {
+                if( !sharedPart.Memory.TryGetValue( e.MappingIndex, out var oGetter ) )
+                {
+                    oGetter = $"back{e.MappingIndex}";
+                    sharedPart.Append( "Func<IServiceProvider,object> " ).Append( (string)oGetter )
+                              .Append( " = sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append( e.MappingIndex ).Append( " );" ).NewLine();
+                    sharedPart.Memory.Add( e.MappingIndex, oGetter );
+                }
+                Debug.Assert( oGetter != null );
                 scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
-                     .AppendTypeOf( e.UbiquitousType )
-                     .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append( e.MappingIndex )
-                     .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
+                     .AppendTypeOf( e.UbiquitousType ).Append( ", " ).Append( (string)oGetter )
+                     .Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
             scope.Append( "};" ).NewLine();
 
             scope.Append( "_ubiquitousFrontDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();
             foreach( var e in endpointResult.UbiquitousMappings )
             {
+                var defaultProvider = endpointResult.DefaultUbiquitousValueProviders[e.MappingIndex];
+                if( !sharedPart.Memory.TryGetValue( defaultProvider.Provider.ClassType, out var oGetter ) )
+                {
+                    oGetter = $"front{e.MappingIndex}";
+                    sharedPart.Append( "Func<IServiceProvider,object> " ).Append( (string)oGetter )
+                              .Append( " = sp => ((" ).AppendGlobalTypeName(defaultProvider.ProviderType)
+                              .Append( "?)CK.StObj.EndpointHelper.GetGlobalProvider(sp).GetService( " ).AppendTypeOf( defaultProvider.Provider.ClassType )
+                              .Append( " )!).Default;" ).NewLine();
+                    sharedPart.Memory.Add( defaultProvider.Provider.ClassType, oGetter );
+                }
+                Debug.Assert( oGetter != null );
                 scope.Append( "new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( " )
-                     .AppendTypeOf( e.UbiquitousType )
-                     .Append( ", sp => CK.StObj.ScopeDataHolder.GetUbiquitous( sp, " ).Append( e.MappingIndex )
-                     .Append( " ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
-            }
-            scope.Append( "};" ).NewLine();
-
-            scope.Append( "_defaultUbiquitousValueProviders = new IStObjFinalClass[] {" ).NewLine();
-            foreach( var e in endpointResult.DefaultUbiquitousValueProviders )
-            {
-                scope.Append( "GeneratedRootContext.ToLeaf( " ).AppendTypeOf( e.ClassType ).Append( ")," ).NewLine();
+                     .AppendTypeOf( e.UbiquitousType ).Append( ", " ).Append( (string)oGetter )
+                     .Append( ", Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped )," ).NewLine();
             }
             scope.Append( "};" ).NewLine();
 

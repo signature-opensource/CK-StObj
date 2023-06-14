@@ -150,9 +150,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                                                             IServiceCollection global )
         {
             // We have no real issues for real objects: we simply create singleton descriptors
-            // with the true singleton instance and add them to the global container and
-            // to the mappings (if there are endpoints).
-            foreach( var o in stObjMap.StObjs.FinalImplementations )
+            // with the true singleton instance and add them to the global container.
+            foreach( IStObjFinalImplementation o in stObjMap.StObjs.FinalImplementations )
             {
                 var typeMapping = new ServiceDescriptor( o.ClassType, o.Implementation );
                 global.Add( typeMapping );
@@ -167,25 +166,16 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                     global.Add( mMapping );
                 }
             }
-            // For services it's less trivial: the mappings must be able to resolve the descriptor's implementation type
-            // so that multiple can be handled.
-            // One way would be to create a typed lambda where sp => sp.GetService( s.ClassType ) is used
-            // so that the returned type of Func<IServiceProvider,s.ClassType> can be inspected.
-            // The other one introduces the TypedServiceDescriptor : ServiceDescriptor specialization that
-            // capture the implementation type. 
-            foreach( var s in stObjMap.Services.MappingList )
+            foreach( IStObjServiceClassDescriptor s in stObjMap.Services.MappingList )
             {
-                if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
+                if( s.IsScoped )
                 {
-                    if( s.IsScoped )
-                    {
-                        AddServiceMapping( global, s, ServiceLifetime.Scoped );
-                    }
-                    else
-                    {
-                        if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
-                        AddServiceMapping( global, s, ServiceLifetime.Singleton );
-                    }
+                    AddServiceMapping( global, s, ServiceLifetime.Scoped );
+                }
+                else
+                {
+                    if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                    AddServiceMapping( global, s, ServiceLifetime.Singleton );
                 }
             }
 
@@ -216,7 +206,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // We have no real issues for real objects: we simply create singleton descriptors
             // with the true singleton instance and add them to the global container and
             // to the endpoint mappings.
-            foreach( var o in stObjMap.StObjs.FinalImplementations )
+            foreach( IStObjFinalImplementation o in stObjMap.StObjs.FinalImplementations )
             {
                 var typeMapping = new ServiceDescriptor( o.ClassType, o.Implementation );
                 global.Add( typeMapping );
@@ -251,17 +241,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // capture the implementation type.
             foreach( var s in stObjMap.Services.MappingList )
             {
-                if( (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) != AutoServiceKind.UbiquitousInfo )
+                if( s.IsScoped )
                 {
-                    if( s.IsScoped )
-                    {
-                        AddServiceMapping( global, mappings, s, ServiceLifetime.Scoped );
-                    }
-                    else
-                    {
-                        if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
-                        AddServiceMapping( global, mappings, s, ServiceLifetime.Singleton );
-                    }
+                    AddServiceMapping( global, mappings, s, ServiceLifetime.Scoped, (s.AutoServiceKind & AutoServiceKind.UbiquitousInfo) == AutoServiceKind.UbiquitousInfo );
+                }
+                else
+                {
+                    if( s.ClassType == typeof( EndpointTypeManager ) ) continue;
+                    AddServiceMapping( global, mappings, s, ServiceLifetime.Singleton, false );
                 }
             }
             // Locking the IsMultiple optimized to be singleton: this prevents
@@ -273,10 +260,16 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 if( !multiple.IsScoped ) mappings[multiple.ItemType].LockAsSingleton();
             }
 
-            static void AddServiceMapping( IServiceCollection global, Dictionary<Type, Mapping> mappings, IStObjServiceClassDescriptor s, ServiceLifetime lt )
+            static void AddServiceMapping( IServiceCollection global,
+                                            Dictionary<Type, Mapping> mappings,
+                                            IStObjServiceClassDescriptor s,
+                                            ServiceLifetime lt,
+                                            bool isUbiquitousInfo )
             {
                 var typeMapping = new ServiceDescriptor( s.ClassType, s.FinalType, lt );
                 global.Add( typeMapping );
+                if( isUbiquitousInfo ) return;
+
                 Mapping m = new Mapping( typeMapping, null );
                 mappings.Add( s.ClassType, m );
                 // Same delegate used for all the mappings (if any). 
@@ -438,8 +431,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // mapped to IRealObject or IAutoService.
             // This also updates the mappings with potential Mapping.Endpoint objects.
             // Also check that a explicitly supported ubiquitous service is registered no more than once and if
-            // it is not, registers the resolution from the EndpointUbiquitousInfo object.
-            if( CheckRegistrations( monitor, endpoint, stObjMap, mappings, EndpointUbiquitousInfo_CK._descriptors ) )
+            // it is not, registers the resolution from the EndpointUbiquitousInfo scoped object or the default value providers.
+            if( CheckRegistrations( monitor,
+                                    endpoint,
+                                    stObjMap,
+                                    mappings,
+                                    _definition.Kind == EndpointKind.Back
+                                        ? EndpointTypeManager_CK._ubiquitousBackDescriptors
+                                        : EndpointTypeManager_CK._ubiquitousFrontDescriptors ) )
             {
                 var configuration = new ServiceCollection();
                 // Generates the Multiple descriptors.
@@ -467,9 +466,10 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 bool success = true;
                 foreach( var d in configuration )
                 {
+                    bool isUbiquitousInfo = ubiquitousServicesDescriptors.Any( uD => uD.ServiceType == d.ServiceType );
                     if( mappings.TryGetValue( d.ServiceType, out var exists ) )
                     {
-                        if( ubiquitousServicesDescriptors.Any( uD => uD.ServiceType == d.ServiceType ) )
+                        if( isUbiquitousInfo )
                         {
                             monitor.Error( $"EndpointDefinition '{_definition.Name}' duplicates the registration of ubiquitous service '{d.ServiceType:C}'." +
                                             $" This is not allowed: explicitly supported ubiquitous services must be registered once and only once." );
@@ -479,41 +479,47 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                     }
                     else mappings.Add( d.ServiceType, new Mapping( null, d ) );
 
-                    if( d.Lifetime == ServiceLifetime.Singleton )
+                    if( !isUbiquitousInfo )
                     {
-                        singletons ??= new List<Type>();
-                        singletons.Add( d.ServiceType );
-                    }
-                    else
-                    {
-                        scoped ??= new List<Type>();
-                        scoped.Add( d.ServiceType );
+                        if( d.Lifetime == ServiceLifetime.Singleton )
+                        {
+                            singletons ??= new List<Type>();
+                            singletons.Add( d.ServiceType );
+                        }
+                        else
+                        {
+                            scoped ??= new List<Type>();
+                            scoped.Add( d.ServiceType );
+                        }
                     }
                 }
-                // TODO: we can be a bit more clever here.
-                //       - First we could check that for IAutoServices, all the UniqueMappings
-                //         are mapped (to the same resolution).
-                //       - Second we could detect whether a EndpointDefinition cover ALL the ubiquitous services.
-                //         If yes, then it is a "Front Endpoint" (just like the global one) that can be root of "request".
-                //
-                //         Currently:
-                //          - If a EndpointDefinition is unable to resolve a Ubiquitous service, then it should register a
-                //            sensible default for it (actually a factory that returns the default).
-                //          - The worst case is when a EndpointDefinition is unaware of the Ubiquitous service (independent package):
-                //            the Ubiquitous service will not be available and everything will work until this missing service will
-                //            be needed (this includes a EndpointUbiquitousInfo resolution).
-                //            To handle this, one may consider for each ubiquitous service a singleton default provider (a Func<IUbiquitousService>
-                //            may do the job, then we'll be able to automatically "fill the holes": any endpoint would then be a "Front Endpoint".
-                //
-                foreach( var d in ubiquitousServicesDescriptors )
+                if( success )
                 {
-                    if( mappings.ContainsKey( d.ServiceType ) )
+                    // Handle Ubiquitous info resolution only if no error duplicates have been found.
+                    foreach( var g in EndpointTypeManager_CK._ubiquitousMappings.GroupBy( m => m.MappingIndex, m => m.UbiquitousType ) )
                     {
-                        monitor.Info( $"Endpoint '{_definition.Name}' explicitly supports the ubiquitous service '{d.ServiceType:C}'." );
-                    }
-                    else
-                    {
-                        mappings.Add( d.ServiceType, new Mapping( null, d ) );
+                        Mapping? supported = g.Select( t => mappings.GetValueOrDefault( t ) ).FirstOrDefault();
+                        if( supported != null )
+                        {
+                            Debug.Assert( supported.Global == null && supported.Endpoint is ServiceDescriptor, "Only the endpoint registered this and without duplicates (success is true)." );
+                            monitor.Info( $"Endpoint '{_definition.Name}' explicitly supports the ubiquitous service '{g.First().Name}'." );
+                            // Fills the holes if any.
+                            foreach( var t in g )
+                            {
+                                if( !mappings.ContainsKey( t ) )
+                                {
+                                    mappings.Add( t, new Mapping( null, (ServiceDescriptor)supported.Endpoint ) );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Use the default: either the "back" or "front" descriptor.
+                            foreach( var t in g )
+                            {
+                                mappings.Add( t, new Mapping( null, ubiquitousServicesDescriptors.First( d => d.ServiceType == t ) ) );
+                            }
+                        }
                     }
                 }
                 if( !ErrorNotEndpointAutoServices( monitor, _definition, stObjMap, singletons, ServiceLifetime.Singleton ) ) success = false;
@@ -558,6 +564,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         }
     }
 
+    // Injected only if there are endpoints.
     readonly struct FinalConfigurationBuilder
     {
         readonly List<Type> _singGlobal;

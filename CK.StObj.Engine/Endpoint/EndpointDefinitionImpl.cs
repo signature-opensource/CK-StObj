@@ -22,6 +22,8 @@ namespace CK.Setup
             _attr = attr;
         }
 
+        public EndpointKind Kind => _attr.Kind;
+
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
             if( c.ActualSourceCodeIsUseless ) return CSCodeGenerationResult.Success;

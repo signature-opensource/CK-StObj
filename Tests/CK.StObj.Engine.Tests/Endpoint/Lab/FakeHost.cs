@@ -25,8 +25,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         // Mimics the code executed at startup based on the Fake objects.
         public static IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? CreateServiceProvider( IActivityMonitor monitor,
-                                                                                                    IServiceCollection globalConfiguration,
-                                                                                                     out IServiceProvider? globalServiceProvider )
+                                                                                                        IServiceCollection globalConfiguration,
+                                                                                                        out IServiceProvider? globalServiceProvider )
         {
             // 1 - This is the AddStObjMap work. The StObjMap is from the StObj assembly or it's an embedded map:
             //     anyway, we have an instance.

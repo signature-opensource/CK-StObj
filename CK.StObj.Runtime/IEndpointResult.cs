@@ -34,9 +34,37 @@ namespace CK.Setup
         IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings { get; }
 
         /// <summary>
+        /// Captures the ubiquitous default provider implementation.
+        /// </summary>
+        public readonly struct UbiquitousDefault
+        {
+            /// <summary>
+            /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> type that the
+            /// <see cref="Provider"/> implements.
+            /// </summary>
+            public Type ProviderType { get; }
+
+            /// <summary>
+            /// Gets the service implementation.
+            /// </summary>
+            public IStObjFinalClass Provider { get; }
+
+            /// <summary>
+            /// Initializes a new default.
+            /// </summary>
+            /// <param name="providerType">The <see cref="IEndpointUbiquitousServiceDefault{T}"/> type.</param>
+            /// <param name="provider">The service implementation.</param>
+            public UbiquitousDefault( Type providerType, IStObjFinalClass provider )
+            {
+                ProviderType = providerType;
+                Provider = provider;
+            }
+        }
+
+        /// <summary>
         /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ubiquitous
         /// service.
         /// </summary>
-        IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders { get; }
+        IReadOnlyList<UbiquitousDefault> DefaultUbiquitousValueProviders { get; }
     }
 }

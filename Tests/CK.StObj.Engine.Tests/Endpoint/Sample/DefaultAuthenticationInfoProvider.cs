@@ -1,9 +1,18 @@
-﻿using CK.Core;
+using CK.Core;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    public sealed class DefaultAuthenticationInfoProvider : IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>
+    /// <summary>
+    /// IFakeAuthenticationInfo / FakeAuthenticationInfo are NOT auto services.
+    /// Default provider must exist for both of them.
+    /// But nothing prevents to implement the 2 defaults on the same service!
+    /// </summary>
+    public sealed class DefaultAuthenticationInfoProvider : IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>, IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>
     {
-        public IFakeAuthenticationInfo Default => new FakeAuthenticationInfo( "", 0 );
+        readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
+
+        FakeAuthenticationInfo IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>.Default => _anonymous;
+
+        IFakeAuthenticationInfo IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>.Default => _anonymous;
     }
 }

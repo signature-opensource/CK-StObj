@@ -17,7 +17,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         static readonly EndpointDefinition[] _endpoints;
         internal static readonly UbiquitousMapping[] _ubiquitousMappings;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
-        internal static readonly IStObjFinalClass[] _defaultUbiquitousValueProviders;
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;
 
@@ -31,8 +30,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(IParallelLogger), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
                 { typeof(IFakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
                 { typeof(FakeAuthenticationInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(IFakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
-                { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
+                { typeof(IFakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
+                { typeof(FakeTenantInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsAutoService | AutoServiceKind.IsScoped },
                 { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
             };
             _endpoints = new EndpointDefinition[] { new FakeBackEndpointDefinition_CK() };
@@ -44,37 +43,26 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 new UbiquitousMapping( typeof(FakeAuthenticationInfo), 2 ),
                 new UbiquitousMapping( typeof(FakeCultureInfo), 3 )
             };
+            Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetUbiquitous( sp, 0 );
+            Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetUbiquitous( sp, 1 );
+            Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetUbiquitous( sp, 2 );
+            Func<IServiceProvider, object> back3 = sp => ScopeDataHolder.GetUbiquitous( sp, 3 );
             _ubiquitousBackDescriptors = new ServiceDescriptor[] {
-                    new ServiceDescriptor( typeof(IFakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), ServiceLifetime.Scoped ),
-                    new ServiceDescriptor( typeof(FakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), ServiceLifetime.Scoped ),
-                    new ServiceDescriptor( typeof(IFakeAuthenticationInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 1 ), ServiceLifetime.Scoped ),
-                    new ServiceDescriptor( typeof(FakeAuthenticationInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 2 ), ServiceLifetime.Scoped ),
-                    new ServiceDescriptor( typeof(FakeCultureInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 3 ), ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof( IFakeTenantInfo), back0, ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof( FakeTenantInfo), back0, ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof( IFakeAuthenticationInfo), back1, ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof( FakeAuthenticationInfo), back2, ServiceLifetime.Scoped ),
+                    new ServiceDescriptor( typeof( FakeCultureInfo), back3, ServiceLifetime.Scoped ),
             };
+            Func<IServiceProvider, object> front0 = sp => ((IEndpointUbiquitousServiceDefault<FakeTenantInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultTenantProvider ) )!).Default;
+            Func<IServiceProvider, object> front1 = sp => ((IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultAuthenticationInfoProvider ) )!).Default;
+            Func<IServiceProvider, object> front3 = sp => ((IEndpointUbiquitousServiceDefault<FakeCultureInfo>?)EndpointHelper.GetGlobalProvider( sp ).GetService( typeof( DefaultCultureProvider ) )!).Default;
             _ubiquitousFrontDescriptors = new ServiceDescriptor[] {
-                    new ServiceDescriptor( typeof(IFakeTenantInfo),
-                                           sp => ((DefaultTenantProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultTenantProvider) )!).Default,
-                                           ServiceLifetime.Singleton ),
-                    new ServiceDescriptor( typeof(FakeTenantInfo),
-                                           sp => ((DefaultTenantProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultTenantProvider) )!).Default,
-                                           ServiceLifetime.Singleton ),
-                    new ServiceDescriptor( typeof(IFakeAuthenticationInfo),
-                                           sp => ((DefaultAuthenticationInfoProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default,
-                                           ServiceLifetime.Singleton ),
-                    new ServiceDescriptor( typeof(FakeAuthenticationInfo),
-                                           sp => ((DefaultAuthenticationInfoProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultAuthenticationInfoProvider) )!).Default,
-                                           ServiceLifetime.Singleton ),
-                    new ServiceDescriptor( typeof(FakeCultureInfo),
-                                           sp => ((DefaultCultureProvider?)EndpointHelper.GetGlobalProvider(sp).GetService( typeof(DefaultCultureProvider) )!).Default,
-                                           ServiceLifetime.Singleton ),
-            };
-
-            _defaultUbiquitousValueProviders = new IStObjFinalClass[]
-            {
-                GeneratedRootContext.ToLeaf( typeof(DefaultTenantProvider ) )!,
-                GeneratedRootContext.ToLeaf( typeof(DefaultAuthenticationInfoProvider) )!,
-                GeneratedRootContext.ToLeaf( typeof(DefaultAuthenticationInfoProvider) )!,
-                GeneratedRootContext.ToLeaf( typeof(DefaultCultureProvider) )!
+                    new ServiceDescriptor( typeof( IFakeTenantInfo), front0, ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof( FakeTenantInfo), front0, ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof( IFakeAuthenticationInfo), front1, ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof( FakeAuthenticationInfo), front1, ServiceLifetime.Singleton ),
+                    new ServiceDescriptor( typeof( FakeCultureInfo),front3, ServiceLifetime.Singleton ),
             };
         }
 
@@ -94,8 +82,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public override IReadOnlyList<IEndpointType> EndpointTypes => _endpointTypes;
 
         public override IReadOnlyList<UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
-
-        public override IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => throw new NotImplementedException();
 
         internal ServiceDescriptor[] CreateCommonDescriptors( IStObjMap stObjMap )
         {

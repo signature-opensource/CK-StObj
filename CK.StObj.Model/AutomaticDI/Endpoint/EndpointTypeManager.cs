@@ -85,11 +85,6 @@ namespace CK.Core
         /// </summary>
         public abstract IReadOnlyList<UbiquitousMapping> UbiquitousMappings { get; }
 
-        /// <summary>
-        /// Gets the <see cref="IEndpointUbiquitousServiceDefault{T}"/> to use for each mapped ubiquitous
-        /// service.
-        /// </summary>
-        public abstract IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders { get; }
     }
 
 }

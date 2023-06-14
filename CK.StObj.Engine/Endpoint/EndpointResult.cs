@@ -21,7 +21,7 @@ namespace CK.Setup
         readonly IReadOnlyList<EndpointContext> _contexts;
         readonly IReadOnlyList<Type> _rawUbiquitousServices;
         readonly List<EndpointTypeManager.UbiquitousMapping> _ubiquitousMappings;
-        readonly List<IStObjFinalClass> _defaultUbiquitousProviders;
+        readonly List<IEndpointResult.UbiquitousDefault> _ubiquitousDefaults;
 
         /// <inheritdoc />
         public IReadOnlyList<IEndpointContext> EndpointContexts => _contexts;
@@ -35,8 +35,7 @@ namespace CK.Setup
         /// <inheritdoc />
         public IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
 
-        /// <inheritdoc />
-        public IReadOnlyList<IStObjFinalClass> DefaultUbiquitousValueProviders => _defaultUbiquitousProviders;
+        public IReadOnlyList<IEndpointResult.UbiquitousDefault> DefaultUbiquitousValueProviders => _ubiquitousDefaults;
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,
                         IReadOnlyDictionary<Type, AutoServiceKind> endpointServices,
@@ -46,7 +45,7 @@ namespace CK.Setup
             _endpointServices = endpointServices;
             _rawUbiquitousServices = ubiquitousServices;
             _ubiquitousMappings = new List<EndpointTypeManager.UbiquitousMapping>();
-            _defaultUbiquitousProviders = new List<IStObjFinalClass>();
+            _ubiquitousDefaults = new List<IEndpointResult.UbiquitousDefault>();
         }
 
         internal static EndpointResult? Create( IActivityMonitor monitor,
@@ -59,7 +58,7 @@ namespace CK.Setup
                 var rName = EndpointContext.DefinitionName( d.ClassType ).ToString();
                 var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
                 var nestedDataType = d.ClassType.GetNestedType( "Data" );
-                var attr = d.Attributes.GetTypeCustomAttributes<EndpointDefinitionAttribute>().FirstOrDefault();
+                var attr = d.Attributes.GetTypeCustomAttributes<EndpointDefinitionImpl>().FirstOrDefault();
                 if( attr == null )
                 {
                     monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must be decorated with a [EndpointDefinition( EndpointKind.XXX )] attribute." );
@@ -116,27 +115,31 @@ namespace CK.Setup
                 {
                     // We check that if more than one default value provider exists,
                     // they are the same final type.
-                    IStObjFinalClass? defaultProvider = null;
+                    IEndpointResult.UbiquitousDefault? defaultProvider = null;
                     // We (heavily) rely on the fact that the UniqueMappings are ordered
                     // from most abstract to leaf type here.
                     foreach( var m in auto.UniqueMappings )
                     {
-                        _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( m, current) );
+                        _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( m, current ) );
                         ubiquitousTypes.Remove( m );
                         if( !FindSameDefaultProvider( monitor, services, m, ref defaultProvider ) ) success = false;
                     }
-                    _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping(auto.ClassType, current) );
+                    _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( auto.ClassType, current ) );
                     ubiquitousTypes.Remove( auto.ClassType );
-                    if( defaultProvider == null )
+                    if( !FindSameDefaultProvider( monitor, services, t, ref defaultProvider ) )
                     {
-                        defaultProvider = FindDefaultProvider( monitor, services, t, expected: false );
-                        if( defaultProvider == null )
-                        {
-                            monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
-                                           $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '")}'. " +
-                                           $"All ubiquitous service must have a default value provider." );
-                            success = false;
-                        }
+                        success = false;
+                    }
+                    else if( !defaultProvider.HasValue )
+                    {
+                        monitor.Error( $"Unable to find an implementation of at least one 'IEndpointUbiquitousServiceDefault<T>' where T is " +
+                                       $"one of '{auto.UniqueMappings.Append( auto.ClassType ).Select( t => t.Name ).Concatenate( "', '" )}'. " +
+                                       $"All ubiquitous service must have a default value provider." );
+                        success = false;
+                    }
+                    else
+                    {
+                        _ubiquitousDefaults.Add( defaultProvider.Value );
                     }
                 }
                 else
@@ -144,41 +147,55 @@ namespace CK.Setup
                     var defaultProvider = FindDefaultProvider( monitor, services, t, expected: true );
                     if( defaultProvider != null )
                     {
-                        _defaultUbiquitousProviders.Add( defaultProvider );
+                        _ubiquitousDefaults.Add( defaultProvider.Value );
                     }
                     else
                     {
                         success = false;
                     }
-                    _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( t, current) );
+                    _ubiquitousMappings.Add( new EndpointTypeManager.UbiquitousMapping( t, current ) );
                     ubiquitousTypes.RemoveAt( ubiquitousTypes.Count - 1 );
                 }
                 ++current;
             }
             return success;
 
-            static IStObjFinalClass? FindDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services, Type ubiquitousType, bool expected )
+            static IEndpointResult.UbiquitousDefault? FindDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services, Type ubiquitousType, bool expected )
             {
                 Type defaultProviderType = typeof( IEndpointUbiquitousServiceDefault<> ).MakeGenericType( ubiquitousType );
                 var defaultProvider = services.ToLeaf( defaultProviderType );
-                if( defaultProvider == null && expected )
+                if( defaultProvider == null )
                 {
-                    monitor.Error( $"Unable to find an implementation for '{defaultProviderType:C}'. " +
-                                   $"Type '{ubiquitousType.Name}' is not a valid Ubiquitous information service, all ubiquitous service must have a default value provider." );
+                    if( expected )
+                    {
+                        monitor.Error( $"Unable to find an implementation for '{defaultProviderType:C}'. " +
+                                       $"Type '{ubiquitousType.Name}' is not a valid Ubiquitous information service, all ubiquitous service must have a default value provider." );
+                    }
+                    return null;
                 }
-                return defaultProvider;
+                return new IEndpointResult.UbiquitousDefault( defaultProviderType, defaultProvider );
             }
 
-            static bool FindSameDefaultProvider( IActivityMonitor monitor, IStObjServiceEngineMap services, Type t, ref IStObjFinalClass? defaultProvider )
+            static bool FindSameDefaultProvider( IActivityMonitor monitor,
+                                                 IStObjServiceEngineMap services,
+                                                 Type t,
+                                                 ref IEndpointResult.UbiquitousDefault? defaultProvider )
             {
                 var d = FindDefaultProvider( monitor, services, t, false );
                 if( d != null )
                 {
-                    if( defaultProvider != null && defaultProvider != d )
+                    if( defaultProvider != null )
                     {
-                        monitor.Error( $"Invalid ubiquitous service '{t.Name}': only one default value provider must exist. Found '{defaultProvider.ClassType:C}' and '{d.ClassType:C}'." );
-                        return false;
+                        if( defaultProvider.Value.Provider != d.Value.Provider )
+                        {
+                            monitor.Error( $"Invalid ubiquitous service '{t.Name}': only one default value provider must exist. " +
+                                           $"Found '{defaultProvider.Value.Provider.ClassType:C}' and '{d.Value.Provider.ClassType:C}'." );
+                            return false;
+                        }
                     }
+                    // This is called from generalized to specialized: the final default provider
+                    // is the most specialized one and this is fine (even if we eventually return an object from the
+                    // ServiceDescriptor factory method).
                     defaultProvider = d;
                 }
                 return true;
