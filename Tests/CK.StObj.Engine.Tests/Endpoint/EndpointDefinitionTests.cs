@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     [TestFixture]
     public class EndpointDefinitionTests
     {
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class AppIdentityEndpointDefinition : EndpointDefinition<AppIdentityEndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -30,12 +30,12 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                             Func<IServiceProvider, Data> scopeData,
                                                             IServiceProviderIsService globalServiceExists )
             {
-                services.AddScoped<IActivityMonitor,ActivityMonitor>();
+                services.AddScoped<IActivityMonitor, ActivityMonitor>();
                 services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
             }
         }
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class BackdoorEndpointDefinition : EndpointDefinition<BackdoorEndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -112,7 +112,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             return new object[] { endpoints, appIdentity, backdoor, s.GetRequiredService<EndpointTypeManager>(), s.GetRequiredService<IStObjMap>() }; 
         }
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Back )]
         public abstract class NoWay1Definition : BackdoorEndpointDefinition
         {
         }
@@ -126,7 +126,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         }
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Back )]
         public abstract class Dup1EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -138,7 +138,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Back )]
         public abstract class Dup2EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -158,7 +158,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         }
 
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class BadNameDefinition : EndpointDefinition<BadNameDefinition.Data>
         {
             public sealed class Data : ScopedData

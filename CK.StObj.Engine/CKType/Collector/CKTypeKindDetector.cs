@@ -71,11 +71,16 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets all the types that have been declared as endpoint services.
+        /// <para>
+        /// Some of these types may appear only here since totally external types (interfaces or classes)
+        /// can be declared as endpoint services.
+        /// </para>
         /// </summary>
         public IReadOnlyDictionary<Type, AutoServiceKind> EndpointServices => _endpointServices;
 
         /// <summary>
-        /// Gets the ubiquitous types.
+        /// Gets the ubiquitous types. These are endpoint services that are available from all endpoints
+        /// and can be overridden.
         /// </summary>
         public IReadOnlyList<Type> UbiquitousInfoServices => _ubiquitousInfoServices;
 
@@ -473,7 +478,10 @@ namespace CK.Setup
                             if( (k & CKTypeKind.IsEndpointService) != 0 )
                             {
                                 _endpointServices.Add( t, k.ToAutoServiceKind() );
-                                _ubiquitousInfoServices.Add( t );
+                                if( (k & CKTypeKind.UbiquitousInfo) == CKTypeKind.UbiquitousInfo )
+                                {
+                                    _ubiquitousInfoServices.Add( t );
+                                }
                             }
                         }
                     }

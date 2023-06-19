@@ -10,6 +10,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         {
         }
 
+        // Descriptors for back endpoints: ubiquitous informations are resolved from the
+        // EndpointUbiquitousInfo scoped instance.
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _descriptors;
 
         static EndpointUbiquitousInfo_CK()
@@ -18,14 +20,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // are listed that points to the same Mapper (here the first one).
             // This is not the case of IFakeAuthenticationInfo/FakeAuthenticationInfo: these are
             // de facto 2 independent services (standard DI behavior).
-            _entries = new Entry[]
-            {
-                new Entry( typeof(IFakeTenantInfo), 0 ),
-                new Entry( typeof(FakeTenantInfo), 0 ),
-                new Entry( typeof(IFakeAuthenticationInfo), 1 ),
-                new Entry( typeof(FakeAuthenticationInfo), 2 ),
-                new Entry( typeof(FakeCultureInfo), 3 )
-            };
+            _entries = EndpointTypeManager_CK._ubiquitousMappings;
             _descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
                 new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(IFakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
                 new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),

@@ -4,6 +4,7 @@ using static CK.Core.EndpointDefinition;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// Non generic endpoint definition.
     /// <see cref="EndpointDefinition{TScopeData}"/> must be used as the base class
@@ -18,6 +19,12 @@ namespace CK.Core
         /// "XXX" for "XXXEndpointDefinition".
         /// </summary>
         public abstract string Name { get; }
+
+        /// <summary>
+        /// Gets this endpoint kind (from <see cref="EndpointDefinitionAttribute"/>).
+        /// This is automatically implemented.
+        /// </summary>
+        public abstract EndpointKind Kind { get; }
 
         // The only allowed specialization is EndpointDefinition<TScopeData>
         internal EndpointDefinition()

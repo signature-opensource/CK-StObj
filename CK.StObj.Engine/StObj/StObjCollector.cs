@@ -293,8 +293,8 @@ namespace CK.Setup
                 {
                     // Now that Real objects and core AutoServices are settled, creates the EndpointResult.
                     // This doesn't need the full auto service resolution so we have the choice to do it before
-                    // or after services finalization: do it before because may be one day the final service
-                    // resolution may need it.
+                    // or after services finalization: do it before because we need to push it down to the engine
+                    // map with the dirty trick below (SetFinalOrderedResults).
                     using( monitor.OpenInfo( "Endpoints handling." ) )
                     {
                         endpoints = EndpointResult.Create( monitor, typeResult.RealObjects.EngineMap, typeResult.KindComputeFacade.KindDetector );
@@ -314,6 +314,13 @@ namespace CK.Setup
                         using( monitor.OpenInfo( "Checking remaining IEnumerable<> lifetime of IsMultiple interfaces." ) )
                         {
                             if( !typeResult.KindComputeFacade.FinalizeMultipleMappings( monitor, typeResult.RealObjects.EngineMap.ToLeaf ) )
+                            {
+                                buildValueCollector = null;
+                            }
+                        }
+                        if( endpoints != null && endpoints.HasUbiquitousInfoServices )
+                        {
+                            if( !endpoints.BuildUbiquitousMappingsAndCheckDefaultProvider( monitor, typeResult.RealObjects.EngineMap.Services ) )
                             {
                                 buildValueCollector = null;
                             }

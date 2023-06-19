@@ -8,8 +8,67 @@ using System.Linq;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
-    sealed class FakeStObjMap : IStObjMap, IStObjObjectMap, IStObjServiceMap
+    // This class is generated.
+    sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
     {
+        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
+        {
+            ClassType = t;
+            FinalType = finalType;
+            AutoServiceKind = k;
+            MarshallableTypes = marshallableTypes;
+            MultipleMappings = mult;
+            UniqueMappings = uniq;
+        }
+
+        public Type ClassType { get; }
+
+        public Type FinalType { get; }
+
+        public bool IsScoped => (AutoServiceKind & AutoServiceKind.IsScoped) != 0;
+
+        public AutoServiceKind AutoServiceKind { get; }
+
+        public IReadOnlyCollection<Type> MarshallableTypes { get; }
+
+        public IReadOnlyCollection<Type> MultipleMappings { get; }
+
+        public IReadOnlyCollection<Type> UniqueMappings { get; }
+    }
+
+
+    sealed class GeneratedRootContext : IStObjMap, IStObjObjectMap, IStObjServiceMap
+    {
+        static readonly Dictionary<Type, IStObjServiceClassDescriptor> _serviceMappings;
+
+        static GeneratedRootContext()
+        {
+            // For this sample we only need those 3 ServiceClassDescriptor to
+            // be able to resolve the default value of ubiquitous info services for front endpoints.
+            // In real life, there would be the other auto services here.
+            _serviceMappings = new Dictionary<Type, IStObjServiceClassDescriptor>()
+            {
+                { typeof(DefaultTenantProvider), new StObjServiceClassDescriptor( typeof(DefaultTenantProvider),
+                                                                                  typeof(DefaultTenantProvider),
+                                                                                  AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton,
+                                                                                  marshallableTypes: Type.EmptyTypes,
+                                                                                  mult: Type.EmptyTypes,
+                                                                                  uniq: Type.EmptyTypes) },
+                { typeof(DefaultCultureProvider), new StObjServiceClassDescriptor( typeof(DefaultCultureProvider),
+                                                                                   typeof(DefaultCultureProvider),
+                                                                                   AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton,
+                                                                                   marshallableTypes: Type.EmptyTypes,
+                                                                                   mult: Type.EmptyTypes,
+                                                                                   uniq: Type.EmptyTypes) },
+                { typeof(DefaultAuthenticationInfoProvider), new StObjServiceClassDescriptor( typeof(DefaultAuthenticationInfoProvider),
+                                                                                              typeof(DefaultAuthenticationInfoProvider),
+                                                                                              AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton,
+                                                                                              marshallableTypes: Type.EmptyTypes,
+                                                                                              mult: Type.EmptyTypes,
+                                                                                              uniq: Type.EmptyTypes) }
+            };
+        }
+
         public IStObjObjectMap StObjs => this;
 
         public SHA1Value GeneratedSignature => throw new NotImplementedException();
@@ -30,7 +89,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         IReadOnlyList<IStObjFinalImplementation> IStObjServiceMap.ObjectMappingList => throw new NotImplementedException();
 
-        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => throw new NotImplementedException();
+        IReadOnlyDictionary<Type, IStObjServiceClassDescriptor> IStObjServiceMap.Mappings => _serviceMappings;
 
         IStObjFinalImplementation? IStObjObjectMap.ToLeaf( Type t ) => throw new NotImplementedException();
 
@@ -38,7 +97,15 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => Array.Empty<IStObjServiceClassDescriptor>();
 
-        public IStObjFinalClass? ToLeaf( Type t ) => null;
+        IStObjFinalClass? IStObjMap.ToLeaf( Type t ) => ToLeaf( t );
+
+        IStObjFinalClass? IStObjServiceMap.ToLeaf( Type t ) => ToLeaf( t );
+
+        internal static IStObjFinalClass? ToLeaf( Type t )
+        {
+            // This is not the real generated code.
+            return _serviceMappings.GetValueOrDefault( t );
+        }
 
         // This method is generated by code.
         // Note: When no EndpointDefinition exist, the code that manages endpoints is not generated.
@@ -47,14 +114,21 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // Gives the real objects an opportunity to configure the services.
             RealObjectConfigureServices( in reg );
 
+            // Check the ubiquitous services.
+            if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( reg.Monitor, reg.Services, true ) )
+            {
+                return false;
+            }
+
             // - We build a mapping of ServiceType -> ServiceDescriptors from the global configuration (only if there are endpoints).
             var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );
 
             // - We add the code generated HostedServiceLifetimeTrigger to the global container: the endpoint
             //   containers don't need it.
+            //   We inject it at the 0 index: it will be the first one to be triggered.
             //   We don't do it here to avoid creating yet another fake implementation.
             //   
-            // reg.Services.Add( new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IHostedService ), typeof( HostedServiceLifetimeTrigger ), ServiceLifetime.Singleton ) );
+            // reg.Services.Insert( 0, new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof( IHostedService ), typeof( HostedServiceLifetimeTrigger ), ServiceLifetime.Singleton ) );
             //
 
             //  - Then an instance of the special "super singleton" EndpointTypeManager is created.

@@ -12,11 +12,13 @@ namespace CK.Setup
     {
         readonly IStObjResult _endpointDefinition;
         readonly string _name;
+        readonly EndpointKind _kind;
         readonly Type? _instanceDataType;
 
-        internal EndpointContext( IStObjResult endpointDefinition, string name, Type? instanceDataType )
+        internal EndpointContext( IStObjResult endpointDefinition, string name, EndpointKind kind, Type? instanceDataType )
         {
             _name = name;
+            _kind = kind;
             _instanceDataType = instanceDataType;
             _endpointDefinition = endpointDefinition;
         }
@@ -26,6 +28,8 @@ namespace CK.Setup
         public string Name => _name;
 
         public Type? ScopeDataType => _instanceDataType;
+
+        public EndpointKind Kind => _kind;
 
         internal static ReadOnlySpan<char> DefinitionName( Type definition ) => definition.Name.AsSpan( 0, definition.Name.Length - 18 );
 

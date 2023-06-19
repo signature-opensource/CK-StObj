@@ -1,11 +1,14 @@
 using CK.Core;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    [EndpointDefinition]
+    /// <summary>
+    /// This endpoint relies only on the EndpointUbiquitousInfo. Ubiquitous information can be
+    /// overridden but this endpoint has no way to retrieve any of the existing ubiquitous information.
+    /// </summary>
+    [EndpointDefinition( EndpointKind.Back )]
     public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.Data>
     {
         public sealed class Data : ScopedData

@@ -38,7 +38,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             public IEnumerable<IMany> All { get; }
         }
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class FirstEndpointDefinition : EndpointDefinition<FirstEndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -58,7 +58,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             }
         }
 
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class SecondEndpointDefinition : EndpointDefinition<SecondEndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -249,7 +249,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
         // IMany will be resolved as Singleton because the auto services ManySingleton is registered.
         // This Buggy endpoint declares a IMany scoped service: this will fail when registering the StObjMap.
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<ManyAsScopedEndpointDefinition.Data>
         {
             public sealed class Data : ScopedData
@@ -283,7 +283,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
         // This one will be fine.
-        [EndpointDefinition]
+        [EndpointDefinition( EndpointKind.Front )]
         public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<ManyAsSingletonEndpointDefinition.Data>
         {
             public sealed class Data : ScopedData

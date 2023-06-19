@@ -93,7 +93,7 @@ namespace CK.Setup
             public override string ToString() => Class.ToString();
         }
 
-        class InterfaceFamily
+        sealed class InterfaceFamily
         {
             readonly HashSet<AutoServiceInterfaceInfo> _interfaces;
             readonly Dictionary<AutoServiceClassInfo,SCRClass> _classes;

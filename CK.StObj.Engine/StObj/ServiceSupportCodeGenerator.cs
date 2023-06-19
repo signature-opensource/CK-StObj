@@ -9,7 +9,6 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-
     class ServiceSupportCodeGenerator
     {
         const string _stObjServiceClassDescriptor = """
@@ -40,6 +39,7 @@ namespace CK.Setup
                         public IReadOnlyCollection<Type> UniqueMappings { get; }
                     }
                     """;
+
         readonly ITypeScope _rootType;
         readonly IFunctionScope _rootCtor;
 
@@ -64,7 +64,7 @@ static readonly IStObjServiceClassDescriptor[] _serviceMappingList;
 static readonly Dictionary<Type,IStObjMultipleInterface> _multipleMappings;
 
 // Direct static access to the IStObjServiceClassDescriptor services.
-// - (TODO: Unify MappingIndex on a GFinalRealObjectWithAutoService or something like that an rename this static AutoServices) The GenServices list indexed by IStObjServiceClassDescriptor.MappingIndex.
+// - (TODO: Unify MappingIndex on a GFinalRealObjectWithAutoService or something like that and rename this static AutoServices) The GenServices list indexed by IStObjServiceClassDescriptor.MappingIndex.
 // - The ToServiceLeaf (IStObjServiceMap.ToLeaf) that returns a IStObjServiceClassDescriptor or a real object only if the Type is a Auto service.
 // - The ToLeaf (IStObjMap.ToLeaf) that returns any real object or a IStObjServiceClassDescriptor.
 public static IReadOnlyList<IStObjServiceClassDescriptor> GenServices => _serviceMappingList;
@@ -252,7 +252,9 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             var fScope = _rootType.CreateFunction( "public bool ConfigureServices( in StObjContextRoot.ServiceRegister reg )" );
             using var region = fScope.Region();
 
-            fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine();
+            fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine()
+                  .Append( "if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( reg.Monitor, reg.Services, true ) ) return false;" ).NewLine();
+
             // Common endpoint container configuration is done on the global, externally configured services so that
             // we minimize the number of registrations to process.
             if( hasEndpoint )

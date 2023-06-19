@@ -26,20 +26,30 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                      typeof( IEPService2 ) );
             var r = TestHelper.GetSuccessfulResult( c ).EndpointResult;
             r.EndpointContexts.Should().HaveCount( 0 );
-            r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsEndpointService|AutoServiceKind.IsScoped );
+            r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
             r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
         }
 
-
-        [EndpointScopedService()]
-        public abstract class AEPService1 : IScopedAutoService
+        [TEMPEndpointScopedService( isUbiquitousEndpointInfo: true )]
+        public sealed class AmbientThing
         {
+            public string? ThingName { get; set; }
         }
 
-        [EndpointScopedService]
-        public abstract class AEPService2 : AEPService1
+        public sealed class DefaultAmbientThingProvider : IEndpointUbiquitousServiceDefault<AmbientThing>
         {
+            public AmbientThing Default => new AmbientThing() { ThingName = "I'm the default thing name!" };
         }
 
+
+        [Test]
+        public void ubiquitous_info_service_requires_its_default_value_provider()
+        {
+            var noWay = TestHelper.CreateStObjCollector( typeof( AmbientThing ) );
+            TestHelper.GetFailedResult( noWay );
+
+            var c = TestHelper.CreateStObjCollector( typeof( AmbientThing ), typeof( DefaultAmbientThingProvider ) );
+            TestHelper.GetSuccessfulResult( c );
+        }
     }
 }

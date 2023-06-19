@@ -10,7 +10,10 @@ namespace CK.Core
     /// The <typeparamref name="TScopeData"/> is a key as well as the <see cref="EndpointDefinition.Name"/>: all endpoint
     /// must have different name and different scope data type otherwise a setup error will occur.
     /// </summary>
-    /// <typeparam name="TScopeData">Type of the scoped data that is injected in <see cref="IEndpointServiceProvider{TScopeData}"/>.</typeparam>
+    /// <typeparam name="TScopeData">
+    /// Type of the scoped data that is injected in <see cref="IEndpointServiceProvider{TScopeData}"/>.
+    /// Must be a nested <c>public class Data : ScopeData</c> class.
+    /// </typeparam>
     [CKTypeDefiner]
     public abstract class EndpointDefinition<TScopeData> : EndpointDefinition
         where TScopeData : EndpointDefinition.ScopedData

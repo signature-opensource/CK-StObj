@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// States that the decorated class or interface is a scoped endpoint service.
     /// </summary>
