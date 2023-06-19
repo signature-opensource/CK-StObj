@@ -46,7 +46,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void ubiquitous_info_service_requires_its_default_value_provider()
         {
             var noWay = TestHelper.CreateStObjCollector( typeof( AmbientThing ) );
-            TestHelper.GetFailedResult( noWay );
+            TestHelper.GetFailedResult( noWay, "Type 'AmbientThing' is not a valid Ubiquitous information service, all ubiquitous service must have a default value provider." );
 
             var c = TestHelper.CreateStObjCollector( typeof( AmbientThing ), typeof( DefaultAmbientThingProvider ) );
             TestHelper.GetSuccessfulResult( c );
