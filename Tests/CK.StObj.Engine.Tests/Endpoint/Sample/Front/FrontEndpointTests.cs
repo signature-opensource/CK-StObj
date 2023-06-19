@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using static CK.StObj.Engine.Tests.Endpoint.BackgroundEndpointTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint

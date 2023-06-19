@@ -24,18 +24,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                      typeof( BackgroundExecutor ),
                                                      typeof( SampleCommandMemory ),
                                                      typeof( TenantResolutionService ),
-                                                     typeof( IFakeTenantInfo ),
                                                      typeof( FakeTenantInfo ),
                                                      typeof( DefaultTenantProvider ) );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
                 services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );
                 services.Services.AddScoped<IParallelLogger>( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
-                if( mode != "Register IFakeTenantInfo" )
+                if( mode != "Register FakeTenantInfo" )
                 {
                     services.Services.AddScoped<IFakeTenantInfo>( sp => sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
                 }
-                if( mode != "Register FakeTenantInfo" )
+                if( mode != "Register IFakeTenantInfo" )
                 {
                     services.Services.AddScoped<FakeTenantInfo>( sp => (FakeTenantInfo)sp.GetRequiredService<TenantResolutionService>().GetTenantFromRequest() );
                 }

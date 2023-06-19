@@ -114,6 +114,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // Gives the real objects an opportunity to configure the services.
             RealObjectConfigureServices( in reg );
 
+            // Check the ubiquitous services.
+            if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( reg.Monitor, reg.Services, true ) )
+            {
+                return false;
+            }
+
             // - We build a mapping of ServiceType -> ServiceDescriptors from the global configuration (only if there are endpoints).
             var mappings = EndpointHelper.CreateInitialMapping( reg.Monitor, reg.Services, EndpointTypeManager_CK._endpointServices.ContainsKey );
 

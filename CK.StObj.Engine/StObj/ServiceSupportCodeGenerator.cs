@@ -252,7 +252,9 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
             var fScope = _rootType.CreateFunction( "public bool ConfigureServices( in StObjContextRoot.ServiceRegister reg )" );
             using var region = fScope.Region();
 
-            fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine();
+            fScope.Append( "RealObjectConfigureServices( in reg );" ).NewLine()
+                  .Append( "if( !EndpointHelper.CheckAndNormalizeUbiquitousInfoServices( reg.Monitor, reg.Services, true ) ) return false;" ).NewLine();
+
             // Common endpoint container configuration is done on the global, externally configured services so that
             // we minimize the number of registrations to process.
             if( hasEndpoint )
