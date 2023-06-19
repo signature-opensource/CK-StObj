@@ -3,7 +3,7 @@ using CK.Setup;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-    [TEMPEndpointScopedService( isUbiquitousEndpointInfo: true )]
+    [EndpointScopedService( isUbiquitousEndpointInfo: true )]
     public sealed class FakeCultureInfo
     {
         public FakeCultureInfo( string culture )

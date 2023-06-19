@@ -8,7 +8,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     /// declared as a EndpointService | IsScoped by StObjCollector.WellKnownServices AND as a
     /// ubiquitous endpoint info.
     /// </summary>
-    [TEMPEndpointScopedService( isUbiquitousEndpointInfo: true )]
+    [EndpointScopedService( isUbiquitousEndpointInfo: true )]
     public interface IFakeAuthenticationInfo
     {
         int ActorId { get; }
