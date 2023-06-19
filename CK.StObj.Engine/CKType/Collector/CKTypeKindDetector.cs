@@ -295,9 +295,8 @@ namespace CK.Setup
                                 isExcludedType = true;
                                 break;
                             case "EndpointScopedServiceAttribute":
-                            case "TEMPEndpointScopedServiceAttribute":
                                 isEndpointScoped = true;
-                                isUbiquitousServiceInfo = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b;
+                                isUbiquitousServiceInfo = a.ConstructorArguments.Count == 1 && a.ConstructorArguments[0].Value is bool b && b;
                                 break;
                             case "EndpointSingletonServiceAttribute":
                                 isEndpointSingleton = true;
