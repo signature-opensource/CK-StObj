@@ -12,11 +12,12 @@ namespace CK.Core
     /// </summary>
     /// <typeparam name="TScopeData">
     /// Type of the scoped data that is injected in <see cref="IEndpointServiceProvider{TScopeData}"/>.
-    /// Must be a nested <c>public class Data : ScopeData</c> class.
+    /// Must be a nested <c>public sealed class Data : IScopedData</c> or <c>public sealed class Data : BackScopedData</c> for
+    /// <see cref="EndpointKind.Back"/> endpoints.
     /// </typeparam>
     [CKTypeDefiner]
     public abstract class EndpointDefinition<TScopeData> : EndpointDefinition
-        where TScopeData : EndpointDefinition.ScopedData
+        where TScopeData : class, EndpointDefinition.IScopedData
     {
         /// <summary>
         /// Must be implemented to configure the endpoint services.

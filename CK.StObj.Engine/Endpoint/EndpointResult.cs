@@ -56,22 +56,36 @@ namespace CK.Setup
             foreach( var d in engineMap.FinalImplementations.Where( d => typeof( EndpointDefinition ).IsAssignableFrom( d.ClassType ) ) )
             {
                 var rName = EndpointContext.DefinitionName( d.ClassType ).ToString();
-                var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
-                var nestedDataType = d.ClassType.GetNestedType( "Data" );
                 var attr = d.Attributes.GetTypeCustomAttributes<EndpointDefinitionImpl>().FirstOrDefault();
                 if( attr == null )
                 {
                     monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must be decorated with a [EndpointDefinition( EndpointKind.XXX )] attribute." );
                     return null;
                 }
+                var kind = attr.Kind;
+                var nestedDataType = d.ClassType.GetNestedType( "Data" );
                 if( nestedDataType == null )
                 {
                     monitor.Error( $"EndpointDefinition type '{d.ClassType:C}' must define a nested 'public class Data : ScopedData' class." );
                     return null;
                 }
-                if( nestedDataType.BaseType != typeof( EndpointDefinition.ScopedData ) )
+                var scopeDataType = d.ClassType.BaseType!.GetGenericArguments()[0];
+                if( scopeDataType != nestedDataType )
                 {
-                    monitor.Error( $"Type '{d.ClassType:C}.Data' must specialize ScopedData class (not {nestedDataType.BaseType:C})." );
+                    monitor.Error( $"The generic parameter of '{d.ClassType:C}' must be '{d.ClassType.Name}.Data'." );
+                    return null;
+                }
+                bool isBackData = typeof( EndpointDefinition.BackScopedData ).IsAssignableFrom( scopeDataType );
+                if( isBackData != (kind == EndpointKind.Back) )
+                {
+                    if( isBackData )
+                    {
+                        monitor.Error( $"Type '{d.ClassType:C}.Data' must not specialize BackScopedData, it must simply support the IScopedData interface because it is a Front endpoint." );
+                    }
+                    else
+                    {
+                        monitor.Error( $"Type '{d.ClassType:C}.Data' must specialize BackScopedData because it is a Back endpoint." );
+                    }
                     return null;
                 }
                 if( contexts != null )

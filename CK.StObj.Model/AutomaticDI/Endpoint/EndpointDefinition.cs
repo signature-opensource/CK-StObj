@@ -32,12 +32,24 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Base endpoint scoped data that enables ubiquitous scoped service informations
-        /// marshalling: this must be specialized for each endpoint definition: the specialized
-        /// ScopedData type is the key to resolve the <see cref="IEndpointType{TScopeData}"/> that
-        /// exposes the final DI container.
+        /// Marker interface for scope data. It is enough for <see cref="EndpointKind.Front"/> endpoints to
+        /// simply support it, but back endpoints must specialize <see cref="BackScopedData"/>.
+        /// <para>
+        /// A nested <c>public sealed class Data : IScopedData</c> (or <c>public sealed class Data : BackScopedData</c> for
+        /// back endpoints) must be defined for each endpoint definition: this nested <c>Data</c> type is the key to resolve
+        /// the <see cref="IEndpointType{TScopeData}"/> that exposes the final DI container.
+        /// </para>
         /// </summary>
-        public class ScopedData
+        public interface IScopedData
+        {
+        }
+
+        /// <summary>
+        /// Required base endpoint scoped data for <see cref="EndpointKind.Back"/> endpoints.
+        /// This enables ubiquitous scoped service informations marshalling from the calling context
+        /// to the called context.
+        /// </summary>
+        public class BackScopedData : IScopedData
         {
             readonly EndpointUbiquitousInfo _ubiquitousInfo;
 
@@ -48,11 +60,11 @@ namespace CK.Core
             /// <para>
             /// Extra parameters can be freely defined (typically the <see cref="IActivityMonitor"/> that must be used in the scope),
             /// including ones that are ubiquitous information services: this is the explicit and type safe way to inject ubiquitous
-            /// informations that is both more explicit and efficient that using <see cref="EndpointUbiquitousInfo.Override{T}(T)"/>
+            /// informations that is both more explicit and efficient than using <see cref="EndpointUbiquitousInfo.Override{T}(T)"/>
             /// methods.
             /// </para>
             /// </summary>
-            protected ScopedData( EndpointUbiquitousInfo ubiquitousInfo )
+            protected BackScopedData( EndpointUbiquitousInfo ubiquitousInfo )
             {
                 Throw.CheckNotNullArgument( ubiquitousInfo );
                 _ubiquitousInfo = ubiquitousInfo;
@@ -63,7 +75,6 @@ namespace CK.Core
             /// </summary>
             public EndpointUbiquitousInfo UbiquitousInfo => _ubiquitousInfo;
         }
-
 
     }
 

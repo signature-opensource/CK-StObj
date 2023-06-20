@@ -10,7 +10,7 @@ namespace CK.Setup
 
     /// <summary>
     /// Implements a EndpointDefinition instance.
-    /// There is only the Name to generate here...
+    /// There is only the Name and the Kind to generate here...
     /// </summary>
     public sealed class EndpointDefinitionImpl : CSCodeGeneratorType, IAttributeContextBound
     {

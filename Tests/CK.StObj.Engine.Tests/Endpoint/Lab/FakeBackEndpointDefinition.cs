@@ -20,7 +20,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // to the internal world.
         // Here we have decided to explicitly provide the IActivityMonitor. This supposes that
         // it is "reserved" to work on this side in the scoped service container!
-        public sealed class Data : ScopedData
+        public sealed class Data : BackScopedData
         {
             internal readonly IActivityMonitor _monitor;
 
