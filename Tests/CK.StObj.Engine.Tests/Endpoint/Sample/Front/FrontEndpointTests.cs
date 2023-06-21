@@ -1,8 +1,11 @@
 using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NUnit.Framework;
+using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -10,7 +13,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 {
 
     [TestFixture]
-    public partial class FrontEndpointTests
+    public class FrontEndpointTests
     {
         [Test]
         public async Task global_DI_automatically_falls_back_to_default_value_provider_for_ubiquitous_info_Async()
@@ -29,6 +32,88 @@ namespace CK.StObj.Engine.Tests.Endpoint
                 var tenant = scoped.ServiceProvider.GetService<IFakeTenantInfo>();
                 Debug.Assert( tenant != null );
                 tenant.Name.Should().Be( "DefaultTenant" );
+            }
+        }
+
+        [EndpointDefinition( EndpointKind.Front )]
+        public abstract class SomeFrontEndpointDefinition : EndpointDefinition<SomeFrontEndpointDefinition.Data>
+        {
+            public sealed class Data : IScopedData
+            {
+                internal IActivityMonitor _monitor;
+                public Data( IActivityMonitor monitor )
+                {
+                    _monitor = monitor;
+                }
+            }
+
+            public override void ConfigureEndpointServices( IServiceCollection services, Func<IServiceProvider, Data> scopeData, IServiceProviderIsService globalServiceExists )
+            {
+                services.AddScoped<IActivityMonitor>( sp => scopeData( sp )._monitor );
+                services.AddScoped<IParallelLogger>( sp => scopeData( sp )._monitor.ParallelLogger );
+            }
+        }
+
+        [Test]
+        public async Task Front_endpoint_default_for_ubiquitous_services_Async()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( SomeFrontEndpointDefinition ),
+                                                     typeof( FakeTenantInfo ),
+                                                     typeof( DefaultTenantProvider ),
+                                                     typeof( FakeCultureInfo ),
+                                                     typeof( DefaultCultureProvider ),
+                                                     typeof( FakeAuthenticationInfo ),
+                                                     typeof( DefaultAuthenticationInfoProvider ) );
+            using var services = TestHelper.CreateAutomaticServices( c ).Services;
+
+            await TestHelper.StartHostedServicesAsync( services );
+
+            var someFront = services.GetRequiredService<IEndpointType<SomeFrontEndpointDefinition.Data>>();
+
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
+            {
+                using( var scoped = someFront.GetContainer().CreateScope( new SomeFrontEndpointDefinition.Data( TestHelper.Monitor ) ) )
+                {
+                    var tenantI = scoped.ServiceProvider.GetRequiredService<IFakeTenantInfo>();
+                    var tenantC = scoped.ServiceProvider.GetRequiredService<FakeTenantInfo>();
+                    var authI = scoped.ServiceProvider.GetRequiredService<IFakeAuthenticationInfo>();
+                    var authC = scoped.ServiceProvider.GetRequiredService<FakeAuthenticationInfo>();
+                    var culture = scoped.ServiceProvider.GetRequiredService<FakeCultureInfo>();
+
+                    var monitor = scoped.ServiceProvider.GetRequiredService<IActivityMonitor>();
+                    monitor.Trace( $"TenantI: {tenantI.Name}, TenantC: {tenantC.Name}, AuthI: {authI.ActorId}, AuthC: {authC.ActorId}, Cult: {culture.Culture}" );
+                }
+                logs.Should().Contain( "TenantI: DefaultTenant, TenantC: DefaultTenant, AuthI: 0, AuthC: 0, Cult: default" );
+            }
+        }
+
+        public sealed class NotEnoughDefaultAuthenticationInfoProvider1 : IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>
+        {
+            readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
+
+            public IFakeAuthenticationInfo Default => _anonymous;
+        }
+
+        public sealed class NotEnoughDefaultAuthenticationInfoProvider2 : IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>
+        {
+            readonly FakeAuthenticationInfo _anonymous = new FakeAuthenticationInfo( "", 0 );
+
+            public FakeAuthenticationInfo Default => _anonymous;
+        }
+
+
+        [Test]
+        public void ubiquitous_services_are_easier_when_they_are_AutoService()
+        {
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
+                                                         typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) );
+                TestHelper.GetFailedResult( c );
+            }
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
+                                                         typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
+                TestHelper.GetFailedResult( c );
             }
         }
     }
