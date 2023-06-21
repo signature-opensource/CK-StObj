@@ -52,6 +52,9 @@ namespace CK.Setup
             // The SignalR IHubContext<THub> and IHubContext<THub,T> are singletons (that expose all the Clients of the hub).
             SetAutoServiceKind( "Microsoft.AspNetCore.SignalR.IHubContext`1, Microsoft.AspNetCore.SignalR.Core", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.AspNetCore.SignalR.IHubContext`2, Microsoft.AspNetCore.SignalR.Core", AutoServiceKind.IsSingleton, isOptional: true );
+
+            // IDataProtectionProvider is a singleton.
+            SetAutoServiceKind( "Microsoft.AspNetCore.DataProtection.IDataProtectionProvider, Microsoft.AspNetCore.DataProtection.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
         }
     }
 }
