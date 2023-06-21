@@ -26,9 +26,6 @@ namespace CK.Setup
             SetAutoServiceKind( typeof( IServiceScopeFactory ), AutoServiceKind.IsSingleton );
             SetAutoServiceKind( typeof( IServiceProviderIsService ), AutoServiceKind.IsSingleton );
 
-            // The IAuthenticationInfo is a endpoint scoped service.
-            SetAutoServiceKind( "CK.Auth.Abstractions, CK.Auth.IAuthenticationInfo", AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped, isOptional: true );
-
             // Registration must be done from the most specific types to the basic ones: here we must
             // start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
             SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot`1, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsProcessService, isOptional: true );
