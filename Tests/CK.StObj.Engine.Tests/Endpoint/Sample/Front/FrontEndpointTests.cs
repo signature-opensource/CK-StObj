@@ -103,7 +103,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
 
 
         [Test]
-        public void ubiquitous_services_are_easier_when_they_are_AutoService()
+        public void ubiquitous_services_are_painful_when_they_are_not_AutoService()
         {
             {
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),

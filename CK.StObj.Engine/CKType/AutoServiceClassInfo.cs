@@ -159,8 +159,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the final service kind.
         /// <see cref="AutoServiceKind.IsSingleton"/> and <see cref="AutoServiceKind.IsScoped"/> are propagated using the lifetime rules.
-        /// <see cref="AutoServiceKind.IsEndpointService"/> or <see cref="AutoServiceKind.IsProcessService"/>
-        /// are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
+        /// <see cref="AutoServiceKind.IsProcessService"/> are propagated to any service that depend on this one (transitively), unless <see cref="AutoServiceKind.IsMarshallable"/> is set.
         /// </summary>
         public AutoServiceKind? FinalTypeKind { get; private set; }
 
@@ -347,16 +346,15 @@ namespace CK.Setup
 
         /// <summary>
         /// Sets one of the leaves of this class to be the most specialized one from this
-        /// instance potentially up to the leaf (and handles container binding at the same time).
+        /// instance potentially up to the leaf.
         /// At least one assignment (the one of this instance) is necessarily done.
         /// Trailing path may have already been resolved to this or to another specialization:
         /// classes that are already assigned are skipped.
         /// This must obviously be called bottom-up the inheritance chain.
         /// </summary>
-        internal bool SetMostSpecialized(
-            IActivityMonitor monitor,
-            StObjObjectEngineMap engineMap,
-            AutoServiceClassInfo mostSpecialized )
+        internal bool SetMostSpecialized( IActivityMonitor monitor,
+                                          StObjObjectEngineMap engineMap,
+                                          AutoServiceClassInfo mostSpecialized )
         {
             Debug.Assert( IsIncluded );
             Debug.Assert( MostSpecialized == null );
@@ -577,16 +575,15 @@ namespace CK.Setup
         /// <summary>
         /// This is called on the Service leaf and recursively on the Generalization.
         /// </summary>
-        internal HashSet<AutoServiceClassInfo> GetCtorParametersClassClosure(
-            IActivityMonitor m,
-            CKTypeCollector collector,
-            ref bool initializationError )
+        internal HashSet<AutoServiceClassInfo> GetCtorParametersClassClosure( IActivityMonitor m,
+                                                                              CKTypeCollector collector,
+                                                                              ref bool initializationError )
         {
             if( _ctorParmetersClosure == null )
             {
                 // Parameters of base classes are by design added to parameters of this instance.
                 // This ensure the "Inheritance Constructor Parameters rule", even if parameters are
-                // not exposed from the inherited constructor (and base parameters are direclty new'ed).
+                // not exposed from the inherited constructor (and base parameters are directly new'ed).
                 _ctorParmetersClosure = new HashSet<AutoServiceClassInfo>();
 
                 bool AddCoveredParameters( IEnumerable<AutoServiceClassInfo> classes )
@@ -685,11 +682,33 @@ namespace CK.Setup
             Debug.Assert( IsIncluded && !IsRealObject );
             if( _ctorBinding.HasValue ) return _ctorBinding.Value;
             bool success = Generalization?.EnsureCtorBinding( m, collector ) ?? true;
+            if( !AnalyzeSingleConstructor( m, collector ) ) success = false;
+            _ctorBinding = success;
+            return success;
+        }
+
+        bool AnalyzeSingleConstructor( IActivityMonitor m, CKTypeCollector collector )
+        {
+            bool success = true;
             var ctors = ClassType.GetConstructors();
             if( ctors.Length > 1 )
             {
-                m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relays to protected constructors for explicit initialization." );
-                success = false;
+                if( !collector.KindDetector.UbiquitousInfoServices.Contains( ClassType ) )
+                {
+                    m.Error( $"Multiple public constructors found for '{ClassType:C}'. Only one must exist. Consider using factory methods that relay to protected constructors for explicit initialization." );
+                    success = false;
+                }
+                else
+                {
+                    // Ubiquitous services are not automatically resolved but explicitly resolved with a factory function (or found in the EndpointUbiquitousInfo
+                    // or set to their default value provided by their IEndpointUbiquitousServiceDefault singleton companion).
+                    // They can perfectly have multiple constructors (they are selected/used by the explicit factory methods).
+                    // When a single constructor is found, we process it like a regular auto service.
+                    // Here there are multiple constructors: we ignore them since unifying their parameters don't make a lot of sense.
+                    // And by ignoring them here, we apply (caller code) the ReplaceAutoService attribute (if any... and this would be surprising).
+                    m.Trace( $"{ctors.Length} public constructors found for ubiquitous endpoint service '{ClassType:C}'. Skipping constructor parameters analysis." );
+                    ConstructorParameters = Array.Empty<CtorParameter>();
+                }
             }
             else
             {
@@ -709,7 +728,7 @@ namespace CK.Setup
                         m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist (since at least one non-public constructor exists)." );
                     }
                 }
-                else 
+                else
                 {
                     var parameters = ctors[0].GetParameters();
                     var allCtorParameters = new CtorParameter[parameters.Length];
@@ -729,11 +748,11 @@ namespace CK.Setup
                     ConstructorParameters = allCtorParameters;
                 }
             }
-            _ctorBinding = success;
+
             return success;
         }
 
-         readonly ref struct CtorParameterData
+        readonly ref struct CtorParameterData
          {
             public readonly bool Success;
             public readonly AutoServiceClassInfo? Class;
