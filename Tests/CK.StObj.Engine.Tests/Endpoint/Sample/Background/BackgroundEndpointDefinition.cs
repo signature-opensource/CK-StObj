@@ -11,7 +11,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
     [EndpointDefinition( EndpointKind.Back )]
     public abstract class BackgroundEndpointDefinition : EndpointDefinition<BackgroundEndpointDefinition.Data>
     {
-        public sealed class Data : ScopedData
+        public sealed class Data : BackScopedData
         {
             internal Data( EndpointUbiquitousInfo ubiquitousInfo, IActivityMonitor monitor )
                 : base( ubiquitousInfo )

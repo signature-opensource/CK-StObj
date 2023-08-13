@@ -18,12 +18,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class AppIdentityEndpointDefinition : EndpointDefinition<AppIdentityEndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
             public override void ConfigureEndpointServices( IServiceCollection services,
@@ -38,12 +34,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class BackdoorEndpointDefinition : EndpointDefinition<BackdoorEndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
             public override void ConfigureEndpointServices( IServiceCollection services,
@@ -129,7 +121,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Back )]
         public abstract class Dup1EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : BackScopedData
             {
                 public Data( EndpointUbiquitousInfo ubiquitousInfo )
                     : base( ubiquitousInfo )
@@ -161,12 +153,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class BadNameDefinition : EndpointDefinition<BadNameDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
         }
@@ -180,6 +168,52 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var c1 = TestHelper.CreateStObjCollector( typeof( BadNameDefinition ) );
             TestHelper.GetFailedResult( c1, msg );
         }
+
+        [EndpointDefinition( EndpointKind.Front )]
+        public abstract class BadFrontDataEndpointDefinition : EndpointDefinition<BadFrontDataEndpointDefinition.Data>
+        {
+            public sealed class Data : BackScopedData
+            {
+                public Data( EndpointUbiquitousInfo ubiquitousInfo )
+                    : base( ubiquitousInfo )
+                {
+                }
+            }
+
+        }
+
+        [EndpointDefinition( EndpointKind.Back )]
+        public abstract class BadBackDataEndpointDefinition : EndpointDefinition<BadBackDataEndpointDefinition.Data>
+        {
+            public sealed class Data : IScopedData
+            {
+            }
+        }
+
+        [Test]
+        public void EndpointDefinition_Data_type_is_checked()
+        {
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
+            {
+                const string msg = "Type 'EndpointDefinitionTests.BadFrontDataEndpointDefinition.Data' must not specialize BackScopedData, " +
+                                   "it must simply support the IScopedData interface because it is a Front endpoint.";
+
+                var c = TestHelper.CreateStObjCollector( typeof( BadFrontDataEndpointDefinition ) );
+                TestHelper.GetFailedResult( c );
+
+                logs.Should().Contain( msg );
+            }
+
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
+            {
+                const string msg = "Type 'EndpointDefinitionTests.BadBackDataEndpointDefinition.Data' must specialize BackScopedData because it is a Back endpoint.";
+
+                var c = TestHelper.CreateStObjCollector( typeof( BadBackDataEndpointDefinition ) );
+                TestHelper.GetFailedResult( c );
+                logs.Should().Contain( msg );
+            }
+        }
+
 
     }
 }

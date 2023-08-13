@@ -30,7 +30,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
         }
 
-        [TEMPEndpointScopedService( isUbiquitousEndpointInfo: true )]
+        [EndpointScopedService( isUbiquitousEndpointInfo: true )]
         public sealed class AmbientThing
         {
             public string? ThingName { get; set; }

@@ -4,11 +4,15 @@ using CK.Core;
 namespace CK.StObj.Engine.Tests.Endpoint
 {
     /// <summary>
-    /// Mimics the CK.Auth.Abstraction.IAuthenticationInfo interface that is just an interface
-    /// declared as a EndpointService | IsScoped by StObjCollector.WellKnownServices AND as a
-    /// ubiquitous endpoint info.
+    /// This does NOT mimic the CK.Auth.Abstraction.IAuthenticationInfo interface: this is just an interface
+    /// defined as a ubiquitous endpoint info.
+    /// <para>
+    /// Because this is NOT an IAutoService, you're on your own: each specialization level must be explicitly
+    /// handled when registering and IEndpointUbiquitousServiceDefault must exist for them.
+    /// </para>
+    /// The real IAuthenticationInfo is a IAutoService (like the <see cref="IFakeTenantInfo"/>.
     /// </summary>
-    [TEMPEndpointScopedService( isUbiquitousEndpointInfo: true )]
+    [EndpointScopedService( isUbiquitousEndpointInfo: true )]
     public interface IFakeAuthenticationInfo
     {
         int ActorId { get; }

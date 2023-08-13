@@ -41,12 +41,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class FirstEndpointDefinition : EndpointDefinition<FirstEndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
             public override void ConfigureEndpointServices( IServiceCollection services,
@@ -61,12 +57,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class SecondEndpointDefinition : EndpointDefinition<SecondEndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
             public override void ConfigureEndpointServices( IServiceCollection services,
@@ -252,12 +244,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class ManyAsScopedEndpointDefinition : EndpointDefinition<ManyAsScopedEndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
             public override void ConfigureEndpointServices( IServiceCollection services,
@@ -286,12 +274,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class ManyAsSingletonEndpointDefinition : EndpointDefinition<ManyAsSingletonEndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : IScopedData
             {
-                public Data( EndpointUbiquitousInfo ubiquitousInfo )
-                    : base( ubiquitousInfo )
-                {
-                }
             }
 
 

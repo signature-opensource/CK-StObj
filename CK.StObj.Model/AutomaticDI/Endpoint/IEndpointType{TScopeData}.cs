@@ -14,7 +14,7 @@ namespace CK.Core
     /// </summary>
     /// <typeparam name="TScopeData">Type of the scoped specific instance data.</typeparam>
     public interface IEndpointType<TScopeData> : IEndpointType, ISingletonAutoService
-         where TScopeData : EndpointDefinition.ScopedData
+         where TScopeData : class, EndpointDefinition.IScopedData
     {
         /// <summary>
         /// Gets the <see cref="IServiceProvider"/> for this endpoint definition that

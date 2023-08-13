@@ -402,11 +402,19 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     sealed class ScopeDataHolder
     {
         [AllowNull]
-        internal EndpointDefinition.ScopedData _data;
+        internal EndpointDefinition.IScopedData _data;
 
         internal static object GetUbiquitous( IServiceProvider sp, int index )
         {
-            return Unsafe.As<EndpointUbiquitousInfo_CK>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data.UbiquitousInfo ).At( index );
+            // This looks scary, but:
+            // - first we resolve the ScopeDataHolder type that is necessary a ScopeDataHolder.
+            // - then we know that the _data is necessarily a BackScopedData because:
+            //      - this method is called only for back endpoints (front endpoints use the IEndpointUbiquitousServiceDefault<>
+            //        singletons to resolve missing ubiquitous info instead of relying on the scoped Ubiquitous instance.
+            //      - the BackScopedData inheritance is checked at setup time for Back endpoints.
+            // - We can then access the UbiquitousInfo instance that is the code generated class with its At( mappingIndex )
+            //   hidden accessor.
+            return Unsafe.As<EndpointUbiquitousInfo_CK>( Unsafe.As<EndpointDefinition.BackScopedData>( Unsafe.As<ScopeDataHolder>( sp.GetService( typeof( ScopeDataHolder ) )! )._data).UbiquitousInfo ).At( index );
         }
     }
 
@@ -422,9 +430,9 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
     }
 
-    sealed class EndpointType<TScopedData> : IEndpointType<TScopedData>, IEndpointTypeInternal where TScopedData : EndpointDefinition.ScopedData
+    sealed class EndpointType<TScopedData> : IEndpointType<TScopedData>, IEndpointTypeInternal where TScopedData : class, EndpointDefinition.IScopedData
     {
-        internal IEndpointServiceProvider<TScopedData>? _services;
+        IEndpointServiceProvider<TScopedData>? _services;
 
         readonly EndpointDefinition<TScopedData> _definition;
         internal ServiceCollection? _configuration;
@@ -483,7 +491,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             public AsyncServiceScope CreateAsyncScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateAsyncScope();
-                scopedData.UbiquitousInfo.Lock();
+                if( scopedData is EndpointDefinition.BackScopedData back ) back.UbiquitousInfo.Lock();
                 scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
@@ -491,7 +499,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             public IServiceScope CreateScope( TScopedData scopedData )
             {
                 var scope = _serviceProvider.CreateScope();
-                scopedData.UbiquitousInfo.Lock();
+                if( scopedData is EndpointDefinition.BackScopedData back ) back.UbiquitousInfo.Lock();
                 scope.ServiceProvider.GetRequiredService<ScopeDataHolder>()._data = scopedData;
                 return scope;
             }
