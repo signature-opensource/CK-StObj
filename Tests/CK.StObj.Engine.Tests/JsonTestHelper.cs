@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests
 {
@@ -34,47 +35,10 @@ namespace CK.StObj.Engine.Tests
         /// <param name="text">Optional Json text hook called on success.</param>
         /// <returns>The deserialized Poco.</returns>
         [return: NotNullIfNotNull( "o" )]
-        [Obsolete("Must use the new TestHelper.JsonIdempotenceCheck",true)]
         public static T? Roundtrip<T>( PocoDirectory directory, T? o, PocoJsonSerializerOptions? options = null, Action<string>? text = null ) where T : class, IPoco
         {
-            byte[] bin1;
-            string bin1Text;
-            using( var m = Util.RecyclableStreamManager.GetStream() )
-            {
-                Utf8JsonWriter w = new Utf8JsonWriter( m );
-                try
-                {
-                    o.Write( w, true, options );
-                    w.Flush();
-                    bin1 = m.ToArray();
-                    bin1Text = Encoding.UTF8.GetString( bin1 );
-                    text?.Invoke( bin1Text );
-                }
-                catch( Exception )
-                {
-                    w.Flush();
-                    bin1 = m.ToArray();
-                    bin1Text = Encoding.UTF8.GetString( bin1 );
-                    // On error, bin1 and bin1Text can be inspected here.
-                    throw;
-                }
-
-                var r1 = new Utf8JsonReader( bin1 );
-
-                var o2 = directory.Read( ref r1, options );
-
-                m.Position = 0;
-                using( var w2 = new Utf8JsonWriter( m ) )
-                {
-                    o2.Write( w2, true, options );
-                    w2.Flush();
-                }
-                var bin2 = m.ToArray();
-
-                bin1.Should().BeEquivalentTo( bin2 );
-
-                return (T?)o2;
-            }
+            T? Read( ref Utf8JsonReader r ) => (T?)directory.Read( ref r, options );
+            return TestHelper.JsonIdempotenceCheck( o, (w,o) => o.Write( w, true, options ), Read, text );
         }
     }
 }

@@ -197,6 +197,7 @@ namespace CK.Setup.Json
                 {
                     read.Append( variableName ).Append( " = TimeSpan.FromTicks( r.TokenType == System.Text.Json.JsonTokenType.String ? Int64.Parse( r.GetString(), System.Globalization.NumberFormatInfo.InvariantInfo ) : r.GetInt64() ); r.Read();" );
                 } );
+
             _standardReaders.Add( new ECMAScriptStandardNumberReader() );
             _standardReaders.Add( new ECMAScriptStandardBigIntReader() );
             _typeInfoRefTypeStartIdx = _typeInfos.Count;

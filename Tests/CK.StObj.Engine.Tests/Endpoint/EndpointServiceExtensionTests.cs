@@ -2,6 +2,7 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Endpoint
@@ -25,6 +26,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var c = TestHelper.CreateStObjCollector( typeof( IEPService1 ),
                                                      typeof( IEPService2 ) );
             var r = TestHelper.GetSuccessfulResult( c ).EndpointResult;
+            Debug.Assert( r != null );
             r.EndpointContexts.Should().HaveCount( 0 );
             r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
             r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );

@@ -2,9 +2,10 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System;
 using static CK.Testing.StObjEngineTestHelper;
 
-namespace CK.StObj.Engine.Tests.Poco
+namespace CK.StObj.Engine.Tests.PocoJson
 {
     [TestFixture]
     public class PocoWithGlobalizationTypesTests
@@ -34,26 +35,28 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void default_for_Globalization_types_are_handled()
+        public void Globalization_types_serialization_are_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithGlobalization ) );
+            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithGlobalization ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var p = s.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
-            p.ExtendedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
-            p.NormalizedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
-            p.ResultMessage.IsValid.Should().BeFalse();
-            p.MCString.Should().BeSameAs( MCString.Empty );
-            p.CodeString.Should().BeSameAs( CodeString.Empty );
-            p.FormattedString.Should().BeEquivalentTo( FormattedString.Empty );
+            JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
 
-            p.NExtendedCultureInfo.Should().BeNull();
-            p.NNormalizedCultureInfo.Should().BeNull();
-            p.NResultMessage.Should().BeNull();
-            p.NMCString.Should().BeNull();
-            p.NCodeString.Should().BeNull();
-            p.NFormattedString.Should().BeNull();
-            p.NResultMessage.HasValue.Should().BeFalse();
+            var name = "me";
+            p.ExtendedCultureInfo = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
+            p.NormalizedCultureInfo = NormalizedCultureInfo.GetNormalizedCultureInfo( "ar-SA" );
+            p.ResultMessage = ResultMessage.Info( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
+            p.MCString = p.ResultMessage.Message;
+            p.CodeString = new CodeString( ExtendedCultureInfo.GetExtendedCultureInfo( "ar-tn" ), $"Hello on {DateTime.UtcNow.Date}." );
+            p.FormattedString = p.CodeString.FormattedString;
+
+            var back = JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
+            back.ExtendedCultureInfo.Name.Should().Be( "fr-ca,es" );
+            back.NormalizedCultureInfo.Name.Should().Be( "ar-sa" );
+            back.ResultMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
+            back.CodeString.ContentCulture.Name.Should().Be( "ar-tn" );
+            back.CodeString.Text.Should().Be( $"Hello on {DateTime.UtcNow.Date}." );
         }
     }
 }
