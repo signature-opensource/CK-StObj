@@ -102,10 +102,37 @@ namespace CK.Setup
                     Type propType = p.PropertyType;
                     bool isUnionType = p.PropertyUnionTypes.Any();
 
+                    bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
+
                     var typeName = propType.ToCSharpName();
                     string fieldName = "_v" + p.Index;
                     tB.Append( typeName ).Space().Append( fieldName );
-                    if( p.DefaultValueSource == null ) tB.Append( ";" );
+                    if( p.DefaultValueSource == null )
+                    {
+                        // Handles CK.Globalization types default values.
+                        // We don't need to depends on C.Globalization: duck typing is enough.
+                        // We set the default value only if the property is not nullable.
+                        if( !isNullable && p.PropertyType.Namespace == "CK.Core" )
+                        {
+                            if( p.PropertyType.Name == "NormalizedCultureInfo" || p.PropertyType.Name == "ExtendedCultureInfo" )
+                            {
+                                tB.Append( "=CK.Core.NormalizedCultureInfo.CodeDefault" );
+                            }
+                            else if( p.PropertyType.Name == "CodeString" )
+                            {
+                                tB.Append( "=CK.Core.CodeString.Empty" );
+                            }
+                            else if( p.PropertyType.Name == "FormattedString" )
+                            {
+                                tB.Append( "=CK.Core.FormattedString.Empty" );
+                            }
+                            else if( p.PropertyType.Name == "MCString" )
+                            {
+                                tB.Append( "=CK.Core.MCString.Empty" );
+                            }
+                        }
+                        tB.Append( ";" );
+                    }
                     else
                     {
                         tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" );
@@ -130,7 +157,6 @@ namespace CK.Setup
                           .OpenBlock();
 
                         bool isTechnicallyNullable = p.PropertyNullableTypeTree.Kind.IsTechnicallyNullable();
-                        bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
 
                         if( isTechnicallyNullable && !isNullable )
                         {
