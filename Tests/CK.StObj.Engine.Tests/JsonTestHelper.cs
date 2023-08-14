@@ -34,11 +34,12 @@ namespace CK.StObj.Engine.Tests
         /// <param name="text">Optional Json text hook called on success.</param>
         /// <returns>The deserialized Poco.</returns>
         [return: NotNullIfNotNull( "o" )]
+        [Obsolete("Must use the new TestHelper.JsonIdempotenceCheck",true)]
         public static T? Roundtrip<T>( PocoDirectory directory, T? o, PocoJsonSerializerOptions? options = null, Action<string>? text = null ) where T : class, IPoco
         {
             byte[] bin1;
             string bin1Text;
-            using( var m = new MemoryStream() )
+            using( var m = Util.RecyclableStreamManager.GetStream() )
             {
                 Utf8JsonWriter w = new Utf8JsonWriter( m );
                 try

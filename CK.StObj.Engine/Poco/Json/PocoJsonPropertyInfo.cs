@@ -12,7 +12,7 @@ namespace CK.Setup.Json
         {
             PropertyInfo = p;
             AllHandlers = handlers;
-            ECMAStandardHandlers = ecmaStandardReadhandlers ?? (IReadOnlyList<JsonCodeGenHandler>)Array.Empty<JsonCodeGenHandler>();
+            ECMAStandardHandlers = ecmaStandardReadhandlers ?? Array.Empty<JsonCodeGenHandler>();
         }
 
         internal void OnPocoInfoAvailable( PocoJsonInfo p )

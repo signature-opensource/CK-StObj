@@ -39,6 +39,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             DateTimeOffset PDateTimeOffset { get; set; }
             TimeSpan PTimeSpan { get; set; }
             Guid PGuid { get; set; }
+            CodeString CodeString { get; set; }
         }
 
         [TestCase( PocoJsonSerializerMode.ECMAScriptSafe )]
@@ -66,6 +67,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMax.PDateTimeOffset = DateTimeOffset.MaxValue;
             nMax.PTimeSpan = TimeSpan.MaxValue;
             nMax.PGuid = Guid.Parse( "ffffffff-ffff-ffff-ffff-ffffffffffff" );
+            nMax.CodeString = new CodeString( $"A CodeString in {NormalizedCultureInfo.Current} culture with {DateTime.UtcNow:G}." );
 
             var nMin = services.GetRequiredService<IPocoFactory<IAllBasicTypes>>().Create();
             nMin.PByte = Byte.MinValue;
@@ -84,6 +86,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             nMin.PDateTimeOffset = DateTimeOffset.MinValue;
             nMin.PTimeSpan = TimeSpan.MinValue;
             nMin.PGuid = Guid.Empty;
+            nMin.CodeString.Should().BeSameAs( CodeString.Empty );
 
             var options = new PocoJsonSerializerOptions { Mode = mode };
 
