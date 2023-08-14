@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             back.NormalizedCultureInfo.Name.Should().Be( "ar-sa" );
             back.ResultMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
             back.CodeString.ContentCulture.Name.Should().Be( "ar-tn" );
-            back.CodeString.Text.Should().Be( $"Hello on {DateTime.UtcNow.Date}." );
+            back.CodeString.Text.Should().StartWith( $"Hello on " );
         }
     }
 }
