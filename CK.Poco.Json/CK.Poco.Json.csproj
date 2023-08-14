@@ -7,7 +7,7 @@ Offers Json serialization/deserialization support to IPoco.
     </Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Globalization" Version="0.0.0--04hwixt-develop" />
+    <PackageReference Include="CK.Globalization" Version="0.0.0--04hwj6j-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
