@@ -16,6 +16,8 @@ namespace CK.StObj.Engine.Tests.Poco
             // Default must be NormalizedCultureInfo.CodeDefault.
             NormalizedCultureInfo NormalizedCultureInfo { get; set; }
 
+            // Default is a SimpleUserMessage.IsValid == false.
+            SimpleUserMessage SimpleUserMessage { get; set; }
             // Default is a UserMessage.IsValid == false.
             UserMessage UserMessage { get; set; }
             // Default must be MCString.Empty.
@@ -27,6 +29,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ExtendedCultureInfo? NExtendedCultureInfo { get; set; }
             NormalizedCultureInfo? NNormalizedCultureInfo { get; set; }
+            SimpleUserMessage? NSimpleUserMessage { get; set; }
             UserMessage? NUserMessage { get; set; }
             MCString? NMCString { get; set; }
             CodeString? NCodeString { get; set; }
@@ -42,6 +45,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.ExtendedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
             p.NormalizedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
+            p.SimpleUserMessage.IsValid.Should().BeFalse();
             p.UserMessage.IsValid.Should().BeFalse();
             p.MCString.Should().BeSameAs( MCString.Empty );
             p.CodeString.Should().BeSameAs( CodeString.Empty );
@@ -49,6 +53,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.NExtendedCultureInfo.Should().BeNull();
             p.NNormalizedCultureInfo.Should().BeNull();
+            p.NSimpleUserMessage.Should().BeNull();
             p.NUserMessage.Should().BeNull();
             p.NMCString.Should().BeNull();
             p.NCodeString.Should().BeNull();

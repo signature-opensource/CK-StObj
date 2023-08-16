@@ -110,8 +110,9 @@ namespace CK.Setup
                     if( p.DefaultValueSource == null )
                     {
                         // Handles CK.Globalization types default values.
-                        // We don't need to depends on C.Globalization: duck typing is enough.
-                        // We set the default value only if the property is not nullable.
+                        // We don't need to depends on CK.Globalization: duck typing is enough.
+                        // We set the default value only if the property is not nullable and only for the
+                        // reference types (value types defaults do the job).
                         if( !isNullable && p.PropertyType.Namespace == "CK.Core" )
                         {
                             if( p.PropertyType.Name == "NormalizedCultureInfo" || p.PropertyType.Name == "ExtendedCultureInfo" )
@@ -121,10 +122,6 @@ namespace CK.Setup
                             else if( p.PropertyType.Name == "CodeString" )
                             {
                                 tB.Append( "=CK.Core.CodeString.Empty" );
-                            }
-                            else if( p.PropertyType.Name == "FormattedString" )
-                            {
-                                tB.Append( "=CK.Core.FormattedString.Empty" );
                             }
                             else if( p.PropertyType.Name == "MCString" )
                             {

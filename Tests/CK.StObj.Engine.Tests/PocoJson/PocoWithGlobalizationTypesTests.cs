@@ -17,6 +17,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // Default must be NormalizedCultureInfo.CodeDefault.
             NormalizedCultureInfo NormalizedCultureInfo { get; set; }
 
+            // Default is a SimpleUserMessage.IsValid == false.
+            SimpleUserMessage SimpleUserMessage { get; set; }
             // Default is a UserMessage.IsValid == false.
             UserMessage UserMessage { get; set; }
             // Default must be MCString.Empty.
@@ -28,6 +30,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             ExtendedCultureInfo? NExtendedCultureInfo { get; set; }
             NormalizedCultureInfo? NNormalizedCultureInfo { get; set; }
+            SimpleUserMessage? NSimpleUserMessage { get; set; }
             UserMessage? NUserMessage { get; set; }
             MCString? NMCString { get; set; }
             CodeString? NCodeString { get; set; }
@@ -46,6 +49,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var name = "me";
             p.ExtendedCultureInfo = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
             p.NormalizedCultureInfo = NormalizedCultureInfo.GetNormalizedCultureInfo( "ar-SA" );
+            p.SimpleUserMessage = new SimpleUserMessage( UserMessageLevel.Warn, "A simple message.", 42 );
             p.UserMessage = UserMessage.Info( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
             p.MCString = p.UserMessage.Message;
             p.CodeString = new CodeString( ExtendedCultureInfo.GetExtendedCultureInfo( "ar-tn" ), $"Hello on {DateTime.UtcNow.Date}." );
@@ -54,6 +58,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var back = JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
             back.ExtendedCultureInfo.Name.Should().Be( "fr-ca,es" );
             back.NormalizedCultureInfo.Name.Should().Be( "ar-sa" );
+
+            back.SimpleUserMessage.Text.Should().Be( "A simple message." );
+            back.SimpleUserMessage.Depth.Should().Be( 42 );
+            back.SimpleUserMessage.Level.Should().Be( UserMessageLevel.Warn );
+
             back.UserMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
             back.CodeString.ContentCulture.Name.Should().Be( "ar-tn" );
             back.CodeString.Text.Should().StartWith( $"Hello on " );

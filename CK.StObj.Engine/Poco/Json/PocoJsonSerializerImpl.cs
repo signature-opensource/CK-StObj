@@ -78,6 +78,16 @@ namespace CK.Setup.Json
                     read.Append( variableName ).Append( " = CK.Core.NormalizedCultureInfo.GetNormalizedCultureInfo( r.GetString() ); r.Read();" );
                 } );
 
+            jsonCodeGen.AllowTypeInfo( typeof( SimpleUserMessage ), "SimpleUserMessage" )!.Configure(
+               ( ICodeWriter write, string variableName ) =>
+               {
+                   write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+               },
+               ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+               {
+                   read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadSimpleUserMessageFromJsonArray( ref r );" );
+               } );
+
             jsonCodeGen.AllowTypeInfo( typeof( UserMessage ), "UserMessage" )!.Configure(
                 ( ICodeWriter write, string variableName ) =>
                 {
