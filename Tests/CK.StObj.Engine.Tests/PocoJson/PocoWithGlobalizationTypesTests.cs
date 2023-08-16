@@ -17,8 +17,8 @@ namespace CK.StObj.Engine.Tests.PocoJson
             // Default must be NormalizedCultureInfo.CodeDefault.
             NormalizedCultureInfo NormalizedCultureInfo { get; set; }
 
-            // Default is a ResultMessage.IsValid == false.
-            ResultMessage ResultMessage { get; set; }
+            // Default is a UserMessage.IsValid == false.
+            UserMessage UserMessage { get; set; }
             // Default must be MCString.Empty.
             MCString MCString { get; set; }
             // Default must be CodeString.Empty.
@@ -28,7 +28,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             ExtendedCultureInfo? NExtendedCultureInfo { get; set; }
             NormalizedCultureInfo? NNormalizedCultureInfo { get; set; }
-            ResultMessage? NResultMessage { get; set; }
+            UserMessage? NUserMessage { get; set; }
             MCString? NMCString { get; set; }
             CodeString? NCodeString { get; set; }
             FormattedString? NFormattedString { get; set; }
@@ -46,15 +46,15 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var name = "me";
             p.ExtendedCultureInfo = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
             p.NormalizedCultureInfo = NormalizedCultureInfo.GetNormalizedCultureInfo( "ar-SA" );
-            p.ResultMessage = ResultMessage.Info( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
-            p.MCString = p.ResultMessage.Message;
+            p.UserMessage = UserMessage.Info( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
+            p.MCString = p.UserMessage.Message;
             p.CodeString = new CodeString( ExtendedCultureInfo.GetExtendedCultureInfo( "ar-tn" ), $"Hello on {DateTime.UtcNow.Date}." );
             p.FormattedString = p.CodeString.FormattedString;
 
             var back = JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
             back.ExtendedCultureInfo.Name.Should().Be( "fr-ca,es" );
             back.NormalizedCultureInfo.Name.Should().Be( "ar-sa" );
-            back.ResultMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
+            back.UserMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
             back.CodeString.ContentCulture.Name.Should().Be( "ar-tn" );
             back.CodeString.Text.Should().StartWith( $"Hello on " );
         }
