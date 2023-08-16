@@ -59,7 +59,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             back.ExtendedCultureInfo.Name.Should().Be( "fr-ca,es" );
             back.NormalizedCultureInfo.Name.Should().Be( "ar-sa" );
 
-            back.SimpleUserMessage.Text.Should().Be( "A simple message." );
+            back.SimpleUserMessage.Message.Should().Be( "A simple message." );
             back.SimpleUserMessage.Depth.Should().Be( 42 );
             back.SimpleUserMessage.Level.Should().Be( UserMessageLevel.Warn );
 
