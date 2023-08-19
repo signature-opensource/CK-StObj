@@ -64,7 +64,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             back.SimpleUserMessage.Level.Should().Be( UserMessageLevel.Warn );
 
             back.UserMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
-            back.CodeString.ContentCulture.Name.Should().Be( "ar-tn" );
+            back.CodeString.TargetCulture.Name.Should().Be( "ar-tn" );
             back.CodeString.Text.Should().StartWith( $"Hello on " );
         }
     }
