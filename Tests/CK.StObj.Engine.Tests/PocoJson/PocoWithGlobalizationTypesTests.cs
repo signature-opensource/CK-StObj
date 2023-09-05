@@ -45,12 +45,13 @@ namespace CK.StObj.Engine.Tests.PocoJson
             var p = s.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
             JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
+            ExtendedCultureInfo someCulture = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
 
             var name = "me";
-            p.ExtendedCultureInfo = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
+            p.ExtendedCultureInfo = someCulture;
             p.NormalizedCultureInfo = NormalizedCultureInfo.GetNormalizedCultureInfo( "ar-SA" );
             p.SimpleUserMessage = new SimpleUserMessage( UserMessageLevel.Warn, "A simple message.", 42 );
-            p.UserMessage = UserMessage.Info( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
+            p.UserMessage = UserMessage.Info( someCulture, $"Hello {name}, today is {DateTime.UtcNow.Date}." );
             p.MCString = p.UserMessage.Message;
             p.CodeString = new CodeString( ExtendedCultureInfo.GetExtendedCultureInfo( "ar-tn" ), $"Hello on {DateTime.UtcNow.Date}." );
             p.FormattedString = p.CodeString.FormattedString;
@@ -63,7 +64,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             back.SimpleUserMessage.Depth.Should().Be( 42 );
             back.SimpleUserMessage.Level.Should().Be( UserMessageLevel.Warn );
 
-            back.UserMessage.Text.Should().Be( $"Hello {name}, today is {DateTime.UtcNow.Date}." );
+            back.UserMessage.Text.Should().Be( string.Create( someCulture, $"Hello {name}, today is {DateTime.UtcNow.Date}." ) );
             back.CodeString.TargetCulture.Name.Should().Be( "ar-tn" );
             back.CodeString.Text.Should().StartWith( $"Hello on " );
         }
