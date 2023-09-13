@@ -17,6 +17,10 @@ namespace CK.Core
     /// if( !reader.TrySkip() ) dataProvider.SkipMoreData( ref reader );
     /// </code>
     /// </para>
+    /// <para>
+    /// This implements the pattern described here:
+    /// https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/use-utf8jsonreader#read-from-a-stream-using-utf8jsonreader
+    /// </para>
     /// </summary>
     public interface IUtf8JsonReaderDataProvider
     {

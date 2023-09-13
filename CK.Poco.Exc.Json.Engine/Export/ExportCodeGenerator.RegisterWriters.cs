@@ -3,6 +3,7 @@ using CK.Core;
 using System.Numerics;
 using System;
 using System.Diagnostics;
+using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Setup.PocoJson
 {
@@ -109,6 +110,19 @@ namespace CK.Setup.PocoJson
                                                   .Append( v )
                                                   .Append( ".Ticks.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" );
                 }
+                else if( type.Type == typeof( SimpleUserMessage )
+                         || type.Type == typeof( UserMessage )
+                         || type.Type == typeof( FormattedString )
+                         || type.Type == typeof( MCString )
+                         || type.Type == typeof( CodeString ) )
+                {
+                    return GlobalizationTypesWriter;
+                }
+                else if( type.Type == typeof( NormalizedCultureInfo )
+                         || type.Type == typeof( ExtendedCultureInfo ) )
+                {
+                    return CultureInfoWriter;
+                }
                 return Throw.NotSupportedException<CodeWriter>( type.Type.ToCSharpName() );
 
                 static void NumberWriter( ICodeWriter writer, string variableName )
@@ -119,6 +133,18 @@ namespace CK.Setup.PocoJson
                 static void StringWriter( ICodeWriter write, string variableName )
                 {
                     write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( " );" );
+                }
+
+                static void CultureInfoWriter( ICodeWriter write, string variableName )
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Name );" );
+                }
+
+                static void GlobalizationTypesWriter( ICodeWriter write, string variableName )
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " )
+                                                                    .Append( variableName )
+                                                                    .Append( " );" );
                 }
 
                 static void NumberAsStringWriter( ICodeWriter write, string variableName )

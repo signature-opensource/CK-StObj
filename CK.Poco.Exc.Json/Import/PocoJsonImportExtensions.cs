@@ -88,14 +88,14 @@ namespace CK.Core
         /// <returns>The Poco (can be null).</returns>
         public static IPoco? JsonDeserialize( this PocoDirectory @this, Stream utf8JsonStream, PocoJsonImportOptions? options = null )
         {
+            options ??= PocoJsonImportOptions.Default;
             if( utf8JsonStream is RecyclableMemoryStream r )
             {
-                var rSeq = new Utf8JsonReader( r.GetReadOnlySequence(), PocoJsonImportOptions.Default.ReaderOptions );
+                var rSeq = new Utf8JsonReader( r.GetReadOnlySequence(), options.ReaderOptions );
                 // Dispose even if it is not currently required (no data provider).
                 using var rSeqCtx = new PocoJsonReadContext( options );
                 return @this.ReadJson( ref rSeq, rSeqCtx );
             }
-            options ??= PocoJsonImportOptions.Default;
             using var rCtx = new PocoJsonReadContext( options, Utf8JsonStreamReader.Create( utf8JsonStream, options.ReaderOptions, out var reader ) );
             return @this.ReadJson( ref reader, rCtx );
         }

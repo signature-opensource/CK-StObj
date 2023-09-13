@@ -15,6 +15,8 @@ namespace CK.Setup
         public static readonly FieldDefaultValue DateTimeDefault = new FieldDefaultValue( Util.UtcMinValue, "CK.Core.Util.UtcMinValue" );
         // Applies to NormalizedCultureInfo and ExtendedCultureInfo.
         public static readonly FieldDefaultValue CultureDefault = new FieldDefaultValue( NormalizedCultureInfo.CodeDefault, "CK.Core.NormalizedCultureInfo.CodeDefault" );
+        public static readonly FieldDefaultValue MCStringDefault = new FieldDefaultValue( MCString.Empty, "CK.Core.MCString.Empty" );
+        public static readonly FieldDefaultValue CodeStringDefault = new FieldDefaultValue( CodeString.Empty, "CK.Core.CodeString.Empty" );
 
         public FieldDefaultValue( object? simpleValue, string source )
         {

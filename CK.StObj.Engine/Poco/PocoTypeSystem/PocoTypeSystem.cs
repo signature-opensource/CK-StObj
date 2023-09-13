@@ -62,28 +62,32 @@ namespace CK.Setup
             RegValueType( this, _obliviousCache, typeof( ulong ), typeof( ulong? ), "ulong" );
             RegValueType( this, _obliviousCache, typeof( ushort ), typeof( ushort? ), "ushort" );
             RegValueType( this, _obliviousCache, typeof( sbyte ), typeof( sbyte? ), "sbyte" );
+            RegValueType( this, _obliviousCache, typeof( SimpleUserMessage ), typeof( SimpleUserMessage? ), "SimpleUserMessage" );
+            RegValueType( this, _obliviousCache, typeof( UserMessage ), typeof( UserMessage? ), "UserMessage" );
+            RegValueType( this, _obliviousCache, typeof( FormattedString ), typeof( FormattedString? ), "FormattedString" );
             
-            _objectType = PocoType.CreateObject( this );
-            _obliviousCache.Add( "object", _objectType );
-            _obliviousCache.Add( _objectType.Type, _objectType );
-
-            var stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", FieldDefaultValue.StringDefault );
-            _obliviousCache.Add( "string", stringType );
-            _obliviousCache.Add( stringType.Type, stringType );
-
-            var eCultureType = PocoType.CreateBasicRef( this, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault );
-            _obliviousCache.Add( "ExtendedCultureInfo", eCultureType );
-            _obliviousCache.Add( eCultureType.Type, eCultureType );
-
-            var nCultureType = PocoType.CreateBasicRef( this, typeof( NormalizedCultureInfo ), "NormalizedCultureInfo", FieldDefaultValue.CultureDefault );
-            _obliviousCache.Add( "NormalizedCultureInfo", nCultureType );
-            _obliviousCache.Add( nCultureType.Type, nCultureType );
-
             static void RegValueType( PocoTypeSystem s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
             {
                 var x = PocoType.CreateBasicValue( s, tNotNull, tNull, name );
                 c.Add( tNotNull, x );
                 c.Add( tNull, x.Nullable );
+            }
+
+            _objectType = PocoType.CreateObject( this );
+            _obliviousCache.Add( "object", _objectType );
+            _obliviousCache.Add( _objectType.Type, _objectType );
+
+            RegReferenceType( this, _obliviousCache, typeof( string ), "string", FieldDefaultValue.StringDefault );
+            RegReferenceType( this, _obliviousCache, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault );
+            RegReferenceType( this, _obliviousCache, typeof( NormalizedCultureInfo ), "NormalizedCultureInfo", FieldDefaultValue.CultureDefault );
+            RegReferenceType( this, _obliviousCache, typeof( MCString ), "MCString", FieldDefaultValue.MCStringDefault );
+            RegReferenceType( this, _obliviousCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault );
+
+            static void RegReferenceType( PocoTypeSystem s, Dictionary<object, IPocoType> c, Type t, string name, FieldDefaultValue defaultValue )
+            {
+                var x = PocoType.CreateBasicRef( s, t, name, defaultValue );
+                c.Add( t, x );
+                c.Add( name, x );
             }
         }
 
@@ -186,8 +190,12 @@ namespace CK.Setup
                 Debug.Assert( result.Kind == PocoTypeKind.Any
                               || result.Kind == PocoTypeKind.IPoco
                               || result.Kind == PocoTypeKind.AbstractIPoco
-                              // Allowed BasicTypes.
-                              || result.Type == typeof( string ) || result.Type == typeof( ExtendedCultureInfo ) || result.Type == typeof( NormalizedCultureInfo ) );
+                              // Allowed BasicTypes that are reference types.
+                              || result.Type == typeof( string )
+                              || result.Type == typeof( ExtendedCultureInfo )
+                              || result.Type == typeof( NormalizedCultureInfo )
+                              || result.Type == typeof( MCString )
+                              || result.Type == typeof( CodeString ) );
                 return nType.IsNullable ? result.Nullable : result;
             }
             if( typeof( IPoco ).IsAssignableFrom( t ) )
