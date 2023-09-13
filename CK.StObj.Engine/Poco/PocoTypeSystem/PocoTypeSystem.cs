@@ -27,7 +27,6 @@ namespace CK.Setup
         // - A string key indexes the IPocoType.CSharpName for non oblivious types.
         readonly Dictionary<object, IPocoType> _obliviousCache;
         readonly IPocoType _objectType;
-        readonly IPocoType _stringType;
         // Contains the not nullable types (PocoType instances are the non nullable types).
         readonly List<PocoType> _allTypes;
         readonly HalfTypeList _exposedAllTypes;
@@ -63,14 +62,22 @@ namespace CK.Setup
             RegValueType( this, _obliviousCache, typeof( ulong ), typeof( ulong? ), "ulong" );
             RegValueType( this, _obliviousCache, typeof( ushort ), typeof( ushort? ), "ushort" );
             RegValueType( this, _obliviousCache, typeof( sbyte ), typeof( sbyte? ), "sbyte" );
-
-            _objectType = PocoType.CreateBasicRef( this, typeof( object ), "object", PocoTypeKind.Any );
+            
+            _objectType = PocoType.CreateObject( this );
             _obliviousCache.Add( "object", _objectType );
             _obliviousCache.Add( _objectType.Type, _objectType );
 
-            _stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", PocoTypeKind.Basic );
-            _obliviousCache.Add( "string", _stringType );
-            _obliviousCache.Add( _stringType.Type, _stringType );
+            var stringType = PocoType.CreateBasicRef( this, typeof( string ), "string", FieldDefaultValue.StringDefault );
+            _obliviousCache.Add( "string", stringType );
+            _obliviousCache.Add( stringType.Type, stringType );
+
+            var eCultureType = PocoType.CreateBasicRef( this, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault );
+            _obliviousCache.Add( "ExtendedCultureInfo", eCultureType );
+            _obliviousCache.Add( eCultureType.Type, eCultureType );
+
+            var nCultureType = PocoType.CreateBasicRef( this, typeof( NormalizedCultureInfo ), "NormalizedCultureInfo", FieldDefaultValue.CultureDefault );
+            _obliviousCache.Add( "NormalizedCultureInfo", nCultureType );
+            _obliviousCache.Add( nCultureType.Type, nCultureType );
 
             static void RegValueType( PocoTypeSystem s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
             {
@@ -177,9 +184,10 @@ namespace CK.Setup
             {
                 Debug.Assert( !result.IsNullable );
                 Debug.Assert( result.Kind == PocoTypeKind.Any
-                              || result.Type == typeof( string )
                               || result.Kind == PocoTypeKind.IPoco
-                              || result.Kind == PocoTypeKind.AbstractIPoco );
+                              || result.Kind == PocoTypeKind.AbstractIPoco
+                              // Allowed BasicTypes.
+                              || result.Type == typeof( string ) || result.Type == typeof( ExtendedCultureInfo ) || result.Type == typeof( NormalizedCultureInfo ) );
                 return nType.IsNullable ? result.Nullable : result;
             }
             if( typeof( IPoco ).IsAssignableFrom( t ) )

@@ -150,13 +150,13 @@ namespace CK.Poco.Exc.Json.Tests
             nMin.PTimeSpan = TimeSpan.MinValue;
             nMin.PGuid = Guid.Empty;
 
-            var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(null) serialization: " + t ) );
+            var nNull2 = JsonTestHelper.Roundtrip( directory, nNull, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (null) serialization: " + t ) );
             nNull2.Should().BeEquivalentTo( nNull );
 
-            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(max) serialization: " + t ) );
+            var nMax2 = JsonTestHelper.Roundtrip( directory, nMax, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (max) serialization: " + t ) );
             nMax2.Should().BeEquivalentTo( nMax );
 
-            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes(min) serialization: " + t ) );
+            var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (min) serialization: " + t ) );
             nMin2.Should().BeEquivalentTo( nMin );
         }
 

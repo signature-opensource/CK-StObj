@@ -5,18 +5,20 @@ namespace CK.Setup
 {
     partial class PocoType
     {
+        internal static PocoType CreateObject( PocoTypeSystem s )
+        {
+            return new PocoType( s, typeof(object), "object", PocoTypeKind.Any, t => new NullReferenceType( t ) );
+        }
+
         internal static PocoType CreateBasicRef( PocoTypeSystem s,
                                                  Type type,
                                                  string csharpName,
-                                                 PocoTypeKind kind )
+                                                 FieldDefaultValue defaultValue )
         {
             Debug.Assert( !type.IsValueType );
-            Debug.Assert( type == typeof( object ) || type == typeof( string ) );
-            Debug.Assert( kind == PocoTypeKind.Any || kind == PocoTypeKind.Basic );
-            // A string field is allowed (RequiresInit) since, by default, string fields use the FieldDefaultValue.StringDefault.
-            return type == typeof( string )
-                    ? new BasicTypeWithDefaultValue( s, type, csharpName, kind, FieldDefaultValue.StringDefault, t => new NullReferenceType( t ) )
-                    : new PocoType( s, type, csharpName, kind, t => new NullReferenceType( t ) );
+            Debug.Assert( type != typeof( object ) );
+            Debug.Assert( defaultValue != null );
+            return new BasicTypeWithDefaultValue( s, type, csharpName, PocoTypeKind.Basic, defaultValue, t => new NullReferenceType( t ) );
         }
 
         internal static IPocoType CreateBasicValue( PocoTypeSystem s,
@@ -32,7 +34,11 @@ namespace CK.Setup
                      : new PocoType( s, notNullable, csharpName, PocoTypeKind.Basic, t => new NullValueType( t, nullable ) );
         }
 
-        sealed class BasicTypeWithDefaultValue : PocoType
+        /// <summary>
+        /// This is internal because this is used from the PocoTypeSystem constructor for strings,
+        /// CK.Globalization types and other 
+        /// </summary>
+        internal sealed class BasicTypeWithDefaultValue : PocoType
         {
             readonly IPocoFieldDefaultValue _def;
 

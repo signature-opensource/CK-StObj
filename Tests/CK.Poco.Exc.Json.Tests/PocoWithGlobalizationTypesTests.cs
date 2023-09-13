@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Poco.Exc.Json.Tests;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -40,11 +41,11 @@ namespace CK.StObj.Engine.Tests.PocoJson
         [Test]
         public void Globalization_types_serialization_are_handled()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( PocoJsonSerializer ), typeof( IWithGlobalization ) );
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithGlobalization ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var p = s.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
-            JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
+            JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p, text: t => TestHelper.Monitor.Info( $"IWithGlobalization (default) serialization: " + t ) );
             ExtendedCultureInfo someCulture = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
 
             var name = "me";
@@ -56,7 +57,7 @@ namespace CK.StObj.Engine.Tests.PocoJson
             p.CodeString = new CodeString( ExtendedCultureInfo.GetExtendedCultureInfo( "ar-tn" ), $"Hello on {DateTime.UtcNow.Date}." );
             p.FormattedString = p.CodeString.FormattedString;
 
-            var back = JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p );
+            var back = JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p, text: t => TestHelper.Monitor.Info( $"IWithGlobalization (with values) serialization: " + t ) );
             back.ExtendedCultureInfo.Name.Should().Be( "fr-ca,es" );
             back.NormalizedCultureInfo.Name.Should().Be( "ar-sa" );
 

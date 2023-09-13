@@ -106,14 +106,20 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void ubiquitous_services_are_painful_when_they_are_not_AutoService()
         {
             {
+                const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<FakeAuthenticationInfo>'. " +
+                                   "Type 'FakeAuthenticationInfo' is not a valid Ubiquitous information service, " +
+                                   "all ubiquitous service must have a default value provider.";
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
                                                          typeof( NotEnoughDefaultAuthenticationInfoProvider1 ) );
-                TestHelper.GetFailedResult( c );
+                TestHelper.GetFailedResult( c, msg );
             }
             {
+                const string msg = "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<IFakeAuthenticationInfo>'. " +
+                                   "Type 'IFakeAuthenticationInfo' is not a valid Ubiquitous information service, " +
+                                   "all ubiquitous service must have a default value provider.";
                 var c = TestHelper.CreateStObjCollector( typeof( FakeAuthenticationInfo ),
                                                          typeof( NotEnoughDefaultAuthenticationInfoProvider2 ) );
-                TestHelper.GetFailedResult( c );
+                TestHelper.GetFailedResult( c, msg );
             }
         }
     }

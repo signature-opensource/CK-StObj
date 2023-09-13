@@ -133,7 +133,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [EndpointDefinition( EndpointKind.Back )]
         public abstract class Dup2EndpointDefinition : EndpointDefinition<Dup1EndpointDefinition.Data>
         {
-            public sealed class Data : ScopedData
+            public sealed class Data : BackScopedData
             {
                 public Data( EndpointUbiquitousInfo ubiquitousInfo )
                     : base( ubiquitousInfo )
@@ -146,9 +146,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void EndpointDefinitions_cannot_use_the_same_ScopeData_type()
         {
             var c1 = TestHelper.CreateStObjCollector( typeof( Dup1EndpointDefinition ), typeof( Dup2EndpointDefinition ) );
-            TestHelper.GetFailedResult( c1, "Endpoint definition ScopeData must be different." );
+            TestHelper.GetFailedResult( c1, "The generic parameter of 'EndpointDefinitionTests.Dup2EndpointDefinition' must be 'Dup2EndpointDefinition.Data'." );
         }
-
 
         [EndpointDefinition( EndpointKind.Front )]
         public abstract class BadNameDefinition : EndpointDefinition<BadNameDefinition.Data>
@@ -193,24 +192,19 @@ namespace CK.StObj.Engine.Tests.Endpoint
         [Test]
         public void EndpointDefinition_Data_type_is_checked()
         {
-            using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
                 const string msg = "Type 'EndpointDefinitionTests.BadFrontDataEndpointDefinition.Data' must not specialize BackScopedData, " +
-                                   "it must simply support the IScopedData interface because it is a Front endpoint.";
+                                    "it must simply support the IScopedData interface because it is a Front endpoint.";
 
                 var c = TestHelper.CreateStObjCollector( typeof( BadFrontDataEndpointDefinition ) );
-                TestHelper.GetFailedResult( c );
-
-                logs.Should().Contain( msg );
+                TestHelper.GetFailedResult( c, msg );
             }
 
-            using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
                 const string msg = "Type 'EndpointDefinitionTests.BadBackDataEndpointDefinition.Data' must specialize BackScopedData because it is a Back endpoint.";
 
                 var c = TestHelper.CreateStObjCollector( typeof( BadBackDataEndpointDefinition ) );
-                TestHelper.GetFailedResult( c );
-                logs.Should().Contain( msg );
+                TestHelper.GetFailedResult( c, msg );
             }
         }
 
