@@ -5,6 +5,7 @@
 This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Poco\Json\**" />
@@ -13,8 +14,9 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="7.0.1--0032-develop" />
-    <PackageReference Include="CK.Setup.Dependency" Version="15.0.1--0025-develop" />
+    <PackageReference Include="CK.CodeGen" Version="7.0.1--0039-develop" />
+    <PackageReference Include="CK.Globalization" Version="0.0.0--04jei7h-develop" />
+    <PackageReference Include="CK.Setup.Dependency" Version="15.0.1--0032-develop" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

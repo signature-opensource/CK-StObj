@@ -314,7 +314,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             }
 
             IEndpointServiceProvider<FakeBackEndpointDefinition.Data>? e = FakeHost.CreateServiceProvider( TestHelper.Monitor, global, out var g );
-            Debug.Assert( e != null );
+            Debug.Assert( e != null && g != null );
 
             using var scopedG = g.CreateScope();
             var ubiq = scopedG.ServiceProvider.GetRequiredService<EndpointUbiquitousInfo>();

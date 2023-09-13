@@ -56,6 +56,79 @@ namespace CK.Setup.Json
                 return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
             }
 
+            // CK.Globalization types registration is done here and not in InitializeBasicTypes because
+            // of switch case for reference types that must be correctly ordered.
+            jsonCodeGen.AllowTypeInfo( typeof( ExtendedCultureInfo ), "ECulture" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Name );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.ExtendedCultureInfo.GetExtendedCultureInfo( r.GetString() ); r.Read();" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( NormalizedCultureInfo ), "NCulture" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Name );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.NormalizedCultureInfo.GetNormalizedCultureInfo( r.GetString() ); r.Read();" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( SimpleUserMessage ), "SimpleUserMessage" )!.Configure(
+               ( ICodeWriter write, string variableName ) =>
+               {
+                   write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+               },
+               ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+               {
+                   read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadSimpleUserMessageFromJsonArray( ref r );" );
+               } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( UserMessage ), "UserMessage" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadUserMessageFromJsonArray( ref r );" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( MCString ), "MCString" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadMCStringFromJsonArray( ref r );" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( CodeString ), "CodeString" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadCodeStringFromJsonArray( ref r );" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( FormattedString ), "FormattedString" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadFormattedStringFromJsonArray( ref r );" );
+                } );
+
+
             using( monitor.OpenInfo( $"Allowing Poco Json serialization C# code generation for {pocoSupport.Families.Count} Pocos." ) )
             {
                 // IPoco and IClosedPoco are not in the "OtherInterfaces".

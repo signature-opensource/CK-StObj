@@ -12,6 +12,7 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
+
     [TestFixture]
     public class RecursivePocoTests
     {
