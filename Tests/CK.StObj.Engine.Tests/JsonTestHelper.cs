@@ -37,8 +37,8 @@ namespace CK.StObj.Engine.Tests
         [return: NotNullIfNotNull( "o" )]
         public static T? Roundtrip<T>( PocoDirectory directory, T? o, PocoJsonSerializerOptions? options = null, Action<string>? text = null ) where T : class, IPoco
         {
-            T? Read( ref Utf8JsonReader r ) => (T?)directory.Read( ref r, options );
-            return TestHelper.JsonIdempotenceCheck( o, (w,o) => o.Write( w, true, options ), Read, text );
+            T? Read( ref Utf8JsonReader r, IUtf8JsonReaderContext unused ) => (T?)directory.Read( ref r, options );
+            return TestHelper.JsonIdempotenceCheck( o, (w,o) => o.Write( w, true, options ), Read, null, text );
         }
     }
 }
