@@ -217,15 +217,12 @@ namespace CK.Core
             return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
         }
 
-        static bool CheckNullStart( ref Utf8JsonReader reader, string error )
+        static bool CheckNullStart( ref Utf8JsonReader r, string error )
         {
-            if( reader.TokenStartIndex == 0 && (!reader.Read() || reader.TokenType == JsonTokenType.None) )
+            if( r.TokenStartIndex == 0 && r.TokenType == JsonTokenType.None ) r.Read();
+            if( r.TokenType == JsonTokenType.Null )
             {
-                throw new JsonException( "Empty reader: " + error );
-            }
-            if( reader.TokenType == JsonTokenType.Null )
-            {
-                reader.Read();
+                r.Read();
                 return true;
             }
             return false;
