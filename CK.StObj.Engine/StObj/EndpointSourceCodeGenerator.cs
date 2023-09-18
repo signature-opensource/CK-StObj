@@ -93,8 +93,12 @@ namespace CK.Setup
                     endpoint = _endpoint;
                     _endpoint = null;
                     _lastEndpoint = null;
-                    return endpoint is List<ServiceDescriptor>
-                                            || (_global != null && (endpoint != null || _global is List<ServiceDescriptor>));
+                    // For global services, we registered the UniqueServiceDescriptor for our unique mappings when they come from
+                    // the Automatic DI: we can skip them.
+                    // For endpoint we are into te wild... as well as manual mapping that may have been done in the global container.
+                    int nonUniqueGlobal = _global is List<ServiceDescriptor> desc ? desc.Count( d => d is not UniqueServiceDescriptor ) : 0;
+                    if( nonUniqueGlobal > 1 ) return true;
+                    return (_global != null && endpoint != null) || endpoint is List<ServiceDescriptor>;
                 }
 
                 public object? Global => _global;
@@ -215,7 +219,7 @@ namespace CK.Setup
                     global.Add( typeMapping );
                     foreach( var unique in o.UniqueMappings )
                     {
-                        var uMapping = new ServiceDescriptor( unique, o.Implementation );
+                        var uMapping = new UniqueServiceDescriptor( unique, o.Implementation );
                         global.Add( uMapping );
                     }
                     foreach( var multi in o.MultipleMappings )
@@ -244,6 +248,25 @@ namespace CK.Setup
             """;
 
         // Always injected.
+        const string _uniqueServiceDescriptor =
+            """
+            sealed class UniqueServiceDescriptor : ServiceDescriptor
+            {
+                // For Real objects
+                public UniqueServiceDescriptor( Type serviceType, object instance )
+                    : base( serviceType, instance )
+                {
+                }
+
+                // For services.
+                public UniqueServiceDescriptor( Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lifetime )
+                    : base( serviceType, factory, lifetime )
+                {
+                }
+            }
+            """;
+
+        // Always injected.
         const string _addGlobalServiceMapping =
             """
             static void AddGlobalServiceMapping( IServiceCollection global, IStObjServiceClassDescriptor s, ServiceLifetime lt )
@@ -254,7 +277,7 @@ namespace CK.Setup
                 Func<IServiceProvider, object>? shared = null;
                 foreach( var unique in s.UniqueMappings )
                 {
-                    var uMapping = new ServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
+                    var uMapping = new UniqueServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                     global.Add( uMapping );
                 }
                 foreach( var multi in s.MultipleMappings )
@@ -298,7 +321,7 @@ namespace CK.Setup
                     mappings.Add( o.ClassType, m );
                     foreach( var unique in o.UniqueMappings )
                     {
-                        var uMapping = new ServiceDescriptor( unique, o.Implementation );
+                        var uMapping = new UniqueServiceDescriptor( unique, o.Implementation );
                         global.Add( uMapping );
                         m.AddGlobal( uMapping );
                     }
@@ -375,7 +398,7 @@ namespace CK.Setup
                     Func<IServiceProvider, object>? shared = null;
                     foreach( var unique in s.UniqueMappings )
                     {
-                        var uMapping = new ServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
+                        var uMapping = new UniqueServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                         global.Add( uMapping );
                         // We don't need a TypedServiceDescriptor here: this is a unique mapping, no
                         // multiple is allowed by design.
@@ -666,7 +689,11 @@ namespace CK.Setup
                                     }
                                     else
                                     {
-                                        monitor.Warn( $"Endpoint '{definition.Name}' supports the {lt} service '{s:C}' that is not declared as a endpoint service." );
+                                        // Silently skips IActivityMonitor and IParallelLogger that are "by design".
+                                        if( s != typeof( IActivityMonitor ) && s != typeof( IParallelLogger ) )
+                                        {
+                                            monitor.Warn( $"Endpoint '{definition.Name}' supports the {lt} service '{s:C}' that is not declared as a endpoint service." );
+                                        }
                                     }
                                 }
                             }
@@ -914,6 +941,7 @@ namespace CK.Setup
 
                         static void Handle( ServiceDescriptor ext, List<Type> singTypes, List<object> singInst, List<Type> scopTypes, List<string> typeMappedErrors )
                         {
+                            if( ext is UniqueServiceDescriptor ) return;
                             if( ext.Lifetime == ServiceLifetime.Singleton )
                             {
                                 if( ext.ImplementationInstance != null )
@@ -1011,7 +1039,8 @@ namespace CK.Setup
                     .CreatePart( out var helperExtension )
                  .CloseBlock()
                  .Append( _scopedDataHolder )
-;
+                 .Append( _uniqueServiceDescriptor );
+
                 if( !hasEndpoint )
                 {
                     g.Append( _endpointTypeInternalNoEndpoint );
@@ -1019,9 +1048,9 @@ namespace CK.Setup
                 }
                 else
                 {
-                    g.Append( _endpointTypeInternalWithEndpoints )
+                    g.Append( _typedServiceDescriptor )
+                     .Append( _endpointTypeInternalWithEndpoints )
                      .Append( _mapping )
-                     .Append( _typedServiceDescriptor )
                      .Append( _globalServices )
                      .Append( _endpointType )
                      .Append( _finalConfigurationBuilder );

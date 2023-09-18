@@ -73,8 +73,12 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             endpoint = _endpoint;
             _endpoint = null;
             _lastEndpoint = null;
-            return endpoint is List<ServiceDescriptor>
-                                    || (_global != null && (endpoint != null || _global is List<ServiceDescriptor>));
+            // For global services, we registered the UniqueServiceDescriptor for our unique mappings when they come from
+            // the Automatic DI: we can skip them.
+            // For endpoint we are into te wild... as well as manual mapping that may have been done in the global container.
+            int nonUniqueGlobal = _global is List<ServiceDescriptor> desc ? desc.Count( d => d is not UniqueServiceDescriptor ) : 0;
+            if( nonUniqueGlobal > 1 ) return true;
+            return (_global != null && endpoint != null) || endpoint is List<ServiceDescriptor>;
         }
 
         public object? Global => _global;
@@ -110,6 +114,21 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Debug.Assert( o.ImplementationType == null, "Mapped type descriptor doesn't need this." );
             Debug.Assert( o.ImplementationFactory != null );
             return new TypedServiceDescriptor( o.ServiceType, o.ImplementationFactory, o.Lifetime, implementationType );
+        }
+    }
+
+    sealed class UniqueServiceDescriptor : ServiceDescriptor
+    {
+        // For Real objects
+        public UniqueServiceDescriptor( Type serviceType, object instance )
+            : base( serviceType, instance )
+        {
+        }
+
+        // For services.
+        public UniqueServiceDescriptor( Type serviceType, Func<IServiceProvider, object> factory, ServiceLifetime lifetime )
+            : base( serviceType, factory, lifetime )
+        {
         }
     }
 
@@ -233,7 +252,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 global.Add( typeMapping );
                 foreach( var unique in o.UniqueMappings )
                 {
-                    var uMapping = new ServiceDescriptor( unique, o.Implementation );
+                    var uMapping = new UniqueServiceDescriptor( unique, o.Implementation );
                     global.Add( uMapping );
                 }
                 foreach( var multi in o.MultipleMappings )
@@ -268,7 +287,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             Func<IServiceProvider, object>? shared = null;
             foreach( var unique in s.UniqueMappings )
             {
-                var uMapping = new ServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
+                var uMapping = new UniqueServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                 global.Add( uMapping );
             }
             foreach( var multi in s.MultipleMappings )
@@ -295,7 +314,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 mappings.Add( o.ClassType, m );
                 foreach( var unique in o.UniqueMappings )
                 {
-                    var uMapping = new ServiceDescriptor( unique, o.Implementation );
+                    var uMapping = new UniqueServiceDescriptor( unique, o.Implementation );
                     global.Add( uMapping );
                     m.AddGlobal( uMapping );
                 }
@@ -372,7 +391,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 Func<IServiceProvider, object>? shared = null;
                 foreach( var unique in s.UniqueMappings )
                 {
-                    var uMapping = new ServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
+                    var uMapping = new UniqueServiceDescriptor( unique, shared ??= (sp => sp.GetService( s.ClassType )!), lt );
                     global.Add( uMapping );
                     // We don't need a TypedServiceDescriptor here: this is a unique mapping, no
                     // multiple is allowed by design.
@@ -619,9 +638,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                                     success = false;
                                 }
                             }
-                            else
+                            else  
                             {
-                                monitor.Warn( $"Endpoint '{definition.Name}' supports the {lt} service '{s:C}' that is not declared as a endpoint service." );
+                                // Silently skips IActivityMonitor and IParallelLogger that are "by design".
+                                if( s != typeof( IActivityMonitor ) && s != typeof( IParallelLogger ) )
+                                {
+                                    monitor.Warn( $"Endpoint '{definition.Name}' supports the {lt} service '{s:C}' that is not declared as a endpoint service." );
+                                }
                             }
                         }
                     }
@@ -865,6 +888,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
                 static void Handle( ServiceDescriptor ext, List<Type> singTypes, List<object> singInst, List<Type> scopTypes, List<string> typeMappedErrors )
                 {
+                    if( ext is UniqueServiceDescriptor ) return;
                     if( ext.Lifetime == ServiceLifetime.Singleton )
                     {
                         if( ext.ImplementationInstance != null )
