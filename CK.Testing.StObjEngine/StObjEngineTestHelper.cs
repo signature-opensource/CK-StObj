@@ -88,10 +88,9 @@ namespace CK.Testing
         }
 
         CompileAndLoadResult IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c,
-                                                                                bool generateSourceFile,
                                                                                 Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
         {
-            return DoCompileAndLoadStObjMap( c, engineConfigurator, generateSourceFile, useEmbeddedStObjMapIfPossible: false );
+            return DoCompileAndLoadStObjMap( c, engineConfigurator, true, true );
         }
 
         static CompileAndLoadResult DoCompileAndLoadStObjMap( StObjCollector c,

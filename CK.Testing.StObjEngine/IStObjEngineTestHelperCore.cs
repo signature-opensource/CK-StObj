@@ -83,7 +83,6 @@ namespace CK.Testing.StObjEngine
         /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
-        /// <param name="generateSourceFile">False to not update the G0.cs file.</param>
         /// <param name="engineConfigurator">
         /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
@@ -98,7 +97,6 @@ namespace CK.Testing.StObjEngine
         /// </param>
         /// <returns>The (successful) result and the ready-to-use map.</returns>
         CompileAndLoadResult CompileAndLoadStObjMap( StObjCollector c,
-                                                     bool generateSourceFile = true,
                                                      Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null );
 
         /// <summary>
