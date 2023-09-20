@@ -71,9 +71,14 @@ namespace CK.Setup
                               .NewLine();
                     }
 
-                    // Injects System.Reflection and setup assemblies into the
-                    // workspace that will be used to generate source code.
+                    // Injects setup assemblies into the workspace that will be used to generate source code.
+
+                    // Injects System.Reflection (that may not be referenced by user code).
                     ws.EnsureAssemblyReference( typeof( BindingFlags ) );
+                    // Injects the Microsoft.Extensions.DependencyInjection assembly (that may not be referenced by user code).
+                    ws.EnsureAssemblyReference( typeof( Microsoft.Extensions.DependencyInjection.ServiceProvider ) );
+
+                    // Model assemblies.
                     if( CKTypeResult.Assemblies.Count > 0 )
                     {
                         ws.EnsureAssemblyReference( CKTypeResult.Assemblies );
