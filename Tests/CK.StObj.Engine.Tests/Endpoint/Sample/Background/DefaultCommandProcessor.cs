@@ -2,19 +2,17 @@ using CK.Core;
 
 namespace CK.StObj.Engine.Tests.Endpoint
 {
-
-
     /// <summary>
-    /// Simulates a simple command handler that requires a monitor and
-    /// an authentication info.
+    /// Simulates a simple command handler that can handle any type of command but
+    /// requires a monitor and a tenant info.
     /// </summary>
-    public sealed class SampleCommandProcessor : IScopedAutoService
+    public sealed class DefaultCommandProcessor : ISampleCommandProcessor, IScopedAutoService
     {
         readonly IActivityMonitor _monitor;
         readonly SampleCommandMemory _commandHistory;
         readonly IFakeTenantInfo _tenantInfo;
 
-        public SampleCommandProcessor( IActivityMonitor monitor, SampleCommandMemory commandHistory, IFakeTenantInfo info )
+        public DefaultCommandProcessor( IActivityMonitor monitor, SampleCommandMemory commandHistory, IFakeTenantInfo info )
         {
             _monitor = monitor;
             _commandHistory = commandHistory;
