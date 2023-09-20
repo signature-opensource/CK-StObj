@@ -683,6 +683,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                                     Type[]? ScopTypes,
                                     int Count );
 
+        // Final transfers of the registrations from the computed mappings to the endpoint configuration.
+        // Singletons with no provided instance (they have a factory) are rerouted to the global
+        // containers. Singletons with an instance or open generics (like IOptions<>) are copied
+        // as-is: open generics requires the ImplementationType to be set (otherwise the
+        // CallSiteFactory.Populate() throws). This is not a concern since no instance are
+        // realized for an open generic (this check is for security).
+        // Note that we register only the LAST seen instance AND its corresponding IEnumerable<T>
+        // if multiple registrations appears.
         public void FinalConfigure( IActivityMonitor monitor, ServiceCollection endpoint )
         {
             foreach( var (t, m) in _mappings )
@@ -691,7 +699,8 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 if( last == null ) continue;
                 if( m.LastEndpoint == null
                     && last.Lifetime == ServiceLifetime.Singleton
-                    && last.ImplementationInstance == null )
+                    && last.ImplementationInstance == null
+                    && !last.ServiceType.IsGenericTypeDefinition )
                 {
                     endpoint.Add( new ServiceDescriptor( t, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( t )!, ServiceLifetime.Singleton ) );
                 }
