@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CK.Globalization" Version="0.0.0--04jhz0v-develop" />
+    <PackageReference Include="CK.Globalization" Version="0.0.0--04jibk7-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
