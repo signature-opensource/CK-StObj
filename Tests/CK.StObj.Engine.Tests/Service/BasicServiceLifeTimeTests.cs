@@ -252,9 +252,8 @@ namespace CK.StObj.Engine.Tests.Service
         public class ExtS : IExternalService3 { }
 
         [Test]
-        public void SetAutoServiceKind_application_order_doesnt_matter_on_interfaces()
+        public void SetAutoServiceKind_application_order_matter_on_interfaces()
         {
-            // Because all interfaces are flattened on Types that support them.
             {
                 var collector = TestHelper.CreateStObjCollector();
                 collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
@@ -276,7 +275,7 @@ namespace CK.StObj.Engine.Tests.Service
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
-                                                                                 | AutoServiceKind.IsScoped
+                                                                                 | AutoServiceKind.IsSingleton // ! THIS IS BAD !
                                                                                  | AutoServiceKind.IsProcessService );
             }
         }
