@@ -1,7 +1,6 @@
 using CK.Poco.Exc.Json;
 using Microsoft.IO;
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json;
@@ -60,7 +59,7 @@ namespace CK.Core
         public static IPoco? JsonDeserialize( this PocoDirectory @this, ReadOnlySpan<byte> utf8Json, PocoJsonImportOptions? options = null )
         {
             var r = new Utf8JsonReader( utf8Json );
-            // Dispose even if it is not currently required (no data provider).
+            // Dispose even if it is not currently required (no read context).
             using var rCtx = new PocoJsonReadContext( options );
             return @this.ReadJson( ref r, rCtx );
         }
@@ -98,17 +97,6 @@ namespace CK.Core
             }
             using var rCtx = new PocoJsonReadContext( options, Utf8JsonStreamReader.Create( utf8JsonStream, options.ReaderOptions, out var reader ) );
             return @this.ReadJson( ref reader, rCtx );
-        }
-
-        /// <summary>
-        /// Throws a <see cref="JsonException"/>.
-        /// </summary>
-        /// <param name="reader">This reader.</param>
-        /// <param name="message">The exception message.</param>
-        [DoesNotReturn]
-        public static void ThrowJsonException( this ref Utf8JsonReader reader, string message )
-        {
-            throw new JsonException( $"{message} - {reader.BytesConsumed} consumed bytes, current depth is {reader.CurrentDepth}." );
         }
 
     }

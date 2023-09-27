@@ -11,19 +11,19 @@ namespace CK.Poco.Exc.Json
     /// This context must be disposed once done with it.
     /// </para>
     /// </summary>
-    public sealed class PocoJsonReadContext : IUtf8JsonReaderDataProvider, IDisposable
+    public sealed class PocoJsonReadContext : IUtf8JsonReaderContext, IDisposable
     {
-        readonly IUtf8JsonReaderDataProvider? _dataProvider;
+        readonly IUtf8JsonReaderContext? _inner;
         readonly PocoJsonImportOptions _options;
 
         /// <summary>
         /// Initialize a new reader context.
         /// </summary>
         /// <param name="options">Options to use. Defaults to <see cref="PocoJsonImportOptions.Default"/></param>
-        /// <param name="dataProvider">Optional data provider.</param>
-        public PocoJsonReadContext( PocoJsonImportOptions? options = null, IUtf8JsonReaderDataProvider? dataProvider = null )
+        /// <param name="inner">Optional wrapped context.</param>
+        public PocoJsonReadContext( PocoJsonImportOptions? options = null, IUtf8JsonReaderContext? inner = null )
         {
-            _dataProvider = dataProvider;
+            _inner = inner;
             _options = options ?? PocoJsonImportOptions.Default;
         }
 
@@ -38,14 +38,14 @@ namespace CK.Poco.Exc.Json
         /// </summary>
         public void Dispose()
         {
-            if( _dataProvider is IDisposable d ) d.Dispose();
+            if( _inner is IDisposable d ) d.Dispose();
         }
 
         /// <inheritdoc />
-        public void ReadMoreData( ref Utf8JsonReader reader ) => _dataProvider?.ReadMoreData( ref reader );
+        public void ReadMoreData( ref Utf8JsonReader reader ) => _inner?.ReadMoreData( ref reader );
 
         /// <inheritdoc />
-        public void SkipMoreData( ref Utf8JsonReader reader ) => _dataProvider?.SkipMoreData( ref reader );
+        public void SkipMoreData( ref Utf8JsonReader reader ) => _inner?.SkipMoreData( ref reader );
     }
 }
 
