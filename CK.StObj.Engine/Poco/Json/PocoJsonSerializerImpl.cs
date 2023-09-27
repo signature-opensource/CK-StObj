@@ -85,7 +85,7 @@ namespace CK.Setup.Json
                },
                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                {
-                   read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadSimpleUserMessageFromJsonArray( ref r );" );
+                   read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadSimpleUserMessageFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
                } );
 
             jsonCodeGen.AllowTypeInfo( typeof( UserMessage ), "UserMessage" )!.Configure(
@@ -95,7 +95,7 @@ namespace CK.Setup.Json
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadUserMessageFromJsonArray( ref r );" );
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadUserMessageFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
                 } );
 
             jsonCodeGen.AllowTypeInfo( typeof( MCString ), "MCString" )!.Configure(
@@ -105,7 +105,7 @@ namespace CK.Setup.Json
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadMCStringFromJsonArray( ref r );" );
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadMCStringFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
                 } );
 
             jsonCodeGen.AllowTypeInfo( typeof( CodeString ), "CodeString" )!.Configure(
@@ -115,7 +115,7 @@ namespace CK.Setup.Json
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadCodeStringFromJsonArray( ref r );" );
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadCodeStringFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
                 } );
 
             jsonCodeGen.AllowTypeInfo( typeof( FormattedString ), "FormattedString" )!.Configure(
@@ -125,7 +125,7 @@ namespace CK.Setup.Json
                 },
                 ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
                 {
-                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadFormattedStringFromJsonArray( ref r );" );
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadFormattedStringFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
                 } );
 
 
@@ -199,11 +199,6 @@ namespace CK.Setup.Json
                 ns.Append( @"
         static class JsonGeneratedHelperExtension
         {
-            public static void ThrowJsonException( this ref System.Text.Json.Utf8JsonReader r, string m )
-            {
-                ThrowJsonException( m );
-            }
-
             public static void ThrowJsonException( string m )
             {
                 throw new System.Text.Json.JsonException( m );
