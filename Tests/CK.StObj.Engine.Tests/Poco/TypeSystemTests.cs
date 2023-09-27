@@ -59,12 +59,13 @@ namespace CK.StObj.Engine.Tests.Poco
             var ts = r.CKTypeResult.PocoTypeSystem;
 
             const int basicTypesCount = 19;
+            const int globalizationTypesCount = 7; // SimpleUserMessage, UserMessage, FormattedString, MCString, CodeString, NormalizedCultureInfo, ExtendedCultureInfo.
             const int enumTypesCount = 1; // AnEnum
             const int pocoTypesCount = 4 + 2; // IPoco and IClosedPoco
             const int listTypesCount = 1 + 1; // List<(int,string)> and List<(int Count, string Name)>
             const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective oblivious types.
 
-            ts.AllTypes.Count.Should().Be( (basicTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
+            ts.AllTypes.Count.Should().Be( (basicTypesCount + globalizationTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
             int before = ts.AllTypes.Count;
             var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
