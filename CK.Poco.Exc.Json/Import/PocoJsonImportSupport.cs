@@ -93,19 +93,12 @@ namespace CK.Core
             return p;
         }
 
-        static bool CheckNullStart( ref Utf8JsonReader reader, PocoJsonReadContext context, string error )
+        static bool CheckNullStart( ref Utf8JsonReader r, PocoJsonReadContext context, string error )
         {
-            if( reader.TokenStartIndex == 0 )
+            if( r.TokenStartIndex == 0 && r.TokenType == JsonTokenType.None ) r.ReadWithMoreData( context );
+            if( r.TokenType == JsonTokenType.Null )
             {
-                if( !reader.Read() ) context.ReadMoreData( ref reader );
-                if( reader.TokenType == JsonTokenType.None )
-                {
-                    reader.ThrowJsonException( "Empty reader: " + error );
-                }
-            }
-            if( reader.TokenType == JsonTokenType.Null )
-            {
-                if( !reader.Read() ) context.ReadMoreData( ref reader );
+                r.ReadWithMoreData( context );
                 return true;
             }
             return false;

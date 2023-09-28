@@ -15,6 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\CK.Poco.Exc.Json.Engine\CK.Poco.Exc.Json.Engine.csproj" />
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
   </ItemGroup>
 

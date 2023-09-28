@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using System.ComponentModel.Design;
 
 namespace CK.Setup.PocoJson
 {
@@ -71,10 +72,15 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
     if( !wCtx.Options.TypeLess ) w.WriteEndArray();
 }" );
             // Builds the different sorters for cases that must be ordered: arrays and collections
-            // only since these are the only reference types except the basic ones (that moreover
-            // is currently the single 'string').
+            // only since these are the only reference types except the basic ones (that 
+            // is currently: the 'string', the Globalization reference types MCString, CodeString, Normalized & ExtendedCultureInfo).
             var arrays = new ObliviousReferenceTypeSorter();
             var collections = new ObliviousReferenceTypeSorter();
+            // Among the Globalization reference types, only the Normalized & ExtendedCultureInfo have an issue:
+            // the specialized NormalizedCultureInfo must appear before ExtendedCultureInfo.
+            // We don't use a ObliviousReferenceTypeSorter for 2 types here.
+            IPocoType? extendedCultureInfo = null;
+            IPocoType? normalizedCultureInfo = null;
 
             foreach( var t in _nameMap.ExchangeableNonNullableObliviousTypes )
             {
@@ -89,8 +95,33 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
                 {
                     case PocoTypeKind.Basic:
                         {
-                            var part = t.Type.IsValueType ? basicValueTypeCases : basicRefTypeCases;
-                            WriteCase( part, t );
+                            if( t.Type.IsValueType )
+                            {
+                                WriteCase( basicValueTypeCases, t );
+                            }
+                            else
+                            {
+                                if( t.Type == typeof( string ) )
+                                {
+                                    WriteCase( basicRefTypeCases, t );
+                                }
+                                else
+                                {
+                                    if( t.Type == typeof( NormalizedCultureInfo ) )
+                                    {
+                                        normalizedCultureInfo = t;
+                                    }
+                                    else if( t.Type == typeof( ExtendedCultureInfo ) )
+                                    {
+                                        extendedCultureInfo = t;
+                                    }
+                                    else
+                                    {
+                                        Throw.DebugAssert( t.Type == typeof( MCString ) || t.Type == typeof( CodeString ) );
+                                        WriteCase( basicRefTypeCases, t );
+                                    }
+                                }
+                            }
                             break;
                         }
 
@@ -135,7 +166,9 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
 
             foreach( var t in arrays.SortedTypes ) WriteCase( arrayCases, t );
             foreach( var t in collections.SortedTypes ) WriteCase( collectionCases, t );
-
+            // Normalized MUST come first.
+            if( normalizedCultureInfo != null ) WriteCase( basicRefTypeCases, normalizedCultureInfo );
+            if( extendedCultureInfo != null ) WriteCase( basicRefTypeCases, extendedCultureInfo );
             return;
 
             void WriteCase( ITypeScopePart code, IPocoType t, string? typeName = null )

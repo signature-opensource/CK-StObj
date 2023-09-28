@@ -170,9 +170,33 @@ namespace CK.Setup.PocoJson
                     // Because Microsoft guys don't want you to be able to do the same as them... :(
                     return ( w, v ) => w.Append( v ).Append( "=r.TokenType==System.Text.Json.JsonTokenType.String?Decimal.Parse(r.GetString(),System.Globalization.NumberFormatInfo.InvariantInfo ):r.GetDecimal();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
+                if( type.Type == typeof( NormalizedCultureInfo ) )
+                {
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.NormalizedCultureInfo.GetNormalizedCultureInfo( r.GetString() );if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                }
+                if( type.Type == typeof( ExtendedCultureInfo ) )
+                {
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.ExtendedCultureInfo.GetExtendedCultureInfo( r.GetString() );if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                }
                 if( type.Type == typeof( SimpleUserMessage ) )
                 {
-                    return ( w, v ) => w.Append( v ).Append( "=r.GetString();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ReadSimpleUserMessageFromJsonArray( ref r, rCtx );" );
+                }
+                if( type.Type == typeof( UserMessage ) )
+                {
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ReadUserMessageFromJsonArray( ref r, rCtx );" );
+                }
+                if( type.Type == typeof( CodeString ) )
+                {
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ReadCodeStringFromJsonArray( ref r, rCtx );" );
+                }
+                if( type.Type == typeof( MCString ) )
+                {
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ReadMCStringFromJsonArray( ref r, rCtx );" );
+                }
+                if( type.Type == typeof( FormattedString ) )
+                {
+                    return ( w, v ) => w.Append( v ).Append( "= CK.Core.GlobalizationJsonHelper.ReadFormattedStringFromJsonArray( ref r, rCtx );" );
                 }
                 return Throw.NotSupportedException<CodeReader>( type.CSharpName );
             }
