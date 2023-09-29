@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.Loader;
 
 namespace CK.Setup
 {
@@ -102,7 +103,7 @@ namespace CK.Setup
                 }
                 canSkipRun = false;
             }
-            else if( !forceRun && (_saveSource != SaveSourceLevel.None || compile != CompileOption.None ) )
+            else if( !forceRun && (_saveSource != SaveSourceLevel.None || compile != CompileOption.None) )
             {
                 // A code base SHA1 is provided.
                 // If we can find this map in the already available StObjMap, we may skip the run.
@@ -157,9 +158,71 @@ namespace CK.Setup
         /// <inheritdoc />
         public GeneratedG0Artifact? GeneratedSource { get; }
 
-
         /// <inheritdoc />
         public string Names => _names;
+
+        /// <summary>
+        /// Tries to load the <see cref="IStObjMap"/> from <see cref="IRunningBinPathGroup.RunSignature"/> SHA1 from
+        /// already available maps (see <see cref="StObjContextRoot.Load(SHA1Value, IActivityMonitor?)"/>)
+        /// or from the <see cref="IRunningBinPathGroup.GeneratedAssembly"/>.
+        /// <para>
+        /// This must not be called on the <see cref="IRunningBinPathGroup.IsUnifiedPure"/> otherwise an <see cref="InvalidOperationException"/>
+        /// is thrown.
+        /// </para>
+        /// </summary>
+        /// <param name="g">This group from which the map must be obtain.</param>
+        /// <param name="embeddedIfPossible">
+        /// False to skip an available map and load it from the generated assembly.
+        /// By default, the map is searched in available ones before loading the assembly.
+        /// </param>
+        /// <returns>The map or null.</returns>
+        public IStObjMap? TryLoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true )
+        {
+            return TryLoadStObjMap( monitor, embeddedIfPossible, false );
+        }
+
+        public IStObjMap LoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true )
+        {
+            return TryLoadStObjMap( monitor, embeddedIfPossible, true )!;
+        }
+
+        IStObjMap? TryLoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible, bool throwOnError )
+        {
+            Throw.CheckState( !IsUnifiedPure );
+            if( embeddedIfPossible )
+            {
+                IStObjMap? map = StObjContextRoot.Load( RunSignature, monitor );
+                if( map != null )
+                {
+                    monitor.Info( $"Embedded generated source code is available for BinPath '{_names}'." );
+                    return map;
+                }
+                monitor.Info( $"No embedded generated source code found for RunSignature '{RunSignature}'." );
+            }
+            if( !GeneratedAssembly.Exists() )
+            {
+                var msg = $"Unable to find generated assembly '{GeneratedAssembly.Path}' for BinPath '{_names}'.";
+                if( throwOnError ) Throw.InvalidOperationException( msg );
+                monitor.Error( msg );
+            }
+            else
+            {
+                System.Reflection.Assembly a;
+                try
+                {
+                    a = AssemblyLoadContext.Default.LoadFromAssemblyPath( GeneratedAssembly.Path );
+                    return StObjContextRoot.Load( a, monitor );
+                }
+                catch( Exception ex )
+                {
+                    var msg = $"While loading assembly '{GeneratedAssembly.Path}' for BinPath '{_names}'.";
+                    if( throwOnError ) Throw.InvalidOperationException( msg, ex );
+                    monitor.Error( msg, ex );
+                }
+            }
+            return null;
+        }
+
 
         internal bool UpdateSimilarArtifactsFromHead( IActivityMonitor monitor )
         {

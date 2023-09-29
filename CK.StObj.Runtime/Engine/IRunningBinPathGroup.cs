@@ -82,5 +82,37 @@ namespace CK.Setup
         /// </summary>
         GeneratedG0Artifact? GeneratedSource { get; }
 
+        /// <summary>
+        /// Load the <see cref="IStObjMap"/> from <see cref="IRunningBinPathGroup.RunSignature"/> SHA1 from
+        /// already available maps (see <see cref="StObjContextRoot.Load(SHA1Value, IActivityMonitor?)"/>)
+        /// or from the <see cref="IRunningBinPathGroup.GeneratedAssembly"/>.
+        /// <para>
+        /// This must not be called on the <see cref="IRunningBinPathGroup.IsUnifiedPure"/> otherwise an <see cref="InvalidOperationException"/>
+        /// is thrown.
+        /// </para>
+        /// </summary>
+        /// <param name="embeddedIfPossible">
+        /// False to skip an available map and load it from the generated assembly.
+        /// By default, the map is searched in available ones before loading the assembly.
+        /// </param>
+        /// <returns>The map or null.</returns>
+        IStObjMap LoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true );
+
+        /// <summary>
+        /// Tries to load the <see cref="IStObjMap"/> from <see cref="IRunningBinPathGroup.RunSignature"/> SHA1 from
+        /// already available maps (see <see cref="StObjContextRoot.Load(SHA1Value, IActivityMonitor?)"/>)
+        /// or from the <see cref="IRunningBinPathGroup.GeneratedAssembly"/>.
+        /// <para>
+        /// This must not be called on the <see cref="IRunningBinPathGroup.IsUnifiedPure"/> otherwise an <see cref="InvalidOperationException"/>
+        /// is thrown.
+        /// </para>
+        /// </summary>
+        /// <param name="embeddedIfPossible">
+        /// False to skip an available map and load it from the generated assembly.
+        /// By default, the map is searched in available ones before loading the assembly.
+        /// </param>
+        /// <returns>The map or null.</returns>
+        IStObjMap? TryLoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true );
+
     }
 }

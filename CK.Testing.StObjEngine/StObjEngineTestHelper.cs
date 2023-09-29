@@ -90,20 +90,18 @@ namespace CK.Testing
         CompileAndLoadResult IStObjEngineTestHelperCore.CompileAndLoadStObjMap( StObjCollector c,
                                                                                 Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
         {
-            return DoCompileAndLoadStObjMap( c, engineConfigurator, true, true );
+            return DoCompileAndLoadStObjMap( c, engineConfigurator );
         }
 
         static CompileAndLoadResult DoCompileAndLoadStObjMap( StObjCollector c,
-                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
-                                                              bool generateSourceFile,
-                                                              bool useEmbeddedStObjMapIfPossible )
+                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator )
         {
             // If the embeddedStObjMap must be used, we update the G0.cs file, but if the StObjMap must be loaded from the assembly
             // we avoid updating G0.cs.
-            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, generateSourceFile, CompileOption.Compile );
+            GenerateCodeResult r = DoGenerateCode( TestHelper.GetSuccessfulResult( c ), engineConfigurator, generateSourceFiles: true, CompileOption.Compile );
             r.Success.Should().BeTrue( "CodeGeneration should work." );
-            var map = r.EngineResult.Groups[0].LoadStObjMap( useEmbeddedStObjMapIfPossible );
-            return new CompileAndLoadResult( r, map! );
+            var map = r.EngineResult.Groups[0].LoadStObjMap( TestHelper.Monitor, embeddedIfPossible: true );
+            return new CompileAndLoadResult( r, map );
         }
 
         static GenerateCodeResult DoGenerateCode( StObjCollectorResult result,
@@ -137,7 +135,7 @@ namespace CK.Testing
                                                                                     SimpleServiceContainer? startupServices,
                                                                                     Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
-            var loadResult = DoCompileAndLoadStObjMap( c, engineConfigurator, true, true );
+            var loadResult = DoCompileAndLoadStObjMap( c, engineConfigurator );
 
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             configureServices?.Invoke( reg );
@@ -151,7 +149,7 @@ namespace CK.Testing
                                                                                                              SimpleServiceContainer? startupServices,
                                                                                                              Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
-            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator, true, true ).Map;
+            IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             configureServices?.Invoke( reg );
             reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
