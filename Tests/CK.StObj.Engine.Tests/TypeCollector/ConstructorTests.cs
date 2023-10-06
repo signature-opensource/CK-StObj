@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -49,14 +50,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
 
         public class ServiceWithDefaultCtor : IScopedAutoService
         {
-        }
-
-        public class AAAAA : CSCodeGeneratorType
-        {
-            public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
-            {
-                return CSCodeGenerationResult.Success;
-            }
         }
 
         [CK.Setup.ContextBoundDelegation( "CK.StObj.Engine.Tests.Service.TypeCollector.ConstructorTests+AAAAA, CK.StObj.Engine.Tests" )]
@@ -309,6 +302,5 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 CheckFailure( collector );
             }
         }
-
     }
 }

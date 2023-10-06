@@ -11,7 +11,7 @@ namespace CK.Core
     /// namespace will be considered as a valid marker.
     /// </para>
     /// </summary>
-    [AttributeUsage( AttributeTargets.Class|AttributeTargets.Interface, AllowMultiple = false, Inherited = false )]
+    [AttributeUsage( AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false, Inherited = false )]
     public class IsMarshallableAttribute : Attribute
     {
     }
