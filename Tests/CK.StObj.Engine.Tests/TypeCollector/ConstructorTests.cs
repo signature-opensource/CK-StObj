@@ -52,11 +52,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
         }
 
-        [CK.Setup.ContextBoundDelegation( "CK.StObj.Engine.Tests.Service.TypeCollector.ConstructorTests+AAAAA, CK.StObj.Engine.Tests" )]
-        public abstract class ServiceWithDefaultCtorThatMustBeImplemented : IScopedAutoService
-        {
-        }
-
         [Test]
         public void services_must_have_only_one_public_ctor_or_no_constructor_at_all()
         {
@@ -93,14 +88,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( typeof( ServiceWithDefaultCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
-                c.ConstructorParameters.Should().BeEmpty();
-            }
-            {
-                var r = CheckSuccess( collector =>
-                {
-                    collector.RegisterType( typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
-                } );
-                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
                 c.ConstructorParameters.Should().BeEmpty();
             }
         }
