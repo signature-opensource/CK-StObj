@@ -28,7 +28,7 @@ namespace CK.Setup.PocoJson
 
         CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystem typeSystem )
         {
-            if( typeSystem.IsLocked )
+            if( !typeSystem.IsLocked )
             {
                 return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
             }
