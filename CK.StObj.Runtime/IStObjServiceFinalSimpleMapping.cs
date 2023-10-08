@@ -11,9 +11,9 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the unique index that identifies this descriptor: its index in
-        /// the <see cref="IStObjServiceMap.SimpleMappingList"/>.
+        /// the <see cref="IStObjServiceMap.MappingList"/>.
         /// </summary>
-        int SimpleMappingIndex { get; }
+        int MappingIndex { get; }
     }
 
 }

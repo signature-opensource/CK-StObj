@@ -150,7 +150,13 @@ namespace CK.Setup
             {
                 MethodInfo? mGet = p.GetGetMethod( true );
                 MethodInfo? mSet = p.GetSetMethod( true );
-                bool isVirtual = (mGet != null && mGet.IsVirtual) || (mSet != null && mSet.IsVirtual);
+
+                // Okay... This is awful but it seems that there's no other quick way to detect an explicit method
+                // implementation... This works for C# because the name mangling is deterministic: the method name
+                // starts with the interface full name followed by '.' method name. Since a dot in a "regular" method
+                // name is not possible, this does the job...
+                bool isVirtual = (mGet != null && mGet.IsVirtual && !mGet.Name.Contains('.'))
+                                 || (mSet != null && mSet.IsVirtual && mSet.Name.Contains( '.' ));
                 if( !isVirtual ) continue;
 
                 bool isAbstract = (mGet != null && mGet.IsAbstract) || (mSet != null && mSet.IsAbstract);
@@ -227,7 +233,7 @@ namespace CK.Setup
         {
             if( _stubType == null ) Throw.InvalidOperationException( $"StubType not available for '{AbstractType.Name}'." );
 
-            ITypeScope cB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, _stubType );
+            ITypeScope cB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, _stubType );
 
             // Calls all Type level implementors first.
             foreach( var impl in TypeImplementors )

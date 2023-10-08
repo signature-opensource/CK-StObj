@@ -41,12 +41,14 @@ namespace CK.Setup
         /// <param name="type">Type for which attributes must be cached.</param>
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="includeBaseClass">True to include attributes of base classes and attributes on members of the base classes.</param>
-        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClass )
+        /// <param name="alsoRegister">Enables a <see cref="IAttributeContextBoundInitializer.Initialize"/> to register types (typically nested types).</param>
+        public TypeAttributesCache( IActivityMonitor monitor, Type type, IServiceProvider services, bool includeBaseClass, Action<Type> alsoRegister )
             : this( monitor,
                     type,
                     (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), includeBaseClass ),
                     services,
-                    includeBaseClass )
+                    includeBaseClass,
+                    alsoRegister )
         {
         }
 
@@ -54,7 +56,8 @@ namespace CK.Setup
                              Type type,
                              IAttributeContextBound[] typeAttributes,
                              IServiceProvider services,
-                             bool includeBaseClasses )
+                             bool includeBaseClasses,
+                             Action<Type> alsoRegister )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
 
@@ -77,7 +80,7 @@ namespace CK.Setup
                 {
                     if( e.Attr is IAttributeContextBoundInitializer aM )
                     {
-                        aM.Initialize( monitor, this, e.M );
+                        aM.Initialize( monitor, this, e.M, alsoRegister );
                         if( --initializerCount == 0 ) break;
                     }
                 }
@@ -106,7 +109,8 @@ namespace CK.Setup
                     using( var sLocal = new SimpleServiceContainer( services ) )
                     {
                         Debug.Assert( _all.Length == 0, "Constructors see no attributes at all. IAttributeContextBoundInitializer must be used to have access to other attributes." );
-                        sLocal.Add<Type>( Type );
+                        sLocal.Add( monitor );
+                        sLocal.Add( Type );
                         sLocal.Add<ITypeAttributesCache>( this );
                         sLocal.Add<MemberInfo>( m );
                         if( m is MethodInfo method ) sLocal.Add<MethodInfo>( method );
@@ -131,11 +135,12 @@ namespace CK.Setup
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="type">Type for which attributes must be cached.</param>
+        /// <param name="alsoRegister">Enables a <see cref="IAttributeContextBoundInitializer.Initialize"/> to register types (typically nested types).</param>
         /// <returns>The cache or null.</returns>
-        public static TypeAttributesCache? CreateOnRegularType( IActivityMonitor monitor, IServiceProvider services, Type type )
+        public static TypeAttributesCache? CreateOnRegularType( IActivityMonitor monitor, IServiceProvider services, Type type, Action<Type> alsoRegister )
         {
             var attr = (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), false );
-            return attr.Length > 0 ? new TypeAttributesCache( monitor, type, attr, services, false ) : null;
+            return attr.Length > 0 ? new TypeAttributesCache( monitor, type, attr, services, false, alsoRegister ) : null;
         }
 
         /// <summary>

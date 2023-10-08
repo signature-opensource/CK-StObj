@@ -7,8 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Engine\CK.StObj.Engine.csproj" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="7.0.0" />
-    <!-- This implements concrete ServiceCollection and DI engine itself. -->
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="8.0.0" />
   </ItemGroup>
 </Project>

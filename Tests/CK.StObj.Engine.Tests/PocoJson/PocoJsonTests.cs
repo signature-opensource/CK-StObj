@@ -34,11 +34,14 @@ namespace CK.StObj.Engine.Tests.PocoJson
 
             ITest? nullPoco = null;
 
-            JsonTestHelper.Roundtrip( directory, nullPoco ).Should().BeNull();
+            var buffer = new ArrayBufferWriter<byte>();
+            using Utf8JsonWriter w = new Utf8JsonWriter( buffer );
+            nullPoco.Write( w, true );
+            w.Flush();
+            Encoding.ASCII.GetString( buffer.WrittenSpan ).Should().Be( "null" );
 
-            IPoco? nullUnknwonPoco = null;
-
-            JsonTestHelper.Roundtrip( directory, nullUnknwonPoco ).Should().BeNull();
+            var r = new Utf8JsonReader( buffer.WrittenSpan );
+            directory.Read( ref r ).Should().BeNull();
         }
 
         [Test]

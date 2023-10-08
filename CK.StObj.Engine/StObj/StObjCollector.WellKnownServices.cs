@@ -1,4 +1,5 @@
 using CK.Core;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,18 +10,28 @@ namespace CK.Setup
     {
         void AddWellKnownServices()
         {
-            // The IActivityMobitor is by design a scoped service. It is not Optional (since it necessarily exists).
-            SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsScoped );
+            // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
+            // It is actually more than that: it is the only ubiquitous endpoint service (with its ParallelLogger) all endpoints must support them.
+            // Note: The right way to inject a monitor is:
+            //
+            //    services.AddScoped<IActivityMonitor,ActivityMonitor>();
+            //    services.AddScoped( sp => sp.GetRequiredService<IActivityMonitor>().ParallelLogger );
+            //
+            SetAutoServiceKind( typeof( IActivityMonitor ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            SetAutoServiceKind( typeof( IParallelLogger ), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
 
-            // The IServiceProvider itself is a Singleton.   
+            // The IServiceProvider is both a singleton and a scope: it is the container (whatever it is).
+            // By defining it as a singleton, we don't force a totally useless Scoped lifetime.
             SetAutoServiceKind( typeof( IServiceProvider ), AutoServiceKind.IsSingleton );
+            SetAutoServiceKind( typeof( IServiceScopeFactory ), AutoServiceKind.IsSingleton );
+            SetAutoServiceKind( typeof( IServiceProviderIsService ), AutoServiceKind.IsSingleton );
 
             // Registration must be done from the most specific types to the basic ones: here we must
             // start with IOptionsSnapshot since IOptionsSnapshot<T> extends IOptions<T>.
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot`1, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsFrontProcessService, isOptional: true );
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsSnapshot`1, Microsoft.Extensions.Options", AutoServiceKind.IsScoped | AutoServiceKind.IsProcessService, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptions`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsProcessService, isOptional: true );
             // IOptionsMonitor is independent.
-            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsFrontProcessService, isOptional: true );
+            SetAutoServiceKind( "Microsoft.Extensions.Options.IOptionsMonitor`1, Microsoft.Extensions.Options", AutoServiceKind.IsSingleton | AutoServiceKind.IsProcessService, isOptional: true );
 
             // This defines a  [Multiple] ISingletonAutoService. Thanks to this definition, hosted services implementations that are IAutoServices are automatically registered.
             SetAutoServiceKind( "Microsoft.Extensions.Hosting.IHostedService, Microsoft.Extensions.Hosting.Abstractions", AutoServiceKind.IsSingleton | AutoServiceKind.IsMultipleService, isOptional: true );
@@ -41,6 +52,9 @@ namespace CK.Setup
             // The SignalR IHubContext<THub> and IHubContext<THub,T> are singletons (that expose all the Clients of the hub).
             SetAutoServiceKind( "Microsoft.AspNetCore.SignalR.IHubContext`1, Microsoft.AspNetCore.SignalR.Core", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( "Microsoft.AspNetCore.SignalR.IHubContext`2, Microsoft.AspNetCore.SignalR.Core", AutoServiceKind.IsSingleton, isOptional: true );
+
+            // IDataProtectionProvider is a singleton.
+            SetAutoServiceKind( "Microsoft.AspNetCore.DataProtection.IDataProtectionProvider, Microsoft.AspNetCore.DataProtection.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
         }
     }
 }

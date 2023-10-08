@@ -21,7 +21,7 @@ namespace CK.Core
 
         /// <summary>
         /// Gets whether this is a scoped service or a singleton one.
-        /// For <see cref="IStObjFinalImplementation"/> this is always true.
+        /// For <see cref="IStObjFinalImplementation"/> this is always false.
         /// </summary>
         bool IsScoped { get; }
 

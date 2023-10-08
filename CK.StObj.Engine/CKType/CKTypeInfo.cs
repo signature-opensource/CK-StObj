@@ -37,7 +37,14 @@ namespace CK.Setup
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="isExcluded">True to actually exclude this type from the registration.</param>
         /// <param name="serviceClass">Service class is mandatory if this is an independent Type info.</param>
-        internal CKTypeInfo( IActivityMonitor monitor, CKTypeInfo? parent, Type t, IServiceProvider services, bool isExcluded, AutoServiceClassInfo? serviceClass )
+        /// <param name="alsoRegister">Enables a <see cref="IAttributeContextBoundInitializer.Initialize"/> to register types (typically nested types).</param>
+        internal CKTypeInfo( IActivityMonitor monitor,
+                             CKTypeInfo? parent,
+                             Type t,
+                             IServiceProvider services,
+                             bool isExcluded,
+                             AutoServiceClassInfo? serviceClass,
+                             Action<Type> alsoRegister )
         {
             Debug.Assert( (serviceClass == null) == (this is RealObjectClassInfo) );
             ServiceClass = serviceClass;
@@ -55,7 +62,7 @@ namespace CK.Setup
             }
             else
             {
-                _attributes = new TypeAttributesCache( monitor, t, services, parent == null );
+                _attributes = new TypeAttributesCache( monitor, t, services, parent == null, alsoRegister );
                 _interfacesCache = t.GetInterfaces();
                 if( parent != null )
                 {
@@ -74,7 +81,7 @@ namespace CK.Setup
         {
             get
             {
-                if( IsSpecialized ) Throw.InvalidOperationException( $"Must be called on the most specialized type." );
+                Throw.CheckState( !IsSpecialized );
                 return (IReadOnlyCollection<Type>?)_uniqueMappings ?? Type.EmptyTypes;
             }
         }
@@ -87,7 +94,7 @@ namespace CK.Setup
         {
             get
             {
-                if( IsSpecialized ) throw new InvalidOperationException( $"Must be called on the most specialized type." );
+                Throw.CheckState( !IsSpecialized );
                 return (IReadOnlyCollection<Type>?)_multipleMappings ?? Type.EmptyTypes;
             }
         }
@@ -256,7 +263,7 @@ namespace CK.Setup
         /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
         /// The type t must not already be registered (it can, of course be mapped to other final types).
         /// </summary>
-        /// <param name="t">The type that must uniquely be associated to this most specialized type.</param>
+        /// <param name="t">The type that must be associated to this most specialized type.</param>
         /// <param name="k">The kind from the <see cref="CKTypeKindDetector"/>.</param>
         /// <param name="collector">The type collector.</param>
         internal void AddMultipleMapping( Type t, CKTypeKind k, CKTypeCollector collector )
@@ -267,12 +274,9 @@ namespace CK.Setup
             Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Multiple mapping '{t}' already registered in {ToString()}." );
             Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Multiple mapping '{t}' already registered in UNIQUE mappings of {ToString()}." );
             Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
-            if( _multipleMappings == null ) _multipleMappings = new List<Type>();
+            _multipleMappings ??= new List<Type>();
             _multipleMappings.Add( t );
-            if( (k&(CKTypeKind.IsFrontService|CKTypeKind.IsMarshallable)) != (CKTypeKind.IsFrontService | CKTypeKind.IsMarshallable) )
-            {
-                collector.RegisterMultipleInterfaces( t, k, this );
-            }
+            collector.RegisterMultipleInterfaces( t, k, this );
         }
 
         /// <summary>

@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -51,19 +52,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
         }
 
-        public class AAAAA : CSCodeGeneratorType
-        {
-            public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
-            {
-                return CSCodeGenerationResult.Success;
-            }
-        }
-
-        [CK.Setup.ContextBoundDelegation( "CK.StObj.Engine.Tests.Service.TypeCollector.ConstructorTests+AAAAA, CK.StObj.Engine.Tests" )]
-        public abstract class ServiceWithDefaultCtorThatMustBeImplemented : IScopedAutoService
-        {
-        }
-
         [Test]
         public void services_must_have_only_one_public_ctor_or_no_constructor_at_all()
         {
@@ -89,7 +77,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( typeof( ServiceWithOneCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithOneCtor ) );
-                c.ConstructorInfo.Should().NotBeNull();
                 Debug.Assert( c.ConstructorParameters != null );
                 c.ConstructorParameters.Should().HaveCount( 1 );
                 c.ConstructorParameters[0].IsAutoService.Should().BeFalse();
@@ -101,16 +88,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( typeof( ServiceWithDefaultCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
-                c.ConstructorInfo.Should().NotBeNull();
-                c.ConstructorParameters.Should().BeEmpty();
-            }
-            {
-                var r = CheckSuccess( collector =>
-                {
-                    collector.RegisterType( typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
-                } );
-                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
-                c.ConstructorInfo.Should().BeNull();
                 c.ConstructorParameters.Should().BeEmpty();
             }
         }
@@ -153,7 +130,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             }
             r.AutoServices.RootClasses.Should().HaveCount( mode == "RegisteredDependentService" ? 2 : 1 );
             var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( Consumer1Service ) );
-            c.ConstructorInfo.Should().NotBeNull();
             c.ConstructorParameters.Should().HaveCount( 3 );
             Debug.Assert( c.ConstructorParameters != null );
             c.ConstructorParameters[0].Name.Should().Be( "normal" );
@@ -313,6 +289,5 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 CheckFailure( collector );
             }
         }
-
     }
 }

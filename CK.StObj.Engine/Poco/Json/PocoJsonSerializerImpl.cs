@@ -37,7 +37,7 @@ namespace CK.Setup.Json
         /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
-            var pocoDirectory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            var pocoDirectory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
             var jsonCodeGen = new JsonSerializationCodeGen( monitor, pocoDirectory );
             // Exposes this as a service to others.
             monitor.Info( "Exposing JsonSerializationCodeGen in CurrentRun services." );
@@ -55,6 +55,79 @@ namespace CK.Setup.Json
                 monitor.Info( "No Poco available. Skipping Poco serialization code generation." );
                 return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
             }
+
+            // CK.Globalization types registration is done here and not in InitializeBasicTypes because
+            // of switch case for reference types that must be correctly ordered.
+            jsonCodeGen.AllowTypeInfo( typeof( ExtendedCultureInfo ), "ECulture" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Name );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.ExtendedCultureInfo.GetExtendedCultureInfo( r.GetString() ); r.Read();" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( NormalizedCultureInfo ), "NCulture" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "w.WriteStringValue( " ).Append( variableName ).Append( ".Name );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.NormalizedCultureInfo.GetNormalizedCultureInfo( r.GetString() ); r.Read();" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( SimpleUserMessage ), "SimpleUserMessage" )!.Configure(
+               ( ICodeWriter write, string variableName ) =>
+               {
+                   write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+               },
+               ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+               {
+                   read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadSimpleUserMessageFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
+               } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( UserMessage ), "UserMessage" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadUserMessageFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( MCString ), "MCString" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadMCStringFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( CodeString ), "CodeString" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadCodeStringFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
+                } );
+
+            jsonCodeGen.AllowTypeInfo( typeof( FormattedString ), "FormattedString" )!.Configure(
+                ( ICodeWriter write, string variableName ) =>
+                {
+                    write.Append( "CK.Core.GlobalizationJsonHelper.WriteAsJsonArray( w, " ).Append( variableName ).Append( " );" );
+                },
+                ( ICodeWriter read, string variableName, bool assignOnly, bool isNullable ) =>
+                {
+                    read.Append( variableName ).Append( " = CK.Core.GlobalizationJsonHelper.ReadFormattedStringFromJsonArray( ref r, CK.Core.IUtf8JsonReaderContext.Empty );" );
+                } );
+
 
             using( monitor.OpenInfo( $"Allowing Poco Json serialization C# code generation for {pocoSupport.Roots.Count} Pocos." ) )
             {
@@ -126,11 +199,6 @@ namespace CK.Setup.Json
                 ns.Append( @"
         static class JsonGeneratedHelperExtension
         {
-            public static void ThrowJsonException( this ref System.Text.Json.Utf8JsonReader r, string m )
-            {
-                ThrowJsonException( m );
-            }
-
             public static void ThrowJsonException( string m )
             {
                 throw new System.Text.Json.JsonException( m );
@@ -143,7 +211,7 @@ namespace CK.Setup.Json
             // Generates the factory and the Poco class code.
             foreach( var root in pocoSupport.Roots )
             {
-                var factory = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+                var factory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
                 foreach( var i in root.Interfaces )
                 {
                     var interfaceName = i.PocoInterface.ToCSharpName();
@@ -157,7 +225,7 @@ namespace CK.Setup.Json
                 }
                 factory.Append( "public IPoco ReadTyped( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options ) => new " ).Append( root.PocoClass.Name ).Append( "( ref r, options );" ).NewLine();
 
-                var pocoClass = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+                var pocoClass = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
 
                 // Generates the Poco class Read and Write methods.
                 // UnionTypes on properties are registered.

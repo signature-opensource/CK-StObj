@@ -33,7 +33,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     {
                         if( p.Name == "GlobalSequence" )
                         {
-                            ITypeScope? tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, poco.PocoClass );
+                            ITypeScope? tB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, poco.PocoClass );
                             tB.Append( "public int GlobalSequence => 45343;" );
                         }
                     }

@@ -2,23 +2,25 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.Setup
 {
+
+
     /// <summary>
     /// Encapsulates Service result analysis. 
     /// </summary>
-    public class AutoServiceCollectorResult
+    public sealed class AutoServiceCollectorResult
     {
-        internal AutoServiceCollectorResult(
-            bool success,
-            IReadOnlyList<AutoServiceInterfaceInfo> allInterfaces,
-            IReadOnlyList<AutoServiceInterfaceInfo> leafInterfaces,
-            IReadOnlyList<AutoServiceInterfaceInfo> rootInterfaces,
-            IReadOnlyList<AutoServiceClassInfo> rootClasses,
-            IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
-            IReadOnlyList<Type>? abstractTails,
-            IReadOnlyList<AutoServiceClassInfo> subGraphs )
+        internal AutoServiceCollectorResult( bool success,
+                                             IReadOnlyList<AutoServiceInterfaceInfo> allInterfaces,
+                                             IReadOnlyList<AutoServiceInterfaceInfo> leafInterfaces,
+                                             IReadOnlyList<AutoServiceInterfaceInfo> rootInterfaces,
+                                             IReadOnlyList<AutoServiceClassInfo> rootClasses,
+                                             IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
+                                             IReadOnlyList<Type>? abstractTails,
+                                             IReadOnlyList<AutoServiceClassInfo> subGraphs )
         {
             AllInterfaces = allInterfaces;
             LeafInterfaces = leafInterfaces;

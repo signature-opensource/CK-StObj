@@ -2,8 +2,12 @@
 
 using CK.Core;
 using CK.Setup;
+using FluentAssertions.Common;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CK.Testing.StObjEngine
 {
@@ -75,7 +79,7 @@ namespace CK.Testing.StObjEngine
         /// Compiles and loads the <see cref="IStObjMap"/> from the generated assembly based on
         /// a <see cref="GetSuccessfulResult(StObjCollector)"/>.
         /// <para>
-        /// Source code file G0.cs is not updated but the assembly is generated.
+        /// Source code file G0.cs is updated by default and the assembly is generated.
         /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
@@ -148,7 +152,25 @@ namespace CK.Testing.StObjEngine
         /// <returns>The (failed) service register.</returns>
         StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
-                                                                                  SimpleServiceContainer? startupServices = null );
+                                                                                  SimpleServiceContainer? startupServices = null,
+                                                                                  Action<StObjContextRoot.ServiceRegister>? configureServices = null );
+
+        /// <summary>
+        /// Starts any <see cref="IHostedService"/> in <paramref name="services"/>.
+        /// </summary>
+        /// <param name="services">The service provider.</param>
+        /// <param name="cancellation">Optional cancellation token.</param>
+        /// <returns>The <paramref name="services"/>.</returns>
+        Task<ServiceProvider> StartHostedServicesAsync( ServiceProvider services, CancellationToken cancellation = default );
+
+        /// <summary>
+        /// Stops any <see cref="IHostedService"/> in <paramref name="services"/> and optionally disposes the provider.
+        /// </summary>
+        /// <param name="services">The service provider.</param>
+        /// <param name="disposeServices">True to dispose the <paramref name="services"/>.</param>
+        /// <param name="cancellation">Optional cancellation token.</param>
+        /// <returns>The awaitable.</returns>
+        Task StopHostedServicesAsync( ServiceProvider services, bool disposeServices = false, CancellationToken cancellation = default );
 
     }
 }

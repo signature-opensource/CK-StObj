@@ -5,12 +5,12 @@
 This is a SetupDependency of CK.StObj.Runtime (that is itself a SetuoDependency of CK.StObj.Model) that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>
-    <LangVersion>9.0</LangVersion>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Runtime\CK.StObj.Runtime.csproj" />
-    <PackageReference Include="CK.CodeGen.Roslyn" Version="7.0.0" />
-    <PackageReference Include="CK.Core" Version="17.0.0" />
+    <PackageReference Include="CK.CodeGen.Roslyn" Version="8.0.0" />
+    <PackageReference Include="CK.Core" Version="18.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

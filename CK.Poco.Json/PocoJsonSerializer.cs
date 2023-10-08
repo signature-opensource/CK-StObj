@@ -123,7 +123,7 @@ namespace CK.Core
         public static T? Read<T>( this IPocoFactory<T> @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null ) where T : class, IPoco
         {
             Throw.CheckNotNullArgument( @this );
-            if( CheckNullStart( ref reader, "expecting Json object, Json array or null value." ) ) return null;
+            if( CheckNullStart( ref reader ) ) return null;
             return ((IFactoryReader<T>)@this).Read( ref reader, options );
         }
 
@@ -175,7 +175,7 @@ namespace CK.Core
         public static IPoco? Read( this PocoDirectory @this, ref Utf8JsonReader reader, PocoJsonSerializerOptions? options = null )
         {
             Throw.CheckNotNullArgument( @this );
-            if( CheckNullStart( ref reader, "expecting Json Poco array or null value." ) ) return null;
+            if( CheckNullStart( ref reader ) ) return null;
 
             if( reader.TokenType != JsonTokenType.StartArray ) throw new JsonException( "Expecting Json Poco array." );
             reader.Read();
@@ -217,15 +217,12 @@ namespace CK.Core
             return JsonDeserialize( @this, System.Text.Encoding.UTF8.GetBytes( s ).AsSpan(), options );
         }
 
-        static bool CheckNullStart( ref Utf8JsonReader reader, string error )
+        static bool CheckNullStart( ref Utf8JsonReader r )
         {
-            if( reader.TokenStartIndex == 0 && (!reader.Read() || reader.TokenType == JsonTokenType.None) )
+            if( r.TokenStartIndex == 0 && r.TokenType == JsonTokenType.None ) r.Read();
+            if( r.TokenType == JsonTokenType.Null )
             {
-                throw new JsonException( "Empty reader: " + error );
-            }
-            if( reader.TokenType == JsonTokenType.Null )
-            {
-                reader.Read();
+                r.Read();
                 return true;
             }
             return false;

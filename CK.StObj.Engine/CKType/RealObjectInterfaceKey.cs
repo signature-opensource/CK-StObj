@@ -11,7 +11,7 @@ namespace CK.Setup
     /// This enables the use of one and only one dictionnary for Mappings (Type => Final Type) as well as 
     /// highest implementation association (Real object interface => its highest implementation).
     /// </summary>
-    internal class RealObjectInterfaceKey
+    internal sealed class RealObjectInterfaceKey
     {
         public readonly Type InterfaceType;
 

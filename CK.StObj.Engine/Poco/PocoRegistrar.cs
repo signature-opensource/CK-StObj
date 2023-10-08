@@ -114,13 +114,15 @@ namespace CK.Setup
             foreach( Type b in t.GetInterfaces() )
             {
                 if( b == typeof( IPoco ) || b == typeof( IClosedPoco ) ) continue;
-                // Base interface must be a IPoco. This is a security to avoid "normal" interfaces to appear
-                // by mistake in a Poco.
-                if( !typeof( IPoco ).IsAssignableFrom( b ) )
-                {
-                    monitor.Fatal( $"Poco interface '{t.AssemblyQualifiedName}' extends '{b.Name}'. '{b.Name}' must be marked with CK.Core.IPoco interface." );
-                    return null;
-                }
+                //// Base interface must be a IPoco. This is a security to avoid "normal" interfaces to appear
+                //// by mistake in a Poco.
+                //// To allow this, base interface MUST be marked with ExcludeCKTypeAttribute (duck typing).
+                //if( !typeof( IPoco ).IsAssignableFrom( b )
+                //    && !b.GetCustomAttributesData().Any( a => a.AttributeType.Name == nameof(ExcludeCKTypeAttribute) ) )
+                //{
+                //    monitor.Fatal( $"Poco interface '{t.AssemblyQualifiedName}' extends '{b.Name}'. '{b.Name}' must also be a CK.Core.IPoco interface or a [ExcludeCKType] attribute." );
+                //    return null;
+                //}
                 // Attempts to register the base if and only if it is not a "definer".
                 if( _actualPocoPredicate( monitor, b ) )
                 {

@@ -7,12 +7,13 @@ using System.Diagnostics;
 
 namespace CK.Setup
 {
+
     /// <summary>
     /// Code source generator for <see cref="IPoco"/>.
     /// Generates the implementation of the <see cref="PocoDirectory"/> abstract real object
     /// and all the Poco final classes.
     /// </summary>
-    public class PocoDirectoryImpl : CSCodeGeneratorType
+    public sealed class PocoDirectoryImpl : CSCodeGeneratorType
     {
         /// <summary>
         /// Generates the <paramref name="scope"/> that is the PocoDirectory_CK class and
@@ -25,7 +26,7 @@ namespace CK.Setup
         /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
-            Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the PocoDirectory_CK type name to reference the PocoDirectory implementation." );
+            Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the CK.Core.PocoDirectory_CK type name to reference the PocoDirectory implementation." );
             // Let the PocoDirectory_CK be sealed.
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
@@ -56,12 +57,12 @@ namespace CK.Setup
             foreach( var root in r.Roots )
             {
                 // PocoFactory class.
-                var tFB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
+                var tFB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
                 tFB.Definition.Modifiers |= Modifiers.Sealed;
                 string factoryClassName = tFB.Definition.Name.Name;
 
                 // Poco class.
-                var tB = c.Assembly.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
+                var tB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
@@ -101,10 +102,34 @@ namespace CK.Setup
                     Type propType = p.PropertyType;
                     bool isUnionType = p.PropertyUnionTypes.Any();
 
+                    bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
+
                     var typeName = propType.ToCSharpName();
                     string fieldName = "_v" + p.Index;
                     tB.Append( typeName ).Space().Append( fieldName );
-                    if( p.DefaultValueSource == null ) tB.Append( ";" );
+                    if( p.DefaultValueSource == null )
+                    {
+                        // Handles CK.Globalization types default values.
+                        // We don't need to depends on CK.Globalization: duck typing is enough.
+                        // We set the default value only if the property is not nullable and only for the
+                        // reference types (value types defaults do the job).
+                        if( !isNullable && p.PropertyType.Namespace == "CK.Core" )
+                        {
+                            if( p.PropertyType.Name == "NormalizedCultureInfo" || p.PropertyType.Name == "ExtendedCultureInfo" )
+                            {
+                                tB.Append( "=CK.Core.NormalizedCultureInfo.CodeDefault" );
+                            }
+                            else if( p.PropertyType.Name == "CodeString" )
+                            {
+                                tB.Append( "=CK.Core.CodeString.Empty" );
+                            }
+                            else if( p.PropertyType.Name == "MCString" )
+                            {
+                                tB.Append( "=CK.Core.MCString.Empty" );
+                            }
+                        }
+                        tB.Append( ";" );
+                    }
                     else
                     {
                         tB.Append( " = " ).Append( p.DefaultValueSource ).Append( ";" );
@@ -129,7 +154,6 @@ namespace CK.Setup
                           .OpenBlock();
 
                         bool isTechnicallyNullable = p.PropertyNullableTypeTree.Kind.IsTechnicallyNullable();
-                        bool isNullable = p.PropertyNullableTypeTree.Kind.IsNullable();
 
                         if( isTechnicallyNullable && !isNullable )
                         {

@@ -190,8 +190,9 @@ namespace CK.Setup
                                       RealObjectClassInfo parent,
                                       Type t,
                                       IServiceProvider provider,
-                                      bool isExcluded )
-            : base( monitor, parent, t, provider, isExcluded, null )
+                                      bool isExcluded,
+                                      Action<Type> alsoRegister )
+            : base( monitor, parent, t, provider, isExcluded, null, alsoRegister )
         {
             Debug.Assert( parent == Generalization );
             if( IsExcluded ) return;
@@ -515,6 +516,9 @@ namespace CK.Setup
 
         public readonly MethodInfo RegisterStartupServices;
 
+        /// <summary>
+        /// Gets the RegisterStartupServices methods top down to this final class.
+        /// </summary>
         public IEnumerable<MethodInfo> AllRegisterStartupServices
         {
             get
@@ -565,14 +569,13 @@ namespace CK.Setup
 
         internal IEnumerable<Type> ThisRealObjectInterfaces => Generalization != null ? _realObjectInterfaces.Except( Generalization._realObjectInterfaces ) : _realObjectInterfaces;
 
-        internal bool CreateMutableItemsPath(
-            IActivityMonitor monitor,
-            IServiceProvider services,
-            StObjObjectEngineMap engineMap,
-            MutableItem? generalization,
-            IDynamicAssembly tempAssembly,
-            List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
-            List<Type> abstractTails )
+        internal bool CreateMutableItemsPath( IActivityMonitor monitor,
+                                              IServiceProvider services,
+                                              StObjObjectEngineMap engineMap,
+                                              MutableItem? generalization,
+                                              IDynamicAssembly tempAssembly,
+                                              List<(MutableItem, ImplementableTypeInfo)> lastConcretes,
+                                              List<Type> abstractTails )
         {
             Debug.Assert( tempAssembly != null );
             var item = new MutableItem( this, generalization, engineMap );
