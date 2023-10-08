@@ -219,15 +219,6 @@ namespace CK.Setup
         public IReadOnlyList<AutoServiceInterfaceInfo>? Interfaces { get; private set; }
 
         /// <summary>
-        /// Gets the container type to which this service is associated.
-        /// This can be null (service is considered to reside in the final package) or
-        /// if an error occurred.
-        /// For Service Chaining Resolution to be available (either to depend on or be used by others),
-        /// services must be associated to one container.
-        /// </summary>
-        public Type? ContainerType { get; }
-
-        /// <summary>
         /// Gets the StObj container.
         /// </summary>
         public IStObjResult? Container => ContainerItem;
@@ -381,14 +372,6 @@ namespace CK.Setup
 #if DEBUG
                     atLeastOneAssignment = true;
 #endif
-                    if( child.ContainerType != null )
-                    {
-                        if( (child.ContainerItem = engineMap.ToHighestImpl( child.ContainerType )) == null )
-                        {
-                            monitor.Error( $"Unable to resolve container '{child.ContainerType.FullName}' for service '{child.ClassType.FullName}' to a StObj." );
-                            success = false;
-                        }
-                    }
                 }
             }
             while( (child = child.Generalization) != Generalization );
