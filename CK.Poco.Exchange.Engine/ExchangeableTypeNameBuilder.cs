@@ -15,8 +15,8 @@ namespace CK.Setup
     /// This type is completely opened to extensions.
     /// <para>
     /// The default implementation generates names based on the <see cref="IPocoType.CSharpName"/> except
-    /// for collections where "L(T)", "S(T)", "M(TKey,TValue)" and "O(T)" replaces List, HashSet and Dictionary
-    /// names.
+    /// for collections where "L(T)", "S(T)", "M(TKey,TValue)" replaces List, HashSet and Dictionary
+    /// names and "O(T)" replaces <c>Dictionary&lt;string,T&gt;</c>.
     /// </para>
     /// <para>
     /// Using the same name for different types is possible but is not recommended since
@@ -414,7 +414,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns a "O(TValue)" pattern. This is map of string to TValue.
+        /// Returns a "O(TValue)" pattern. This is map of string to TValue (<c>Dictionary&lt;string,T&gt;</c>.).
         /// </summary>
         /// <param name="map">The map type.</param>
         /// <param name="value">The type of the value.</param>

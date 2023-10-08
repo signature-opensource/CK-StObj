@@ -5,8 +5,6 @@ using System.Reflection;
 
 namespace CK.Setup
 {
-
-
     /// <summary>
     /// The Poco type system manages by default all the types reachable from IPoco
     /// objects. Further <see cref="IRecordPocoType"/> and <see cref="ICollectionPocoType"/> can

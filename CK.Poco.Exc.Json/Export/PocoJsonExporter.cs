@@ -6,8 +6,15 @@ using System.Threading.Tasks;
 
 namespace CK.Poco.Exc.Json
 {
+    /// <summary>
+    /// Singleton auto service IPoco exporter with <see cref="PocoJsonExportOptions.Default"/>.
+    /// Its <see cref="ProtocolName"/> is "Json".
+    /// </summary>
     public sealed class PocoJsonExporter : IPocoExporter
     {
+        /// <summary>
+        /// Returns "Json".
+        /// </summary>
         public string ProtocolName => "Json";
 
         public void Write( IActivityMonitor monitor, Stream output, IPoco? data )

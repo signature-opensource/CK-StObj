@@ -35,9 +35,9 @@ namespace CK.Poco.Exc.Json
         {
             UseCamelCase = true;
 #if DEBUG
-            WriterOptions = new JsonWriterOptions() { SkipValidation = true };
-#else
             WriterOptions = new JsonWriterOptions();
+#else
+            WriterOptions = new JsonWriterOptions() { SkipValidation = true };
 #endif
         }
 

@@ -8,12 +8,23 @@ using System.Threading.Tasks;
 
 namespace CK.Poco.Exc.Json
 {
+    /// <summary>
+    /// Singleton auto service IPoco importer with <see cref="PocoJsonImportOptions.Default"/>.
+    /// Its <see cref="ProtocolName"/> is "Json".
+    /// </summary>
     public sealed class PocoJsonImporter : IPocoImporter
     {
         readonly PocoDirectory _pocoDirectory;
 
+        /// <summary>
+        /// Returns "Json".
+        /// </summary>
         public string ProtocolName => "Json";
 
+        /// <summary>
+        /// Initializes a new "Json" <see cref="PocoJsonImporter"/> that uses <see cref="PocoJsonImportOptions.Default"/>.
+        /// </summary>
+        /// <param name="pocoDirectory">The poco directory.</param>
         public PocoJsonImporter( PocoDirectory pocoDirectory )
         {
             _pocoDirectory = pocoDirectory;
