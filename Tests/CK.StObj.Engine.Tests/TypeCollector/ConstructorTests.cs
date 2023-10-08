@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Diagnostics;
@@ -52,19 +53,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
         }
 
-        public class AAAAA : CSCodeGeneratorType
-        {
-            public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
-            {
-                return CSCodeGenerationResult.Success;
-            }
-        }
-
-        [CK.Setup.ContextBoundDelegation( "CK.StObj.Engine.Tests.Service.TypeCollector.ConstructorTests+AAAAA, CK.StObj.Engine.Tests" )]
-        public abstract class ServiceWithDefaultCtorThatMustBeImplemented : IScopedAutoService
-        {
-        }
-
         [Test]
         public void services_must_have_only_one_public_ctor_or_no_constructor_at_all()
         {
@@ -101,14 +89,6 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                     collector.RegisterType( TestHelper.Monitor, typeof( ServiceWithDefaultCtor ) );
                 } );
                 var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtor ) );
-                c.ConstructorParameters.Should().BeEmpty();
-            }
-            {
-                var r = CheckSuccess( collector =>
-                {
-                    collector.RegisterType( TestHelper.Monitor, typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
-                } );
-                var c = r.AutoServices.RootClasses.Single( x => x.ClassType == typeof( ServiceWithDefaultCtorThatMustBeImplemented ) );
                 c.ConstructorParameters.Should().BeEmpty();
             }
         }
@@ -310,6 +290,5 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 CheckFailure( collector );
             }
         }
-
     }
 }

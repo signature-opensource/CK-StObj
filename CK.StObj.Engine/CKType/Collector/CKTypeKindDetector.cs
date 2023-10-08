@@ -269,10 +269,12 @@ namespace CK.Setup
                         Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                         Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
                         Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
+                        Debug.Assert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
                         bool hasSuperDefiner = false;
                         bool hasDefiner = false;
                         bool isMultipleInterface = false;
                         bool hasMarshallable = false;
+                        bool hasSingletonService = false;
                         bool isExcludedType = false;
                         bool isEndpointScoped = false;
                         bool isUbiquitousServiceInfo = false;
@@ -312,6 +314,9 @@ namespace CK.Setup
                                     break;
                                 case "IsMarshallableAttribute":
                                     hasMarshallable = true;
+                                    break;
+                                case "SingletonServiceAttribute":
+                                    hasSingletonService = true;
                                     break;
                                 case "IsMultipleAttribute" when t.IsInterface:
                                     isMultipleInterface = true;
@@ -355,6 +360,7 @@ namespace CK.Setup
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
                             if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
+                            if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
                             if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
                             if( hasSuperDefiner ) k |= IsSuperDefiner;
                             if( hasDefiner ) k |= IsDefiner;
