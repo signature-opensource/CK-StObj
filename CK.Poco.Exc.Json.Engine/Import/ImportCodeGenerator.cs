@@ -194,8 +194,20 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                 GenerateRecordReader( monitor, _importerType, r );
             }
             GenerateReadAny();
+            SupportPocoDirectoryJsonImportGenerated( monitor );
             return true;
         }
 
+        void SupportPocoDirectoryJsonImportGenerated( IActivityMonitor monitor )
+        {
+            ITypeScope pocoDirectory = _generationContext.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            pocoDirectory.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.IPocoDirectoryJsonImportGenerated" ) );
+            var read = pocoDirectory.CreateFunction( "object? CK.Core.IPocoDirectoryJsonImportGenerated.ReadAnyJson( " +
+                                                        "ref System.Text.Json.Utf8JsonReader r, " +
+                                                        "Poco.Exc.Json.PocoJsonReadContext context)" );
+            read.Append( "Throw.CheckNotNullArgument( context );" )
+                .Append( "return " ).Append( _importerType.FullName )
+                                    .Append( ".ReadAny( ref r, context );" );
+        }
     }
 }

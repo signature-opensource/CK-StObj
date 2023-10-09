@@ -9,6 +9,12 @@ namespace CK.Core
 {
     public static class PocoJsonImportExtensions
     {
+        /// <inheritdoc cref="IPocoDirectoryJsonImportGenerated.ReadAnyJson(ref Utf8JsonReader, PocoJsonReadContext)"/>
+        public static object? ReadAnyJson( this PocoDirectory @this, ref Utf8JsonReader r, PocoJsonReadContext context )
+        {
+            if( r.TokenType == JsonTokenType.None ) r.ReadWithMoreData( context );
+            return ((IPocoDirectoryJsonImportGenerated)@this).ReadAnyJson( ref r, context );
+        }
         /// <summary>
         /// Reads a typed Poco (that can be null) from Utf8 encoded bytes.
         /// <para>

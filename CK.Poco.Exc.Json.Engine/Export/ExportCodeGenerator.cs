@@ -62,7 +62,7 @@ namespace CK.Setup.PocoJson
         }
 
         // Used by GenerateWriteMethods.GeneratePocoWriteMethod for the WriteJson( w, withType, options )
-        // and  GenerateWriteAny().
+        // and GenerateWriteAny().
         void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable, bool honorOption )
         {
             var typeName = _nameMap.GetName( nonNullable );
@@ -75,7 +75,22 @@ namespace CK.Setup.PocoJson
             RegisterWriters();
             GenerateWriteMethods( monitor );
             GenerateWriteAny();
+            SupportPocoDirectoryJsonExportGenerated( monitor );
             return true;
         }
+
+        void SupportPocoDirectoryJsonExportGenerated( IActivityMonitor monitor )
+        {
+            ITypeScope pocoDirectory = _generationContext.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            pocoDirectory.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.IPocoDirectoryJsonExportGenerated" ) );
+            var read = pocoDirectory.CreateFunction( "void CK.Core.IPocoDirectoryJsonExportGenerated.WriteAnyJson( " +
+                                                        "System.Text.Json.Utf8JsonWriter w, " +
+                                                        "object? o, " +
+                                                        "Poco.Exc.Json.PocoJsonExportOptions? options)" );
+
+            read.Append( "var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( options );" ).NewLine()
+                .Append( _exporterType.FullName ).Append( ".WriteAny( w, o, wCtx );" );
+        }
+
     }
 }

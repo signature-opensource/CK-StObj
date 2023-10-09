@@ -12,6 +12,11 @@ namespace CK.Core
     /// </summary>
     public static class PocoJsonExportExtensions
     {
+        /// <inheritdoc cref="IPocoDirectoryJsonExportGenerated.WriteAnyJson(Utf8JsonWriter, object?, PocoJsonExportOptions?)"/>
+        public static void WriteAnyJson( this PocoDirectory @this, Utf8JsonWriter w, object? o, PocoJsonExportOptions? options = null )
+        {
+            ((IPocoDirectoryJsonExportGenerated)@this).WriteAnyJson( w, o, options );
+        }
         /// <summary>
         /// Serializes this Poco (that can be null) into UTF-8 Json bytes.
         /// </summary>
