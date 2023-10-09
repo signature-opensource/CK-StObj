@@ -32,6 +32,25 @@ namespace CK.StObj.Engine.Tests.Endpoint
             r.EndpointServices[typeof( IEPService2 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsSingleton | AutoServiceKind.IsAutoService );
         }
 
+        [EndpointSingletonService]
+        interface IEPServiceHidden
+        {
+        }
+
+        [Test]
+        public void internal_endpoint_services_that_are_not_IAutoService_are_ignored()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IEPService1 ),
+                                                     typeof( IEPServiceHidden ) );
+            var r = TestHelper.GetSuccessfulResult( c ).EndpointResult;
+            Debug.Assert( r != null );
+            r.EndpointContexts.Should().HaveCount( 0 );
+            r.EndpointServices[typeof( IEPService1 )].Should().Be( AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped );
+            r.EndpointServices.Should().NotContainKey( typeof( IEPServiceHidden ) );
+        }
+
+
+
         [EndpointScopedService( isUbiquitousEndpointInfo: true )]
         public sealed class AmbientThing
         {
