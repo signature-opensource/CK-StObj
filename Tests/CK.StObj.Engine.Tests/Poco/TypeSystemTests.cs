@@ -279,18 +279,22 @@ namespace CK.StObj.Engine.Tests.Poco
             ICollectionPocoType List_Int_IsOblivious( IPocoTypeSystem ts )
             {
                 var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListV ) )! );
-                Debug.Assert( tRV != null && tRV.IsOblivious && !tRV.Nullable.IsOblivious );
+                Debug.Assert( tRV != null );
+                tRV.IsOblivious.Should().BeTrue();
+                tRV.Nullable.IsOblivious.Should().BeFalse();
                 tRV.CSharpName.Should().Be( "List<int>" );
-                tRV.ImplTypeName.Should().Be( "List<int>" );
+                tRV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
                 return tRV;
             }
 
             ICollectionPocoType List_IntN_IsOblivious( IPocoTypeSystem ts )
             {
                 var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNV ) )! );
-                Debug.Assert( tRNV != null && tRNV.IsOblivious && !tRNV.Nullable.IsOblivious );
+                Debug.Assert( tRNV != null );
+                tRNV.IsOblivious.Should().BeTrue();
+                tRNV.Nullable.IsOblivious.Should().BeFalse();
                 tRNV.CSharpName.Should().Be( "List<int?>" );
-                tRNV.ImplTypeName.Should().Be( "List<int?>" );
+                tRNV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
                 return tRNV;
             }
 
@@ -298,6 +302,7 @@ namespace CK.StObj.Engine.Tests.Poco
             {
                 var tIV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListV ) )! );
                 Debug.Assert( tIV != null );
+                tIV.IsOblivious.Should().BeFalse();
                 tIV.CSharpName.Should().Be( "IList<int>" );
                 tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
                 if( !revert ) tIV.ObliviousType.Should().BeSameAs( tRV );
@@ -308,6 +313,7 @@ namespace CK.StObj.Engine.Tests.Poco
             {
                 var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNV ) )! );
                 Debug.Assert( tINV != null );
+                tINV.IsOblivious.Should().BeFalse();
                 tINV.CSharpName.Should().Be( "IList<int?>" );
                 tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
                 if( !revert ) tINV.ObliviousType.Should().BeSameAs( tRNV );
@@ -317,7 +323,9 @@ namespace CK.StObj.Engine.Tests.Poco
             ICollectionPocoType List_Object_Is_Oblivious( IPocoTypeSystem ts )
             {
                 var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListR ) )! );
-                Debug.Assert( tRR != null && tRR.IsOblivious && !tRR.Nullable.IsOblivious );
+                Debug.Assert( tRR != null );
+                tRR.IsOblivious.Should().BeTrue();
+                tRR.Nullable.IsOblivious.Should().BeFalse();
                 tRR.CSharpName.Should().Be( "List<object>" );
                 tRR.ImplTypeName.Should().Be( "List<object>" );
                 return tRR;
@@ -326,7 +334,8 @@ namespace CK.StObj.Engine.Tests.Poco
             ICollectionPocoType List_ObjectN( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRR )
             {
                 var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNR ) )! );
-                Debug.Assert( tRNR != null && !tRNR.IsOblivious );
+                Debug.Assert( tRNR != null );
+                tRNR.IsOblivious.Should().BeFalse();
                 tRNR.CSharpName.Should().Be( "List<object?>" );
                 tRNR.ImplTypeName.Should().Be( "List<object?>" );
                 if( !revert ) tRNR.ObliviousType.Should().BeSameAs( tRR );
@@ -356,16 +365,19 @@ namespace CK.StObj.Engine.Tests.Poco
             ICollectionPocoType List_Poco_IsOblivious( IPocoTypeSystem ts, string n )
             {
                 var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPR ) )! );
-                Debug.Assert( tPRR != null && tPRR.IsOblivious && !tPRR.Nullable.IsOblivious);
+                Debug.Assert( tPRR != null );
+                tPRR.IsOblivious.Should().BeTrue();
+                tPRR.Nullable.IsOblivious.Should().BeFalse();
                 tPRR.CSharpName.Should().Be( $"List<{n}>" );
-                tPRR.ImplTypeName.Should().Be( $"List<{n}>" );
+                tPRR.ImplTypeName.Should().Match( "CK.GRSupport.PocoList_*_CK" );
                 return tPRR;
             }
 
             ICollectionPocoType List_PocoN( bool revert, IPocoTypeSystem ts, string n, ICollectionPocoType tPRR )
             {
                 var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPNR ) )! );
-                Debug.Assert( tPRNR != null && !tPRNR.IsOblivious );
+                Debug.Assert( tPRNR != null );
+                tPRNR.IsOblivious.Should().BeFalse();
                 tPRNR.CSharpName.Should().Be( $"List<{n}?>" );
                 tPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
                 if( !revert ) tPRNR.ObliviousType.Should().BeSameAs( tPRR );

@@ -318,7 +318,7 @@ namespace CK.Setup
                                                                        this,
                                                                        tOblivious,
                                                                        obliviousTypeName,
-                                                                       obliviousTypeName,
+                                                                       typeName,
                                                                        isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                                        tI.ObliviousType,
                                                                        null );
@@ -414,7 +414,7 @@ namespace CK.Setup
                                                                        this,
                                                                        tOblivious,
                                                                        obliviousTypeName,
-                                                                       obliviousTypeName,
+                                                                       typeName,
                                                                        tK,
                                                                        tV.ObliviousType,
                                                                        null );

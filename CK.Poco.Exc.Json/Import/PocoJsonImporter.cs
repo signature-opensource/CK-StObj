@@ -35,7 +35,7 @@ namespace CK.Poco.Exc.Json
         {
             try
             {
-                data = _pocoDirectory.JsonDeserialize( input, PocoJsonImportOptions.Default );
+                data = _pocoDirectory.ReadJson( input, PocoJsonImportOptions.Default );
                 return true;
             }
             catch( Exception ex )
@@ -59,13 +59,13 @@ namespace CK.Poco.Exc.Json
         /// <inheritdoc />
         public IPoco? Read( IActivityMonitor monitor, Stream input )
         {
-            return _pocoDirectory.JsonDeserialize( input, PocoJsonImportOptions.Default );
+            return _pocoDirectory.ReadJson( input, PocoJsonImportOptions.Default );
         }
 
         /// <inheritdoc />
         public Task<IPoco?> ReadAsync( IActivityMonitor monitor, Stream input, CancellationToken cancel )
         {
-            return Task.FromResult( _pocoDirectory.JsonDeserialize( input, PocoJsonImportOptions.Default ) );
+            return Task.FromResult( _pocoDirectory.ReadJson( input, PocoJsonImportOptions.Default ) );
         }
     }
 

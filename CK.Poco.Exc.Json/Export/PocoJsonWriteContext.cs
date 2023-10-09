@@ -11,6 +11,9 @@ namespace CK.Poco.Exc.Json
     /// This context must be disposed once done with it.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// This currently only holds the <see cref="Options"/>. This is an extension point.
+    /// </remarks>
     public sealed class PocoJsonWriteContext : IDisposable
     {
         readonly PocoJsonExportOptions _options;

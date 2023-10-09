@@ -71,6 +71,8 @@ By using a `[CKTypeDefiner]` attribute on a `IPoco`, the interface becomes a kin
 The definer is NOT a `IPoco`, doesn't define a "Poco family", only the interfaces that specialize it are `IPoco`
 and define a family.
 
+> `[CKTypeDefiner]` attribute is the **abstract** of the Poco Type System.
+
 __Note:__ `[AutoImplementationClaim]` is an "advanced" attribute that states that this member is not a
 regular property, it will be automatically implemented by some aspects of the framework.
 
@@ -95,7 +97,7 @@ public interface ICommandPart : ICommand
 {
 }
 
-// This is a command part.
+// This is a command part ([CKTypeDefiner] attribute is implied - and useless).
 public interface ICommandAuthUnsafe : ICommandPart
 {
     int ActorId { get; set; }
@@ -133,7 +135,7 @@ for instance). How the mapping should be done (how to transmit a Decimal) requir
 and implemented.
 - An may be the worst of all the impacts: sometimes the required I/O protocol impacts the application Type definition itself: 
 the I/O constraints leak in the application code. For example, as there are no natural support of Tuples with ProtoBuf (tuples
-must be expressed explicitly with messages composed of `Item1`, `Item2`, etc. fields), the lead developer has prohibited the
+must be expressed explicitly with messages composed of fields `Item1`, `Item2`, etc.): the lead developer has prohibited the
 use of tuples.
 
 The Poco approach is to consider that the Application relies on IPoco to model any data that may need to be exchanged and then
@@ -434,6 +436,7 @@ Abstract readonly property MAY be supported for records in the future: these pro
 should be wrapped in a `ReadOnly<,,,>` generic that will both signal the read only aspect and protects the fields, mutable 
 record should be disallowed (only read only types should be allowed).
 
+> For records, a subtle choice has to be made will be whether field names matters or not (kind of nominal vs. structural
+> typying).
+
 For recursive sets and dictionaries, this MAY be supported by using adapter instances (similar to https://github.com/Invenietis/CK-Core/blob/develop/CK.Core/Extension/DictionaryExtension.cs#L52).
-
-

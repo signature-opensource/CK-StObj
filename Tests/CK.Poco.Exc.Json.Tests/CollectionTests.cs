@@ -274,12 +274,12 @@ namespace CK.Poco.Exc.Json.Tests
             o.ToString().Should().Be( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}".Replace( " ", "" ) );
 
             var f = s.GetRequiredService<IPocoFactory<IWithDynamicObject>>();
-            var oBack = f.JsonDeserialize( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}" );
+            var oBack = f.ReadJson( @"{""OfInt"":{ ""One"": 1, ""Two"": 2, ""Three"": 3 }}" );
             Debug.Assert( oBack != null );
             oBack.OfInt["Three"].Should().Be( 3 );
             oBack.Should().BeEquivalentTo( o );
 
-            var oBackA = f.JsonDeserialize( @"{""OfInt"":[[""One"",1],[""Two"",2],[""Three"",3]]}" );
+            var oBackA = f.ReadJson( @"{""OfInt"":[[""One"",1],[""Two"",2],[""Three"",3]]}" );
             Debug.Assert( oBackA != null );
             oBackA.Should().BeEquivalentTo( oBack );
         }
