@@ -49,7 +49,7 @@ namespace CK.Setup
             // Other known singletons.
             SetAutoServiceKind( monitor, "System.Net.Http.IHttpClientFactory, Microsoft.Extensions.Http", AutoServiceKind.IsSingleton, isOptional: true );
             SetAutoServiceKind( monitor, "Microsoft.Extensions.Configuration.IConfigurationRoot, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
-            // IConfigurationRoot is not added to the DI by default, only the IConfiguration (that happens to be the root) is registered.
+            // IConfigurationRoot is not added to the DI by default, only a IConfiguration (that happens to be the root) is registered.
             // See https://github.com/aspnet/templating/issues/193#issuecomment-351137277.
             SetAutoServiceKind( monitor, "Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
 
