@@ -49,10 +49,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             r.EndpointServices.Should().NotContainKey( typeof( IEPServiceHidden ) );
         }
 
-
-
         [EndpointScopedService( isUbiquitousEndpointInfo: true )]
-        public sealed class AmbientThing
+        public class AmbientThing
         {
             public string? ThingName { get; set; }
         }
@@ -72,5 +70,47 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var c = TestHelper.CreateStObjCollector( typeof( AmbientThing ), typeof( DefaultAmbientThingProvider ) );
             TestHelper.GetSuccessfulResult( c );
         }
+
+        public class SpecAmbientThing : AmbientThing
+        {
+        }
+
+        public sealed class SpecAmbientThingProvider : IEndpointUbiquitousServiceDefault<SpecAmbientThing>
+        {
+            public SpecAmbientThing Default => new SpecAmbientThing() { ThingName = "I'm the default (spec) thing name!" };
+        }
+
+        [Test]
+        public void specialized_ubiquitous_info_service_not_AutoService_cannot_share_the_SpecDefaultProvider()
+        {
+            var noWay = TestHelper.CreateStObjCollector( typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider ) );
+            TestHelper.GetFailedResult( noWay );
+        }
+
+        [EndpointScopedService( isUbiquitousEndpointInfo: true )]
+        public class AutoAmbientThing : IAutoService
+        {
+            public string? ThingName { get; set; }
+        }
+
+        public class SpecAutoAmbientThing : AutoAmbientThing
+        {
+        }
+
+        public sealed class SpecAutoAmbientThingProvider : IEndpointUbiquitousServiceDefault<SpecAutoAmbientThing>
+        {
+            public SpecAutoAmbientThing Default => new SpecAutoAmbientThing() { ThingName = "I'm the default (AutoService spec) thing name!" };
+        }
+
+        [Test]
+        public void specialized_ubiquitous_info_AutoServices_can_share_the_SpecDefaultProvider()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( SpecAutoAmbientThing ),
+                                                     typeof( AutoAmbientThing ),
+                                                     typeof( SpecAutoAmbientThingProvider ) );
+            TestHelper.GetSuccessfulResult( c );
+        }
+
+
     }
 }
