@@ -375,14 +375,28 @@ namespace CK.Setup
                             {
                                 // We check for errors here that cannot be checked by the central GetCombinationError method and handle
                                 // IMarshaller<> only if the type is not excluded.
+                                bool isPublic = t.IsPublic || t.IsNestedPublic;
 
                                 // A type MUST be public only if it is a IAutoService.
-                                // External services definitions are not concerned by public/private access!
-                                if( !t.Assembly.IsDynamic
-                                    && (k & CKTypeKind.IsAutoService) != 0
-                                    && !(t.IsPublic || t.IsNestedPublic) )
+                                // (External services definitions are not concerned by public/private access.)
+                                // If the type is not a IAutoService but a EndpointService, if it is not public we
+                                // ignore it. This avoids to generate a reference to the type that will fail to compile
+                                // and this keeps the implementation as a "detail". 
+                                if( (k & CKTypeKind.IsAutoService) != 0 )
                                 {
-                                    m.Error( $"Type '{t}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                    if( !isPublic )
+                                    {
+                                        m.Error( $"Type '{t:C}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                        k |= CKTypeKind.HasError;
+                                    }
+                                }
+                                else if( (k & CKTypeKind.IsEndpointService) != 0 )
+                                {
+                                    if( !isPublic )
+                                    {
+                                        k &= ~CKTypeKind.IsEndpointService;
+                                        m.Info( $"Type '{t:C}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
+                                    }
                                 }
                                 if( t.IsClass )
                                 {
@@ -391,7 +405,7 @@ namespace CK.Setup
                                     var error = (k & MaskPublicInfo).GetCombinationError( true );
                                     if( error != null )
                                     {
-                                        m.Error( $"Invalid class '{t}' kind: {error}" );
+                                        m.Error( $"Invalid class '{t:C}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
                                     }
                                     else if( (k & CKTypeKind.IsAutoService) != 0 )
