@@ -210,7 +210,7 @@ namespace CK.Setup
         /// This is required for code generation: such assemblies are dependencies.
         /// </summary>
         /// <param name="t">The registered type.</param>
-        protected void RegisterAssembly( Type t )
+        public void RegisterAssembly( Type t )
         {
             var a = t.Assembly;
             if( !a.IsDynamic ) _assemblies.Add( a );
