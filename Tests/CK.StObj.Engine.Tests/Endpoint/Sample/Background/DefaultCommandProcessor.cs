@@ -11,12 +11,17 @@ namespace CK.StObj.Engine.Tests.Endpoint
         readonly IActivityMonitor _monitor;
         readonly SampleCommandMemory _commandHistory;
         readonly IFakeTenantInfo _tenantInfo;
+        readonly ICallContextLike _callContextLike;
 
-        public DefaultCommandProcessor( IActivityMonitor monitor, SampleCommandMemory commandHistory, IFakeTenantInfo info )
+        public DefaultCommandProcessor( IActivityMonitor monitor,
+                                        SampleCommandMemory commandHistory,
+                                        IFakeTenantInfo info,
+                                        ICallContextLike callContextLike )
         {
             _monitor = monitor;
             _commandHistory = commandHistory;
             _tenantInfo = info;
+            _callContextLike = callContextLike;
         }
 
         public void Process( object command )
