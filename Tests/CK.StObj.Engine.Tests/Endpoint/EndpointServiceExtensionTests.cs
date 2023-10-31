@@ -84,7 +84,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public void specialized_ubiquitous_info_service_not_AutoService_cannot_share_the_SpecDefaultProvider()
         {
             var noWay = TestHelper.CreateStObjCollector( typeof( SpecAmbientThing ), typeof( SpecAmbientThingProvider ) );
-            TestHelper.GetFailedResult( noWay );
+            TestHelper.GetFailedResult( noWay, "Unable to find an implementation for 'IEndpointUbiquitousServiceDefault<EndpointServiceExtensionTests.AmbientThing>'. Type 'AmbientThing' is not a valid Ubiquitous information service, all ubiquitous service must have a default value provider." );
         }
 
         [EndpointScopedService( isUbiquitousEndpointInfo: true )]

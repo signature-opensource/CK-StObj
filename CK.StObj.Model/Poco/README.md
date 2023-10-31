@@ -73,8 +73,10 @@ and define a family.
 
 > `[CKTypeDefiner]` attribute is the **abstract** of the Poco Type System.
 
-__Note:__ `[AutoImplementationClaim]` is an "advanced" attribute that states that this member is not a
+__Notes:__
+- `[AutoImplementationClaim]` is an "advanced" attribute that states that this member is not a
 regular property, it will be automatically implemented by some aspects of the framework.
+- The real Cris command model is a bit more complex than that.
 
 #### The [CKTypeSuperDefiner] defines abstract IPoco
 Using the `[CKTypeSuperDefiner]` makes direct extensions on the interface an abstraction rather

@@ -108,7 +108,7 @@ This enables a lot of optimizations and versatility since any kind of parameters
 For instance the CK.Poco.Exc.Json above is basically synchronous, no Read/WriteAsync are supported (just because
 this is not easy to support), but it CAN always be done.
 
-The second step is to implement one or more one `IPocoImporter` and `IPocoExporter` that are basically
+The second step is to implement one or more `IPocoImporter` and `IPocoExporter` that are basically
 adapters from `Stream` to whatever is needed to serialize/deserialize the IPoco types.
 Their `ProtocolName` embeds/defines/summarizes/describes the "options" used to serialize/deserialize: a package can
 expose multiple `IPocoImporter` and `IPocoExporter` that embed for each protocol name the options that will be used.
