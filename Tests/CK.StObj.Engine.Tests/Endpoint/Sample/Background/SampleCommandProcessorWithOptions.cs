@@ -13,7 +13,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
         readonly IOptions<SomeCommandProcessingOptions> _options;
         readonly SampleCommandMemory _commandHistory;
 
-        public SampleCommandProcessorWithOptions( IOptions<SomeCommandProcessingOptions> options, SampleCommandMemory commandHistory )
+        public SampleCommandProcessorWithOptions( IOptions<SomeCommandProcessingOptions> options,
+                                                  SampleCommandMemory commandHistory )
         {
             _options = options;
             _commandHistory = commandHistory;
