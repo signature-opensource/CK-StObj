@@ -58,12 +58,14 @@ namespace CK.Setup
                 object? _endpoint;
                 ServiceDescriptor? _lastEndpoint;
                 bool _isScoped;
-
-                public Mapping( ServiceDescriptor? global, ServiceDescriptor? endpoint )
+                public readonly bool IsAutoDI;
+            
+                public Mapping( bool isAutoDI, ServiceDescriptor? global, ServiceDescriptor? endpoint )
                 {
                     _global = _lastGlobal = global;
                     _endpoint = _lastEndpoint = endpoint;
                     _isScoped = true;
+                    IsAutoDI = isAutoDI;
                 }
 
                 public void AddGlobal( ServiceDescriptor d )
@@ -316,7 +318,7 @@ namespace CK.Setup
                 {
                     var typeMapping = new ServiceDescriptor( o.ClassType, o.Implementation );
                     global.Add( typeMapping );
-                    Mapping? m = new Mapping( typeMapping, null );
+                    Mapping? m = new Mapping( true, typeMapping, null );
                     // Use Add: no external configuration must register a IRealObject.
                     mappings.Add( o.ClassType, m );
                     foreach( var unique in o.UniqueMappings )
@@ -335,7 +337,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            mappings.Add( multi, new Mapping( mMapping, null ) );
+                            mappings.Add( multi, new Mapping( false, mMapping, null ) );
                         }
                     }
                 }
@@ -392,7 +394,7 @@ namespace CK.Setup
                     var typeMapping = new ServiceDescriptor( s.ClassType, s.FinalType, lt );
                     global.Add( typeMapping );
 
-                    Mapping m = new Mapping( typeMapping, null );
+                    Mapping m = new Mapping( true, typeMapping, null );
                     mappings.Add( s.ClassType, m );
                     // Same delegate used for all the mappings (if any). 
                     Func<IServiceProvider, object>? shared = null;
@@ -415,7 +417,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            mappings.Add( multi, new Mapping( mMapping, null ) );
+                            mappings.Add( multi, new Mapping( false, mMapping, null ) );
                         }
                     }
                 }
@@ -447,7 +449,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        mappings.Add( t, new Mapping( d, null ) );
+                        mappings.Add( t, new Mapping( false, d, null ) );
                     }
                 }
                 return mappings;
@@ -640,7 +642,7 @@ namespace CK.Setup
                             {
                                 exists.AddEndpoint( d );
                             }
-                            else mappings.Add( d.ServiceType, new Mapping( null, d ) );
+                            else mappings.Add( d.ServiceType, new Mapping( false, null, d ) );
 
                             bool isUbiquitousInfo = EndpointTypeManager_CK._ubiquitousMappings.Any( uD => uD.UbiquitousType == d.ServiceType );
                             if( !isUbiquitousInfo )
@@ -748,18 +750,53 @@ namespace CK.Setup
                 {
                     foreach( var (t, m) in _mappings )
                     {
-                        var last = m.LastEndpoint ?? m.LastGlobal;
-                        if( last == null ) continue;
-                        if( m.LastEndpoint == null
-                            && last.Lifetime == ServiceLifetime.Singleton
-                            && last.ImplementationInstance == null
-                            && !last.ServiceType.IsGenericTypeDefinition )
+                        if( m.IsAutoDI )
                         {
-                            endpoint.Add( new ServiceDescriptor( t, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( t )!, ServiceLifetime.Singleton ) );
+                            Debug.Assert( m.Global != null && m.Endpoint == null );
+                            var reg = m.Global;
+                            if( reg is List<ServiceDescriptor> list )
+                            {
+                                foreach( var d in list )
+                                {
+                                    AddFromAutoDI( endpoint, d );
+                                }
+                            }
+                            else
+                            {
+                                AddFromAutoDI( endpoint, (ServiceDescriptor)reg );
+                            }
+
+                            static void AddFromAutoDI( ServiceCollection endpoint, ServiceDescriptor d )
+                            {
+                                if( d.Lifetime == ServiceLifetime.Singleton
+                                    && d.ImplementationInstance == null
+                                    && !d.ServiceType.IsGenericTypeDefinition )
+                                {
+                                    endpoint.Add( new ServiceDescriptor( d.ServiceType,
+                                                                         sp => EndpointHelper.GetGlobalProvider( sp ).GetService( d.ServiceType )!,
+                                                                         ServiceLifetime.Singleton ) );
+                                }
+                                else
+                                {
+                                    endpoint.Add( d );
+                                }
+                            }
                         }
                         else
                         {
-                            endpoint.Add( last );
+                            var last = m.LastEndpoint ?? m.LastGlobal;
+                            if( last == null ) continue;
+                            if( m.LastEndpoint == null
+                                && last.Lifetime == ServiceLifetime.Singleton
+                                && last.ImplementationInstance == null
+                                && !last.ServiceType.IsGenericTypeDefinition )
+                            {
+                                endpoint.Add( new ServiceDescriptor( t, sp => EndpointHelper.GetGlobalProvider( sp ).GetService( t )!, ServiceLifetime.Singleton ) );
+                            }
+                            else
+                            {
+                                endpoint.Add( last );
+                            }
                         }
 
                         if( !m.HasMultiple( out var mappingEndpoint ) ) continue;

@@ -206,7 +206,7 @@ namespace CK.Setup
         /// This is required for code generation: such assemblies are dependencies.
         /// </summary>
         /// <param name="t">The registered type.</param>
-        protected void RegisterAssembly( IActivityMonitor monitor, Type t )
+        public void RegisterAssembly( IActivityMonitor monitor, Type t )
         {
             var a = t.Assembly;
             if( !a.IsDynamic ) _assemblies.Add( a );

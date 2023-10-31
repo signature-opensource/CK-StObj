@@ -693,7 +693,8 @@ namespace CK.Setup
                     // When a single constructor is found, we process it like a regular auto service.
                     // Here there are multiple constructors: we ignore them since unifying their parameters don't make a lot of sense.
                     // And by ignoring them here, we apply (caller code) the ReplaceAutoService attribute (if any... and this would be surprising).
-                    m.Trace( $"{ctors.Length} public constructors found for ubiquitous endpoint service '{ClassType:C}'. Skipping constructor parameters analysis." );
+                    m.Trace( $"{ctors.Length} public constructors found for ubiquitous endpoint service '{ClassType:C}'. " +
+                             $"Skipping constructor parameters analysis (endpoint services are resolved by the endpoint configuration)." );
                     ConstructorParameters = Array.Empty<CtorParameter>();
                 }
             }
@@ -710,9 +711,21 @@ namespace CK.Setup
                     }
                     else
                     {
-                        // The class is not abstract and has no public constructor. We can't do anything with it.
-                        success = false;
-                        m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist (since at least one non-public constructor exists)." );
+                        // The class is not abstract and has no public constructor.
+                        // Same as above (multiple constructor case): this is allowed for endpoint services since
+                        // they are "manually" build by the endpoint code.
+                        if( !collector.KindDetector.UbiquitousInfoServices.Contains( ClassType ) )
+                        {
+                            // We can't do anything with it.
+                            success = false;
+                            m.Error( $"No public constructor found for '{ClassType.FullName}' and no default constructor exist (since at least one non-public constructor exists)." );
+                        }
+                        else
+                        {
+                            m.Trace( $"No public constructors found for ubiquitous endpoint service '{ClassType:C}'. " +
+                                $"Skipping constructor parameters analysis (endpoint services are resolved by the endpoint configuration)." );
+                            ConstructorParameters = Array.Empty<CtorParameter>();
+                        }
                     }
                 }
                 else

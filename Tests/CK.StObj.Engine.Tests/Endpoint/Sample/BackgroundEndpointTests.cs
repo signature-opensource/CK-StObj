@@ -28,7 +28,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                      typeof( SampleCommandMemory ),
                                                      typeof( TenantResolutionService ),
                                                      typeof( FakeTenantInfo ),
-                                                     typeof( DefaultTenantProvider ) );
+                                                     typeof( DefaultTenantProvider ),
+                                                     typeof( TransactionalCallContextLike ) );
             using var services = TestHelper.CreateAutomaticServices( c, configureServices: services =>
             {
                 services.Services.AddScoped<IActivityMonitor>( sp => new ActivityMonitor( "Request monitor" ) );

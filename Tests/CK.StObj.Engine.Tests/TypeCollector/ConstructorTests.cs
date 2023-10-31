@@ -226,7 +226,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
         {
         }
 
-        class BaseReferencer : RefBased
+        public class BaseReferencer : RefBased
         {
             public BaseReferencer( RefBased b )
             {

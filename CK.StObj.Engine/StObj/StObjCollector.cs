@@ -93,7 +93,8 @@ namespace CK.Setup
             }
             else if( _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null )
             {
-                 return true;
+                _cc.RegisterAssembly( type );
+                return true;
             }
             return false;
         }

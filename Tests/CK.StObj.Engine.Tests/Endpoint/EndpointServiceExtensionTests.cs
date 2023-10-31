@@ -91,15 +91,30 @@ namespace CK.StObj.Engine.Tests.Endpoint
         public class AutoAmbientThing : IAutoService
         {
             public string? ThingName { get; set; }
+
+            // This test that no public constructor is allowed on Endpoint AutoService.
+            protected AutoAmbientThing() { }
         }
 
         public class SpecAutoAmbientThing : AutoAmbientThing
         {
+            protected SpecAutoAmbientThing() { }
+
+            public static SpecAutoAmbientThing Create() => new SpecAutoAmbientThing();
         }
 
         public sealed class SpecAutoAmbientThingProvider : IEndpointUbiquitousServiceDefault<SpecAutoAmbientThing>
         {
-            public SpecAutoAmbientThing Default => new SpecAutoAmbientThing() { ThingName = "I'm the default (AutoService spec) thing name!" };
+            public SpecAutoAmbientThing Default
+            {
+                get
+                {
+
+                    var s = SpecAutoAmbientThing.Create();
+                    s.ThingName = "I'm the default (AutoService spec) thing name!";
+                    return s;
+                }
+            }
         }
 
         [Test]

@@ -15,7 +15,8 @@ namespace CK.Setup
             _wellKnownServiceKindRegistered = true;
 
             // The IActivityMobitor is by design a endpoint scoped service. It is not Optional (since it necessarily exists).
-            // It is actually more than that: it is the only ubiquitous endpoint service (with its ParallelLogger) all endpoints must support them.
+            // It is actually more than that: it is the only ubiquitous endpoint service (with its ParallelLogger) that must be
+            // supported by all endpoints.
             // Note: The right way to inject a monitor is:
             //
             //    services.AddScoped<IActivityMonitor,ActivityMonitor>();
@@ -59,6 +60,9 @@ namespace CK.Setup
 
             // IDataProtectionProvider is a singleton.
             SetAutoServiceKind( monitor, "Microsoft.AspNetCore.DataProtection.IDataProtectionProvider, Microsoft.AspNetCore.DataProtection.Abstractions", AutoServiceKind.IsSingleton, isOptional: true );
+
+            // The CK.AspNet.ScopedHttpContext is only available in the Global DI.
+            SetAutoServiceKind( monitor, "CK.AspNet.ScopedHttpContext, CK.AspNet", AutoServiceKind.IsEndpointService|AutoServiceKind.IsScoped, isOptional: true );
         }
     }
 }
