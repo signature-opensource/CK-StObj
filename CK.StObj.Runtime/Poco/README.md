@@ -15,8 +15,9 @@ type that its regular non nullable type because a nullable value type is a `Null
 its `T` value and a boolean that states whether it is null or not.
 
 For a Reference type, the oblivious type is its non nullable version. **Caution:** this reverts
-the "runtime behavior". We choose this to avoid all the '?' in oblivious type names and if we
-took this path, its because:
+the "runtime behavior". We choose this to avoid all the '?' in oblivious type names.
+
+
 
 > An oblivious type necessarily is composed 
 

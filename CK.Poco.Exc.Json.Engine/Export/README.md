@@ -9,7 +9,7 @@ The code generation of the export is a 3 steps process. Export relies on the Obl
 The set of exported type names (visible to the consumers) is the Oblivious types' name:
 - Oblivious reference types have non null names.
   - IPoco use their full C# name or [ExternalName] attribute.
-  - Collections use "T[]", "L(T)", "S(T)", "M(TKey,TValue)" and O(T) for dictionaries with a string key.
+  - Collections use "T[]", "L(T)", "S(T)", "M(TKey,TValue)" and "O(T)" for dictionaries with a string key.
 - Value types can be nullable.
   - Both "int" and "int?" are exported.
   - Anonymous record type is "(T1,T2,...)". Here also "(T1,T2,...)?" can appear.
@@ -143,7 +143,7 @@ For this polymorphic type to be read back by consumers, its type must be conveye
 by most of the serialization libraries, we use a different approach: a 2-cells array with the `["type name", ...and its value...]
 is written.
 
-The core of the static void WriteAny( Utf8JsonWriter w, object o, PocoJsonExportWriteContext wCtx )` method
+The core of the static `void WriteAny( Utf8JsonWriter w, object o, PocoJsonExportWriteContext wCtx )` method
 is basically a big switch case on `o.GetType()` that routes any object to its registered Oblivious type. The
 switch is broken into smaller pieces for better performance.
 
