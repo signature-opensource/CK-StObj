@@ -237,7 +237,14 @@ namespace CK.Setup
                 {
                     var baseType = t.BaseType;
                     if( baseType == typeof( object ) ) baseType = null;
-                    var allInterfaces = t.GetInterfaces();
+                    // Internal interfaces are "transparent". They can bring some CKomposable interface (IAutoService, etc.)
+                    // but are ignored.
+                    // An "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
+                    // Implementations are free to define and use them.
+                    // There's one gotcha with this: when duck typing is used (with locally defined internal interfaces), this doesn't work.
+                    // The planned solution is to stop using duck typing and to introduce a CK.Abstraction base assembly that will define
+                    // once for all the CKomposable interfaces and attributes.
+                    var allInterfaces = t.GetInterfaces().Where( i => i.IsPublic || i.IsNestedPublic ).ToArray();
 
                     // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
                     // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IProcessAutoService
@@ -254,9 +261,6 @@ namespace CK.Setup
                         else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.
-                    // Any "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
-                    // So, "internal interfaces" are leaves, we don't need to handle "holes" in the interface hierarchy and implementations are free to
-                    // define and use them.
                     //
                     bool isInternalInterface = t.IsInterface && !t.IsPublic && !t.IsNestedPublic;
                     if( k == CKTypeKind.None && !isInternalInterface )
