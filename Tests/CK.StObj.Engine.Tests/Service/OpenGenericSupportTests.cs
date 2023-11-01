@@ -82,5 +82,31 @@ namespace CK.StObj.Engine.Tests.Service
             }
         }
 
+        [IsMultiple]
+        public interface IDeviceHost : ISingletonAutoService
+        {
+        }
+
+        interface IInternalDeviceHost : IDeviceHost { }
+
+
+        [CKTypeDefiner]
+        public abstract class DeviceHost<T1, T2> : IInternalDeviceHost
+        {
+        }
+
+        public class ADeviceHost : DeviceHost<int, string>
+        {
+        }
+
+        [Test]
+        public void device_host_model()
+        {
+            var collector = TestHelper.CreateStObjCollector();
+            collector.RegisterType( typeof( ADeviceHost ) );
+            using var s = TestHelper.CreateAutomaticServices( collector ).Services;
+
+            s.GetService<ADeviceHost>().Should().NotBeNull(); 
+        }
     }
 }
