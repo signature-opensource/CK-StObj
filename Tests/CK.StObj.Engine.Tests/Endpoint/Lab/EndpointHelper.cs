@@ -452,6 +452,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public bool IsService( Type serviceType ) => _externalMappings.TryGetValue( serviceType, out var m ) && !m.IsEmpty;
     }
 
+    [CK.Core.StObjGen]
     sealed class EndpointType<TScopedData> : IEndpointType<TScopedData>, IEndpointTypeInternal where TScopedData : class, EndpointDefinition.IScopedData
     {
         IEndpointServiceProvider<TScopedData>? _services;

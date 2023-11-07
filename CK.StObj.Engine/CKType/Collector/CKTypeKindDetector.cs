@@ -238,7 +238,14 @@ namespace CK.Setup
                 {
                     var baseType = t.BaseType;
                     if( baseType == typeof( object ) ) baseType = null;
-                    var allInterfaces = t.GetInterfaces();
+                    // Internal interfaces are "transparent". They can bring some CKomposable interface (IAutoService, etc.)
+                    // but are ignored.
+                    // An "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
+                    // Implementations are free to define and use them.
+                    // There's one gotcha with this: when duck typing is used (with locally defined internal interfaces), this doesn't work.
+                    // The planned solution is to stop using duck typing and to introduce a CK.Abstraction base assembly that will define
+                    // once for all the CKomposable interfaces and attributes.
+                    var allInterfaces = t.GetInterfaces().Where( i => i.IsPublic || i.IsNestedPublic ).ToArray();
 
                     // First handles the pure interface that have no base interfaces and no members: this can be one of our marker interfaces.
                     // We must also handle here interfaces that have one base because IScoped/SingletonAutoService/IProcessAutoService
@@ -255,9 +262,6 @@ namespace CK.Setup
                         else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.
-                    // Any "internal interface" is simply ignored because no public interfaces can extend it (Error CS0061: Inconsistent accessibility).
-                    // So, "internal interfaces" are leaves, we don't need to handle "holes" in the interface hierarchy and implementations are free to
-                    // define and use them.
                     //
                     bool isInternalInterface = t.IsInterface && !t.IsPublic && !t.IsNestedPublic;
                     if( k == CKTypeKind.None && !isInternalInterface )
@@ -293,7 +297,7 @@ namespace CK.Setup
                                 // This attributes stops all subsequent analysis (it's the only one).
                                 // A [StObjGen] is necessarily None.
                                 k = CKTypeKind.IsExcludedType;
-                                m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
+                                m.Trace( $"Type '{t:N}' is [StObjGen]. It is ignored." );
                                 break;
                             }
                             switch( n )
@@ -336,7 +340,7 @@ namespace CK.Setup
                             {
                                 if( hasDefiner )
                                 {
-                                    m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t}' is useless since [CKTypeSuperDefiner] is also defined." );
+                                    m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t:N}' is useless since [CKTypeSuperDefiner] is also defined." );
                                 }
                                 hasDefiner = true;
                             }
@@ -386,7 +390,7 @@ namespace CK.Setup
                                 {
                                     if( !isPublic )
                                     {
-                                        m.Error( $"Type '{t:C}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                        m.Error( $"Type '{t:N}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
@@ -395,7 +399,7 @@ namespace CK.Setup
                                     if( !isPublic )
                                     {
                                         k &= ~CKTypeKind.IsEndpointService;
-                                        m.Info( $"Type '{t:C}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
+                                        m.Info( $"Type '{t:N}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
                                     }
                                 }
                                 if( t.IsClass )
@@ -405,7 +409,7 @@ namespace CK.Setup
                                     var error = (k & MaskPublicInfo).GetCombinationError( true );
                                     if( error != null )
                                     {
-                                        m.Error( $"Invalid class '{t:C}' kind: {error}" );
+                                        m.Error( $"Invalid class '{t:N}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
                                     }
                                     else if( (k & CKTypeKind.IsAutoService) != 0 )
@@ -439,7 +443,7 @@ namespace CK.Setup
                                     var error = (k & MaskPublicInfo).GetCombinationError( false );
                                     if( error != null )
                                     {
-                                        m.Error( $"Invalid interface '{t}' kind: {error}" );
+                                        m.Error( $"Invalid interface '{t:N}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
