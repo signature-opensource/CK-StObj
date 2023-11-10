@@ -128,7 +128,7 @@ namespace CK.Setup
                         {
                             // The IPoco interface type is NOT registered as a IPoco.
                             // We fail on this (we have no way to create the instance).
-                            monitor.Error( $"Poco readonly property '{p.PropertyType.DeclaringType!.FullName}.{p.PropertyName}': the property type {p.PropertyType.Name} is a IPoco that is not registered." );
+                            monitor.Error( $"Poco readonly property '{p}': the property type '{p.PropertyType:N}' is a IPoco that is not registered." );
                             // Trick: we instantiate an empty clashPath to signal this case: a resulting
                             // empty path is an unregistered IPoco (and error has been logged).
                             clashPath = new List<PropertyInfo>();
