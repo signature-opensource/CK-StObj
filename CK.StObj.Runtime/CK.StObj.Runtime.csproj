@@ -9,10 +9,10 @@ This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSe
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
-    <PackageReference Include="CK.CodeGen" Version="8.0.2--0011-develop" />
-    <PackageReference Include="CK.Globalization" Version="0.4.1--0002-develop" />
-    <PackageReference Include="CK.Reflection" Version="9.0.3--0039-develop" />
-    <PackageReference Include="CK.Setup.Dependency" Version="16.0.2--0011-develop" />
+    <PackageReference Include="CK.CodeGen" Version="9.0.0" />
+    <PackageReference Include="CK.Globalization" Version="0.5.0" />
+    <PackageReference Include="CK.Reflection" Version="9.0.2" />
+    <PackageReference Include="CK.Setup.Dependency" Version="17.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
