@@ -7,6 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Engine\CK.StObj.Engine.csproj" />
-    <PackageReference Include="CK.Testing.Monitoring" Version="8.1.0" />
+    <PackageReference Include="CK.Testing.Monitoring" Version="9.0.0" />
   </ItemGroup>
 </Project>
