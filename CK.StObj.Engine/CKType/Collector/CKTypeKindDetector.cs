@@ -295,7 +295,7 @@ namespace CK.Setup
                                 // This attributes stops all subsequent analysis (it's the only one).
                                 // A [StObjGen] is necessarily None.
                                 k = CKTypeKind.IsExcludedType;
-                                m.Trace( $"Type '{t}' is [StObjGen]. It is ignored." );
+                                m.Trace( $"Type '{t:N}' is [StObjGen]. It is ignored." );
                                 break;
                             }
                             switch( n )
@@ -338,7 +338,7 @@ namespace CK.Setup
                             {
                                 if( hasDefiner )
                                 {
-                                    m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t}' is useless since [CKTypeSuperDefiner] is also defined." );
+                                    m.Warn( $"Attribute [CKTypeDefiner] defined on type '{t:N}' is useless since [CKTypeSuperDefiner] is also defined." );
                                 }
                                 hasDefiner = true;
                             }
@@ -388,7 +388,7 @@ namespace CK.Setup
                                 {
                                     if( !isPublic )
                                     {
-                                        m.Error( $"Type '{t:C}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
+                                        m.Error( $"Type '{t:N}' being '{(k & MaskPublicInfo).ToStringFlags()}' must be public." );
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
@@ -397,7 +397,7 @@ namespace CK.Setup
                                     if( !isPublic )
                                     {
                                         k &= ~CKTypeKind.IsEndpointService;
-                                        m.Info( $"Type '{t:C}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
+                                        m.Info( $"Type '{t:N}' is an internal EndpointService. Its kind will only be '{(k & MaskPublicInfo).ToStringFlags()}'." );
                                     }
                                 }
                                 if( t.IsClass )
@@ -407,7 +407,7 @@ namespace CK.Setup
                                     var error = (k & MaskPublicInfo).GetCombinationError( true );
                                     if( error != null )
                                     {
-                                        m.Error( $"Invalid class '{t:C}' kind: {error}" );
+                                        m.Error( $"Invalid class '{t:N}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
                                     }
                                     else if( (k & CKTypeKind.IsAutoService) != 0 )
@@ -441,7 +441,7 @@ namespace CK.Setup
                                     var error = (k & MaskPublicInfo).GetCombinationError( false );
                                     if( error != null )
                                     {
-                                        m.Error( $"Invalid interface '{t}' kind: {error}" );
+                                        m.Error( $"Invalid interface '{t:N}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
                                     }
                                 }
