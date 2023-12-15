@@ -13,19 +13,19 @@ namespace CK.Setup
 {
     sealed class UnionTypeCollector : IUnionTypeCollector
     {
-        readonly List<IExtPropertyInfo> _types;
+        readonly List<IExtMemberInfo> _types;
 
-        public UnionTypeCollector( bool canBeExtended, IExtPropertyInfo firstDef )
+        public UnionTypeCollector( bool canBeExtended, IExtMemberInfo firstDef )
         {
-            _types = new List<IExtPropertyInfo> { firstDef };
+            _types = new List<IExtMemberInfo> { firstDef };
             CanBeExtended = canBeExtended;
         }
 
-        public List<IExtPropertyInfo> Types => _types;
+        public List<IExtMemberInfo> Types => _types;
 
         public bool CanBeExtended { get; }
 
-        IReadOnlyList<IExtPropertyInfo> IUnionTypeCollector.Types => Types;
+        IReadOnlyList<IExtMemberInfo> IUnionTypeCollector.Types => Types;
 
         public override string ToString()
         {

@@ -79,5 +79,20 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "IDictionary<string,bool>' key cannot be nullable. Nullable type 'string?' cannot be a key." );
         }
 
+        public interface IInvalidAbstractCollectionInside : IPoco
+        {
+            IList<IList<int>> NoWay { get; }
+        }
+
+        [Test]
+        public void Abstract_collections_only_at_the_top()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalidAbstractCollectionInside ) );
+            TestHelper.GetFailedResult( c,
+                "Invalid subordinated abstract 'IList<Int32>' in Property 'NoWay' on " +
+                "Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidAbstractCollectionInside'. " +
+                "It must be a List." );
+        }
+
     }
 }

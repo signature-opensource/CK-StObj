@@ -33,14 +33,19 @@ namespace CK.Setup
         Record,
 
         /// <summary>
-        /// A concrete <see cref="IPoco"/> (<see cref="IPrimaryPocoType"/>).
+        /// The IPoco interface that defines a family (<see cref="IPrimaryPocoType"/>).
         /// </summary>
-        IPoco,
+        PrimaryPoco,
+
+        /// <summary>
+        /// A IPoco interface that belongs to a family (<see cref="ISecondaryPocoType"/>).
+        /// </summary>
+        SecondaryPoco,
 
         /// <summary>
         /// An abstract IPoco (<see cref="IAbstractPocoType"/>).
         /// </summary>
-        AbstractIPoco,
+        AbstractPoco,
 
         /// <summary>
         /// Enumeration (<see cref="IEnumPocoType"/>).

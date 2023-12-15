@@ -29,8 +29,8 @@ namespace CK.Poco.Exc.Json.Tests
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
             o.ToString().Should().Be( @"{""Hop"":[""CodeGen!"",3712]}" );
 
-            //var o2 = JsonTestHelper.Roundtrip( directory, o );
-            //o2.Hop.Should().Be( ("CodeGen!", 3712) );
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
+            o2.Hop.Should().Be( ("CodeGen!", 3712) );
         }
 
         public interface IWithNullableTuple : IPoco
@@ -49,14 +49,14 @@ namespace CK.Poco.Exc.Json.Tests
             var o = f.Create( o => { o.Hop = ("CodeGen!", 3712); } );
             o.ToString().Should().Be( @"{""Hop"":[""CodeGen!"",3712]}" );
 
-            //var o2 = JsonTestHelper.Roundtrip( directory, o );
-            //o2.Hop.Should().Be( ("CodeGen!", 3712) );
+            var o2 = JsonTestHelper.Roundtrip( directory, o );
+            o2.Hop.Should().Be( ("CodeGen!", 3712) );
 
             o.Hop = null;
             o.ToString().Should().Be( @"{""Hop"":null}" );
 
-            //var o3 = JsonTestHelper.Roundtrip( directory, o );
-            //o3.Hop.Should().BeNull();
+            var o3 = JsonTestHelper.Roundtrip( directory, o );
+            o3.Hop.Should().BeNull();
         }
 
     }

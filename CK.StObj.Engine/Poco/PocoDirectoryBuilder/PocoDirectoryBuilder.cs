@@ -352,7 +352,7 @@ namespace CK.Setup
                 tB.AddInterfaceImplementation( i );
 
                 // Caches the "class UnionType" properties.
-                PropertyInfo[]? cacheUnionTypesDef = null;
+                MemberInfo[]? cacheUnionTypesDef = null;
                 var propertyInfos = i.GetProperties();
                 foreach( var p in propertyInfos )
                 {
@@ -418,7 +418,9 @@ namespace CK.Setup
                                 Type? u = i.GetNestedType( "UnionTypes", BindingFlags.Public | BindingFlags.NonPublic );
                                 if( u == null )
                                 {
-                                    monitor.Error( $"[UnionType] attribute on '{i.ToCSharpName()}.{p.Name}' requires a nested 'class UnionTypes {{ public (int,string) {p.Name} {{ get; }} }}' with the types (here, (int,string) is just an example of course)." );
+                                    monitor.Error( $"[UnionType] attribute on '{i.ToCSharpName()}.{p.Name}' requires a nested " +
+                                                   $"'class UnionTypes {{ public (int,string) {p.Name} {{ get; }} }}' with the types. " +
+                                                   $"Here, (int,string) is just an example of course." );
                                     success = false;
                                     cacheUnionTypesDef = Array.Empty<PropertyInfo>();
                                 }
@@ -466,7 +468,7 @@ namespace CK.Setup
                                         ref List<string>? dimPropertyNames,
                                         Type tInterface,
                                         IExtPropertyInfo p,
-                                        PropertyInfo[]? unionTypesDef )
+                                        MemberInfo[]? unionTypesDef )
         {
             Debug.Assert( p.DeclaringType == tInterface && p.PropertyInfo.GetMethod != null );
 

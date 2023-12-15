@@ -17,7 +17,7 @@ namespace CK.Setup.PocoJson
             foreach( var t in _nameMap.ExchangeableNonNullableObliviousTypes )
             {
                 if( t.Kind == PocoTypeKind.Any
-                    || t.Kind == PocoTypeKind.AbstractIPoco
+                    || t.Kind == PocoTypeKind.AbstractPoco
                     || t.Kind == PocoTypeKind.UnionType ) continue;
                 // We cannot directly use the GetReadFunctionName here if the type is a value type: the ReaderFunction
                 // here returns an object: it has to be explicitly boxed.

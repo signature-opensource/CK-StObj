@@ -10,6 +10,11 @@ namespace CK.Setup
     public interface ICollectionPocoType : IPocoType
     {
         /// <summary>
+        /// Gets whether this is a <see cref="IList{T}"/>, <see cref="ISet{T}"/> or <see cref="IDictionary{TKey, TValue}"/>.
+        /// </summary>
+        bool IsAbstractCollection { get; }
+
+        /// <summary>
         /// Gets the generic parameters or the array element type.
         /// </summary>
         IReadOnlyList<IPocoType> ItemTypes { get; }

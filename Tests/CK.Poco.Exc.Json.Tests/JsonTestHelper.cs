@@ -21,7 +21,7 @@ namespace CK.Poco.Exc.Json.Tests
         /// <param name="importOptions">The import options to use.</param>
         /// <param name="text">Optional Json text hook called on success.</param>
         /// <returns>The deserialized Poco.</returns>
-        [return: NotNullIfNotNull( "o" )]
+        [return: NotNullIfNotNull( nameof( o ) )]
         public static T? Roundtrip<T>( PocoDirectory directory,
                                        T? o,
                                        PocoJsonExportOptions? exportOptions = null,

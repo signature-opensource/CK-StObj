@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var e = ts.FindObliviousType( typeof( IEmptyPoco ) );
+            var e = ts.FindByType( typeof( IEmptyPoco ) );
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeFalse();
         }
@@ -37,7 +37,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var e = ts.FindObliviousType( typeof( IPoco ) );
+            var e = ts.FindByType( typeof( IPoco ) );
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeFalse();
         }
@@ -54,14 +54,14 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IRefEmptyPoco ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var e = ts.FindObliviousType( typeof( IRefEmptyPoco ) ) as IPrimaryPocoType;
+            var e = ts.FindByType( typeof( IRefEmptyPoco ) ) as IPrimaryPocoType;
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeTrue( "The string Data is still exchangeable." );
             e.Fields.Single( f => f.Name == "Empty" ).IsExchangeable.Should().BeFalse();
             e.Fields.Single( f => f.Name == "Data" ).IsExchangeable.Should().BeTrue();
 
             // Condemn the string! (this is rather stupid :)).
-            var stringType = ts.FindObliviousType( typeof( string ) );
+            var stringType = ts.FindByType( typeof( string ) );
             Debug.Assert( stringType != null );
 
             ts.SetNotExchangeable( TestHelper.Monitor, stringType );
@@ -91,11 +91,11 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IPocoWithCollection ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
 
-            var poco = ts.FindObliviousType( typeof( IPoco ) ) as IAbstractPocoType;
+            var poco = ts.FindByType( typeof( IPoco ) ) as IAbstractPocoType;
             Debug.Assert( poco != null );
             poco.IsExchangeable.Should().BeTrue();
 
-            var e = ts.FindObliviousType( typeof( IPocoWithCollection ) ) as IPrimaryPocoType;
+            var e = ts.FindByType( typeof( IPocoWithCollection ) ) as IPrimaryPocoType;
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeTrue();
             e.Fields.Single( f => f.Name == "Empty" ).IsExchangeable.Should().BeFalse( "An array of non exchangeable." );
@@ -110,7 +110,7 @@ namespace CK.StObj.Engine.Tests.Poco
             e.Fields.Single( f => f.Name == "JustToBeSureThePocoIsExchangeable" ).IsExchangeable.Should().BeTrue();
 
             // Condemn the int! (this is rather stupid :)).
-            var intType = ts.FindObliviousType( typeof( int ) );
+            var intType = ts.FindByType( typeof( int ) );
             Debug.Assert( intType != null );
 
             ts.SetNotExchangeable( TestHelper.Monitor, intType );

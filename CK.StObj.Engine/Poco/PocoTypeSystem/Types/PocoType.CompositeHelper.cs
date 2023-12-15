@@ -133,7 +133,7 @@ namespace CK.Setup
                         if( fInfo.IsAllowed ) continue;
                         if( fInfo.IsDisallowed )
                         {
-                            monitor.Error( $"Unable to obtain a default value for field '{f.Name}', record '{type.CSharpName}' default value cannot be generated." );
+                            monitor.Error( $"Unable to obtain a default value for '{f.Name}', on '{type.CSharpName}' default value cannot be generated. Should this be nullable?" );
                             return DefaultValueInfo.Disallowed;
                         }
                         Debug.Assert( fInfo.RequiresInit );

@@ -108,12 +108,12 @@ public interface ICommandAuthUnsafe : ICommandPart
 
 ### The IClosedPoco
 
-The [`IClosedPoco`](IClosedPoco.cs) interface (that is a `[CKTypeDefiner]` without any property) is a special
-marker that expects the final IPoco to be "closed": one of its IPoco definition MUST expose all the properties
+The [`IClosedPoco`](IClosedPoco.cs) interface marker (no properties) is a `[CKTypeDefiner]` that
+expects the final IPoco to be "closed": one of its IPoco definition MUST expose all the properties
 of all its interfaces.
 
 A Poco family can have such a "Closure interface" without being a `IClosedPoco`, but if `IClosedPoco` belongs
-to the family definition an no closure can be found, it is an error.
+to the family definition, this closure is guarenteed to exist: when no closure can be found, it is an error.
 
 ## Poco for Data Exchange
 
@@ -269,7 +269,7 @@ share the same restrictions:
 - Must contain only Poco compliant field types.
 
 A simple struct is valid under conditions:
-- `readonly` field or read only property are forbidden.
+- `readonly` fields or read only properties are forbidden.
 - There must be at most one constructor. Their default parameter value if any is used as the default 
   corresponding field or property value.  
 
@@ -282,7 +282,7 @@ public struct DetailWithFields
     [DefaultValue( 42 )]
     public int Power;
 
-    public IList<int> Values;
+    public List<int> Values;
 
     [DefaultValue( "Hip!" )]
     public string Name;
@@ -293,7 +293,7 @@ public struct DetailWithProperties
     [DefaultValue( 3712 )]
     public int Power { get; set; }
 
-    public IList<int> Values { get; set; }
+    public List<int> Values { get; set; }
 
     [DefaultValue( "Hop!" )]
     public string Name { get; set; }
@@ -315,14 +315,15 @@ public interface IWithComplexRecords : IPoco
 ### The conformant collections
 IPoco can expose `T[]`, `List<T>`, `IList<T>`, `HashSet<T>`, `ISet<T>`, `Dictionary<TKey,TValue>` and
 `IDictionary<TKey,TValue>` where `T`, `TKey` and `TValue` are Poco compliant types.
-A `List<(string Name, IDictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid.
+A `List<(string Name, Dictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid
+(and still you won't do that, will you?).
 
 The 3 read only collections are supported: `IReadOnlyList<T>`, `IReadOnlySet<T>` and `IReadOnlyDictionary<TKey,TValue>`.
 This supports the "Abstract Read Only Properties" (see below).
 
 A collection defined on a IPoco must be either fully read only or fully mutable:
-- `IList<(IList<int>, HashSet<double>)>` is valid.
-- `IList<(IReadOnlyList<int>, HashSet<double>)>` is invalid.
+- `IList<(List<int>, HashSet<double>)>` is valid.
+- `List<(IReadOnlyList<int>, HashSet<double>)>` is invalid.
 - `IReadOblyList<List<int>>` is invalid.
 
 ### IPoco properties
@@ -381,7 +382,7 @@ This concept may seem overkill (and it somehow is) but the goal is to exploit th
 attribute on a `IPoco` defines a kind of "abstract" definition. Such definer SHOULD be able to carry "abstract projections"
 by exposing read only properties:
   - An `object Identifier { get; }` that can be implemented (at the "concrete" `IPoco` level) by a 
-    `int Identifier {get ; set; }` for a family and by `string Identifier { get; set; } for another one.
+    `int Identifier { get ; set; }` for a family and by `string Identifier { get; set; }` for another one.
   - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `IList<Y> Things { get; }` where X 
     is assignable from Y.
 
@@ -401,10 +402,14 @@ reality about them:
 | `IReadOnlySet<object>` <: `HashSet<IUser>`  | No | Read only HashSet and Dictionaries are not covariant. |
 | `IReadOnlyDictionary<int,object>` <: `Dictionary<int,IUser>`  | No | Read only HashSet and Dictionaries are not covariant. |
 
-To overcome these limitations and unifies the API, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco collections,
+To overcome these limitations and unifies the API, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco properties,
 extended collection types are generated that automatically support all these expected covariance.
 
-> **The IPoco framework automatically corrects these cases!**
+**The IPoco framework automatically corrects these cases**... but this applies only:
+- When abstract `IList<>`, `ISet<>` or `IDictionary<,>` collections are used. When a IPoco property is defined by a concrete collection,
+  the concrete type is used as-is without any adaptation. 
+- To direct IPoco properties. Abstract collections are forbidden "inside" a property type: `List<IList<int>>`
+  or `(int Power, IList<int> Values)` are forbidden.
 
 Note that this "extended covariance":
 - **Supports nullability** (and enforces it!): `IReadOnlyList<object?>` <: `IList<IUser>` is allowed and supported BUT 
@@ -429,14 +434,13 @@ Non writable properties are ignored by serializers/deserializers: they remain pu
 
 The "extended covariance" is currently limited:
 - Records, because they are mutable beasts, are not supported.
-- Recursive lists are supported thanks to the natural covariance support of `IReadOnlyList<out T>` but recursive
-  readonly sets and dictionaries are not.
+- Recursive collections are not supported (currently a `IList<IList<int>>` is forbidden, it can only be `IList<List<int>>`).
 
 **Future**:
 Abstract readonly property MAY be supported for records in the future: these properties would have to be regular properties
-(not `ref` properties otherwise they would be writable properties) and may contain a subset of the writable fields. Value Tuples 
-should be wrapped in a `ReadOnly<,,,>` generic that will both signal the read only aspect and protects the fields, mutable 
-record should be disallowed (only read only types should be allowed).
+(not `ref` properties otherwise they would be writable properties) and may contain a subset of the writable fields. Structs exposed
+without `ref` **are readonly-like ones** because it's always a copy that can be mutated: the value held by the Poco (or the collection)
+cannot be changed.
 
 > For records, a subtle choice has to be made will be whether field names matters or not (kind of nominal vs. structural
 > typying).

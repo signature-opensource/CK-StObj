@@ -1,5 +1,4 @@
 using CK.Core;
-using OneOf.Types;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +11,11 @@ namespace CK.Setup
 {
     /// <summary>
     /// Implements a reusable builder for <see cref="ExchangeableTypeName"/>.
-    /// This type is completely opened to extensions.
+    /// This type is completely opened to extensions:
+    /// <list type="bullet">
+    ///     <item>Overriding <see cref="IsExchangeable(IActivityMonitor, IPocoType)"/> enables to filter out any type.</item>
+    ///     <item>Overriding any of the MakeXXXName method enables to project any type name.</item>
+    /// </list>
     /// <para>
     /// The default implementation generates names based on the <see cref="IPocoType.CSharpName"/> except
     /// for collections where "L(T)", "S(T)", "M(TKey,TValue)" replaces List, HashSet and Dictionary
@@ -104,11 +107,14 @@ namespace CK.Setup
                             case PocoTypeKind.Basic:
                                 n = MakeBasicName( monitor, t );
                                 break;
-                            case PocoTypeKind.IPoco:
+                            case PocoTypeKind.PrimaryPoco:
                                 n = MakePrimaryPocoName( monitor, (IPrimaryPocoType)t );
                                 break;
-                            case PocoTypeKind.AbstractIPoco:
+                            case PocoTypeKind.AbstractPoco:
                                 n = MakeAbstractPocoName( monitor, (IAbstractPocoType)t );
+                                break;
+                            case PocoTypeKind.SecondaryPoco:
+                                n = MakeSecondaryPocoName( monitor, (ISecondaryPocoType)t );
                                 break;
                             case PocoTypeKind.UnionType:
                                 n = MakeUnionTypeName( monitor, (IUnionPocoType)t, GetTypeName );
@@ -130,7 +136,7 @@ namespace CK.Setup
 
         internal void SetNotExchangeable( IActivityMonitor monitor, IPocoType t, string? reason = null )
         {
-            Debug.Assert( _result != null && (!_result[t.Index >> 1].IsInitialized || !_result[t.Index >> 1].IsExchangeable) );
+            Throw.DebugAssert( _result != null && (!_result[t.Index >> 1].IsInitialized || !_result[t.Index >> 1].IsExchangeable) );
             ref var n = ref _result[t.Index >> 1];
             if( !n.IsInitialized )
             {
@@ -138,6 +144,13 @@ namespace CK.Setup
                 using( monitor.OpenInfo( $"{t.ToString()} is not exchangeable.{reason}" ) )
                 {
                     n = FullExchangeableTypeName.Unexchangeable;
+                    if( t is IPrimaryPocoType primary )
+                    {
+                        foreach( var sec in primary.SecondaryTypes )
+                        {
+                            SetNotExchangeable( monitor, sec );
+                        }
+                    }
                     var backRef = t.FirstBackReference;
                     while( backRef != null )
                     {
@@ -149,7 +162,7 @@ namespace CK.Setup
                         {
                             switch( backRef.Owner.Kind )
                             {
-                                case PocoTypeKind.IPoco:
+                                case PocoTypeKind.PrimaryPoco:
                                 case PocoTypeKind.AnonymousRecord:
                                 case PocoTypeKind.Record:
                                     {
@@ -160,7 +173,7 @@ namespace CK.Setup
                                         }
                                         break;
                                     }
-                                case PocoTypeKind.AbstractIPoco:
+                                case PocoTypeKind.AbstractPoco:
                                 case PocoTypeKind.UnionType:
                                     {
                                         var u = (IOneOfPocoType)t;
@@ -212,6 +225,17 @@ namespace CK.Setup
         protected virtual FullExchangeableTypeName MakeAbstractPocoName( IActivityMonitor monitor, IAbstractPocoType abstractPoco )
         {
             return new FullExchangeableTypeName( abstractPoco );
+        }
+
+        /// <summary>
+        /// Returns the interface C# name.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="secondaryPoco">The secondary Poco interface.</param>
+        /// <returns>By default, the C# interface name.</returns>
+        protected virtual FullExchangeableTypeName MakeSecondaryPocoName( IActivityMonitor monitor, ISecondaryPocoType secondaryPoco )
+        {
+            return new FullExchangeableTypeName( secondaryPoco );
         }
 
         /// <summary>
@@ -326,7 +350,7 @@ namespace CK.Setup
                                                                             Func<IPocoField,FullExchangeableTypeName> fieldTypeNames )
         {
             _nBuilder.Clear()
-                     .Append( "(" );
+                     .Append( '(' );
             bool atLeastOne = false;
             foreach( var f in record.Fields )
             {

@@ -62,6 +62,9 @@ namespace CK.Setup
         /// <summary>
         /// Gets all the interface types that are not <see cref="IPoco"/> but nevertheless are supported by this <see cref="PocoClass"/>.
         /// See <see cref="IPocoDirectory.OtherInterfaces"/>.
+        /// <para>
+        /// Note that <see cref="IPoco"/> and <see cref="IClosedPoco"/> are NOT part of this set.
+        /// </para>
         /// </summary>
         IReadOnlyCollection<Type> OtherInterfaces { get; }
 

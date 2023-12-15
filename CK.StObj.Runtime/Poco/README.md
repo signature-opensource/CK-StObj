@@ -10,22 +10,12 @@ The "Oblivious" name comes the C# Nullable Reference Type (NRT) world (see [here
 An oblivious context is when NRT is disabled: reference types are always nullable, this is how
 the runtime works, regardless of any ? or !.
 
-For a Value type, its oblivious type is itself: a nullable value type is a totally different
+For a basic Value type, its oblivious type is itself: a nullable value type is a totally different
 type that its regular non nullable type because a nullable value type is a `Nullable<T>` with
 its `T` value and a boolean that states whether it is null or not.
 
 For a Reference type, the oblivious type is its non nullable version. **Caution:** this reverts
 the "runtime behavior". We choose this to avoid all the '?' in oblivious type names.
 
-
-
-> An oblivious type necessarily is composed 
-
-type is necessarily not nullable. Handling a nullable type once the non
-nullable is handled is often easy (for instance when deserializing, handling a nullable
-is a "shell" that reads the "null" marker and returns null instead of throwing).
-
-The Oblivious type of an anonymous record 
-
-An Oblivious type is only composed of Oblivious types.
+TODO: to be extended...
 

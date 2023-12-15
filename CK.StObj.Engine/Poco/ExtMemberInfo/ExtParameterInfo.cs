@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -9,7 +10,7 @@ namespace CK.Setup
         {
         }
 
-        public ParameterInfo ParameterInfo => (ParameterInfo)_o;
+        public ParameterInfo ParameterInfo => Unsafe.As<ParameterInfo>( _o );
     }
 
 }

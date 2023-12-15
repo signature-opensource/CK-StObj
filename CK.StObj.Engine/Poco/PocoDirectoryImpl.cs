@@ -118,7 +118,7 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
                 tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                var pocoType = _typeSystem.FindObliviousType<IPrimaryPocoType>( family.PrimaryInterface.PocoInterface );
+                var pocoType = _typeSystem.FindByType<IPrimaryPocoType>( family.PrimaryInterface.PocoInterface );
                 Debug.Assert( pocoType != null );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );
@@ -310,22 +310,22 @@ namespace CK.Setup
         static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport list )
         {
             Debug.Assert( list.Type.ImplTypeName == list.Type.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
-            var pocoClassName = list.Type.ImplTypeName;
-            Debug.Assert( pocoClassName != null );
-            var t = ns.CreateType( $"sealed class {list.TypeName} : List<{pocoClassName}>" );
+            var primaryTypeName = list.Type.CSharpName;
+            Debug.Assert( primaryTypeName != null );
+            var t = ns.CreateType( $"sealed class {list.TypeName} : List<{primaryTypeName}>" );
             t.Append( "public bool IsReadOnly => false;" ).NewLine();
-            foreach( var tI in list.Type.FamilyInfo.Interfaces )
+            foreach( var tI in list.Type.FamilyInfo.Interfaces.Skip( 1 ) )
             {
                 t.Definition.BaseTypes.Add( new ExtendedTypeName( $"IList<{tI.CSharpName}>" ) );
 
-                AppendICollectionImpl( t, tI.CSharpName, pocoClassName );
+                AppendICollectionImpl( t, tI.CSharpName, primaryTypeName );
 
                 t.Append( tI.CSharpName ).Append( " IList<" ).Append( tI.CSharpName ).Append( ">.this[int index] {" )
-                    .Append( "get => this[index]; set => this[index] = (" ).Append( pocoClassName ).Append( ")value; }" ).NewLine()
+                    .Append( "get => this[index]; set => this[index] = (" ).Append( primaryTypeName ).Append( ")value; }" ).NewLine()
                 .Append( "int IList<" ).Append( tI.CSharpName ).Append( ">.IndexOf( " ).Append( tI.CSharpName )
-                    .Append( " item ) => IndexOf( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                    .Append( " item ) => IndexOf( (" ).Append( primaryTypeName ).Append( ")item );" ).NewLine()
                 .Append( "void IList<" ).Append( tI.CSharpName ).Append( ">.Insert( int index, " ).Append( tI.CSharpName )
-                    .Append( " item ) => Insert( index, (" ).Append( pocoClassName ).Append( ")item );" ).NewLine();
+                    .Append( " item ) => Insert( index, (" ).Append( primaryTypeName ).Append( ")item );" ).NewLine();
             }
 
         }
@@ -333,62 +333,62 @@ namespace CK.Setup
         static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport set )
         {
             var t = set.Type;
-            var pocoClassName = t.ImplTypeName;
-            Debug.Assert( pocoClassName != null );
+            var primaryTypeName = t.CSharpName;
+            Debug.Assert( primaryTypeName != null );
             string? nonNullablePocoClassNameWhenNullable = null;
             bool isNullable = t.IsNullable;
             if( isNullable )
             {
-                nonNullablePocoClassNameWhenNullable = pocoClassName;
-                pocoClassName += "?"; 
+                nonNullablePocoClassNameWhenNullable = primaryTypeName;
+                primaryTypeName += "?"; 
             }
-            var typeScope = ns.CreateType( $"sealed class {set.TypeName} : HashSet<{pocoClassName}>" );
+            var typeScope = ns.CreateType( $"sealed class {set.TypeName} : HashSet<{primaryTypeName}>" );
             typeScope.Append( "public bool IsReadOnly => false;" ).NewLine();
-            foreach( var tI in t.FamilyInfo.Interfaces )
+            foreach( var tI in t.FamilyInfo.Interfaces.Skip( 1 ) )
             {
-                AppendICollectionImpl( typeScope, tI.CSharpName, pocoClassName );
+                AppendICollectionImpl( typeScope, tI.CSharpName, primaryTypeName );
                 // IReadOnlySet<T> is implemented by the public methods of ISet<T>.
                 typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"IReadOnlySet<{tI.CSharpName}>" ) );
                 typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"ISet<{tI.CSharpName}>" ) );
 
-                typeScope.Append( "bool ISet<" ).Append( tI.CSharpName ).Append( ">.Add( " ).Append( tI.CSharpName ).Append( " item ) => Add( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
+                typeScope.Append( "bool ISet<" ).Append( tI.CSharpName ).Append( ">.Add( " ).Append( tI.CSharpName ).Append( " item ) => Add( (" ).Append( primaryTypeName ).Append( ")item );" ).NewLine()
 
                  .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".ExceptWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => ExceptWith( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => ExceptWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                 .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".IntersectWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => IntersectWith( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => IntersectWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                 .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".SymmetricExceptWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => SymmetricExceptWith( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => SymmetricExceptWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                 .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".UnionWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => UnionWith( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine();
+                    .Append( "> other ) => UnionWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine();
 
                 typeScope.Append( "public bool IsProperSubsetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsProperSubsetOf( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsProperSubsetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool IsProperSupersetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsProperSupersetOf( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsProperSupersetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool IsSubsetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsSubsetOf( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsSubsetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool IsSupersetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsSupersetOf( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsSupersetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool Overlaps( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.Overlaps( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.Overlaps( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool SetEquals( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.SetEquals( (IEnumerable<" ).Append( pocoClassName ).Append( ">)other );" ).NewLine();
+                    .Append( "> other ) => base.SetEquals( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine();
             }
-            AppendReadOnly( typeScope, isNullable ? "object?" : "object", pocoClassName, nonNullablePocoClassNameWhenNullable );
-            AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", pocoClassName, nonNullablePocoClassNameWhenNullable );
-            if( t.FamilyInfo.IsClosedPoco ) AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", pocoClassName, nonNullablePocoClassNameWhenNullable );
+            AppendReadOnly( typeScope, isNullable ? "object?" : "object", primaryTypeName, nonNullablePocoClassNameWhenNullable );
+            AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", primaryTypeName, nonNullablePocoClassNameWhenNullable );
+            if( t.FamilyInfo.IsClosedPoco ) AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", primaryTypeName, nonNullablePocoClassNameWhenNullable );
             foreach( var a in t.AbstractTypes )
             {
-                AppendReadOnly( typeScope, a.CSharpName, pocoClassName, nonNullablePocoClassNameWhenNullable );
+                AppendReadOnly( typeScope, a.CSharpName, primaryTypeName, nonNullablePocoClassNameWhenNullable );
             }
             
             static void AppendReadOnly( ITypeScope typeScope, string abstractTypeName, string pocoClassName, string? nonNullablePocoClassNameWhenNullable )

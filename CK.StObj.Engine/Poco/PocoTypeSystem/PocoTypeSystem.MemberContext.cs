@@ -15,16 +15,30 @@ namespace CK.Setup
     {
         sealed class MemberContext
         {
+            readonly IExtMemberInfo _root;
             IList<string?>? _tupleNames;
-            IExtMemberInfo _root;
             int _tupleIndex;
+            bool _forbidAbstractCollections;
 
-            public MemberContext( IExtMemberInfo root )
+            public MemberContext( IExtMemberInfo root, bool forbidAbstractCollections )
             {
                 _root = root;
+                _forbidAbstractCollections = forbidAbstractCollections;
                 _tupleIndex = 0;
             }
 
+            public void Reset()
+            {
+                _tupleIndex = 0;
+                _tupleNames = null;
+            }
+
+            public bool ForbidAbstractCollections
+            {
+                get => _forbidAbstractCollections;
+                set => _forbidAbstractCollections = value;
+            }
+           
             public RecordAnonField[] GetTupleNamedFields( int count )
             {
                 _tupleNames ??= _root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();

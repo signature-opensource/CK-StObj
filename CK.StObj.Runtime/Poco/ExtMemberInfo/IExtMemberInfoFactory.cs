@@ -22,6 +22,17 @@ namespace CK.Setup
         IExtTypeInfo CreateNullOblivious( Type type );
 
         /// <summary>
+        /// Creates the <see cref="IExtMemberInfo" /> for a <see cref="MemberInfo" />.
+        /// <para>
+        /// Type, PropertyInfo, FieldInfo and EventInfo are MemberInfo but <see cref="ParameterInfo"/>
+        /// is not. This will thrown an <see cref="ArgumentException"/> for <see cref="MethodBase"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="memberInfo">The member for which info must be obtained.</param>
+        /// <returns>The <see cref="IExtMemberInfo"/>.</returns>
+        IExtMemberInfo Create( MemberInfo memberInfo );
+
+        /// <summary>
         /// Creates the <see cref="IExtMemberInfo" /> for the given <see cref="ParameterInfo" />.
         /// </summary>
         /// <param name="parameterInfo">The parameter for which member info must be obtained.</param>

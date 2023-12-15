@@ -67,34 +67,35 @@ namespace CK.Setup
         string ImplTypeName { get; }
 
         /// <summary>
-        /// Gets the oblivious type. This type is oblivious in three ways:
+        /// Gets the oblivious type.
         /// <list type="bullet">
         ///   <item>
         ///     <term>Nullable Reference Types</term>
         ///     <description>
-        ///         All reference types (including this one if <see cref="Type.IsValueType"/>
-        ///         is false) are the <see cref="NonNullable"/> ones.
+        ///         Oblivious type of a reference type is always the <see cref="NonNullable"/>.
         ///     </description>
         ///   </item>
         ///   <item>
-        ///   <term>Specialized implementation types</term>
+        ///   <term>Collection types</term>
         ///   <description>
         ///         Specialized covariant collections are erased to be the regular <see cref="List{T}"/>,
         ///         <see cref="HashSet{T}"/> and <see cref="Dictionary{TKey, TValue}"/>.
         ///   </description>
         ///   </item>
         ///   <item>
-        ///   <term>Value tuple field names</term>
+        ///   <term>Value Tuple (Anonymous records)</term>
         ///   <description>
-        ///         Anonymous record field names are erased (<see cref="IRecordPocoField.IsUnnamed"/> is
-        ///         always true).
+        ///         The oblivious type is the value tuple with no field names (all <see cref="IRecordPocoField.IsUnnamed"/>
+        ///         are true) and with references to oblivious types (all <see cref="IPocoType.ITypeRef.Type"/> are oblivious).
+        ///   </description>
+        ///   </item>
+        ///   <term>IPoco types</term>
+        ///   <description>
+        ///         <see cref="ISecondaryPocoType"/>'s oblivious is its non nullable <see cref="IPrimaryPocoType"/>.
+        ///         (non nullables <see cref="IAbstractPocoType"/> and <see cref="IPrimaryPocoType"/> are their own oblivious).
         ///   </description>
         ///   </item>
         /// </list>
-        /// <para>
-        /// Named composites (<see cref="PocoTypeKind.IPoco"/> and <see cref="PocoTypeKind.Record"/>) are their
-        /// own oblivious types (for IPoco, as a reference type, it is the non nullable one).
-        /// </para>
         /// <para>
         /// Anonymous records (value tuples) have a "in depth" ObliviousType: field names are erased
         /// and all field types are oblivious.
@@ -191,5 +192,32 @@ namespace CK.Setup
         /// <param name="type">The type to check.</param>
         /// <returns>True if the type is covariant, false otherwise.</returns>
         bool IsReadableType( IExtNullabilityInfo type );
+
+
+        /// <summary>
+        /// Checks whether this type is the "same type" as <paramref name="type"/>.
+        /// <para>
+        /// This handles <see cref="ISecondaryPocoType"/> and <see cref="IPrimaryPocoType"/> unification
+        /// and only this.
+        /// </para>
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>True if the type is the exact same type as this one or they both belong to the same Poco family.</returns>
+        bool IsSamePocoType( IPocoType type );
+
+        /// <summary>
+        /// Gets whether the given type is covariant with this one.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>True if the type is covariant, false otherwise.</returns>
+        bool IsReadableType( IPocoType type );
+
+        /// <summary>
+        /// Gets whether the given type is contravariant with this one.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>True if the type is contravariant, false otherwise.</returns>
+        bool IsWritableType( IPocoType type );
+
     }
 }

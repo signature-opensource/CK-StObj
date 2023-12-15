@@ -35,6 +35,8 @@ namespace CK.Setup
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
+                public IEnumerable<ISecondaryPocoType> SecondaryTypes => NonNullable.SecondaryTypes.Select( s => s.Nullable );
+
                 ICompositePocoType ICompositePocoType.ObliviousType => NonNullable;
 
                 IPrimaryPocoType IPrimaryPocoType.Nullable => this;
@@ -69,11 +71,11 @@ namespace CK.Setup
             public PrimaryPocoType( PocoTypeSystem s,
                                     IPocoFamilyInfo family,
                                     Type primaryInterface )
-                : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.IPoco, t => new Null( t ) )
+                : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.PrimaryPoco, t => new Null( t ) )
             {
                 _familyInfo = family;
                 // The full name is the ImplTypeName. This works because the generated type is not a nested type (and not a generic of course).
-                Debug.Assert( !family.PocoClass.FullName!.Contains( '+' ) );
+                Throw.DebugAssert( !family.PocoClass.FullName!.Contains( '+' ) );
                 _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {family.PocoClass.FullName}()" );
             }
 
@@ -95,7 +97,7 @@ namespace CK.Setup
 
             protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
             {
-                Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
+                Throw.DebugAssert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
                 if( IsExchangeable )
                 {
                     if( !_fields.Any( f => f.IsExchangeable ) )
@@ -131,6 +133,19 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _familyInfo.ExternalName?.Name ?? CSharpName;
 
+            public IEnumerable<ISecondaryPocoType> SecondaryTypes
+            {
+                get
+                {
+                    var b = FirstBackReference;
+                    while( b != null )
+                    {
+                        if( b is ISecondaryPocoType sec ) yield return sec;
+                        b = b.NextRef;
+                    }
+                }
+            }
+
             public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
             {
                 if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
@@ -150,6 +165,30 @@ namespace CK.Setup
                        || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
                        || FamilyInfo.Interfaces.Any( i => i.PocoInterface == t )
                        || FamilyInfo.OtherInterfaces.Any( i => i == t );
+            }
+
+            public override bool IsReadableType( IPocoType type )
+            {
+                // type.IsNullable may be true: we don't care.
+                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                if( type.Kind == PocoTypeKind.SecondaryPoco )
+                {
+                    return ((ISecondaryPocoType)type).PrimaryPocoType == this;
+                }
+                if( type.Kind == PocoTypeKind.AbstractPoco )
+                {
+                    var t = type.Type;
+                    return t == typeof(IPoco)
+                           || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
+                           || FamilyInfo.OtherInterfaces.Any( i => i == t );
+                }
+                return false;
+            }
+
+            public override bool IsWritableType( IPocoType type )
+            {
+                return type == this
+                       || (!type.IsNullable && FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type ));
             }
 
             [AllowNull]

@@ -13,25 +13,23 @@ namespace CK.Setup
         sealed class PocoPropertyBuilder
         {
             readonly PocoTypeSystem _system;
+            readonly FakeExtPropertyInfo _fakeInderred;
             IPocoPropertyInfo? _prop;
             IExtPropertyInfo? _bestProperty;
             PocoFieldAccessKind _fieldAccessKind;
             IPocoType? _bestReg;
             IExtMemberInfo? _defaultValueSource;
             FieldDefaultValue? _defaultValue;
-            // Used for the inferred type.
-            PropertyInfo? _inferredPropertyInfo;
 
             public PocoPropertyBuilder( PocoTypeSystem system )
             {
                 _system = system;
+                _fakeInderred = new FakeExtPropertyInfo();
             }
-
-            public PocoPropertyBuilder Inferred => this;
 
             public PrimaryPocoField? Build( IActivityMonitor monitor, PocoType.PrimaryPocoType p, IPocoPropertyInfo prop )
             {
-                Debug.Assert( prop.DeclaredProperties.All( p => p.HomogeneousNullabilityInfo != null ) );
+                Throw.DebugAssert( prop.DeclaredProperties.All( p => p.HomogeneousNullabilityInfo != null ) );
                 _prop = prop;
                 _bestProperty = null;
                 _bestReg = null;
@@ -58,12 +56,10 @@ namespace CK.Setup
                     if( isWritable ) _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
                     monitor.Trace( $"Inferred {(isWritable ? "mutable collection" : "read only")} type for {prop}: {inferred.Value.Resolved.Type:C}" );
 
-                    _inferredPropertyInfo ??= GetType().GetProperty( nameof( Inferred ) )!;
-                    var fakeAttributes = inferred.Value.TupleNames != null ? new object[] { inferred.Value.TupleNames } : null;
-                    var inferredMember = _system._memberInfoFactory.CreateFake( _inferredPropertyInfo, inferred.Value.Resolved, fakeAttributes, null );
-                    _bestReg = _system.Register( monitor, inferredMember );
+                    _fakeInderred.SetInfo( prop, inferred.Value.Resolved, inferred.Value.TupleNames );
+                    _bestReg = _system.Register( monitor, _fakeInderred );
                     if( _bestReg == null ) return null;
-                    _bestProperty = inferredMember;
+                    _bestProperty = _fakeInderred;
                     if( !CheckExistingReadOnlyProperties( monitor, null ) ) return null;
                 }
                 Debug.Assert( _bestReg != null && _bestProperty != null );
@@ -146,14 +142,7 @@ namespace CK.Setup
                         }
                         if( success )
                         {
-                            // If the type is a IPoco family member, we map it to the PrimaryInterface.
-                            // This supports once for all the family equivalence class by erasing the specific
-                            // interface.
-                            //
-                            // Note that this works because we have first created all the IPoco types: now that we handle
-                            // their fields can we rely on their topology.
-                            //
-                            // Variance and nullability handling needs more thoughts...
+                            // Variance and nullability handling needs thoughts...
                             //
                             // A List<int> is not related to a List<int?>. We can keep both and let the user deal with
                             // this complexity.
@@ -181,7 +170,8 @@ namespace CK.Setup
                             //  - When true, types can be widened.
                             //  - When false, types must be unrelated.
                             //
-                            var oneType = _system.Register( monitor, new MemberContext( pU ), tInfo );
+                            var reusableContext = new MemberContext( pU, forbidAbstractCollections: true );
+                            var oneType = _system.Register( monitor, reusableContext, tInfo );
                             if( oneType == null ) return null;
                             // If the value is nullable, we project the nullability on each type
                             // of the union.
@@ -195,12 +185,12 @@ namespace CK.Setup
                             for( int i = 0; i < types.Count; ++i )
                             {
                                 var tE = types[i];
-                                if( tE.IsSameType( newInfo ) )
+                                if( tE.IsSamePocoType( oneType ) )
                                 {
                                     monitor.Warn( $"{prop}: UnionType '{oneType.CSharpName}' duplicated. Removing one." );
                                     oneTypeToAdd = null;
                                 }
-                                else if( tE.IsReadableType( newInfo ) )
+                                else if( tE.IsReadableType( oneType ) )
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
@@ -213,7 +203,7 @@ namespace CK.Setup
                                         success = false;
                                     }
                                 }
-                                else if( tE.IsWritableType( newInfo ) )
+                                else if( tE.IsWritableType( oneType ) )
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
@@ -361,15 +351,16 @@ namespace CK.Setup
                 {
                     var reg = _system.Register( monitor, p );
                     if( reg == null ) return false;
+                    Throw.DebugAssert( "PocoTypeSystem.Register only accepts homogeneous nullability info.", p.HomogeneousNullabilityInfo != null );
                     if( _bestReg != null )
                     {
-                        Debug.Assert( _bestProperty != null );
-                        if( reg != _bestReg )
+                        Throw.DebugAssert( _bestProperty != null );
+                        if( _bestReg.IsSamePocoType( reg ) )
                         {
-                            monitor.Error( $"{p}: Type must be exactly '{_bestReg.CSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
-                            return false;
+                            return true;
                         }
-                        return true;
+                        monitor.Error( $"{p}: Type must be '{_bestReg.CSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
+                        return false;
                     }
                     _bestProperty = p;
                     _bestReg = reg;

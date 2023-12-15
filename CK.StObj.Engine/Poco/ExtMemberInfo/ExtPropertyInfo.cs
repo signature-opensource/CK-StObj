@@ -1,4 +1,7 @@
+using System;
+using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -18,7 +21,7 @@ namespace CK.Setup
         {
         }
 
-        public PropertyInfo PropertyInfo => (PropertyInfo)_o;
+        public PropertyInfo PropertyInfo => Unsafe.As<PropertyInfo>( _o );
     }
 
 }

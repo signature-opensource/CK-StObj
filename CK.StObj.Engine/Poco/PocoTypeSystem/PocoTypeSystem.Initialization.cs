@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System;
-using CK.CodeGen;
-using static OneOf.Types.TrueFalseOrNull;
 
 namespace CK.Setup
 {
@@ -45,15 +43,29 @@ namespace CK.Setup
                 //       captured at the PocoDirectory level and may be used to restore a detailed
                 //       "IPoco definition" knowledge.
                 //
+                //  Note: The 2023-12-13, the "IConcretePoco" is back and named ISecondaryPocoType...
+                //        Because we want ISuperUserInfo (that is a IUserInfo) to appear in the system type.
+                //        Eradicating secondary interfaces worked fine, except that such "specialization" cannot
+                //        appear in the exposed types. We eventually considered that this was not a good idea and
+                //        had to handle this. The ISecondaryPocoType has its primary as its oblivious type, and
+                //        relay IsSameType/IsReadableType/IsWritableType and DefaultValueInfo to its primary.
+                //        
+                // 
                 // We also index the primary by its generated PocoClass type.
                 //
                 var primary = PocoType.CreatePrimaryPoco( this, family );
-                Debug.Assert( family.Interfaces[0].PocoInterface == primary.Type );
-                foreach( var i in family.Interfaces )
+                Throw.DebugAssert( family.Interfaces[0].PocoInterface == primary.Type );
+                _typeCache.Add( primary.Type, primary );
+                _typeCache.Add( primary.CSharpName, primary );
+                foreach( var i in family.Interfaces.Skip( 1 ) )
                 {
-                    _obliviousCache.Add( i.PocoInterface, primary );
+                    var sec = PocoType.CreateSecondaryPocoType( this, i.PocoInterface, primary );
+                    _typeCache.Add( i.PocoInterface, sec );
+                    _typeCache.Add( sec.CSharpName, sec );
                 }
-                _obliviousCache.Add( family.PocoClass, primary );
+                // Extra registration for the implementation class type.
+                _typeCache.Add( family.PocoClass, primary );
+
                 allPrimaries[iPrimary++] = primary;
                 if( family.IsClosedPoco ) closedPrimaries[iClosedPrimary++] = primary;
             }
@@ -71,9 +83,9 @@ namespace CK.Setup
             }
             // Third, registers the IPoco and IClosedPoco full sets.
             var all = PocoType.CreateAbstractPoco( monitor, this, typeof( IPoco ), allAbstracts.ToArray(), allPrimaries );
-            _obliviousCache.Add( typeof( IPoco ), all );
+            _typeCache.Add( typeof( IPoco ), all );
             var allClosed = PocoType.CreateAbstractPoco( monitor, this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
-            _obliviousCache.Add( typeof( IClosedPoco ), allClosed );
+            _typeCache.Add( typeof( IClosedPoco ), allClosed );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
             foreach( var p in allPrimaries )
             {
@@ -84,7 +96,7 @@ namespace CK.Setup
                     int idx = 0;
                     foreach( var a in p.FamilyInfo.OtherInterfaces )
                     {
-                        abstracts[idx++] = (IAbstractPocoType)_obliviousCache[a];
+                        abstracts[idx++] = (IAbstractPocoType)_typeCache[a];
                     }
                     p.AbstractTypes = abstracts;
                 }
@@ -109,10 +121,10 @@ namespace CK.Setup
                 success &= p.SetFields( monitor, StringBuilderPool, fields );
             }
             // Oblivious check: all reference type registered by types are non nullable.
-            // Only ValueT Types are oblivious and registered for nullable and non nullable.
-            Debug.Assert( _obliviousCache.Where( kv => kv.Key is Type )
+            // Only Value Types are oblivious and registered for nullable and non nullable.
+            Throw.DebugAssert( _typeCache.Where( kv => kv.Key is Type )
                                          .Select( kv => (Type: (Type)kv.Key, PocoType: kv.Value) )
-                                         .All( x => x.PocoType.IsOblivious
+                                         .All( x => (x.PocoType.IsOblivious || x.PocoType.Kind == PocoTypeKind.SecondaryPoco )
                                                     &&
                                                     (
                                                         (x.Type.IsValueType && (x.PocoType.IsNullable == (Nullable.GetUnderlyingType(x.Type) != null)))
@@ -150,7 +162,7 @@ namespace CK.Setup
                                   List<IAbstractPocoType> allAbstracts,
                                   List<IAbstractPocoType> closedAbstracts )
         {
-            if( !_obliviousCache.TryGetValue( tAbstract, out var result ) )
+            if( !_typeCache.TryGetValue( tAbstract, out var result ) )
             {
                 var families = poco.OtherInterfaces[tAbstract];
                 var abstractSubTypes = abstractTypes.Where( a => a != tAbstract && tAbstract.IsAssignableFrom( a ) ).ToList();
@@ -162,11 +174,11 @@ namespace CK.Setup
                 }
                 foreach( var f in families )
                 {
-                    subTypes[i++] = _obliviousCache[f.PrimaryInterface.PocoInterface];
+                    subTypes[i++] = _typeCache[f.PrimaryInterface.PocoInterface];
                 }
                 var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes );
                 result = a;
-                _obliviousCache.Add( tAbstract, a );
+                _typeCache.Add( tAbstract, a );
                 allAbstracts.Add( a );
                 if( typeof( IClosedPoco ).IsAssignableFrom( tAbstract ) ) closedAbstracts.Add( a );
             }

@@ -102,6 +102,18 @@ namespace CK.Setup
                 }
             }
 
+            public override bool IsWritableType( IPocoType type )
+            {
+                return type == this || _allowedTypes.Any( a => a.IsWritableType( type ) );
+            }
+
+            public override bool IsReadableType( IPocoType type )
+            {
+                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                // To allow the type to be readable, it must be readable.
+                return type.IsNullable && _allowedTypes.Any( a => a.IsReadableType( type ) );
+            }
+
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
 
             public override IPocoType ObliviousType => _obliviousType;

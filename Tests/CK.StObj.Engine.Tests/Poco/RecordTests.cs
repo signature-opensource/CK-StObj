@@ -132,7 +132,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         // Error CS8170  Struct members cannot return 'this' or other instance members by reference.
-        //public struct ThisMayBetterButImossible
+        //public struct ThisMayBetterButImpossible
         //{
         //    DetailWithFields _v;
 

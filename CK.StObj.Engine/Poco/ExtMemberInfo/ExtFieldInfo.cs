@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -9,7 +10,7 @@ namespace CK.Setup
         {
         }
 
-        public FieldInfo FieldInfo => (FieldInfo)_o;
+        public FieldInfo FieldInfo => Unsafe.As<FieldInfo>( _o );
     }
 
 }

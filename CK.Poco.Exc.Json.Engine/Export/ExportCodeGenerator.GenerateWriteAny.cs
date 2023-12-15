@@ -85,7 +85,7 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             foreach( var t in _nameMap.ExchangeableNonNullableObliviousTypes )
             {
                 if( t.Kind == PocoTypeKind.Any
-                    || t.Kind == PocoTypeKind.AbstractIPoco
+                    || t.Kind == PocoTypeKind.AbstractPoco
                     || t.Kind == PocoTypeKind.UnionType
                     || t.ObliviousType != t )
                 {
@@ -137,7 +137,7 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
                             break;
                         }
 
-                    case PocoTypeKind.IPoco:
+                    case PocoTypeKind.PrimaryPoco:
                         {
                             WriteCase( pocoCases, t );
                             break;

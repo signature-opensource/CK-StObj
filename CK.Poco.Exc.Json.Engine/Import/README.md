@@ -20,7 +20,7 @@ They are limited to instantiate oblivious types: the type `IList<(int A, int B)>
 type is not an exported type name (it is exported as a "L((int,int))" that is `List<(int,int)>`).
 
 These top-level functions cannot always be used internally: Poco collection types often use non regular collection
-types (a `IList<IUserInfo>` where `IUserInfo : IPoco` is implemented by a generated specialized `List<IUserInfo>`
+types (a `ISet<IUserInfo>` where `IUserInfo : IPoco` is implemented by a generated specialized `HashSet<IUserInfo>`
 that supports an extended covariance). Moreover, Poco fields can be `readonly`: they cannot be assigned to a new instance,
 only can they be filled with their content.
 
@@ -31,12 +31,12 @@ its job whereas Importers have to deal with these internal types.
 Writing into a stream is easy (the `Utf8JsonWriter` does it natively), but reading from a stream is not as
 simple.
 
-The [.Net documentation is irrelevant](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/use-dom-utf8jsonreader-utf8jsonwriter?pivots=dotnet-7-0#read-from-a-stream-using-utf8jsonreader).
-An issue has been opened here: https://github.com/dotnet/docs/issues/32950
+The [.Net documentation](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/use-utf8jsonreader?#read-from-a-stream-using-utf8jsonreader)
+shows how reading can be done. The not so easy part is supporting the `Skip` method, handling a potential BOM
+and and provide a way to inject a composable context into reader functions.
+All of this is simplified by the [`Utf8JsonStreamReader`](https://github.com/Invenietis/CK-Core/blob/master/CK.Core/Json/Utf8JsonStreamReader.cs).
 
-The code required to make this work is provided by the [`Utf8JsonStreamReader`](../../CK.Poco.Exc.Json/Utf8JsonStreamReader.cs).
-In the code below, simple call to `r.Read()` and `r.Skip()` are used but generated code uses the `PocoJsonReadContext rCtx`
-that implements `IUtf8JsonReaderDataProvider`. The real code for a Read is:
+The code below is the "extended read &amp; Skip": 
 ```csharp
 if( !r.Read() ) rCtx.ReadMoreData( ref reader );
 ```
@@ -44,6 +44,8 @@ And for a Skip, it is:
 ```csharp
 if( !r.TrySkip() ) rCtx.SkipMoreData( ref reader );
 ```
+Calls to `r.Read()` and `r.Skip()` are followed (when they return false) by a call to a `PocoJsonReadContext rCtx`
+that implements `IUtf8JsonReaderDataProvider`.
 
 ## Code Generation
 
@@ -55,8 +57,8 @@ These functions know how to read their corresponding type into a named variable 
 and a `PocoJsonReadContext rCtx`
 
 For a basic type (`int`), the generated code simply uses the `Utf8JsonReader` API:
-- The function is: `(w,v) => w.Append( v ).Append( " = r.GetInt32(); r.Read();" )`
-- This generates for instance: `i = r.GetInt32(); r.Read();`
+- The function is: `(w,v) => w.Append( v ).Append( " = r.GetInt32(); if( !r.Read() ) rCtx.ReadMoreData( ref r );" )`
+- This generates: `i = r.GetInt32(); if( !r.Read() ) rCtx.ReadMoreData( ref r );`
 
 For a Poco object, the reader function calls the `ReadJson` method that is generated on each Poco class implementation.
 The object is already allocated, this reader function "fills" an existing instance. This supports an incomplete
@@ -90,7 +92,7 @@ static CodeReader GetRecordCodeReader( IPocoType type )
 {
     return ( w, v ) => w.Append( "CK.Poco.Exc.JsonGen.Importer.Read_" )
                         .Append( type.Index )
-                        .Append( "(ref r,ref " )
+                        .Append( "(ref r, ref " )
                         .Append( v ).Append( ",options);" );
 }
 ```
@@ -115,14 +117,14 @@ internal static T[] ReadArray<T>( ref Utf8JsonReader r, TypedReader<T> itemReade
 ```
 And all Lists or Sets are filled by the common `FillListOrSet` helper:
 ```csharp
-internal static void FillListOrSet<T>( ref Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, PocoJsonImportOptions options )
+internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, TypedReader<T> itemReader, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
-    r.Read();
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
     while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
     {
-        c.Add( itemReader( ref r, options ) );
+        c.Add( itemReader( ref r, rCtx ) );
     }
-    r.Read();
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 ```
 For each registered collection type, the reader function calls `GetReadFunctionName` to obtain the name of a

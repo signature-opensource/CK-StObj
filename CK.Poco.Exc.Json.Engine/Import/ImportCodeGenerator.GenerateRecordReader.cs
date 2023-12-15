@@ -35,10 +35,13 @@ namespace CK.Setup.PocoJson
                 {
                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
                     {
-                        GenerateRead( writer, f.Type, $"v.{f.Name}", f.DefaultValueInfo.RequiresInit ? false : null );
+                        GenerateRead( writer, f.Type, $"v.Item{f.Index+1}", f.DefaultValueInfo.RequiresInit ? false : null );
                         writer.NewLine();
                     }
                 }
+                writer.Append( "if( r.TokenType != System.Text.Json.JsonTokenType.EndArray ) r.ThrowJsonException( \"Expecting ']' to end anonymous record '" )
+                      .Append( type.CSharpName ).Append( "'.\" );" ).NewLine()
+                      .Append( "if( !r.Read() ) rCtx.ReadMoreData( ref r );" ).NewLine();
             }
 
             void GenerateReadNamedFields( ITypeScope writer, IRecordPocoType type )

@@ -22,6 +22,20 @@ namespace CK.Setup
             return new ExtTypeInfo( this, type );
         }
 
+        public IExtMemberInfo Create( MemberInfo memberInfo )
+        {
+            Throw.CheckNotNullArgument( memberInfo );
+            return memberInfo switch
+            {
+                PropertyInfo p => new ExtPropertyInfo( this, p ),
+                FieldInfo p => new ExtFieldInfo( this, p ),
+                EventInfo e => new ExtEventInfo( this, e ),
+                Type t => new ExtTypeInfo( this, t ),
+                _ => Throw.ArgumentException<IExtMemberInfo>( nameof( memberInfo ) )
+            }; ;
+        }
+
+
         public IExtParameterInfo Create( ParameterInfo parameterInfo )
         {
             Throw.CheckNotNullArgument( parameterInfo );

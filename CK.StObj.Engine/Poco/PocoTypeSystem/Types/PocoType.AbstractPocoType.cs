@@ -67,7 +67,7 @@ namespace CK.Setup
                                       Type tAbstract,
                                       int abstractCount,
                                       IReadOnlyList<IPocoType> abstractAndPrimary )
-                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractIPoco, t => new NullAbstractPoco( t ) )
+                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstractAndPrimary = abstractAndPrimary;
                 _abstractCount = abstractCount;
@@ -114,6 +114,25 @@ namespace CK.Setup
                         && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
             }
 
+            /// <summary>
+            /// <c>Type.IsAssignableFrom( type.Type )</c> is not enough.
+            /// A primary interface may not extend this abstract interface (the abstract is defined on a secondary interface):
+            /// We must check that the proposed type is compatible with any of our primary poco.
+            /// <para>
+            /// The base IsReadableType that simply challenges <c>type.Type.IsAssignableFrom( Type )</c> is fine: we don't need
+            /// to override it.
+            /// </para>
+            /// </summary>
+            /// <param name="type">The potential contravariant type.</param>
+            /// <returns>True if the type is contravariant, false otherwise.</returns>
+            public override bool IsWritableType( IPocoType type )
+            {
+                return type == this
+                       || (!type.IsNullable
+                            && (Type.IsAssignableFrom( type.Type )
+                                || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) )));
+            }
+
             IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
 
             IOneOfPocoType IOneOfPocoType.NonNullable => this;
@@ -130,7 +149,7 @@ namespace CK.Setup
                                       Type tAbstract,
                                       IReadOnlyList<IAbstractPocoType> abstracts,
                                       IReadOnlyList<IPrimaryPocoType> primaries )
-                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractIPoco, t => new NullAbstractPoco( t ) )
+                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstracts = abstracts;
                 _primaries = primaries;
@@ -182,6 +201,15 @@ namespace CK.Setup
             {
                 return !type.IsNullable
                        && (Type.IsAssignableFrom( type.Type ) || _primaries.Any( t => t.IsWritableType( type ) ));
+            }
+
+            // See AbstractPocoType1.
+            public override bool IsWritableType( IPocoType type )
+            {
+                return type == this
+                       || (!type.IsNullable
+                            && (Type.IsAssignableFrom( type.Type )
+                                || _primaries.Any( t => t.IsWritableType( type ) )));
             }
 
             IOneOfPocoType IOneOfPocoType.Nullable => Nullable;

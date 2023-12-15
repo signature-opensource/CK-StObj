@@ -73,10 +73,10 @@ namespace CK.StObj.Engine.Tests.Poco
             ts.AllTypes.Count.Should().Be( before + 2 );
             tRec.Kind.Should().Be( PocoTypeKind.Record );
 
-            IPrimaryPocoType wA = ts.FindObliviousType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
+            IPrimaryPocoType wA = ts.FindByType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
             IPocoType countAndName = wA.Fields[0].Type;
 
-            IPrimaryPocoType wR = ts.FindObliviousType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
+            IPrimaryPocoType wR = ts.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
         }
 
@@ -89,22 +89,22 @@ namespace CK.StObj.Engine.Tests.Poco
             var r = TestHelper.GetSuccessfulResult( c );
             var ts = r.CKTypeResult.PocoTypeSystem;
 
-            var p = ts.FindObliviousType<IPrimaryPocoType>( typeof( IWithList ) );
+            var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
             Debug.Assert( p != null );
             p.IsNullable.Should().BeFalse();
             p.IsOblivious.Should().BeTrue();
             p.Should().BeAssignableTo<IPrimaryPocoType>();
 
-            var p2 = ts.FindObliviousType( typeof( IWithList ) );
+            var p2 = ts.FindByType( typeof( IWithList ) );
             p2.Should().BeSameAs( p );
 
-            var a = ts.FindObliviousType( typeof( ILinkedListPart ) );
+            var a = ts.FindByType( typeof( ILinkedListPart ) );
             Debug.Assert( a != null );
             a.Should().BeAssignableTo<IAbstractPocoType>();
 
             ((IAbstractPocoType)a).AllowedTypes.Should().Contain( p );
 
-            var impl = ts.FindObliviousType( p.FamilyInfo.PocoClass );
+            var impl = ts.FindByType( p.FamilyInfo.PocoClass );
             impl.Should().BeSameAs( p );
 
         }
@@ -177,6 +177,13 @@ namespace CK.StObj.Engine.Tests.Poco
             int Value { get; set; }
         }
 
+        // We need (at least) a secondary IPoco to test the CK.GRSupport.PocoList_*_CK adapter.
+        // For list, when there's only the primary, we use the List<primary> that is enough because
+        // IReadOnlyList is covariant and there's no list implementation to adapt.
+        public interface ISecondaryVerySimplePoco : IVerySimplePoco
+        {
+        }
+
         public List<int> ListV = null!; // Oblivious
         public List<int?> ListNV = null!; // Oblivious
         public IList<int?> IListNV = null!;
@@ -196,7 +203,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( true )]
         public void oblivious_List( bool revert )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ) );
             var r = TestHelper.GetSuccessfulResult( c );
             var ts = r.CKTypeResult.PocoTypeSystem;
 
@@ -283,7 +290,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 tRV.IsOblivious.Should().BeTrue();
                 tRV.Nullable.IsOblivious.Should().BeFalse();
                 tRV.CSharpName.Should().Be( "List<int>" );
-                tRV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
+                tRV.ImplTypeName.Should().Be( "List<int>" );
                 return tRV;
             }
 
@@ -294,7 +301,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 tRNV.IsOblivious.Should().BeTrue();
                 tRNV.Nullable.IsOblivious.Should().BeFalse();
                 tRNV.CSharpName.Should().Be( "List<int?>" );
-                tRNV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
+                tRNV.ImplTypeName.Should().Be( "List<int?>" );
                 return tRNV;
             }
 
@@ -369,7 +376,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 tPRR.IsOblivious.Should().BeTrue();
                 tPRR.Nullable.IsOblivious.Should().BeFalse();
                 tPRR.CSharpName.Should().Be( $"List<{n}>" );
-                tPRR.ImplTypeName.Should().Match( "CK.GRSupport.PocoList_*_CK" );
+                tPRR.ImplTypeName.Should().Match( $"List<{n}>" );
                 return tPRR;
             }
 
@@ -434,19 +441,22 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // Dictionary<object,int>: This is the oblivious.
             var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicV ) )! );
-            Debug.Assert( tRV != null && tRV.IsOblivious && !tRV.Nullable.IsOblivious );
+            Debug.Assert( tRV != null );
+            tRV.IsOblivious.Should().BeTrue();
             tRV.CSharpName.Should().Be( "Dictionary<object,int>" );
             tRV.ImplTypeName.Should().Be( "Dictionary<object,int>" );
 
             // Dictionary<object,int?>: This is the oblivious.
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNV ) )! );
-            Debug.Assert( tRNV != null && tRNV.IsOblivious && !tRNV.Nullable.IsOblivious );
+            Debug.Assert( tRNV != null );
+            tRNV.IsOblivious.Should().BeTrue();
             tRNV.CSharpName.Should().Be( "Dictionary<object,int?>" );
             tRNV.ImplTypeName.Should().Be( "Dictionary<object,int?>" );
 
             // IDictionary<object,int>
             var tIV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicV ) )! );
             Debug.Assert( tIV != null );
+            tIV.IsOblivious.Should().BeFalse();
             tIV.CSharpName.Should().Be( "IDictionary<object,int>" );
             tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueDictionary<object,int>" );
             tIV.ObliviousType.Should().BeSameAs( tRV );
@@ -454,6 +464,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // IDictionary<object,int?>
             var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNV ) )! );
             Debug.Assert( tINV != null );
+            tINV.IsOblivious.Should().BeFalse();
             tINV.CSharpName.Should().Be( "IDictionary<object,int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueDictionary<object,int>" );
             tINV.ObliviousType.Should().BeSameAs( tRNV );
@@ -462,27 +473,31 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // Dictionary<int,object>: This is the oblivious.
             var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicR ) )! );
-            Debug.Assert( tRR != null && tRR.IsOblivious && !tRR.Nullable.IsOblivious );
+            Debug.Assert( tRR != null );
+            tRR.IsOblivious.Should().BeTrue();
             tRR.CSharpName.Should().Be( "Dictionary<int,object>" );
             tRR.ImplTypeName.Should().Be( "Dictionary<int,object>" );
 
             // Dictionary<int,object?>
             var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNR ) )! );
-            Debug.Assert( tRNR != null && !tRNR.IsOblivious );
+            Debug.Assert( tRNR != null );
+            tRNR.IsOblivious.Should().BeFalse();
             tRNR.CSharpName.Should().Be( "Dictionary<int,object?>" );
             tRNR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
             tRNR.ObliviousType.Should().BeSameAs( tRR );
 
             // IDictionary<int,object?>
             var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNR ) )! );
-            Debug.Assert( tINR != null && !tINR.IsOblivious );
+            Debug.Assert( tINR != null );
+            tINR.IsOblivious.Should().BeFalse();
             tINR.CSharpName.Should().Be( "IDictionary<int,object?>" );
             tINR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
             tINR.ObliviousType.Should().BeSameAs( tRR );
 
             // IDictionary<int,object>
             var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicR ) )! );
-            Debug.Assert( tIR != null && !tIR.IsOblivious );
+            Debug.Assert( tIR != null );
+            tIR.IsOblivious.Should().BeFalse();
             tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
             tIR.ImplTypeName.Should().Be( "Dictionary<int,object>" );
             tIR.ObliviousType.Should().BeSameAs( tRR );
@@ -492,27 +507,31 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // Dictionary<int,IVerySimplePoco>: This is the oblivious.
             var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPR ) )! );
-            Debug.Assert( tPRR != null && tPRR.IsOblivious && !tPRR.Nullable.IsOblivious );
+            Debug.Assert( tPRR != null );
+            tPRR.IsOblivious.Should().BeTrue();
             tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
             tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}>" );
 
             // Dictionary<int,IVerySimplePoco?>
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPNR ) )! );
-            Debug.Assert( tPRNR != null && !tPRNR.IsOblivious );
+            Debug.Assert( tPRNR != null );
+            tPRNR.IsOblivious.Should().BeFalse();
             tPRNR.CSharpName.Should().Be( $"Dictionary<int,{n}?>" );
             tPRNR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
             tPRNR.ObliviousType.Should().BeSameAs( tPRR );
 
             // IDictionary<int,IVerySimplePoco?>
             var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPNR ) )! );
-            Debug.Assert( tPINR != null && !tPINR.IsOblivious );
+            Debug.Assert( tPINR != null );
+            tPINR.IsOblivious.Should().BeFalse();
             tPINR.CSharpName.Should().Be( $"IDictionary<int,{n}?>" );
             tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoDictionary_*_*_CK" );
             tPINR.ObliviousType.Should().BeSameAs( tPRR );
 
             // IDictionary<int,IVerySimplePoco>
             var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPR ) )! );
-            Debug.Assert( tPIR != null && !tPIR.IsOblivious );
+            Debug.Assert( tPIR != null );
+            tPIR.IsOblivious.Should().BeFalse();
             tPIR.CSharpName.Should().Be( $"IDictionary<int,{n}>" );
             tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the Dictionary<int,IVerySimplePoco?>." );
             tPIR.ObliviousType.Should().BeSameAs( tPRR );
@@ -520,12 +539,10 @@ namespace CK.StObj.Engine.Tests.Poco
 
         // AnonymousSampleO is the common ObliviousType: 
         public (IVerySimplePoco, List<IVerySimplePoco>) AnonymousSampleO = default;
-        public (IVerySimplePoco? A, IList<IVerySimplePoco?>? B) AnonymousSample1 = default;
-        public (IVerySimplePoco? A, IList<IVerySimplePoco?> B) AnonymousSample2 = default;
-        public (IVerySimplePoco? A, IList<IVerySimplePoco>? B) AnonymousSample3 = default;
-        public (IVerySimplePoco? A, IList<IVerySimplePoco> B) AnonymousSample4 = default;
-        public (IVerySimplePoco A, IList<IVerySimplePoco> B2) AnonymousSample5 = default;
-        public (IVerySimplePoco, List<IVerySimplePoco> X) AnonymousSample6 = default;
+        public (IVerySimplePoco?, List<IVerySimplePoco> X) AnonymousSample1 = default;
+        public (IVerySimplePoco A, List<IVerySimplePoco?> B) AnonymousSample2 = default;
+        public (IVerySimplePoco A, List<IVerySimplePoco>? B) AnonymousSample3 = default;
+        public (IVerySimplePoco? A, List<IVerySimplePoco?>? B) AnonymousSample4 = default;
 
         [TestCase( "ObliviousFirst" )]
         [TestCase( "ObliviousLast" )]
@@ -546,12 +563,8 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( t3 != null );
             var t4 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample4 ) )! );
             Debug.Assert( t4 != null );
-            var t5 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample5 ) )! );
-            Debug.Assert( t5 != null );
-            var t6 = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSample6 ) )! );
-            Debug.Assert( t6 != null );
 
-            if( mode == "ObliviousLast" ) tO = (IRecordPocoType?)ts.FindObliviousType( GetType().GetField( nameof( AnonymousSampleO ) )!.FieldType );
+            if( mode == "ObliviousLast" ) tO = (IRecordPocoType?)ts.FindByType( GetType().GetField( nameof( AnonymousSampleO ) )!.FieldType );
             Debug.Assert( tO != null && tO.IsAnonymous && tO.IsOblivious );
 
             tO.ObliviousType.Should().BeSameAs( tO );
@@ -559,28 +572,17 @@ namespace CK.StObj.Engine.Tests.Poco
             t2.ObliviousType.Should().BeSameAs( tO );
             t3.ObliviousType.Should().BeSameAs( tO );
             t4.ObliviousType.Should().BeSameAs( tO );
-            t5.ObliviousType.Should().BeSameAs( tO );
-            t6.ObliviousType.Should().BeSameAs( tO );
-            new object[] { tO, t1, t2, t3, t4, t5, t6 }.Distinct().Should().HaveCount( 7, "Different PocoTypes." );
+            new object[] { tO, t1, t2, t3, t4 }.Distinct().Should().HaveCount( 5, "Different PocoTypes." );
         }
 
         public List<HashSet<Dictionary<int, object>>> ListCollectionO = null!;
         public (
                     List<HashSet<Dictionary<int, object?>>> C1,
-                    IList<HashSet<Dictionary<int, object?>?>?> C2,
-                    List<ISet<Dictionary<int, object>?>?> C3,
-                    List<HashSet<IDictionary<int, object>?>?> C4,
-                    List<HashSet<IDictionary<int, object>>> C5,
-                    List<HashSet<Dictionary<int, object>?>?> C6,
-                    List<HashSet<Dictionary<int, object>?>?> C7,
-                    List<HashSet<IDictionary<int, object>?>?> C8,
-                    List<ISet<Dictionary<int, object?>?>?> C9,
-                    IList<ISet<IDictionary<int, object>>> C10,
-
-                    List<HashSet<Dictionary<int, object>>>? C11,
-                    List<HashSet<Dictionary<int, object>>?> C12,
-                    List<HashSet<Dictionary<int, object>?>> C13,
-                    List<HashSet<Dictionary<int, object?>>> C14
+                    List<HashSet<Dictionary<int, object>?>?> C2,
+                    List<HashSet<Dictionary<int, object>?>?> C3,
+                    List<HashSet<Dictionary<int, object>>>? C4,
+                    List<HashSet<Dictionary<int, object>>?> C5,
+                    List<HashSet<Dictionary<int, object>?>> C6
                )
                ListCollections = default!;
 

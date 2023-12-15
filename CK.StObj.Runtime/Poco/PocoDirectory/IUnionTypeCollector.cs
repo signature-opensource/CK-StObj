@@ -21,7 +21,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the different types that compose this union.
         /// </summary>
-        IReadOnlyList<IExtPropertyInfo> Types { get; }
+        IReadOnlyList<IExtMemberInfo> Types { get; }
 
         /// <summary>
         /// Returns a readable comma separated list of type names.

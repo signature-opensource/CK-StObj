@@ -101,7 +101,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void device_host_model()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ADeviceHost ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( ADeviceHost ) );
             using var s = TestHelper.CreateAutomaticServices( collector ).Services;
 
             s.GetService<ADeviceHost>().Should().NotBeNull(); 

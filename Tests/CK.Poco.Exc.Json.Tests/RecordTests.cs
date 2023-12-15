@@ -68,7 +68,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IHoldRecList : IPoco
         {
-            public record struct Rec( IList<Rec> R, int A = 3712 );
+            public record struct Rec( List<Rec> R, int A = 3712 );
 
             ref Rec P { get; }
         }

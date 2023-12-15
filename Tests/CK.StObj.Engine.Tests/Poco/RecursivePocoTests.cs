@@ -116,7 +116,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IHoldRecList : IPoco
         {
-            public record struct Rec( IList<Rec> R, int A );
+            public record struct Rec( List<Rec> R, int A );
 
             ref Rec P { get; }
         }
@@ -126,7 +126,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecList ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindObliviousType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindByType( typeof( IHoldRecList.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );
@@ -145,7 +145,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecArray ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindObliviousType( typeof( IHoldRecArray.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindByType( typeof( IHoldRecArray.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );
@@ -164,7 +164,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecDic ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
-            var tRec = ts.FindObliviousType( typeof( IHoldRecDic.Rec ) ) as IRecordPocoType;
+            var tRec = ts.FindByType( typeof( IHoldRecDic.Rec ) ) as IRecordPocoType;
             Debug.Assert( tRec != null );
             var list = tRec.Fields[0].Type as ICollectionPocoType;
             Debug.Assert( list != null );

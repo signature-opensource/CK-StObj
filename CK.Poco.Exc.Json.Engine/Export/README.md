@@ -95,44 +95,13 @@ public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJ
 
 All writer methods for value types use a `ref` parameter for their input: no copies are made for value types.
 
+> There's room for improvement here. Not all possible optimizations have been done (such as using precomputed
+utf8 spans for field names instead of strings).
+
 ### Writing collections
 
 Only regular collection types (`List<T>`, `HashSet<T>` and `Dictionary<T>`) need to be generated. Other types
 are casted into the regular ones. 
-
-Lists and arrays are very efficiently written since they use `AsSpan()` and [`CollectionsMarshal.AsSpan`](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.collectionsmarshal.asspan)
-to avoid any value type copies. Here is for instance the `List<List<int>>` and `List<int>` write methods:
-
-```csharp
-internal static void Write_56( System.Text.Json.Utf8JsonWriter w, ref List<List<int>> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
-{
-    var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
-    w.WriteStartArray();
-    for( int i = 0; i < a.Length; ++i )
-    {
-        if( a[i] == null ) w.WriteNullValue();
-        else
-        {
-            CK.Poco.Exc.JsonGen.Exporter.Write_54( w, ref a[i], wCtx );
-        }
-    }
-    w.WriteEndArray();
-}
-internal static void Write_54( System.Text.Json.Utf8JsonWriter w, ref List<int> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
-{
-    var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );
-    w.WriteStartArray();
-    for( int i = 0; i < a.Length; ++i )
-    {
-        w.WriteNumberValue( a[i] );
-    }
-    w.WriteEndArray();
-
-}
-```
-
-Unfortunately, no such direct access to the inner storage is available for HashSets and Dictionaries. For them,
-a basic enumeration is used on the values.
 
 ## Step 3: Generation of the WriteAny method.
 

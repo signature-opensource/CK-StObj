@@ -46,26 +46,37 @@ namespace CK.Setup
         IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
 
         /// <summary>
-        /// Tries to find the oblivious Poco type from an actual type.
+        /// Tries to find by type. Not all types can be indexed by types: the most obvious are nullable reference types
+        /// but collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c>)
+        /// are not. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
+        /// interfaces can be found by this method.
         /// </summary>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
-        IPocoType? FindObliviousType( Type type );
-        
+        IPocoType? FindByType( Type type );
+
         /// <summary>
-        /// Tries to find the oblivious Poco type from an actual type.
+        /// Tries to find by type. Not all types can be indexed by types: the most obvious are nullable reference types
+        /// but collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c>)
+        /// are not. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
+        /// interfaces can be found by this method.
         /// </summary>
         /// <typeparam name="T">The expected <see cref="IPocoType"/>.</typeparam>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
-        T? FindObliviousType<T>( Type type ) where T : class, IPocoType;
+        T? FindByType<T>( Type type ) where T : class, IPocoType;
         
         /// <summary>
         /// Forbids a type to be <see cref="IPocoType.IsExchangeable"/>. This
         /// condemns all fields that depend on it to be no more <see cref="IPocoField.IsExchangeable"/>
         /// and can subsequently also condemn other types if all their fields become not exchangeable.
         /// <para>
-        /// The "object" (<see cref="PocoTypeKind.Any"/>) is necessarily exchangeable. 
+        /// The "object" (<see cref="PocoTypeKind.Any"/>) is necessarily exchangeable: an <see cref="ArgumentException"/>
+        /// is thrown if <paramref name="type"/> is Any. 
+        /// </para>
+        /// <para>
+        /// An argument exception is also thrown if <paramref name="type"/> is a <see cref="PocoTypeKind.SecondaryPoco"/>:
+        /// only the <see cref="IPrimaryPocoType"/> or <see cref="IAbstractPocoType"/> can be set to not exchangeable.
         /// </para>
         /// </summary>
         /// <param name="monitor">Required monitor.</param>

@@ -54,7 +54,7 @@ namespace CK.Setup
 
             protected override void OnAlreadyVisited( IActivityMonitor monitor, IPocoType t )
             {
-                _cycleFound |= t.Kind == PocoTypeKind.IPoco;
+                _cycleFound |= t.Kind == PocoTypeKind.PrimaryPoco;
             }
 
             protected override void VisitCollection( IActivityMonitor monitor, ICollectionPocoType collection )

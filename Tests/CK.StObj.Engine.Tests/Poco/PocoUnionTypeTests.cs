@@ -56,7 +56,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Union_definition_must_be_public_properties_in_nested_class_UnionTypes()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissUnionTypes ) );
-            TestHelper.GetFailedResult( c, "[UnionType] attribute on 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'class UnionTypes { public (int,string) Thing { get; } }' with the types (here, (int,string) is just an example of course)." );
+            TestHelper.GetFailedResult( c, "[UnionType] attribute on 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IInvalidPocoWithUnionTypeMissUnionTypes.Thing' requires a nested 'class UnionTypes { public (int,string) Thing { get; } }' with the types. Here, (int,string) is just an example of course." );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeMissFieldDefinition ) );
             TestHelper.GetFailedResult( c, "The nested class UnionTypes requires a public value tuple 'Thing' property." );
             c = TestHelper.CreateStObjCollector( typeof( IInvalidPocoWithUnionTypeInvalidFieldDefinition ) );
@@ -163,7 +163,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_when_not_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType )/*, typeof( PocoJsonSerializer )*/ );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionType ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -181,8 +181,6 @@ namespace CK.StObj.Engine.Tests.Poco
 
             // AnotherThing must not be null.
             p.AnotherThing = 3;
-            //var p2 = JsonTestHelper.Roundtrip( directory, p );
-            //p.Should().BeEquivalentTo( p2 );
         }
 
         public interface IPerson : IPoco { }
@@ -215,21 +213,22 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void IsAssignableFrom_and_duplicates_are_removed()
         {
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
                 var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes2 ), typeof( IPerson ), typeof( IStudent ) );
                 TestHelper.GetSuccessfulResult( c );
 
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "Property 'AnotherThing' on Poco interfaces: 'I2': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPerson' duplicated. Removing one.", StringComparison.Ordinal ) );
+                logs.Should().Contain( "Property 'AnotherThing' on Poco interfaces: 'I2': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IStudent' duplicated. Removing one." );
             }
-            using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Warn ) )
+            using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
                 var c = TestHelper.CreateStObjCollector( typeof( IPocoWithDuplicatesUnionTypes3 ), typeof( IPerson ), typeof( IStudent ) );
                 TestHelper.GetSuccessfulResult( c );
 
-                entries.Select( e => e.Text ).Should()
-                    .Contain( t => t.Contains( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPerson' duplicated. Removing one.", StringComparison.Ordinal ) );
+                logs.Should()
+                    .Contain( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'CK.StObj.Engine.Tests.Poco.PocoUnionTypeTests.IPerson' duplicated. Removing one." );
+                logs.Count( t => t.Contains( "Property 'YetAnotherThing' on Poco interfaces: 'I3': UnionType 'string' duplicated. Removing one." ) )
+                    .Should().Be( 3 );
             }
         }
 
@@ -293,7 +292,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_if_none_of_the_variant_is_nullable()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable )/*, typeof( PocoJsonSerializer )*/ );
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
@@ -307,9 +306,6 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.Invoking( x => x.Thing = null! ).Should().Throw<ArgumentException>();
             p.Invoking( x => x.Thing = this ).Should().Throw<ArgumentException>();
-
-            //var p2 = JsonTestHelper.Roundtrip( directory, p );
-            //p.Should().BeEquivalentTo( p2 );
         }
 
 

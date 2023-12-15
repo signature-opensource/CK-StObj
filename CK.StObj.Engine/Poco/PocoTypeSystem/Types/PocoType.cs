@@ -79,6 +79,25 @@ namespace CK.Setup
                 return NonNullable.IsWritableType( type.ToNonNullable() );
             }
 
+            public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
+
+            public bool IsReadableType( IPocoType type )
+            {
+                // We are on a nullable type. Non nullable IsReadableType predicates don't care of the
+                // type nullability (a nullable can always be read from it's non nullable): we
+                // simply relay the type here.
+                return NonNullable.IsReadableType( type );
+            }
+
+            public bool IsWritableType( IPocoType type )
+            {
+                // We are on a nullable type. Non nullable IsWritableType predicates rejects
+                // nullable type (a nullable cannot be set to a non nullable). We
+                // relay the non nullable type here and if it is writable then we, as a nullable
+                // type are writable regardless of type.IsNullable.
+                return NonNullable.IsWritableType( type.NonNullable );
+            }
+
             public override string ToString() => PocoType.ToString( this, true );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
@@ -124,6 +143,9 @@ namespace CK.Setup
 
             public string ImplTypeName => _csharpName;
 
+            // We can avoid the Primary/SecondaryPoco test because we are on a value type.
+            public bool IsSamePocoType( IPocoType type ) => type == this;
+
             /// <summary>
             /// Returning this works for basic value types, enumerations and named records
             /// but not for anonymous records.
@@ -162,6 +184,23 @@ namespace CK.Setup
             public bool IsReadableType( IExtNullabilityInfo type ) => type.Type == typeof( object ) || type.Type == Type || type.Type == NonNullable.Type;
 
             public bool IsWritableType( IExtNullabilityInfo type ) => type.Type == Type;
+
+            public bool IsReadableType( IPocoType type )
+            {
+                // We are on a nullable type. Non nullable IsReadableType predicates don't care of the
+                // type nullability (a nullable can always be read from it's non nullable): we
+                // simply relay the type here.
+                return NonNullable.IsReadableType( type );
+            }
+
+            public bool IsWritableType( IPocoType type )
+            {
+                // We are on a nullable type. Non nullable IsWritableType predicates rejects
+                // nullable type (a nullable cannot be set to a non nullable). We
+                // relay the non nullable type here and if it is writable then we, as a nullable
+                // type are writable regardless of type.IsNullable.
+                return NonNullable.IsWritableType( type.NonNullable );
+            }
 
             public override string ToString() => PocoType.ToString( this, true );
 
@@ -220,28 +259,37 @@ namespace CK.Setup
         public virtual string ImplTypeName => _csharpName;
 
         /// <summary>
-        /// Defaults to "this".
-        /// Works for everything except for:
-        /// - Anonymous records: since they are value tuples that have no field name and associated oblivious types,
-        ///   this cannot be 'this' by default.
-        /// - Collections and Union types: since they have an oblivious composed of oblivious types.
+        /// Defaults to "this" that works for everything except for:
+        /// <list type="bullet">
+        ///     <item>
+        ///     Anonymous records: their obblivious are value tuples that have no field name and oblivious field types.
+        ///     </item>
+        ///     <item>
+        ///     Collections and Union types: their oblivious is the same type composed only of oblivious types.
+        ///     </item>
+        ///     <item>
+        ///     SecondaryPoco: their oblivious is the PrimaryPoco.
+        ///     </item>
+        /// </list>
         /// </summary>
         public virtual IPocoType ObliviousType
         {
             get
             {
-                Debug.Assert( Kind != PocoTypeKind.AnonymousRecord
-                              && Kind != PocoTypeKind.Array
-                              && Kind != PocoTypeKind.List
-                              && Kind != PocoTypeKind.HashSet
-                              && Kind != PocoTypeKind.Dictionary
-                              && Kind != PocoTypeKind.UnionType, "These override." );
-                Debug.Assert( Kind == PocoTypeKind.Any
-                              || Kind == PocoTypeKind.Basic
-                              || Kind == PocoTypeKind.Enum
-                              || Kind == PocoTypeKind.Record
-                              || Kind == PocoTypeKind.IPoco
-                              || Kind == PocoTypeKind.AbstractIPoco );
+                Throw.DebugAssert( "These type must override.",
+                                    Kind != PocoTypeKind.AnonymousRecord
+                                    && Kind != PocoTypeKind.Array
+                                    && Kind != PocoTypeKind.List
+                                    && Kind != PocoTypeKind.HashSet
+                                    && Kind != PocoTypeKind.Dictionary
+                                    && Kind != PocoTypeKind.UnionType
+                                    && Kind != PocoTypeKind.SecondaryPoco );
+                Throw.DebugAssert( Kind == PocoTypeKind.Any
+                                   || Kind == PocoTypeKind.Basic
+                                   || Kind == PocoTypeKind.Enum
+                                   || Kind == PocoTypeKind.Record
+                                   || Kind == PocoTypeKind.PrimaryPoco
+                                   || Kind == PocoTypeKind.AbstractPoco );
                 return this;
             }
         }
@@ -257,10 +305,11 @@ namespace CK.Setup
         {
             get
             {
-                Debug.Assert( Kind == PocoTypeKind.Any
-                              || (Kind == PocoTypeKind.Basic && !(Type == typeof( string ) || Type == typeof( DateTime )))
-                              || Kind == PocoTypeKind.UnionType
-                              || Kind == PocoTypeKind.AbstractIPoco, "All other PocoType override this." );
+                Throw.DebugAssert( "All other PocoType override this.",
+                                   Kind == PocoTypeKind.Any
+                                   || (Kind == PocoTypeKind.Basic && !(Type == typeof( string ) || Type == typeof( DateTime )))
+                                   || Kind == PocoTypeKind.UnionType
+                                   || Kind == PocoTypeKind.AbstractPoco );
 
                 return Kind == PocoTypeKind.Basic ? DefaultValueInfo.Allowed : DefaultValueInfo.Disallowed;
             }
@@ -316,26 +365,60 @@ namespace CK.Setup
         public virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
-            if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
+            if( type.IsNullable )
+            {
+                if( !ignoreRootTypeIsNullable ) return false;
+                type = type.ToNonNullable();
+            }
             Debug.Assert( !IsPurelyGeneratedType, "Collections override this." );
-            Debug.Assert( Kind != PocoTypeKind.IPoco, "PrimaryPocoType override this." );
+            Debug.Assert( Kind is not (PocoTypeKind.PrimaryPoco or PocoTypeKind.SecondaryPoco), "Primary & Secondary PocoType override this." );
             return Type == type.Type;
         }
 
-        public virtual bool IsWritableType( IExtNullabilityInfo type )
-        {
-            Debug.Assert( !IsNullable, "Null implementations override this." );
-            return !type.IsNullable && Type.IsAssignableFrom( type.Type );
-        }
-
-        /// <summary>
-        /// Simply calls <c>type.Type.IsAssignableFrom( Type )</c> at this level.
-        /// </summary>
         public virtual bool IsReadableType( IExtNullabilityInfo type )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
             Debug.Assert( typeof( int? ).IsAssignableFrom( typeof( int ) ), "Value Type nullable <: not nullable is handled by .Net." );
             return type.Type.IsAssignableFrom( Type );
+        }
+        public virtual bool IsWritableType( IExtNullabilityInfo type )
+        {
+            Debug.Assert( !IsNullable, "Null implementations override this." );
+            return (!type.IsNullable && Type.IsAssignableFrom( type.Type ));
+        }
+
+        public bool IsSamePocoType( IPocoType type ) => IsSamePocoType( this, type );
+
+        static bool IsSamePocoType( IPocoType t1, IPocoType t2 )
+        {
+            return t2.IsNullable == t1.IsNullable
+                   &&
+                   (t2 == t1
+                     || (t2.Kind == PocoTypeKind.SecondaryPoco && t1.Kind == PocoTypeKind.SecondaryPoco
+                         && ((ISecondaryPocoType)t2).PrimaryPocoType == ((ISecondaryPocoType)t1).PrimaryPocoType)
+                     || (t2.Kind == PocoTypeKind.PrimaryPoco && t1.Kind == PocoTypeKind.SecondaryPoco
+                         && t2 == ((ISecondaryPocoType)t1).PrimaryPocoType)
+                     || (t2.Kind == PocoTypeKind.SecondaryPoco && t1.Kind == PocoTypeKind.PrimaryPoco
+                         && ((ISecondaryPocoType)t2).PrimaryPocoType == (IPrimaryPocoType)t1));
+        }
+
+        /// <summary>
+        /// Simply calls <c>type.Type.IsAssignableFrom( Type )</c> at this level.
+        /// </summary>
+        public virtual bool IsReadableType( IPocoType type )
+        {
+            Throw.DebugAssert( "Null implementations override this.", !IsNullable );
+            Throw.DebugAssert( "Value Type nullable <: not nullable is kindly handled by .Net.", typeof( int? ).IsAssignableFrom( typeof( int ) ) );
+            return type == this || type.Kind == PocoTypeKind.Any || type.Type.IsAssignableFrom( Type );
+        }
+
+        /// <summary>
+        /// Checks that <paramref name="type"/> is not nullable and calls <c>Type.IsAssignableFrom( type.Type )</c> at this level.
+        /// </summary>
+        public virtual bool IsWritableType( IPocoType type )
+        {
+            Debug.Assert( !IsNullable, "Null implementations override this." );
+            return type == this || (!type.IsNullable && Type.IsAssignableFrom( type.Type ));
         }
 
         static string ToString( IPocoType t, bool withOblivious )

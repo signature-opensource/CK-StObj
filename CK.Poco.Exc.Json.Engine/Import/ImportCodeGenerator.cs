@@ -111,6 +111,10 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             {
                 return "CK.Poco.Exc.JsonGen.Importer.ReadAny";
             }
+            if( t.Kind == PocoTypeKind.SecondaryPoco )
+            {
+                t = t.ObliviousType;
+            }
             // Allow reference types to be null here (oblivious NRT mode).
             // The function is bound to the non null type, but it handles the nullable.
             var tFunc = t.Type.IsValueType ? t : t.NonNullable;
@@ -156,7 +160,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             {
                 Debug.Assert( !t.IsNullable, "This must be called only when it makes sense: nullable doesn't require any initialization." );
                 return t.DefaultValueInfo.RequiresInit
-                       && (t.Kind == PocoTypeKind.IPoco
+                       && (t.Kind == PocoTypeKind.PrimaryPoco
                            || t.Kind == PocoTypeKind.List
                            || t.Kind == PocoTypeKind.Dictionary
                            || t.Kind == PocoTypeKind.HashSet

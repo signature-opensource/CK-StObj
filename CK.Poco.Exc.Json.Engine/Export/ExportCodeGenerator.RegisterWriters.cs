@@ -4,6 +4,7 @@ using System.Numerics;
 using System;
 using System.Diagnostics;
 using static CK.Core.PocoJsonExportSupport;
+using System.Reflection.Metadata;
 
 namespace CK.Setup.PocoJson
 {
@@ -13,16 +14,42 @@ namespace CK.Setup.PocoJson
         //         Writers for the same "oblivious family" will share the same delegate.
         void RegisterWriters()
         {
+            _exporterType.GeneratedByComment().Append(
+            """
+            internal static void WriteEnumerablePoco( System.Text.Json.Utf8JsonWriter w, IEnumerable<IPoco> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
+            {
+               w.WriteStartArray();
+               foreach( var e in v )
+               {
+                  if( e == null ) w.WriteNullValue();
+                  else System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( e ).WriteJson( w, wCtx );
+               }
+               w.WriteEndArray();
+            }
+
+            internal static void WriteEnumerablePocoWithType( System.Text.Json.Utf8JsonWriter w, IEnumerable<IPoco> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
+            {
+               w.WriteStartArray();
+               foreach( var e in v )
+               {
+                  if( e == null ) w.WriteNullValue();
+                  else System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( e ).WriteJson( w, wCtx, true );
+               }
+               w.WriteEndArray();
+            }
+            """ );
+
             foreach( var type in _nameMap.ExchangeableNonNullableTypes )
             {
                 switch( type.Kind )
                 {
                     case PocoTypeKind.UnionType:
-                    case PocoTypeKind.AbstractIPoco:
+                    case PocoTypeKind.AbstractPoco:
                     case PocoTypeKind.Any:
                         _writers[type.Index >> 1] = ObjectWriter;
                         break;
-                    case PocoTypeKind.IPoco:
+                    case PocoTypeKind.PrimaryPoco:
+                    case PocoTypeKind.SecondaryPoco:
                         _writers[type.Index >> 1] = PocoWriter;
                         break;
                     case PocoTypeKind.Basic:
@@ -30,16 +57,30 @@ namespace CK.Setup.PocoJson
                         break;
                     case PocoTypeKind.Array:
                         {
-                            var tA = (ICollectionPocoType)type;
-                            _writers[type.Index >> 1] = tA.ItemTypes[0].Type == typeof( byte )
-                                                            ? ( writer, v ) => writer.Append( "w.WriteBase64StringValue( " ).Append( v ).Append( " );" )
-                                                            : GetCollectionObliviousCodeWriter( type );
+                            var t = (ICollectionPocoType)type;
+                            _writers[type.Index >> 1] = t.ItemTypes[0].Type == typeof( byte )
+                                                            ? ByteArrayWriter
+                                                            : t.ItemTypes[0].Kind switch
+                                                            {
+                                                                PocoTypeKind.AbstractPoco => EnumerablePocoWriterWithType,
+                                                                PocoTypeKind.PrimaryPoco or PocoTypeKind.SecondaryPoco => EnumerablePocoWriter,
+                                                                _ => GetCollectionWriter( type )
+                                                            };
                             break;
                         }
                     case PocoTypeKind.List:
                     case PocoTypeKind.HashSet:
+                        {
+                            _writers[type.Index >> 1] = ((ICollectionPocoType)type).ItemTypes[0].Kind switch
+                            {
+                                PocoTypeKind.AbstractPoco => EnumerablePocoWriterWithType,
+                                PocoTypeKind.PrimaryPoco or PocoTypeKind.SecondaryPoco => EnumerablePocoWriter,
+                                _ => GetCollectionWriter( type )
+                            };
+                            break;
+                        }
                     case PocoTypeKind.Dictionary:
-                        _writers[type.Index >> 1] = GetCollectionObliviousCodeWriter( type );
+                        _writers[type.Index >> 1] = GetCollectionWriter( type );
                         break;
                     case PocoTypeKind.Record:
                     case PocoTypeKind.AnonymousRecord:
@@ -60,9 +101,24 @@ namespace CK.Setup.PocoJson
                 writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteAny( w, " ).Append( variableName ).Append( ", wCtx );" );
             }
 
+            static void ByteArrayWriter( ICodeWriter writer, string variableName )
+            {
+                writer.Append( "w.WriteBase64StringValue( " ).Append( variableName ).Append( " );" );
+            }
+
             static void PocoWriter( ICodeWriter writer, string variableName )
             {
                 writer.Append( "((PocoJsonExportSupport.IWriter)" ).Append( variableName ).Append( ").WriteJson( w, wCtx );" );
+            }
+
+            static void EnumerablePocoWriterWithType( ICodeWriter writer, string variableName )
+            {
+                writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteEnumerablePocoWithType( w, " ).Append( variableName ).Append( ", wCtx );" );
+            }
+
+            static void EnumerablePocoWriter( ICodeWriter writer, string variableName )
+            {
+                writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteEnumerablePoco( w, " ).Append( variableName ).Append( ", wCtx );" );
             }
 
             static CodeWriter GetBasicTypeCodeWriter( IPocoType type )
@@ -153,17 +209,8 @@ namespace CK.Setup.PocoJson
                 }
             }
 
-            static CodeWriter GetCollectionObliviousCodeWriter( IPocoType type )
+            static CodeWriter GetCollectionWriter( IPocoType type )
             {
-                if( type.ImplTypeName != type.ObliviousType.ImplTypeName )
-                {
-                    // The type is an adapter that is a type.ObliviousType.ImplTypeName.
-                    return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
-                                                  .Append( type.ObliviousType.Index )
-                                                  .Append( "( w, (" ).Append( type.ObliviousType.ImplTypeName ).Append( ")" )
-                                                  .Append( v )
-                                                  .Append( ",wCtx);" );
-                }
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
                                               .Append( type.ObliviousType.Index )
                                               .Append( "(w," )

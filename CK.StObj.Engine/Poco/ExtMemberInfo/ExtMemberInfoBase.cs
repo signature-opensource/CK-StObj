@@ -147,7 +147,7 @@ namespace CK.Setup
                         ParameterInfo p => _factory.CreateNullabilityInfo( p, false ),
                         PropertyInfo p => _factory.CreateNullabilityInfo( p, false ),
                         FieldInfo p => _factory.CreateNullabilityInfo( p, false ),
-                        EventInfo p => ReadNullabilityInfo,
+                        EventInfo => ReadNullabilityInfo,
                         _ => Throw.NotSupportedException<IExtNullabilityInfo>()
                     };
                     if( _wNullabilityInfo.IsHomogeneous ) _rNullabilityInfo ??= _wNullabilityInfo;

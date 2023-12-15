@@ -119,7 +119,7 @@ namespace CK.Setup
                         // It's useless here to try do detect an incompatibility between the 2 interfaces.
                         // The only thing we must do is trying to select a family if possible so we don't
                         // erase any "concrete" Poco, letting a last "abstract" win the choice.
-                        var fLeft = typeSystem.FindObliviousType<IPrimaryPocoType>( left.Type );
+                        var fLeft = typeSystem.FindByType<IPrimaryPocoType>( left.Type );
                         if( fLeft != null ) return left;
                         // Left is abstract: right may be a concrete one...
                         return right;
@@ -312,7 +312,7 @@ namespace CK.Setup
                 // We are left with IPoco interfaces.
                 if( !typeof( IPoco ).IsAssignableFrom( t.Type ) ) return UnsupportedTypeError( monitor, t.Type );
                 // If the poco is not abstract, resolves its primary type.
-                var concrete = ctx.TypeSystem.FindObliviousType<IPrimaryPocoType>( t.Type );
+                var concrete = ctx.TypeSystem.FindByType<IPrimaryPocoType>( t.Type );
                 return concrete != null
                         ? new ExtNullabilityInfo( concrete.Type, t.IsNullable )
                         : t;
@@ -333,7 +333,11 @@ namespace CK.Setup
                     var tGen = t.Type.GetGenericTypeDefinition();
                     Type? tGenMapped = MapGeneric( monitor, tGen, ref ctx );
                     if( tGenMapped == null ) return null;
-
+                    // Stop analysing invariants.
+                    if( tGen == typeof( List<> ) || tGen == typeof( HashSet<> ) || tGen == typeof( Dictionary<,> ) )
+                    {
+                        return t;
+                    }
                     var t0 = ToConcrete( monitor, t.GenericTypeArguments[0], ref ctx );
                     if( t0 == null ) return null;
                     if( t.GenericTypeArguments.Count == 1 )
@@ -352,18 +356,24 @@ namespace CK.Setup
                     {
                         if( tGen == typeof( IReadOnlyList<> ) )
                         {
+                            // Map to IList<> only for the top type, otherwise map to List<>: we currently forbid
+                            // subordinated abstractions.
+                            var isRoot = ctx.RootKind == PocoTypeKind.None;
                             if( !ctx.SetCollectionContext( monitor, true, tGen, PocoTypeKind.List ) ) return null;
-                            return typeof( IList<> );
+                            return isRoot ? typeof( IList<> ) : typeof( List<> );
                         }
                         if( tGen == typeof( IList<> ) || tGen == typeof( List<> ) )
                         {
                             if( !ctx.SetCollectionContext( monitor, false, tGen, PocoTypeKind.List ) ) return null;
+                            // If a IList<> is specified in a subordinated position, it will be forbidden when the type
+                            // will be registered. While inferring, we can keep it.
                             return tGen;
                         }
                         if( tGen == typeof( IReadOnlySet<> ) )
                         {
+                            var isRoot = ctx.RootKind == PocoTypeKind.None;
                             if( !ctx.SetCollectionContext( monitor, true, tGen, PocoTypeKind.HashSet ) ) return null;
-                            return typeof( ISet<> );
+                            return isRoot ? typeof( ISet<> ) : typeof( HashSet<> );
                         }
                         if( tGen == typeof( ISet<> ) || tGen == typeof( HashSet<> ) )
                         {
@@ -372,8 +382,9 @@ namespace CK.Setup
                         }
                         if( tGen == typeof( IReadOnlyDictionary<,> ) )
                         {
+                            var isRoot = ctx.RootKind == PocoTypeKind.None;
                             if( !ctx.SetCollectionContext( monitor, true, tGen, PocoTypeKind.Dictionary ) ) return null;
-                            return typeof( IDictionary<,> );
+                            return isRoot ? typeof( IDictionary<,> ) : typeof( Dictionary<,> );
                         }
                         if( tGen == typeof( IDictionary<,> ) || tGen == typeof( Dictionary<,> ) )
                         {

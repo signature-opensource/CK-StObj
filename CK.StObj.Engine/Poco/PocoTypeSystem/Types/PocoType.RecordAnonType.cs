@@ -80,6 +80,7 @@ namespace CK.Setup
                         PocoTypeKind.AnonymousRecord,
                         t => new Null( t, tNull ) )
             {
+                Throw.DebugAssert( obliviousType != null || fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
                 _obliviousType = obliviousType ?? this;
                 _fields = fields;
                 foreach( var f in fields ) f.SetOwner( this );
@@ -118,6 +119,24 @@ namespace CK.Setup
             IRecordPocoType IRecordPocoType.Nullable => Nullable;
 
             IRecordPocoType IRecordPocoType.NonNullable => this;
+
+            public override bool IsWritableType( IPocoType type )
+            {
+                return type == this;
+            }
+
+            public override bool IsReadableType( IPocoType type )
+            {
+                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                if( type.Kind != PocoTypeKind.AnonymousRecord ) return false;
+                var aType = (RecordAnonType)type;
+                if( _fields.Length != aType._fields.Length ) return false;
+                for( int i = 0; i < _fields.Length; i++ )
+                {
+                    if( !_fields[i].Type.IsReadableType( aType._fields[i].Type ) ) return false;
+                }
+                return true;
+            }
 
             protected override void OnNoMoreExchangeable( IActivityMonitor monitor, ITypeRef r )
             {

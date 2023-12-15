@@ -1,9 +1,12 @@
 using CK.Core;
+using CommunityToolkit.HighPerformance;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -135,8 +138,7 @@ namespace CK.Poco.Exc.Json.Tests
                                         [""L(int?)"",[null,0,null]]
                                     ]
                                 ]
-                }"
-                                .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+                }".Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
             }
         }
 
@@ -283,5 +285,6 @@ namespace CK.Poco.Exc.Json.Tests
             Debug.Assert( oBackA != null );
             oBackA.Should().BeEquivalentTo( oBack );
         }
+
     }
 }

@@ -116,11 +116,13 @@ namespace CK.Setup
             // Gets all the virtual methods (abstract methods are virtual).
             // We normalize the method object to the Declared one because of the way the
             // TypeAttributeCache/AttributeProvider works: this SHOULD be refactored soon (around IExtTypeInfo).
-            var candidates = abstractType.GetMethods( bindingFlags )
-                                         .Where( m => !m.IsSpecialName && m.IsVirtual )
-                                         .Select( m => m.ReflectedType == m.DeclaringType
-                                                        ? m
-                                                        : m.DeclaringType!.GetMethod( m.Name, bindingFlags, m.GetParameters().Select( p => p.ParameterType ).ToArray() ) );
+            IEnumerable<MethodInfo> candidates = abstractType.GetMethods( bindingFlags )
+                                                    .Where( m => !m.IsSpecialName && m.IsVirtual )
+                                                    .Select( m => m.ReflectedType == m.DeclaringType
+                                                                ? m
+                                                                : m.DeclaringType!.GetMethod( m.Name,
+                                                                                              bindingFlags,
+                                                                                              m.GetParameters().Select( p => p.ParameterType ).ToArray() ) )!;
             int nbUncovered = 0;
             List<ImplementableMethodInfo> methods = new List<ImplementableMethodInfo>();
             foreach( var m in candidates )

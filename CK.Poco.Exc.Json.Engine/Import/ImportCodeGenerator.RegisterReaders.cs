@@ -22,13 +22,21 @@ namespace CK.Setup.PocoJson
                     case PocoTypeKind.Any:
                         _readers[type.Index >> 1] = ObjectReader;
                         break;
-                    case PocoTypeKind.AbstractIPoco:
+                    case PocoTypeKind.AbstractPoco:
                         _readers[type.Index >> 1] = GetAbstractPocoReader( type );
                         break;
-                    case PocoTypeKind.IPoco:
-                        _readers[type.Index >> 1] = GetPocoReader( type );
-                        pocos.Add( (IPrimaryPocoType)type );
-                        break;
+                    case PocoTypeKind.PrimaryPoco:
+                        {
+                            var r = GetPocoReader( type );
+                            var t = (IPrimaryPocoType)type;
+                            _readers[type.Index >> 1] = r;
+                            foreach( var sec in t.SecondaryTypes )
+                            {
+                                _readers[sec.Index >> 1] = r;
+                            }
+                            pocos.Add( t );
+                            break;
+                        }
                     case PocoTypeKind.Basic:
                         _readers[type.Index >> 1] = GetBasicTypeCodeReader( type );
                         break;

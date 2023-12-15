@@ -1,15 +1,8 @@
-using CK.CodeGen;
 using CK.Core;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
 
 namespace CK.Setup
 {
@@ -48,6 +41,8 @@ namespace CK.Setup
             }
 
             new ICollectionPocoType NonNullable => Unsafe.As<ICollectionPocoType>( base.NonNullable );
+
+            public bool IsAbstractCollection => NonNullable.IsAbstractCollection;
 
             public IReadOnlyList<IPocoType> ItemTypes => NonNullable.ItemTypes;
 
@@ -103,6 +98,8 @@ namespace CK.Setup
 
             public override IPocoType ObliviousType => _obliviousType;
 
+            public bool IsAbstractCollection => Kind! != PocoTypeKind.Array && CSharpName[0] == 'I';
+
             ICollectionPocoType ICollectionPocoType.ObliviousType => _obliviousType;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemType;
@@ -139,7 +136,7 @@ namespace CK.Setup
                     return _itemType[0].IsSameType( type.GenericTypeArguments[0] );
                 }
                 // The purely generated type are currently only for Poco List, Set (and Dictionary).
-                Debug.Assert( _itemType[0].Kind == PocoTypeKind.IPoco );
+                Debug.Assert( _itemType[0].Kind == PocoTypeKind.PrimaryPoco );
                 Debug.Assert( Type == IDynamicAssembly.PurelyGeneratedType, "This one cannot do any job :)." );
                 // We could resolve the PocoType and expect this PocoType in return...
                 // ...or we can "reproduce" the "external" to actual type mapping: only the abstractions
@@ -189,7 +186,7 @@ namespace CK.Setup
                 // We are on our wrappers. Since we did not generate dynamic types for them, we must
                 // reproduce here their capabilities.
                 // The purely generated type are currently only for Poco List, Set (and Dictionary).
-                Debug.Assert( _itemType[0].Kind == PocoTypeKind.IPoco );
+                Debug.Assert( _itemType[0].Kind == PocoTypeKind.PrimaryPoco );
 
                 if( type.Type.IsGenericType && !type.Type.IsValueType )
                 {
@@ -248,6 +245,35 @@ namespace CK.Setup
                 return IsSameType( type, true );
             }
 
+            public override bool IsWritableType( IPocoType type )
+            {
+                // Poco Collections are implementations. We don't support any contravariance.
+                return type == this;
+            }
+
+            public override bool IsReadableType( IPocoType type )
+            {
+                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                // It must be the same kind of collection. Array is invariant.
+                if( type.Kind != Kind || Kind == PocoTypeKind.Array ) return false;
+                var cType = (ICollectionPocoType)type;
+                // Covariance applies to IList or ISet.
+                if( cType.IsAbstractCollection )
+                {
+                    return ItemTypes[0].IsReadableType( cType.ItemTypes[0] );
+                }
+                Throw.DebugAssert( "Otherwise, type == this.", ItemTypes[0] != cType.ItemTypes[0] );
+                // Save the non nullable <: nullable type value
+                // but only for reference types.
+                var tItem = ItemTypes[0];
+                if( !tItem.Type.IsValueType )
+                {
+                    var targetValue = cType.ItemTypes[0].NonNullable;
+                    return tItem == targetValue;
+                }
+                return false;
+            }
+
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
         }
 
@@ -302,6 +328,8 @@ namespace CK.Setup
 
             ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( _obliviousType );
 
+            public bool IsAbstractCollection => CSharpName[0] == 'I';
+
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 
             #region ITypeRef auto implementation for Key type.
@@ -330,7 +358,7 @@ namespace CK.Setup
                     return _itemTypes[1].IsSameType( type.GenericTypeArguments[1] );
                 }
                 // See CollectonType1 above.
-                Debug.Assert( _itemTypes[1].Kind == PocoTypeKind.IPoco );
+                Debug.Assert( _itemTypes[1].Kind == PocoTypeKind.PrimaryPoco );
                 Debug.Assert( Type == IDynamicAssembly.PurelyGeneratedType, "This one cannot do any job :)." );
                 if( type.Type.IsGenericType && !type.Type.IsValueType )
                 {
@@ -353,7 +381,7 @@ namespace CK.Setup
                 // We are on our wrappers. Since we did not generate dynamic types for them, we must
                 // reproduce here their capabilities.
                 // The purely generated type are currently only for Poco List, Set (and Dictionary) but not array.
-                Debug.Assert( _itemTypes[1].Kind == PocoTypeKind.IPoco );
+                Debug.Assert( _itemTypes[1].Kind == PocoTypeKind.PrimaryPoco );
                 Debug.Assert( Kind != PocoTypeKind.Array );
 
                 if( type.Type.IsGenericType && !type.Type.IsValueType )
@@ -391,6 +419,36 @@ namespace CK.Setup
                     return Type.IsAssignableFrom( type.Type );
                 }
                 return IsSameType( type, true );
+            }
+
+            public override bool IsWritableType( IPocoType type )
+            {
+                // Poco Collections are implementations. We don't support any contravariance.
+                return type == this;
+            }
+
+            public override bool IsReadableType( IPocoType type )
+            {
+                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                // It must be the same kind of collection. Array is invariant.
+                if( type.Kind != PocoTypeKind.Dictionary ) return false;
+                var cType = (ICollectionPocoType)type;
+                // Covariance applies to IDictionary value only.
+                if( ItemTypes[0] != cType.ItemTypes[0] ) return false;
+                if( cType.IsAbstractCollection )
+                {
+                    return ItemTypes[1].IsReadableType( cType.ItemTypes[1] );
+                }
+                Throw.DebugAssert( "Otherwise, type == this.", ItemTypes[1] != cType.ItemTypes[1] );
+                // Save the non nullable <: nullable type value
+                // but only for reference types.
+                IPocoType tItem = ItemTypes[1];
+                if( tItem.Type.IsValueType )
+                {
+                    var targetValue = ItemTypes[1].NonNullable;
+                    return tItem == targetValue;
+                }
+                return false;
             }
 
         }

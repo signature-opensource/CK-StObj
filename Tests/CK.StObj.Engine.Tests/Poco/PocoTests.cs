@@ -145,7 +145,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same( Type t1, Type t2 )
         {
             var c = TestHelper.CreateStObjCollector( t1, t2 );
-            TestHelper.GetFailedResult( c, "Type must be exactly '", "' since '", "' defines it." );
+            TestHelper.GetFailedResult( c, "Type must be '", "' since '", "' defines it." );
         }
 
         public interface IDefTestMaskedBaseProperties : IDefTest
@@ -262,7 +262,10 @@ namespace CK.StObj.Engine.Tests.Poco
         public void same_Poco_properties_can_be_of_any_type_as_long_as_they_belong_to_the_same_Poco_family()
         {
             {
-                var c = TestHelper.CreateStObjCollector( typeof( IRootTest ), typeof( ISubTest ), typeof( IRootBestTest ), typeof( ISubBestTest ) );
+                var c = TestHelper.CreateStObjCollector( typeof( IRootTest ),
+                                                         typeof( ISubTest ),
+                                                         typeof( IRootBestTest ),
+                                                         typeof( ISubBestTest ) );
                 TestHelper.GetSuccessfulResult( c );
             }
 
@@ -283,7 +286,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                                          typeof( ISubBestTest ),
                                                          typeof( IRootAbsoluteBestTest ),
                                                          typeof( IRootBuggyOtherFamily ) );
-                TestHelper.GetFailedResult( c, "IPoco 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefBase' has been excluded." );
+                TestHelper.GetFailedResult( c, "IPoco 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefBase' has been excluded or not registered." );
             }
 
             // With IDefBase Poco registration:
@@ -295,7 +298,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                                          typeof( IRootAbsoluteBestTest ),
                                                          typeof( IRootBuggyOtherFamily ),
                                                          typeof( IDefBase ) );
-                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub': Type must be exactly 'CK.StObj.Engine.Tests.Poco.PocoTests.ISubTest' since 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub' defines it." );
+                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub': Type must be 'CK.StObj.Engine.Tests.Poco.PocoTests.ISubTest' since 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub' defines it." );
             }
         }
 

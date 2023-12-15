@@ -4,7 +4,10 @@ namespace CK.Setup
 {
 
     /// <summary>
-    /// Type for the primary interface of a <see cref="PocoTypeKind.IPoco"/> family.
+    /// Type for the primary interface of a <see cref="PocoTypeKind.PrimaryPoco"/> family.
+    /// <para>
+    /// This type is its own <see cref="IPocoType.ObliviousType"/>.
+    /// </para>
     /// </summary>
     public interface IPrimaryPocoType : ICompositePocoType
     {
@@ -24,6 +27,12 @@ namespace CK.Setup
         IReadOnlyList<IAbstractPocoType> AbstractTypes { get; }
 
         /// <summary>
+        /// Gets the extension interfaces with the same nullability as this one.
+        /// Corresponds to the <see cref="IPocoFamilyInfo.Interfaces"/> (except the first one that is this primary Poco type).
+        /// </summary>
+        IEnumerable<ISecondaryPocoType> SecondaryTypes { get; }
+
+        /// <summary>
         /// Gets the constructor source code.
         /// </summary>
         string CSharpBodyConstructorSourceCode { get; }
@@ -33,6 +42,6 @@ namespace CK.Setup
 
         /// <inheritdoc cref="IPocoType.NonNullable" />
         new IPrimaryPocoType NonNullable { get; }
-
     }
+
 }

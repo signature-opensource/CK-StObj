@@ -13,7 +13,7 @@ namespace CK.Setup.PocoJson
             {
                 switch( type.Kind )
                 {
-                    case PocoTypeKind.IPoco:
+                    case PocoTypeKind.PrimaryPoco:
                         GeneratePocoWriteMethod( monitor, _generationContext, (IPrimaryPocoType)type );
                         break;
                     case PocoTypeKind.AnonymousRecord:
@@ -100,21 +100,31 @@ namespace CK.Setup.PocoJson
             {
                 GenerateWriteJsonMethodHeader( code, type );
                 code.OpenBlock();
-                if( type.Kind == PocoTypeKind.Array )
+                code.Append( "w.WriteStartArray();" ).NewLine();
+                if( type.ItemTypes[0].Type.IsValueType )
                 {
-                    code.Append( "var a = v.AsSpan();" ).NewLine();
+                    if( type.Kind == PocoTypeKind.Array )
+                    {
+                        code.Append( "var a = v.AsSpan();" ).NewLine();
+                    }
+                    else
+                    {
+                        code.Append( "var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );" ).NewLine();
+                    }
+                    code.Append( "for( int i = 0; i < a.Length; ++i )" )
+                        .OpenBlock()
+                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "a[i]" ) )
+                        .CloseBlock();
                 }
                 else
                 {
-                    code.Append( "var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );" ).NewLine();
+                    code.Append( "foreach( var e in v )" )
+                        .OpenBlock()
+                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "e" ) )
+                        .CloseBlock();
                 }
-                code.Append( "w.WriteStartArray();" ).NewLine()
-                    .Append( "for( int i = 0; i < a.Length; ++i )" )
-                    .OpenBlock()
-                    .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "a[i]" ) )
-                    .CloseBlock()
-                    .Append( "w.WriteEndArray();" ).NewLine()
-                    .CloseBlock();
+                code.Append( "w.WriteEndArray();" ).NewLine();
+                code.CloseBlock();
             }
 
             void GenerateAnonymousRecordWriteMethod( ITypeScope code, IRecordPocoType type )
@@ -126,7 +136,7 @@ namespace CK.Setup.PocoJson
                 {
                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
                     {
-                        GenerateWrite( code, f.Type, $"v.{f.Name}" );
+                        GenerateWrite( code, f.Type, $"v.Item{f.Index+1}" );
                     }
                 }
                 code.Append( "w.WriteEndArray();" ).NewLine()
