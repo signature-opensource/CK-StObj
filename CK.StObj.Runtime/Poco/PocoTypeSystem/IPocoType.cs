@@ -167,31 +167,31 @@ namespace CK.Setup
         /// </summary>
         ITypeRef? FirstBackReference { get; }
 
-        /// <summary>
-        /// Gets whether the given type is the same as this one: either this <see cref="Type"/> and <see cref="IExtNullabilityInfo.Type"/> are
-        /// the same or the generated type for the <paramref name="type"/> would be the same as this one, or the <see cref="IExtNullabilityInfo.Type"/>
-        /// is a IPoco interface of the same family as this one.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <param name="ignoreRootTypeIsNullable">
-        /// True to skip this <see cref="IsNullable"/> vs. <paramref name="type"/>'s <see cref="IExtNullabilityInfo.IsNullable"/> check.
-        /// </param>
-        /// <returns>True if the type is the same, false otherwise.</returns>
-        bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false );
+        ///// <summary>
+        ///// Gets whether the given type is the same as this one: either this <see cref="Type"/> and <see cref="IExtNullabilityInfo.Type"/> are
+        ///// the same or the generated type for the <paramref name="type"/> would be the same as this one, or the <see cref="IExtNullabilityInfo.Type"/>
+        ///// is a IPoco interface of the same family as this one.
+        ///// </summary>
+        ///// <param name="type">The type to check.</param>
+        ///// <param name="ignoreRootTypeIsNullable">
+        ///// True to skip this <see cref="IsNullable"/> vs. <paramref name="type"/>'s <see cref="IExtNullabilityInfo.IsNullable"/> check.
+        ///// </param>
+        ///// <returns>True if the type is the same, false otherwise.</returns>
+        //bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false );
 
-        /// <summary>
-        /// Gets whether the given type is contravariant with this one.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <returns>True if the type is contravariant, false otherwise.</returns>
-        bool IsWritableType( IExtNullabilityInfo type );
+        ///// <summary>
+        ///// Gets whether the given type is contravariant with this one.
+        ///// </summary>
+        ///// <param name="type">The type to check.</param>
+        ///// <returns>True if the type is contravariant, false otherwise.</returns>
+        //bool IsWritableType( IExtNullabilityInfo type );
 
-        /// <summary>
-        /// Gets whether the given type is covariant with this one.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <returns>True if the type is covariant, false otherwise.</returns>
-        bool IsReadableType( IExtNullabilityInfo type );
+        ///// <summary>
+        ///// Gets whether the given type is covariant with this one.
+        ///// </summary>
+        ///// <param name="type">The type to check.</param>
+        ///// <returns>True if the type is covariant, false otherwise.</returns>
+        //bool IsReadableType( IExtNullabilityInfo type );
 
 
         /// <summary>

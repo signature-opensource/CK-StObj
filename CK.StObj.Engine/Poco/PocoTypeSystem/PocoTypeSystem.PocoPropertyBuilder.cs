@@ -127,6 +127,7 @@ namespace CK.Setup
                         monitor.Error( $"Property '{prop.Name}' of the nested 'class {pU.DeclaringType.DeclaringType!:N}.UnionTypes' must be a value tuple (current type is {nInfo.Type:C})." );
                         return null;
                     }
+                    var reusableContext = new MemberContext( pU, forbidAbstractCollections: true );
                     foreach( var tInfo in nInfo.GenericTypeArguments )
                     {
                         if( tInfo.Type == typeof(object) )
@@ -170,16 +171,14 @@ namespace CK.Setup
                             //  - When true, types can be widened.
                             //  - When false, types must be unrelated.
                             //
-                            var reusableContext = new MemberContext( pU, forbidAbstractCollections: true );
+                            reusableContext.Reset();
                             var oneType = _system.Register( monitor, reusableContext, tInfo );
                             if( oneType == null ) return null;
                             // If the value is nullable, we project the nullability on each type
                             // of the union.
-                            var newInfo = tInfo;
                             if( isNullable )
                             {
                                 oneType = oneType.Nullable;
-                                newInfo = newInfo.ToNullable();
                             }
                             var oneTypeToAdd = oneType;
                             for( int i = 0; i < types.Count; ++i )
@@ -335,12 +334,56 @@ namespace CK.Setup
                         }
                         if( p.Type.IsByRef )
                         {
-                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is not a record nor a collection, it must be a regular property with a setter: '{_bestReg.CSharpName} {p.Name} {{ get; set; }}'." );
+                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is not a record, it must not be a 'ref' property, only a regular property with a setter: '{_bestReg.CSharpName} {p.Name} {{ get; set; }}'." );
                             return false;
                         }
                     }
                     return true;
                 }
+                // The property is a simple { get; }. It may be an "Abstract read only Property"
+                // or a real property that must be allocated.
+                // This current implementation is not satisfying.
+                // What we should do here is:
+                // - Resolve the property type with a new "AllowAbstractReadonly" code path that would
+                //   allow IReadonlyList/Set/Dictionary (and may be other "ReadOnly" types to appear)
+                //   that would return a IPocoType if the type is a Poco compliant type or a "Extended/AbstractPocoType"
+                //   that is a potentially covariant type for one PocoType (or more? - a IReadOnlySet<IUserInfo> is compatible
+                //   with a mere HashSet<IUserInfo> without the covariant adapter of the ISet<IUserInfo>...).
+                // - This AbstractPocoType may then even be able to describe an "Adapter" or a projection from the IPocoType to the "abstract type"
+                //   (or generate the code adapter like the IPrimaryPocoType.CSharpBodyConstructorSourceCode).
+                //
+                // Before this can be done we can certainly find an intermediate way. The fact is that the property
+                // will be an "Abstract read only Property" if it is a "read only type":
+                // - Any Basic type (inluding the Globalization types) are value types or immutable reference types: this is compatible
+                //   with a "read only view".
+                // - We consider that "object" is a read only type.
+                //   - object Stuff { get; } and object? Stuff { get; } are the ultimate abstract readonly properties.
+                // - Value types (record type) are also "read only" because through a simple { get; }, it is a clone that is exposed.
+                // - We are left with IPoco...
+                //   - IUserInfo Thing { get; } is a real property.
+                //   - IUserInfo? Thing { get; } is "abstract" that would be not null only if a writable property IUserInfo? Thing { get; }
+                //     or a "real" IUserInfo Thing { get; } is defined is defined elsewhere in the family.
+                //     But as an "Abstract", it must not be mutable! Currently this corresponds to a "I'm an optional property in the family"...
+                //     This is strange but not totally irrelevant. This is not an "Abstract property", more an "Optional Property"...
+                //     I have absolutely no idea if this can have a usage but it's logically sound and its behavior will not violate the
+                //     Principle of Least Surprise.
+                //  - ...Array:
+                //    - int[] Stuff { get; } or int[]? Stuff { get; }
+                //      are both "Optional property". They don't define anything usable by themselves but if a real property (with a setter) exists
+                //      in the family, they can be used.
+                //  - List/Set/Dictionary
+                //    - If the type is a Poco collection (List, Set, Dictionary and abstract IList, ISet, IDictionary only at the root of the type),
+                //      it is mutable. It is a real property.
+                //    - We are left only with a IReadOnlyList/Set/Dictionary and this is where covariance comes into play.
+                //      - The items type must be read only.
+                //        - Here again all Basic and any value types are fine: they are exposed as values by the
+                //          collection accessors (no ref access).
+                //        - We don't have IReadOnly<IPoco> or other constructs that can constrain a collection item.
+                //          We forbid this: no IPoco can appear in a collection.
+                //        - If we allow subordinated collections, they must be IReadOnlyList/Set/Dictionary ones, but then we have
+                //          currently absolutely no way 
+                //      - The dictionary key being invariant is not an issue.
+                //
                 if( _bestProperty != null && !CheckNewReadOnly( monitor, p ) )
                 {
                     return false;

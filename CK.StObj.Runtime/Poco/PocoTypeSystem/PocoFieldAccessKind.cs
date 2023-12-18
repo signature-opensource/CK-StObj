@@ -20,7 +20,7 @@ namespace CK.Setup
 
         /// <summary>
         /// The field is a regular property with a setter.
-        /// Its type can be an array.
+        /// Its type can be an array but not another kind of collection.
         /// </summary>
         HasSetter,
 

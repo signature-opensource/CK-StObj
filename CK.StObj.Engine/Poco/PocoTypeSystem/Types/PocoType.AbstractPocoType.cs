@@ -108,11 +108,11 @@ namespace CK.Setup
 
             public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary;
 
-            public override bool IsWritableType( IExtNullabilityInfo type )
-            {
-                return !type.IsNullable
-                        && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
-            }
+            //public override bool IsWritableType( IExtNullabilityInfo type )
+            //{
+            //    return !type.IsNullable
+            //            && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
+            //}
 
             /// <summary>
             /// <c>Type.IsAssignableFrom( type.Type )</c> is not enough.
@@ -197,11 +197,13 @@ namespace CK.Setup
 
             public IEnumerable<IPocoType> AllowedTypes => ((IEnumerable<IPocoType>)_abstracts).Concat( _primaries );
 
-            public override bool IsWritableType( IExtNullabilityInfo type )
-            {
-                return !type.IsNullable
-                       && (Type.IsAssignableFrom( type.Type ) || _primaries.Any( t => t.IsWritableType( type ) ));
-            }
+            #region Type against IExtNullabilityInfo. Should be replaced by an Adapter factory.
+            //public override bool IsWritableType( IExtNullabilityInfo type )
+            //{
+            //    return !type.IsNullable
+            //           && (Type.IsAssignableFrom( type.Type ) || _primaries.Any( t => t.IsWritableType( type ) ));
+            //}
+            #endregion Waiting for the "Adapter factory".
 
             // See AbstractPocoType1.
             public override bool IsWritableType( IPocoType type )

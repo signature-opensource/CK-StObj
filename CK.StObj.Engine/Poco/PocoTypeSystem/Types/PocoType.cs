@@ -63,21 +63,23 @@ namespace CK.Setup
             /// </summary>
             public IPocoType ObliviousType => _nonNullable.ObliviousType;
 
-            public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
-            {
-                if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
-                return NonNullable.IsSameType( type, true );
-            }
+            #region Type against IExtNullabilityInfo. Should be replaced by an Adapter factory.
+            //public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
+            //{
+            //    if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
+            //    return NonNullable.IsSameType( type, true );
+            //}
 
-            public bool IsReadableType( IExtNullabilityInfo type )
-            {
-                return NonNullable.IsReadableType( type );
-            }
+            //public bool IsReadableType( IExtNullabilityInfo type )
+            //{
+            //    return NonNullable.IsReadableType( type );
+            //}
 
-            public bool IsWritableType( IExtNullabilityInfo type )
-            {
-                return NonNullable.IsWritableType( type.ToNonNullable() );
-            }
+            //public bool IsWritableType( IExtNullabilityInfo type )
+            //{
+            //    return NonNullable.IsWritableType( type.ToNonNullable() );
+            //}
+            #endregion Waiting for the "Adapter factory".
 
             public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
 
@@ -175,15 +177,17 @@ namespace CK.Setup
 
             public bool IsExchangeable => NonNullable.IsExchangeable;
 
-            public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
-            {
-                if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
-                return NonNullable.IsSameType( type, true );
-            }
+            #region Type against IExtNullabilityInfo. Should be replaced by an Adapter factory.
+            //public bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
+            //{
+            //    if( !ignoreRootTypeIsNullable && !type.IsNullable ) return false;
+            //    return NonNullable.IsSameType( type, true );
+            //}
 
-            public bool IsReadableType( IExtNullabilityInfo type ) => type.Type == typeof( object ) || type.Type == Type || type.Type == NonNullable.Type;
+            //public bool IsReadableType( IExtNullabilityInfo type ) => type.Type == typeof( object ) || type.Type == Type || type.Type == NonNullable.Type;
 
-            public bool IsWritableType( IExtNullabilityInfo type ) => type.Type == Type;
+            //public bool IsWritableType( IExtNullabilityInfo type ) => type.Type == Type;
+            #endregion Waiting for the "Adapter factory".
 
             public bool IsReadableType( IPocoType type )
             {
@@ -362,7 +366,8 @@ namespace CK.Setup
             return f;
         }
 
-        public virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
+        #region Type against IExtNullabilityInfo. Should be replaced by an Adapter factory.
+        internal virtual bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
             if( type.IsNullable )
@@ -375,17 +380,18 @@ namespace CK.Setup
             return Type == type.Type;
         }
 
-        public virtual bool IsReadableType( IExtNullabilityInfo type )
+        internal virtual bool IsReadableType( IExtNullabilityInfo type )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
             Debug.Assert( typeof( int? ).IsAssignableFrom( typeof( int ) ), "Value Type nullable <: not nullable is handled by .Net." );
             return type.Type.IsAssignableFrom( Type );
         }
-        public virtual bool IsWritableType( IExtNullabilityInfo type )
+        internal virtual bool IsWritableType( IExtNullabilityInfo type )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
             return (!type.IsNullable && Type.IsAssignableFrom( type.Type ));
         }
+        #endregion Waiting for the "Adapter factory".
 
         public bool IsSamePocoType( IPocoType type ) => IsSamePocoType( this, type );
 
