@@ -41,8 +41,6 @@ namespace CK.Setup
 
             public string ImplTypeName => NonNullable.ImplTypeName;
 
-            public bool IsProperType => _nonNullable.IsProperType;
-
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
             public Type Type => NonNullable.Type;
@@ -74,7 +72,7 @@ namespace CK.Setup
                 // Non nullable IsReadableType predicates don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return !type.IsNullable && NonNullable.IsReadableType( type );
+                return type.IsNullable && NonNullable.IsReadableType( type );
             }
 
             public bool IsWritableType( IPocoType type )
@@ -131,8 +129,6 @@ namespace CK.Setup
 
             public string ImplTypeName => _csharpName;
 
-            public bool IsProperType => _nonNullable.IsProperType;
-
             // We can avoid the Primary/SecondaryPoco test because we are on a value type.
             public bool IsSamePocoType( IPocoType type ) => type == this;
 
@@ -172,7 +168,7 @@ namespace CK.Setup
                 // Non nullable IsReadableType predicates don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return !type.IsNullable && NonNullable.IsReadableType( type );
+                return type.IsNullable && NonNullable.IsReadableType( type );
             }
 
             public bool IsWritableType( IPocoType type )
@@ -239,28 +235,6 @@ namespace CK.Setup
         /// purely generated type name.
         /// </summary>
         public virtual string ImplTypeName => _csharpName;
-
-        public virtual bool IsProperType
-        {
-            get
-            {
-                Throw.DebugAssert( "These type must override.",
-                                    Kind != PocoTypeKind.AnonymousRecord
-                                    && Kind != PocoTypeKind.Record
-                                    && Kind != PocoTypeKind.Array
-                                    && Kind != PocoTypeKind.List
-                                    && Kind != PocoTypeKind.HashSet
-                                    && Kind != PocoTypeKind.Dictionary
-                                    && Kind != PocoTypeKind.UnionType);
-                Throw.DebugAssert( Kind == PocoTypeKind.Any
-                                   || Kind == PocoTypeKind.Basic
-                                   || Kind == PocoTypeKind.Enum
-                                   || Kind == PocoTypeKind.PrimaryPoco
-                                   || Kind == PocoTypeKind.AbstractPoco
-                                   || Kind == PocoTypeKind.SecondaryPoco );
-                return true;
-            }
-        }
 
         /// <summary>
         /// Defaults to "this" that works for everything except for:

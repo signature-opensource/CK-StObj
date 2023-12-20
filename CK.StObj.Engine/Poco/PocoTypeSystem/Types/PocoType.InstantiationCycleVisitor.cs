@@ -18,7 +18,7 @@ namespace CK.Setup
             //
             List<List<IPocoField>> _path;
             int _typedPathCount;
-            // Will stop the 
+            // Will stop the visit.
             bool _cycleFound;
 
             public InstantiationCycleVisitor()
@@ -54,7 +54,7 @@ namespace CK.Setup
 
             protected override void OnAlreadyVisited( IActivityMonitor monitor, IPocoType t )
             {
-                _cycleFound |= t.Kind == PocoTypeKind.PrimaryPoco;
+                _cycleFound |= t.Kind == PocoTypeKind.PrimaryPoco | t.Kind == PocoTypeKind.SecondaryPoco;
             }
 
             protected override void VisitCollection( IActivityMonitor monitor, ICollectionPocoType collection )

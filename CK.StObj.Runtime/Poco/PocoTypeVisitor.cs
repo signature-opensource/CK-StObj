@@ -9,8 +9,11 @@ namespace CK.Setup
     /// <summary>
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
     /// are available in <see cref="LastVisited"/>.
-    /// By default, <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/> and <see cref="IUnionPocoType"/>'s
-    /// <see cref="IOneOfPocoType.AllowedTypes"/> are followed.
+    /// <para>
+    /// By default, nullable types visit their <see cref="IPocoType.NonNullable"/> and <see cref="ISecondaryPocoType.PrimaryPocoType"/>,
+    /// <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/> and <see cref="IUnionPocoType"/>'s <see cref="IOneOfPocoType.AllowedTypes"/>
+    /// are followed.
+    /// </para>
     /// </summary>
     public class PocoTypeVisitor
     {
@@ -74,19 +77,27 @@ namespace CK.Setup
                 OnAlreadyVisited( monitor, t );
                 return false;
             }
-            switch( t )
+            if( t.IsNullable )
             {
-                case IPrimaryPocoType primary: VisitPrimaryPoco( monitor, primary ); break;
-                case IAbstractPocoType abstractPoco: VisitAbstractPoco( monitor, abstractPoco ); break;
-                case ICollectionPocoType collection: VisitCollection( monitor, collection ); break;
-                case IRecordPocoType record: VisitRecord( monitor, record ); break;
-                case IUnionPocoType union: VisitUnion( monitor, union ); break;
-                case IEnumPocoType e: VisitEnum( monitor, e ); break;
-                default:
-                    Debug.Assert( t.GetType().Name == "PocoType" || t.GetType().Name == "BasicTypeWithDefaultValue" );
-                    VisitBasic( monitor, t );
-                    break;
-            };
+                VisitNullable( monitor, t );
+            }
+            else
+            {
+                switch( t )
+                {
+                    case IPrimaryPocoType primary: VisitPrimaryPoco( monitor, primary ); break;
+                    case ISecondaryPocoType secondary: VisitSecondaryPoco( monitor, secondary ); break;
+                    case IAbstractPocoType abstractPoco: VisitAbstractPoco( monitor, abstractPoco ); break;
+                    case ICollectionPocoType collection: VisitCollection( monitor, collection ); break;
+                    case IRecordPocoType record: VisitRecord( monitor, record ); break;
+                    case IUnionPocoType union: VisitUnion( monitor, union ); break;
+                    case IEnumPocoType e: VisitEnum( monitor, e ); break;
+                    default:
+                        Debug.Assert( t.GetType().Name == "PocoType" || t.GetType().Name == "BasicTypeWithDefaultValue" );
+                        VisitBasic( monitor, t );
+                        break;
+                }
+            }
             return true;
         }
 
@@ -103,6 +114,16 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// Visits the <see cref="IPocoType.NonNullable"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="primary">A nullable type.</param>
+        protected virtual void VisitNullable( IActivityMonitor monitor, IPocoType t )
+        {
+            Visit( monitor, t.NonNullable );
+        }
+
+        /// <summary>
         /// Visits the <see cref="ICompositePocoType.Fields"/>, calling <see cref="VisitField(IActivityMonitor, IPocoField)"/>.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
@@ -110,6 +131,16 @@ namespace CK.Setup
         protected virtual void VisitPrimaryPoco( IActivityMonitor monitor, IPrimaryPocoType primary )
         {
             foreach( var f in primary.Fields ) VisitField( monitor, f );
+        }
+
+        /// <summary>
+        /// Visits the <see cref="ISecondaryPocoType.PrimaryPocoType"/>.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="secondary">A secondary poco type.</param>
+        protected virtual void VisitSecondaryPoco( IActivityMonitor monitor, ISecondaryPocoType secondary )
+        {
+            VisitPrimaryPoco( monitor, secondary.PrimaryPocoType );
         }
 
         /// <summary>

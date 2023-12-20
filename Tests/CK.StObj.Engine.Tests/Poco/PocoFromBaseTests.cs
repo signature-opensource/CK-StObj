@@ -9,12 +9,12 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
-    namespace DucTypedAndInternal
+    namespace DuckTypedAndInternal
     {
         class ExcludeCKTypeAttribute : System.Attribute { }
     }
 
-    [DucTypedAndInternal.ExcludeCKType]
+    [DuckTypedAndInternal.ExcludeCKType]
     public interface IAmNotAPocoButIAmPocoCompliant
     {
         List<(int Power, string Name)> Values { get; }
@@ -43,7 +43,5 @@ namespace CK.StObj.Engine.Tests.Poco
             a.Values.Should().NotBeNull().And.BeEmpty();
             a.Power.Should().Be( 3712 );
         }
-
-
     }
 }

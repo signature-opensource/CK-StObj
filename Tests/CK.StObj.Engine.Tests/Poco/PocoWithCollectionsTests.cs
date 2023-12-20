@@ -50,11 +50,14 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void non_null_Array_property_are_initialized_to_the_Array_Empty()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IWithArray ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IWithArray ), typeof( IWithArraySetter ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var f = s.GetRequiredService<IPocoFactory<IWithArray>>();
+            var f = s.GetRequiredService<IPocoFactory<IWithArraySetter>>();
             var p = f.Create();
             p.Array.Should().BeSameAs( Array.Empty<int>() );
+            p.Array = new int[] { 1, 2, 3 };
+            var readOnly = (IWithArray)p;
+            readOnly.Array.Should().BeEquivalentTo( new int[] { 1, 2, 3 } );
         }
 
         [Test]

@@ -28,6 +28,18 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
+        public interface IDirectErrorWithSetter : IPoco
+        {
+            IDirectErrorWithSetter Pouf { get; set; }
+        }
+
+        [Test]
+        public void Direct_recursion_is_detected_even_if_setter_is_used_because_of_initialization()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IDirectErrorWithSetter ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+        }
+
         public interface ICycleError : IPoco
         {
             ICycleError1 Pouf1 { get; }
@@ -42,6 +54,23 @@ namespace CK.StObj.Engine.Tests.Poco
         public void Indirect_one_level_recursion_is_detected()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ICycleError ), typeof( ICycleError1 ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+        }
+
+        public interface ICycleErrorWithSetter : IPoco
+        {
+            ICycleErrorWithSetter1 Pouf1 { get; set; }
+        }
+
+        public interface ICycleErrorWithSetter1 : IPoco
+        {
+            ICycleErrorWithSetter Pouf { get; set; }
+        }
+
+        [Test]
+        public void Indirect_one_level_recursion_is_detected_even_with_setters()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ICycleErrorWithSetter ), typeof( ICycleErrorWithSetter1 ) );
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
@@ -95,6 +124,23 @@ namespace CK.StObj.Engine.Tests.Poco
             Array.Reverse( types );
             TestHelper.GetFailedResult( TestHelper.CreateStObjCollector( types ), "Detected an instantiation cycle in Poco:" );
         }
+
+        public interface IDirectErrorPrimary : IPoco
+        {
+        }
+
+        public interface IDirectErrorSecondary : IDirectErrorPrimary
+        {
+            IDirectErrorSecondary Pouf { get; set; }
+        }
+
+        [Test]
+        public void Direct_recursion_is_detected_through_secondary()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IDirectErrorPrimary ), typeof( IDirectErrorSecondary ) );
+            TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
+        }
+
 
     }
 }

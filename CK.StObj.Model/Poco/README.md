@@ -162,44 +162,38 @@ type or a construct is missing, it could be easily added).
 - We believe that the "Poco compliant types" we support are enough to model any "exchange data" notably with the
 support of the support of a union type (the `oneof`) for IPoco property.
 
-## Proper and Compliant Poco types
+## This is an ongoing work...
 
-The Poco Type System defines two sets of types:
-- The Proper types are the types that are allowed to appear as IPoco's property types.
-- The Compliant types have less constraints than the Proper types (but not a superset).
+One of the goal is to automatically support ReadOnly and Immutable poco and this far esaier to say than to
+achieve.
 
-Proper types support guaranteed covariance and read only support (future readonly IPoco will rely on
-this ro be computable).
-Compliant types have no covariance guaranty an can be used outside of the IPoco fields definition.
+An idealized view of ReadOnly and Immutable could be to consider that the ReadOnly aspect is a view on
+any mutable Poco compliant type and that Immutability is simply the same ReadOnly aspect on a snapshot
+of the mutable type. This "vision" is the target but I'm not sure this is can be done, especially if we
+want to fully support covariance (that we should).
 
-Basic Types are either value types or immutable reference types:
- - Value types: `int`, `long`, `short`, `byte`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`,
-   `TimeSpan`, `Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte` and
-   `SimpleUserMessage`, `UserMessage` and `FormattedString`.
- - Reference types: `string`, `ExtendedCultureInfo`, `NormalizedCultureInfo`, `MCString` and `CodeString`
- - Formally `object` is a basic type provided that at runtime, the instance must be a compliant type.
+Current implementation has no ReadOnly nor Immutable support simply because it is harder than I initially
+envisioned but there are restrictions and checks that should help supporting them in the future.
 
-Basic types are Proper and Compliant types.
-
-IPoco interfaces are either:
-- Primary: this is the interface that denotes a family (`IUserInfo : IPoco`).
-- Secondary: an interface that extends a family (`IColoredUserInfo : IUserInfo`).
-- Abstract: an interface that is marked with `[CKTypeDefiner]` can appear in multiple families (`ICommandAuthenticated`).
-
-These IPoco types are Proper and Compliant types.
-
-
-
+## Poco compliant types
 
 The set of Poco compliant type is precisely defined:
 
- - Basic types: `int`, `long`, `short`, `byte`, `string`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`, `TimeSpan`,
-   `Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte`. 
- - Formally `object` is a basic type provided that at runtime, the instance must be a Poco compliant type.
- - Other `IPoco` objects (through any interface or the base `IPoco` interface).
- - Value tuples of compliant Poco types.
- - `List<>`, `IList<>`, `HashSet<>`, `ISet<>`, `Dictionary<,>` `IDictionary<,>` and array 
-   of Poco compliant type.
+- Basic types:
+  - Value types: `int`, `long`, `short`, `byte`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`,
+    `TimeSpan`, `Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte` and
+    `SimpleUserMessage`, `UserMessage` and `FormattedString`.
+  - Reference types: `string`, `ExtendedCultureInfo`, `NormalizedCultureInfo`, `MCString` and `CodeString`
+  - Formally `object` is a basic type provided that at runtime, the instance must be a compliant type.
+- `IPoco` objects that can be:
+  - Primary: this is the interface that denotes a family (`IUserInfo : IPoco`).
+  - Secondary: an interface that extends a family (`IColoredUserInfo : IUserInfo`).
+  - Abstract: an interface that is marked with `[CKTypeDefiner]` can appear in multiple families (like `ICommand` or
+    the base `IPoco`).
+- Value tuples (or fully mutable structs) of compliant Poco types.
+- Collections can be `List<>`, `IList<>`, `HashSet<>`, `ISet<>`, `Dictionary<,>` `IDictionary<,>` and
+  array of Poco compliant type.
+
 
 ### The PocoRecord
 
@@ -230,7 +224,7 @@ Initial values are guaranteed to follow the nullability rules (here Name will th
 initial `Power` field will be 0).
 
 > The `ref` enables the individual fields to be set and the tuple then becomes a "local" sub type, an
-> "anonymous record". 
+"anonymous record". 
 
 Value tuples can be nested:
 ```csharp
@@ -239,7 +233,11 @@ public interface IOneInside : IPoco
     ref (int A, (string Name, int Power) B) Thing { get; }
 }
 ```
-Here again, the non nullable `B.Name` will be the empty string.
+Here again, the non nullable `Thing.B.Name` will be the empty string.
+Nesting is allowed... But:
+- It becomes quickly hard to read.
+- Fields are not "by ref"! It can be tedious to copy the whole subordinated
+  structure to update a value in a value.
 
 For more information on value tuple and more specifically their field names, please read this excellent
 analysis: http://mustoverride.com/tuples_names/. The Poco framework handles the field names so that
@@ -251,9 +249,11 @@ ValueTuple since they are mutable value types with 2 added benefits:
 - the default parameter values naturally express the field default value;
 - being an explicitly named type it acts as reusable definition of its set of fields.
 
-Record struct have generated value equality and ToString method (but we don't really care here): it is only the
-syntactic sugar for the constructor with positional parameters that is of interest here to easily describe the
-data structure.
+Record struct have:
+ - Generated value equality and this is important.
+ - ToString method (but we don't really care here)
+ - A syntactic sugar for the constructor with positional parameters enables to easily describe the
+   data structure and the default values.
 
 The previous example can easily be rewritten with a reused `record struct` for 2 properties:
 ```csharp
@@ -287,51 +287,57 @@ public record Person
 Note the `default!` that explicitly breaks the "not nullable" contracts to avoid warnings... In the IPoco,
 since there is no `[DefaultValue]`, the empty string is used by default.
 
-#### Fully mutable structs are "Record"
+#### IPoco fields can only be IsReadOnlyCompliant records
+A record that doesn't contain any mutable reference type is "read only compliant": a copy of the value
+is de facto a "readonly" projection of its source in the sense where it cannot be used to mutate the
+source data. 
+
+Only "read only compliant" records can be IPoco field (this restriction is here to ease support of
+ReadOnly poco). Such record cannot contain field thar are `IPoco` or collection.
+
+#### Fully mutable structs are "Record" IF they implement their IEquatable 
 Value Tuples and `record struct` are finally the same for the Poco framework: they are value types that
 share the same restrictions:
 - Must be fully mutable.
-- Must be exposed by `ref` properties on `IPoco`.
-- Must contain only fields of Basic types.
+- Must contain only fields of compliant Poco types.
+- Must implement `IEquatable<TSelf>`.
+- When used as a field in a IPoco, it must be exposed by a `ref` property AND must be "read only compliant".
 
-A simple struct is valid under conditions:
-- `readonly` fields or read only properties are forbidden.
-- There must be at most one constructor. Their default parameter value if any is used as the default 
-  corresponding field or property value.  
-
-These are valid Poco record definitions:
+These are valid Poco record definitions (`ThingDetail` is "read only compliant, but `DetailWithFields` is not):
 ```csharp
 public record struct ThingDetail( int Power, string Name = "Albert" );
 
-public struct DetailWithFields
+public struct DetailWithFields : IEquatable<DetailWithFields>
 {
     [DefaultValue( 42 )]
     public int Power;
 
+    public List<int>? Values;
+
     [DefaultValue( "Hip!" )]
-    public string Name;
-}
+    public string? Name;
 
-public struct DetailWithProperties
-{
-    [DefaultValue( 3712 )]
-    public int Power { get; set; }
+    public readonly bool Equals( DetailWithFields other ) => Power == other.Power
+                                                              && Name == other.Name
+                                                              && EqualityComparer<List<int>>.Default.Equals( Values, other.Values );
 
-    [DefaultValue( "Hop!" )]
-    public string Name { get; set; }
+    public override bool Equals( [NotNullWhen( true )] object? obj ) => obj is DetailWithFields other && Equals( other );
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine( Power, Name, EqualityComparer<List<int>>.Default.GetHashCode( Values ) );
+    }
 }
 ```
-Nesting is allowed... But:
-- It becomes quickly hard to read.
-- Fields are not "by ref"! It can be tedious to copy the whole subordinated
-  structure to update a value in a value.
 
 ### The conformant collections
+
 IPoco can expose `T[]`, `IList<T>`, `ISet<T>` and `IDictionary<TKey,TValue>` where:
 - `T`, `TKey` and `TValue` must be a Basic type, a IPoco (abstract or not) or a record (anonymous or not) of Basic types.
 - `TKey` is not nullable.
 
-Recursve collections are forbidden. One cannot define a `IList<IList<int>>`.
+Recursive collections are forbidden except for arrays. One cannot define a `IList<IList<int>>` or a `ISet<object[]>`
+but `int[][]` is valid.
 
 ### IPoco properties
 
@@ -372,7 +378,7 @@ able to synthesize a default instance.
 - Value tuples are like record struct with no default values expressed (no `[DefaultValue]` attribute): we must 
   be able find an initial value for all non nullable fields of the tuple .
 
-#### Writable & Read only properties: the "Abstract Read Only Properties"
+#### Writable vs. Read only properties: the "Abstract Read Only Properties"
 A read only property can appear on one or more IPoco interface of a family and also exists
 in a writable form on other interfaces. When this happens, the "writable wins": the Poco's
 property is actually writable. The read only definitions become "hidden" by the writable ones
@@ -393,6 +399,9 @@ by exposing read only properties:
   - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `IList<Y> Things { get; }` where X 
     is assignable from Y.
 
+> Abstract Read Only Properties are the the basis of the future ReadOnly Poco support. ReadOnly and
+Immutable will rely on this to "allow as much covariance" as possible.
+
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
 specification). This relation between 2 types is written `<:`. Below is listed some **expected covariances** and the (sad)
 reality about them:
@@ -412,16 +421,22 @@ reality about them:
 To overcome these limitations and unifies the API, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco properties,
 extended collection types are generated that automatically support all these expected covariance.
 
-**The IPoco framework automatically corrects these cases**... but this applies only:
-- When abstract `IList<>`, `ISet<>` or `IDictionary<,>` collections are used. When a IPoco property is defined by a concrete collection,
-  the concrete type is used as-is without any adaptation. 
-- To direct IPoco properties. Abstract collections are forbidden "inside" a property type: `List<IList<int>>`
-  or `(int Power, IList<int> Values)` are forbidden.
+**The IPoco framework automatically corrects these cases**... but this comes with restrictions:
+- This only applies to direct IPoco properties.
+- Only abstract `IList<>`, `ISet<>` or `IDictionary<,>` collections must be used for Poco fields.
+  It is an error to define a IPoco property by a concrete collection.
+- Such collections cannot be a collection of collection: `IList<IList<int>>` is forbidden. 
+- Dictionary key is invariant.
+
+Outside of IPoco fields, only concrete `List<>`, `HashSet<>` and `Dictionary<,>` can be used and they can
+be recursive: a `List<Dictionary<int,object>>` is valid.
 
 Note that this "extended covariance":
 - **Supports nullability** (and enforces it!): `IReadOnlyList<object?>` <: `IList<IUser>` is allowed and supported BUT 
   `IReadOnlyList<object>` <: `IList<IUser?>` is an error (even for reference types).
 - Considers dictionary key as being invariant. (Even if this can be done, the number of required adaptations to support this would explode.)
+
+> Currently, `IReadOnlyList/Set/Dictionary` are NOT YET supported (it is internally implemented but not exposed).
 
 When all definitions of a property are read only (no writable appears in the family), this property is either:
   - Nullable... and it keeps its default null value forever. This is _stupid_. 
@@ -435,21 +450,5 @@ If we choose this point of view, there is no reason to forbid these properties t
 Non writable properties are ignored by serializers/deserializers: they remain purely on the C# side with their default values.
 
 > Abstract Read Only Properties are for the C# side only, they don't appear when Poco are exchanged. [Poco Exchange](PocoExchange/README.md) 
-> are unaware of these beasts.
+are unaware of these beasts.
 
-#### Current limitations of the "Abstract Read Only Properties"
-
-The "extended covariance" is currently limited:
-- Records, because they are mutable beasts, are not supported.
-- Recursive collections are not supported (currently a `IList<IList<int>>` is forbidden, it can only be `IList<List<int>>`).
-
-**Future**:
-Abstract readonly property MAY be supported for records in the future: these properties would have to be regular properties
-(not `ref` properties otherwise they would be writable properties) and may contain a subset of the writable fields. Structs exposed
-without `ref` **are readonly-like ones** because it's always a copy that can be mutated: the value held by the Poco (or the collection)
-cannot be changed.
-
-> For records, a subtle choice has to be made will be whether field names matters or not (kind of nominal vs. structural
-> typying).
-
-For recursive sets and dictionaries, this MAY be supported by using adapter instances (similar to https://github.com/Invenietis/CK-Core/blob/develop/CK.Core/Extension/DictionaryExtension.cs#L52).

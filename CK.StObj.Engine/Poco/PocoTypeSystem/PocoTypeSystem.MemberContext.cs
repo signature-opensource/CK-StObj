@@ -15,7 +15,7 @@ namespace CK.Setup
     {
         sealed class MemberContext
         {
-            readonly bool _isProperType;
+            readonly bool _isPocoField;
             readonly IExtMemberInfo _root;
             IList<string?>? _tupleNames;
             int _tupleIndex;
@@ -23,17 +23,17 @@ namespace CK.Setup
             bool _forbidAbstractCollections;
             bool _forbidCollections;
 
-            public MemberContext( bool isProperType, IExtMemberInfo root )
+            public MemberContext( bool isPocoField, IExtMemberInfo root )
             {
-                _isProperType = isProperType;
-                // Compliant types don't have abstract collections.
-                _forbidAbstractCollections = !isProperType;
+                _isPocoField = isPocoField;
+                // Abstract collections are possible only in IPoco.
+                _forbidAbstractCollections = !isPocoField;
                 _root = root;
                 _tupleIndex = 0;
             }
 
             public MemberContext( MemberContext parent, IExtMemberInfo root )
-                : this( parent._isProperType, root )
+                : this( parent._isPocoField, root )
             {
                 _parent = parent;
             }
@@ -43,10 +43,10 @@ namespace CK.Setup
                 _tupleIndex = 0;
                 _tupleNames = null;
                 _forbidCollections = forbidCollections;
-                _forbidAbstractCollections = forbidAbstractCollections && !_isProperType;
+                _forbidAbstractCollections = forbidAbstractCollections && !_isPocoField;
             }
 
-            public bool IsProperType => _isProperType;
+            public bool IsPocoField => _isPocoField;
 
             public bool ForbidAbstractCollections
             {
@@ -67,7 +67,7 @@ namespace CK.Setup
                 {
                     return false;
                 }
-                if( _isProperType )
+                if( _isPocoField )
                 {
                     _forbidCollections = true;
                 }
@@ -81,7 +81,7 @@ namespace CK.Setup
 
             public bool EnterArray( IActivityMonitor monitor, IExtNullabilityInfo nType )
             {
-                // Always allow arrays of arrays. Arrays are not proper types.
+                // Always allow arrays of arrays.
                 return _root.Type.IsArray || CheckForbidden( monitor, nType, true, "" );
             }
 
@@ -103,26 +103,11 @@ namespace CK.Setup
                 return true;
             }
 
-            internal static bool IsValidProperType( IRecordPocoField field )
+            internal static bool IsReadOnlyCompliant( IRecordPocoField field )
             {
                 var invalid = field.Type.Kind is PocoTypeKind.AbstractPoco or PocoTypeKind.SecondaryPoco or PocoTypeKind.PrimaryPoco
                                               or PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary or PocoTypeKind.Array;
-                return !invalid && field.Type.IsProperType;
-            }
-
-            internal bool CheckRecordProperType( IActivityMonitor monitor, IRecordPocoType recordPocoType )
-            {
-                if( _parent == null && _isProperType && !recordPocoType.IsProperType )
-                {
-                    var invalid = recordPocoType.Fields.Where( f => !IsValidProperType( f ) );
-                    if( invalid.Any() )
-                    {
-                        var fields = invalid.Select( f => $"{Environment.NewLine}{f.Type.CSharpName} {f.Name}" );
-                        monitor.Error( $"Invalid mutable reference types in '{recordPocoType.CSharpName:N}':{fields.Concatenate()}" );
-                        return false;
-                    }
-                }
-                return true;
+                return !invalid && (field.Type is not IRecordPocoType r || r.IsReadOnlyCompliant);
             }
 
             public RecordAnonField[] GetTupleNamedFields( int count )

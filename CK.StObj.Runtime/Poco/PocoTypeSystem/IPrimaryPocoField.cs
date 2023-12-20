@@ -24,6 +24,5 @@ namespace CK.Setup
         /// Gets the private generated field name: "_v{Index}".
         /// </summary>
         string PrivateFieldName { get; }
-
     }
 }

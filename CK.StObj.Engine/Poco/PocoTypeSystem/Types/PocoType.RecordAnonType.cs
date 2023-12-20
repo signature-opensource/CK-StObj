@@ -22,10 +22,10 @@ namespace CK.Setup
                                                               Type tNull,
                                                               string typeName,
                                                               RecordAnonField[] fields,
-                                                              bool isProperType,
+                                                              bool isReadOnlyCompliant,
                                                               IPocoType? obliviousType )
         {
-            return new RecordAnonType( monitor, s, tNotNull, tNull, typeName, fields, isProperType, (IRecordPocoType?)obliviousType );
+            return new RecordAnonType( monitor, s, tNotNull, tNull, typeName, fields, isReadOnlyCompliant, (IRecordPocoType?)obliviousType );
         }
 
         internal sealed class RecordAnonType : PocoType, IRecordPocoType
@@ -42,6 +42,8 @@ namespace CK.Setup
                 public bool IsAnonymous => true;
 
                 public override IPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
+
+                public bool IsReadOnlyCompliant => NonNullable.IsReadOnlyCompliant;
 
                 ICompositePocoType ICompositePocoType.ObliviousType => Unsafe.As<ICompositePocoType>( ObliviousType );
 
@@ -67,7 +69,7 @@ namespace CK.Setup
             readonly RecordAnonField[] _fields;
             readonly IRecordPocoType _obliviousType;
             readonly DefaultValueInfo _defInfo;
-            readonly bool _isProperType;
+            readonly bool _isReadOnlyCompliant;
 
             public RecordAnonType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -75,7 +77,7 @@ namespace CK.Setup
                                    Type tNull,
                                    string typeName,
                                    RecordAnonField[] fields,
-                                   bool isProperType,
+                                   bool isReadOnlyCompliant,
                                    IRecordPocoType? obliviousType )
                 : base( s,
                         tNotNull,
@@ -86,7 +88,7 @@ namespace CK.Setup
                 Throw.DebugAssert( obliviousType != null || fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
                 _obliviousType = obliviousType ?? this;
                 _fields = fields;
-                _isProperType = isProperType;
+                _isReadOnlyCompliant = isReadOnlyCompliant;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
                 // Sets the initial IsExchangeable status.
@@ -104,7 +106,7 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => CSharpName;
 
-            public override bool IsProperType => _isProperType;
+            public bool IsReadOnlyCompliant => _isReadOnlyCompliant;
 
             public override IPocoType ObliviousType => _obliviousType;
 

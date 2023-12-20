@@ -43,6 +43,8 @@ namespace CK.Setup
 
                 IRecordPocoType IRecordPocoType.ObliviousType => Unsafe.As<IRecordPocoType>( this );
 
+                public bool IsReadOnlyCompliant => NonNullable.IsReadOnlyCompliant;
+
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
@@ -63,7 +65,7 @@ namespace CK.Setup
             [AllowNull] RecordNamedField[] _fields;
             readonly ExternalNameAttribute? _externalName;
             DefaultValueInfo _defInfo;
-            bool _isProperType;
+            bool _isReadOnlyCompliant;
 
             public RecordNamedType( IActivityMonitor monitor,
                                     PocoTypeSystem s,
@@ -80,11 +82,11 @@ namespace CK.Setup
                 _externalName = externalName;
             }
 
-            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, bool isProperType, RecordNamedField[] fields )
+            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, bool isReadOnlyCompliant, RecordNamedField[] fields )
             {
                 _fields = fields;
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
-                _isProperType = isProperType;
+                _isReadOnlyCompliant = isReadOnlyCompliant;
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {
@@ -100,7 +102,7 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
 
-            public override bool IsProperType => _isProperType;
+            public bool IsReadOnlyCompliant => _isReadOnlyCompliant;
 
             ICompositePocoType ICompositePocoType.ObliviousType => this;
 

@@ -144,7 +144,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithSets : IPoco
         {
-            HashSet<HashSet<int>> SetOfSet { get; }
+            HashSet<object> SetOfSet { get; }
 
             ISet<int> CovariantSetImpl { get; }
 
@@ -179,7 +179,7 @@ namespace CK.Poco.Exc.Json.Tests
             {
                 o.ToString().Should().Be( @"
                 {
-                    ""SetOfSet"":[[1,2],[3,4,5]],
+                    ""SetOfSet"":[[""S(int)"",[1,2]],[""S(int)"",[3,4,5]]],
                     ""CovariantSetImpl"":[42,3712],
                     ""CovariantSetNullableImpl"":[null,0,1]
                 }"
@@ -189,7 +189,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithDictionaries : IPoco
         {
-            Dictionary<int, Dictionary<object, object?>> DicOfDic { get; }
+            Dictionary<object, object> DicOfDic { get; }
 
             IDictionary<int, int> CovariantDicImpl { get; }
 
@@ -225,16 +225,22 @@ namespace CK.Poco.Exc.Json.Tests
                 {
                     ""DicOfDic"":
                         [
-                            [1,[
-                                [[""int"",1],[""long"",""2""]],
-                                [[""string"",""Hello""],[""string"",""World!""]],
-                                [[""string"",""Goodbye""],null]
-                               ]
+                            [[""int"",1],
+                              [""M(object,object)"",
+                                [
+                                  [[""int"",1],[""long"",""2""]],
+                                  [[""string"",""Hello""],[""string"",""World!""]],
+                                  [[""string"",""Goodbye""],null]
+                                ]
+                              ]
                             ],
-                            [2,[
-                                [[""int"",3],[""int"",4]],
-                                [[""string"",""Hello2""],[""string"",""World2!""]]
-                               ]
+                            [[""int"",2],
+                              [""M(object,object)"",
+                                [
+                                  [[""int"",3],[""int"",4]],
+                                  [[""string"",""Hello2""],[""string"",""World2!""]]
+                                ]
+                              ]
                             ]
                         ],
                     ""CovariantDicImpl"":

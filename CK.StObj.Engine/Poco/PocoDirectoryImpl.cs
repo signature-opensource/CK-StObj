@@ -183,15 +183,26 @@ namespace CK.Setup
                                   .Append( "if( !" ).Append( f.PrivateFieldName ).Append( "Allowed" )
                                   .Append( ".Any( t => t.IsAssignableFrom( tV ) ) )" )
                                     .OpenBlock()
-                                    .Append( "Throw.ArgumentException( $\"Unexpected Type '{tV.ToCSharpName()}' in UnionType. Allowed types are: '" )
+                                    .Append( "Throw.ArgumentException( \"value\", $\"Unexpected Type '{tV.ToCSharpName()}' in UnionType. Allowed types are: '" )
                                     .Append( uT.AllowedTypes.Select( tU => tU.CSharpName ).Concatenate( "', '" ) )
                                     .Append( "'.\");" )
                                     .CloseBlock();
-
                                 if( f.Type.IsNullable ) tB.CloseBlock();
+                                tB.Append( f.PrivateFieldName ).Append( " = value;" );
                             }
-                            tB.Append( f.PrivateFieldName ).Append( " = value;" )
-                                .CloseBlock()
+                            else
+                            {
+                                tB.Append( f.PrivateFieldName );
+                                if( f.Type.CSharpName != f.Type.ImplTypeName )
+                                {
+                                    tB.Append( " = (" ).Append( f.Type.ImplTypeName ).Append( ")value;" );
+                                }
+                                else
+                                {
+                                    tB.Append( " = value;" );
+                                }
+                            }
+                            tB.CloseBlock()
                               .CloseBlock();
                         }
                     }

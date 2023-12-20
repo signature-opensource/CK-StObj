@@ -54,6 +54,5 @@ namespace CK.StObj.Engine.Tests.Poco
             a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
         }
-
     }
 }

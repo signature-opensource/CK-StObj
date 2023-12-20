@@ -16,10 +16,9 @@ namespace CK.Setup
                                                                string implTypeName,
                                                                PocoTypeKind kind,
                                                                IPocoType itemType,
-                                                               bool isProperType,
                                                                IPocoType? obliviousType )
         {
-            return new ListOrSetOrArrayType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, isProperType, (ICollectionPocoType?)obliviousType );
+            return new ListOrSetOrArrayType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType );
         }
 
         internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
@@ -29,10 +28,9 @@ namespace CK.Setup
                                                          string implTypeName,
                                                          IPocoType itemType1,
                                                          IPocoType itemType2,
-                                                         bool isProperType,
                                                          IPocoType? obliviousType )
         {
-            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, isProperType, (ICollectionPocoType?)obliviousType );
+            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
         }
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
@@ -63,7 +61,6 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
-            readonly bool _isProperType;
             readonly ICollectionPocoType _obliviousType;
 
 
@@ -74,14 +71,12 @@ namespace CK.Setup
                                          string implTypeName,
                                          PocoTypeKind kind,
                                          IPocoType itemType,
-                                         bool isProperType,
                                          ICollectionPocoType? obliviousType )
                 : base( s, tCollection, csharpName, kind, t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
                 _obliviousType = obliviousType ?? this;
                 _implTypeName = implTypeName;
-                _isProperType = isProperType;
                 _itemType = new[] { itemType };
                 if( itemType.Kind != PocoTypeKind.Any )
                 {
@@ -100,8 +95,6 @@ namespace CK.Setup
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
 
             public override string ImplTypeName => _implTypeName;
-
-            public override bool IsProperType => _isProperType;
 
             public override IPocoType ObliviousType => _obliviousType;
 
@@ -167,7 +160,6 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
-            readonly bool _isProperType;
 
             public DictionaryType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -176,7 +168,6 @@ namespace CK.Setup
                                    string implTypeName,
                                    IPocoType keyType,
                                    IPocoType valueType,
-                                   bool isProperType,
                                    ICollectionPocoType? obliviousType )
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t ) )
             {
@@ -196,7 +187,6 @@ namespace CK.Setup
                     if( IsExchangeable && !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
                 }
                 _implTypeName = implTypeName;
-                _isProperType = isProperType;
             }
 
             // Base OnNoMoreExchangeable method is fine here.
@@ -207,8 +197,6 @@ namespace CK.Setup
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
 
             public override string ImplTypeName => _implTypeName;
-
-            public override bool IsProperType => _isProperType;
 
             public override IPocoType ObliviousType => _obliviousType;
 

@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup
 {
@@ -12,7 +14,7 @@ namespace CK.Setup
         sealed class PocoPropertyBuilder
         {
             readonly PocoTypeSystem _system;
-            IPocoPropertyInfo? _prop;
+            IPocoPropertyInfo? _props;
             IExtPropertyInfo? _bestProperty;
             PocoFieldAccessKind _fieldAccessKind;
             IPocoType? _bestReg;
@@ -24,10 +26,10 @@ namespace CK.Setup
                 _system = system;
             }
 
-            public PrimaryPocoField? Build( IActivityMonitor monitor, PocoType.PrimaryPocoType p, IPocoPropertyInfo prop )
+            public PrimaryPocoField? Build( IActivityMonitor monitor, PocoType.PrimaryPocoType p, IPocoPropertyInfo props )
             {
-                Throw.DebugAssert( prop.DeclaredProperties.All( p => p.HomogeneousNullabilityInfo != null ) );
-                _prop = prop;
+                Throw.DebugAssert( props.DeclaredProperties.All( p => p.HomogeneousNullabilityInfo != null ) );
+                _props = props;
                 _bestProperty = null;
                 _bestReg = null;
                 _defaultValueSource = null;
@@ -47,17 +49,17 @@ namespace CK.Setup
                     && _defaultValue.SimpleValue == null
                     && !_bestReg.IsNullable )
                 {
-                    monitor.Error( $"Invalid null DefaultValue attribute on non nullable property {prop}: '{_bestReg.CSharpName}'." );
+                    monitor.Error( $"Invalid null DefaultValue attribute on non nullable property {props}: '{_bestReg.CSharpName}'." );
                     return null;
                 }
 
                 IPocoType? finalType;
-                if( prop.UnionTypeDefinition != null )
+                if( props.UnionTypeDefinition != null )
                 {
                     Debug.Assert( _bestReg.Kind == PocoTypeKind.Any, "Only 'object' property can be used for union types." );
                     // This has the awful side effect to alter the _defaultValue...
                     // But I'm tired and lazy.
-                    finalType = HandleUnionTypeDefinition( monitor, prop );
+                    finalType = HandleUnionTypeDefinition( monitor, props );
                     if( finalType == null ) return null;
                 }
                 else
@@ -66,13 +68,13 @@ namespace CK.Setup
                         && _defaultValue.SimpleValue != null
                         && !_bestReg.Type.IsAssignableFrom( _defaultValue.SimpleValue.GetType() ) )
                     {
-                        monitor.Error( $"Invalid DefaultValue attribute on {prop}: default value {_defaultValue} is not compatible with type '{_bestReg.CSharpName}'." );
+                        monitor.Error( $"Invalid DefaultValue attribute on {props}: default value {_defaultValue} is not compatible with type '{_bestReg.CSharpName}'." );
                         return null;
                     }
                     finalType = _bestReg;
                 }
 
-                return new PrimaryPocoField( prop,
+                return new PrimaryPocoField( props,
                                              finalType,
                                              _fieldAccessKind,
                                              p,
@@ -252,9 +254,9 @@ namespace CK.Setup
             /// </summary>
             bool TryFindWritableAndCheckReadOnlys( IActivityMonitor monitor )
             {
-                Debug.Assert( _prop != null );
+                Debug.Assert( _props != null );
                 List<(IExtPropertyInfo P, IPocoType T)>? abstractReadOnlyToCheck = null;
-                foreach( var p in _prop.DeclaredProperties )
+                foreach( var p in _props.DeclaredProperties )
                 {
                     if( !Add( monitor, p, ref abstractReadOnlyToCheck ) )
                     {
@@ -282,8 +284,8 @@ namespace CK.Setup
                         (_bestProperty, _bestReg) = abstractReadOnlyToCheck.FirstOrDefault( c => abstractReadOnlyToCheck.All( a => c.T.IsReadableType( a.T ) ) );
                         if( _bestReg == null )
                         {
-                            var types = _prop.DeclaredProperties.Select( p => p.TypeCSharpName ).Concatenate( Environment.NewLine );
-                            monitor.Error( $"Failed to find a writable property for read only {_prop} types:{Environment.NewLine}{types}" );
+                            var types = _props.DeclaredProperties.Select( p => p.TypeCSharpName ).Concatenate( Environment.NewLine );
+                            monitor.Error( $"Failed to find a writable property for read only {_props} types:{Environment.NewLine}{types}" );
                             return false;
                         }
                     }
@@ -303,9 +305,17 @@ namespace CK.Setup
 
             bool Add( IActivityMonitor monitor, IExtPropertyInfo p, ref List<(IExtPropertyInfo, IPocoType)>? abstractReadOnlyToCheck )
             {
-                Debug.Assert( _prop != null );
+                Debug.Assert( _props != null );
                 var reg = _system.Register( monitor, p, true );
                 if( reg == null ) return false;
+
+                if( reg is IRecordPocoType record && !record.IsReadOnlyCompliant )
+                {
+                    var b = new StringBuilder();
+                    DumpReadOnlyCompliant( b, record, 1 );
+                    monitor.Error( $"Invalid mutable reference types in '{p.DeclaringType:N}.{p.Name}':{b}" );
+                    return false;
+                }
 
                 if( p.PropertyInfo.CanWrite || p.Type.IsByRef )
                 {
@@ -388,6 +398,24 @@ namespace CK.Setup
                     abstractReadOnlyToCheck.Add( (p, reg) );
                 }
                 return true;
+            }
+
+            static void DumpReadOnlyCompliant( StringBuilder b, IRecordPocoType record, int depth )
+            {
+                Throw.DebugAssert( !record.IsReadOnlyCompliant );
+                foreach( var f in record.Fields )
+                {
+                    if( MemberContext.IsReadOnlyCompliant( f ) ) continue;
+                    if( f.Type is IRecordPocoType r )
+                    {
+                        b.AppendLine().Append( ' ', depth * 2 ).Append( "in '" ).Append( f.Type.CSharpName ).Append( ' ' ).Append( f.Name ).Append( "':" );
+                        DumpReadOnlyCompliant( b, r, depth + 1 );
+                    }
+                    else
+                    {
+                        b.AppendLine().Append( ' ', depth * 2 ).Append( f.Type.CSharpName ).Append( ' ' ).Append( f.Name );
+                    }
+                }
             }
 
             bool AddWritable( IActivityMonitor monitor, IExtPropertyInfo p, IPocoType reg )
