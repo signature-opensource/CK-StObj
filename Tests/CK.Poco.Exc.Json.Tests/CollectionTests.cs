@@ -91,7 +91,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithLists : IPoco
         {
-            List<List<int>> ListOfList { get; }
+            IList<object> ListOfList { get; }
 
             IList<int> CovariantListImpl { get; }
 
@@ -128,12 +128,12 @@ namespace CK.Poco.Exc.Json.Tests
             {
                 oD.ToString().Should().Be( @"
                 {
-                    ""ListOfList"": [[1,2],[3,4,5]],
+                    ""ListOfList"": [[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]],
                     ""CovariantListImpl"": [42,3712],
                     ""CovariantListNullableImpl"": [null,0,null],
                     ""Result"": [""object[]"",
                                     [
-                                        [""L(L(int))"",[[1,2],[3,4,5]]],
+                                        [""L(object)"",[[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]]],
                                         [""L(int)"",[42,3712]],
                                         [""L(int?)"",[null,0,null]]
                                     ]

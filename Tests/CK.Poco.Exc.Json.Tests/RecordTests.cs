@@ -66,29 +66,5 @@ namespace CK.Poco.Exc.Json.Tests
             o3.Hop.Should().BeNull();
         }
 
-        public interface IHoldRecList : IPoco
-        {
-            public record struct Rec( List<Rec> R, int A = 3712 );
-
-            ref Rec P { get; }
-        }
-
-        [Test]
-        public void recursive_list_use_of_named_record_is_handled()
-        {
-            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IHoldRecList ) );
-            using var s = TestHelper.CreateAutomaticServices( c ).Services;
-            var directory = s.GetRequiredService<PocoDirectory>();
-
-            var p = directory.Create<IHoldRecList>();
-            p.P.R.Should().NotBeNull();
-            p.P.A.Should().Be( 3712 );
-            p.P.R.Add( new IHoldRecList.Rec( new List<IHoldRecList.Rec>(), 42 ) );
-
-            p.ToString().Should().Be( @"{""P"":{""R"":[{""R"":[],""A"":42}],""A"":3712}}" );
-
-            var p2 = JsonTestHelper.Roundtrip( directory, p );
-            p2.Should().BeEquivalentTo( p );
-        }
     }
 }

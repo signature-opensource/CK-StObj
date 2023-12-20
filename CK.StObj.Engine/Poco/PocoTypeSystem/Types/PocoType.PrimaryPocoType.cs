@@ -146,27 +146,6 @@ namespace CK.Setup
                 }
             }
 
-            public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
-            {
-                if( !ignoreRootTypeIsNullable && type.IsNullable ) return false;
-                return FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
-            }
-
-            public override bool IsWritableType( IExtNullabilityInfo type )
-            {
-                return !type.IsNullable && FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type );
-            }
-
-            public override bool IsReadableType( IExtNullabilityInfo type )
-            {
-                var t = type.Type;
-                return t == typeof( object )
-                       || t == typeof( IPoco )
-                       || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
-                       || FamilyInfo.Interfaces.Any( i => i.PocoInterface == t )
-                       || FamilyInfo.OtherInterfaces.Any( i => i == t );
-            }
-
             public override bool IsReadableType( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.

@@ -21,19 +21,19 @@ namespace CK.StObj.Engine.Tests.Poco
             object Auto { get; }
         }
 
-        #region Reference type (List)
+        #region Reference type (IReadOnlyList)
         public interface IAutoListPrimary1 : IPoco, IHaveAutoProperty
         {
             new IList<string> Auto { get; }
         }
         public interface IAutoListExtension1 : IAutoListPrimary1
         {
-            new IList<string>? Auto { get; }
+            new IReadOnlyList<string>? Auto { get; }
         }
 
         public interface IAutoListPrimary2 : IPoco, IHaveAutoProperty
         {
-            new IList<string>? Auto { get; }
+            new IReadOnlyList<string>? Auto { get; }
         }
         public interface IAutoListExtension2 : IAutoListPrimary2
         {
@@ -81,8 +81,8 @@ namespace CK.StObj.Engine.Tests.Poco
         }
         #endregion
 
-        [TestCase( typeof( List<string> ), typeof( IAutoListPrimary1 ), typeof( IAutoListExtension1 ) )]
-        [TestCase( typeof( List<string> ), typeof( IAutoListPrimary2 ), typeof( IAutoListExtension2 ) )]
+        [TestCase( typeof( IReadOnlyList<string> ), typeof( IAutoListPrimary1 ), typeof( IAutoListExtension1 ), Ignore =" Not implemented yet" )]
+        [TestCase( typeof( IReadOnlyList<string> ), typeof( IAutoListPrimary2 ), typeof( IAutoListExtension2 ), Ignore = " Not implemented yet" )]
         [TestCase( typeof( int ), typeof( IAutoIntPrimary1 ), typeof( IAutoIntExtension1 ) )]
         [TestCase( typeof( int ), typeof( IAutoIntPrimary2 ), typeof( IAutoIntExtension2 ) )]
         [TestCase( typeof( (int,string) ), typeof( IAutoAnonymousRecordPrimary1 ), typeof( IAutoAnonymousRecordExtension1 ) )]

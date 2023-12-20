@@ -22,9 +22,10 @@ namespace CK.Setup
                                                               Type tNull,
                                                               string typeName,
                                                               RecordAnonField[] fields,
+                                                              bool isProperType,
                                                               IPocoType? obliviousType )
         {
-            return new RecordAnonType( monitor, s, tNotNull, tNull, typeName, fields, (IRecordPocoType?)obliviousType );
+            return new RecordAnonType( monitor, s, tNotNull, tNull, typeName, fields, isProperType, (IRecordPocoType?)obliviousType );
         }
 
         internal sealed class RecordAnonType : PocoType, IRecordPocoType
@@ -66,6 +67,7 @@ namespace CK.Setup
             readonly RecordAnonField[] _fields;
             readonly IRecordPocoType _obliviousType;
             readonly DefaultValueInfo _defInfo;
+            readonly bool _isProperType;
 
             public RecordAnonType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -73,6 +75,7 @@ namespace CK.Setup
                                    Type tNull,
                                    string typeName,
                                    RecordAnonField[] fields,
+                                   bool isProperType,
                                    IRecordPocoType? obliviousType )
                 : base( s,
                         tNotNull,
@@ -83,6 +86,7 @@ namespace CK.Setup
                 Throw.DebugAssert( obliviousType != null || fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
                 _obliviousType = obliviousType ?? this;
                 _fields = fields;
+                _isProperType = isProperType;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
                 // Sets the initial IsExchangeable status.
@@ -99,6 +103,8 @@ namespace CK.Setup
             public ExternalNameAttribute? ExternalName => null;
 
             public string ExternalOrCSharpName => CSharpName;
+
+            public override bool IsProperType => _isProperType;
 
             public override IPocoType ObliviousType => _obliviousType;
 
@@ -129,7 +135,7 @@ namespace CK.Setup
             {
                 if( type == this || type.Kind == PocoTypeKind.Any ) return true;
                 if( type.Kind != PocoTypeKind.AnonymousRecord ) return false;
-                var aType = (RecordAnonType)type;
+                var aType = (RecordAnonType)type.NonNullable;
                 if( _fields.Length != aType._fields.Length ) return false;
                 for( int i = 0; i < _fields.Length; i++ )
                 {

@@ -89,9 +89,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidAbstractCollectionInside ) );
             TestHelper.GetFailedResult( c,
-                "Invalid subordinated abstract 'IList<Int32>' in Property 'NoWay' on " +
-                "Poco interfaces: 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidAbstractCollectionInside'. " +
-                "It must be a List." );
+                "Invalid collection 'IList<int>' in Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidAbstractCollectionInside.NoWay'." );
         }
 
     }

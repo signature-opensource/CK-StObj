@@ -146,7 +146,7 @@ namespace CK.Setup
                     if( !detector.CheckValid( monitor ) )
                     {
                         // As soon as one cycle is detected, we stop: this avoids
-                        // any dependency on the cycle to be (stupidly) detected.
+                        // any dependency on the cycle to be (redundantly) detected.
                         success = false;
                         break;
                     }

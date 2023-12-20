@@ -63,6 +63,7 @@ namespace CK.Setup
             [AllowNull] RecordNamedField[] _fields;
             readonly ExternalNameAttribute? _externalName;
             DefaultValueInfo _defInfo;
+            bool _isProperType;
 
             public RecordNamedType( IActivityMonitor monitor,
                                     PocoTypeSystem s,
@@ -79,10 +80,11 @@ namespace CK.Setup
                 _externalName = externalName;
             }
 
-            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, RecordNamedField[] fields )
+            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, bool isProperType, RecordNamedField[] fields )
             {
                 _fields = fields;
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
+                _isProperType = isProperType;
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {
@@ -97,6 +99,8 @@ namespace CK.Setup
             public ExternalNameAttribute? ExternalName => _externalName;
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
+
+            public override bool IsProperType => _isProperType;
 
             ICompositePocoType ICompositePocoType.ObliviousType => this;
 

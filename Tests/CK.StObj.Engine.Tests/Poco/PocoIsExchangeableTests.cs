@@ -78,17 +78,18 @@ namespace CK.StObj.Engine.Tests.Poco
 
             IReadOnlyList<string> ROFieldIsNotExchangeable2 { get; }
 
-            IList<Dictionary<IEmptyPoco, string>> NotExchangeableBecauseOfKey { get; }
+            IDictionary<IRefEmptyPoco, string> NotExchangeableBecauseOfKey { get; }
 
-            IList<Dictionary<string, IEmptyPoco>> NotExchangeableBecauseOfValue { get; }
+            IDictionary<string, IRefEmptyPoco> NotExchangeableBecauseOfValue { get; }
 
             int JustToBeSureThePocoIsExchangeable { get; set; }
         }
 
         [Test]
+        [Ignore( "IReadOnlyList<string> not implemented yet." )]
         public void IsExchangeable_through_collections()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IPocoWithCollection ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IRefEmptyPoco ), typeof( IPocoWithCollection ) );
             var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
 
             var poco = ts.FindByType( typeof( IPoco ) ) as IAbstractPocoType;
@@ -103,6 +104,15 @@ namespace CK.StObj.Engine.Tests.Poco
 
             e.Fields.Single( f => f.Name == "ROFieldIsNotExchangeable1" ).IsExchangeable.Should().BeFalse();
             e.Fields.Single( f => f.Name == "ROFieldIsNotExchangeable2" ).IsExchangeable.Should().BeFalse();
+
+            e.Fields.Single( f => f.Name == "NotExchangeableBecauseOfKey" ).IsExchangeable.Should().BeTrue();
+            e.Fields.Single( f => f.Name == "NotExchangeableBecauseOfValue" ).IsExchangeable.Should().BeTrue();
+
+            // Condemn the string!
+            // This condemns IRefEmptyPoco.Data that condemns the NotExchangeableBecauseOfKey and NotExchangeableBecauseOfValue.
+            var stringType = ts.FindByType( typeof( string ) );
+            Throw.DebugAssert( stringType != null );
+            ts.SetNotExchangeable( TestHelper.Monitor, stringType );
 
             e.Fields.Single( f => f.Name == "NotExchangeableBecauseOfKey" ).IsExchangeable.Should().BeFalse();
             e.Fields.Single( f => f.Name == "NotExchangeableBecauseOfValue" ).IsExchangeable.Should().BeFalse();

@@ -290,7 +290,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed_if_none_of_the_variant_is_nullable()
+        public void Union_property_implementation_guards_the_setter_and_null_is_NOT_allowed()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoWithUnionTypeNoNullable ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;

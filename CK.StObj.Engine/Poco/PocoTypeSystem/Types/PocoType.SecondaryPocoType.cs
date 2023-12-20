@@ -47,23 +47,6 @@ namespace CK.Setup
 
             public override DefaultValueInfo DefaultValueInfo => _primary.DefaultValueInfo;
 
-            #region Type against IExtNullabilityInfo. Should be replaced by an Adapter factory.
-            //public override bool IsSameType( IExtNullabilityInfo type, bool ignoreRootTypeIsNullable = false )
-            //{
-            //    return _primary.IsSameType( type, ignoreRootTypeIsNullable );
-            //}
-
-            //public override bool IsReadableType( IExtNullabilityInfo type )
-            //{
-            //    return _primary.IsReadableType( type );
-            //}
-
-            //public override bool IsWritableType( IExtNullabilityInfo type )
-            //{
-            //    return _primary.IsWritableType( type );
-            //}
-            #endregion Waiting for the "Adapter factory".
-
             public override bool IsReadableType( IPocoType type )
             {
                 return _primary.IsReadableType( type );

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CK.Setup
@@ -141,21 +142,28 @@ namespace CK.Setup
             }
         }
 
-        public IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t ) => DoRegister( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
+        public IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
-        public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo ) => DoRegister( monitor, memberInfo );
+        public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo ) => Register( monitor, memberInfo, false );
 
-        public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => DoRegister( monitor, _memberInfoFactory.Create( p ) );
+        public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
-        public IPocoType? Register( IActivityMonitor monitor, FieldInfo f ) => DoRegister( monitor, _memberInfoFactory.Create( f ) );
+        public IPocoType? Register( IActivityMonitor monitor, FieldInfo f ) => Register( monitor, _memberInfoFactory.Create( f ) );
 
-        public IPocoType? Register( IActivityMonitor monitor, ParameterInfo p ) => DoRegister( monitor, _memberInfoFactory.Create( p ) );
+        public IPocoType? Register( IActivityMonitor monitor, ParameterInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
-        IPocoType? DoRegister( IActivityMonitor monitor, IExtMemberInfo memberInfo, bool forbidAbstractCollections = false )
+        IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo, MemberContext parent )
         {
             var nType = memberInfo.GetHomogeneousNullabilityInfo( monitor );
             if( nType == null ) return null;
-            return Register( monitor, new MemberContext( memberInfo, forbidAbstractCollections ), nType );
+            return Register( monitor, new MemberContext( parent, memberInfo ), nType );
+        }
+
+        internal IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo, bool isProperType = false )
+        {
+            var nType = memberInfo.GetHomogeneousNullabilityInfo( monitor );
+            if( nType == null ) return null;
+            return Register( monitor, new MemberContext( isProperType, memberInfo ), nType );
         }
 
         IPocoType? Register( IActivityMonitor monitor,
@@ -183,17 +191,17 @@ namespace CK.Setup
             }
             if( _typeCache.TryGetValue( t, out var result ) )
             {
-                Debug.Assert( !result.IsNullable );
-                Debug.Assert( result.Kind == PocoTypeKind.Any
-                              || result.Kind == PocoTypeKind.PrimaryPoco
-                              || result.Kind == PocoTypeKind.AbstractPoco
-                              || result.Kind == PocoTypeKind.SecondaryPoco
-                              // Allowed BasicTypes that are reference types.
-                              || result.Type == typeof( string )
-                              || result.Type == typeof( ExtendedCultureInfo )
-                              || result.Type == typeof( NormalizedCultureInfo )
-                              || result.Type == typeof( MCString )
-                              || result.Type == typeof( CodeString ) );
+                Throw.DebugAssert( !result.IsNullable );
+                Throw.DebugAssert( result.Kind == PocoTypeKind.Any
+                                   || result.Kind == PocoTypeKind.PrimaryPoco
+                                   || result.Kind == PocoTypeKind.AbstractPoco
+                                   || result.Kind == PocoTypeKind.SecondaryPoco
+                                   // Allowed BasicTypes that are reference types.
+                                   || result.Type == typeof( string )
+                                   || result.Type == typeof( ExtendedCultureInfo )
+                                   || result.Type == typeof( NormalizedCultureInfo )
+                                   || result.Type == typeof( MCString )
+                                   || result.Type == typeof( CodeString ) );
                 return nType.IsNullable ? result.Nullable : result;
             }
             // If it's a IPoco we should have found it: it has been excluded or not registered.
@@ -233,23 +241,11 @@ namespace CK.Setup
 
             IPocoType? RegisterListOrSet( IActivityMonitor monitor, bool isList, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
             {
-                bool invalidSubAbstract = false;
                 var listOrHashSet = isList ? "List" : "HashSet";
-                if( ctx.ForbidAbstractCollections )
-                {
-                    if( !isRegular )
-                    {
-                        monitor.Error( $"Invalid subordinated abstract '{(isList ? "IList" : "ISet")}<{nType.GenericTypeArguments[0]:C}>' in {ctx}. It must be a {listOrHashSet}." );
-                        invalidSubAbstract = true;
-                    }
-                }
-                else
-                {
-                    ctx.ForbidAbstractCollections = true;
-                }
+                bool valid = ctx.EnterListSetOrDictionary( monitor, nType, isRegular, listOrHashSet );
 
                 var tI = Register( monitor, ctx, nType.GenericTypeArguments[0] );
-                if( tI == null || invalidSubAbstract ) return null;
+                if( tI == null || !valid ) return null;
 
                 var csharpName = isRegular
                                     ? $"{listOrHashSet}<{tI.CSharpName}>"
@@ -343,6 +339,7 @@ namespace CK.Setup
                                                                        obliviousTypeName,
                                                                        isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                                        itemType: tI.ObliviousType,
+                                                                       false,
                                                                        obliviousType: null );
                             _typeCache.Add( tOblivious, obliviousType );
                             _typeCache.Add( obliviousTypeName, obliviousType );
@@ -350,6 +347,13 @@ namespace CK.Setup
                         Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>" );
                     }
                     Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
+                    // Because we currently forbid any collection item, then any abstract collection (!isRegular) is a proper type because it is
+                    // either a IList/Set of:
+                    // - value type wich we have our covariant wrappers.
+                    // - Primary/SecondaryPoco that is a List<Primary only> or our wrapper for List<Primary/Secondary> or Set.
+                    // - AbstractPoco that is a List<I> that is covariant. 
+                    // If we relax this, then this will become no more the case!
+
                     result = PocoType.CreateCollection( monitor,
                                                         this,
                                                         t,
@@ -357,6 +361,7 @@ namespace CK.Setup
                                                         typeName,
                                                         isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                         tI,
+                                                        ctx.IsProperType,
                                                         obliviousType );
                     _typeCache.Add( csharpName, result );
                     // If we have built the oblivious, register it.
@@ -367,24 +372,12 @@ namespace CK.Setup
                     }
                 }
                 return nType.IsNullable ? result.Nullable : result;
+
             }
 
             IPocoType? RegisterDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
             {
-                bool invalidSubAbstract = false;
-                if( ctx.ForbidAbstractCollections )
-                {
-                    if( !isRegular )
-                    {
-                        monitor.Error( $"Invalid subordinated abstract 'IDictionary<{nType.GenericTypeArguments[0]:C},{nType.GenericTypeArguments[1]:C}>' in {ctx}. It must be a Dictionary." );
-                        invalidSubAbstract = true;
-                    }
-                }
-                else
-                {
-                    ctx.ForbidAbstractCollections = true;
-                }
-
+                bool valid = ctx.EnterListSetOrDictionary( monitor, nType, isRegular, "Dictionary" );
                 var tK = Register( monitor, ctx, nType.GenericTypeArguments[0] );
                 if( tK == null ) return null;
                 if( tK.IsNullable )
@@ -393,7 +386,7 @@ namespace CK.Setup
                     return null;
                 }
                 var tV = Register( monitor, ctx, nType.GenericTypeArguments[1] );
-                if( tV == null || invalidSubAbstract ) return null;
+                if( tV == null || !valid ) return null;
 
                 var csharpName = isRegular
                                     ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
@@ -455,6 +448,7 @@ namespace CK.Setup
                                                                        obliviousTypeName,
                                                                        tK,
                                                                        tV.ObliviousType,
+                                                                       false,
                                                                        null );
                             _typeCache.Add( tOblivious, obliviousType );
                             _typeCache.Add( obliviousTypeName, obliviousType );
@@ -469,6 +463,7 @@ namespace CK.Setup
                                                         typeName,
                                                         tK,
                                                         tV,
+                                                        ctx.IsProperType,
                                                         obliviousType );
                     _typeCache.Add( csharpName, result );
                     if( obliviousType == null )
@@ -507,12 +502,12 @@ namespace CK.Setup
         {
             Debug.Assert( nType.ElementType != null );
 
-            ctx.ForbidAbstractCollections = true;
+            bool valid = ctx.EnterArray( monitor, nType );
 
             // The oblivious array type is the array of its oblivious item type
             // (value type or nullable reference type).
             var tItem = Register( monitor, ctx, nType.ElementType );
-            if( tItem == null ) return null;
+            if( tItem == null || !valid ) return null;
 
             var chsarpName = tItem.CSharpName + "[]";
             if( !_typeCache.TryGetValue( chsarpName, out var result ) )
@@ -522,19 +517,21 @@ namespace CK.Setup
                     // The oblivious array is not registered.
                     var oName = tItem.ObliviousType.CSharpName + "[]";
                     obliviousType = PocoType.CreateCollection( monitor,
-                                                             this,
-                                                             nType.Type,
-                                                             oName,
-                                                             oName,
-                                                             PocoTypeKind.Array,
-                                                             tItem.ObliviousType,
-                                                             null );
+                                                               this,
+                                                               nType.Type,
+                                                               oName,
+                                                               oName,
+                                                               PocoTypeKind.Array,
+                                                               tItem.ObliviousType,
+                                                               false,
+                                                               null );
                     _typeCache.Add( nType.Type, obliviousType );
                     _typeCache.Add( oName, obliviousType );
                 }
                 // If the item is oblivious then, it is the oblivious array.
                 if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType.Nullable : obliviousType;
 
+                // An array is not a proper type.
                 result = PocoType.CreateCollection( monitor,
                                                     this,
                                                     nType.Type,
@@ -542,6 +539,7 @@ namespace CK.Setup
                                                     chsarpName,
                                                     PocoTypeKind.Array,
                                                     tItem,
+                                                    false,
                                                     obliviousType );
                 _typeCache.Add( chsarpName, result );
             }
@@ -598,6 +596,7 @@ namespace CK.Setup
                 _typeCache.Add( tNull, obliviousType.Nullable );
                 return nType.IsNullable ? obliviousType.Nullable : obliviousType;
             }
+            IPocoType? record;
             // We first handle ValueTuple since we can easily detect them.
             if( tNotNull.IsValueTuple() )
             {
@@ -606,18 +605,24 @@ namespace CK.Setup
                 // We may be on the oblivious type... But we have to check (and we may be on an already registered
                 // anonymous record anyway: field names are the keys).
                 tNull ??= obliviousType?.Nullable.Type ?? typeof( Nullable<> ).MakeGenericType( tNotNull );
-                return OnValueTypeAnonymousRecord( monitor, ctx, nType, tNotNull, tNull, (IRecordPocoType?)obliviousType );
+                record = OnValueTypeAnonymousRecord( monitor, ctx, nType, tNotNull, tNull, (IRecordPocoType?)obliviousType );
             }
-            // Other generic value types are not supported.
-            if( tNotNull.IsGenericType )
+            else
             {
-                Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
-                monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
-                return null;
+                // Other generic value types are not supported.
+                if( tNotNull.IsGenericType )
+                {
+                    Debug.Assert( tNotNull.GetGenericArguments().Length == nType.GenericTypeArguments.Count );
+                    monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
+                    return null;
+                }
+                // Last chance: may be a new "record struct".
+                tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
+                record = OnTypedRecord( monitor, ctx, nType, tNotNull, tNull );
             }
-            // Last chance: may be a new "record struct".
-            tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
-            return OnTypedRecord( monitor, ctx, nType, tNotNull, tNull );
+            if( record == null ) return null;
+            Throw.DebugAssert( record is IRecordPocoType );
+            return ctx.CheckRecordProperType( monitor, Unsafe.As<IRecordPocoType>( record ) ) ? record : null;
         }
 
         IPocoType? OnValueTypeAnonymousRecord( IActivityMonitor monitor,
@@ -631,7 +636,9 @@ namespace CK.Setup
             var fields = ctx.GetTupleNamedFields( subInfos.Count );
             // Here we can resolve the field types without fear of infinite recursion: value tuples
             // cannot be recursive by design.
-            // We can detect that this is the oblivious one: it must have no field names.
+            // We can detect that this is the oblivious one: it must have no field names and its fields are oblivious.
+            // We also compute whether this is a proper type.
+            bool isProperType = true;
             bool isOblivious = true;
             var b = StringBuilderPool.Get();
             b.Append( '(' );
@@ -646,6 +653,7 @@ namespace CK.Setup
                 if( !f.IsUnnamed ) b.Append( ' ' ).Append( f.Name );
                 isOblivious &= f.IsUnnamed && fType.IsOblivious;
                 f.SetType( fType );
+                isProperType &= MemberContext.IsValidProperType( f );
             }
             b.Append( ')' );
             // If this happens to be the oblivious type... 
@@ -656,7 +664,7 @@ namespace CK.Setup
                 {
                     // We build it.
                     var obliviousName = b.ToString();
-                    obliviousType = PocoType.CreateAnonymousRecord( monitor, this, tNotNull, tNull, obliviousName, fields, null );
+                    obliviousType = PocoType.CreateAnonymousRecord( monitor, this, tNotNull, tNull, obliviousName, fields, isProperType, null );
                     _typeCache.Add( tNotNull, obliviousType );
                     _typeCache.Add( tNull, obliviousType.Nullable );
                 }
@@ -699,7 +707,7 @@ namespace CK.Setup
                     var obliviousName = b.ToString();
                     var tNullOblivious = typeof( Nullable<> ).MakeGenericType( tNotNullOblivious );
                     Debug.Assert( obliviousName != typeName );
-                    obliviousType = PocoType.CreateAnonymousRecord( monitor, this, tNotNullOblivious, tNullOblivious, obliviousName, obliviousFields, null );
+                    obliviousType = PocoType.CreateAnonymousRecord( monitor, this, tNotNullOblivious, tNullOblivious, obliviousName, obliviousFields, isProperType, null );
                     _typeCache.Add( tNotNullOblivious, obliviousType );
                     _typeCache.Add( tNullOblivious, obliviousType.Nullable );
                 }
@@ -707,7 +715,7 @@ namespace CK.Setup
             // Don't need the buffer anymore.
             StringBuilderPool.GetStringAndReturn( b );
 
-            result = PocoType.CreateAnonymousRecord( monitor, this, tNotNull, tNull, typeName, fields, obliviousType );
+            result = PocoType.CreateAnonymousRecord( monitor, this, tNotNull, tNull, typeName, fields, isProperType, obliviousType );
             _typeCache.Add( typeName, result );
             return nType.IsNullable ? result.Nullable : result;
 
@@ -758,10 +766,10 @@ namespace CK.Setup
         }
 
         IPocoType? OnTypedRecord( IActivityMonitor monitor,
-                                          MemberContext ctx,
-                                          IExtNullabilityInfo nType,
-                                          Type tNotNull,
-                                          Type tNull )
+                                  MemberContext ctx,
+                                  IExtNullabilityInfo nType,
+                                  Type tNotNull,
+                                  Type tNull )
         {
             // C#10 record struct are not decorated by any special attribute: we treat them like any other struct.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
@@ -791,6 +799,7 @@ namespace CK.Setup
             }
             var ctorParams = ctors.Length == 1 ? ctors[0].GetParameters() : null;
 
+            bool isProperType = true;
             var propertyInfos = tNotNull.GetProperties();
             var fieldInfos = tNotNull.GetFields();
             var fields = new RecordNamedField[propertyInfos.Length + fieldInfos.Length];
@@ -802,8 +811,9 @@ namespace CK.Setup
                     monitor.Error( $"'{pInfo}' is readonly. A record struct must be fully mutable." );
                     return null;
                 }
-                var f = CreateField( monitor, r, i, DoRegister( monitor, pInfo, forbidAbstractCollections: true ), pInfo, ctorParams, StringBuilderPool );
+                var f = CreateField( monitor, r, i, Register( monitor, pInfo, ctx ), pInfo, ctorParams, StringBuilderPool );
                 if( f == null ) return null;
+                isProperType &= MemberContext.IsValidProperType( f );
                 fields[i] = f;
             }
             int idx = propertyInfos.Length;
@@ -815,11 +825,11 @@ namespace CK.Setup
                     monitor.Error( $"Field '{fInfo.DeclaringType}.{fInfo.Name}' is readonly. A record struct must be fully mutable." );
                     return null;
                 }
-                var f = CreateField( monitor, r, idx, DoRegister( monitor, fInfo, forbidAbstractCollections: true ), fInfo, ctorParams, StringBuilderPool );
+                var f = CreateField( monitor, r, idx, Register( monitor, fInfo, ctx ), fInfo, ctorParams, StringBuilderPool );
                 if( f == null ) return null;
                 fields[idx++] = f;
             }
-            r.SetFields( monitor, this, fields );
+            r.SetFields( monitor, this, isProperType, fields );
             return nType.IsNullable ? r.Nullable : r;
 
 

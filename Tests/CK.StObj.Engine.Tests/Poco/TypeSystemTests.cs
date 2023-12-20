@@ -2,17 +2,14 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
-using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data.SqlTypes;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Xml.Linq;
-using static CK.StObj.Engine.Tests.AmbientPropertiesTests;
-using static CK.StObj.Engine.Tests.SimpleObjectsTests;
 using static CK.Testing.StObjEngineTestHelper;
+
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -186,24 +183,30 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public List<int> ListV = null!; // Oblivious
         public List<int?> ListNV = null!; // Oblivious
-        public IList<int?> IListNV = null!;
-        public IList<int> IListV = null!;
 
         public List<object> ListR = null!; // Oblivious
         public List<object?> ListNR = null!;
-        public IList<object?> IListNR = null!;
-        public IList<object> IListR = null!;
 
         public List<IVerySimplePoco> ListPR = null!; // Oblivious
         public List<IVerySimplePoco?> ListPNR = null!;
-        public IList<IVerySimplePoco?> IListPNR = null!;
-        public IList<IVerySimplePoco> IListPR = null!;
+
+        public interface IProperListDefinition : IPoco
+        {
+            IList<int?> IListNV { get; }
+            IList<int> IListV { get; }
+            IList<object?> IListNR { get; }
+            IList<object> IListR { get; }
+            IList<IVerySimplePoco?> IListPNR { get; }
+            IList<IVerySimplePoco> IListPR { get; }
+        }
 
         [TestCase( false )]
         [TestCase( true )]
         public void oblivious_List( bool revert )
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ),
+                                                     typeof( ISecondaryVerySimplePoco ),
+                                                     typeof( IProperListDefinition ) );
             var r = TestHelper.GetSuccessfulResult( c );
             var ts = r.CKTypeResult.PocoTypeSystem;
 
@@ -307,7 +310,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ICollectionPocoType IList_Int( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRV )
             {
-                var tIV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListV ) )! );
+                var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
+                var tIV = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListV ) ).Type;
                 Debug.Assert( tIV != null );
                 tIV.IsOblivious.Should().BeFalse();
                 tIV.CSharpName.Should().Be( "IList<int>" );
@@ -318,7 +322,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ICollectionPocoType IList_IntN( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRNV )
             {
-                var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNV ) )! );
+                var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
+                var tINV = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListNV ) ).Type;
                 Debug.Assert( tINV != null );
                 tINV.IsOblivious.Should().BeFalse();
                 tINV.CSharpName.Should().Be( "IList<int?>" );
@@ -351,7 +356,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ICollectionPocoType IList_ObjectN( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRR )
             {
-                var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListNR ) )! );
+                var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
+                var tINR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListNR ) ).Type;
                 Debug.Assert( tINR != null && !tINR.IsOblivious );
                 tINR.CSharpName.Should().Be( "IList<object?>" );
                 tINR.ImplTypeName.Should().Be( "List<object?>" );
@@ -361,7 +367,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ICollectionPocoType IList_Object( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRR )
             {
-                var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListR ) )! );
+                var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
+                var tIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListR ) ).Type;
                 Debug.Assert( tIR != null && !tIR.IsOblivious );
                 tIR.CSharpName.Should().Be( "IList<object>" );
                 tIR.ImplTypeName.Should().Be( "List<object>" );
@@ -393,7 +400,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ICollectionPocoType IList_PocoN( bool revert, IPocoTypeSystem ts, string n, ICollectionPocoType tPRR )
             {
-                var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListPNR ) )! );
+                var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
+                var tPINR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPNR ) ).Type;
                 Debug.Assert( tPINR != null && !tPINR.IsOblivious );
                 tPINR.CSharpName.Should().Be( $"IList<{n}?>" );
                 tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoList_*_CK" );
@@ -403,7 +411,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             ICollectionPocoType IList_Poco( bool revert, IPocoTypeSystem ts, string n, ICollectionPocoType tPRNR, ICollectionPocoType tPRR )
             {
-                var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IListPR ) )! );
+                var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
+                var tPIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPR ) ).Type;
                 Debug.Assert( tPIR != null && !tPIR.IsOblivious );
                 tPIR.CSharpName.Should().Be( $"IList<{n}>" );
                 if( !revert )
@@ -417,23 +426,28 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public Dictionary<object, int> DicV = null!; // Oblivious
         public Dictionary<object, int?> DicNV = null!; // Oblivious
-        public IDictionary<object, int?> IDicNV = null!;
-        public IDictionary<object, int> IDicV = null!;
 
         public Dictionary<int, object> DicR = null!; // Oblivious
         public Dictionary<int, object?> DicNR = null!;
-        public IDictionary<int, object?> IDicNR = null!;
-        public IDictionary<int, object> IDicR = null!;
 
         public Dictionary<int, IVerySimplePoco> DicPR = null!; // Oblivious
         public Dictionary<int, IVerySimplePoco?> DicPNR = null!;
-        public IDictionary<int, IVerySimplePoco?> IDicPNR = null!;
-        public IDictionary<int, IVerySimplePoco> IDicPR = null!;
+
+
+        public interface IProperDictionaryDefinition : IPoco
+        {
+            IDictionary<object, int?> IDicNV { get; }
+            IDictionary<object, int> IDicV { get; }
+            IDictionary<int, object?> IDicNR { get; }
+            IDictionary<int, object> IDicR { get; }
+            IDictionary<int, IVerySimplePoco?> IDicPNR { get; }
+            IDictionary<int, IVerySimplePoco> IDicPR { get; }
+        }
 
         [Test]
         public void oblivious_Dictionary()
         {
-            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ), typeof( IProperDictionaryDefinition) );
             var r = TestHelper.GetSuccessfulResult( c );
             var ts = r.CKTypeResult.PocoTypeSystem;
 
@@ -453,8 +467,11 @@ namespace CK.StObj.Engine.Tests.Poco
             tRNV.CSharpName.Should().Be( "Dictionary<object,int?>" );
             tRNV.ImplTypeName.Should().Be( "Dictionary<object,int?>" );
 
+            var defPoco = ts.FindByType<IPrimaryPocoType>( typeof( IProperDictionaryDefinition ) );
+            Throw.DebugAssert( defPoco != null );
+
             // IDictionary<object,int>
-            var tIV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicV ) )! );
+            var tIV = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == "IDicV" ).Type;
             Debug.Assert( tIV != null );
             tIV.IsOblivious.Should().BeFalse();
             tIV.CSharpName.Should().Be( "IDictionary<object,int>" );
@@ -462,14 +479,14 @@ namespace CK.StObj.Engine.Tests.Poco
             tIV.ObliviousType.Should().BeSameAs( tRV );
 
             // IDictionary<object,int?>
-            var tINV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNV ) )! );
+            var tINV = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == "IDicNV" ).Type;
             Debug.Assert( tINV != null );
             tINV.IsOblivious.Should().BeFalse();
             tINV.CSharpName.Should().Be( "IDictionary<object,int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueDictionary<object,int>" );
             tINV.ObliviousType.Should().BeSameAs( tRNV );
 
-            // Dictionary of reference type (object) for the value.
+            ////// Dictionary of reference type (object) for the value.
 
             // Dictionary<int,object>: This is the oblivious.
             var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicR ) )! );
@@ -487,7 +504,7 @@ namespace CK.StObj.Engine.Tests.Poco
             tRNR.ObliviousType.Should().BeSameAs( tRR );
 
             // IDictionary<int,object?>
-            var tINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicNR ) )! );
+            var tINR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicNR ) ).Type;
             Debug.Assert( tINR != null );
             tINR.IsOblivious.Should().BeFalse();
             tINR.CSharpName.Should().Be( "IDictionary<int,object?>" );
@@ -495,7 +512,7 @@ namespace CK.StObj.Engine.Tests.Poco
             tINR.ObliviousType.Should().BeSameAs( tRR );
 
             // IDictionary<int,object>
-            var tIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicR ) )! );
+            var tIR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicR ) ).Type;
             Debug.Assert( tIR != null );
             tIR.IsOblivious.Should().BeFalse();
             tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
@@ -521,7 +538,7 @@ namespace CK.StObj.Engine.Tests.Poco
             tPRNR.ObliviousType.Should().BeSameAs( tPRR );
 
             // IDictionary<int,IVerySimplePoco?>
-            var tPINR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPNR ) )! );
+            var tPINR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicPNR ) ).Type;
             Debug.Assert( tPINR != null );
             tPINR.IsOblivious.Should().BeFalse();
             tPINR.CSharpName.Should().Be( $"IDictionary<int,{n}?>" );
@@ -529,7 +546,7 @@ namespace CK.StObj.Engine.Tests.Poco
             tPINR.ObliviousType.Should().BeSameAs( tPRR );
 
             // IDictionary<int,IVerySimplePoco>
-            var tPIR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( IDicPR ) )! );
+            var tPIR = (ICollectionPocoType)defPoco.Fields.Single( f => f.Name == nameof( IProperDictionaryDefinition.IDicPR ) ).Type;
             Debug.Assert( tPIR != null );
             tPIR.IsOblivious.Should().BeFalse();
             tPIR.CSharpName.Should().Be( $"IDictionary<int,{n}>" );

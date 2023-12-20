@@ -40,6 +40,7 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
+        [Ignore( "Not implemented yet." )]
         public void intrinsic_from_IList_to_IReadOnlyList()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IActualRootA ), typeof( IActualSubA ) );

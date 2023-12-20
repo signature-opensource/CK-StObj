@@ -162,7 +162,34 @@ type or a construct is missing, it could be easily added).
 - We believe that the "Poco compliant types" we support are enough to model any "exchange data" notably with the
 support of the support of a union type (the `oneof`) for IPoco property.
 
-## Poco compliant types
+## Proper and Compliant Poco types
+
+The Poco Type System defines two sets of types:
+- The Proper types are the types that are allowed to appear as IPoco's property types.
+- The Compliant types have less constraints than the Proper types (but not a superset).
+
+Proper types support guaranteed covariance and read only support (future readonly IPoco will rely on
+this ro be computable).
+Compliant types have no covariance guaranty an can be used outside of the IPoco fields definition.
+
+Basic Types are either value types or immutable reference types:
+ - Value types: `int`, `long`, `short`, `byte`, `bool`, `double`, `float`, `object`, `DateTime`, `DateTimeOffset`,
+   `TimeSpan`, `Guid`, `decimal`, `System.Numerics.BigInteger`, `uint`, `ulong`, `ushort`, `sbyte` and
+   `SimpleUserMessage`, `UserMessage` and `FormattedString`.
+ - Reference types: `string`, `ExtendedCultureInfo`, `NormalizedCultureInfo`, `MCString` and `CodeString`
+ - Formally `object` is a basic type provided that at runtime, the instance must be a compliant type.
+
+Basic types are Proper and Compliant types.
+
+IPoco interfaces are either:
+- Primary: this is the interface that denotes a family (`IUserInfo : IPoco`).
+- Secondary: an interface that extends a family (`IColoredUserInfo : IUserInfo`).
+- Abstract: an interface that is marked with `[CKTypeDefiner]` can appear in multiple families (`ICommandAuthenticated`).
+
+These IPoco types are Proper and Compliant types.
+
+
+
 
 The set of Poco compliant type is precisely defined:
 
@@ -180,12 +207,12 @@ A PocoRecord is a mutable struct. It aims to capture "micro local types". They a
 
 #### ValueTuple: the "Anonymous Record"
 
-A value tuple is like an anonymous type that locally defines a small structure. The following
-pattern is quite common:
+A value tuple is like an anonymous type that locally defines a small structure of basic types. The following
+class property seems fine:
 ```csharp
 class AmIWrong
 {
-    public (int Power, string Name, List<int> Values) Simple { get; set; }
+    public (int Power, string Name) Simple { get; set; }
 }
 ```
 However, there's something wrong here about nullability. Despites the non nullable string and list, `Name` and `Values` are
@@ -196,11 +223,11 @@ one. To solve this value tuples and mutable structs must be `ref` properties in 
 ```csharp
 public interface IWithValueTuple : IPoco
 {
-    ref (int Power, string Name, List<int> Values) Thing { get; }
+    ref (int Power, string Name) Thing { get; }
 }
 ```
 Initial values are guaranteed to follow the nullability rules (here Name will the empty string and
-initial `Values` field will be a ready-to-use empty list).
+initial `Power` field will be 0).
 
 > The `ref` enables the individual fields to be set and the tuple then becomes a "local" sub type, an
 > "anonymous record". 
@@ -209,11 +236,10 @@ Value tuples can be nested:
 ```csharp
 public interface IOneInside : IPoco
 {
-    ref (int A, (string Name, List<int> Values) B) Thing { get; }
+    ref (int A, (string Name, int Power) B) Thing { get; }
 }
 ```
-Here again, the non nullable `Name` will be the empty string and the `Values` will be initialized to
-an empty list.
+Here again, the non nullable `B.Name` will be the empty string.
 
 For more information on value tuple and more specifically their field names, please read this excellent
 analysis: http://mustoverride.com/tuples_names/. The Poco framework handles the field names so that
@@ -233,7 +259,7 @@ The previous example can easily be rewritten with a reused `record struct` for 2
 ```csharp
 public interface IWithRecordStruct : IPoco
 {
-    public record struct ThingDetail( int Power, List<int> Values, string Name = "Albert" );
+    public record struct ThingDetail( int Power, string Name = "Albert" );
 
     ref ThingDetail Thing1 { get; }
     ref ThingDetail Thing2 { get; }
@@ -266,7 +292,7 @@ Value Tuples and `record struct` are finally the same for the Poco framework: th
 share the same restrictions:
 - Must be fully mutable.
 - Must be exposed by `ref` properties on `IPoco`.
-- Must contain only Poco compliant field types.
+- Must contain only fields of Basic types.
 
 A simple struct is valid under conditions:
 - `readonly` fields or read only properties are forbidden.
@@ -275,14 +301,12 @@ A simple struct is valid under conditions:
 
 These are valid Poco record definitions:
 ```csharp
-public record struct ThingDetail( int Power, List<int> Values, string Name = "Albert" );
+public record struct ThingDetail( int Power, string Name = "Albert" );
 
 public struct DetailWithFields
 {
     [DefaultValue( 42 )]
     public int Power;
-
-    public List<int> Values;
 
     [DefaultValue( "Hip!" )]
     public string Name;
@@ -293,38 +317,21 @@ public struct DetailWithProperties
     [DefaultValue( 3712 )]
     public int Power { get; set; }
 
-    public List<int> Values { get; set; }
-
     [DefaultValue( "Hop!" )]
     public string Name { get; set; }
 }
 ```
-Nesting has no limit... except the readability. The following Poco is valid and note that all the
-non null defaults are correctly initialized:
-```csharp
-public interface IWithComplexRecords : IPoco
-{
-    public record struct Funny( DetailWithProperties FP, (string S, (DetailWithProperties P, DetailWithFields F) Inner ) A );
-
-    ref (DetailWithFields F, DetailWithProperties P) A { get; }
-
-    ref (Funny Funny, IWithComplexRecords? Next) B { get; }
-}
-```
+Nesting is allowed... But:
+- It becomes quickly hard to read.
+- Fields are not "by ref"! It can be tedious to copy the whole subordinated
+  structure to update a value in a value.
 
 ### The conformant collections
-IPoco can expose `T[]`, `List<T>`, `IList<T>`, `HashSet<T>`, `ISet<T>`, `Dictionary<TKey,TValue>` and
-`IDictionary<TKey,TValue>` where `T`, `TKey` and `TValue` are Poco compliant types.
-A `List<(string Name, Dictionary<IPerson,(int[] Distances, IPerson[] Friend)> Mappings)>` is valid
-(and still you won't do that, will you?).
+IPoco can expose `T[]`, `IList<T>`, `ISet<T>` and `IDictionary<TKey,TValue>` where:
+- `T`, `TKey` and `TValue` must be a Basic type, a IPoco (abstract or not) or a record (anonymous or not) of Basic types.
+- `TKey` is not nullable.
 
-The 3 read only collections are supported: `IReadOnlyList<T>`, `IReadOnlySet<T>` and `IReadOnlyDictionary<TKey,TValue>`.
-This supports the "Abstract Read Only Properties" (see below).
-
-A collection defined on a IPoco must be either fully read only or fully mutable:
-- `IList<(List<int>, HashSet<double>)>` is valid.
-- `List<(IReadOnlyList<int>, HashSet<double>)>` is invalid.
-- `IReadOblyList<List<int>>` is invalid.
+Recursve collections are forbidden. One cannot define a `IList<IList<int>>`.
 
 ### IPoco properties
 

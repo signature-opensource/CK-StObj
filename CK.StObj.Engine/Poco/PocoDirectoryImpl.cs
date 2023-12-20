@@ -125,37 +125,11 @@ namespace CK.Setup
                 ctorB.Append( pocoType.CSharpBodyConstructorSourceCode );
 
                 foreach( var f in pocoType.Fields )
-
-                    /* To transfer to CSharpBodyConstructorSourceCode 
-                    if( p.DefaultValueSource == null )
-                    {
-                        // Handles CK.Globalization types default values.
-                        // We don't need to depends on CK.Globalization: duck typing is enough.
-                        // We set the default value only if the property is not nullable and only for the
-                        // reference types (value types defaults do the job).
-                        if( !isNullable && p.PropertyType.Namespace == "CK.Core" )
-                        {
-                            if( p.PropertyType.Name == "NormalizedCultureInfo" || p.PropertyType.Name == "ExtendedCultureInfo" )
-                            {
-                                tB.Append( "=CK.Core.NormalizedCultureInfo.CodeDefault" );
-                            }
-                            else if( p.PropertyType.Name == "CodeString" )
-                            {
-                                tB.Append( "=CK.Core.CodeString.Empty" );
-                            }
-                            else if( p.PropertyType.Name == "MCString" )
-                            {
-                                tB.Append( "=CK.Core.MCString.Empty" );
-                            }
-                        }
-                        tB.Append( ";" );
-                    }
-                    */
                 {
                     // Creates the backing field.
                     if( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.ReadOnly )
                     {
-                        // If it can be readonly, it should be.
+                        // Since it can be readonly, let it be.
                         fieldPart.Append( "readonly " );
                     }
                     fieldPart.Append( f.Type.ImplTypeName ).Space().Append( f.PrivateFieldName ).Append( ";" ).NewLine();

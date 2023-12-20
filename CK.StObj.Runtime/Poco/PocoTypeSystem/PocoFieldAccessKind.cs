@@ -7,14 +7,12 @@ using System.Threading.Tasks;
 namespace CK.Setup
 {
     /// <summary>
-    /// Qualifies the <see cref="IPrimaryPocoField.AccessKind"/>.
+    /// Qualifies the <see cref="IPrimaryPocoField.FieldAccess"/>.
     /// </summary>
     public enum PocoFieldAccessKind
     {
         /// <summary>
-        /// The field is readonly. It is not implemented by any writable
-        /// property and keeps its default value. <see cref="IPocoField.IsExchangeable"/>
-        /// is false.
+        /// The field is an allocated <see cref="IPrimaryPocoType"/> or <see cref="ISecondaryPocoType"/>.
         /// </summary>
         ReadOnly,
 

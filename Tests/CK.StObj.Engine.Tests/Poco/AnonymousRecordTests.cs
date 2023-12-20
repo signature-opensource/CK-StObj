@@ -53,50 +53,45 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IWithN : IPoco
         {
-            ref (string? A, List<string?>? B, List<List<string?>?>? C)? Thing { get; }
+            ref (string? A, (string? S, int I) B, ((string? S1, string S2), string? S3)? C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart0 : IPoco
         {
-            ref (string? A, List<string?>? B, List<List<string?>?>? C) Thing { get; }
+            ref (string? A, (string? S, int I) B, ((string? S1, string S2), string? S3) C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart1 : IPoco
         {
-            ref (string? A, List<string?>? B, List<List<string?>?> C)? Thing { get; }
+            ref (string? A, (string? S, int I) B, ((string? S1, string S2), string S3)? C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart2 : IPoco
         {
-            ref (string? A, List<string?>? B, List<List<string?>>? C)? Thing { get; }
+            ref (string? A, (string? S, int I) B, ((string? S1, string? S2), string? S3)? C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart3 : IPoco
         {
-            ref (string? A, List<string?>? B, List<List<string>?>? C)? Thing { get; }
+            ref (string? A, (string? S, int I) B, ((string S1, string S2), string? S3)? C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart4 : IPoco
         {
-            ref (string? A, List<string?> B, List<List<string?>?>? C)? Thing { get; }
+            ref (string? A, (string S, int I) B, ((string? S1, string S2), string? S3)? C) Thing { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithNotNPart5 : IPoco
         {
-            ref (string? A, List<string>? B, List<List<string?>?>? C)? Thing { get; }
+            ref (string A, (string? S, int I) B, ((string? S1, string S2), string? S3)? C) Thing { get; }
         }
 
-        [CKTypeDefiner]
-        public interface IWithNotNPart6 : IPoco
-        {
-            ref (string A, List<string?>? B, List<List<string?>?>? C)? Thing { get; }
-        }
 
         // Thing is writable: it must have the same nullability.
         public interface INullabilityError0 : IWithN, IWithNotNPart0 { }
@@ -105,12 +100,11 @@ namespace CK.StObj.Engine.Tests.Poco
         public interface INullabilityError3 : IWithN, IWithNotNPart3 { }
         public interface INullabilityError4 : IWithN, IWithNotNPart4 { }
         public interface INullabilityError5 : IWithN, IWithNotNPart5 { }
-        public interface INullabilityError6 : IWithN, IWithNotNPart6 { }
 
         [CKTypeDefiner]
         public interface IWithNPart : IPoco
         {
-            ref (string? A, List<string?>? B, List<List<string?>?>? C)? Thing { get; }
+            ref (string? A, (string? S, int I) B, ((string? S1, string S2), string? S3)? C) Thing { get; }
         }
 
         public interface INoError : IWithN, IWithNPart
@@ -120,21 +114,20 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void nullability_incoherence_is_checked()
         {
-            //var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
-            //TestHelper.GetSuccessfulResult( c );
+            var c = TestHelper.CreateStObjCollector( typeof( INoError ) );
+            TestHelper.GetSuccessfulResult( c );
 
-            //CheckError( typeof( INullabilityError0 ) );
+            CheckError( typeof( INullabilityError0 ) );
             CheckError( typeof( INullabilityError1 ) );
             CheckError( typeof( INullabilityError2 ) );
             CheckError( typeof( INullabilityError3 ) );
             CheckError( typeof( INullabilityError4 ) );
             CheckError( typeof( INullabilityError5 ) );
-            CheckError( typeof( INullabilityError6 ) );
 
             static void CheckError( Type tError )
             {
                 var c = TestHelper.CreateStObjCollector( tError );
-                TestHelper.GetFailedResult( c, "Type must be '(string? A,List<string?>? B,List<List<string?>?>? C)?' since " );
+                TestHelper.GetFailedResult( c, "Type must be '(string? A,(string? S,int I) B,((string? S1,string S2),string? S3)? C)' since " );
             }
         }
 

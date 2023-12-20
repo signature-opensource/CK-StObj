@@ -26,6 +26,11 @@ namespace CK.Setup
         Type Type { get; }
 
         /// <summary>
+        /// Gets whether this type is a proper type. Only proper types can appear in a IPoco.
+        /// </summary>
+        bool IsProperType { get; }
+
+        /// <summary>
         /// Gets whether the <see cref="Type"/> is a purely generated type.
         /// When true, the Type property is <see cref="IDynamicAssembly.PurelyGeneratedType"/>.
         /// </summary>

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 
 namespace CK.Setup
 {
@@ -13,7 +12,6 @@ namespace CK.Setup
         sealed class PocoPropertyBuilder
         {
             readonly PocoTypeSystem _system;
-            readonly FakeExtPropertyInfo _fakeInderred;
             IPocoPropertyInfo? _prop;
             IExtPropertyInfo? _bestProperty;
             PocoFieldAccessKind _fieldAccessKind;
@@ -24,7 +22,6 @@ namespace CK.Setup
             public PocoPropertyBuilder( PocoTypeSystem system )
             {
                 _system = system;
-                _fakeInderred = new FakeExtPropertyInfo();
             }
 
             public PrimaryPocoField? Build( IActivityMonitor monitor, PocoType.PrimaryPocoType p, IPocoPropertyInfo prop )
@@ -39,28 +36,6 @@ namespace CK.Setup
                 if( !TryFindWritableAndCheckReadOnlys( monitor ) )
                 {
                     return null;
-                }
-                bool isWritable = _bestReg != null;
-                if( !isWritable )
-                {
-                    // No writable property defines the type.
-                    // Trying to infer it and check this against all the real properties.
-                    var inferred = ConcreteTypeResolver.ToConcrete( monitor, _system, prop.DeclaredProperties );
-                    if( inferred == null )
-                    {
-                        var types = prop.DeclaredProperties.Select( p => p.TypeCSharpName ).Concatenate( Environment.NewLine );
-                        monitor.Error( $"Failed to infer type from read only {prop} types:{Environment.NewLine}{types}" );
-                        return null;
-                    }
-                    isWritable = inferred.Value.IsWritableCollection;
-                    if( isWritable ) _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
-                    monitor.Trace( $"Inferred {(isWritable ? "mutable collection" : "read only")} type for {prop}: {inferred.Value.Resolved.Type:C}" );
-
-                    _fakeInderred.SetInfo( prop, inferred.Value.Resolved, inferred.Value.TupleNames );
-                    _bestReg = _system.Register( monitor, _fakeInderred );
-                    if( _bestReg == null ) return null;
-                    _bestProperty = _fakeInderred;
-                    if( !CheckExistingReadOnlyProperties( monitor, null ) ) return null;
                 }
                 Debug.Assert( _bestReg != null && _bestProperty != null );
                 // Now that we know that there are no issues on the unified type across the property implementations:
@@ -127,10 +102,10 @@ namespace CK.Setup
                         monitor.Error( $"Property '{prop.Name}' of the nested 'class {pU.DeclaringType.DeclaringType!:N}.UnionTypes' must be a value tuple (current type is {nInfo.Type:C})." );
                         return null;
                     }
-                    var reusableContext = new MemberContext( pU, forbidAbstractCollections: true );
+                    var reusableContext = new MemberContext( false, pU );
                     foreach( var tInfo in nInfo.GenericTypeArguments )
                     {
-                        if( tInfo.Type == typeof(object) )
+                        if( tInfo.Type == typeof( object ) )
                         {
                             monitor.Error( $"'{pU.DeclaringType!.DeclaringType!:N}.UnionTypes.{prop.Name}' cannot define the type 'object' since this would erase all possible types." );
                             success = false;
@@ -171,7 +146,7 @@ namespace CK.Setup
                             //  - When true, types can be widened.
                             //  - When false, types must be unrelated.
                             //
-                            reusableContext.Reset();
+                            reusableContext.Reset( false, false );
                             var oneType = _system.Register( monitor, reusableContext, tInfo );
                             if( oneType == null ) return null;
                             // If the value is nullable, we project the nullability on each type
@@ -278,9 +253,10 @@ namespace CK.Setup
             bool TryFindWritableAndCheckReadOnlys( IActivityMonitor monitor )
             {
                 Debug.Assert( _prop != null );
+                List<(IExtPropertyInfo P, IPocoType T)>? abstractReadOnlyToCheck = null;
                 foreach( var p in _prop.DeclaredProperties )
                 {
-                    if( !Add( monitor, p ) )
+                    if( !Add( monitor, p, ref abstractReadOnlyToCheck ) )
                     {
                         return false;
                     }
@@ -298,18 +274,47 @@ namespace CK.Setup
                         }
                     }
                 }
+                if( abstractReadOnlyToCheck != null )
+                {
+                    if( _bestReg == null )
+                    {
+                        // Gets the first type that satisfies all the declared type.
+                        (_bestProperty, _bestReg) = abstractReadOnlyToCheck.FirstOrDefault( c => abstractReadOnlyToCheck.All( a => c.T.IsReadableType( a.T ) ) );
+                        if( _bestReg == null )
+                        {
+                            var types = _prop.DeclaredProperties.Select( p => p.TypeCSharpName ).Concatenate( Environment.NewLine );
+                            monitor.Error( $"Failed to find a writable property for read only {_prop} types:{Environment.NewLine}{types}" );
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        foreach( var (prop, type) in abstractReadOnlyToCheck )
+                        {
+                            if( !CheckAbstractReadOnly( monitor, prop, type ) )
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
                 return true;
-
             }
 
-            bool Add( IActivityMonitor monitor, IExtPropertyInfo p )
+            bool Add( IActivityMonitor monitor, IExtPropertyInfo p, ref List<(IExtPropertyInfo, IPocoType)>? abstractReadOnlyToCheck )
             {
                 Debug.Assert( _prop != null );
+                var reg = _system.Register( monitor, p, true );
+                if( reg == null ) return false;
 
                 if( p.PropertyInfo.CanWrite || p.Type.IsByRef )
                 {
                     _fieldAccessKind = p.Type.IsByRef ? PocoFieldAccessKind.IsByRef : PocoFieldAccessKind.HasSetter;
-                    if( !AddWritable( monitor, p ) ) return false;
+
+                    if( !AddWritable( monitor, p, reg ) )
+                    {
+                        return false;
+                    }
                     // On success, always check that a record must be a ref property, that a collection must not
                     // have a setter and that any other type must be a regular property.
                     Debug.Assert( _bestReg != null );
@@ -342,108 +347,73 @@ namespace CK.Setup
                 }
                 // The property is a simple { get; }. It may be an "Abstract read only Property"
                 // or a real property that must be allocated.
-                // This current implementation is not satisfying.
-                // What we should do here is:
-                // - Resolve the property type with a new "AllowAbstractReadonly" code path that would
-                //   allow IReadonlyList/Set/Dictionary (and may be other "ReadOnly" types to appear)
-                //   that would return a IPocoType if the type is a Poco compliant type or a "Extended/AbstractPocoType"
-                //   that is a potentially covariant type for one PocoType (or more? - a IReadOnlySet<IUserInfo> is compatible
-                //   with a mere HashSet<IUserInfo> without the covariant adapter of the ISet<IUserInfo>...).
-                // - This AbstractPocoType may then even be able to describe an "Adapter" or a projection from the IPocoType to the "abstract type"
-                //   (or generate the code adapter like the IPrimaryPocoType.CSharpBodyConstructorSourceCode).
-                //
-                // Before this can be done we can certainly find an intermediate way. The fact is that the property
-                // will be an "Abstract read only Property" if it is a "read only type":
-                // - Any Basic type (inluding the Globalization types) are value types or immutable reference types: this is compatible
-                //   with a "read only view".
-                // - We consider that "object" is a read only type.
-                //   - object Stuff { get; } and object? Stuff { get; } are the ultimate abstract readonly properties.
-                // - Value types (record type) are also "read only" because through a simple { get; }, it is a clone that is exposed.
-                // - We are left with IPoco...
-                //   - IUserInfo Thing { get; } is a real property.
-                //   - IUserInfo? Thing { get; } is "abstract" that would be not null only if a writable property IUserInfo? Thing { get; }
-                //     or a "real" IUserInfo Thing { get; } is defined is defined elsewhere in the family.
-                //     But as an "Abstract", it must not be mutable! Currently this corresponds to a "I'm an optional property in the family"...
-                //     This is strange but not totally irrelevant. This is not an "Abstract property", more an "Optional Property"...
-                //     I have absolutely no idea if this can have a usage but it's logically sound and its behavior will not violate the
-                //     Principle of Least Surprise.
-                //  - ...Array:
-                //    - int[] Stuff { get; } or int[]? Stuff { get; }
-                //      are both "Optional property". They don't define anything usable by themselves but if a real property (with a setter) exists
-                //      in the family, they can be used.
-                //  - List/Set/Dictionary
-                //    - If the type is a Poco collection (List, Set, Dictionary and abstract IList, ISet, IDictionary only at the root of the type),
-                //      it is mutable. It is a real property.
-                //    - We are left only with a IReadOnlyList/Set/Dictionary and this is where covariance comes into play.
-                //      - The items type must be read only.
-                //        - Here again all Basic and any value types are fine: they are exposed as values by the
-                //          collection accessors (no ref access).
-                //        - We don't have IReadOnly<IPoco> or other constructs that can constrain a collection item.
-                //          We forbid this: no IPoco can appear in a collection.
-                //        - If we allow subordinated collections, they must be IReadOnlyList/Set/Dictionary ones, but then we have
-                //          currently absolutely no way 
-                //      - The dictionary key being invariant is not an issue.
-                //
-                if( _bestProperty != null && !CheckNewReadOnly( monitor, p ) )
+
+                // Secondary and PrimaryPoco: real property.
+                var isSecondaryPoco = reg.Kind is PocoTypeKind.SecondaryPoco;
+                if( isSecondaryPoco )
                 {
+                    Throw.DebugAssert( reg.ObliviousType is IPrimaryPocoType );
+                    reg = reg.ObliviousType;
+                }
+                if( isSecondaryPoco || reg.Kind == PocoTypeKind.PrimaryPoco )
+                {
+                    return AddWritable( monitor, p, reg );
+                }
+                // IList, ISet or IDictionary (because it is necessarily a propert type): real property.
+                if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary )
+                {
+                    _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
+                    return AddWritable( monitor, p, reg );
+                }
+
+                // An "Abstract read only Property".
+                Throw.DebugAssert( reg.Kind is PocoTypeKind.Any
+                                               or PocoTypeKind.Basic
+                                               or PocoTypeKind.Enum
+                                               or PocoTypeKind.Array
+                                               or PocoTypeKind.AbstractPoco
+                                               or PocoTypeKind.Record
+                                               or PocoTypeKind.AnonymousRecord
+                                               or PocoTypeKind.UnionType );
+                if( _bestReg != null )
+                {
+                    if( !CheckAbstractReadOnly( monitor, p, reg ) )
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    abstractReadOnlyToCheck ??= new List<(IExtPropertyInfo, IPocoType)>();
+                    abstractReadOnlyToCheck.Add( (p, reg) );
+                }
+                return true;
+            }
+
+            bool AddWritable( IActivityMonitor monitor, IExtPropertyInfo p, IPocoType reg )
+            {
+                if( _bestReg != null )
+                {
+                    Throw.DebugAssert( _bestProperty != null );
+                    if( _bestReg.IsSamePocoType( reg ) )
+                    {
+                        return true;
+                    }
+                    monitor.Error( $"{p}: Type must be '{_bestReg.CSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
                     return false;
                 }
-                return true;
-
-                bool AddWritable( IActivityMonitor monitor, IExtPropertyInfo p )
-                {
-                    var reg = _system.Register( monitor, p );
-                    if( reg == null ) return false;
-                    Throw.DebugAssert( "PocoTypeSystem.Register only accepts homogeneous nullability info.", p.HomogeneousNullabilityInfo != null );
-                    if( _bestReg != null )
-                    {
-                        Throw.DebugAssert( _bestProperty != null );
-                        if( _bestReg.IsSamePocoType( reg ) )
-                        {
-                            return true;
-                        }
-                        monitor.Error( $"{p}: Type must be '{_bestReg.CSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
-                        return false;
-                    }
-                    _bestProperty = p;
-                    _bestReg = reg;
-                    return CheckExistingReadOnlyProperties( monitor, p );
-                }
-            }
-
-            bool CheckExistingReadOnlyProperties( IActivityMonitor monitor, IExtPropertyInfo? stopper )
-            {
-                Debug.Assert( _prop != null );
-                foreach( var pRead in _prop.DeclaredProperties )
-                {
-                    if( pRead == stopper ) break;
-                    if( !CheckNewReadOnly( monitor, pRead ) )
-                    {
-                        return false;
-                    }
-                }
+                _bestProperty = p;
+                _bestReg = reg;
                 return true;
             }
 
-            bool CheckNewReadOnly( IActivityMonitor monitor, IExtPropertyInfo p )
+            bool CheckAbstractReadOnly( IActivityMonitor monitor, IExtPropertyInfo p, IPocoType type )
             {
-                Debug.Assert( _bestReg != null && _bestProperty != null );
-                var nInfo = p.HomogeneousNullabilityInfo;
-                Debug.Assert( nInfo != null );
-
-                // If the property has no setter, then its type is allowed to be a nullable (since we have a writable,
-                // either the writable is nullable or the property will never be null).
-                // Note that if it is a ref property then it is a writable one and we are not here.
-                Debug.Assert( !p.PropertyInfo.PropertyType.IsByRef );
-                var bestType = p.PropertyInfo.CanWrite ? _bestReg : _bestReg.Nullable;
-                if( !bestType.IsReadableType( nInfo ) )
+                Throw.DebugAssert( _bestReg != null && _bestProperty != null );
+                Throw.DebugAssert( !p.PropertyInfo.PropertyType.IsByRef && !p.PropertyInfo.CanWrite );
+                if( !_bestReg.IsReadableType( type ) )
                 {
-                    using( monitor.OpenError( $"Read only {p} has incompatible types." ) )
-                    {
-                        monitor.Trace( $"Property type: {p.TypeCSharpName}" );
-                        monitor.Trace( $"Implemented type: {_bestReg}" );
-                        monitor.Trace( $"Implementation decided by: {_bestProperty.DeclaringType:C}.{_bestProperty.Name}" );
-                    }
+                    monitor.OpenError( $"Read only {p} is not compatible with {_bestReg}." );
                     return false;
                 }
                 return true;
