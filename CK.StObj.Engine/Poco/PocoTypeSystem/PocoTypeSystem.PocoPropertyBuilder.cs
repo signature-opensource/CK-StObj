@@ -104,7 +104,7 @@ namespace CK.Setup
                         monitor.Error( $"Property '{prop.Name}' of the nested 'class {pU.DeclaringType.DeclaringType!:N}.UnionTypes' must be a value tuple (current type is {nInfo.Type:C})." );
                         return null;
                     }
-                    var reusableContext = new MemberContext( false, pU );
+                    var reusableContext = new MemberContext( pU );
                     foreach( var tInfo in nInfo.GenericTypeArguments )
                     {
                         if( tInfo.Type == typeof( object ) )
@@ -148,7 +148,7 @@ namespace CK.Setup
                             //  - When true, types can be widened.
                             //  - When false, types must be unrelated.
                             //
-                            reusableContext.Reset( false, false );
+                            reusableContext.Reset();
                             var oneType = _system.Register( monitor, reusableContext, tInfo );
                             if( oneType == null ) return null;
                             // If the value is nullable, we project the nullability on each type
@@ -306,15 +306,32 @@ namespace CK.Setup
             bool Add( IActivityMonitor monitor, IExtPropertyInfo p, ref List<(IExtPropertyInfo, IPocoType)>? abstractReadOnlyToCheck )
             {
                 Debug.Assert( _props != null );
-                var reg = _system.Register( monitor, p, true );
+                var reg = _system.RegisterPocoField( monitor, p );
                 if( reg == null ) return false;
 
-                if( reg is IRecordPocoType record && !record.IsReadOnlyCompliant )
+                // Check record constraints:
+                // - In a Poco field, records must be "Read Only Compliant".
+                // - The only way to expose a record is through a ref property get:
+                //   - No ref and { get; }: There is no point to allow records to be Abstract Read Only properties for 2 reasons:
+                //      - the type is completely defined, there is no possible "specialization".
+                //      - the "ref" can easily be forgotten by the developper, preventing the easy update of the value.
+                //   - A { get; set; }: This could be allowed but this would be error prone since some record will be by ref and
+                //     other by value. There is no point to allow this.
+                if( reg is IRecordPocoType record )
                 {
-                    var b = new StringBuilder();
-                    DumpReadOnlyCompliant( b, record, 1 );
-                    monitor.Error( $"Invalid mutable reference types in '{p.DeclaringType:N}.{p.Name}':{b}" );
-                    return false;
+                    // This is enough to test for "ref { get; }". ("ref { get; set; }" is invalid and { get; } has a !IsByRef type.
+                    if( !p.Type.IsByRef )
+                    {
+                        monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' must be a ref property: 'ref {reg.CSharpName} {p.Name} {{ get; }}'." );
+                        return false;
+                    }
+                    if( !record.IsReadOnlyCompliant )
+                    {
+                        var b = new StringBuilder();
+                        DumpReadOnlyCompliant( b, record, 1 );
+                        monitor.Error( $"Invalid mutable reference types in '{p.DeclaringType:N}.{p.Name}':{b}" );
+                        return false;
+                    }
                 }
 
                 if( p.PropertyInfo.CanWrite || p.Type.IsByRef )
@@ -325,17 +342,13 @@ namespace CK.Setup
                     {
                         return false;
                     }
-                    // On success, always check that a record must be a ref property, that a collection must not
+                    // On success, always check that a collection must not
                     // have a setter and that any other type must be a regular property.
                     Debug.Assert( _bestReg != null );
                     Debug.Assert( _bestReg is not IRecordPocoType || _bestReg.Type.IsValueType, "IRecordPocoType => ValueType." );
                     if( _bestReg is IRecordPocoType )
                     {
-                        if( !p.Type.IsByRef )
-                        {
-                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' must be a ref property: 'ref {_bestReg.CSharpName} {p.Name} {{ get; }}'." );
-                            return false;
-                        }
+                        Throw.DebugAssert( "Already checked.", p.Type.IsByRef );
                     }
                     else
                     {
@@ -355,8 +368,10 @@ namespace CK.Setup
                     }
                     return true;
                 }
-                // The property is a simple { get; }. It may be an "Abstract read only Property"
+                // The property is a simple { get; } and not a record. It may be an "Abstract read only Property"
                 // or a real property that must be allocated.
+
+                Throw.DebugAssert( reg.Kind is not PocoTypeKind.AnonymousRecord or PocoTypeKind.Record );
 
                 // Secondary and PrimaryPoco: real property.
                 var isSecondaryPoco = reg.Kind is PocoTypeKind.SecondaryPoco;
@@ -369,7 +384,7 @@ namespace CK.Setup
                 {
                     return AddWritable( monitor, p, reg );
                 }
-                // IList, ISet or IDictionary (because it is necessarily a propert type): real property.
+                // IList, ISet or IDictionary: real property.
                 if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary )
                 {
                     _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
@@ -382,8 +397,6 @@ namespace CK.Setup
                                                or PocoTypeKind.Enum
                                                or PocoTypeKind.Array
                                                or PocoTypeKind.AbstractPoco
-                                               or PocoTypeKind.Record
-                                               or PocoTypeKind.AnonymousRecord
                                                or PocoTypeKind.UnionType );
                 if( _bestReg != null )
                 {

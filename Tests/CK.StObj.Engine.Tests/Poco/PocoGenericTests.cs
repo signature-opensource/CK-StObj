@@ -42,7 +42,7 @@ namespace CK.StObj.Engine.Tests.Poco
             /// <summary>
             /// Gets a mutable list of <see cref="IMissionLine"/>.
             /// </summary>
-            List<T> Items { get; }
+            IList<T> Items { get; }
         }
 
         [CKTypeDefiner]

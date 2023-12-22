@@ -38,7 +38,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IWithList : ILinkedListPart
         {
-            List<(int Count, string Name)> Thing { get; }
+            IList<(int Count, string Name)> Thing { get; }
         }
 
         public record struct NamedRec( int Count, string Name, (int Count, string Name) Inside );
@@ -625,6 +625,6 @@ namespace CK.StObj.Engine.Tests.Poco
             oA.Fields.Where( f => !f.IsUnnamed ).Should().BeEmpty( "The oblivious anonymous record has no field name." );
             oA.Fields.Where( f => f.Type != tO ).Should().BeEmpty( "The oblivious anonymous record has oblivious field types." );
         }
-    }
 
+    }
 }

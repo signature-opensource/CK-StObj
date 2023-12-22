@@ -144,7 +144,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithSets : IPoco
         {
-            HashSet<object> SetOfSet { get; }
+            ISet<object> SetOfSet { get; }
 
             ISet<int> CovariantSetImpl { get; }
 
@@ -189,7 +189,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithDictionaries : IPoco
         {
-            Dictionary<object, object> DicOfDic { get; }
+            IDictionary<object, object> DicOfDic { get; }
 
             IDictionary<int, int> CovariantDicImpl { get; }
 

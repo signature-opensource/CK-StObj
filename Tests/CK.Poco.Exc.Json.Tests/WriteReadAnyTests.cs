@@ -101,7 +101,7 @@ namespace CK.Poco.Exc.Json.Tests
         public interface IBatchCommand : ICommand
         {
             IList<ICommand> Commands { get; }
-            List<ICommand> OtherCommands { get; }
+            IList<ICommand> OtherCommands { get; }
 
             public static new IBatchCommand CreateRandom( PocoDirectory directory, Random r )
             {
@@ -154,7 +154,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IMultiMission : IMission
         {
-            Dictionary<string,IMission> Missions { get; }
+            IDictionary<string,IMission> Missions { get; }
 
             public static new IMultiMission CreateRandom( PocoDirectory directory, Random r )
             {
@@ -174,8 +174,8 @@ namespace CK.Poco.Exc.Json.Tests
         public interface IMultiMission2 : IMission
         {
             IDictionary<string,IMission> Missions { get; }
-            //IList<ITotallySimpleMission> SimpleMissions { get; }
-            List<IVerySimpleMission> VerySimpleMissions { get; }
+
+            IList<IVerySimpleMission> VerySimpleMissions { get; }
 
             public static new IMultiMission2 CreateRandom( PocoDirectory directory, Random r )
             {
@@ -191,9 +191,6 @@ namespace CK.Poco.Exc.Json.Tests
                     nb = 1 + r.Next( 4 );
                     for( int i = 0; i < nb; i++ )
                     {
-                        //m.SimpleMissions.Add( r.Next( 2 ) == 0
-                        //                        ? IVerySimpleMission.CreateRandom( directory, r )
-                        //                        : ISimpleMission.CreateRandom( directory, r ) );
                         m.VerySimpleMissions.Add( r.Next( 2 ) == 0
                                                     ? IVerySimpleMission.CreateRandom( directory, r )
                                                     : ISimpleMission.CreateRandom( directory, r ) );
@@ -204,7 +201,7 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IOrder : IPoco
         {
-            List<(string Ref, int Quantity)> Lines { get; }
+            IList<(string Ref, int Quantity)> Lines { get; }
 
             public static IOrder CreateRandom( PocoDirectory directory, Random r )
             {

@@ -144,26 +144,24 @@ namespace CK.Setup
 
         public IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
-        public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo ) => Register( monitor, memberInfo, false );
-
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
         public IPocoType? Register( IActivityMonitor monitor, FieldInfo f ) => Register( monitor, _memberInfoFactory.Create( f ) );
 
         public IPocoType? Register( IActivityMonitor monitor, ParameterInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
-        IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo, MemberContext parent )
+        public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo )
         {
             var nType = memberInfo.GetHomogeneousNullabilityInfo( monitor );
             if( nType == null ) return null;
-            return Register( monitor, new MemberContext( parent, memberInfo ), nType );
+            return Register( monitor, new MemberContext( memberInfo ), nType );
         }
 
-        internal IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo, bool isPocoField = false )
+        internal IPocoType? RegisterPocoField( IActivityMonitor monitor, IExtMemberInfo memberInfo )
         {
             var nType = memberInfo.GetHomogeneousNullabilityInfo( monitor );
             if( nType == null ) return null;
-            return Register( monitor, new MemberContext( isPocoField, memberInfo ), nType );
+            return Register( monitor, new MemberContext( memberInfo, true ), nType );
         }
 
         IPocoType? Register( IActivityMonitor monitor,
@@ -279,22 +277,39 @@ namespace CK.Setup
                             // We are obviously not the oblivious.
                             tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
                         }
-                        else if( tI.Kind == PocoTypeKind.PrimaryPoco )
+                        else if( tI.Kind == PocoTypeKind.AbstractPoco )
                         {
-                            // For IPoco, use generated covariant implementations only if needed:
-                            // - For list only if more than one Poco interface exist in the family. When the family contains only one interface
-                            //   (the primary one), the oblivious List<PrimaryInterface> is fine.
-                            // - But it's not the case for Set because IReadOnlySet<T> is NOT covariant. We need the object and abstract adaptations...
-                            var poco = (IPrimaryPocoType)tI.NonNullable;
-                            if( !isList || poco.FamilyInfo.Interfaces.Count > 1 )
+                            // HashSet<> is not natively covariant. We support it here.
+                            if( !isList )
                             {
-                                // We choose the non nullable item type to follow the C# "oblivious nullable reference type" that is non nullable. 
-                                typeName = EnsurePocoListOrHashSetType( monitor, poco, isList, listOrHashSet );
+                                typeName = EnsurePocoHashSetOfAbstractType( monitor, (IAbstractPocoType)tI.NonNullable );
                                 t = IDynamicAssembly.PurelyGeneratedType;
-                                // Since we are on a reference type, the oblivious is the non nullable.
-                                Debug.Assert( poco.IsOblivious );
                                 // We are obviously not the oblivious.
                                 tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+                            }
+                        }
+                        else
+                        {
+                            bool isSecondary = tI.Kind == PocoTypeKind.SecondaryPoco;
+                            if( isSecondary || tI.Kind == PocoTypeKind.PrimaryPoco )
+                            {
+                                // For IPoco, use generated covariant implementations only if needed:
+                                // - For list only if more than one Poco interface exist in the family. When the family contains only one interface
+                                //   (the primary one), the oblivious List<PrimaryInterface> is fine.
+                                // - But it's not the case for Set because IReadOnlySet<T> is NOT covariant. We need the object and abstract adaptations...
+                                var poco = isSecondary
+                                            ? ((ISecondaryPocoType)tI.NonNullable).PrimaryPocoType
+                                            : (IPrimaryPocoType)tI.NonNullable;
+                                if( !isList || isSecondary || poco.FamilyInfo.Interfaces.Count > 1 )
+                                {
+                                    // We choose the non nullable item type to follow the C# "oblivious nullable reference type" that is non nullable. 
+                                    typeName = EnsurePocoListOrHashSetType( monitor, poco, isList, listOrHashSet );
+                                    t = IDynamicAssembly.PurelyGeneratedType;
+                                    // Since we are on a reference type, the oblivious is the non nullable.
+                                    Debug.Assert( poco.IsOblivious );
+                                    // We are obviously not the oblivious.
+                                    tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+                                }
                             }
                         }
                     }
@@ -403,12 +418,26 @@ namespace CK.Setup
                             }
                             tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                         }
-                        else if( tV.Kind == PocoTypeKind.PrimaryPoco )
+                        else if( tV.Kind == PocoTypeKind.AbstractPoco )
                         {
                             // IReadOnlyDictionary<TKey,TValue> is NOT convariant on TValue: we always need an adapter.
-                            typeName = EnsurePocoDictionaryType( monitor, tK, (IPrimaryPocoType)tV.NonNullable );
+                            typeName = EnsurePocoDictionaryOfAbstractType( monitor, tK, (IAbstractPocoType)tV.NonNullable );
                             t = IDynamicAssembly.PurelyGeneratedType;
                             tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                        }
+                        else 
+                        {
+                            bool isSecondary = tV.Kind == PocoTypeKind.SecondaryPoco;
+                            if( isSecondary || tV.Kind == PocoTypeKind.PrimaryPoco )
+                            {
+                                // The adapter enables Primary and Secondary inputs and AbstractPoco outputs.
+                                var poco = isSecondary
+                                                ? ((ISecondaryPocoType)tV.NonNullable).PrimaryPocoType
+                                                : (IPrimaryPocoType)tV.NonNullable;
+                                typeName = EnsurePocoDictionaryType( monitor, tK, poco );
+                                t = IDynamicAssembly.PurelyGeneratedType;
+                                tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                            }
                         }
                     }
                     if( typeName == null )
@@ -475,6 +504,17 @@ namespace CK.Setup
                 return g.FullName;
             }
 
+            string EnsurePocoHashSetOfAbstractType( IActivityMonitor monitor, IAbstractPocoType tI )
+            {
+                Debug.Assert( !tI.IsNullable );
+                var genTypeName = $"PocoHashSet_{tI.Index}_CK";
+                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
+                {
+                    _requiredSupportTypes.Add( genTypeName, g = new PocoHashSetOfAbstractRequiredSupport( tI, genTypeName ) );
+                }
+                return g.FullName;
+            }
+
             string EnsurePocoDictionaryType( IActivityMonitor monitor, IPocoType tK, IPrimaryPocoType tV )
             {
                 Debug.Assert( !tV.IsNullable );
@@ -482,6 +522,17 @@ namespace CK.Setup
                 if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
                 {
                     _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryRequiredSupport( tK, tV, genTypeName ) );
+                }
+                return g.FullName;
+            }
+
+            string EnsurePocoDictionaryOfAbstractType( IActivityMonitor monitor, IPocoType tK, IAbstractPocoType tV )
+            {
+                Debug.Assert( !tV.IsNullable );
+                var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
+                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
+                {
+                    _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryOfAbstractRequiredSupport( tK, tV, genTypeName ) );
                 }
                 return g.FullName;
             }
@@ -606,7 +657,7 @@ namespace CK.Setup
                 tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
                 record = OnTypedRecord( monitor, ctx, nType, tNotNull, tNull );
             }
-            Throw.DebugAssert( record is IRecordPocoType );
+            Throw.DebugAssert( record is null or IRecordPocoType );
             return record;
         }
 
@@ -618,7 +669,7 @@ namespace CK.Setup
                                                IRecordPocoType? obliviousType )
         {
             var subInfos = FlattenValueTuple( nType ).ToList();
-            var fields = ctx.GetTupleNamedFields( subInfos.Count );
+            var fields = ctx.EnterValueTuple( subInfos.Count, out var state );
             // Here we can resolve the field types without fear of infinite recursion: value tuples
             // cannot be recursive by design.
             // We can detect that this is the oblivious one: it must have no field names and its fields are oblivious.
@@ -641,6 +692,7 @@ namespace CK.Setup
                 isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
             }
             b.Append( ')' );
+            ctx.LeaveValueTuple( state );
             // If this happens to be the oblivious type... 
             if( isOblivious )
             {
@@ -746,8 +798,6 @@ namespace CK.Setup
                     _ => Throw.NotSupportedException<Type>()
                 };
             }
-
-
         }
 
         IPocoType? OnTypedRecord( IActivityMonitor monitor,
@@ -796,7 +846,7 @@ namespace CK.Setup
                     monitor.Error( $"'{pInfo}' is readonly. A record struct must be fully mutable." );
                     return null;
                 }
-                var f = CreateField( monitor, r, i, Register( monitor, pInfo, ctx ), pInfo, ctorParams, StringBuilderPool );
+                var f = CreateField( monitor, r, i, Register( monitor, pInfo ), pInfo, ctorParams, StringBuilderPool );
                 if( f == null ) return null;
                 isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
                 fields[i] = f;
@@ -810,7 +860,7 @@ namespace CK.Setup
                     monitor.Error( $"Field '{fInfo.DeclaringType}.{fInfo.Name}' is readonly. A record struct must be fully mutable." );
                     return null;
                 }
-                var f = CreateField( monitor, r, idx, Register( monitor, fInfo, ctx ), fInfo, ctorParams, StringBuilderPool );
+                var f = CreateField( monitor, r, idx, Register( monitor, fInfo ), fInfo, ctorParams, StringBuilderPool );
                 if( f == null ) return null;
                 isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
                 fields[idx++] = f;

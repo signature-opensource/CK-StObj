@@ -6,6 +6,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
@@ -179,5 +180,30 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
+        public (List<(int A, (string B, Dictionary<(string C, int /*no name*/, string D), (List<int> E, HashSet<(int F, int G)> H)> /*no name*/) I)>? J, int K) ComplexTupleNames;
+
+        [Test]
+        public void complex_tuple_names_handling()
+        {
+            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var t = ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ComplexTupleNames ) )! );
+            var r0 = CheckIsTuple( t, "J", "K" );
+            var r1 = CheckIsTuple( ((ICollectionPocoType)r0.Fields[0].Type).ItemTypes[0], "A", "I" );
+            var r2 = CheckIsTuple( r1.Fields[1].Type, "B", "Item2" );
+            var dicKey = ((ICollectionPocoType)r2.Fields[1].Type).ItemTypes[0];
+            CheckIsTuple( dicKey, "C", "Item2", "D" );
+            var dicValue = ((ICollectionPocoType)r2.Fields[1].Type).ItemTypes[1];
+            var r3 = CheckIsTuple( dicValue, "E", "H" );
+            var setValue = ((ICollectionPocoType)r3.Fields[1].Type).ItemTypes[0];
+            CheckIsTuple( setValue, "F", "G" );
+        }
+
+        IRecordPocoType CheckIsTuple( IPocoType? t, params string[] names )
+        {
+            Throw.DebugAssert( t != null && t is IRecordPocoType );
+            var r = (IRecordPocoType)t;
+            r.Fields.Select( f => f.Name ).Should().BeEquivalentTo( names );
+            return r;
+        }
     }
 }

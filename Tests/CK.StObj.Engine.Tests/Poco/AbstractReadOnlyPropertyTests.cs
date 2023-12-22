@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static CK.StObj.Engine.Tests.Poco.AnonymousRecordTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -159,12 +160,14 @@ namespace CK.StObj.Engine.Tests.Poco
         }
         public interface IAutoAnonymousRecordExtension1 : IAutoAnonymousRecordPrimary1
         {
-            new (int A, string B)? Auto { get; }
+            // Record cannot be Abstract Read Only Property. Use object here.
+            new object? Auto { get; }
         }
 
         public interface IAutoAnonymousRecordPrimary2 : IPoco, IHaveAutoProperty
         {
-            new (int A, string B)? Auto { get; }
+            // Record cannot be Abstract Read Only Property. Use object here.
+            new object? Auto { get; }
         }
         public interface IAutoAnonymousRecordExtension2 : IAutoAnonymousRecordPrimary2
         {
@@ -188,6 +191,34 @@ namespace CK.StObj.Engine.Tests.Poco
             f.Should().BeSameAs( d.Find( tExtension ) );
             var o = (IHaveAutoProperty)f.Create();
             o.Auto.Should().NotBeNull().And.BeOfType( tAutoProperty );
+        }
+
+        // There is no point to allow records to be Abstract Read Only properties for 2 reasons:
+        // - the type is completely defined, there is no possible "specialization".
+        // - the "ref" can easily be forgotten by the developper, preventing the easy update of the value.
+        public interface IInvalidAnonymousRecord : IPoco
+        {
+            (int A, int B) NoWay { get; }
+        }
+
+        public interface IInvalidNamedRecord : IPoco
+        {
+            public record struct Rec( int A, int B );
+            Rec NoWay { get; }
+        }
+
+        [Test]
+        public void record_cannot_be_a_Abstract_Read_Only_Property()
+        {
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IInvalidAnonymousRecord ) );
+                TestHelper.GetFailedResult( c,
+                    "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidAnonymousRecord.NoWay' must be a ref property: 'ref (int A,int B) NoWay { get; }'." );
+            }
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IInvalidNamedRecord ) );
+                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.NoWay' must be a ref property: 'ref CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IInvalidNamedRecord.Rec NoWay { get; }'." );
+            }
         }
 
     }

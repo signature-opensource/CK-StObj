@@ -8,16 +8,34 @@ namespace CK.Setup
     public interface IAbstractPocoType : IOneOfPocoType
     {
         /// <summary>
-        /// Gets the set of other abstract IPoco types that are
-        /// compatible with this one.
+        /// Gets the set of other abstract IPoco types that specialize this one.
+        /// <para>
+        /// These are nullable types if this type is nullable.
+        /// </para>
         /// </summary>
-        IEnumerable<IAbstractPocoType> OtherAbstractTypes { get; }
+        IEnumerable<IAbstractPocoType> Specializations { get; }
 
         /// <summary>
-        /// Gets the set of <see cref="IConcretePocoType"/> of
+        /// Gets the set of abstract IPoco types that generalize this one.
+        /// <para>
+        /// These are nullable types if this type is nullable.
+        /// </para>
+        /// <para>
+        /// This never contains the root <see cref="CK.Core.IPoco"/> but can contain
+        /// the <see cref="CK.Core.IClosedPoco"/>.
+        /// </para>
+        /// </summary>
+        IEnumerable<IAbstractPocoType> Generalizations { get; }
+
+        /// <summary>
+        /// Gets the set of <see cref="IPrimaryPocoType"/> of
         /// primary interfaces that are compatible with this abstract type.
         /// <para>
-        /// Use <see cref="IOneOfPocoType.AllowedTypes"/> for the full set of compatible types.
+        /// These are nullable types if this type is nullable.
+        /// </para>
+        /// <para>
+        /// Use <see cref="IOneOfPocoType.AllowedTypes"/> for the full set of compatible types
+        /// (primary and abstract Poco types).
         /// </para>
         /// </summary>
         IEnumerable<IPrimaryPocoType> PrimaryPocoTypes { get; }

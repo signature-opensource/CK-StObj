@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -56,7 +57,10 @@ namespace CK.StObj.Engine.Tests.Poco
 
             void ICollection<IThing>.Add( IThing item ) => Add( (TImpl)item );
 
-            void ICollection<IThing>.CopyTo( IThing[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
+            void ICollection<IThing>.CopyTo( IThing[] array, int arrayIndex )
+            {
+                foreach( var e in this ) array[arrayIndex++] = e;
+            }
 
             bool ICollection<IThing>.Remove( IThing item ) => Remove( (TImpl)item );
 
@@ -114,40 +118,24 @@ namespace CK.StObj.Engine.Tests.Poco
         //    where TImpl : class, T1, T2
         //{
         //    public bool IsReadOnly => false;
-
         //    #region Repeat for each concrete interface (T1).
         //    T1 IList<T1>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
-
         //    void ICollection<T1>.Add( T1 item ) => Add( (TImpl)item );
-
         //    bool ICollection<T1>.Contains( T1 item ) => Contains( (TImpl)item );
-
         //    void ICollection<T1>.CopyTo( T1[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
-
         //    int IList<T1>.IndexOf( T1 item ) => IndexOf( (TImpl)item );
-
         //    void IList<T1>.Insert( int index, T1 item ) => Insert( index, (TImpl)item );
-
         //    bool ICollection<T1>.Remove( T1 item ) => Remove( (TImpl)item );
-
         //    IEnumerator<T1> IEnumerable<T1>.GetEnumerator() => GetEnumerator();
         //    #endregion
-
         //    #region Repeat for each concrete interface (T2).
         //    T2 IList<T2>.this[int index] { get => this[index]; set => this[index] = (TImpl)value; }
-
         //    void ICollection<T2>.Add( T2 item ) => Add( (TImpl)item );
-
         //    bool ICollection<T2>.Contains( T2 item ) => Contains( (TImpl)item );
-
         //    void ICollection<T2>.CopyTo( T2[] array, int arrayIndex ) => CopyTo( (TImpl[])array, arrayIndex );
-
         //    int IList<T2>.IndexOf( T2 item ) => IndexOf( (TImpl)item );
-
         //    void IList<T2>.Insert( int index, T2 item ) => Insert( index, (TImpl)item );
-
         //    bool ICollection<T2>.Remove( T2 item ) => Remove( (TImpl)item );
-
         //    IEnumerator<T2> IEnumerable<T2>.GetEnumerator() => GetEnumerator();
         //    #endregion
         //}

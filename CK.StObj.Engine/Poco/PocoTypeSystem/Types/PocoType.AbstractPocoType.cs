@@ -41,7 +41,9 @@ namespace CK.Setup
 
             new IAbstractPocoType NonNullable => Unsafe.As<IAbstractPocoType>( NonNullable );
 
-            public IEnumerable<IAbstractPocoType> OtherAbstractTypes => NonNullable.OtherAbstractTypes.Select( a => a.Nullable );
+            public IEnumerable<IAbstractPocoType> Specializations => NonNullable.Specializations.Select( a => a.Nullable );
+
+            public IEnumerable<IAbstractPocoType> Generalizations => NonNullable.Generalizations.Select( a => a.Nullable );
 
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => NonNullable.PrimaryPocoTypes.Select( a => a.Nullable );
 
@@ -56,11 +58,13 @@ namespace CK.Setup
             IOneOfPocoType IOneOfPocoType.NonNullable => NonNullable;
         }
 
+        // For all AbstractPoco except IPoco and IClosedPoco.
         internal sealed class AbstractPocoType1 : PocoType, IAbstractPocoType
         {
             readonly IReadOnlyList<IPocoType> _abstractAndPrimary;
             readonly int _abstractCount;
             int _exchangeableCount;
+            object _generalizations;
 
             public AbstractPocoType1( IActivityMonitor monitor,
                                       PocoTypeSystem s,
@@ -71,6 +75,7 @@ namespace CK.Setup
             {
                 _abstractAndPrimary = abstractAndPrimary;
                 _abstractCount = abstractCount;
+                _generalizations = s;
                 int exchangeableCount = 0;
                 for( int i = 0; i < abstractAndPrimary.Count; i++ )
                 {
@@ -98,7 +103,25 @@ namespace CK.Setup
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
 
-            public IEnumerable<IAbstractPocoType> OtherAbstractTypes => _abstractAndPrimary.Take( _abstractCount ).Cast<IAbstractPocoType>();
+            public IEnumerable<IAbstractPocoType> Specializations => _abstractAndPrimary.Take( _abstractCount ).Cast<IAbstractPocoType>();
+
+            public IEnumerable<IAbstractPocoType> Generalizations
+            {
+                get
+                {
+                    if( _generalizations is not IEnumerable<IAbstractPocoType> g )
+                    {
+                        var ts = (PocoTypeSystem)_generalizations;
+                        _generalizations = g = _type.GetInterfaces()
+                                                    .Where( t => t != typeof( IPoco ) )
+                                                    .Select( ts.FindByType )
+                                                    .Where( i => i != null )
+                                                    .Cast<IAbstractPocoType>()
+                                                    .ToArray();
+                    }
+                    return g;
+                }
+            }
 
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _abstractAndPrimary.Skip( _abstractCount ).Cast<IPrimaryPocoType>();
 
@@ -107,12 +130,6 @@ namespace CK.Setup
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
             public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary;
-
-            //public override bool IsWritableType( IExtNullabilityInfo type )
-            //{
-            //    return !type.IsNullable
-            //            && (Type.IsAssignableFrom( type.Type ) || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.IsWritableType( type ) ));
-            //}
 
             /// <summary>
             /// <c>Type.IsAssignableFrom( type.Type )</c> is not enough.
@@ -138,6 +155,7 @@ namespace CK.Setup
             IOneOfPocoType IOneOfPocoType.NonNullable => this;
         }
 
+        // Only for IPoco and IClosedPoco.
         internal sealed class AbstractPocoType2 : PocoType, IAbstractPocoType
         {
             readonly IReadOnlyList<IAbstractPocoType> _abstracts;
@@ -151,6 +169,7 @@ namespace CK.Setup
                                       IReadOnlyList<IPrimaryPocoType> primaries )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, t => new NullAbstractPoco( t ) )
             {
+                Throw.DebugAssert( tAbstract == typeof( IPoco ) || tAbstract == typeof( IClosedPoco ) );
                 _abstracts = abstracts;
                 _primaries = primaries;
                 int exchanchableCount = 0;
@@ -187,7 +206,9 @@ namespace CK.Setup
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
 
-            public IEnumerable<IAbstractPocoType> OtherAbstractTypes => _abstracts;
+            public IEnumerable<IAbstractPocoType> Specializations => _abstracts;
+
+            public IEnumerable<IAbstractPocoType> Generalizations => Array.Empty<IAbstractPocoType>();
 
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 

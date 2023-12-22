@@ -14,6 +14,6 @@ namespace CK.CrisLike
         /// <summary>
         /// Gets the list of error strings.
         /// </summary>
-        List<string> Errors { get; }
+        IList<string> Errors { get; }
     }
 }

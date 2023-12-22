@@ -6,8 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-using NullabilityInfo = System.Reflection.TEMPNullabilityInfo;
-
 namespace CK.Setup
 {
 
@@ -19,47 +17,31 @@ namespace CK.Setup
             readonly IExtMemberInfo _root;
             IList<string?>? _tupleNames;
             int _tupleIndex;
-            MemberContext? _parent;
             bool _forbidAbstractCollections;
-            bool _forbidCollections;
+            bool _forbidConcreteCollections;
 
-            public MemberContext( bool isPocoField, IExtMemberInfo root )
+            // Ctor for Poco field.
+            public MemberContext( IExtMemberInfo root, bool isPocoField )
             {
-                _isPocoField = isPocoField;
-                // Abstract collections are possible only in IPoco.
-                _forbidAbstractCollections = !isPocoField;
+                Throw.DebugAssert( isPocoField );
+                _isPocoField = true;
+                _forbidConcreteCollections = true;
+                _root = root;
+            }
+
+            public MemberContext( IExtMemberInfo root )
+            {
                 _root = root;
                 _tupleIndex = 0;
             }
 
-            public MemberContext( MemberContext parent, IExtMemberInfo root )
-                : this( parent._isPocoField, root )
+            public void Reset()
             {
-                _parent = parent;
-            }
-
-            public void Reset( bool forbidCollections, bool forbidAbstractCollections )
-            {
-                _tupleIndex = 0;
+                _forbidConcreteCollections = _isPocoField;
+                _forbidAbstractCollections = false;
                 _tupleNames = null;
-                _forbidCollections = forbidCollections;
-                _forbidAbstractCollections = forbidAbstractCollections && !_isPocoField;
+                _tupleIndex = 0;
             }
-
-            public bool IsPocoField => _isPocoField;
-
-            public bool ForbidAbstractCollections
-            {
-                get => _forbidAbstractCollections;
-                set => _forbidAbstractCollections = value;
-            }
-
-            public bool ForbidCollections
-            {
-                get => _forbidCollections;
-                set => _forbidCollections = value;
-            }
-
 
             public bool EnterListSetOrDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isRegular, string concreteType )
             {
@@ -67,14 +49,12 @@ namespace CK.Setup
                 {
                     return false;
                 }
+                // Never allow an abstract collection in a collection.
+                _forbidAbstractCollections = true;
                 if( _isPocoField )
                 {
-                    _forbidCollections = true;
-                }
-                else
-                {
-                    // Never allow an abstract collection in a collection.
-                    _forbidAbstractCollections = true;
+                    // Poco fields cannot have recursive collections.
+                    _forbidConcreteCollections = true;
                 }
                 return true;
             }
@@ -87,10 +67,18 @@ namespace CK.Setup
 
             bool CheckForbidden( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isRegular, string concreteType )
             {
-                if( _forbidCollections )
+                if( _forbidConcreteCollections && _forbidAbstractCollections )
                 {
                     monitor.Error( $"Invalid collection '{nType.Type:C}' in {ToString()}." );
                     return false;
+                }
+                else if( _forbidConcreteCollections )
+                {
+                    if( isRegular )
+                    {
+                        monitor.Error( $"Invalid concrete collection '{nType.Type:C}' in {ToString()}. Only IList<>, ISet<> and IDictionary<,> must be used for Poco fields." );
+                        return false;
+                    }
                 }
                 else if( _forbidAbstractCollections )
                 {
@@ -110,8 +98,12 @@ namespace CK.Setup
                 return !invalid && (field.Type is not IRecordPocoType r || r.IsReadOnlyCompliant);
             }
 
-            public RecordAnonField[] GetTupleNamedFields( int count )
+            public RecordAnonField[] EnterValueTuple( int count, out int state )
             {
+                state = _forbidConcreteCollections ? 1 : 0;
+                state |= _forbidAbstractCollections ? 2 : 0;
+                _forbidAbstractCollections = true;
+                _forbidConcreteCollections = false;
                 _tupleNames ??= _root.GetCustomAttributes<TupleElementNamesAttribute>().FirstOrDefault()?.TransformNames ?? Array.Empty<string>();
                 var fields = new RecordAnonField[count];
                 for( int i = 0; i < fields.Length; ++i )
@@ -119,6 +111,12 @@ namespace CK.Setup
                     fields[i] = new RecordAnonField( i, _tupleNames.Count > _tupleIndex ? _tupleNames[_tupleIndex++] : null );
                 }
                 return fields;
+            }
+
+            public void LeaveValueTuple( int state )
+            {
+                _forbidConcreteCollections = (state & 1) != 0;
+                _forbidAbstractCollections = (state & 2) != 0;
             }
 
             public override string ToString() => _root.ToString()!;

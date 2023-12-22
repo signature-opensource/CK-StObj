@@ -15,26 +15,23 @@ namespace CK.StObj.Engine.Tests.Poco
     {
         public interface ISimpleCollections : IPoco
         {
-            public List<string> Strings { get; }
+            public IList<string> Strings { get; }
 
-            public Dictionary<string, ISimpleCollections> Configurations { get; }
+            public IDictionary<string, ISimpleCollections> Configurations { get; }
 
-            public HashSet<int> DistinctValues { get; }
+            public ISet<int> DistinctValues { get; }
         }
 
         [Test]
-        public void readonly_List_Dictionary_and_HashSet_properties_are_automatically_initialized_with_an_empty_instance()
+        public void readonly_IList_IDictionary_and_ISet_properties_are_automatically_initialized_with_an_empty_instance()
         {
+
             var c = TestHelper.CreateStObjCollector( typeof( ISimpleCollections ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var p = s.GetRequiredService<IPocoFactory<ISimpleCollections>>().Create();
             p.Strings.Should().NotBeNull().And.BeEmpty();
             p.Configurations.Should().NotBeNull().And.BeEmpty();
             p.DistinctValues.Should().NotBeNull().And.BeEmpty();
-
-            p.GetType().GetProperty( nameof( p.Strings ) ).Should().NotBeWritable();
-            p.GetType().GetProperty( nameof( p.Configurations ) ).Should().NotBeWritable();
-            p.GetType().GetProperty( nameof( p.DistinctValues ) ).Should().NotBeWritable();
         }
 
         public interface IWithArray : IPoco
@@ -93,6 +90,19 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidAbstractCollectionInside ) );
             TestHelper.GetFailedResult( c,
                 "Invalid collection 'IList<int>' in Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidAbstractCollectionInside.NoWay'." );
+        }
+
+        public interface IInvalidConcreteList : IPoco
+        {
+            List<int> NoWay { get; }
+        }
+
+        [Test]
+        public void invalid_List_Poco_field()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalidConcreteList ) );
+            TestHelper.GetFailedResult( c,
+                "Invalid concrete collection 'List<int>' in Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidConcreteList.NoWay'. Only IList<>, ISet<> and IDictionary<,> must be used for Poco fields." );
         }
 
     }

@@ -17,7 +17,7 @@ namespace CK.StObj.Engine.Tests.Poco
     [DuckTypedAndInternal.ExcludeCKType]
     public interface IAmNotAPocoButIAmPocoCompliant
     {
-        List<(int Power, string Name)> Values { get; }
+        IList<(int Power, string Name)> Values { get; }
 
         [DefaultValue(3712)]
         int Power { get; set; }
@@ -31,7 +31,7 @@ namespace CK.StObj.Engine.Tests.Poco
     public class PocoFromBaseTests
     {
         [Test]
-        public void IPoco_can_be_defined_above_but_with_ExcludeCKType_attribute()
+        public void IPoco_fields_can_be_defined_above_but_with_ExcludeCKType_attribute()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IPocoFromBase ) );
             var result = TestHelper.CreateAutomaticServices( c );

@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis;
 using CK.Core;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 
 namespace CK.Setup
 {
@@ -286,7 +287,15 @@ namespace CK.Setup
                         if( listOrSet.IsList ) GeneratePocoList( monitor, ns, listOrSet );
                         else GeneratePocoHashSet( monitor, ns, listOrSet );
                         break;
-                    case PocoDictionaryRequiredSupport dic: GeneratePocoDictionary( monitor, ns, dic ); break;
+                    case PocoDictionaryRequiredSupport dic:
+                        GeneratePocoDictionary( monitor, ns, dic );
+                        break;
+                    case PocoHashSetOfAbstractRequiredSupport set:
+                        GenerateHashSetOfAbstract( monitor, ns, set );
+                        break;
+                    case PocoDictionaryOfAbstractRequiredSupport dic:
+                        GeneratePocoDictionaryOfAbstract( monitor, ns, dic );
+                        break;
                     default: throw new NotSupportedException();
                 }
             }
@@ -294,102 +303,139 @@ namespace CK.Setup
 
         static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport list )
         {
-            Debug.Assert( list.Type.ImplTypeName == list.Type.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
-            var primaryTypeName = list.Type.CSharpName;
-            Debug.Assert( primaryTypeName != null );
-            var t = ns.CreateType( $"sealed class {list.TypeName} : List<{primaryTypeName}>" );
+            Debug.Assert( list.ItemType.ImplTypeName == list.ItemType.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
+            var pocoClassName = list.ItemType.ImplTypeName;
+            Debug.Assert( pocoClassName != null );
+            var t = ns.CreateType( $"sealed class {list.TypeName} : List<{pocoClassName}>" );
             t.Append( "public bool IsReadOnly => false;" ).NewLine();
-            foreach( var tI in list.Type.FamilyInfo.Interfaces.Skip( 1 ) )
+            foreach( var tI in list.ItemType.FamilyInfo.Interfaces )
             {
                 t.Definition.BaseTypes.Add( new ExtendedTypeName( $"IList<{tI.CSharpName}>" ) );
 
-                AppendICollectionImpl( t, tI.CSharpName, primaryTypeName );
+                AppendICollectionImpl( t, tI.CSharpName, pocoClassName );
 
                 t.Append( tI.CSharpName ).Append( " IList<" ).Append( tI.CSharpName ).Append( ">.this[int index] {" )
-                    .Append( "get => this[index]; set => this[index] = (" ).Append( primaryTypeName ).Append( ")value; }" ).NewLine()
+                    .Append( "get => this[index]; set => this[index] = (" ).Append( pocoClassName ).Append( ")value; }" ).NewLine()
                 .Append( "int IList<" ).Append( tI.CSharpName ).Append( ">.IndexOf( " ).Append( tI.CSharpName )
-                    .Append( " item ) => IndexOf( (" ).Append( primaryTypeName ).Append( ")item );" ).NewLine()
+                    .Append( " item ) => IndexOf( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
                 .Append( "void IList<" ).Append( tI.CSharpName ).Append( ">.Insert( int index, " ).Append( tI.CSharpName )
-                    .Append( " item ) => Insert( index, (" ).Append( primaryTypeName ).Append( ")item );" ).NewLine();
+                    .Append( " item ) => Insert( index, (" ).Append( pocoClassName ).Append( ")item );" ).NewLine();
             }
 
         }
 
         static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport set )
         {
-            var t = set.Type;
-            var primaryTypeName = t.CSharpName;
-            Debug.Assert( primaryTypeName != null );
-            string? nonNullablePocoClassNameWhenNullable = null;
-            bool isNullable = t.IsNullable;
-            if( isNullable )
+            var actualTypeName = set.ItemType.ImplTypeName;
+            ITypeScope typeScope = CreateHashSetType( ns,
+                                                      set,
+                                                      set.ItemType.IsNullable,
+                                                      ref actualTypeName,
+                                                      out var nonNullableActualTypeNameIfNullable );
+            // Implements the family: ISet<> support for all of them.
+            foreach( var tI in set.ItemType.FamilyInfo.Interfaces )
             {
-                nonNullablePocoClassNameWhenNullable = primaryTypeName;
-                primaryTypeName += "?"; 
-            }
-            var typeScope = ns.CreateType( $"sealed class {set.TypeName} : HashSet<{primaryTypeName}>" );
-            typeScope.Append( "public bool IsReadOnly => false;" ).NewLine();
-            foreach( var tI in t.FamilyInfo.Interfaces.Skip( 1 ) )
-            {
-                AppendICollectionImpl( typeScope, tI.CSharpName, primaryTypeName );
-                // IReadOnlySet<T> is implemented by the public methods of ISet<T>.
+                AppendICollectionImpl( typeScope, tI.CSharpName, actualTypeName );
+                // IReadOnlySet<T> is implemented by the public methods of ISet<T> except the IReadOnlySet<T>.Contains( T item ).
                 typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"IReadOnlySet<{tI.CSharpName}>" ) );
                 typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"ISet<{tI.CSharpName}>" ) );
 
-                typeScope.Append( "bool ISet<" ).Append( tI.CSharpName ).Append( ">.Add( " ).Append( tI.CSharpName ).Append( " item ) => Add( (" ).Append( primaryTypeName ).Append( ")item );" ).NewLine()
+                AppendIReadOnlySetContains( typeScope, tI.CSharpName, actualTypeName, nonNullableActualTypeNameIfNullable );
 
-                 .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".ExceptWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => ExceptWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                typeScope.Append( "bool ISet<" ).Append( tI.CSharpName ).Append( ">.Add( " ).Append( tI.CSharpName ).Append( " item ) => Add( (" ).Append( actualTypeName ).Append( ")item );" ).NewLine()
 
-                .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".IntersectWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => IntersectWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                 .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ">.ExceptWith( IEnumerable<" ).Append( tI.CSharpName )
+                    .Append( "> other ) => ExceptWith( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
-                .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".SymmetricExceptWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => SymmetricExceptWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ">.IntersectWith( IEnumerable<" ).Append( tI.CSharpName )
+                    .Append( "> other ) => IntersectWith( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
-                .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ".UnionWith( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => UnionWith( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine();
+                .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ">.SymmetricExceptWith( IEnumerable<" ).Append( tI.CSharpName )
+                    .Append( "> other ) => SymmetricExceptWith( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
+
+                .Append( "void ISet<" ).Append( tI.CSharpName ).Append( ">.UnionWith( IEnumerable<" ).Append( tI.CSharpName )
+                    .Append( "> other ) => UnionWith( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine();
 
                 typeScope.Append( "public bool IsProperSubsetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsProperSubsetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsProperSubsetOf( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool IsProperSupersetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsProperSupersetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsProperSupersetOf( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool IsSubsetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsSubsetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsSubsetOf( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool IsSupersetOf( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.IsSupersetOf( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.IsSupersetOf( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool Overlaps( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.Overlaps( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine()
+                    .Append( "> other ) => base.Overlaps( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine()
 
                   .Append( "public bool SetEquals( IEnumerable<" ).Append( tI.CSharpName )
-                    .Append( "> other ) => base.SetEquals( (IEnumerable<" ).Append( primaryTypeName ).Append( ">)other );" ).NewLine();
+                    .Append( "> other ) => base.SetEquals( (IEnumerable<" ).Append( actualTypeName ).Append( ">)other );" ).NewLine();
             }
-            AppendReadOnly( typeScope, isNullable ? "object?" : "object", primaryTypeName, nonNullablePocoClassNameWhenNullable );
-            AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", primaryTypeName, nonNullablePocoClassNameWhenNullable );
-            if( t.FamilyInfo.IsClosedPoco ) AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", primaryTypeName, nonNullablePocoClassNameWhenNullable );
-            foreach( var a in t.AbstractTypes )
+            AppendIReadOnlySetSupport( actualTypeName,
+                                       nonNullableActualTypeNameIfNullable,
+                                       typeScope,
+                                       set.ItemType.FamilyInfo.IsClosedPoco, set.ItemType.AbstractTypes );
+        }
+
+        static void GenerateHashSetOfAbstract( IActivityMonitor monitor, INamespaceScope ns, PocoHashSetOfAbstractRequiredSupport set )
+        {
+            var actualTypeName = set.ItemType.CSharpName;
+            ITypeScope typeScope = CreateHashSetType( ns,
+                                                      set,
+                                                      set.ItemType.IsNullable,
+                                                      ref actualTypeName,
+                                                      out var nonNullableActualTypeNameIfNullable );
+            AppendIReadOnlySetSupport( actualTypeName,
+                                       nonNullableActualTypeNameIfNullable,
+                                       typeScope,
+                                       false, set.ItemType.Generalizations );
+        }
+
+        static ITypeScope CreateHashSetType( INamespaceScope ns,
+                                             PocoRequiredSupportType supportType,
+                                             bool isNullable,
+                                             ref string actualTypeName,
+                                             out string? nonNullableActualTypeNameIfNullable )
+        {
+            Throw.DebugAssert( !string.IsNullOrWhiteSpace( actualTypeName  ) );
+            nonNullableActualTypeNameIfNullable = null;
+            if( isNullable )
             {
-                AppendReadOnly( typeScope, a.CSharpName, primaryTypeName, nonNullablePocoClassNameWhenNullable );
+                nonNullableActualTypeNameIfNullable = actualTypeName;
+                actualTypeName += "?";
             }
-            
-            static void AppendReadOnly( ITypeScope typeScope, string abstractTypeName, string pocoClassName, string? nonNullablePocoClassNameWhenNullable )
+            var typeScope = ns.CreateType( $"sealed class {supportType.TypeName} : HashSet<{actualTypeName}>" );
+            typeScope.Append( "public bool IsReadOnly => false;" ).NewLine();
+            return typeScope;
+        }
+
+
+        static void AppendIReadOnlySetSupport( string actualTypeName,
+                                               string? nonNullableActualTypeNameIfNullable,
+                                               ITypeScope typeScope,
+                                               bool addClosedPoco,
+                                               IEnumerable<IAbstractPocoType> abstractPocoTypes )
+        {
+            bool isNullable = nonNullableActualTypeNameIfNullable != null;
+            AppendReadOnly( typeScope, isNullable ? "object?" : "object", actualTypeName, nonNullableActualTypeNameIfNullable );
+            AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
+            if( addClosedPoco )
+            {
+                AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
+            }
+            foreach( var a in abstractPocoTypes )
+            {
+                AppendReadOnly( typeScope, a.CSharpName, actualTypeName, nonNullableActualTypeNameIfNullable );
+            }
+
+            static void AppendReadOnly( ITypeScope typeScope, string abstractTypeName, string actualTypeName, string? nonNullableActualTypeNameIfNullable )
             {
                 typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"IReadOnlySet<{abstractTypeName}>" ) );
 
-                typeScope.Append( "bool IReadOnlySet<" ).Append( abstractTypeName )
-                    .Append( ">.Contains( " ).Append( abstractTypeName ).Append( " item ) => " );
-                if( nonNullablePocoClassNameWhenNullable == null )
-                {
-                    typeScope.Append( "item is " ).Append( pocoClassName ).Append( " v && Contains( v );" ).NewLine();
-                }
-                else
-                {
-                    typeScope.Append( "(item is " ).Append( nonNullablePocoClassNameWhenNullable ).Append( " v && Contains( v )) || (item == null && Contains( null ));" ).NewLine();
-                }
+                AppendIReadOnlySetContains( typeScope, abstractTypeName, actualTypeName, nonNullableActualTypeNameIfNullable );
 
                 typeScope.Append( "bool IReadOnlySet<" ).Append( abstractTypeName ).Append( ">.IsProperSubsetOf( IEnumerable<" ).Append( abstractTypeName ).Append( "> other ) => CovariantHelpers.IsProperSubsetOf( this, other );" ).NewLine()
 
@@ -405,7 +451,20 @@ namespace CK.Setup
 
                 .Append( "IEnumerator<" ).Append( abstractTypeName ).Append( "> IEnumerable<" ).Append( abstractTypeName ).Append( ">.GetEnumerator() => GetEnumerator();" ).NewLine();
             }
+        }
 
+        static void AppendIReadOnlySetContains( ITypeScope typeScope, string abstractTypeName, string actualTypeName, string? nonNullableActualTypeNameIfNullable )
+        {
+            typeScope.Append( "bool IReadOnlySet<" ).Append( abstractTypeName )
+                .Append( ">.Contains( " ).Append( abstractTypeName ).Append( " item ) => " );
+            if( nonNullableActualTypeNameIfNullable == null )
+            {
+                typeScope.Append( "item is " ).Append( actualTypeName ).Append( " v && Contains( v );" ).NewLine();
+            }
+            else
+            {
+                typeScope.Append( "(item is " ).Append( nonNullableActualTypeNameIfNullable ).Append( " v && Contains( v )) || (item == null && Contains( null ));" ).NewLine();
+            }
         }
 
         static void AppendICollectionImpl( ITypeScope t, string abstractTypeName, string pocoClassName )
@@ -415,7 +474,9 @@ namespace CK.Setup
             .Append( "bool ICollection<" ).Append( abstractTypeName ).Append( ">.Contains( " ).Append( abstractTypeName )
                .Append( " item ) => Contains( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
             .Append( "void ICollection<" ).Append( abstractTypeName ).Append( ">.CopyTo( " )
-               .Append( abstractTypeName ).Append( "[] array, int arrayIndex ) => CopyTo( (" ).Append( pocoClassName ).Append( "[])array, arrayIndex );" ).NewLine()
+               .Append( abstractTypeName ).Append( "[] array, int arrayIndex )" ).OpenBlock()
+               .Append( "foreach( var e in this ) array[arrayIndex++] = e;" )
+               .CloseBlock()
            .Append( "bool ICollection<" ).Append( abstractTypeName ).Append( ">.Remove( " ).Append( abstractTypeName )
                .Append( " item ) => Remove( (" ).Append( pocoClassName ).Append( ")item );" ).NewLine()
            .Append( "IEnumerator<" ).Append( abstractTypeName ).Append( "> IEnumerable<" ).Append( abstractTypeName ).Append( ">.GetEnumerator() => GetEnumerator();" )
@@ -424,66 +485,95 @@ namespace CK.Setup
 
         static void GeneratePocoDictionary( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryRequiredSupport dic )
         {
-            var pocoClassName = dic.Type.ImplTypeName;
-            var typeScope = ns.CreateType( $"sealed class {dic.TypeName} : Dictionary<{dic.Key.CSharpName},{pocoClassName}>" );
-            typeScope.Append( @"
-bool TGV<TOut>( TKey key, out TOut? value ) where TOut : class
-{
-    if( base.TryGetValue( key, out var v ) )
-    {
-        value = Unsafe.As<TOut>( v );
-        return true;
-    }
-    value = null;
-    return false;
-}
-public bool IsReadOnly => false;" ).NewLine();
+            var k = dic.KeyType.CSharpName;
+            var actualTypeName = dic.ValueType.ImplTypeName;
+            ITypeScope typeScope = CreateDictionaryType( ns, dic, k, actualTypeName );
 
-            AppendIReadOnly( typeScope, dic, "object", pocoClassName );
-            AppendIReadOnly( typeScope, dic, "IPoco", pocoClassName );
-            if( dic.Type.FamilyInfo.IsClosedPoco ) AppendIReadOnly( typeScope, dic, "IClosedPoco", pocoClassName );
-            foreach( var tI in dic.Type.FamilyInfo.Interfaces )
+            foreach( var tI in dic.ValueType.FamilyInfo.Interfaces )
             {
-                AppendIReadOnly( typeScope, dic, tI.CSharpName, pocoClassName );
-                typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"IDictionary<{dic.Key.CSharpName},{tI.CSharpName}>" ) );
+                AppendIReadOnlyDictionary( typeScope, k, tI.CSharpName, actualTypeName );
 
-                typeScope.Append( "ICollection<TKey> IDictionary<TKey, " ).Append( tI.CSharpName ).Append( ">.Keys => Keys;" ).NewLine();
-                typeScope.Append( "ICollection<" ).Append( tI.CSharpName ).Append( "> IDictionary<TKey, " ).Append( tI.CSharpName )
-                    .Append( ">.Values => Unsafe.As<ICollection<" ).Append( tI.CSharpName ).Append( ">>( Values );" ).NewLine();
-                typeScope.Append( "IThing IDictionary<TKey, " ).Append( tI.CSharpName )
-                    .Append( ">.this[TKey key] { get => this[key]; set => this[key] = (" ).Append( pocoClassName ).Append( ")value; }" ).NewLine();
-                typeScope.Append( "void IDictionary<TKey, " ).Append( tI.CSharpName ).Append( ">.Add( TKey key, " )
-                    .Append( tI.CSharpName ).Append( " value ) => Add( key, (" ).Append( pocoClassName ).Append( ")value );" ).NewLine();
-                typeScope.Append( "void ICollection<KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( ">>.Add( KeyValuePair<TKey, " ).Append( tI.CSharpName )
-                    .Append( "> item ) => Add( item.Key, (" ).Append( pocoClassName ).Append( ")item.Value );" ).NewLine();
+                typeScope.Definition.BaseTypes.Add( new ExtendedTypeName( $"IDictionary<{k},{tI.CSharpName}>" ) );
 
-                typeScope.Append( "bool ICollection<KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( ">>.Contains( KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( "> item ) => base.TryGetValue( item.Key, out var v ) && v == item.Value;" ).NewLine();
+                typeScope.Append( "ICollection<" ).Append( k ).Append( "> IDictionary<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">.Keys => Keys;" ).NewLine();
+                typeScope.Append( "ICollection<" ).Append( tI.CSharpName ).Append( "> IDictionary<" ).Append( k ).Append( ", " ).Append( tI.CSharpName )
+                    .Append( ">.Values => global::System.Runtime.CompilerServices.Unsafe.As<ICollection<" ).Append( tI.CSharpName ).Append( ">>( Values );" ).NewLine();
+                typeScope.Append( tI.CSharpName ).Append( " IDictionary<" ).Append( k ).Append( ", " ).Append( tI.CSharpName )
+                    .Append( ">.this[" ).Append( k ).Append( " key] { get => this[key]; set => this[key] = (" ).Append( actualTypeName ).Append( ")value; }" ).NewLine();
+                typeScope.Append( "void IDictionary<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">.Add( " ).Append( k ).Append( " key, " )
+                    .Append( tI.CSharpName ).Append( " value ) => Add( key, (" ).Append( actualTypeName ).Append( ")value );" ).NewLine();
+                typeScope.Append( "void ICollection<KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">>.Add( KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName )
+                    .Append( "> item ) => Add( item.Key, (" ).Append( actualTypeName ).Append( ")item.Value );" ).NewLine();
 
-                typeScope.Append( "void ICollection<KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( ">>.CopyTo( KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( ">[] array, int arrayIndex )" ).NewLine()
-                    .Append( " => ((ICollection<KeyValuePair<TKey, " ).Append( pocoClassName ).Append( ">>)this).CopyTo( Unsafe.As<KeyValuePair<TKey, " ).Append( pocoClassName ).Append( ">[]>( array ), arrayIndex );" ).NewLine();
+                typeScope.Append( "bool ICollection<KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">>.Contains( KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( "> item ) => base.TryGetValue( item.Key, out var v ) && v == item.Value;" ).NewLine();
 
-                typeScope.Append( "bool ICollection<KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( ">>.Remove( KeyValuePair<TKey, " ).Append( tI.CSharpName ).Append( "> item )" ).NewLine()
-                    .Append( "=> ((ICollection<KeyValuePair<TKey, " ).Append( pocoClassName ).Append( ">>)this).Remove( new KeyValuePair<TKey, " ).Append( pocoClassName ).Append( ">( item.Key, (" ).Append( pocoClassName ).Append( ")item.Value ) );" ).NewLine();
+                typeScope.Append( "void ICollection<KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">>.CopyTo( KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">[] array, int arrayIndex )" ).NewLine()
+                    .Append( " => ((ICollection<KeyValuePair<" ).Append( k ).Append( ", " ).Append( actualTypeName ).Append( ">>)this).CopyTo( global::System.Runtime.CompilerServices.Unsafe.As<KeyValuePair<" ).Append( k ).Append( ", " ).Append( actualTypeName ).Append( ">[]>( array ), arrayIndex );" ).NewLine();
+
+                typeScope.Append( "bool ICollection<KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( ">>.Remove( KeyValuePair<" ).Append( k ).Append( ", " ).Append( tI.CSharpName ).Append( "> item )" ).NewLine()
+                    .Append( "=> ((ICollection<KeyValuePair<" ).Append( k ).Append( ", " ).Append( actualTypeName ).Append( ">>)this).Remove( new KeyValuePair<" ).Append( k ).Append( ", " ).Append( actualTypeName ).Append( ">( item.Key, (" ).Append( actualTypeName ).Append( ")item.Value ) );" ).NewLine();
 
             }
-            foreach( var a in dic.Type.AbstractTypes )
+
+            AppendIReadOnlyDictionarySupport( actualTypeName, typeScope, k, dic.ValueType.FamilyInfo.IsClosedPoco, dic.ValueType.AbstractTypes );
+        }
+
+        static void GeneratePocoDictionaryOfAbstract( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryOfAbstractRequiredSupport dic )
+        {
+            var k = dic.KeyType.CSharpName;
+            var actualTypeName = dic.ValueType.ImplTypeName;
+            ITypeScope typeScope = CreateDictionaryType( ns, dic, k, actualTypeName );
+            AppendIReadOnlyDictionarySupport( actualTypeName, typeScope, k, false, dic.ValueType.Generalizations );
+        }
+
+        static ITypeScope CreateDictionaryType( INamespaceScope ns, PocoRequiredSupportType dic, string k, string actualTypeName )
+        {
+            var typeScope = ns.CreateType( $"sealed class {dic.TypeName} : Dictionary<{k},{actualTypeName}>" );
+            typeScope.Append( "bool TGV<TOut>( " ).Append( k ).Append( " key, out TOut? value ) where TOut : class" ).NewLine()
+                     .OpenBlock()
+                     .Append( """
+                            if( base.TryGetValue( key, out var v ) )
+                            {
+                                value = global::System.Runtime.CompilerServices.Unsafe.As<TOut>( v );
+                                return true;
+                            }
+                            value = null;
+                            return false;
+                            """ )
+                     .CloseBlock()
+                     .Append( "public bool IsReadOnly => false;" ).NewLine();
+            return typeScope;
+        }
+
+        static void AppendIReadOnlyDictionarySupport( string pocoClassName,
+                                                      ITypeScope typeScope,
+                                                      string k,
+                                                      bool addClosedPoco,
+                                                      IEnumerable<IAbstractPocoType> abstractTypes )
+        {
+            AppendIReadOnlyDictionary( typeScope, k, "object", pocoClassName );
+            AppendIReadOnlyDictionary( typeScope, k, "IPoco", pocoClassName );
+            if( addClosedPoco )
             {
-                AppendIReadOnly( typeScope, dic, a.CSharpName, pocoClassName );
+                AppendIReadOnlyDictionary( typeScope, k, "IClosedPoco", pocoClassName );
             }
-
-            static void AppendIReadOnly( ITypeScope t, PocoDictionaryRequiredSupport dic, string abstractTypeName, string pocoClassName )
+            foreach( var a in abstractTypes )
             {
-                t.Definition.BaseTypes.Add( new ExtendedTypeName( $"IReadOnlyDictionary<{dic.Key.CSharpName},{abstractTypeName}>" ) );
-                t.Append( abstractTypeName ).Append( " IReadOnlyDictionary<TKey, " ).Append( abstractTypeName ).Append( ">.this[TKey key] => this[key];" ).NewLine();
-                t.Append( "IEnumerable<TKey> IReadOnlyDictionary<TKey, " ).Append( abstractTypeName ).Append( ">.Keys => Keys;" ).NewLine();
-                t.Append( "IEnumerable<" ).Append( abstractTypeName ).Append( "> IReadOnlyDictionary<TKey, " ).Append( abstractTypeName ).Append( ">.Values => Values;" ).NewLine();
-                t.Append( "public bool TryGetValue( TKey key, out " ).Append( abstractTypeName ).Append( " value ) => TGV( key, out value );" ).NewLine();
-
-                t.Append( "IEnumerator<KeyValuePair<TKey, " ).Append( abstractTypeName ).Append( ">> IEnumerable<KeyValuePair<TKey," ).Append( abstractTypeName ).Append( ">>.GetEnumerator()" ).NewLine()
-                 .Append( "=> ((IEnumerable<KeyValuePair<TKey, " ).Append( pocoClassName ).Append( ">>)this).Select( kv => KeyValuePair.Create( kv.Key, (" ).Append( abstractTypeName ).Append( ")kv.Value ) ).GetEnumerator();" ).NewLine();
+                AppendIReadOnlyDictionary( typeScope, k, a.CSharpName, pocoClassName );
             }
         }
 
+        static void AppendIReadOnlyDictionary( ITypeScope t, string k, string abstractTypeName, string actualTypeName )
+        {
+            t.Definition.BaseTypes.Add( new ExtendedTypeName( $"IReadOnlyDictionary<{k},{abstractTypeName}>" ) );
+            t.Append( abstractTypeName ).Append( " IReadOnlyDictionary<" ).Append( k ).Append( ", " ).Append( abstractTypeName ).Append( ">.this[" ).Append( k ).Append( " key] => this[key];" ).NewLine();
+            t.Append( "IEnumerable<" ).Append( k ).Append( "> IReadOnlyDictionary<" ).Append( k ).Append( ", " ).Append( abstractTypeName ).Append( ">.Keys => Keys;" ).NewLine();
+            t.Append( "IEnumerable<" ).Append( abstractTypeName ).Append( "> IReadOnlyDictionary<" ).Append( k ).Append( ", " ).Append( abstractTypeName ).Append( ">.Values => Values;" ).NewLine();
+            t.Append( "public bool TryGetValue( " ).Append( k ).Append( " key, out " ).Append( abstractTypeName ).Append( " value ) => TGV( key, out value );" ).NewLine();
+
+            t.Append( "IEnumerator<KeyValuePair<" ).Append( k ).Append( ", " ).Append( abstractTypeName ).Append( ">> IEnumerable<KeyValuePair<" ).Append( k ).Append( "," ).Append( abstractTypeName ).Append( ">>.GetEnumerator()" ).NewLine()
+             .Append( "=> ((IEnumerable<KeyValuePair<" ).Append( k ).Append( ", " ).Append( actualTypeName ).Append( ">>)this).Select( kv => KeyValuePair.Create( kv.Key, (" ).Append( abstractTypeName ).Append( ")kv.Value ) ).GetEnumerator();" ).NewLine();
+        }
 
         CSCodeGenerationResult CheckNoMoreRegisteredPocoTypes( IActivityMonitor monitor )
         {

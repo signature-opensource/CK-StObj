@@ -3,11 +3,11 @@ using CK.Core;
 namespace CK.Setup
 {
     /// <summary>
-    /// Defines the "multi variance" dictionary for a Poco.
+    /// Defines the "multi variance" dictionary for AbstractPoco values.
     /// </summary>
-    public sealed class PocoDictionaryRequiredSupport : PocoRequiredSupportType
+    public sealed class PocoDictionaryOfAbstractRequiredSupport : PocoRequiredSupportType
     {
-        public PocoDictionaryRequiredSupport( IPocoType key, IPrimaryPocoType value, string typeName )
+        public PocoDictionaryOfAbstractRequiredSupport( IPocoType key, IAbstractPocoType value, string typeName )
             : base( typeName )
         {
             Throw.CheckNotNullArgument( value );
@@ -25,6 +25,6 @@ namespace CK.Setup
         /// <summary>
         /// Gets the not nullable value type.
         /// </summary>
-        public IPrimaryPocoType ValueType { get; }
+        public IAbstractPocoType ValueType { get; }
     }
 }

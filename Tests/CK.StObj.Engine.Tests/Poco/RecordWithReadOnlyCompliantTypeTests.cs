@@ -263,7 +263,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( IHoldAnonymousRecList ) );
             TestHelper.GetFailedResult( c,
                 "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecList.P':",
-                "");
+                "List<int> R" );
         }
 
         public interface IHoldAnonymousRecArray : IPoco
