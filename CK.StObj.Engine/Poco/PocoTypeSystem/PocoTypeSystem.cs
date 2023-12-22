@@ -382,6 +382,11 @@ namespace CK.Setup
                                                Type tNull,
                                                IRecordPocoType? obliviousType )
         {
+            Throw.DebugAssert( "Value tuples implement IEquatable<TSelf>.",
+                                tNotNull.GetInterfaces().Any( i => i.IsGenericType
+                                                                   && i.Namespace == "System"
+                                                                   && i.Name == "IEquatable`1"
+                                                                   && i.GetGenericArguments()[0] == tNotNull ) );
             var subInfos = FlattenValueTuple( nType ).ToList();
             var fields = ctx.EnterValueTuple( subInfos.Count, out var state );
             // Here we can resolve the field types without fear of infinite recursion: value tuples
@@ -522,15 +527,22 @@ namespace CK.Setup
         {
             // C#10 record struct are not decorated by any special attribute: we treat them like any other struct.
             // Allow only fully mutable struct: all its exposed properties and fields must be mutable.
-            Debug.Assert( tNotNull.IsValueType );
-            Debug.Assert( !_typeCache.ContainsKey( tNotNull ), "OnValueType found it." );
+            Throw.DebugAssert( tNotNull.IsValueType );
+            Throw.DebugAssert( "OnValueType didn't find it.", !_typeCache.ContainsKey( tNotNull ) );
 
             // Named record can have an [ExternalName].
             if( !TypeExtensions.TryGetExternalNames( monitor, tNotNull, tNotNull.GetCustomAttributesData(), out var externalName ) )
             {
                 return null;
             }
-
+            if( !tNotNull.GetInterfaces().Any( i => i.IsGenericType
+                                                    && i.Namespace == "System"
+                                                    && i.Name == "IEquatable`1"
+                                                    && i.GetGenericArguments()[0] == tNotNull ) )
+            {
+                monitor.Error( $"Struct '{tNotNull:N}' must implement 'IEquatable<{tNotNull.Name}>'." );
+                return null;
+            }
             // We first create the type and register it without its fields: fields
             // may recursively use this type.
             var typeName = tNotNull.ToCSharpName();
@@ -543,7 +555,7 @@ namespace CK.Setup
             var ctors = tNotNull.GetConstructors();
             if( ctors.Length > 1 )
             {
-                monitor.Error( $"More than one constructor found for record struct '{tNotNull}': at most one constructor must be specified for record struct." );
+                monitor.Error( $"More than one constructor found for record struct '{tNotNull:N}': at most one constructor must be specified for record struct." );
                 return null;
             }
             var ctorParams = ctors.Length == 1 ? ctors[0].GetParameters() : null;

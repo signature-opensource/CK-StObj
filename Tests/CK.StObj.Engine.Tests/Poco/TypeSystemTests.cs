@@ -2,6 +2,7 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -107,23 +108,33 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         // Same structure but not same field names.
-        public struct NotSameFieldNameAsNamedRec
+        public struct NotSameFieldNameAsNamedRec : IEquatable<NotSameFieldNameAsNamedRec>
         {
             public int A;
             [DefaultValue( "" )]
             public string B;
             public (int, string N) C;
+
+            public bool Equals( NotSameFieldNameAsNamedRec other )
+            {
+                return A == other.A && B == other.B && EqualityComparer<(int,string)>.Default.Equals( C, other.C );
+            }
         }
 
         public NotSameFieldNameAsNamedRec GetNotSameFieldNameAsNamedRec => default;
 
         // Same field names but not same default.
-        public struct NotSameDefaultAsNamedRec
+        public struct NotSameDefaultAsNamedRec : IEquatable<NotSameDefaultAsNamedRec>
         {
             public int A;
             [DefaultValue( "Not the default string." )]
             public string B;
             public (int, string N) C;
+
+            public bool Equals( NotSameDefaultAsNamedRec other )
+            {
+                return A == other.A && B == other.B && EqualityComparer<(int, string)>.Default.Equals( C, other.C );
+            }
         }
 
         public NotSameDefaultAsNamedRec GetNotSameDefaultAsNamedRec => default;
@@ -154,7 +165,10 @@ namespace CK.StObj.Engine.Tests.Poco
             tNotSameDefaultDef.Should().Be( "new(){B = @\"Not the default string.\", C = (default, \"\")}" );
         }
 
-        public struct AnEmptyOne { }
+        public struct AnEmptyOne : IEquatable<AnEmptyOne>
+        {
+            public bool Equals( AnEmptyOne other ) => true;
+        }
 
         public AnEmptyOne GetAnEmptyOne => default;
 

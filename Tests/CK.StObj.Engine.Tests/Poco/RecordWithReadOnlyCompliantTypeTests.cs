@@ -323,9 +323,14 @@ namespace CK.StObj.Engine.Tests.Poco
 
         // We cannot forbid this without preventing record struct positional parameter syntax
         // to work.
-        public struct ValidSetterButNotIdeal
+        public struct ValidSetterButNotIdeal : IEquatable<ValidSetterButNotIdeal>
         {
             public DetailWithFields Thing { get; set; }
+
+            public bool Equals( ValidSetterButNotIdeal other )
+            {
+                return EqualityComparer<DetailWithFields>.Default.Equals( Thing, other.Thing );
+            }
         }
 
         public ValidSetterButNotIdeal GetValidSetterButNotIdeal => default;
@@ -333,9 +338,14 @@ namespace CK.StObj.Engine.Tests.Poco
         // It's unfortunate that record struct positional parameter syntax generates
         // properties instead of fields. Simple fields (like in ValueTuple) are easier to use
         // with composite struct fields.
-        public struct Simple
+        public struct Simple : IEquatable<Simple>
         {
             public DetailWithFields Thing;
+
+            public bool Equals( Simple other )
+            {
+                return EqualityComparer<DetailWithFields>.Default.Equals( Thing, other.Thing );
+            }
         }
 
         public Simple GetSimple => default;
