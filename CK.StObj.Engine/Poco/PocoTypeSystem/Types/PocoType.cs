@@ -202,7 +202,8 @@ namespace CK.Setup
                             Type notNullable,
                             string csharpName,
                             PocoTypeKind kind,
-                            Func<PocoType, IPocoType> nullFactory )
+                            Func<PocoType, IPocoType> nullFactory,
+                            bool isExchangeable = true )
         {
             Debug.Assert( !notNullable.IsValueType || System.Nullable.GetUnderlyingType( notNullable ) == null );
             Debug.Assert( !csharpName.EndsWith( '?' ) );
@@ -212,7 +213,7 @@ namespace CK.Setup
             _type = notNullable;
             _csharpName = csharpName;
             _kind = kind;
-            _isExchangeable = true;
+            _isExchangeable = isExchangeable;
             _nullable = nullFactory( this );
             s.AddNew( this );
         }
@@ -278,8 +279,8 @@ namespace CK.Setup
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
         /// overrides this).
-        /// The only case where we disallow is object, AbstractIPoco and UnionType: union type
-        /// default is handled at the field level based on the DefaultValue attribute (like the others)
+        /// The only case where we disallow is object, AbstractIPoco, abstract readonly list/set/dictionary and UnionType:
+        /// union type default is handled at the field level based on the DefaultValue attribute (like the others)
         /// or based on the first type in the variants definition that can provide a default value.
         /// </summary>
         public virtual DefaultValueInfo DefaultValueInfo
@@ -290,7 +291,8 @@ namespace CK.Setup
                                    Kind == PocoTypeKind.Any
                                    || (Kind == PocoTypeKind.Basic && !(Type == typeof( string ) || Type == typeof( DateTime )))
                                    || Kind == PocoTypeKind.UnionType
-                                   || Kind == PocoTypeKind.AbstractPoco );
+                                   || Kind == PocoTypeKind.AbstractPoco
+                                   || this is AbstractCollectionType );
 
                 return Kind == PocoTypeKind.Basic ? DefaultValueInfo.Allowed : DefaultValueInfo.Disallowed;
             }

@@ -191,7 +191,7 @@ The set of Poco compliant type is precisely defined:
   - Abstract: an interface that is marked with `[CKTypeDefiner]` can appear in multiple families (like `ICommand` or
     the base `IPoco`).
 - Value tuples (or fully mutable structs) of compliant Poco types.
-- Collections can be `List<>`, `IList<>`, `HashSet<>`, `ISet<>`, `Dictionary<,>` `IDictionary<,>` and
+- Collections can be `List<>`, `IList<>`, `HashSet<>`, `ISet<>`, `Dictionary<,>`, `IDictionary<,>` and
   array of Poco compliant type.
 
 
@@ -220,7 +220,7 @@ public interface IWithValueTuple : IPoco
     ref (int Power, string Name) Thing { get; }
 }
 ```
-Initial values are guaranteed to follow the nullability rules (here Name will the empty string and
+Initial values are guaranteed to follow the nullability rules (here `Name will the empty string and
 initial `Power` field will be 0).
 
 > The `ref` enables the individual fields to be set and the tuple then becomes a "local" sub type, an
@@ -234,9 +234,9 @@ public interface IOneInside : IPoco
 }
 ```
 Here again, the non nullable `Thing.B.Name` will be the empty string.
-Nesting is allowed... But:
+Nesting is allowed... `**But**:
 - It becomes quickly hard to read.
-- Fields are not "by ref"! It can be tedious to copy the whole subordinated
+- **Fields are not "by ref"!** It can be tedious to copy the whole subordinated
   structure to update a value in a value.
 
 For more information on value tuple and more specifically their field names, please read this excellent
@@ -292,8 +292,8 @@ A record that doesn't contain any mutable reference type is "read only compliant
 is de facto a "readonly" projection of its source in the sense where it cannot be used to mutate the
 source data. 
 
-Only "read only compliant" records can be IPoco field (this restriction is here to ease support of
-ReadOnly poco). Such record cannot contain field thar are `IPoco` or collection.
+Only "read only compliant" records can be IPoco field (this restriction is here to enable support of
+ReadOnly poco). Such record cannot contain field that are `IPoco` or collection.
 
 #### Fully mutable structs are "Record" IF they implement their IEquatable 
 Value Tuples and `record struct` are finally the same for the Poco framework: they are value types that
@@ -303,7 +303,8 @@ share the same restrictions:
 - Must implement `IEquatable<TSelf>`.
 - When used as a field in a IPoco, it must be exposed by a `ref` property AND must be "read only compliant".
 
-These are valid Poco record definitions (`ThingDetail` is "read only compliant, but `DetailWithFields` is not):
+These are valid Poco record definitions (`ThingDetail` is "read only compliant, but `DetailWithFields` is
+not because ist contains a List):
 ```csharp
 public record struct ThingDetail( int Power, string Name = "Albert" );
 
@@ -330,14 +331,23 @@ public struct DetailWithFields : IEquatable<DetailWithFields>
 }
 ```
 
-### The conformant collections
+### The collections
 
+### As Poco fields
 IPoco can expose `T[]`, `IList<T>`, `ISet<T>` and `IDictionary<TKey,TValue>` where:
 - `T`, `TKey` and `TValue` must be a Basic type, a IPoco (abstract or not) or a record (anonymous or not) of Basic types.
 - `TKey` is not nullable.
 
 Recursive collections are forbidden except for arrays. One cannot define a `IList<IList<int>>` or a `ISet<object[]>`
 but `int[][]` is valid.
+
+### When not in a Poco field
+
+When used outside of a IPoco field, collections must be the concrete types: `List<>`, `HashSet<>` or `Dictionary<,>` and
+array of Poco compliant type.
+
+The item must always be a Poco compliant type: recursive collections can be defined (`List<List<Dictionary<string,IUserInfo>>>`
+is valid) and record can contain such collections. 
 
 ### IPoco properties
 
@@ -366,7 +376,7 @@ The only true basic type that is a reference type is the `string`, the
 attribute must then be used to provide a default value. The empty string being a quite natural "default" for a
 non nullable string, if no `[DefaultValue]` exists, the empty string is automatically used.
 The other basic type that is a reference type is the `object`: if it's not an "Abstract Read Only Property" (see below)
-there MUST be a `[DefaultValue]` attribute defined for all non nullable `object` properties.
+there MUST be a `[DefaultValue]` attribute defined.
 
 For any other non nullable property types (records, collection, IPoco) the constructor must be
 able to synthesize a default instance.
@@ -399,9 +409,6 @@ by exposing read only properties:
   - A `IReadOnlyList<X> Things { get; }` that can be implemented by a `IList<Y> Things { get; }` where X 
     is assignable from Y.
 
-> Abstract Read Only Properties are the the basis of the future ReadOnly Poco support. ReadOnly and
-Immutable will rely on this to "allow as much covariance" as possible.
-
 This is all about covariance of the model (the latter example relies on the `IReadOnlyList<out T>` **out**
 specification). This relation between 2 types is written `<:`. Below is listed some **expected covariances** and the (sad)
 reality about them:
@@ -418,8 +425,8 @@ reality about them:
 | `IReadOnlySet<object>` <: `HashSet<IUser>`  | No | Read only HashSet and Dictionaries are not covariant. |
 | `IReadOnlyDictionary<int,object>` <: `Dictionary<int,IUser>`  | No | Read only HashSet and Dictionaries are not covariant. |
 
-To overcome these limitations and unifies the API, when `IList<>`, `ISet<>` or  `IDictionary<,>` are used to define Poco properties,
-extended collection types are generated that automatically support all these expected covariance.
+To overcome these limitations and unifies the API, `IList<>`, `ISet<>` or  `IDictionary<,>` MUST BE used to define
+Poco properties, extended collection types are generated that automatically support all these expected covariance.
 
 **The IPoco framework automatically corrects these cases**... but this comes with restrictions:
 - This only applies to direct IPoco properties.
@@ -435,8 +442,6 @@ Note that this "extended covariance":
 - **Supports nullability** (and enforces it!): `IReadOnlyList<object?>` <: `IList<IUser>` is allowed and supported BUT 
   `IReadOnlyList<object>` <: `IList<IUser?>` is an error (even for reference types).
 - Considers dictionary key as being invariant. (Even if this can be done, the number of required adaptations to support this would explode.)
-
-> Currently, `IReadOnlyList/Set/Dictionary` are NOT YET supported (it is internally implemented but not exposed).
 
 When all definitions of a property are read only (no writable appears in the family), this property is either:
   - Nullable... and it keeps its default null value forever. This is _stupid_. 

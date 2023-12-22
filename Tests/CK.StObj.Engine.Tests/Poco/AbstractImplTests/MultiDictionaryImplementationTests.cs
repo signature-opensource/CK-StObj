@@ -15,10 +15,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public interface IWithDictionary : IPoco
         {
             object Dictionary { get; }
-            //
-            // This would be far better when this could be used:
-            //
-            // IReadOnlyDictionary<int,IAbstractBase> Dictionary { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithReadOnlyDictionary : IPoco
+        {
+            IReadOnlyDictionary<int,IAbstractBase> Dictionary { get; }
         }
 
         public interface IPocoWithDictionaryOfPrimary : IPoco, IWithDictionary
@@ -26,12 +28,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             new IDictionary<int,IVerySimplePoco> Dictionary { get; }
         }
 
-        public interface IPocoWithDictionaryOfSecondary : IPoco, IWithDictionary
+        public interface IPocoWithDictionaryOfSecondary : IPoco, IWithDictionary, IWithReadOnlyDictionary
         {
             new IDictionary<int, ISecondaryVerySimplePoco> Dictionary { get; }
         }
 
-        public interface IPocoWithDictionaryOfOtherSecondary : IPoco, IWithDictionary
+        public interface IPocoWithDictionaryOfOtherSecondary : IPoco, IWithDictionary, IWithReadOnlyDictionary
         {
             new IDictionary<int, IOtherSecondaryVerySimplePoco> Dictionary { get; }
         }

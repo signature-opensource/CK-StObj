@@ -76,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
             string ROFieldIsNotExchangeable1 { get; }
 
-            IReadOnlyList<string> ROFieldIsNotExchangeable2 { get; }
+            IReadOnlyList<string>? ROFieldIsNotExchangeable2 { get; }
 
             IDictionary<IRefEmptyPoco, string> NotExchangeableBecauseOfKey { get; }
 
@@ -86,7 +86,6 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        [Ignore( "IReadOnlyList<string> not implemented yet." )]
         public void IsExchangeable_through_collections()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IRefEmptyPoco ), typeof( IPocoWithCollection ) );

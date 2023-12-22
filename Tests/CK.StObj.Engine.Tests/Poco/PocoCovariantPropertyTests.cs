@@ -14,8 +14,6 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
-
-
     [TestFixture]
     public class PocoCovariantPropertyTests
     {
@@ -40,15 +38,12 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         [Test]
-        [Ignore( "Not implemented yet." )]
         public void intrinsic_from_IList_to_IReadOnlyList()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IActualRootA ), typeof( IActualSubA ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var d = s.GetRequiredService<PocoDirectory>();
-            var fA = d.Find( "CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IActualRootA" );
-            Debug.Assert( fA != null );
-            var a = (IActualRootA)fA.Create();
+            var a = d.Create<IActualRootA>();
             a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();

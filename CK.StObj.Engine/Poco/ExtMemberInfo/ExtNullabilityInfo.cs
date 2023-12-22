@@ -1,13 +1,9 @@
 using CK.Core;
-using CK.Core.Impl;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
-using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CK.Setup
@@ -97,7 +93,7 @@ namespace CK.Setup
                 }
             }
 
-            static object CreateFromArgs( Type[] args )
+            static ExtNullabilityInfo[] CreateFromArgs( Type[] args )
             {
                 var s = new ExtNullabilityInfo[args.Length];
                 for( int i = 0; i < args.Length; i++ )
@@ -131,8 +127,7 @@ namespace CK.Setup
 
         internal ExtNullabilityInfo( Type t, IExtNullabilityInfo a, bool isNullable )
         {
-            Debug.Assert( !t.IsValueType
-                          && ((t.IsGenericType && t.GenericTypeArguments.Length == 1) || t.IsSZArray) );
+            Throw.DebugAssert( !t.IsValueType && ((t.IsGenericType && t.GenericTypeArguments.Length == 1) || t.IsSZArray) );
             _type = t;
             _subTypes = t.IsSZArray ? a : new[] { a };
             _isNullable = isNullable;
@@ -142,7 +137,7 @@ namespace CK.Setup
 
         internal ExtNullabilityInfo( Type t, IExtNullabilityInfo a0, IExtNullabilityInfo a1, bool isNullable )
         {
-            Debug.Assert( !t.IsValueType && t.IsGenericType && t.GetGenericTypeDefinition().GetGenericArguments().Length == 2 );
+            Throw.DebugAssert( !t.IsValueType && t.IsGenericType && t.GetGenericTypeDefinition().GetGenericArguments().Length == 2 );
             _type = t;
             _subTypes = new[] { a0, a1 };
             _isNullable = isNullable;
@@ -186,6 +181,17 @@ namespace CK.Setup
         public IExtNullabilityInfo? ElementType => _subTypes as ExtNullabilityInfo;
 
         public IReadOnlyList<IExtNullabilityInfo> GenericTypeArguments => _subTypes as IReadOnlyList<IExtNullabilityInfo> ?? Array.Empty<ExtNullabilityInfo>();
+
+        public IExtNullabilityInfo SetReferenceTypeDefinition( Type typeDefinition, bool? nullable )
+        {
+            Throw.CheckState( !Type.IsValueType && ElementType == null );
+            Throw.CheckArgument( typeDefinition != null
+                                 && !typeDefinition.IsValueType
+                                 && typeDefinition.IsGenericTypeDefinition
+                                 && typeDefinition.GetGenericArguments().Length == GenericTypeArguments.Count );
+            var t = typeDefinition.MakeGenericType(GenericTypeArguments.Select( a => a.Type ).ToArray() );
+            return new ExtNullabilityInfo( t, _subTypes, nullable ?? _isNullable, _useReadState, _homogeneous );
+        }
 
         public StringBuilder ToString( StringBuilder b )
         {

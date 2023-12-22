@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace CK.Setup
 {
@@ -33,6 +34,18 @@ namespace CK.Setup
             return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
         }
 
+        internal static AbstractCollectionType CreateAbstractCollection( PocoTypeSystem s,
+                                                                         Type tCollection,
+                                                                         string csharpName,
+                                                                         ICollectionPocoType mutable )
+        {
+            Throw.DebugAssert( mutable.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary
+                               && !mutable.IsNullable
+                               && mutable.IsAbstractCollection
+                               && mutable.MutableCollection == mutable );
+            return new AbstractCollectionType( s, tCollection, csharpName, mutable );
+        }
+
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
         {
             public NullCollection( IPocoType notNullable )
@@ -44,7 +57,11 @@ namespace CK.Setup
 
             public bool IsAbstractCollection => NonNullable.IsAbstractCollection;
 
+            public bool IsAbstractReadOnly => NonNullable.IsAbstractReadOnly;
+
             public IReadOnlyList<IPocoType> ItemTypes => NonNullable.ItemTypes;
+
+            public ICollectionPocoType MutableCollection => NonNullable.MutableCollection.Nullable;
 
             ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( ObliviousType );
 
@@ -96,11 +113,13 @@ namespace CK.Setup
 
             public override string ImplTypeName => _implTypeName;
 
-            public override IPocoType ObliviousType => _obliviousType;
+            public override ICollectionPocoType ObliviousType => _obliviousType;
 
             public bool IsAbstractCollection => Kind! != PocoTypeKind.Array && CSharpName[0] == 'I';
 
-            ICollectionPocoType ICollectionPocoType.ObliviousType => _obliviousType;
+            public bool IsAbstractReadOnly => false;
+
+            public ICollectionPocoType MutableCollection => this;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemType;
 
@@ -189,20 +208,19 @@ namespace CK.Setup
                 _implTypeName = implTypeName;
             }
 
-            // Base OnNoMoreExchangeable method is fine here.
-            // protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
 
             public override string ImplTypeName => _implTypeName;
 
-            public override IPocoType ObliviousType => _obliviousType;
-
-            ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( _obliviousType );
+            public override ICollectionPocoType ObliviousType => _obliviousType;
 
             public bool IsAbstractCollection => CSharpName[0] == 'I';
+
+            public bool IsAbstractReadOnly => false;
+
+            public ICollectionPocoType MutableCollection => this;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 
@@ -251,6 +269,42 @@ namespace CK.Setup
                 return false;
             }
 
+        }
+
+        // IReadOnlyList, IReadOnlySet or IReadOnlyDictionary.
+        // No IPocoType.ITypeRef here: this is not an exchangeable type.
+        internal sealed class AbstractCollectionType : PocoType, ICollectionPocoType
+        {
+            readonly ICollectionPocoType _mutable;
+
+            public AbstractCollectionType( PocoTypeSystem s,
+                                           Type tCollection,
+                                           string csharpName,
+                                           ICollectionPocoType mutable )
+                : base( s, tCollection, csharpName, mutable.Kind, t => new NullCollection( t ), false )
+            {
+                _mutable = mutable;
+            }
+
+            new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
+
+            public bool IsAbstractCollection => true;
+
+            public bool IsAbstractReadOnly => true;
+
+            public ICollectionPocoType MutableCollection => _mutable;
+
+            public IReadOnlyList<IPocoType> ItemTypes => _mutable.ItemTypes;
+
+            public override ICollectionPocoType ObliviousType => _mutable.ObliviousType;
+
+            public override bool IsReadableType( IPocoType type ) => _mutable.IsReadableType( type );
+
+            public override bool IsWritableType( IPocoType type ) => false;
+
+            ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
+
+            ICollectionPocoType ICollectionPocoType.NonNullable => this;
         }
 
     }

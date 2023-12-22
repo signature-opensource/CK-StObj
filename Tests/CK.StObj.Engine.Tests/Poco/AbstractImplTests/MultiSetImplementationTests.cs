@@ -15,10 +15,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public interface IWithSet : IPoco
         {
             object Set { get; }
-            //
-            // This would be far better when this could be used:
-            //
-            // IReadOnlySet<IAbstractBase> Set { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithReadOnlySet : IPoco
+        {
+            IReadOnlySet<IAbstractBase> Set { get; }
         }
 
         public interface IPocoWithSetOfPrimary : IPoco, IWithSet
@@ -26,12 +28,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             new ISet<IVerySimplePoco> Set { get; }
         }
 
-        public interface IPocoWithSetOfSecondary : IPoco, IWithSet
+        public interface IPocoWithSetOfSecondary : IPoco, IWithSet, IWithReadOnlySet
         {
             new ISet<ISecondaryVerySimplePoco> Set { get; }
         }
 
-        public interface IPocoWithSetOfOtherSecondary : IPoco, IWithSet
+        public interface IPocoWithSetOfOtherSecondary : IPoco, IWithSet, IWithReadOnlySet
         {
             new ISet<IOtherSecondaryVerySimplePoco> Set { get; }
         }

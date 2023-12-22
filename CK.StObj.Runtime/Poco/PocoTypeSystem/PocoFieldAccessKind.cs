@@ -12,7 +12,8 @@ namespace CK.Setup
     public enum PocoFieldAccessKind
     {
         /// <summary>
-        /// The field is an allocated <see cref="IPrimaryPocoType"/> or <see cref="ISecondaryPocoType"/>.
+        /// The field is an allocated <see cref="IPrimaryPocoType"/> or <see cref="ISecondaryPocoType"/>
+        /// or a <see cref="ICollectionPocoType.IsAbstractReadOnly"/> collection.
         /// </summary>
         ReadOnly,
 

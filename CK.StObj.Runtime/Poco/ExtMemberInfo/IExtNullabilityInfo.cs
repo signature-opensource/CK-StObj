@@ -45,6 +45,20 @@ namespace CK.Setup
         bool IsHomogeneous { get; }
 
         /// <summary>
+        /// Limited mutator. <paramref name="typeDefinition"/> must not be <see cref="Type.IsValueType"/> and must
+        /// be a <see cref="Type.IsGenericTypeDefinition"/> with the same number of arguments as this <see cref="GenericTypeArguments"/>.
+        /// <para>
+        /// The new type is built thanks to <see cref="Type.MakeGenericType(Type[])"/> bound to this GenericTypeArguments.
+        /// </para>
+        /// </summary>
+        /// <param name="typeDefinition">Generic type definition to apply to substitute this <see cref="Type"/>.</param>
+        /// <param name="nullable">
+        /// True to return the non nullable, false for the nullable. By default this <see cref="IsNullable"/> is used.
+        /// </param>
+        /// <returns>A new <see cref="IExtNullabilityInfo"/>.</returns>
+        IExtNullabilityInfo SetReferenceTypeDefinition( Type typeDefinition, bool? nullable = null );
+
+        /// <summary>
         /// Returns either this or the non nullable corresponding nullability
         /// info if this is nullable.
         /// </summary>

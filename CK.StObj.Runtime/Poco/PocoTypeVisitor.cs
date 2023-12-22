@@ -164,9 +164,13 @@ namespace CK.Setup
 
         /// <summary>
         /// Visits the <see cref="ICollectionPocoType.ItemTypes"/>, calling <see cref="Visit(IActivityMonitor, IPocoType)"/>
+        /// for the collection type arguments.
+        /// <para>
+        /// This doesn't follow the <see cref="ICollectionPocoType.MutableCollection"/>: the arguments are the same.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="collection"></param>
+        /// <param name="collection">The collection to visit.</param>
         protected virtual void VisitCollection( IActivityMonitor monitor, ICollectionPocoType collection )
         {
             foreach( var itemType in collection.ItemTypes ) Visit( monitor, itemType );

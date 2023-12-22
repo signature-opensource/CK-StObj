@@ -385,19 +385,21 @@ namespace CK.Setup
                     return AddWritable( monitor, p, reg );
                 }
                 // IList, ISet or IDictionary: real property.
-                if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary )
+                if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary
+                    && !((ICollectionPocoType)reg).IsAbstractReadOnly )
                 {
                     _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
                     return AddWritable( monitor, p, reg );
                 }
 
-                // An "Abstract read only Property".
+                // An "Abstract Read Only property".
                 Throw.DebugAssert( reg.Kind is PocoTypeKind.Any
                                                or PocoTypeKind.Basic
                                                or PocoTypeKind.Enum
                                                or PocoTypeKind.Array
                                                or PocoTypeKind.AbstractPoco
-                                               or PocoTypeKind.UnionType );
+                                               or PocoTypeKind.UnionType
+                                    || (reg is ICollectionPocoType c && c.IsAbstractReadOnly) );
                 if( _bestReg != null )
                 {
                     if( !CheckAbstractReadOnly( monitor, p, reg ) )

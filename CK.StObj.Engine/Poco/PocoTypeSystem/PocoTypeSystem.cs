@@ -3,6 +3,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -221,321 +222,34 @@ namespace CK.Setup
             bool isRegular = tGen == typeof( List<> );
             if( isRegular || tGen == typeof( IList<> ) )
             {
-                return RegisterListOrSet( monitor, true, nType, ctx, t, isRegular );
+                return RegisterListOrSet( monitor, true, nType, ctx, isRegular );
             }
             isRegular = tGen == typeof( HashSet<> );
             if( isRegular || tGen == typeof( ISet<> ) )
             {
-                return RegisterListOrSet( monitor, false, nType, ctx, t, isRegular );
+                return RegisterListOrSet( monitor, false, nType, ctx, isRegular );
             }
             isRegular = tGen == typeof( Dictionary<,> );
             if( isRegular || tGen == typeof( IDictionary<,> ) )
             {
-                return RegisterDictionary( monitor, nType, ctx, t, isRegular );
+                return RegisterDictionary( monitor, nType, ctx, isRegular );
+            }
+            // "Abstract Read Only" handling.
+            if( tGen == typeof( IReadOnlyList<> ) )
+            {
+                return RegisterReadOnlyListOrSet( monitor, true, nType, ctx );
+            }
+            if( tGen == typeof( IReadOnlySet<> ) )
+            {
+                return RegisterReadOnlyListOrSet( monitor, false, nType, ctx );
+            }
+            if( tGen == typeof( IReadOnlyDictionary<,> ) )
+            {
+                return RegisterReadOnlyDictionary( monitor, nType, ctx );
             }
             // The end...
             monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t:C}'." );
             return null;
-
-            IPocoType? RegisterListOrSet( IActivityMonitor monitor, bool isList, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
-            {
-                var listOrHashSet = isList ? "List" : "HashSet";
-                bool valid = ctx.EnterListSetOrDictionary( monitor, nType, isRegular, listOrHashSet );
-
-                var tI = Register( monitor, ctx, nType.GenericTypeArguments[0] );
-                if( tI == null || !valid ) return null;
-
-                var csharpName = isRegular
-                                    ? $"{listOrHashSet}<{tI.CSharpName}>"
-                                    : $"{(isList ? "IList" : "ISet")}<{tI.CSharpName}>";
-                if( !_typeCache.TryGetValue( csharpName, out var result ) )
-                {
-                    Type? tOblivious = null;
-                    string? typeName = null;
-                    if( !isRegular )
-                    {
-                        // IList or ISet
-                        if( tI.Type.IsValueType )
-                        {
-                            Throw.DebugAssert( "Value types are implemented by themselves.", tI.CSharpName == tI.ImplTypeName );
-                            // For value type item, use our covariant implementations.
-                            // We use the Oblivious type name as a minor optimization for Roslyn here when the item
-                            // is an anonymous record: instead of using the CSharName with its field names that will
-                            // create useless TupleNamesAttribute, the oblivious has no field names.
-                            if( tI.IsNullable )
-                            {
-                                typeName = $"CovariantHelpers.CovNullableValue{listOrHashSet}<{tI.NonNullable.ObliviousType.ImplTypeName}>";
-                                t = (isList ? typeof( CovariantHelpers.CovNullableValueList<> ) : typeof( CovariantHelpers.CovNullableValueHashSet<> ))
-                                    .MakeGenericType( tI.NonNullable.Type );
-                            }
-                            else
-                            {
-                                typeName = $"CovariantHelpers.CovNotNullValue{listOrHashSet}<{tI.ObliviousType.ImplTypeName}>";
-                                t = (isList ? typeof( CovariantHelpers.CovNotNullValueList<> ) : (typeof( CovariantHelpers.CovNotNullValueHashSet<> )))
-                                    .MakeGenericType( tI.Type );
-                            }
-                            // We are obviously not the oblivious.
-                            tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                        }
-                        else if( tI.Kind == PocoTypeKind.AbstractPoco )
-                        {
-                            // HashSet<> is not natively covariant. We support it here.
-                            if( !isList )
-                            {
-                                typeName = EnsurePocoHashSetOfAbstractType( monitor, (IAbstractPocoType)tI.NonNullable );
-                                t = IDynamicAssembly.PurelyGeneratedType;
-                                // We are obviously not the oblivious.
-                                tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                            }
-                        }
-                        else
-                        {
-                            bool isSecondary = tI.Kind == PocoTypeKind.SecondaryPoco;
-                            if( isSecondary || tI.Kind == PocoTypeKind.PrimaryPoco )
-                            {
-                                // For IPoco, use generated covariant implementations only if needed:
-                                // - For list only if more than one Poco interface exist in the family. When the family contains only one interface
-                                //   (the primary one), the oblivious List<PrimaryInterface> is fine.
-                                // - But it's not the case for Set because IReadOnlySet<T> is NOT covariant. We need the object and abstract adaptations...
-                                var poco = isSecondary
-                                            ? ((ISecondaryPocoType)tI.NonNullable).PrimaryPocoType
-                                            : (IPrimaryPocoType)tI.NonNullable;
-                                if( !isList || isSecondary || poco.FamilyInfo.Interfaces.Count > 1 )
-                                {
-                                    // We choose the non nullable item type to follow the C# "oblivious nullable reference type" that is non nullable. 
-                                    typeName = EnsurePocoListOrHashSetType( monitor, poco, isList, listOrHashSet );
-                                    t = IDynamicAssembly.PurelyGeneratedType;
-                                    // Since we are on a reference type, the oblivious is the non nullable.
-                                    Debug.Assert( poco.IsOblivious );
-                                    // We are obviously not the oblivious.
-                                    tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                                }
-                            }
-                        }
-                    }
-                    if( typeName == null )
-                    {
-                        // It's not an abstraction for which we have a dedicated implementation or it's
-                        // explicitly a regular List/HashSet: use the regular collection type.
-                        t = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                        // This is the oblivious implementation if:
-                        //   - the regular type has been requested
-                        //   - AND the item type is the oblivious one.
-                        if( isRegular && tI.IsOblivious )
-                        {
-                            // We are building the oblivious: let the tOblivious be null.
-                            typeName = csharpName;
-                        }
-                        else
-                        {
-                            tOblivious = t;
-                            typeName = isRegular ? csharpName : $"{listOrHashSet}<{tI.CSharpName}>";
-                        }
-                    }
-                    // Ensure that the obliviousType is registered if we are not instantiating it.
-                    IPocoType? obliviousType = null;
-                    if( tOblivious != null )
-                    {
-                        // The type we are about to create is not the oblivious one.
-                        // However we have everything here to create it:
-                        // - It has the same kind.
-                        // - Its typeName is its obliviousTypeName.
-                        // - Its item type is tI.ObliviousType.
-                        // - We used the tOblivious != null as a flag, so we have it.
-                        if( !_typeCache.TryGetValue( tOblivious, out obliviousType ) )
-                        {
-                            var obliviousTypeName = $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>";
-                            Throw.DebugAssert( "The only way for the typeName to be the oblivious one here is if a IList<> or ISet<> is requested.",
-                                               typeName != obliviousTypeName || !isRegular );
-                            obliviousType = PocoType.CreateCollection( monitor,
-                                                                       this,
-                                                                       tOblivious,
-                                                                       obliviousTypeName,
-                                                                       obliviousTypeName,
-                                                                       isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
-                                                                       itemType: tI.ObliviousType,
-                                                                       obliviousType: null );
-                            _typeCache.Add( tOblivious, obliviousType );
-                            _typeCache.Add( obliviousTypeName, obliviousType );
-                        }
-                        Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>" );
-                    }
-                    Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
-                    result = PocoType.CreateCollection( monitor,
-                                                        this,
-                                                        t,
-                                                        csharpName,
-                                                        typeName,
-                                                        isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
-                                                        tI,
-                                                        obliviousType );
-                    _typeCache.Add( csharpName, result );
-                    // If we have built the oblivious, register it.
-                    if( obliviousType == null )
-                    {
-                        Throw.DebugAssert( result.IsOblivious && csharpName == typeName );
-                        _typeCache.Add( result.Type, result );
-                    }
-                }
-                return nType.IsNullable ? result.Nullable : result;
-
-            }
-
-            IPocoType? RegisterDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, Type t, bool isRegular )
-            {
-                bool valid = ctx.EnterListSetOrDictionary( monitor, nType, isRegular, "Dictionary" );
-                var tK = Register( monitor, ctx, nType.GenericTypeArguments[0] );
-                if( tK == null ) return null;
-                if( tK.IsNullable )
-                {
-                    monitor.Error( $"{ctx}: '{nType.Type:C}' key cannot be nullable. Nullable type '{tK.CSharpName}' cannot be a key." );
-                    return null;
-                }
-                var tV = Register( monitor, ctx, nType.GenericTypeArguments[1] );
-                if( tV == null || !valid ) return null;
-
-                var csharpName = isRegular
-                                    ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
-                                    : $"IDictionary<{tK.CSharpName},{tV.CSharpName}>";
-                if( !_typeCache.TryGetValue( csharpName, out var result ) )
-                {
-                    Type? tOblivious = null;
-                    string? typeName = null;
-                    if( !isRegular )
-                    {
-                        if( tV.Type.IsValueType )
-                        {
-                            Throw.DebugAssert( "Value types are implemented by themselves.", tV.ImplTypeName == tV.CSharpName );
-                            if( tV.IsNullable )
-                            {
-                                typeName = $"CovariantHelpers.CovNullableValueDictionary<{tK.ImplTypeName},{tV.NonNullable.ObliviousType.ImplTypeName}>";
-                                t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.NonNullable.Type );
-                            }
-                            else
-                            {
-                                typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.ImplTypeName},{tV.ObliviousType.ImplTypeName}>";
-                                t = typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                            }
-                            tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                        }
-                        else if( tV.Kind == PocoTypeKind.AbstractPoco )
-                        {
-                            // IReadOnlyDictionary<TKey,TValue> is NOT convariant on TValue: we always need an adapter.
-                            typeName = EnsurePocoDictionaryOfAbstractType( monitor, tK, (IAbstractPocoType)tV.NonNullable );
-                            t = IDynamicAssembly.PurelyGeneratedType;
-                            tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                        }
-                        else 
-                        {
-                            bool isSecondary = tV.Kind == PocoTypeKind.SecondaryPoco;
-                            if( isSecondary || tV.Kind == PocoTypeKind.PrimaryPoco )
-                            {
-                                // The adapter enables Primary and Secondary inputs and AbstractPoco outputs.
-                                var poco = isSecondary
-                                                ? ((ISecondaryPocoType)tV.NonNullable).PrimaryPocoType
-                                                : (IPrimaryPocoType)tV.NonNullable;
-                                typeName = EnsurePocoDictionaryType( monitor, tK, poco );
-                                t = IDynamicAssembly.PurelyGeneratedType;
-                                tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                            }
-                        }
-                    }
-                    if( typeName == null )
-                    {
-                        t = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                        if( isRegular && tV.IsOblivious )
-                        {
-                            typeName = csharpName;
-                        }
-                        else
-                        {
-                            tOblivious = t;
-                            typeName = isRegular ? csharpName : $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
-                        }
-                    }
-                    IPocoType? obliviousType = null;
-                    if( tOblivious != null )
-                    {
-                        if( !_typeCache.TryGetValue( tOblivious, out obliviousType ) )
-                        {
-                            var obliviousTypeName = $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>";
-                            Throw.DebugAssert( "The only way for the typeName to be the oblivious one here is if a IDictionary<,> is requested.",
-                                               typeName != obliviousTypeName || !isRegular );
-                            obliviousType = PocoType.CreateDictionary( monitor,
-                                                                       this,
-                                                                       tOblivious,
-                                                                       obliviousTypeName,
-                                                                       obliviousTypeName,
-                                                                       tK,
-                                                                       tV.ObliviousType,
-                                                                       null );
-                            _typeCache.Add( tOblivious, obliviousType );
-                            _typeCache.Add( obliviousTypeName, obliviousType );
-                        }
-                        Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>" );
-                    }
-                    Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
-                    result = PocoType.CreateDictionary( monitor,
-                                                        this,
-                                                        t,
-                                                        csharpName,
-                                                        typeName,
-                                                        tK,
-                                                        tV,
-                                                        obliviousType );
-                    _typeCache.Add( csharpName, result );
-                    if( obliviousType == null )
-                    {
-                        Throw.DebugAssert( result.IsOblivious && csharpName == typeName );
-                        _typeCache.Add( result.Type, result );
-                    }
-                }
-                return nType.IsNullable ? result.Nullable : result;
-            }
-
-            string EnsurePocoListOrHashSetType( IActivityMonitor monitor, IPrimaryPocoType tI, bool isList, string listOrHasSet )
-            {
-                Debug.Assert( !tI.IsNullable );
-                var genTypeName = $"Poco{listOrHasSet}_{tI.Index}_CK";
-                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
-                {
-                    _requiredSupportTypes.Add( genTypeName, g = new PocoListOrHashSetRequiredSupport( tI, genTypeName, isList ) );
-                }
-                return g.FullName;
-            }
-
-            string EnsurePocoHashSetOfAbstractType( IActivityMonitor monitor, IAbstractPocoType tI )
-            {
-                Debug.Assert( !tI.IsNullable );
-                var genTypeName = $"PocoHashSet_{tI.Index}_CK";
-                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
-                {
-                    _requiredSupportTypes.Add( genTypeName, g = new PocoHashSetOfAbstractRequiredSupport( tI, genTypeName ) );
-                }
-                return g.FullName;
-            }
-
-            string EnsurePocoDictionaryType( IActivityMonitor monitor, IPocoType tK, IPrimaryPocoType tV )
-            {
-                Debug.Assert( !tV.IsNullable );
-                var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
-                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
-                {
-                    _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryRequiredSupport( tK, tV, genTypeName ) );
-                }
-                return g.FullName;
-            }
-
-            string EnsurePocoDictionaryOfAbstractType( IActivityMonitor monitor, IPocoType tK, IAbstractPocoType tV )
-            {
-                Debug.Assert( !tV.IsNullable );
-                var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
-                if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
-                {
-                    _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryOfAbstractRequiredSupport( tK, tV, genTypeName ) );
-                }
-                return g.FullName;
-            }
         }
 
         IPocoType? OnArray( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )

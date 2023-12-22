@@ -14,10 +14,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public interface IWithList : IPoco
         {
             object List { get; }
-            //
-            // This would be far better when this could be used:
-            //
-            // IReadOnlyList<IAbstractBase> List { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IWithReadOnlyList : IPoco
+        {
+            IReadOnlyList<IAbstractBase> List { get; }
         }
 
         public interface IPocoWithListOfPrimary : IPoco, IWithList
@@ -25,12 +27,12 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             new IList<IVerySimplePoco> List { get; }
         }
 
-        public interface IPocoWithListOfSecondary : IPoco, IWithList
+        public interface IPocoWithListOfSecondary : IPoco, IWithList, IWithReadOnlyList
         {
             new IList<ISecondaryVerySimplePoco> List { get; }
         }
 
-        public interface IPocoWithListOfOtherSecondary : IPoco, IWithList
+        public interface IPocoWithListOfOtherSecondary : IPoco, IWithList, IWithReadOnlyList
         {
             new IList<IOtherSecondaryVerySimplePoco> List { get; }
         }
