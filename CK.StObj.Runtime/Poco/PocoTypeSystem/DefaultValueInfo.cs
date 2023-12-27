@@ -4,6 +4,10 @@ namespace CK.Setup
 {
     /// <summary>
     /// Describes if and how a type can belong to a <see cref="ICompositePocoType"/>.
+    /// <para>
+    /// One and only one among <see cref="IsDisallowed"/>, <see cref="IsAllowed"/> and <see cref="RequiresInit"/>
+    /// is true.
+    /// </para>
     /// </summary>
     public readonly struct DefaultValueInfo
     {
@@ -54,8 +58,10 @@ namespace CK.Setup
 
         /// <summary>
         /// The type can be used as a <see cref="IPrimaryPocoField"/> or <see cref="IRecordPocoType"/>
-        /// field without any initialization.
+        /// field without any initialization: the .NET <c>default</c> value of the type does the job.
+        /// <para>
         /// All nullable types are "Allowed", they will be initialized to null.
+        /// </para>
         /// </summary>
         public bool IsAllowed => _allowed;
 

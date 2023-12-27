@@ -18,8 +18,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this is a <see cref="IReadOnlyList{T}"/>, <see cref="IReadOnlySet{T}"/>, <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
         /// <para>
-        /// <see cref="IsAbstractCollection"/> is true and <see cref="MutableCollection"/> is not this type. Such type can only appear
-        /// in IPoco fields.
+        /// <see cref="IsAbstractCollection"/> is true and <see cref="MutableCollection"/> is not this instance.
+        /// Such type can only appear in IPoco fields.
         /// </para>
         /// </summary>
         bool IsAbstractReadOnly { get; }

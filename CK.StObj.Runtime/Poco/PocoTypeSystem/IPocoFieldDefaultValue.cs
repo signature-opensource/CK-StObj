@@ -11,8 +11,10 @@ namespace CK.Setup
     {
         /// <summary>
         /// Gets the default value when field's type is a simple, basic, type.
+        /// <para>
         /// For complex type, this is null: the default value is typically obtained
         /// by creating a default instance of the type.
+        /// </para>
         /// </summary>
         object? SimpleValue { get; }
 

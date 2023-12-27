@@ -34,7 +34,7 @@ namespace CK.Setup
                 _bestReg = null;
                 _defaultValueSource = null;
                 _defaultValue = null;
-                _fieldAccessKind = PocoFieldAccessKind.ReadOnly;
+                _fieldAccessKind = PocoFieldAccessKind.AbstractReadOnly;
                 if( !TryFindWritableAndCheckReadOnlys( monitor ) )
                 {
                     return null;

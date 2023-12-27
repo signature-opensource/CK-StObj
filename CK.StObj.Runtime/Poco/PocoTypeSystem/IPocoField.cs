@@ -31,7 +31,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this field is exchangeable: the field type must be exchangeable
         /// and for <see cref="IPrimaryPocoField"/>, <see cref="IPrimaryPocoField.FieldAccess"/>
-        /// must not be <see cref="PocoFieldAccessKind.ReadOnly"/>.
+        /// must not be <see cref="PocoFieldAccessKind.AbstractReadOnly"/>.
         /// </summary>
         bool IsExchangeable { get; }
 

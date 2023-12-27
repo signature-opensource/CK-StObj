@@ -76,7 +76,7 @@ namespace CK.Setup
                 _familyInfo = family;
                 // The full name is the ImplTypeName. This works because the generated type is not a nested type (and not a generic of course).
                 Throw.DebugAssert( !family.PocoClass.FullName!.Contains( '+' ) );
-                _def = new FieldDefaultValue( Activator.CreateInstance( family.PocoClass )!, $"new {family.PocoClass.FullName}()" );
+                _def = new FieldDefaultValue( $"new {family.PocoClass.FullName}()" );
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );

@@ -10,7 +10,6 @@ namespace CK.Setup
 {
     sealed class FieldDefaultValue : IPocoFieldDefaultValue
     {
-        public static readonly FieldDefaultValue Invalid = new FieldDefaultValue( String.Empty );
         public static readonly FieldDefaultValue StringDefault = new FieldDefaultValue( String.Empty, "\"\"" );
         public static readonly FieldDefaultValue DateTimeDefault = new FieldDefaultValue( Util.UtcMinValue, "CK.Core.Util.UtcMinValue" );
         // Applies to NormalizedCultureInfo and ExtendedCultureInfo.
