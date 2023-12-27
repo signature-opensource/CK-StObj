@@ -7,7 +7,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// The Poco type system manages by default all the types reachable from IPoco
-    /// objects. Further <see cref="IRecordPocoType"/> and <see cref="ICollectionPocoType"/> can
+    /// objects. Additional <see cref="IRecordPocoType"/> and <see cref="ICollectionPocoType"/> can
     /// be registered.
     /// </summary>
     public interface IPocoTypeSystem

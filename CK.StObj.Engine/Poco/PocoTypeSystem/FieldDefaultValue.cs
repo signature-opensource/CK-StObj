@@ -76,7 +76,7 @@ namespace CK.Setup
             }
             catch( Exception ex )
             {
-                monitor.Error( $"Unable to create a FieldDefaultValue from type {t:N}.", ex );
+                monitor.Error( $"Unable to create a FieldDefaultValue from type '{t:N}'.", ex );
                 return null;
             }
         }

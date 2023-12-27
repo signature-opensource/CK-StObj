@@ -279,7 +279,7 @@ namespace CK.Setup
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
         /// overrides this).
-        /// The only case where we disallow is object, AbstractIPoco, abstract readonly list/set/dictionary and UnionType:
+        /// The only case where we disallow is object (Any), AbstractPoco, abstract readonly list/set/dictionary and UnionType:
         /// union type default is handled at the field level based on the DefaultValue attribute (like the others)
         /// or based on the first type in the variants definition that can provide a default value.
         /// </summary>

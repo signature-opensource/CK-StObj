@@ -281,7 +281,7 @@ namespace CK.Setup
                                            Type tCollection,
                                            string csharpName,
                                            ICollectionPocoType mutable )
-                : base( s, tCollection, csharpName, mutable.Kind, t => new NullCollection( t ), false )
+                : base( s, tCollection, csharpName, mutable.Kind, t => new NullCollection( t ), isExchangeable: false )
             {
                 _mutable = mutable;
             }

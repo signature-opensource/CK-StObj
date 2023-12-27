@@ -200,7 +200,7 @@ namespace CK.Setup
                 if( success )
                 {
                     // Types must be in a deterministic order for the PocoType.KeyUnionTypes to be correct.
-                    // Before sorting, take the first type in the "visible" order that can handle a default value.
+                    // Before sorting, take the first type in the "visible/user defined" order that can handle a default value.
                     var tDef = types.FirstOrDefault( t => !t.DefaultValueInfo.IsDisallowed );
                     types.Sort( ( t1, t2 ) => StringComparer.Ordinal.Compare( t1.CSharpName, t2.CSharpName ) );
                     var unionType = _system.RegisterUnionType( monitor, types );
