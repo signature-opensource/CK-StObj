@@ -41,11 +41,19 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             {
                 var c = TestHelper.CreateStObjCollector( typeof( IWithNonNullAbstract ) );
-                TestHelper.GetFailedResult( c, "Unable to obtain a default value for 'Some', on 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract' default value cannot be generated. Should this be nullable?" );
+                TestHelper.GetFailedResult( c, """
+                    Required computable default value is missing in Poco:
+                    '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract', field: 'Some' has no default value.
+                    No default can be synthesized for non nullable '[AbstractPoco]CK.Core.IPoco'.
+                    """ );
             }
             {
                 var c = TestHelper.CreateStObjCollector( typeof( IWithNonNullAbstract2 ), typeof( ICommand ), typeof( IRealCommand ) );
-                TestHelper.GetFailedResult( c, "Unable to obtain a default value for 'Some', on 'CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract2' default value cannot be generated. Should this be nullable?" );
+                TestHelper.GetFailedResult( c, """
+                    Required computable default value is missing in Poco:
+                    '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.IWithNonNullAbstract2', field: 'Some' has no default value.
+                    No default can be synthesized for non nullable '[AbstractPoco]CK.StObj.Engine.Tests.Poco.AbstractReadOnlyPropertyTests.ICommand'.
+                    """ );
             }
         }
 

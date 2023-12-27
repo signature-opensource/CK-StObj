@@ -56,6 +56,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetFailedResult( c, """
                 Required computable default value is missing in Poco:
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject1', field: 'P.NoWay' has no default value.
+                No default can be synthesized for non nullable '[Any]object'.
                 """ );
             }
             {
@@ -63,6 +64,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetFailedResult( c, """
                 Required computable default value is missing in Poco:
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject2', field: 'P.Sub.NoWay' has no default value.
+                No default can be synthesized for non nullable '[Any]object'.
                 """ );
             }
             {
@@ -71,6 +73,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 Required computable default value is missing in Poco:
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject3', field: 'P' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Thing', field: 'Sub.NoWay' has no default value.
+                No default can be synthesized for non nullable '[Any]object'.
                 """ );
             }
             {
@@ -80,6 +83,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject4', field: 'P.Intermediate' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Intermediate', field: 'Inner' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Thing', field: 'Sub.NoWay' has no default value.
+                No default can be synthesized for non nullable '[Any]object'.
                 """ );
             }
             {
@@ -90,6 +94,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.JustForFun', field: 'Another.Intermediate' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Intermediate', field: 'Inner' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Thing', field: 'Sub.NoWay' has no default value.
+                No default can be synthesized for non nullable '[Any]object'.
                 """ );
             }
         }

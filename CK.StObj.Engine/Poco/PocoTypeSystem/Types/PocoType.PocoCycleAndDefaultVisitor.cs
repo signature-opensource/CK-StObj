@@ -46,8 +46,10 @@ namespace CK.Setup
                         _path.RemoveAll( fields => fields.Count == 0 );
                         Throw.DebugAssert( _path.Count >= 1 );
                         var missing = _path.Select( c => $"'[{c[0].Owner.Kind}]{c[0].Owner.CSharpName}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' has no default value." );
+                        var last = _path[^1][^1];
                         monitor.Error( $"Required computable default value is missing in Poco:" +
-                                       $"{Environment.NewLine}{missing.Concatenate( $"{Environment.NewLine}Because " )}" );
+                                       $"{Environment.NewLine}{missing.Concatenate( $"{Environment.NewLine}Because " )}" +
+                                       $"{Environment.NewLine}No default can be synthesized for non nullable '[{last.Type.Kind}]{last.Type.CSharpName}'." );
                     }
                     return false;
                 }
