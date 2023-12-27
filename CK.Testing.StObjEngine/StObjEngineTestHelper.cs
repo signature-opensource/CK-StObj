@@ -94,8 +94,10 @@ namespace CK.Testing
             {
                 if( !String.IsNullOrEmpty( m ) )
                 {
-                    fatalOrErrors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
-                        .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{fatalOrErrors.Concatenate( Environment.NewLine )}" );
+                    m = m.ReplaceLineEndings();
+                    var errors = fatalOrErrors.Select( m => m.ReplaceLineEndings() );
+                    errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
+                        .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
                 }
             }
         }
