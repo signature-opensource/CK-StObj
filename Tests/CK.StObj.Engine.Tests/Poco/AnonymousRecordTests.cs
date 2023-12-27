@@ -52,6 +52,24 @@ namespace CK.StObj.Engine.Tests.Poco
             p.Thing.DateTimeDefaultsToUtcMinValue.Should().Be( Util.UtcMaxValue );
         }
 
+        public interface IWithValueTuple2 : IPoco
+        {
+            ref (int, string, string?, object?) Power { get; }
+        }
+
+        [Test]
+        public void nullable_string_and_objects_are_let_to_null()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IWithValueTuple2 ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var p = s.GetRequiredService<IPocoFactory<IWithValueTuple2>>().Create();
+
+            p.Power.Item1.Should().Be( 0 );
+            p.Power.Item2.Should().BeEmpty();
+            p.Power.Item3.Should().BeNull();
+            p.Power.Item4.Should().BeNull();
+        }
+
         public interface IWithN : IPoco
         {
             ref (string? A, (string? S, int I) B, ((string? S1, string S2), string? S3)? C) Thing { get; }

@@ -115,10 +115,21 @@ namespace CK.Setup
                 foreach( var prop in p.FamilyInfo.Properties.Values )
                 {
                     var f = builder.Build( monitor, p, prop );
-                    if( f == null ) return false;
-                    fields[prop.Index] = f;
+                    // Continue to analyze the fields.
+                    success &= f != null;
+                    fields[prop.Index] = f!;
                 }
-                success &= p.SetFields( monitor, StringBuilderPool, fields );
+                if( success )
+                {
+                    p.SetFields( monitor, fields );
+                }
+                else
+                {
+                    // We are on an error path. This Poco is invalid, the whole type system will be.
+                    // We can be inefficient here!
+                    fields = fields.Where( f => f != null ).ToArray();
+                    p.SetFields( monitor, fields );
+                }
             }
             // Oblivious check: all reference type registered by types are non nullable.
             // Only Value Types are oblivious and registered for nullable and non nullable.
@@ -132,25 +143,26 @@ namespace CK.Setup
                                                         (!x.Type.IsValueType && !x.PocoType.IsNullable)
                                                     )
                                              ) );
-            // If no error occurred, we can now detect any instantiation cycle error.
-            // We handle only IPoco since collection items are not instantiated
+            // Even if an error occurred, we can detect any instantiation cycle error and missing defaults
+            // (fields on errors have been filtered out).
+            // We handle only cycle of IPoco since collection items are not instantiated
             // and records are struct: a cycle in struct is not possible.
             // If we support mutable classes as "class records", then this will have
             // to be revisited.
-            if( success )
+            // Since we visit the IPoco fields and its record types, we also handle missing default values
+            // (any field that has a true DefaultValueInfo.IsDisallowed).
+            bool cycleError = false;
+            var detector = new PocoType.PocoCycleAndDefaultVisitor();
+            foreach( var p in allPrimaries )
             {
-                var detector = new PocoType.InstantiationCycleVisitor();
-                foreach( var p in allPrimaries )
-                {
-                    detector.VisitRoot( monitor, p );
-                    if( !detector.CheckValid( monitor ) )
-                    {
-                        // As soon as one cycle is detected, we stop: this avoids
-                        // any dependency on the cycle to be (redundantly) detected.
-                        success = false;
-                        break;
-                    }
-                }
+                detector.VisitRoot( monitor, p );
+                // As soon as one cycle is detected, we stop reporting it:
+                // this avoids any dependency on the cycle to be (redundantly) detected
+                // but we continue the process to detect any missing default value.
+                success &= detector.CheckValid( monitor, ref cycleError );
+                // If any error is detected, it is useless to compute any
+                // constructor code.
+                if( success ) p.ComputeCtorCode( StringBuilderPool );
             }
             return success;
         }

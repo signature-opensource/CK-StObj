@@ -8,7 +8,7 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        internal sealed class InstantiationCycleVisitor : PocoTypeVisitor
+        internal sealed class PocoCycleAndDefaultVisitor : PocoTypeVisitor
         {
             // Used to compute a readable path for anonymous types. This displays detected cycles like this:
             //
@@ -18,20 +18,37 @@ namespace CK.Setup
             //
             List<List<IPocoField>> _path;
             int _typedPathCount;
-            // Will stop the visit.
+            // Both will stop the visit.
             bool _cycleFound;
+            bool _missingDefault;
 
-            public InstantiationCycleVisitor()
+            public PocoCycleAndDefaultVisitor()
             {
                 _path = new List<List<IPocoField>>();
             }
 
-            public bool CheckValid( IActivityMonitor monitor )
+            public bool CheckValid( IActivityMonitor monitor, ref bool cycleError )
             {
                 if( _typedPathCount > 0 )
                 {
-                    var cycle = _path.Select( c => $"{Environment.NewLine}'{c[0].Owner}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' => " );
-                    monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'{_path[0][0].Owner}'." );
+                    Throw.DebugAssert( _cycleFound || _missingDefault );
+                    if( _cycleFound && !cycleError )
+                    {
+                        cycleError = true;
+                        var cycle = _path.Select( c => $"{Environment.NewLine}'[{c[0].Owner.Kind}]{c[0].Owner.CSharpName}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' => " );
+                        monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'[{_path[0][0].Owner.Kind}]{_path[0][0].Owner.CSharpName}'." );
+                    }
+                    if( _missingDefault )
+                    {
+                        // Keep only the disallowed fields.
+                        foreach( var fields in _path ) fields.RemoveAll( f => !f.DefaultValueInfo.IsDisallowed );
+                        // Keep only the non empty paths.
+                        _path.RemoveAll( fields => fields.Count == 0 );
+                        Throw.DebugAssert( _path.Count >= 1 );
+                        var missing = _path.Select( c => $"'[{c[0].Owner.Kind}]{c[0].Owner.CSharpName}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' has no default value." );
+                        monitor.Error( $"Required computable default value is missing in Poco:" +
+                                       $"{Environment.NewLine}{missing.Concatenate( $"{Environment.NewLine}Because " )}" );
+                    }
                     return false;
                 }
                 return true;
@@ -43,12 +60,13 @@ namespace CK.Setup
                 for( int i = 0; i < _typedPathCount; i++ ) _path[i].Clear();
                 _typedPathCount = 0;
                 _cycleFound = false;
+                _missingDefault = false;
             }
 
             protected override bool Visit( IActivityMonitor monitor, IPocoType t )
             {
-                // Shortcut the visit if a cycle has been found.
-                if( _cycleFound ) return true;
+                // Shortcut the visit if a cycle or a missing default has been found.
+                if( _cycleFound || _missingDefault ) return true;
                 return base.Visit( monitor, t );
             }
 
@@ -79,6 +97,15 @@ namespace CK.Setup
                     base.VisitField( monitor, field );
                     if( !_cycleFound ) PopPath( isAnonymous );
                 }
+                else if( field.DefaultValueInfo.IsDisallowed )
+                {
+                    PushPath( field );
+                    // Enters the field to try to find the inner culprit if it exists
+                    // but stops the visit once done.
+                    // We may find both a cycle and a missing default.
+                    base.VisitField( monitor, field );
+                    _missingDefault = true;
+                }
             }
 
             void PopPath( bool isAnonymous )
@@ -91,7 +118,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    Debug.Assert( _path[_typedPathCount - 1].Count == 1 );
+                    Throw.DebugAssert( _path[_typedPathCount - 1].Count == 1 );
                     _path[_typedPathCount - 1].Clear();
                     --_typedPathCount;
                 }
@@ -102,7 +129,7 @@ namespace CK.Setup
                 bool isAnonymous = field.Owner is IRecordPocoType r && r.IsAnonymous;
                 if( isAnonymous )
                 {
-                    Debug.Assert( _typedPathCount > 0 );
+                    Throw.DebugAssert( _typedPathCount > 0 );
                     _path[_typedPathCount - 1].Add( field );
                 }
                 else
@@ -113,7 +140,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        Debug.Assert( _path[_typedPathCount].Count == 0 );
+                        Throw.DebugAssert( _path[_typedPathCount].Count == 0 );
                         _path[_typedPathCount].Add( field ); 
                     }
                     _typedPathCount++;

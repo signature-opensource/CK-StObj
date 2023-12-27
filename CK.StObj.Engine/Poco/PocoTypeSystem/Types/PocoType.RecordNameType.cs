@@ -85,7 +85,7 @@ namespace CK.Setup
             internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, bool isReadOnlyCompliant, RecordNamedField[] fields )
             {
                 _fields = fields;
-                _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
+                _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
                 _isReadOnlyCompliant = isReadOnlyCompliant;
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )

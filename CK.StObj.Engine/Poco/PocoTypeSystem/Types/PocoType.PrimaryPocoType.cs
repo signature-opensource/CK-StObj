@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace CK.Setup
 {
@@ -66,7 +67,7 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoFamilyInfo _familyInfo;
             [AllowNull] PrimaryPocoField[] _fields;
-            [AllowNull] string _ctorCode;
+            string _ctorCode;
 
             public PrimaryPocoType( PocoTypeSystem s,
                                     IPocoFamilyInfo family,
@@ -77,6 +78,8 @@ namespace CK.Setup
                 // The full name is the ImplTypeName. This works because the generated type is not a nested type (and not a generic of course).
                 Throw.DebugAssert( !family.PocoClass.FullName!.Contains( '+' ) );
                 _def = new FieldDefaultValue( $"new {family.PocoClass.FullName}()" );
+                // Constructor will remain the empty string when all fields are DefaultValueInfo.IsAllowed (their C# default value).
+                _ctorCode = string.Empty;
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
@@ -107,24 +110,42 @@ namespace CK.Setup
                 }
             }
 
-            internal bool SetFields( IActivityMonitor monitor,
-                                     PocoTypeSystem.IStringBuilderPool sbPool,
-                                     PrimaryPocoField[] fields )
+            internal bool SetFields( IActivityMonitor monitor, PrimaryPocoField[] fields )
             {
                 _fields = fields;
-                var d = CompositeHelper.CreateDefaultValueInfo( monitor, sbPool, this );
-                if( d.IsDisallowed )
-                {
-                    monitor.Error( $"Unable to create '{CSharpName}' constructor code. See previous errors." );
-                    return false;
-                }
-                _ctorCode = d.RequiresInit ? d.DefaultValue.ValueCSharpSource : String.Empty;
                 // Sets the initial IsExchangeable status.
+                // A composite with no field is not exchangeable.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {
                     SetNotExchangeable( monitor, $"none of its {_fields.Length} fields are exchangeable." );
                 }
                 return true;
+            }
+
+            internal void ComputeCtorCode( PocoTypeSystem.IStringBuilderPool sbPool )
+            {
+                var b = sbPool.Get();
+                foreach( var f in _fields )
+                {
+                    var fInfo = f.DefaultValueInfo;
+                    Throw.DebugAssert( "This has been detected by the PocoCycleAndDefaultVisitor.", !fInfo.IsDisallowed );
+                    // If the field is Allowed, skip it.
+                    if( fInfo.IsAllowed ) continue;
+                    Throw.DebugAssert( fInfo.RequiresInit );
+                    // Generate the source code for the initialization.
+                    if( b.Length > 0 )
+                    {
+                        b.Append( ';' ).Append( Environment.NewLine );
+                    }
+                    b.Append( f.PrivateFieldName ).Append( " = " ).Append( fInfo.DefaultValue.ValueCSharpSource );
+                }
+                // If no field have been initialized, the default value is useless => the _ctorCode is let to the string.Empty.
+                if( b.Length > 0 )
+                {
+                    b.Append( ';' );
+                    _ctorCode = b.ToString();
+                }
+                sbPool.Return( b );
             }
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;

@@ -90,7 +90,7 @@ namespace CK.Setup
                 _fields = fields;
                 _isReadOnlyCompliant = isReadOnlyCompliant;
                 foreach( var f in fields ) f.SetOwner( this );
-                _defInfo = CompositeHelper.CreateDefaultValueInfo( monitor, s.StringBuilderPool, this );
+                _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
                 // Sets the initial IsExchangeable status.
                 if( !_fields.Any( f => f.IsExchangeable ) )
                 {

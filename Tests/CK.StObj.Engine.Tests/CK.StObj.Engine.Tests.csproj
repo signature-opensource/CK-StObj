@@ -4,6 +4,7 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <LangVersion>11</LangVersion>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
