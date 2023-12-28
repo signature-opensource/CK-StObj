@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    partial class PocoType
+    partial class PocoTypeSystem
     {
         internal sealed class PocoCycleAndDefaultVisitor : PocoTypeVisitor
         {
@@ -91,6 +91,7 @@ namespace CK.Setup
 
             protected override void VisitField( IActivityMonitor monitor, IPocoField field )
             {
+                if( _cycleFound || _missingDefault ) return;
                 // It's only if the field requires an initialization that we
                 // should follow the path.
                 if( field.DefaultValueInfo.RequiresInit )

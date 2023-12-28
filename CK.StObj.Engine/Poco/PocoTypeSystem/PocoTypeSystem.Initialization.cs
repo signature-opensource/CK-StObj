@@ -152,7 +152,7 @@ namespace CK.Setup
             // Since we visit the IPoco fields and its record types, we also handle missing default values
             // (any field that has a true DefaultValueInfo.IsDisallowed).
             bool cycleError = false;
-            var detector = new PocoType.PocoCycleAndDefaultVisitor();
+            var detector = new PocoCycleAndDefaultVisitor();
             foreach( var p in allPrimaries )
             {
                 detector.VisitRoot( monitor, p );

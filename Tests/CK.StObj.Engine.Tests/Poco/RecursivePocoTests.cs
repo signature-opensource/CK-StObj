@@ -67,6 +67,39 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
+        public interface ICommandOne : IPoco
+        {
+            string Name { get; set; }
+
+            ICommandTwo Friend { get; }
+        }
+
+        public interface ICommandTwo : IPoco
+        {
+            int Age { get; set; }
+
+            ICommandOne AnotherFriend { get; set; }
+
+            ICommandThree FriendThree { get; set; }
+        }
+
+        public interface ICommandThree : IPoco
+        {
+            int Age { get; set; }
+        }
+
+        [Test]
+        public void Indirect_one_level_recursion_is_detected_even_with_setters2()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ICommandOne ), typeof( ICommandTwo ), typeof( ICommandThree ) );
+            TestHelper.GetFailedResult( c,
+                """
+                Detected an instantiation cycle in Poco: 
+                '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.RecursivePocoTests.ICommandOne', field: 'Friend' => 
+                '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.RecursivePocoTests.ICommandTwo', field: 'AnotherFriend' => '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.RecursivePocoTests.ICommandOne'.
+                """ );
+        }
+
         public interface ICycleErrorA : IPoco
         {
             ICycleErrorB PoufB { get; }
