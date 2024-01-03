@@ -57,6 +57,8 @@ namespace CK.Setup
 
         IPocoType IPocoType.ITypeRef.Type => _type;
 
+        public object? Originator => null;
+
         public bool IsExchangeable => _type.IsExchangeable;
 
         public DefaultValueInfo DefaultValueInfo => _type.DefaultValueInfo;

@@ -8,14 +8,21 @@ namespace CK.Setup
         [AllowNull] IRecordPocoType _owner;
         IPocoType.ITypeRef? _nextRef;
         readonly string _name;
+        readonly object _originator;
         readonly int _index;
         readonly DefaultValueInfo _defInfo;
 
-        public RecordNamedField( IRecordPocoType record, int index, string name, IPocoType t, IPocoFieldDefaultValue? defaultValue = null )
+        public RecordNamedField( IRecordPocoType record,
+                                 int index,
+                                 string name,
+                                 IPocoType t,
+                                 IPocoFieldDefaultValue? defaultValue,
+                                 object originator )
         {
             _index = index;
             _name = name;
             _type = t;
+            _originator = originator;
             _owner = record;
             if( t.Kind != PocoTypeKind.Any )
             {
@@ -39,6 +46,8 @@ namespace CK.Setup
         public bool IsExchangeable => _type.IsExchangeable;
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
+
+        public object Originator => _originator;
 
         public bool HasOwnDefaultValue => !_defInfo.IsDisallowed && _defInfo.DefaultValue != _type.DefaultValueInfo.DefaultValue;
 

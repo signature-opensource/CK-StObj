@@ -1,6 +1,7 @@
+using System.Reflection;
+
 namespace CK.Setup
 {
-
     /// <summary>
     /// Common field attributes for <see cref="IPrimaryPocoField"/> and <see cref="IRecordPocoField"/>.
     /// </summary>
@@ -15,6 +16,15 @@ namespace CK.Setup
         /// Gets the field type.
         /// </summary>
         new IPocoType Type { get; }
+
+        /// <summary>
+        /// Gets the reflection object that defines this field. It can be a <see cref="PropertyInfo"/>, a <see cref="FieldInfo"/>
+        /// a <see cref="IPocoPropertyInfo"/> or a <see cref="ParameterInfo"/> for record struct with constructor parameters.
+        /// <para>
+        /// It is null for value tuple fields (anonymous records).
+        /// </para>
+        /// </summary>
+        object? Originator { get; }
 
         /// <summary>
         /// Gets whether this field is disallowed in a owner, always allowed or

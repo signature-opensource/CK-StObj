@@ -38,6 +38,8 @@ namespace CK.Setup
 
         IPocoType IPocoType.ITypeRef.Owner => _owner;
 
+        public object Originator => _p;
+
         public bool IsExchangeable => _fieldAccesskind != PocoFieldAccessKind.AbstractReadOnly && _type.IsExchangeable;
 
         public int Index => _p.Index;
