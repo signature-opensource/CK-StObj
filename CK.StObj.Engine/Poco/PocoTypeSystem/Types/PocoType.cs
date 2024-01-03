@@ -84,7 +84,7 @@ namespace CK.Setup
                 return NonNullable.IsWritableType( type.NonNullable );
             }
 
-            public override string ToString() => PocoType.ToString( this, true );
+            public override string ToString() => PocoType.ToString( this );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -180,7 +180,7 @@ namespace CK.Setup
                 return NonNullable.IsWritableType( type.NonNullable );
             }
 
-            public override string ToString() => PocoType.ToString( this, true );
+            public override string ToString() => PocoType.ToString( this );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
@@ -379,22 +379,9 @@ namespace CK.Setup
             return type == this || (!type.IsNullable && Type.IsAssignableFrom( type.Type ));
         }
 
-        static string ToString( IPocoType t, bool withOblivious )
-        {
-            var r = $"[{t.Kind}]{t.CSharpName}";
-            if( t.CSharpName != t.ImplTypeName )
-            {
-                r += $"/ {t.ImplTypeName}";
-            }
-            if( withOblivious )
-            {
-                if( t.IsOblivious ) r += " (IsOblivious)";
-                else r += $" (Oblivious: {ToString( t.ObliviousType, false )})";
-            }
-            return r;
-        }
+        static string ToString( IPocoType t ) => $"[{t.Kind}]{t.CSharpName}";
 
-        public override sealed string ToString() => $"[{_kind}]{_csharpName}";
+        public override sealed string ToString() => ToString( this );
 
         public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
