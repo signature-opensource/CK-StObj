@@ -135,7 +135,8 @@ namespace CK.Setup
 
             public override bool IsReadableType( IPocoType type )
             {
-                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                // type.IsNullable may be true: we don't care.
+                if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
                 if( type.Kind != PocoTypeKind.AnonymousRecord ) return false;
                 var aType = (RecordAnonType)type.NonNullable;
                 if( _fields.Length != aType._fields.Length ) return false;

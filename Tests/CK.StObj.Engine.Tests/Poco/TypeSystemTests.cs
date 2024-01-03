@@ -104,7 +104,53 @@ namespace CK.StObj.Engine.Tests.Poco
 
             var impl = ts.FindByType( p.FamilyInfo.PocoClass );
             impl.Should().BeSameAs( p );
+        }
 
+        [CKTypeDefiner]
+        public interface IAbstractPoco : IPoco
+        {
+            IWithList? Optional { get; }
+
+            IWithList Required { get; }
+
+            int Power { get; }
+        }
+
+        public interface IWillHaveOnlyRequired : IAbstractPoco
+        {
+        }
+
+        public interface IWithPower : IAbstractPoco
+        {
+            new int Power { get; set; }
+        }
+
+        public interface IWithOptional : IAbstractPoco
+        {
+            new IWithList? Optional { get; set; }
+        }
+
+        public interface IWithAll : IAbstractPoco
+        {
+            new int Power { get; set; }
+            new IWithList? Optional { get; set; }
+        }
+
+        [TestCase( typeof( IWillHaveOnlyRequired ), new[] { "Required" } )]
+        [TestCase( typeof( IWithPower ), new[] { "Required", "Power" } )]
+        [TestCase( typeof( IWithOptional ), new[] { "Required", "Optional" } )]
+        [TestCase( typeof( IWithAll ), new[] { "Required", "Optional", "Power" } )]
+        public void AbstractPocoField_test( Type impl, string[] names )
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IAbstractPoco ),
+                                                     typeof( IWithList ),
+                                                     impl );
+            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );
+            Debug.Assert( abs != null );
+            abs.Fields.Should().HaveCount( names.Length );
+            abs.Fields.Select( f => f.Name ).Should().BeEquivalentTo( names );
         }
 
         // Same structure but not same field names.

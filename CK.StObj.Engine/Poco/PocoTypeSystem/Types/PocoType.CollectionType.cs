@@ -146,7 +146,8 @@ namespace CK.Setup
 
             public override bool IsReadableType( IPocoType type )
             {
-                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                // type.IsNullable may be true: we don't care.
+                if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
                 // It must be the same kind of collection. Array is invariant.
                 if( type.Kind != Kind || Kind == PocoTypeKind.Array ) return false;
                 var cType = (ICollectionPocoType)type;
@@ -247,7 +248,8 @@ namespace CK.Setup
 
             public override bool IsReadableType( IPocoType type )
             {
-                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                // type.IsNullable may be true: we don't care.
+                if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
                 // It must be the same kind of collection. Array is invariant.
                 if( type.Kind != PocoTypeKind.Dictionary ) return false;
                 var cType = (ICollectionPocoType)type;

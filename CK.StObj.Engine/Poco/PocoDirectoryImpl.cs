@@ -128,7 +128,7 @@ namespace CK.Setup
                 foreach( var f in pocoType.Fields )
                 {
                     // Creates the backing field.
-                    if( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.AbstractReadOnly )
+                    if( f.FieldAccess == PocoFieldAccessKind.MutableReference || f.FieldAccess == PocoFieldAccessKind.AbstractReadOnly )
                     {
                         // Since it can be readonly, let it be.
                         fieldPart.Append( "readonly " );
@@ -148,7 +148,7 @@ namespace CK.Setup
                         tB.Append( "public " ).Append( f.Type.CSharpName ).Space().Append( f.Name );
                         if( f.FieldAccess != PocoFieldAccessKind.HasSetter )
                         {
-                            Debug.Assert( f.FieldAccess == PocoFieldAccessKind.MutableCollection || f.FieldAccess == PocoFieldAccessKind.AbstractReadOnly );
+                            Debug.Assert( f.FieldAccess == PocoFieldAccessKind.MutableReference || f.FieldAccess == PocoFieldAccessKind.AbstractReadOnly );
                             // Readonly and MutableCollection doesn't require the "get".
                             // This expose a public (read only) property that is required for MutableCollection but
                             // a little bit useless for pure ReadOnly. However we need an implementation of the property

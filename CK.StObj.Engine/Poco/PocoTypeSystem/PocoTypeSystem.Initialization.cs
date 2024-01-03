@@ -144,7 +144,7 @@ namespace CK.Setup
                                                     )
                                              ) );
             // Even if an error occurred, we can detect any instantiation cycle error and missing defaults
-            // (fields on errors have been filtered out).
+            // (fields on error have been filtered out).
             // We handle only cycle of IPoco since collection items are not instantiated
             // and records are struct: a cycle in struct is not possible.
             // If we support mutable classes as "class records", then this will have
@@ -164,6 +164,7 @@ namespace CK.Setup
                 // constructor code.
                 if( success ) p.ComputeCtorCode( StringBuilderPool );
             }
+            // If there's no error, bind the AbstractPoco fields.
             return success;
         }
 

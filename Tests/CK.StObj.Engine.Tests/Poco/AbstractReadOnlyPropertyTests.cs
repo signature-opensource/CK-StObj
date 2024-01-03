@@ -258,7 +258,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void abstract_properties_samples()
         {
-            var c = TestHelper.CreateStObjCollector( typeof(IHaveLotOfAbstractProperties), typeof( IImplementThem ), typeof( IRealCommand ) );
+            var c = TestHelper.CreateStObjCollector( typeof( IHaveLotOfAbstractProperties ), typeof( IImplementThem ), typeof( IRealCommand ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var d = s.GetRequiredService<PocoDirectory>();
             var impl = d.Create<IImplementThem>();

@@ -170,7 +170,7 @@ namespace CK.Setup
             public override bool IsReadableType( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
-                if( type == this || type.Kind == PocoTypeKind.Any ) return true;
+                if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
                 if( type.Kind == PocoTypeKind.SecondaryPoco )
                 {
                     return ((ISecondaryPocoType)type).PrimaryPocoType == this;

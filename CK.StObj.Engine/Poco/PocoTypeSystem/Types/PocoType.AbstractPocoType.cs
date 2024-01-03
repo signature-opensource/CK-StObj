@@ -3,6 +3,7 @@ using CK.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -16,7 +17,7 @@ namespace CK.Setup
                                                               PocoTypeSystem s,
                                                               Type tAbstract,
                                                               int abstractCount,
-                                                              IReadOnlyList<IPocoType> abstractAndPrimary )
+                                                              IPocoType[] abstractAndPrimary )
         {
             Debug.Assert( abstractAndPrimary.Take(abstractCount).All( t => t is IAbstractPocoType ) );
             Debug.Assert( abstractAndPrimary.Skip(abstractCount).All( t => t is IPrimaryPocoType ) );
@@ -49,6 +50,8 @@ namespace CK.Setup
 
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
+            public ImmutableArray<IAbstractPocoField> Fields => NonNullable.Fields;
+
             IAbstractPocoType IAbstractPocoType.Nullable => this;
 
             IAbstractPocoType IAbstractPocoType.NonNullable => NonNullable;
@@ -61,23 +64,24 @@ namespace CK.Setup
         // For all AbstractPoco except IPoco and IClosedPoco.
         internal sealed class AbstractPocoType1 : PocoType, IAbstractPocoType
         {
-            readonly IReadOnlyList<IPocoType> _abstractAndPrimary;
+            readonly IPocoType[] _abstractAndPrimary;
             readonly int _abstractCount;
-            int _exchangeableCount;
+            ImmutableArray<IAbstractPocoField> _fields;
             object _generalizations;
+            int _exchangeableCount;
 
             public AbstractPocoType1( IActivityMonitor monitor,
                                       PocoTypeSystem s,
                                       Type tAbstract,
                                       int abstractCount,
-                                      IReadOnlyList<IPocoType> abstractAndPrimary )
+                                      IPocoType[] abstractAndPrimary )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, t => new NullAbstractPoco( t ) )
             {
                 _abstractAndPrimary = abstractAndPrimary;
                 _abstractCount = abstractCount;
                 _generalizations = s;
                 int exchangeableCount = 0;
-                for( int i = 0; i < abstractAndPrimary.Count; i++ )
+                for( int i = abstractCount; i < abstractAndPrimary.Length; i++ )
                 {
                     IPocoType t = abstractAndPrimary[i];
                     _ = new PocoTypeRef( this, t, i );
@@ -93,7 +97,7 @@ namespace CK.Setup
             {
                 if( IsExchangeable )
                 {
-                    Debug.Assert( r.Owner == this && _abstractAndPrimary.Contains( r.Type ) );
+                    Throw.DebugAssert( r.Owner == this && _abstractAndPrimary.Skip( _abstractCount ).Contains( r.Type ) );
                     if( --_exchangeableCount == 0 )
                     {
                         SetNotExchangeable( monitor, "no more exchangeable Poco implement it." );
@@ -120,6 +124,35 @@ namespace CK.Setup
                                                     .ToArray();
                     }
                     return g;
+                }
+            }
+
+            public ImmutableArray<IAbstractPocoField> Fields
+            {
+                get
+                {
+                    if( _fields.IsDefault )
+                    {
+                        var props = Type.GetProperties();
+                        var b = ImmutableArray.CreateBuilder<IAbstractPocoField>( props.Length );
+                        foreach( var p in props )
+                        {
+                            var n = p.Name;
+                            var primaries = _abstractAndPrimary.AsSpan( _abstractCount );
+                            foreach( var tP in primaries )
+                            {
+                                var t = Unsafe.As<IPrimaryPocoType>( tP );
+                                var f = t.Fields.FirstOrDefault( f => f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && f.Name == n );
+                                if( f != null )
+                                {
+                                    b.Add( f );
+                                    break;
+                                }
+                            }
+                            _fields = b.Count == props.Length ? b.MoveToImmutable() : b.ToImmutableArray();
+                        }
+                    }
+                    return _fields;
                 }
             }
 
@@ -174,12 +207,6 @@ namespace CK.Setup
                 _primaries = primaries;
                 int exchanchableCount = 0;
                 int counAbstract = abstracts.Count;
-                for( int i = 0; i < counAbstract; i++ )
-                {
-                    IAbstractPocoType t = abstracts[i];
-                    _ = new PocoTypeRef( this, t, i );
-                    if( t.IsExchangeable ) ++exchanchableCount;
-                }
                 for( int i = 0; i < primaries.Count; i++ )
                 {
                     IPrimaryPocoType t = primaries[i];
@@ -196,7 +223,7 @@ namespace CK.Setup
             {
                 if( IsExchangeable )
                 {
-                    Debug.Assert( r.Owner == this && _abstracts.Contains( r.Type ) || _primaries.Contains( r.Type ) );
+                    Throw.DebugAssert( r.Owner == this && _primaries.Contains( r.Type ) );
                     if( --_exchangeableCount == 0 )
                     {
                         SetNotExchangeable( monitor, "no more exchangeable Poco implement it." );
@@ -211,6 +238,8 @@ namespace CK.Setup
             public IEnumerable<IAbstractPocoType> Generalizations => Array.Empty<IAbstractPocoType>();
 
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
+
+            public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 

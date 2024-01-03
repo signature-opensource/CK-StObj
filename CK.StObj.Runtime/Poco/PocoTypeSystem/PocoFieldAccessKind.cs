@@ -57,8 +57,8 @@ namespace CK.Setup
 
         /// <summary>
         /// The field has no setter and is a <see cref="ICollectionPocoType"/> (a list, set
-        /// or dictionary but not an array).
+        /// or dictionary but not an array) or a <see cref="IPrimaryPocoType"/> or a <see cref="ISecondaryPocoType"/>.
         /// </summary>
-        MutableCollection
+        MutableReference
     }
 }

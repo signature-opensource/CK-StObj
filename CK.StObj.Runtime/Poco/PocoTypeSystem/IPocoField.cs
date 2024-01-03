@@ -1,9 +1,10 @@
 namespace CK.Setup
 {
+
     /// <summary>
     /// Common field attributes for <see cref="IPrimaryPocoField"/> and <see cref="IRecordPocoField"/>.
     /// </summary>
-    public interface IPocoField : IPocoType.ITypeRef
+    public interface IPocoField : IAbstractPocoField, IPocoType.ITypeRef
     {
         /// <summary>
         /// Gets the owner of this field.
@@ -11,9 +12,9 @@ namespace CK.Setup
         new ICompositePocoType Owner { get; }
 
         /// <summary>
-        /// Gets the field name.
+        /// Gets the field type.
         /// </summary>
-        string Name { get; }
+        new IPocoType Type { get; }
 
         /// <summary>
         /// Gets whether this field is disallowed in a owner, always allowed or

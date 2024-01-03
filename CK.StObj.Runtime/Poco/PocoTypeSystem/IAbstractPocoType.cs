@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -39,6 +40,11 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         IEnumerable<IPrimaryPocoType> PrimaryPocoTypes { get; }
+
+        /// <summary>
+        /// Gets the fields.
+        /// </summary>
+        ImmutableArray<IAbstractPocoField> Fields { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IAbstractPocoType Nullable { get; }

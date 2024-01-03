@@ -16,7 +16,7 @@ namespace CK.Setup
         bool IsAbstractCollection { get; }
 
         /// <summary>
-        /// Gets whether this is a <see cref="IReadOnlyList{T}"/>, <see cref="IReadOnlySet{T}"/>, <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
+        /// Gets whether this is a <see cref="IReadOnlyList{T}"/>, <see cref="IReadOnlySet{T}"/> or <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
         /// <para>
         /// <see cref="IsAbstractCollection"/> is true and <see cref="MutableCollection"/> is not this instance.
         /// Such type can only appear in IPoco fields.

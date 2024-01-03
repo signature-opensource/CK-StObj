@@ -356,7 +356,8 @@ namespace CK.Setup
                         {
                             if( _bestReg.Kind != PocoTypeKind.Array )
                             {
-                                monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {_bestReg.Kind}, it must be a read only property: '{_bestReg.CSharpName} {p.Name} {{ get; }}'." );
+                                monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {_bestReg.Kind}, it must be a read only property: " +
+                                               $"'{_bestReg.CSharpName} {p.Name} {{ get; }}'." );
                                 return false;
                             }
                         }
@@ -368,38 +369,37 @@ namespace CK.Setup
                     }
                     return true;
                 }
-                // The property is a simple { get; } and not a record. It may be an "Abstract read only Property"
-                // or a real property that must be allocated.
+                // The property is a simple { get; } and not a record. It may be
+                //  - A non nullable "Abstract read only Property" that must be mapped to a writable property.
+                //  - Or a real property that must be allocated.
+                //  - Or a nullable property that is optional.
 
                 Throw.DebugAssert( reg.Kind is not PocoTypeKind.AnonymousRecord or PocoTypeKind.Record );
 
-                // Secondary and PrimaryPoco: real property.
-                var isSecondaryPoco = reg.Kind is PocoTypeKind.SecondaryPoco;
-                if( isSecondaryPoco )
+                // Secondary and PrimaryPoco, IList, ISet and IDictionary:
+                // real property if it is a non nullable and if it's not a IReadOnlyList/Set/Dictionary.
+                if( !reg.IsNullable )
                 {
-                    Throw.DebugAssert( reg.ObliviousType is IPrimaryPocoType );
-                    reg = reg.ObliviousType;
-                }
-                if( isSecondaryPoco || reg.Kind == PocoTypeKind.PrimaryPoco )
-                {
-                    return AddWritable( monitor, p, reg );
-                }
-                // IList, ISet or IDictionary: real property.
-                if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary
-                    && !((ICollectionPocoType)reg).IsAbstractReadOnly )
-                {
-                    _fieldAccessKind = PocoFieldAccessKind.MutableCollection;
-                    return AddWritable( monitor, p, reg );
+                    var isSecondaryPoco = reg.Kind is PocoTypeKind.SecondaryPoco;
+                    if( isSecondaryPoco )
+                    {
+                        Throw.DebugAssert( reg.ObliviousType is IPrimaryPocoType );
+                        reg = reg.ObliviousType;
+                    }
+                    if( isSecondaryPoco || reg.Kind == PocoTypeKind.PrimaryPoco )
+                    {
+                        _fieldAccessKind = PocoFieldAccessKind.MutableReference;
+                        return AddWritable( monitor, p, reg );
+                    }
+                    if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary
+                        && !((ICollectionPocoType)reg).IsAbstractReadOnly )
+                    {
+                        _fieldAccessKind = PocoFieldAccessKind.MutableReference;
+                        return AddWritable( monitor, p, reg );
+                    }
                 }
 
-                // An "Abstract Read Only property".
-                Throw.DebugAssert( reg.Kind is PocoTypeKind.Any
-                                               or PocoTypeKind.Basic
-                                               or PocoTypeKind.Enum
-                                               or PocoTypeKind.Array
-                                               or PocoTypeKind.AbstractPoco
-                                               or PocoTypeKind.UnionType
-                                    || (reg is ICollectionPocoType c && c.IsAbstractReadOnly) );
+                // An "Abstract Read Only property" or a nullable optional property.
                 if( _bestReg != null )
                 {
                     if( !CheckAbstractReadOnly( monitor, p, reg ) )

@@ -394,7 +394,7 @@ namespace CK.Setup
             return r;
         }
 
-        public override sealed string ToString() => ToString( this, true );
+        public override sealed string ToString() => $"[{_kind}]{_csharpName}";
 
         public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
