@@ -27,6 +27,8 @@ namespace CK.Setup
 
         public Type Type => _type;
 
+        public object UnderlyingObject => _type;
+
         public string Name => _type.Name;
 
         public string TypeCSharpName => _typeName ??= _type.ToCSharpName();

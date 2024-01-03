@@ -14,6 +14,12 @@ namespace CK.Setup
     public interface IExtMemberInfo
     {
         /// <summary>
+        /// Gets the underlying <see cref="PropertyInfo"/>, <see cref="FieldInfo"/>, <see cref="EventInfo"/>, <see cref="System.Type"/>
+        /// or <see cref="ParameterInfo"/>.
+        /// </summary>
+        object UnderlyingObject { get; }
+
+        /// <summary>
         /// Gets the Type that declares this member.
         /// <para>
         /// For <see cref="IExtParameterInfo"/> this is the type that declares the method.

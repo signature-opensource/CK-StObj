@@ -82,6 +82,8 @@ namespace CK.Setup
 
         public string Name => _name;
 
+        public object UnderlyingObject => _o;
+
         public Type Type => _type;
 
         public Type DeclaringType => _declaringType;

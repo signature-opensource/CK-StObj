@@ -22,7 +22,7 @@ namespace CK.Setup
         //      - A type is mapped to the oblivious IPocoType
         //      - Or is secondary IPoco interface type mapped to its ISecondaryPocoType (that is not oblivious).
         // - String:
-        //      - A string key indexes the IPocoType.CSharpName for all types (oblivious or not): nullabilties appear in the key.
+        //      - A string key indexes the IPocoType.CSharpName for all types (oblivious or not): nullabilities appear in the key.
         readonly Dictionary<object, IPocoType> _typeCache;
         readonly IPocoType _objectType;
         // Contains the not nullable types (PocoType instances are the non nullable types).
@@ -604,13 +604,20 @@ namespace CK.Setup
                                                   IStringBuilderPool stringPool )
             {
                 if( tField == null ) return null;
-                var defValue = FieldDefaultValue.CreateFromAttribute( monitor, stringPool, fInfo );
-                if( defValue == null && ctorParams != null )
+                object? originator = null;
+                FieldDefaultValue? defValue = null;
+                if( ctorParams != null )
                 {
                     var p = ctorParams.FirstOrDefault( p => p.Name == fInfo.Name );
-                    if( p != null ) defValue = FieldDefaultValue.CreateFromParameter( monitor, stringPool, p );
+                    if( p != null )
+                    {
+                        originator = p;
+                        defValue = FieldDefaultValue.CreateFromParameter( monitor, stringPool, p );
+                    }
                 }
-                return new RecordNamedField( r, idx, fInfo.Name, tField, defValue );
+                defValue ??= FieldDefaultValue.CreateFromAttribute( monitor, stringPool, fInfo );
+                originator ??= fInfo.UnderlyingObject;
+                return new RecordNamedField( r, idx, fInfo.Name, tField, defValue, originator );
             }
 
         }
