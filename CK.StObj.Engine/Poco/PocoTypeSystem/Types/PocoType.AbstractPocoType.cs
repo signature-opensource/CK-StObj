@@ -168,8 +168,8 @@ namespace CK.Setup
                                     break;
                                 }
                             }
-                            _fields = b.Count == props.Length ? b.MoveToImmutable() : b.ToImmutableArray();
                         }
+                        _fields = b.Count == props.Length ? b.MoveToImmutable() : b.ToImmutableArray();
                     }
                     return _fields;
                 }
