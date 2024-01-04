@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -127,6 +128,24 @@ namespace CK.Setup
                 }
             }
 
+            sealed class Field : IAbstractPocoField
+            {
+                readonly IPrimaryPocoField _field;
+                readonly PropertyInfo _prop;
+
+                public Field( IPrimaryPocoField f, PropertyInfo prop )
+                {
+                    _field = f;
+                    _prop = prop;
+                }
+
+                public string Name => _field.Name;
+
+                public IPocoType Type => _field.Type;
+
+                public PropertyInfo Originator => _prop;
+            }
+
             public ImmutableArray<IAbstractPocoField> Fields
             {
                 get
@@ -145,7 +164,7 @@ namespace CK.Setup
                                 var f = t.Fields.FirstOrDefault( f => f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && f.Name == n );
                                 if( f != null )
                                 {
-                                    b.Add( f );
+                                    b.Add( new Field( f, p ) );
                                     break;
                                 }
                             }

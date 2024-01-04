@@ -5,7 +5,7 @@ namespace CK.Setup
     /// <summary>
     /// Common field attributes for <see cref="IPrimaryPocoField"/> and <see cref="IRecordPocoField"/>.
     /// </summary>
-    public interface IPocoField : IAbstractPocoField, IPocoType.ITypeRef
+    public interface IPocoField : IPocoType.ITypeRef
     {
         /// <summary>
         /// Gets the owner of this field.
@@ -13,9 +13,9 @@ namespace CK.Setup
         new ICompositePocoType Owner { get; }
 
         /// <summary>
-        /// Gets the field type.
+        /// Gets the field name.
         /// </summary>
-        new IPocoType Type { get; }
+        string Name { get; }
 
         /// <summary>
         /// Gets the reflection object that defines this field. It can be a <see cref="PropertyInfo"/>, a <see cref="FieldInfo"/>
