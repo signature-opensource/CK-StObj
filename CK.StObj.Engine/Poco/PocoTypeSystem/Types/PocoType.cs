@@ -65,23 +65,23 @@ namespace CK.Setup
 
             public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
 
-            public bool IsReadableType( IPocoType type )
+            public bool CanReadFrom( IPocoType type )
             {
                 // We are on a nullable: if the the type is non nullable, it's over because we
                 // cannot read a non nullable from a nullable.
                 // Non nullable IsReadableType predicates don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return type.IsNullable && NonNullable.IsReadableType( type );
+                return type.IsNullable && NonNullable.CanReadFrom( type );
             }
 
-            public bool IsWritableType( IPocoType type )
+            public bool CanWriteTo( IPocoType type )
             {
                 // We are on a nullable type. Non nullable IsWritableType predicates rejects
                 // nullable type (a nullable cannot be set to a non nullable). We
                 // relay the non nullable type here and if it is writable then we, as a nullable
                 // type are writable regardless of type.IsNullable.
-                return NonNullable.IsWritableType( type.NonNullable );
+                return NonNullable.CanWriteTo( type.NonNullable );
             }
 
             public override string ToString() => PocoType.ToString( this );
@@ -161,23 +161,23 @@ namespace CK.Setup
 
             public bool IsExchangeable => NonNullable.IsExchangeable;
 
-            public bool IsReadableType( IPocoType type )
+            public bool CanReadFrom( IPocoType type )
             {
                 // We are on a nullable: if the the type is non nullable, it's over because we
                 // cannot read a non nullable from a nullable.
                 // Non nullable IsReadableType predicates don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return type.IsNullable && NonNullable.IsReadableType( type );
+                return type.IsNullable && NonNullable.CanReadFrom( type );
             }
 
-            public bool IsWritableType( IPocoType type )
+            public bool CanWriteTo( IPocoType type )
             {
                 // We are on a nullable type. Non nullable IsWritableType predicates rejects
                 // nullable type (a nullable cannot be set to a non nullable). We
                 // relay the non nullable type here and if it is writable then we, as a nullable
                 // type are writable regardless of type.IsNullable.
-                return NonNullable.IsWritableType( type.NonNullable );
+                return NonNullable.CanWriteTo( type.NonNullable );
             }
 
             public override string ToString() => PocoType.ToString( this );
@@ -363,7 +363,7 @@ namespace CK.Setup
         /// <summary>
         /// Simply calls <c>type.Type.IsAssignableFrom( Type )</c> at this level.
         /// </summary>
-        public virtual bool IsReadableType( IPocoType type )
+        public virtual bool CanReadFrom( IPocoType type )
         {
             Throw.DebugAssert( "Null implementations override this.", !IsNullable );
             Throw.DebugAssert( "Value Type nullable <: not nullable is kindly handled by .Net.", typeof( int? ).IsAssignableFrom( typeof( int ) ) );
@@ -373,7 +373,7 @@ namespace CK.Setup
         /// <summary>
         /// Checks that <paramref name="type"/> is not nullable and calls <c>Type.IsAssignableFrom( type.Type )</c> at this level.
         /// </summary>
-        public virtual bool IsWritableType( IPocoType type )
+        public virtual bool CanWriteTo( IPocoType type )
         {
             Debug.Assert( !IsNullable, "Null implementations override this." );
             return type == this || (!type.IsNullable && Type.IsAssignableFrom( type.Type ));

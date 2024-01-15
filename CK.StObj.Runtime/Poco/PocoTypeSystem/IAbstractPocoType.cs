@@ -1,5 +1,7 @@
+using CK.Core;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
@@ -27,6 +29,22 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         IEnumerable<IAbstractPocoType> Generalizations { get; }
+
+        /// <summary>
+        /// Gets whether this interface is a generic type.
+        /// </summary>
+        [MemberNotNullWhen( true, nameof( GenericTypeDefinition ) )]
+        bool IsGenericType { get; }
+
+        /// <summary>
+        /// Gets the generic type definition if this interface is a generic type.
+        /// </summary>
+        IPocoGenericTypeDefinition? GenericTypeDefinition { get; }
+
+        /// <summary>
+        /// Gets a non empty list of generic arguments if <see cref="IsGenericType"/> is true.
+        /// </summary>
+        IReadOnlyList<(IPocoGenericParameter Parameter, IPocoType Type)> GenericArguments { get; }
 
         /// <summary>
         /// Gets the set of <see cref="IPrimaryPocoType"/> of

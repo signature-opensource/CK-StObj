@@ -23,8 +23,21 @@ namespace CK.Setup
         /// Gets the <see cref="IAbstractPocoType"/> that this Poco supports,
         /// excluding the <see cref="CK.Core.IPoco"/> and the <see cref="CK.Core.IClosedPoco"/>.
         /// This is the projection of the <see cref="IPocoFamilyInfo.OtherInterfaces"/>.
+        /// <para>
+        /// The returned types are nullable if this one is the <see cref="Nullable"/>.
+        /// </para>
         /// </summary>
         IReadOnlyList<IAbstractPocoType> AbstractTypes { get; }
+
+        /// <summary>
+        /// Gets the minimal set of <see cref="AbstractTypes"/>, considering inheritance,
+        /// generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/> and
+        /// <see cref="IPocoType.CanWriteTo(IPocoType)"/>.
+        /// <para>
+        /// The returned types are nullable if this one is the <see cref="Nullable"/>.
+        /// </para>
+        /// </summary>
+        IEnumerable<IAbstractPocoType> MinimalAbstractTypes { get; }
 
         /// <summary>
         /// Gets the extension interfaces with the same nullability as this one.

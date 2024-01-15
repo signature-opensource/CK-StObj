@@ -89,7 +89,7 @@ namespace CK.Setup
                                          PocoTypeKind kind,
                                          IPocoType itemType,
                                          ICollectionPocoType? obliviousType )
-                : base( s, tCollection, csharpName, kind, t => new NullCollection( t ) )
+                : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
                 _obliviousType = obliviousType ?? this;
@@ -138,13 +138,13 @@ namespace CK.Setup
 
             #endregion
 
-            public override bool IsWritableType( IPocoType type )
+            public override bool CanWriteTo( IPocoType type )
             {
                 // Poco Collections are implementations. We don't support any contravariance.
                 return type == this;
             }
 
-            public override bool IsReadableType( IPocoType type )
+            public override bool CanReadFrom( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
@@ -154,11 +154,12 @@ namespace CK.Setup
                 // Covariance applies to IList or ISet.
                 if( cType.IsAbstractCollection )
                 {
-                    return ItemTypes[0].IsReadableType( cType.ItemTypes[0] );
+                    return ItemTypes[0].CanReadFrom( cType.ItemTypes[0] );
                 }
                 Throw.DebugAssert( "Otherwise, type == this.", ItemTypes[0] != cType.ItemTypes[0] );
-                // Save the non nullable <: nullable type value
-                // but only for reference types.
+                // Both are List<> or HashSet<>.
+                // Save the non nullable <: nullable type value but only for reference types.
+                // Allow List<object?> = List<object> but not List<int?> = List<int>.
                 var tItem = ItemTypes[0];
                 if( !tItem.Type.IsValueType )
                 {
@@ -189,7 +190,7 @@ namespace CK.Setup
                                    IPocoType keyType,
                                    IPocoType valueType,
                                    ICollectionPocoType? obliviousType )
-                : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, t => new NullCollection( t ) )
+                : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, static t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
                 Debug.Assert( !keyType.IsNullable );
@@ -240,13 +241,13 @@ namespace CK.Setup
 
             ICollectionPocoType ICollectionPocoType.NonNullable => this;
 
-            public override bool IsWritableType( IPocoType type )
+            public override bool CanWriteTo( IPocoType type )
             {
                 // Poco Collections are implementations. We don't support any contravariance.
                 return type == this;
             }
 
-            public override bool IsReadableType( IPocoType type )
+            public override bool CanReadFrom( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
@@ -257,7 +258,7 @@ namespace CK.Setup
                 if( ItemTypes[0] != cType.ItemTypes[0] ) return false;
                 if( cType.IsAbstractCollection )
                 {
-                    return ItemTypes[1].IsReadableType( cType.ItemTypes[1] );
+                    return ItemTypes[1].CanReadFrom( cType.ItemTypes[1] );
                 }
                 Throw.DebugAssert( "Otherwise, type == this.", ItemTypes[1] != cType.ItemTypes[1] );
                 // Save the non nullable <: nullable type value
@@ -283,7 +284,7 @@ namespace CK.Setup
                                            Type tCollection,
                                            string csharpName,
                                            ICollectionPocoType mutable )
-                : base( s, tCollection, csharpName, mutable.Kind, t => new NullCollection( t ), isExchangeable: false )
+                : base( s, tCollection, csharpName, mutable.Kind, static t => new NullCollection( t ), isExchangeable: false )
             {
                 _mutable = mutable;
             }
@@ -300,9 +301,9 @@ namespace CK.Setup
 
             public override ICollectionPocoType ObliviousType => _mutable.ObliviousType;
 
-            public override bool IsReadableType( IPocoType type ) => _mutable.IsReadableType( type );
+            public override bool CanReadFrom( IPocoType type ) => _mutable.CanReadFrom( type );
 
-            public override bool IsWritableType( IPocoType type ) => false;
+            public override bool CanWriteTo( IPocoType type ) => false;
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

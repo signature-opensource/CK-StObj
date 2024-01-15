@@ -167,6 +167,5 @@ namespace CK.StObj.Engine.Tests.Poco
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
 
-
     }
 }

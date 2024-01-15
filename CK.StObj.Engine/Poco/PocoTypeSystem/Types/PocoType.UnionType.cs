@@ -75,7 +75,7 @@ namespace CK.Setup
                         typeof(object),
                         "object",
                         PocoTypeKind.UnionType,
-                        t => new Null( t ) )
+                        static t => new Null( t ) )
             {
                 _obliviousType = obliviousType ?? this;
                 _allowedTypes = allowedTypes;
@@ -102,16 +102,16 @@ namespace CK.Setup
                 }
             }
 
-            public override bool IsWritableType( IPocoType type )
+            public override bool CanWriteTo( IPocoType type )
             {
-                return type == this || _allowedTypes.Any( a => a.IsWritableType( type ) );
+                return type == this || _allowedTypes.Any( a => a.CanWriteTo( type ) );
             }
 
-            public override bool IsReadableType( IPocoType type )
+            public override bool CanReadFrom( IPocoType type )
             {
                 if( type == this || type.Kind == PocoTypeKind.Any ) return true;
                 // To allow the type to be readable, it must be readable.
-                return type.IsNullable && _allowedTypes.Any( a => a.IsReadableType( type ) );
+                return type.IsNullable && _allowedTypes.Any( a => a.CanReadFrom( type ) );
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );

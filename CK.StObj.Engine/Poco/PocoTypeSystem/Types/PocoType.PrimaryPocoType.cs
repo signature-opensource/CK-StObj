@@ -13,7 +13,7 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        public static PrimaryPocoType CreatePrimaryPoco( PocoTypeSystem s, IPocoFamilyInfo family )
+        internal static PrimaryPocoType CreatePrimaryPoco( PocoTypeSystem s, IPocoFamilyInfo family )
         {
             return new PrimaryPocoType( s, family, family.PrimaryInterface.PocoInterface );
         }
@@ -57,6 +57,8 @@ namespace CK.Setup
 
                 public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
 
+                public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => NonNullable.MinimalAbstractTypes.Select( a => a.Nullable );
+
                 IAbstractPocoType IReadOnlyList<IAbstractPocoType>.this[int index] => NonNullable.AbstractTypes[index].Nullable;
 
                 IEnumerator<IAbstractPocoType> IEnumerable<IAbstractPocoType>.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();
@@ -66,13 +68,15 @@ namespace CK.Setup
 
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoFamilyInfo _familyInfo;
+            [AllowNull] IAbstractPocoType[] _abstractTypes;
             [AllowNull] PrimaryPocoField[] _fields;
             string _ctorCode;
+            IReadOnlyList<IAbstractPocoType>? _minimalAbstractTypes;
 
             public PrimaryPocoType( PocoTypeSystem s,
                                     IPocoFamilyInfo family,
                                     Type primaryInterface )
-                : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.PrimaryPoco, t => new Null( t ) )
+                : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.PrimaryPoco, static t => new Null( t ) )
             {
                 _familyInfo = family;
                 // The full name is the ImplTypeName. This works because the generated type is not a nested type (and not a generic of course).
@@ -167,7 +171,7 @@ namespace CK.Setup
                 }
             }
 
-            public override bool IsReadableType( IPocoType type )
+            public override bool CanReadFrom( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
                 if( type.NonNullable == this || type.Kind == PocoTypeKind.Any ) return true;
@@ -178,21 +182,58 @@ namespace CK.Setup
                 if( type.Kind == PocoTypeKind.AbstractPoco )
                 {
                     var t = type.Type;
-                    return t == typeof(IPoco)
+                    return t == typeof( IPoco )
                            || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
                            || FamilyInfo.OtherInterfaces.Any( i => i == t );
                 }
                 return false;
             }
 
-            public override bool IsWritableType( IPocoType type )
+            public override bool CanWriteTo( IPocoType type )
             {
                 return type == this
                        || (!type.IsNullable && FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type ));
             }
 
-            [AllowNull]
-            public IReadOnlyList<IAbstractPocoType> AbstractTypes { get; internal set; }
+            public IReadOnlyList<IAbstractPocoType> AbstractTypes => _abstractTypes;
+
+            internal void SetAbstractTypes( IAbstractPocoType[] types ) => _abstractTypes = types;
+
+            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes
+            {
+                get
+                {
+                    if( _minimalAbstractTypes == null )
+                    {
+                        var result = new List<IAbstractPocoType>( _abstractTypes );
+                        for( int i = 0; i < result.Count; i++ )
+                        {
+                            var a = result[i];
+                            int j = 0;
+                            while( j < i )
+                            {
+                                if( result[j].CanReadFrom( a ) )
+                                {
+                                    result.RemoveAt( i-- );
+                                    goto skip;
+                                }
+                                ++j;
+                            }
+                            while( ++j < result.Count )
+                            {
+                                if( result[j].CanReadFrom( a ) )
+                                {
+                                    result.RemoveAt( i-- );
+                                    goto skip;
+                                }
+                            }
+                            skip:;
+                        }
+                        _minimalAbstractTypes = result;
+                    }
+                    return _minimalAbstractTypes;
+                }
+            }
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
 

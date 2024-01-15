@@ -12,7 +12,7 @@ namespace CK.Core
     /// </para>
     /// </summary>
     [AttributeUsage( AttributeTargets.Class|AttributeTargets.Method|AttributeTargets.Property|AttributeTargets.Event, AllowMultiple = false, Inherited = false )]
-    public class AutoImplementationClaimAttribute : Attribute
+    public sealed class AutoImplementationClaimAttribute : Attribute
     {
     }
 }

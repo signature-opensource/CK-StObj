@@ -65,6 +65,14 @@ namespace CK.Setup
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
         T? FindByType<T>( Type type ) where T : class, IPocoType;
+
+        /// <summary>
+        /// Finds an open generic definition of <see cref="IAbstractPocoType"/>.
+        /// The type must be used by at least one <see cref="IPocoGenericTypeDefinition.Instances"/>.
+        /// </summary>
+        /// <param name="type">Type to find. Must be an open generic type (<c>typeof( ICommand<> )</c>).</param>
+        /// <returns>The type definition or null.</returns>
+        IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type );
         
         /// <summary>
         /// Forbids a type to be <see cref="IPocoType.IsExchangeable"/>. This

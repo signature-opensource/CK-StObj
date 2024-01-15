@@ -286,7 +286,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                                          typeof( ISubBestTest ),
                                                          typeof( IRootAbsoluteBestTest ),
                                                          typeof( IRootBuggyOtherFamily ) );
-                TestHelper.GetFailedResult( c, "IPoco 'CK.StObj.Engine.Tests.Poco.PocoTests+IDefBase' has been excluded or not registered." );
+                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub': Type must be 'CK.StObj.Engine.Tests.Poco.PocoTests.ISubTest' since 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub' defines it." );
             }
 
             // With IDefBase Poco registration:

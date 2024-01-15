@@ -6,8 +6,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
+using static CK.Core.CheckedWriteStream;
 
 namespace CK.Setup
 {
@@ -24,6 +26,8 @@ namespace CK.Setup
         // - String:
         //      - A string key indexes the IPocoType.CSharpName for all types (oblivious or not): nullabilities appear in the key.
         readonly Dictionary<object, IPocoType> _typeCache;
+        // Opne generic types collector.
+        readonly Dictionary<Type, PocoType.PocoGenericTypeDefinition> _typeDefinitions;
         readonly IPocoType _objectType;
         // Contains the not nullable types (PocoType instances are the non nullable types).
         readonly List<PocoType> _allTypes;
@@ -42,6 +46,7 @@ namespace CK.Setup
             _allTypes = new List<PocoType>( 8192 );
             _exposedAllTypes = new HalfTypeList( _allTypes );
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
+            _typeDefinitions = new Dictionary<Type, PocoType.PocoGenericTypeDefinition>();
             _typeCache = new Dictionary<object, IPocoType>();
             RegValueType( this, _typeCache, typeof( bool ), typeof( bool? ), "bool" );
             RegValueType( this, _typeCache, typeof( int ), typeof( int? ), "int" );
@@ -129,6 +134,11 @@ namespace CK.Setup
             return _typeCache.GetValueOrDefault( type ) as T;
         }
 
+        public IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type )
+        {
+            return _typeDefinitions.GetValueOrDefault( type );
+        }
+
         public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )
         {
             Throw.CheckState( !IsLocked );
@@ -186,7 +196,7 @@ namespace CK.Setup
             }
             if( t.IsGenericType )
             {
-                return OnCollection( monitor, nType, ctx );
+                return OnGenericReferenceType( monitor, nType, ctx );
             }
             if( _typeCache.TryGetValue( t, out var result ) )
             {
@@ -203,9 +213,20 @@ namespace CK.Setup
                                    || result.Type == typeof( CodeString ) );
                 return nType.IsNullable ? result.Nullable : result;
             }
-            // If it's a IPoco we should have found it: it has been excluded or not registered.
+            // If it's a IPoco we should have found it: it has been excluded or not registered...
+            // ...OR it's a IPoco interface that has NO implementation but appears (otherwise we won't be here)
+            // as a property or a generic argument.
+            // Instead of using the TypeDetector to check whether this is an orphan abstract (and not an excluded one),
+            // we consider it to be an Orphan Abstract. This has dide effect: this may "transform" a real property
+            // into an abstract one... And this is perfectly fine: if everything is evetually successfully resolved
+            // the system is valid.
+            // If the exluded type is used at a place that requires an instance, this will fail.
             if( typeof( IPoco ).IsAssignableFrom( t ) )
             {
+                if( t.IsInterface )
+                {
+                    return OnAbstractPoco( monitor, nType, null );
+                }
                 monitor.Error( $"IPoco '{t}' has been excluded or not registered." );
             }
             else
@@ -215,7 +236,7 @@ namespace CK.Setup
             return null;
         }
 
-        IPocoType? OnCollection( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
+        IPocoType? OnGenericReferenceType( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
         {
             var t = nType.Type;
             var tGen = t.GetGenericTypeDefinition();
@@ -247,9 +268,63 @@ namespace CK.Setup
             {
                 return RegisterReadOnlyDictionary( monitor, nType, ctx );
             }
-            // The end...
-            monitor.Error( $"{ctx}: Unsupported Poco generic type: '{t:C}'." );
+            // Generic AbstractPoco is the last chance...
+            if( t.IsInterface && typeof(IPoco).IsAssignableFrom( t ) )
+            {
+                return OnAbstractPoco( monitor, nType, tGen );
+            }
+            monitor.Error( $"{ctx}: Unsupported Poco generic type '{t:C}'." );
             return null;
+        }
+
+        IPocoType? OnAbstractPoco( IActivityMonitor monitor, IExtNullabilityInfo nType, Type? tGen )
+        {
+            var result = OnAbstractPoco( monitor, nType.Type, tGen );
+            return result == null
+                    ? null
+                    : nType.IsNullable
+                        ? result.Nullable
+                        : result;
+        }
+
+        // This may be an already registered one because there's at least one implementation for
+        // it or an orphan one.
+        IPocoType? OnAbstractPoco( IActivityMonitor monitor, Type t, Type? tGen )
+        {
+            // If the interface is not registered, it means that there's no implementation
+            // for this. It is a warning, not an error otherwise we'll prevent "partial system"
+            // to run.
+            if( !_typeCache.TryGetValue( t, out var result ) )
+            {
+                monitor.Warn( $"Abstract IPoco interface '{t:N}' is not implemented by any registered Poco. It won't be exchangeable." );
+                bool success = true;
+                var generalizations = new List<IAbstractPocoType>();
+                foreach( var type in t.GetInterfaces() )
+                {
+                    if( typeof(IPoco).IsAssignableFrom( type ) )
+                    {
+                        var g = OnAbstractPoco( monitor, type, type.IsGenericType ? type.GetGenericTypeDefinition() : null );
+                        if( g != null )
+                        {
+                            generalizations.Add( Unsafe.As<IAbstractPocoType>( g ) );
+                        }
+                        else success = false;
+                    }
+                }
+                PocoType.PocoGenericTypeDefinition? typeDefinition = null; 
+                (IPocoGenericParameter Parameter, IPocoType Type)[]? arguments = null;
+                if( tGen != null )
+                {
+                    typeDefinition = EnsureTypeDefinition( tGen );
+                    arguments = typeDefinition.CreateArguments( monitor, this, t );
+                    success &= arguments != null;
+                }
+                if( !success ) return null;
+                result = PocoType.CreateOrphanAbstractPoco( this, t, generalizations, typeDefinition, arguments );
+                _typeCache.Add( t, result );
+            }
+            Throw.DebugAssert( result is IAbstractPocoType );
+            return result;
         }
 
         IPocoType? OnArray( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )

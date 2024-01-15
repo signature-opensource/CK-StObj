@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System;
+using System.Reflection.Metadata;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -73,7 +75,7 @@ namespace CK.Setup
             // An abstract interface can extend other extract interfaces, we
             // must track this.
             // This is a DAG, we don't need a 2 step process and can use directly
-            // the cache.
+            // the cache a simple recusive EnsureAbstract does the job.
             var abstractTypes = poco.OtherInterfaces.Keys;
             var allAbstracts = new List<IAbstractPocoType>();
             var closedAbstracts = new List<IAbstractPocoType>();
@@ -82,9 +84,9 @@ namespace CK.Setup
                 EnsureAbstract( monitor, poco, abstractTypes, tInterface, allAbstracts, closedAbstracts );
             }
             // Third, registers the IPoco and IClosedPoco full sets.
-            var all = PocoType.CreateAbstractPoco( monitor, this, typeof( IPoco ), allAbstracts.ToArray(), allPrimaries );
+            var all = PocoType.CreateAbstractPocoBaseOrClosed( monitor, this, typeof( IPoco ), allAbstracts, allPrimaries );
             _typeCache.Add( typeof( IPoco ), all );
-            var allClosed = PocoType.CreateAbstractPoco( monitor, this, typeof( IClosedPoco ), closedAbstracts.ToArray(), closedPrimaries );
+            var allClosed = PocoType.CreateAbstractPocoBaseOrClosed( monitor, this, typeof( IClosedPoco ), closedAbstracts, closedPrimaries );
             _typeCache.Add( typeof( IClosedPoco ), allClosed );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
             foreach( var p in allPrimaries )
@@ -98,16 +100,23 @@ namespace CK.Setup
                     {
                         abstracts[idx++] = (IAbstractPocoType)_typeCache[a];
                     }
-                    p.AbstractTypes = abstracts;
+                    p.SetAbstractTypes( abstracts );
                 }
                 else
                 {
-                    p.AbstractTypes = Array.Empty<IAbstractPocoType>();
+                    p.SetAbstractTypes( Array.Empty<IAbstractPocoType>() );
                 }
+            }
+            // Now that all IPoco are known, we can resolve the generic type definition parameters:
+            // these parameters are used for covariance detection, they must be resolved
+            // before analyzing fields.
+            bool success = true;
+            foreach( var (t,d) in _typeDefinitions )
+            {
+                success &= d.InitializeGenericInstanceArguments( this, monitor );
             }
             // Now that all IPoco are known, we can set their fields.
             var builder = new PocoPropertyBuilder( this );
-            bool success = true;
             foreach( var p in allPrimaries )
             {
                 Debug.Assert( p.FamilyInfo != null );
@@ -125,7 +134,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    // We are on an error path. This Poco is invalid, the whole type system will be.
+                    // We are on an error path. This Poco is invalid, the whole type system will also be invalid.
                     // We can be inefficient here!
                     fields = fields.Where( f => f != null ).ToArray();
                     p.SetFields( monitor, fields );
@@ -189,7 +198,10 @@ namespace CK.Setup
                 {
                     subTypes[i++] = _typeCache[f.PrimaryInterface.PocoInterface];
                 }
-                var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes );
+                PocoType.PocoGenericTypeDefinition? typeDefinition = tAbstract.IsGenericType
+                                                                        ? EnsureTypeDefinition( tAbstract.GetGenericTypeDefinition() )
+                                                                        : null;
+                var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes, typeDefinition );
                 result = a;
                 _typeCache.Add( tAbstract, a );
                 allAbstracts.Add( a );
@@ -198,7 +210,17 @@ namespace CK.Setup
             return result;
         }
 
-
+        PocoType.PocoGenericTypeDefinition EnsureTypeDefinition( Type tGen )
+        {
+            Throw.DebugAssert( tGen.IsInterface && tGen.IsGenericTypeDefinition );
+            if( !_typeDefinitions.TryGetValue( (Type)tGen, out var typeDefinition ) )
+            {
+                Throw.DebugAssert( (bool)(tGen.ContainsGenericParameters && tGen.GetGenericArguments().Length > 0) );
+                typeDefinition = PocoType.CreateGenericTypeDefinition( (Type)tGen );
+                _typeDefinitions.Add( (Type)tGen, typeDefinition );
+            }
+            return typeDefinition;
+        }
     }
 
 }

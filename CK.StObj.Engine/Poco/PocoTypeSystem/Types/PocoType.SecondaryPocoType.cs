@@ -6,7 +6,7 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        public static SecondaryPocoType CreateSecondaryPocoType( PocoTypeSystem s, Type interfaceType, PrimaryPocoType primary )
+        internal static SecondaryPocoType CreateSecondaryPocoType( PocoTypeSystem s, Type interfaceType, PrimaryPocoType primary )
         {
             return new SecondaryPocoType( s, interfaceType, primary );
         }
@@ -39,7 +39,7 @@ namespace CK.Setup
             public SecondaryPocoType( PocoTypeSystem s,
                                       Type interfaceType,
                                       PrimaryPocoType primary )
-                : base( s, interfaceType, interfaceType.ToCSharpName(), PocoTypeKind.SecondaryPoco, t => new Null( t ) )
+                : base( s, interfaceType, interfaceType.ToCSharpName(), PocoTypeKind.SecondaryPoco, static t => new Null( t ) )
             {
                 _primary = primary;
                 _nextRef = ((PocoType)primary.NonNullable).AddBackRef( this );
@@ -47,14 +47,14 @@ namespace CK.Setup
 
             public override DefaultValueInfo DefaultValueInfo => _primary.DefaultValueInfo;
 
-            public override bool IsReadableType( IPocoType type )
+            public override bool CanReadFrom( IPocoType type )
             {
-                return _primary.IsReadableType( type );
+                return _primary.CanReadFrom( type );
             }
 
-            public override bool IsWritableType( IPocoType type )
+            public override bool CanWriteTo( IPocoType type )
             {
-                return _primary.IsWritableType( type );
+                return _primary.CanWriteTo( type );
             }
 
             protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
