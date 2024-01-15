@@ -193,41 +193,7 @@ namespace CK.Setup
 
             internal void SetAbstractTypes( IAbstractPocoType[] types ) => _abstractTypes = types;
 
-            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes
-            {
-                get
-                {
-                    if( _minimalAbstractTypes == null )
-                    {
-                        var result = new List<IAbstractPocoType>( _abstractTypes );
-                        for( int i = 0; i < result.Count; i++ )
-                        {
-                            var a = result[i];
-                            int j = 0;
-                            while( j < i )
-                            {
-                                if( result[j].CanReadFrom( a ) )
-                                {
-                                    result.RemoveAt( i-- );
-                                    goto skip;
-                                }
-                                ++j;
-                            }
-                            while( ++j < result.Count )
-                            {
-                                if( result[j].CanReadFrom( a ) )
-                                {
-                                    result.RemoveAt( i-- );
-                                    goto skip;
-                                }
-                            }
-                            skip:;
-                        }
-                        _minimalAbstractTypes = result;
-                    }
-                    return _minimalAbstractTypes;
-                }
-            }
+            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= AbstractPocoType.ComputeMinimal( _abstractTypes );
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
 

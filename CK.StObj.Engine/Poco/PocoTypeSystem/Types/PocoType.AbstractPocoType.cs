@@ -59,6 +59,8 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> Generalizations => NonNullable.Generalizations.Select( a => a.Nullable );
 
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => NonNullable.MinimalGeneralizations.Select( a => a.Nullable );
+
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => NonNullable.PrimaryPocoTypes.Select( a => a.Nullable );
 
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
@@ -96,6 +98,7 @@ namespace CK.Setup
             List<OrphanAbstractPoco>? _orphanSpecializations;
             ImmutableArray<IAbstractPocoField> _fields;
             object _generalizations;
+            List<IAbstractPocoType>? _minimalGeneralizations;
             int _exchangeableCount;
 
             public AbstractPocoType( IActivityMonitor monitor,
@@ -175,6 +178,38 @@ namespace CK.Setup
                     return g;
                 }
             }
+
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= ComputeMinimal( Generalizations );
+
+            internal static List<IAbstractPocoType> ComputeMinimal( IEnumerable<IAbstractPocoType> abstractTypes )
+            {
+                var result = new List<IAbstractPocoType>( abstractTypes );
+                for( int i = 0; i < result.Count; i++ )
+                {
+                    var a = result[i];
+                    int j = 0;
+                    while( j < i )
+                    {
+                        if( result[j].CanReadFrom( a ) )
+                        {
+                            result.RemoveAt( i-- );
+                            goto skip;
+                        }
+                        ++j;
+                    }
+                    while( ++j < result.Count )
+                    {
+                        if( result[j].CanReadFrom( a ) )
+                        {
+                            result.RemoveAt( i-- );
+                            goto skip;
+                        }
+                    }
+                    skip:;
+                }
+                return result;
+            }
+
 
             sealed class Field : IAbstractPocoField
             {
@@ -322,6 +357,8 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> Generalizations => Array.Empty<IAbstractPocoType>();
 
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => Array.Empty<IAbstractPocoType>();
+
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
@@ -351,6 +388,7 @@ namespace CK.Setup
             readonly IReadOnlyList<IAbstractPocoType> _generalizations;
             readonly (IPocoGenericParameter Parameter, IPocoType Type)[] _genericArguments;
             List<OrphanAbstractPoco>? _orphanSpecializations;
+            List<IAbstractPocoType>? _minimalGeneralizations;
 
             public OrphanAbstractPoco( PocoTypeSystem s,
                                        Type tAbstract,
@@ -376,6 +414,8 @@ namespace CK.Setup
             void IAbstractPocoImpl.AddOrphanSpecializations( OrphanAbstractPoco s ) => (_orphanSpecializations ??= new List<OrphanAbstractPoco>()).Add( s );
 
             public IEnumerable<IAbstractPocoType> Generalizations => _generalizations;
+
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= AbstractPocoType.ComputeMinimal( _generalizations );
 
             public bool IsGenericType => _genericTypeDefinition != null;
 

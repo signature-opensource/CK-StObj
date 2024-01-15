@@ -31,6 +31,16 @@ namespace CK.Setup
         IEnumerable<IAbstractPocoType> Generalizations { get; }
 
         /// <summary>
+        /// Gets the minimal set of <see cref="Generalizations"/>, considering inheritance,
+        /// generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/> and
+        /// <see cref="IPocoType.CanWriteTo(IPocoType)"/>.
+        /// <para>
+        /// The returned types are nullable if this one is the <see cref="Nullable"/>.
+        /// </para>
+        /// </summary>
+        IEnumerable<IAbstractPocoType> MinimalGeneralizations { get; }
+
+        /// <summary>
         /// Gets whether this interface is a generic type.
         /// </summary>
         [MemberNotNullWhen( true, nameof( GenericTypeDefinition ) )]
