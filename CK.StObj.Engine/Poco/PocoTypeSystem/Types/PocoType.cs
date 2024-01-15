@@ -75,14 +75,7 @@ namespace CK.Setup
                 return type.IsNullable && NonNullable.CanReadFrom( type );
             }
 
-            public bool CanWriteTo( IPocoType type )
-            {
-                // We are on a nullable type. Non nullable IsWritableType predicates rejects
-                // nullable type (a nullable cannot be set to a non nullable). We
-                // relay the non nullable type here and if it is writable then we, as a nullable
-                // type are writable regardless of type.IsNullable.
-                return NonNullable.CanWriteTo( type.NonNullable );
-            }
+            public bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
 
             public override string ToString() => PocoType.ToString( this );
 
@@ -171,14 +164,7 @@ namespace CK.Setup
                 return type.IsNullable && NonNullable.CanReadFrom( type );
             }
 
-            public bool CanWriteTo( IPocoType type )
-            {
-                // We are on a nullable type. Non nullable IsWritableType predicates rejects
-                // nullable type (a nullable cannot be set to a non nullable). We
-                // relay the non nullable type here and if it is writable then we, as a nullable
-                // type are writable regardless of type.IsNullable.
-                return NonNullable.CanWriteTo( type.NonNullable );
-            }
+            public bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
 
             public override string ToString() => PocoType.ToString( this );
 
@@ -370,14 +356,7 @@ namespace CK.Setup
             return type.Kind == PocoTypeKind.Any || type.NonNullable == this || type.Type.IsAssignableFrom( Type );
         }
 
-        /// <summary>
-        /// Checks that <paramref name="type"/> is not nullable and calls <c>Type.IsAssignableFrom( type.Type )</c> at this level.
-        /// </summary>
-        public virtual bool CanWriteTo( IPocoType type )
-        {
-            Debug.Assert( !IsNullable, "Null implementations override this." );
-            return type == this || (!type.IsNullable && Type.IsAssignableFrom( type.Type ));
-        }
+        public virtual bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
 
         static string ToString( IPocoType t ) => $"[{t.Kind}]{t.CSharpName}";
 

@@ -47,7 +47,7 @@ namespace CK.Setup
             }
 
             readonly IPocoType _underlyingType;
-            IPocoType.ITypeRef? _nextRef;
+            readonly IPocoType.ITypeRef? _nextRef;
             readonly ExternalNameAttribute? _externalName;
             readonly string? _defaultValueName;
             readonly DefaultValueInfo _defInfo;

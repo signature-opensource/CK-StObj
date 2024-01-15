@@ -189,12 +189,6 @@ namespace CK.Setup
                 return false;
             }
 
-            public override bool CanWriteTo( IPocoType type )
-            {
-                return type == this
-                       || (!type.IsNullable && FamilyInfo.Interfaces.Any( i => i.PocoInterface == type.Type ));
-            }
-
             public IReadOnlyList<IAbstractPocoType> AbstractTypes => _abstractTypes;
 
             internal void SetAbstractTypes( IAbstractPocoType[] types ) => _abstractTypes = types;

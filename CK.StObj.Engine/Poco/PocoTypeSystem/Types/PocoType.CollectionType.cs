@@ -138,12 +138,6 @@ namespace CK.Setup
 
             #endregion
 
-            public override bool CanWriteTo( IPocoType type )
-            {
-                // Poco Collections are implementations. We don't support any contravariance.
-                return type == this;
-            }
-
             public override bool CanReadFrom( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
@@ -241,12 +235,6 @@ namespace CK.Setup
 
             ICollectionPocoType ICollectionPocoType.NonNullable => this;
 
-            public override bool CanWriteTo( IPocoType type )
-            {
-                // Poco Collections are implementations. We don't support any contravariance.
-                return type == this;
-            }
-
             public override bool CanReadFrom( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.
@@ -302,8 +290,6 @@ namespace CK.Setup
             public override ICollectionPocoType ObliviousType => _mutable.ObliviousType;
 
             public override bool CanReadFrom( IPocoType type ) => _mutable.CanReadFrom( type );
-
-            public override bool CanWriteTo( IPocoType type ) => false;
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

@@ -102,11 +102,6 @@ namespace CK.Setup
                 }
             }
 
-            public override bool CanWriteTo( IPocoType type )
-            {
-                return type == this || _allowedTypes.Any( a => a.CanWriteTo( type ) );
-            }
-
             public override bool CanReadFrom( IPocoType type )
             {
                 if( type == this || type.Kind == PocoTypeKind.Any ) return true;

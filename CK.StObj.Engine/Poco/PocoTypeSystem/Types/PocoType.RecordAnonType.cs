@@ -128,11 +128,6 @@ namespace CK.Setup
 
             IRecordPocoType IRecordPocoType.NonNullable => this;
 
-            public override bool CanWriteTo( IPocoType type )
-            {
-                return type == this;
-            }
-
             public override bool CanReadFrom( IPocoType type )
             {
                 // type.IsNullable may be true: we don't care.

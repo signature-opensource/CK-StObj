@@ -52,11 +52,6 @@ namespace CK.Setup
                 return _primary.CanReadFrom( type );
             }
 
-            public override bool CanWriteTo( IPocoType type )
-            {
-                return _primary.CanWriteTo( type );
-            }
-
             protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
             {
                 Throw.DebugAssert( r.Type == _primary );

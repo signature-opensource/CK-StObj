@@ -234,9 +234,7 @@ namespace CK.Setup
             public override bool CanReadFrom( IPocoType type )
             {
                 if( base.CanReadFrom( type ) ) return true;
-                return _genericTypeDefinition != null
-                        ? IsGenericReadable( type, _genericTypeDefinition, _genericArguments )
-                        : false;
+                return _genericTypeDefinition != null && IsGenericReadable( type, _genericTypeDefinition, _genericArguments );
             }
 
             internal static bool IsGenericReadable( IPocoType type,
@@ -261,21 +259,6 @@ namespace CK.Setup
                     return true;
                 }
                 return false;
-            }
-
-            /// <summary>
-            /// <c>Type.IsAssignableFrom( type.Type )</c> is not enough.
-            /// A primary interface may not extend this abstract interface (the abstract is defined on a secondary interface):
-            /// We must check that the proposed type is compatible with any of our primary poco.
-            /// </summary>
-            /// <param name="type">The potential contravariant type.</param>
-            /// <returns>True if the type is contravariant, false otherwise.</returns>
-            public override bool CanWriteTo( IPocoType type )
-            {
-                return type == this
-                       || (!type.IsNullable
-                            && (Type.IsAssignableFrom( type.Type )
-                                || _abstractAndPrimary.Skip( _abstractCount ).Any( t => t.CanWriteTo( type ) )));
             }
 
             internal void SetGenericArguments( (IPocoGenericParameter Parameter, IPocoType Type)[] arguments )
@@ -355,15 +338,6 @@ namespace CK.Setup
 
             public IReadOnlyList<(IPocoGenericParameter Parameter, IPocoType Type)> GenericArguments => Array.Empty<(IPocoGenericParameter, IPocoType)>();
 
-            // See AbstractPocoType1.
-            public override bool CanWriteTo( IPocoType type )
-            {
-                return type == this
-                       || (!type.IsNullable
-                            && (Type.IsAssignableFrom( type.Type )
-                                || _primaries.Any( t => t.CanWriteTo( type ) )));
-            }
-
             IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
 
             IOneOfPocoType IOneOfPocoType.NonNullable => this;
@@ -426,9 +400,7 @@ namespace CK.Setup
             public override bool CanReadFrom( IPocoType type )
             {
                 if( base.CanReadFrom( type ) ) return true;
-                return _genericTypeDefinition != null
-                        ? AbstractPocoType.IsGenericReadable( type, _genericTypeDefinition, _genericArguments )
-                        : false;
+                return _genericTypeDefinition != null && AbstractPocoType.IsGenericReadable( type, _genericTypeDefinition, _genericArguments );
             }
 
         }
