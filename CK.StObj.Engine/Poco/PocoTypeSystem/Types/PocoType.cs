@@ -264,10 +264,12 @@ namespace CK.Setup
 
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that
-        /// overrides this).
+        /// overrides this). Concrete collections have their own default (new List, Array.Empty, etc.).
+        /// <para>
         /// The only case where we disallow is object (Any), AbstractPoco, abstract readonly list/set/dictionary and UnionType:
         /// union type default is handled at the field level based on the DefaultValue attribute (like the others)
         /// or based on the first type in the variants definition that can provide a default value.
+        /// </para>
         /// </summary>
         public virtual DefaultValueInfo DefaultValueInfo
         {

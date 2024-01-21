@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Linq;
+using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup
 {
@@ -96,6 +97,39 @@ namespace CK.Setup
 
             }
 
+            public static void CheckInitialExchangeable( IActivityMonitor monitor, PocoType composite, IReadOnlyList<IPocoField> fields )
+            {
+                int exCount = 0;
+                foreach( var f in fields )
+                {
+                    if( f.IsExchangeable ) exCount++;
+                    else
+                    {
+                        monitor.Info( $"Field '{composite}.{f.Name}' is not exchangeable because its type '{f.Type}' is not exchangeable." );
+                    }
+                }
+                if( exCount == 0 )
+                {
+                    composite.SetNotExchangeable( monitor, $"none of its {fields.Count} fields are exchangeable." );
+                }
+            }
+
+            internal static void OnNoMoreExchangeable( IActivityMonitor monitor, PocoType composite, IReadOnlyList<IPocoField> fields, IPocoType.ITypeRef r )
+            {
+                int exCount = 0;
+                foreach( var f in fields )
+                {
+                    if( f.IsExchangeable ) exCount++;
+                    else if( f.Type == r.Type )
+                    {
+                        monitor.Info( $"Field '{composite}.{f.Name}' is no more exchangeable because its type '{f.Type}' is no more exchangeable." );
+                    }
+                }
+                if( exCount == 0 )
+                {
+                    composite.SetNotExchangeable( monitor, $"no more fields are exchangeable." );
+                }
+            }
         }
 
     }

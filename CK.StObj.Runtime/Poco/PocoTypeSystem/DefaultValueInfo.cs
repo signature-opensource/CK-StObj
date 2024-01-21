@@ -78,7 +78,7 @@ namespace CK.Setup
         /// or if a positional parameter of a record struct has a default value or if it can be automatically
         /// synthesized.
         /// <para>
-        /// For IPoco, when the [DefaultValue] is defined by more than one IPoco interface, it must be the same.
+        /// For IPoco, when the [DefaultValue] is defined on a field by more than one IPoco interface, it must be the same.
         /// </para>
         /// </summary>
         public IPocoFieldDefaultValue? DefaultValue => _def;

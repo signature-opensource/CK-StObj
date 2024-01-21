@@ -107,10 +107,7 @@ namespace CK.Setup
                 Throw.DebugAssert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
                 if( IsExchangeable )
                 {
-                    if( !_fields.Any( f => f.IsExchangeable ) )
-                    {
-                        SetNotExchangeable( monitor, $"its last field type '{r.Type}' becomes not exchangeable." );
-                    }
+                    CompositeHelper.OnNoMoreExchangeable( monitor, this, _fields, r );
                 }
             }
 
@@ -119,10 +116,7 @@ namespace CK.Setup
                 _fields = fields;
                 // Sets the initial IsExchangeable status.
                 // A composite with no field is not exchangeable.
-                if( !_fields.Any( f => f.IsExchangeable ) )
-                {
-                    SetNotExchangeable( monitor, $"none of its {_fields.Length} fields are exchangeable." );
-                }
+                CompositeHelper.CheckInitialExchangeable( monitor, this, _fields );
                 return true;
             }
 

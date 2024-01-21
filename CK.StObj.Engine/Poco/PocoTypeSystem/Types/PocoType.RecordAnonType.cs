@@ -91,11 +91,7 @@ namespace CK.Setup
                 _isReadOnlyCompliant = isReadOnlyCompliant;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
-                // Sets the initial IsExchangeable status.
-                if( !_fields.Any( f => f.IsExchangeable ) )
-                {
-                    SetNotExchangeable( monitor, $"none of its {_fields.Length} fields are exchangeable." );
-                }
+                CompositeHelper.CheckInitialExchangeable( monitor, this, _fields );
             }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
@@ -147,10 +143,7 @@ namespace CK.Setup
                 Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
                 if( IsExchangeable )
                 {
-                    if( !_fields.Any( f => f.IsExchangeable ) )
-                    {
-                        SetNotExchangeable( monitor, $"its last field type '{r.Type}' is not exchangeable." );
-                    }
+                    CompositeHelper.OnNoMoreExchangeable( monitor, this, _fields, r );
                 }
             }
         }

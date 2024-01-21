@@ -28,7 +28,7 @@ namespace CK.Setup
         {
             Debug.Assert( notNullable.IsValueType );
             // A basic value type is always initializable.
-            // DateTime use, by default, CK.Core.Util.UtcMinValue: DateTime must be default to UTC.
+            // DateTime use, by default, CK.Core.Util.UtcMinValue: DateTime must be UTC.
             return notNullable == typeof( DateTime )
                      ? new BasicTypeWithDefaultValue( s, notNullable, csharpName, PocoTypeKind.Basic, FieldDefaultValue.DateTimeDefault, t => new NullValueType( t, nullable ) )
                      : new PocoType( s, notNullable, csharpName, PocoTypeKind.Basic, t => new NullValueType( t, nullable ) );
