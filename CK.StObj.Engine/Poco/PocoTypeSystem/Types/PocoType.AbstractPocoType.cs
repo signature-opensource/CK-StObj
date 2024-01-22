@@ -231,6 +231,8 @@ namespace CK.Setup
                 public IEnumerable<IPrimaryPocoField> Implementations => _owner.PrimaryPocoTypes.Select( p => p.Fields.First( f => f.Name == _prop.Name ) );
 
                 public PropertyInfo Originator => _prop;
+
+                public bool IsReadOnly => _prop.CanWrite || _prop.PropertyType.IsByRef;
             }
 
             public ImmutableArray<IAbstractPocoField> Fields => _fields;

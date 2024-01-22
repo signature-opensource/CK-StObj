@@ -20,6 +20,12 @@ namespace CK.Setup
         IPocoType Type { get; }
 
         /// <summary>
+        /// Gets whether the field is read only: it is not a <c>{ get; set; }</c> nor
+        /// a <c>ref { get; }</c> property.
+        /// </summary>
+        bool IsReadOnly { get; }
+
+        /// <summary>
         /// Gets the <see cref="IPrimaryPocoField"/> that implement this field.
         /// </summary>
         IEnumerable<IPrimaryPocoField> Implementations { get; }
