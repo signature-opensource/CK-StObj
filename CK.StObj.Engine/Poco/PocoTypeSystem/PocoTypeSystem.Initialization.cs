@@ -115,7 +115,7 @@ namespace CK.Setup
             {
                 success &= d.InitializeGenericInstanceArguments( this, monitor );
             }
-            // Now that all IPoco are known, we can set their fields.
+            // Now that all IPoco are known, we can initialize the Primary Poco fields.
             var builder = new PocoPropertyBuilder( this );
             foreach( var p in allPrimaries )
             {
@@ -138,6 +138,18 @@ namespace CK.Setup
                     // We can be inefficient here!
                     fields = fields.Where( f => f != null ).ToArray();
                     p.SetFields( monitor, fields );
+                }
+            }
+            // We are almost done. Now that the Primary Poco fields are resolved, we can resolve the
+            // Abstract Poco fields: they are bound to their "main" type (resolved now as a PocoType)
+            // and can obtain the set of implementation fields from the IPrimaryPoco.
+            // Note: on error, we skip this step.
+            if( success )
+            {
+                foreach( var any in allAbstracts )
+                {
+                    if( any is not PocoType.AbstractPocoType a ) continue;
+                    success &= a.CreateFields( monitor, this );
                 }
             }
             // Oblivious check: all reference type registered by types are non nullable.

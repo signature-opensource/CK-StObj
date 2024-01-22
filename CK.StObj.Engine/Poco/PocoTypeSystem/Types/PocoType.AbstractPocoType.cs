@@ -213,49 +213,55 @@ namespace CK.Setup
 
             sealed class Field : IAbstractPocoField
             {
-                readonly IPrimaryPocoField _field;
+                readonly AbstractPocoType _owner;
                 readonly PropertyInfo _prop;
+                readonly IPocoType _type;
 
-                public Field( IPrimaryPocoField f, PropertyInfo prop )
+                public Field( AbstractPocoType owner, PropertyInfo prop, IPocoType type )
                 {
-                    _field = f;
+                    _owner = owner;
                     _prop = prop;
+                    _type = type;
                 }
 
-                public string Name => _field.Name;
+                public string Name => _prop.Name;
 
-                public IPocoType Type => _field.Type;
+                public IPocoType Type => _type;
+
+                public IEnumerable<IPrimaryPocoField> Implementations => _owner.PrimaryPocoTypes.Select( p => p.Fields.First( f => f.Name == _prop.Name ) );
 
                 public PropertyInfo Originator => _prop;
             }
 
-            public ImmutableArray<IAbstractPocoField> Fields
+            public ImmutableArray<IAbstractPocoField> Fields => _fields;
+
+            internal bool CreateFields( IActivityMonitor monitor, PocoTypeSystem pocoTypeSystem )
             {
-                get
+                Throw.DebugAssert( _fields.IsDefault );
+                bool success = true;
+                var props = Type.GetProperties();
+                var b = ImmutableArray.CreateBuilder<IAbstractPocoField>( props.Length );
+                foreach( var p in props )
                 {
-                    if( _fields.IsDefault )
+                    var primaries = _abstractAndPrimary.AsSpan( _abstractCount );
+                    foreach( var tP in primaries )
                     {
-                        var props = Type.GetProperties();
-                        var b = ImmutableArray.CreateBuilder<IAbstractPocoField>( props.Length );
-                        foreach( var p in props )
+                        var t = Unsafe.As<IPrimaryPocoType>( tP );
+                        // Ensures that this field is actually implemented and is not an "optional property".
+                        if( t.Fields.Any( f => f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && f.Name == p.Name ) )
                         {
-                            var n = p.Name;
-                            var primaries = _abstractAndPrimary.AsSpan( _abstractCount );
-                            foreach( var tP in primaries )
+                            var mainType = pocoTypeSystem.Register( monitor, p );
+                            if( success &= (mainType != null) )
                             {
-                                var t = Unsafe.As<IPrimaryPocoType>( tP );
-                                var f = t.Fields.FirstOrDefault( f => f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && f.Name == n );
-                                if( f != null )
-                                {
-                                    b.Add( new Field( f, p ) );
-                                    break;
-                                }
+                                b.Add( new Field( this, p, mainType! ) );
+                                break;
                             }
                         }
-                        _fields = b.Count == props.Length ? b.MoveToImmutable() : b.ToImmutableArray();
                     }
-                    return _fields;
                 }
+                if( !success ) return false;
+                _fields = b.Count == props.Length ? b.MoveToImmutable() : b.ToImmutableArray();
+                return true;
             }
 
             public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _abstractAndPrimary.Skip( _abstractCount ).Cast<IPrimaryPocoType>();

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace CK.Setup
@@ -14,9 +15,14 @@ namespace CK.Setup
         string Name { get; }
 
         /// <summary>
-        /// Gets the field type.
+        /// Gets the field main type.
         /// </summary>
         IPocoType Type { get; }
+
+        /// <summary>
+        /// Gets the <see cref="IPrimaryPocoField"/> that implement this field.
+        /// </summary>
+        IEnumerable<IPrimaryPocoField> Implementations { get; }
 
         /// <summary>
         /// Gets the property info that define this field.
