@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.StObj.Engine.Tests.CrisLike;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static CK.StObj.Engine.Tests.Poco.AnonymousRecordTests;
+using static CK.StObj.Engine.Tests.Poco.PocoGenericTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -216,6 +218,33 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             public record struct Rec( int A, int B );
             Rec NoWay { get; }
+        }
+
+        [CKTypeDefiner]
+        public interface IHaveNullableAutoProperty
+        {
+            object? Auto { get; }
+        }
+        public interface IAutoIAbstract1 : IPoco, IHaveNullableAutoProperty
+        {
+            new IAbstractCommand? Auto { get; }
+        }
+        public interface IAutoIAbstract2 : IPoco, IHaveNullableAutoProperty
+        {
+            new IPoco? Auto { get; }
+        }
+
+        [TestCase(typeof( IAutoIAbstract1 ) )]
+        [TestCase(typeof( IAutoIAbstract2 ) )]
+        public void object_abstract_readonly_property_can_be_nullable_AbstractPoco( Type tPrimary )
+        {
+            var c = TestHelper.CreateStObjCollector( tPrimary );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var f = d.Find( tPrimary );
+            Debug.Assert( f != null );
+            var o = (IHaveNullableAutoProperty)f.Create();
+            o.Auto.Should().BeNull();
         }
 
         [Test]

@@ -284,8 +284,9 @@ namespace CK.Setup
                         (_bestProperty, _bestReg) = abstractReadOnlyToCheck.FirstOrDefault( c => abstractReadOnlyToCheck.All( a => c.T.CanReadFrom( a.T ) ) );
                         if( _bestReg == null )
                         {
-                            var types = _props.DeclaredProperties.Select( p => p.TypeCSharpName ).Concatenate( Environment.NewLine );
-                            monitor.Error( $"Failed to find a writable property for read only {_props} types:{Environment.NewLine}{types}" );
+                            var allProps = abstractReadOnlyToCheck.Select( p => $"Type {p.T.ToString()} of {p.P}" ).Concatenate( Environment.NewLine );
+                            monitor.Error( $"Failed to find a writable property for read only {_props} types:{Environment.NewLine}{allProps}{Environment.NewLine}" +
+                                           $"None of these types can unify all of them." );
                             return false;
                         }
                     }
@@ -456,7 +457,7 @@ namespace CK.Setup
                 Throw.DebugAssert( !p.PropertyInfo.PropertyType.IsByRef && !p.PropertyInfo.CanWrite );
                 if( !_bestReg.CanReadFrom( type ) )
                 {
-                    monitor.OpenError( $"Read only {p} is not compatible with {_bestReg}." );
+                    monitor.OpenError( $"Read only {p} of type '{type}' is not compatible with {_bestReg}." );
                     return false;
                 }
                 return true;
