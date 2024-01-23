@@ -120,6 +120,8 @@ namespace CK.Setup
             }
         }
 
+        public IPocoDirectory PocoDirectory => _pocoDirectory;
+
         public IPocoType ObjectType => _objectType;
 
         public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;

@@ -13,6 +13,11 @@ namespace CK.Setup
     public interface IPocoTypeSystem
     {
         /// <summary>
+        /// Gets the low level Poco directory on which this Type System is built.
+        /// </summary>
+        IPocoDirectory PocoDirectory { get; }
+
+        /// <summary>
         /// Gets the "object" (<see cref="PocoTypeKind.Any"/>) type.
         /// </summary>
         IPocoType ObjectType { get; }
