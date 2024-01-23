@@ -24,7 +24,7 @@ namespace LibWithSampleModel.Tests
             var d = TestHelper.AutomaticServices.GetRequiredService<PocoDirectory>();
             d.Create<Sample.Model.IRegularPoco>().Should().NotBeNull();
             FluentActions.Invoking( () => d.Create<Sample.Model.IHiddenPoco>() )
-                .Should().Throw<Exception>().WithMessage( "Unable to resolve IPoco interface 'Sample.Model.IHiddenPoco' from PocoDirectory." );
+                .Should().Throw<Exception>().WithMessage( "Unable to resolve concrete IPoco interface 'Sample.Model.IHiddenPoco' from PocoDirectory." );
         }
     }
 }

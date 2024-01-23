@@ -21,16 +21,16 @@ namespace CK.Setup
         /// that uses it is considered excluded.
         /// </para>
         /// </summary>
-        /// <param name="monitor"></param>
-        /// <returns></returns>
-        public bool Initialize( IPocoDirectory poco, IActivityMonitor monitor )
+        /// <param name="monitor">Required monitor.</param>
+        /// <returns>True on success, false otherwise.</returns>
+        public bool Initialize( IActivityMonitor monitor )
         {
-            var allPrimaries = new PocoType.PrimaryPocoType[poco.Families.Count];
-            var closedPrimaries = new PocoType.PrimaryPocoType[poco.Families.Count( f => f.IsClosedPoco )];
+            var allPrimaries = new PocoType.PrimaryPocoType[_pocoDirectory.Families.Count];
+            var closedPrimaries = new PocoType.PrimaryPocoType[_pocoDirectory.Families.Count( f => f.IsClosedPoco )];
             // First, registers the primary and all concrete interfaces for a family.
             int iPrimary = 0;
             int iClosedPrimary = 0;
-            foreach( var family in poco.Families )
+            foreach( var family in _pocoDirectory.Families )
             {
                 // PrimaryPoco hold the fields and are the only registered type
                 // for a Poco family.
@@ -76,12 +76,12 @@ namespace CK.Setup
             // must track this.
             // This is a DAG, we don't need a 2 step process and can use directly
             // the cache a simple recusive EnsureAbstract does the job.
-            var abstractTypes = poco.OtherInterfaces.Keys;
+            var abstractTypes = _pocoDirectory.OtherInterfaces.Keys;
             var allAbstracts = new List<IAbstractPocoType>();
             var closedAbstracts = new List<IAbstractPocoType>();
             foreach( var tInterface in abstractTypes )
             {
-                EnsureAbstract( monitor, poco, abstractTypes, tInterface, allAbstracts, closedAbstracts );
+                EnsureAbstract( monitor, abstractTypes, tInterface, allAbstracts, closedAbstracts );
             }
             // Third, registers the IPoco and IClosedPoco full sets.
             var all = PocoType.CreateAbstractPocoBaseOrClosed( monitor, this, typeof( IPoco ), allAbstracts, allPrimaries );
@@ -190,7 +190,6 @@ namespace CK.Setup
         }
 
         IPocoType EnsureAbstract( IActivityMonitor monitor,
-                                  IPocoDirectory poco,
                                   IEnumerable<Type> abstractTypes,
                                   Type tAbstract,
                                   List<IAbstractPocoType> allAbstracts,
@@ -198,13 +197,13 @@ namespace CK.Setup
         {
             if( !_typeCache.TryGetValue( tAbstract, out var result ) )
             {
-                var families = poco.OtherInterfaces[tAbstract];
+                var families = _pocoDirectory.OtherInterfaces[tAbstract];
                 var abstractSubTypes = abstractTypes.Where( a => a != tAbstract && tAbstract.IsAssignableFrom( a ) ).ToList();
                 var subTypes = new IPocoType[abstractSubTypes.Count + families.Count];
                 int i = 0;
                 foreach( var other in abstractSubTypes )
                 {
-                    subTypes[i++] = EnsureAbstract( monitor, poco, abstractTypes, other, allAbstracts, closedAbstracts );
+                    subTypes[i++] = EnsureAbstract( monitor, abstractTypes, other, allAbstracts, closedAbstracts );
                 }
                 foreach( var f in families )
                 {

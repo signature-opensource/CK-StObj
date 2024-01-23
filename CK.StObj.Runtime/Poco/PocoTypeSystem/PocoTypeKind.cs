@@ -17,8 +17,8 @@ namespace CK.Setup
         Any,
 
         /// <summary>
-        /// Basic types are int, long, short, byte, string, bool, double, float, DateTime, DateTimeOffset, TimeSpan,
-        /// Guid, decimal, BigInteger, uint, ulong, ushort, sbyte.
+        /// Basic types are the value types int, long, short, byte, bool, double, float, DateTime, DateTimeOffset, TimeSpan,
+        /// Guid, decimal, BigInteger, uint, ulong, ushort, sbyte and the <see cref="IBasicRefPocoType"/>.
         /// </summary>
         Basic,
 

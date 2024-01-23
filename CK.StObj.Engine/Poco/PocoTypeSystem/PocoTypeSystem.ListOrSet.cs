@@ -69,17 +69,6 @@ namespace CK.Setup
                         // We are obviously not the oblivious.
                         tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
                     }
-                    else if( tI.Kind == PocoTypeKind.AbstractPoco )
-                    {
-                        // HashSet<> is not natively covariant. We support it here.
-                        if( !isList )
-                        {
-                            typeName = EnsurePocoHashSetOfAbstractType( monitor, (IAbstractPocoType)tI.NonNullable );
-                            t = IDynamicAssembly.PurelyGeneratedType;
-                            // We are obviously not the oblivious.
-                            tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
-                        }
-                    }
                     else
                     {
                         bool isSecondary = tI.Kind == PocoTypeKind.SecondaryPoco;
@@ -99,6 +88,18 @@ namespace CK.Setup
                                 t = IDynamicAssembly.PurelyGeneratedType;
                                 // Since we are on a reference type, the oblivious is the non nullable.
                                 Debug.Assert( poco.IsOblivious );
+                                // We are obviously not the oblivious.
+                                tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+                            }
+                        }
+                        else if( tI.Kind != PocoTypeKind.Any )
+                        {
+                            // HashSet<> is not natively covariant. We support it here for
+                            // AbstractPoco, string and other basic reference types.
+                            if( !isList )
+                            {
+                                typeName = EnsurePocoHashSetOfAbstractOrBasicRefType( monitor, tI.NonNullable );
+                                t = IDynamicAssembly.PurelyGeneratedType;
                                 // We are obviously not the oblivious.
                                 tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
                             }
@@ -190,13 +191,13 @@ namespace CK.Setup
             return g.FullName;
         }
 
-        string EnsurePocoHashSetOfAbstractType( IActivityMonitor monitor, IAbstractPocoType tI )
+        string EnsurePocoHashSetOfAbstractOrBasicRefType( IActivityMonitor monitor, IPocoType tI )
         {
             Debug.Assert( !tI.IsNullable );
             var genTypeName = $"PocoHashSet_{tI.Index}_CK";
             if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
             {
-                _requiredSupportTypes.Add( genTypeName, g = new PocoHashSetOfAbstractRequiredSupport( tI, genTypeName ) );
+                _requiredSupportTypes.Add( genTypeName, g = new PocoHashSetOfAbstractOrBasicRefRequiredSupport( tI, genTypeName ) );
             }
             return g.FullName;
         }

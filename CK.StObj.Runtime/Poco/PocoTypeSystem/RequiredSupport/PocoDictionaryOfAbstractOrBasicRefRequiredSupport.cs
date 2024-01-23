@@ -5,12 +5,12 @@ namespace CK.Setup
     /// <summary>
     /// Defines the "multi variance" dictionary for AbstractPoco values.
     /// </summary>
-    public sealed class PocoDictionaryOfAbstractRequiredSupport : PocoRequiredSupportType
+    public sealed class PocoDictionaryOfAbstractOrBasicRefRequiredSupport : PocoRequiredSupportType
     {
-        public PocoDictionaryOfAbstractRequiredSupport( IPocoType key, IAbstractPocoType value, string typeName )
+        public PocoDictionaryOfAbstractOrBasicRefRequiredSupport( IPocoType key, IPocoType value, string typeName )
             : base( typeName )
         {
-            Throw.CheckNotNullArgument( value );
+            Throw.CheckArgument( value is IAbstractPocoType or IBasicRefPocoType );
             Throw.CheckArgument( !value.IsNullable );
             Throw.CheckArgument( typeName == $"PocoDictionary_{key.Index}_{value.Index}_CK" );
             KeyType = key;
@@ -23,8 +23,8 @@ namespace CK.Setup
         public IPocoType KeyType { get; }
 
         /// <summary>
-        /// Gets the not nullable value type.
+        /// Gets the non nullable item type: a <see cref="IBasicRefPocoType"/> or <see cref="IAbstractPocoType"/>.
         /// </summary>
-        public IAbstractPocoType ValueType { get; }
+        public IPocoType ValueType { get; }
     }
 }

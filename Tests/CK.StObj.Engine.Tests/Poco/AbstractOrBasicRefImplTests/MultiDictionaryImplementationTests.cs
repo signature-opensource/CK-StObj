@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using static CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiSetImplementationTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
@@ -118,5 +117,38 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
                 .And.BeAssignableTo<IReadOnlyDictionary<string, IClosedPoco>>();
         }
 
+        [CKTypeDefiner]
+        public interface IAbstractBasicRefDic: IPoco
+        {
+            IReadOnlyDictionary<int,object> StringDic { get; }
+            IReadOnlyDictionary<int,object> ExtendedCultureInfoDic { get; }
+            IReadOnlyDictionary<int,object> NormalizedCultureInfoDic { get; }
+            IReadOnlyDictionary<int,object> MCStringDic { get; }
+            IReadOnlyDictionary<int,object> CodeStringDic { get; }
+        }
+
+        public interface IBasicRefDics : IAbstractBasicRefDic
+        {
+            new IDictionary<int,string> StringDic { get; }
+            new IDictionary<int,ExtendedCultureInfo> ExtendedCultureInfoDic { get; }
+            new IDictionary<int,NormalizedCultureInfo> NormalizedCultureInfoDic { get; }
+            new IDictionary<int,MCString> MCStringDic { get; }
+            new IDictionary<int,CodeString> CodeStringDic { get; }
+        }
+
+        [Test]
+        public void IDictionary_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBasicRefDic ), typeof( IBasicRefDics ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var pBase = d.Create<IBasicRefDics>();
+            pBase.StringDic.Should().NotBeNull();
+            pBase.ExtendedCultureInfoDic.Should().NotBeNull();
+            pBase.NormalizedCultureInfoDic.Should().NotBeNull();
+            pBase.MCStringDic.Should().NotBeNull();
+            pBase.CodeStringDic.Should().NotBeNull();
+            pBase.NormalizedCultureInfoDic.Should().BeAssignableTo<IReadOnlyDictionary<int,ExtendedCultureInfo>>();
+        }
     }
 }

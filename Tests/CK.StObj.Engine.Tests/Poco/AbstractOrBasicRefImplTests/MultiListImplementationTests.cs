@@ -37,9 +37,15 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             new IList<IOtherSecondaryVerySimplePoco> List { get; }
         }
 
+        public interface IPocoWithListOfAbstract : IPoco, IWithList, IWithReadOnlyList
+        {
+            new IList<IAbstract2> List { get; }
+        }
+
         [TestCase( typeof( IPocoWithListOfPrimary ) )]
         [TestCase( typeof( IPocoWithListOfSecondary ) )]
         [TestCase( typeof( IPocoWithListOfOtherSecondary ) )]
+        [TestCase( typeof( IPocoWithListOfAbstract ) )]
         public void IList_implementation_supports_all_the_required_types( Type type )
         {
             var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
@@ -49,7 +55,14 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             var d = s.GetRequiredService<PocoDirectory>();
             var p = (IWithList)d.Find( type )!.Create();
 
-            p.List.Should().BeAssignableTo<IList<IVerySimplePoco>>()
+            p.List.Should()
+                .BeAssignableTo<IReadOnlyList<object>>()
+                .And.BeAssignableTo<IReadOnlyList<IPoco>>();
+
+            if( type != typeof( IPocoWithListOfAbstract ) )
+            {
+                p.List.Should()
+                .BeAssignableTo<IList<IVerySimplePoco>>()
                 .And.BeAssignableTo<IList<ISecondaryVerySimplePoco>>()
                 .And.BeAssignableTo<IList<IOtherSecondaryVerySimplePoco>>()
                 .And.BeAssignableTo<IReadOnlyList<object>>()
@@ -58,16 +71,17 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
                 .And.BeAssignableTo<IReadOnlyList<ISecondaryVerySimplePoco>>()
                 .And.BeAssignableTo<IReadOnlyList<IOtherSecondaryVerySimplePoco>>();
 
-            if( type != typeof( IPocoWithListOfPrimary ) )
-            {
-                p.List.Should().BeAssignableTo<IReadOnlyList<IAbstractBase>>();
-                if( type == typeof( IPocoWithListOfSecondary ) )
+                if( type != typeof( IPocoWithListOfPrimary ) )
                 {
-                    p.List.Should().BeAssignableTo<IReadOnlyList<IAbstract1>>();
-                }
-                else
-                {
-                    p.List.Should().BeAssignableTo<IReadOnlyList<IAbstract2>>();
+                    p.List.Should().BeAssignableTo<IReadOnlyList<IAbstractBase>>();
+                    if( type == typeof( IPocoWithListOfSecondary ) )
+                    {
+                        p.List.Should().BeAssignableTo<IReadOnlyList<IAbstract1>>();
+                    }
+                    else
+                    {
+                        p.List.Should().BeAssignableTo<IReadOnlyList<IAbstract2>>();
+                    }
                 }
             }
         }

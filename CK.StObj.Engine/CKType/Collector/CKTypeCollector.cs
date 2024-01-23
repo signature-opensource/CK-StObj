@@ -249,7 +249,6 @@ namespace CK.Setup
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoDirectory? pocoDirectory;
-                PocoTypeSystem pocoTypeSystem = new PocoTypeSystem( _memberInfoFactory ); 
                 using( monitor.OpenInfo( "Creating Poco Types and PocoFactory." ) )
                 {
                     pocoDirectory = _pocoBuilder.Build( _tempAssembly, monitor );
@@ -266,9 +265,10 @@ namespace CK.Setup
                     }
                     Debug.Assert( _tempAssembly.GetPocoDirectory() == pocoDirectory, "The extension method GetPocoDirectory() provides it." );
                 }
+                PocoTypeSystem pocoTypeSystem = new PocoTypeSystem( _memberInfoFactory, pocoDirectory ); 
                 using( monitor.OpenInfo( "Initializing Poco Type System." ) )
                 {
-                    if( !pocoTypeSystem.Initialize( pocoDirectory, monitor ) )
+                    if( !pocoTypeSystem.Initialize( monitor ) )
                     {
                         monitor.CloseGroup( "Failed" );
                     }

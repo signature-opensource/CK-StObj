@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using static CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
@@ -38,37 +37,57 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             new ISet<IOtherSecondaryVerySimplePoco> Set { get; }
         }
 
+        public interface IPocoWithSetOfAbstract : IPoco, IWithSet, IWithReadOnlySet
+        {
+            new ISet<IAbstract2> Set { get; }
+        }
+
         [TestCase( typeof( IPocoWithSetOfPrimary ) )]
         [TestCase( typeof( IPocoWithSetOfSecondary ) )]
         [TestCase( typeof( IPocoWithSetOfOtherSecondary ) )]
+        [TestCase( typeof( IPocoWithSetOfAbstract ) )]
         public void ISet_implementation_supports_all_the_required_types( Type type )
         {
+            var requiredType = type == typeof( IPocoWithSetOfSecondary )
+                                ? typeof( ISecondaryVerySimplePoco )
+                                : type == typeof( IPocoWithSetOfOtherSecondary )
+                                    ? typeof( IOtherSecondaryVerySimplePoco )
+                                    : type; // duplicate registered type as a fallback.
             var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IAbstract2 ),
-                                                     typeof( IVerySimplePoco ), typeof( ISecondaryVerySimplePoco ), typeof( IOtherSecondaryVerySimplePoco ),
+                                                     typeof( IVerySimplePoco ), requiredType,
                                                      type );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var d = s.GetRequiredService<PocoDirectory>();
             var p = (IWithSet)d.Find( type )!.Create();
 
-            p.Set.Should().BeAssignableTo<ISet<IVerySimplePoco>>()
-                .And.BeAssignableTo<ISet<ISecondaryVerySimplePoco>>()
-                .And.BeAssignableTo<ISet<IOtherSecondaryVerySimplePoco>>()
-                .And.BeAssignableTo<IReadOnlySet<object>>()
-                .And.BeAssignableTo<IReadOnlySet<IPoco>>()
-                .And.BeAssignableTo<IReadOnlySet<IVerySimplePoco>>()
-                .And.BeAssignableTo<IReadOnlySet<ISecondaryVerySimplePoco>>()
-                .And.BeAssignableTo<IReadOnlySet<IOtherSecondaryVerySimplePoco>>();
+            p.Set.Should()
+                .BeAssignableTo<IReadOnlySet<object>>()
+                .And.BeAssignableTo<IReadOnlySet<IPoco>>();
 
-            if( type != typeof( IPocoWithSetOfPrimary ) )
+            if( type != typeof( IPocoWithSetOfAbstract ) )
             {
-                p.Set.Should().BeAssignableTo<IReadOnlySet<IAbstractBase>>();
-                if( type == typeof( IPocoWithSetOfSecondary ) )
+                p.Set.Should().BeAssignableTo<ISet<IVerySimplePoco>>()
+                    .And.BeAssignableTo<IReadOnlySet<IVerySimplePoco>>();
+
+                if( type != typeof( IPocoWithSetOfPrimary ) )
                 {
-                    p.Set.Should().BeAssignableTo<IReadOnlySet<IAbstract1>>();
-                }
-                else
-                {
-                    p.Set.Should().BeAssignableTo<IReadOnlySet<IAbstract2>>();
+                    p.Set.Should().BeAssignableTo<IReadOnlySet<IAbstractBase>>();
+                    if( type == typeof( IPocoWithSetOfSecondary ) )
+                    {
+                        p.Set.Should().BeAssignableTo<IReadOnlySet<IAbstract1>>()
+                            .And.BeAssignableTo<ISet<ISecondaryVerySimplePoco>>()
+                            .And.BeAssignableTo<IReadOnlySet<ISecondaryVerySimplePoco>>();
+
+                        p.Set.Should().NotBeAssignableTo<IReadOnlySet<IAbstract2>>();
+                    }
+                    else
+                    {
+                        Throw.DebugAssert( type == typeof( IPocoWithSetOfOtherSecondary ) );
+                        p.Set.Should().BeAssignableTo<IReadOnlySet<IAbstract2>>()
+                            .And.BeAssignableTo<ISet<IOtherSecondaryVerySimplePoco>>()
+                            .And.BeAssignableTo<IReadOnlySet<IOtherSecondaryVerySimplePoco>>();
+                        p.Set.Should().NotBeAssignableTo<IReadOnlySet<IAbstract1>>();
+                    }
                 }
             }
         }
@@ -116,6 +135,40 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
                 .And.BeAssignableTo<IReadOnlySet<IAbstract1>>()
                 .And.BeAssignableTo<IReadOnlySet<IAbstract1Closed>>()
                 .And.BeAssignableTo<IReadOnlySet<IClosedPoco>>();
+        }
+
+        [CKTypeDefiner]
+        public interface IAbstractBasicRefSets : IPoco
+        {
+            IReadOnlySet<object> StringSet { get; }
+            IReadOnlySet<object> ExtendedCultureInfoSet { get; }
+            IReadOnlySet<object> NormalizedCultureInfoSet { get; }
+            IReadOnlySet<object> MCStringSet { get; }
+            IReadOnlySet<object> CodeStringSet { get; }
+        }
+
+        public interface IBasicRefSets : IAbstractBasicRefSets
+        {
+            new ISet<string> StringSet { get; }
+            new ISet<ExtendedCultureInfo> ExtendedCultureInfoSet { get; }
+            new ISet<NormalizedCultureInfo> NormalizedCultureInfoSet { get; }
+            new ISet<MCString> MCStringSet { get; }
+            new ISet<CodeString> CodeStringSet { get; }
+        }
+
+        [Test]
+        public void ISet_implementation_of_Abstract_is_NOT_natively_covariant_an_adpater_is_required_for_basic_ref_types()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IAbstractBasicRefSets ), typeof( IBasicRefSets ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var pBase = d.Create<IBasicRefSets>();
+            pBase.StringSet.Should().NotBeNull();
+            pBase.ExtendedCultureInfoSet.Should().NotBeNull();
+            pBase.NormalizedCultureInfoSet.Should().NotBeNull();
+            pBase.MCStringSet.Should().NotBeNull();
+            pBase.CodeStringSet.Should().NotBeNull();
+            pBase.NormalizedCultureInfoSet.Should().BeAssignableTo<IReadOnlySet<ExtendedCultureInfo>>();
         }
     }
 }

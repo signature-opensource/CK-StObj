@@ -6,6 +6,7 @@ using CK.Core;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -290,11 +291,11 @@ namespace CK.Setup
                     case PocoDictionaryRequiredSupport dic:
                         GeneratePocoDictionary( monitor, ns, dic );
                         break;
-                    case PocoHashSetOfAbstractRequiredSupport set:
-                        GenerateHashSetOfAbstract( monitor, ns, set );
+                    case PocoHashSetOfAbstractOrBasicRefRequiredSupport set:
+                        GenerateHashSetOfAbstractOrBasicRef( ns, set );
                         break;
-                    case PocoDictionaryOfAbstractRequiredSupport dic:
-                        GeneratePocoDictionaryOfAbstract( monitor, ns, dic );
+                    case PocoDictionaryOfAbstractOrBasicRefRequiredSupport dic:
+                        GeneratePocoDictionaryOfAbstractBasicRef( monitor, ns, dic );
                         break;
                     default: throw new NotSupportedException();
                 }
@@ -377,10 +378,12 @@ namespace CK.Setup
             AppendIReadOnlySetSupport( actualTypeName,
                                        nonNullableActualTypeNameIfNullable,
                                        typeScope,
-                                       set.ItemType.FamilyInfo.IsClosedPoco, set.ItemType.AbstractTypes );
+                                       isIPoco: true,
+                                       set.ItemType.FamilyInfo.IsClosedPoco,
+                                       set.ItemType.AbstractTypes );
         }
 
-        static void GenerateHashSetOfAbstract( IActivityMonitor monitor, INamespaceScope ns, PocoHashSetOfAbstractRequiredSupport set )
+        static void GenerateHashSetOfAbstractOrBasicRef( INamespaceScope ns, PocoHashSetOfAbstractOrBasicRefRequiredSupport set )
         {
             var actualTypeName = set.ItemType.CSharpName;
             ITypeScope typeScope = CreateHashSetType( ns,
@@ -388,10 +391,29 @@ namespace CK.Setup
                                                       set.ItemType.IsNullable,
                                                       ref actualTypeName,
                                                       out var nonNullableActualTypeNameIfNullable );
+
+            GetBaseTypes( set.ItemType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes );
             AppendIReadOnlySetSupport( actualTypeName,
                                        nonNullableActualTypeNameIfNullable,
                                        typeScope,
-                                       false, set.ItemType.Generalizations );
+                                       isIPoco,
+                                       addIClosedPoco: false,
+                                       baseTypes );
+        }
+
+        static void GetBaseTypes( IPocoType itemType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes )
+        {
+            Throw.DebugAssert( itemType is IAbstractPocoType or IBasicRefPocoType );
+            if( itemType is IAbstractPocoType a )
+            {
+                baseTypes = a.Generalizations;
+                isIPoco = true;
+            }
+            else
+            {
+                baseTypes = Unsafe.As<IBasicRefPocoType>( itemType ).BaseTypes;
+                isIPoco = false;
+            }
         }
 
         static ITypeScope CreateHashSetType( INamespaceScope ns,
@@ -416,17 +438,21 @@ namespace CK.Setup
         static void AppendIReadOnlySetSupport( string actualTypeName,
                                                string? nonNullableActualTypeNameIfNullable,
                                                ITypeScope typeScope,
-                                               bool addClosedPoco,
-                                               IEnumerable<IAbstractPocoType> abstractPocoTypes )
+                                               bool isIPoco,
+                                               bool addIClosedPoco,
+                                               IEnumerable<IPocoType> baseTypes )
         {
             bool isNullable = nonNullableActualTypeNameIfNullable != null;
             AppendReadOnly( typeScope, isNullable ? "object?" : "object", actualTypeName, nonNullableActualTypeNameIfNullable );
-            AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
-            if( addClosedPoco )
+            if( isIPoco )
             {
-                AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
+                AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
+                if( addIClosedPoco )
+                {
+                    AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
+                }
             }
-            foreach( var a in abstractPocoTypes )
+            foreach( var a in baseTypes )
             {
                 AppendReadOnly( typeScope, a.CSharpName, actualTypeName, nonNullableActualTypeNameIfNullable );
             }
@@ -515,15 +541,26 @@ namespace CK.Setup
 
             }
 
-            AppendIReadOnlyDictionarySupport( actualTypeName, typeScope, k, dic.ValueType.FamilyInfo.IsClosedPoco, dic.ValueType.AbstractTypes );
+            AppendIReadOnlyDictionarySupport( actualTypeName,
+                                              typeScope,
+                                              k,
+                                              isIPoco: true,
+                                              dic.ValueType.FamilyInfo.IsClosedPoco,
+                                              dic.ValueType.AbstractTypes );
         }
 
-        static void GeneratePocoDictionaryOfAbstract( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryOfAbstractRequiredSupport dic )
+        static void GeneratePocoDictionaryOfAbstractBasicRef( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryOfAbstractOrBasicRefRequiredSupport dic )
         {
             var k = dic.KeyType.CSharpName;
             var actualTypeName = dic.ValueType.ImplTypeName;
             ITypeScope typeScope = CreateDictionaryType( ns, dic, k, actualTypeName );
-            AppendIReadOnlyDictionarySupport( actualTypeName, typeScope, k, false, dic.ValueType.Generalizations );
+            GetBaseTypes( dic.ValueType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes );
+            AppendIReadOnlyDictionarySupport( actualTypeName,
+                                              typeScope,
+                                              k,
+                                              isIPoco,
+                                              false,
+                                              baseTypes );
         }
 
         static ITypeScope CreateDictionaryType( INamespaceScope ns, PocoRequiredSupportType dic, string k, string actualTypeName )
@@ -548,16 +585,20 @@ namespace CK.Setup
         static void AppendIReadOnlyDictionarySupport( string pocoClassName,
                                                       ITypeScope typeScope,
                                                       string k,
-                                                      bool addClosedPoco,
-                                                      IEnumerable<IAbstractPocoType> abstractTypes )
+                                                      bool isIPoco,
+                                                      bool addIClosedPoco,
+                                                      IEnumerable<IPocoType> baseTypes )
         {
             AppendIReadOnlyDictionary( typeScope, k, "object", pocoClassName );
-            AppendIReadOnlyDictionary( typeScope, k, "IPoco", pocoClassName );
-            if( addClosedPoco )
+            if( isIPoco )
             {
-                AppendIReadOnlyDictionary( typeScope, k, "IClosedPoco", pocoClassName );
+                AppendIReadOnlyDictionary( typeScope, k, "IPoco", pocoClassName );
+                if( addIClosedPoco )
+                {
+                    AppendIReadOnlyDictionary( typeScope, k, "IClosedPoco", pocoClassName );
+                }
             }
-            foreach( var a in abstractTypes )
+            foreach( var a in baseTypes )
             {
                 AppendIReadOnlyDictionary( typeScope, k, a.CSharpName, pocoClassName );
             }

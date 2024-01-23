@@ -323,10 +323,10 @@ namespace CK.Setup
             int _exchangeableCount;
 
             public AbstractPocoBaseAndClosed( IActivityMonitor monitor,
-                                      PocoTypeSystem s,
-                                      Type tAbstract,
-                                      List<IAbstractPocoType> abstracts,
-                                      IPrimaryPocoType[] primaries )
+                                              PocoTypeSystem s,
+                                              Type tAbstract,
+                                              List<IAbstractPocoType> abstracts,
+                                              IPrimaryPocoType[] primaries )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
             {
                 _abstracts = abstracts;

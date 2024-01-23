@@ -34,15 +34,20 @@ namespace CK.Setup
         readonly HalfTypeList _exposedAllTypes;
         readonly Stack<StringBuilder> _stringBuilderPool;
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
+        // The Poco directory can be EmptyPocoDirectory.Default for testing only 
+        readonly IPocoDirectory _pocoDirectory;
         bool _locked;
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
         /// </summary>
-        public PocoTypeSystem( IExtMemberInfoFactory memberInfoFactory )
+        /// <param name="memberInfoFactory">Required factory that cached nullable reference type information.</param>
+        /// <param name="pocoDirectory">Optional Poco directory (null for test only: <see cref="EmptyPocoDirectory.EmptyPocoDirectory"/> is used).</param>
+        public PocoTypeSystem( IExtMemberInfoFactory memberInfoFactory, IPocoDirectory? pocoDirectory = null )
         {
             _stringBuilderPool = new Stack<StringBuilder>();
             _memberInfoFactory = memberInfoFactory;
+            _pocoDirectory = pocoDirectory ?? EmptyPocoDirectory.Default;
             _allTypes = new List<PocoType>( 8192 );
             _exposedAllTypes = new HalfTypeList( _allTypes );
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
@@ -80,17 +85,23 @@ namespace CK.Setup
             _typeCache.Add( "object", _objectType );
             _typeCache.Add( _objectType.Type, _objectType );
 
-            RegReferenceType( this, _typeCache, typeof( string ), "string", FieldDefaultValue.StringDefault );
-            RegReferenceType( this, _typeCache, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault );
-            RegReferenceType( this, _typeCache, typeof( NormalizedCultureInfo ), "NormalizedCultureInfo", FieldDefaultValue.CultureDefault );
-            RegReferenceType( this, _typeCache, typeof( MCString ), "MCString", FieldDefaultValue.MCStringDefault );
-            RegReferenceType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault );
+            RegBasicRefType( this, _typeCache, typeof( string ), "string", FieldDefaultValue.StringDefault, null );
+            var extCInfo = RegBasicRefType( this, _typeCache, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault, null );
+            RegBasicRefType( this, _typeCache, typeof( NormalizedCultureInfo ), "NormalizedCultureInfo", FieldDefaultValue.CultureDefault, extCInfo );
+            RegBasicRefType( this, _typeCache, typeof( MCString ), "MCString", FieldDefaultValue.MCStringDefault, null );
+            RegBasicRefType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault, null );
 
-            static void RegReferenceType( PocoTypeSystem s, Dictionary<object, IPocoType> c, Type t, string name, FieldDefaultValue defaultValue )
+            static IBasicRefPocoType RegBasicRefType( PocoTypeSystem s,
+                                                      Dictionary<object, IPocoType> c,
+                                                      Type t,
+                                                      string name,
+                                                      FieldDefaultValue defaultValue,
+                                                      IBasicRefPocoType? baseType )
             {
-                var x = PocoType.CreateBasicRef( s, t, name, defaultValue );
+                var x = PocoType.CreateBasicRef( s, t, name, defaultValue, baseType );
                 c.Add( t, x );
                 c.Add( name, x );
+                return x;
             }
         }
 
@@ -217,7 +228,7 @@ namespace CK.Setup
             // ...OR it's a IPoco interface that has NO implementation but appears (otherwise we won't be here)
             // as a property or a generic argument.
             // Instead of using the TypeDetector to check whether this is an orphan abstract (and not an excluded one),
-            // we consider it to be an Orphan Abstract. This has dide effect: this may "transform" a real property
+            // we consider it to be an Orphan Abstract. This has side effect: this may "transform" a real property
             // into an abstract one... And this is perfectly fine: if everything is evetually successfully resolved
             // the system is valid.
             // If the exluded type is used at a place that requires an instance, this will fail.
@@ -294,6 +305,8 @@ namespace CK.Setup
             // If the interface is not registered, it means that there's no implementation
             // for this. It is a warning, not an error otherwise we'll prevent "partial system"
             // to run.
+            // However, the type may be a secondary IPoco interface that has been excluded/not registered
+            // and in such case, it's an error. We can detect this case if a parent interface is a ISecondary or IPrimaryPoco.
             if( !_typeCache.TryGetValue( t, out var result ) )
             {
                 monitor.Warn( $"Abstract IPoco interface '{t:N}' is not implemented by any registered Poco. It won't be exchangeable." );
@@ -301,12 +314,18 @@ namespace CK.Setup
                 var generalizations = new List<IAbstractPocoType>();
                 foreach( var type in t.GetInterfaces() )
                 {
-                    if( typeof(IPoco).IsAssignableFrom( type ) )
+                    // IAbstractPocoType.Generalizations must not contain the IPoco base.
+                    if( type != typeof( IPoco ) && typeof( IPoco ).IsAssignableFrom( type ) )
                     {
                         var g = OnAbstractPoco( monitor, type, type.IsGenericType ? type.GetGenericTypeDefinition() : null );
                         if( g != null )
                         {
-                            generalizations.Add( Unsafe.As<IAbstractPocoType>( g ) );
+                            if( g is not IAbstractPocoType a )
+                            {
+                                monitor.Error( $"IPoco Type '{t:N}' has been excluded or is not registered." );
+                                return null;
+                            }
+                            generalizations.Add( a );
                         }
                         else success = false;
                     }
@@ -323,7 +342,7 @@ namespace CK.Setup
                 result = PocoType.CreateOrphanAbstractPoco( this, t, generalizations, typeDefinition, arguments );
                 _typeCache.Add( t, result );
             }
-            Throw.DebugAssert( result is IAbstractPocoType );
+            Throw.DebugAssert( result is IAbstractPocoType or ISecondaryPocoType or IPrimaryPocoType );
             return result;
         }
 

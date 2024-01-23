@@ -83,13 +83,6 @@ namespace CK.Setup
                         }
                         tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                     }
-                    else if( tV.Kind == PocoTypeKind.AbstractPoco )
-                    {
-                        // IReadOnlyDictionary<TKey,TValue> is NOT convariant on TValue: we always need an adapter.
-                        typeName = EnsurePocoDictionaryOfAbstractType( monitor, tK, (IAbstractPocoType)tV.NonNullable );
-                        t = IDynamicAssembly.PurelyGeneratedType;
-                        tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                    }
                     else
                     {
                         bool isSecondary = tV.Kind == PocoTypeKind.SecondaryPoco;
@@ -103,7 +96,16 @@ namespace CK.Setup
                             t = IDynamicAssembly.PurelyGeneratedType;
                             tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                         }
+                        else if( tV.Kind != PocoTypeKind.Any )
+                        {
+                            // IReadOnlyDictionary<TKey,TValue> is NOT convariant on TValue: we always need an adapter.
+                            // We support it here for AbstractPoco, string and other basic reference types.
+                            typeName = EnsurePocoDictionaryOfAbstractOrBasicRefType( monitor, tK, tV.NonNullable );
+                            t = IDynamicAssembly.PurelyGeneratedType;
+                            tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                        }
                     }
+                    
                 }
                 if( typeName == null )
                 {
@@ -169,13 +171,13 @@ namespace CK.Setup
             return g.FullName;
         }
 
-        string EnsurePocoDictionaryOfAbstractType( IActivityMonitor monitor, IPocoType tK, IAbstractPocoType tV )
+        string EnsurePocoDictionaryOfAbstractOrBasicRefType( IActivityMonitor monitor, IPocoType tK, IPocoType tV )
         {
             Debug.Assert( !tV.IsNullable );
             var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
             if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
             {
-                _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryOfAbstractRequiredSupport( tK, tV, genTypeName ) );
+                _requiredSupportTypes.Add( genTypeName, g = new PocoDictionaryOfAbstractOrBasicRefRequiredSupport( tK, tV, genTypeName ) );
             }
             return g.FullName;
         }

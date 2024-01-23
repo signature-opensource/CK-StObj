@@ -93,7 +93,9 @@ namespace CK.Setup
                     case IUnionPocoType union: VisitUnion( monitor, union ); break;
                     case IEnumPocoType e: VisitEnum( monitor, e ); break;
                     default:
-                        Debug.Assert( t.GetType().Name == "PocoType" || t.GetType().Name == "BasicTypeWithDefaultValue" );
+                        Throw.DebugAssert( t.GetType().Name == "PocoType"
+                                           || t.GetType().Name == "BasicValueTypeWithDefaultValue"
+                                           || t.GetType().Name == "BasicRefType" );
                         VisitBasic( monitor, t );
                         break;
                 }
@@ -209,7 +211,7 @@ namespace CK.Setup
         /// Does nothing by default.
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
-        /// <param name="basic">The basic poco type.</param>
+        /// <param name="basic">The basic poco type. Can be a <see cref="IBasicRefPocoType"/>.</param>
         protected virtual void VisitBasic( IActivityMonitor monitor, IPocoType basic )
         {
         }

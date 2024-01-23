@@ -30,7 +30,7 @@ namespace CK.Core
         public static T Create<T>( this PocoDirectory @this ) where T : IPoco
         {
             var c = @this.Find( typeof( T ) );
-            if( c == null ) Throw.Exception( $"Unable to resolve IPoco interface '{typeof(T)}' from PocoDirectory." );
+            if( c == null ) Throw.Exception( $"Unable to resolve concrete IPoco interface '{typeof(T).ToCSharpName()}' from PocoDirectory." );
             return (T)c.Create();
         }
 

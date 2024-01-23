@@ -197,6 +197,6 @@ namespace CK.Setup
         /// </summary>
         /// <returns>The "[Kind]CSharpName".</returns>
         string ToString();
-
     }
+
 }
