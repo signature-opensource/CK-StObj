@@ -232,7 +232,7 @@ namespace CK.Setup
 
                 public PropertyInfo Originator => _prop;
 
-                public bool IsReadOnly => _prop.CanWrite || _prop.PropertyType.IsByRef;
+                public bool IsReadOnly => !(_prop.CanWrite || _prop.PropertyType.IsByRef);
             }
 
             public ImmutableArray<IAbstractPocoField> Fields => _fields;

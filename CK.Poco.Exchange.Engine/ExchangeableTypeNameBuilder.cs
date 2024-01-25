@@ -438,7 +438,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Returns a "O(TValue)" pattern. This is map of string to TValue (<c>Dictionary&lt;string,T&gt;</c>.).
+        /// Returns a "O(TValue)" pattern. This is map of string to TValue (<c>Dictionary&lt;string,T&gt;</c>).
         /// </summary>
         /// <param name="map">The map type.</param>
         /// <param name="value">The type of the value.</param>
