@@ -71,7 +71,7 @@ namespace CK.Setup
         }
 
         // List, HashSet, Array.
-        // This auto implements IPocoType.ITypeRef.
+        // This auto implements IPocoType.ITypeRef for the type parameter.
         internal sealed class ListOrSetOrArrayType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
         {
             readonly IPocoType[] _itemType;
@@ -263,18 +263,21 @@ namespace CK.Setup
         }
 
         // IReadOnlyList, IReadOnlySet or IReadOnlyDictionary.
-        // No IPocoType.ITypeRef here: this is not an exchangeable type.
-        internal sealed class AbstractCollectionType : PocoType, ICollectionPocoType
+        // This auto implements IPocoType.ITypeRef bound to the mutable: this read only exchangeability
+        // is driven by the mutable one.
+        internal sealed class AbstractCollectionType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
         {
             readonly ICollectionPocoType _mutable;
+            readonly IPocoType.ITypeRef? _nextRef;
 
             public AbstractCollectionType( PocoTypeSystem s,
                                            Type tCollection,
                                            string csharpName,
                                            ICollectionPocoType mutable )
-                : base( s, tCollection, csharpName, mutable.Kind, static t => new NullCollection( t ), isExchangeable: false )
+                : base( s, tCollection, csharpName, mutable.Kind, static t => new NullCollection( t ) )
             {
                 _mutable = mutable;
+                _nextRef = ((PocoType)mutable.NonNullable).AddBackRef( this );
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
@@ -290,6 +293,17 @@ namespace CK.Setup
             public override ICollectionPocoType ObliviousType => _mutable.ObliviousType;
 
             public override bool CanReadFrom( IPocoType type ) => _mutable.CanReadFrom( type );
+
+            #region ITypeRef auto implementation
+            public IPocoType.ITypeRef? NextRef => _nextRef;
+
+            int IPocoType.ITypeRef.Index => 0;
+
+            IPocoType IPocoType.ITypeRef.Owner => this;
+
+            IPocoType IPocoType.ITypeRef.Type => _mutable;
+
+            #endregion
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

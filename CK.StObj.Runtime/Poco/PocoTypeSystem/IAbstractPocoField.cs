@@ -6,6 +6,9 @@ namespace CK.Setup
     /// <summary>
     /// An abstract field appears in <see cref="IAbstractPocoType.Fields"/>.
     /// The exchangeability is the type's <see cref="IPocoType.IsExchangeable"/>.
+    /// <para>
+    /// Only fields that have at least one <see cref="Implementations"/> exist.
+    /// </para>
     /// </summary>
     public interface IAbstractPocoField
     {
