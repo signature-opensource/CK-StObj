@@ -176,6 +176,7 @@ namespace CK.Setup
 
         public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo )
         {
+            Throw.CheckState( !IsLocked );
             var nType = memberInfo.GetHomogeneousNullabilityInfo( monitor );
             if( nType == null ) return null;
             return Register( monitor, new MemberContext( memberInfo ), nType );

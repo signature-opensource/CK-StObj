@@ -285,7 +285,7 @@ namespace CK.Setup
                         if( _bestReg == null )
                         {
                             var allProps = abstractReadOnlyToCheck.Select( p => $"Type {p.T.ToString()} of {p.P}" ).Concatenate( Environment.NewLine );
-                            monitor.Error( $"Failed to find a writable property for read only {_props} types:{Environment.NewLine}{allProps}{Environment.NewLine}" +
+                            monitor.Error( $"Failed to infer a writable property type for read only {_props} types:{Environment.NewLine}{allProps}{Environment.NewLine}" +
                                            $"None of these types can unify all of them." );
                             return false;
                         }
@@ -294,7 +294,7 @@ namespace CK.Setup
                     {
                         foreach( var (prop, type) in abstractReadOnlyToCheck )
                         {
-                            if( !CheckAbstractReadOnly( monitor, prop, type ) )
+                            if( !CheckAbstractReadOnlyTypeAgainstWritableOne( monitor, prop, type ) )
                             {
                                 return false;
                             }
@@ -403,7 +403,7 @@ namespace CK.Setup
                 // An "Abstract Read Only property" or a nullable optional property.
                 if( _bestReg != null )
                 {
-                    if( !CheckAbstractReadOnly( monitor, p, reg ) )
+                    if( !CheckAbstractReadOnlyTypeAgainstWritableOne( monitor, p, reg ) )
                     {
                         return false;
                     }
@@ -451,7 +451,7 @@ namespace CK.Setup
                 return true;
             }
 
-            bool CheckAbstractReadOnly( IActivityMonitor monitor, IExtPropertyInfo p, IPocoType type )
+            bool CheckAbstractReadOnlyTypeAgainstWritableOne( IActivityMonitor monitor, IExtPropertyInfo p, IPocoType type )
             {
                 Throw.DebugAssert( _bestReg != null && _bestProperty != null );
                 Throw.DebugAssert( !p.PropertyInfo.PropertyType.IsByRef && !p.PropertyInfo.CanWrite );
