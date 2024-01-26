@@ -141,9 +141,9 @@ namespace CK.Setup
             if( !n.IsInitialized )
             {
                 --_exchangeableCount;
+                n = FullExchangeableTypeName.Unexchangeable;
                 using( monitor.OpenInfo( $"{t.ToString()} is not exchangeable.{reason}" ) )
                 {
-                    n = FullExchangeableTypeName.Unexchangeable;
                     if( t is IPrimaryPocoType primary )
                     {
                         foreach( var sec in primary.SecondaryTypes )
@@ -162,6 +162,11 @@ namespace CK.Setup
                         {
                             switch( backRef.Owner.Kind )
                             {
+                                case PocoTypeKind.SecondaryPoco:
+                                    {
+                                        SetNotExchangeable( monitor, backRef.Owner );
+                                        break;
+                                    }
                                 case PocoTypeKind.PrimaryPoco:
                                 case PocoTypeKind.AnonymousRecord:
                                 case PocoTypeKind.Record:

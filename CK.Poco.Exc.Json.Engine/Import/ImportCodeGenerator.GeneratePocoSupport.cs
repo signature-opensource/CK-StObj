@@ -64,7 +64,7 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                     pocoClass.Append( "case " ).AppendSourceString( f.Name ).Append( ":" )
                              .OpenBlock();
 
-                    GenerateRead( pocoClass, f.Type, f.PrivateFieldName, f.DefaultValueInfo.RequiresInit ? false : null );
+                    GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
 
                     pocoClass.Append("break;").CloseBlock();
                 }

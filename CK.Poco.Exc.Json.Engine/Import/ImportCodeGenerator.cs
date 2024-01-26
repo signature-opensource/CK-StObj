@@ -129,7 +129,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
 
                 _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
                 // Use the potentially nullable reference type here to generate the actual read.
-                GenerateRead( _readerFunctionsPart, tActual, "o", null );
+                GenerateRead( _readerFunctionsPart, tActual, "o", true );
                 _readerFunctionsPart.NewLine()
                     .Append( "return o;" )
                     .CloseBlock();
@@ -137,7 +137,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             return $"CK.Poco.Exc.JsonGen.Importer.FRead_{tFunc.Index}";
         }
 
-        void GenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool? requiresInit )
+        void GenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
         {
             if( t.IsNullable )
             {
@@ -148,39 +148,55 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                         .CloseBlock()
                         .Append( "else" )
                         .OpenBlock();
-                DoGenerateRead( writer, t, variableName, requiresInit );
+                DoGenerateRead( _readers, writer, t, variableName, requiresInit );
                 writer.CloseBlock();
             }
             else
             {
-                DoGenerateRead( writer, t, variableName, requiresInit );
+                DoGenerateRead( _readers, writer, t, variableName, requiresInit );
             }
 
-            static bool DefaultRequiresInit( IPocoType t )
+            static string? GetInitSource( IPocoType t )
             {
-                Debug.Assert( !t.IsNullable, "This must be called only when it makes sense: nullable doesn't require any initialization." );
-                return t.DefaultValueInfo.RequiresInit
-                       && (t.Kind == PocoTypeKind.PrimaryPoco
-                           || t.Kind == PocoTypeKind.List
-                           || t.Kind == PocoTypeKind.Dictionary
-                           || t.Kind == PocoTypeKind.HashSet
-                           || t.Kind == PocoTypeKind.AnonymousRecord
-                           || t.Kind == PocoTypeKind.Record);
+                // BasicTypes will be assigned from low-level reader functions.
+                // Enum are read by casting the underlying type.
+                if( t.Kind == PocoTypeKind.Basic || t.Kind == PocoTypeKind.Enum ) return null;
+                // If the type has a default value source, use it.
+                var def = t.DefaultValueInfo;
+                if( def.RequiresInit ) return def.DefaultValue.ValueCSharpSource;
+                // If the type is a struct it will be read by ref: the variable needs to be assigned
+                // before ref can be used.
+                if( t.Type.IsValueType ) return "default";
+                // Reference types should have a DefaultValue.
+                return null;
             }
 
-            void DoGenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool? requiresInit )
+            static void DoGenerateRead( CodeReader[] readers, ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
             {
-                if( requiresInit ?? DefaultRequiresInit( t.NonNullable ) )
+                if( requiresInit )
                 {
-                    Debug.Assert( t.NonNullable.DefaultValueInfo.DefaultValue != null, "Since requiresInit is true." );
-                    writer.Append( variableName ).Append( "=" ).Append( t.NonNullable.DefaultValueInfo.DefaultValue.ValueCSharpSource ).Append( ";" ).NewLine();
+                    var init = GetInitSource( t.NonNullable );
+                    if( init != null )
+                    {
+                        writer.Append( variableName ).Append( "=" ).Append( init ).Append( ";" ).NewLine();
+                    }
                 }
                 // For nullable records, we need this adapter.
+                // This is crappy and inefficient.
+                // This is because even if we can get the reference to the Nullable value field to fill it,
+                // we miss the capability to set its HasValue to true. So we recopy the read value as the
+                // value (thanks to GetValueOrDefault that does'nt check the HasValue and returns the value as-is).
+                string? originName = null;
                 if( t.IsNullable && (t.Kind == PocoTypeKind.AnonymousRecord || t.Kind == PocoTypeKind.Record) )
                 {
+                    originName = variableName;
                     variableName = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
                 }
-                _readers[t.Index >> 1].Invoke( writer, variableName );
+                readers[t.Index >> 1].Invoke( writer, variableName );
+                if( originName != null )
+                {
+                    writer.NewLine().Append( originName ).Append( " = " ).Append( originName ).Append( ".GetValueOrDefault();" );
+                }
             }
         }
 

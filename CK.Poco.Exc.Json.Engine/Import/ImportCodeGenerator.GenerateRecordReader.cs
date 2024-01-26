@@ -35,7 +35,7 @@ namespace CK.Setup.PocoJson
                 {
                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
                     {
-                        GenerateRead( writer, f.Type, $"v.Item{f.Index+1}", f.DefaultValueInfo.RequiresInit ? false : null );
+                        GenerateRead( writer, f.Type, $"v.Item{f.Index+1}", !f.DefaultValueInfo.RequiresInit );
                         writer.NewLine();
                     }
                 }
@@ -67,7 +67,7 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                         }
                         writer.Append( "case " ).AppendSourceString( f.Name ).Append( ":" )
                               .OpenBlock();
-                        GenerateRead( writer, f.Type, $"v.{f.Name}", f.DefaultValueInfo.RequiresInit ? false : null );
+                        GenerateRead( writer, f.Type, $"v.{f.Name}", !f.DefaultValueInfo.RequiresInit );
                         writer.Append( "break;" )
                               .CloseBlock();
                     }

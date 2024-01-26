@@ -2,6 +2,7 @@ using CK.Core;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System.Collections.Generic;
 using System.Diagnostics;
 using static CK.Poco.Exc.Json.Tests.EnumSupportTest;
 using static CK.Testing.StObjEngineTestHelper;
@@ -97,6 +98,29 @@ namespace CK.Poco.Exc.Json.Tests
             o.Code = CodeOnULong.Pending;
             o.Result = o.Code;
             o.ToString().Should().Be( @"{""Code"":""18446744073709551615"",""Result"":[""ULCode"",""18446744073709551615""]}" );
+        }
+
+        public interface IWithList : IPoco
+        {
+            IList<Code> Codes { get; }
+        }
+
+        [Test]
+        public void enum_serialization_in_list()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithList ) ); ;
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
+
+            var f = s.GetRequiredService<IPocoFactory<IWithList>>();
+            var o = f.Create( o =>
+            {
+                o.Codes.Add( Code.Working );
+                o.Codes.Add( Code.Pending );
+            } );
+            o.ToString().Should().Be( """{"Codes":[1,2]}""" );
+
+            JsonTestHelper.Roundtrip( directory, o );
         }
 
     }
