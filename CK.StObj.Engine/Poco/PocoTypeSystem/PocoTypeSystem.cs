@@ -36,7 +36,10 @@ namespace CK.Setup
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
         // The Poco directory can be EmptyPocoDirectory.Default for testing only 
         readonly IPocoDirectory _pocoDirectory;
-        bool _locked;
+        // Created when locking the type system.
+        ExchangeableLayer? _lockedLayer;
+        // The currently applied layer.
+        ExchangeableLayer? _currentLayer;
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
@@ -105,17 +108,17 @@ namespace CK.Setup
             }
         }
 
-        public bool IsLocked => _locked;
+        public bool IsLocked => _lockedLayer != null;
 
         public void Lock( IActivityMonitor monitor )
         {
-            if( _locked )
+            if( _lockedLayer != null )
             {
                 monitor.Warn( $"TypeSystem is already locked with {_exposedAllTypes.Count} types." );
             }
             else
             {
-                _locked = true;
+                _lockedLayer = new ExchangeableLayer( this, null, false );
                 monitor.Warn( $"Locking TypeSystem with {_exposedAllTypes.Count} types." );
             }
         }

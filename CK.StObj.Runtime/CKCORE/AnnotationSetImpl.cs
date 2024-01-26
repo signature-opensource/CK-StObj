@@ -8,7 +8,7 @@ namespace CK.Core
     /// <summary>
     /// Implementation of the <see cref="IAnnotationSet"/> interface.
     /// As a mutable struct, this should not be exposed directly but encapsulated
-    /// in a class with a relay on its methods.
+    /// in a class with relays on its methods.
     /// <para>
     /// This is a direct copy of the <see cref="System.Xml.Linq.XObject"/> annotation implementation.
     /// </para>

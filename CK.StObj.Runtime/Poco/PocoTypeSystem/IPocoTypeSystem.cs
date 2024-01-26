@@ -139,6 +139,50 @@ namespace CK.Setup
         /// <param name="t">The type that must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
         IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t );
-    }
 
+        /// <summary>
+        /// Creates an exchangeable layer based on the predicate and applies it.
+        /// <see cref="IsLocked"/> must be false otherwise an <see cref="InvalidOperationException"/> is raised.
+        /// <para>
+        /// <see cref="ISecondaryPocoType"/>, the <see cref="PocoTypeKind.Any"/> instance and already not exchangeable types
+        /// are not submitted to the predicate.
+        /// </para>
+        /// See also <see cref="ApplyExchangeableLayer(IActivityMonitor, IExchangeableLayer)"/> about multiple applications.
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="isExchangeable">Must return true to confirm the exchangeability, false to prevent the type to be exchangeable.</param>
+        /// <param name="layer">The new layer.</param>
+        /// <returns>A disposable to restore the original state.</returns>
+        IDisposable CreateAndApplyExchangeableLayer( IActivityMonitor monitor, Func<IPocoType, bool> isExchangeable, out IExchangeableLayer layer );
+
+        /// <summary>
+        /// Creates an exchangeable layer where the provided <paramref name="notExchangeableTypes"/> are not exchangeable.
+        /// <see cref="IsLocked"/> must be false otherwise an <see cref="InvalidOperationException"/> is raised.
+        /// <para>
+        /// <see cref="ISecondaryPocoType"/>, the <see cref="PocoTypeKind.Any"/> instance and already not exchangeable types
+        /// are ignored.
+        /// </para>
+        /// See also <see cref="ApplyExchangeableLayer(IActivityMonitor, IExchangeableLayer)"/> about multiple applications.
+        /// </summary>
+        /// <remarks>
+        /// The types MUST be from this type system otherwise kitten will die: this cannot be checked.
+        /// </remarks>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="notExchangeableTypes">A set of type to exclude.</param>
+        /// <param name="layer">The new layer.</param>
+        /// <returns>A disposable to restore the original state.</returns>
+        IDisposable CreateAndApplyExchangeableLayer( IActivityMonitor monitor, IEnumerable<IPocoType> notExchangeableTypes, out IExchangeableLayer layer );
+
+        /// <summary>
+        /// Applies an existing layer.
+        /// <para>
+        /// Multiple layers can be applied: they act as logical and filter. Disposing the outer one automatically disables
+        /// any subordinated layers.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="layer">The layer to apply.</param>
+        /// <returns>A disposable to restore the original state.</returns>
+        IDisposable ApplyExchangeableLayer( IActivityMonitor monitor, IExchangeableLayer layer );
+    }
 }

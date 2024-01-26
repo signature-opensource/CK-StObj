@@ -294,7 +294,7 @@ namespace CK.Setup
 
         internal void SetNotExchangeable( IActivityMonitor monitor, string reason )
         {
-            Debug.Assert( _isExchangeable );
+            Throw.DebugAssert( _isExchangeable );
             using( monitor.OpenInfo( $"{ToString()} is not exchangeable: {reason}" ) )
             {
                 _isExchangeable = false;
@@ -306,6 +306,9 @@ namespace CK.Setup
                 }
             }
         }
+
+        // Only called from ExchangeableLayer.
+        internal void SetExchangeabilty( bool fromLayer ) => _isExchangeable = fromLayer;
 
         /// <summary>
         /// By default propagates the Not Exchangeable to this type (this works for Collections).
