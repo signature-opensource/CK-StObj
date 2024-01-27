@@ -79,7 +79,7 @@ namespace CK.Setup
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
-
+            string? _standardName;
 
             public ListOrSetOrArrayType( IActivityMonitor monitor,
                                          PocoTypeSystem s,
@@ -112,6 +112,8 @@ namespace CK.Setup
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
 
             public override string ImplTypeName => _implTypeName;
+
+            public override string StandardName => _standardName ??= $"{Kind switch { PocoTypeKind.Array => 'A', PocoTypeKind.List => 'L', _ => 'S'}}({_itemType[0].StandardName})";
 
             public override ICollectionPocoType ObliviousType => _obliviousType;
 
@@ -175,6 +177,7 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
+            string? _standardName;
 
             public DictionaryType( IActivityMonitor monitor,
                                    PocoTypeSystem s,
@@ -209,6 +212,21 @@ namespace CK.Setup
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
 
             public override string ImplTypeName => _implTypeName;
+
+            public override string StandardName
+            {
+                get
+                {
+                    if( _standardName == null )
+                    {
+                        var k = _itemTypes[0];
+                        _standardName = k.Type == typeof( string )
+                                            ? $"O({_itemTypes[1].StandardName})"
+                                            : $"M({k.StandardName},{_itemTypes[1].StandardName})";
+                    }
+                    return _standardName;
+                }
+            }
 
             public override ICollectionPocoType ObliviousType => _obliviousType;
 
@@ -285,6 +303,8 @@ namespace CK.Setup
             public bool IsAbstractCollection => true;
 
             public bool IsAbstractReadOnly => true;
+
+            public override string StandardName => _mutable.StandardName;
 
             public ICollectionPocoType MutableCollection => _mutable;
 

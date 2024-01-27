@@ -28,7 +28,7 @@ namespace CK.Setup
         /// As a convenience, this can returns false if the type is already registered but this
         /// should be avoided.
         /// <para>
-        /// The type must not be 'object', nor a value type and be the nominal one.
+        /// The type must not be 'object', nor a value type and be the oblivious one.
         /// </para>
         /// </summary>
         /// <param name="t">The type to add.</param>
@@ -41,9 +41,9 @@ namespace CK.Setup
                 || t.Type.IsValueType
                 || t.ObliviousType != t )
             {
-                Throw.ArgumentException( $"The type must not be 'object', nor a value type and be the nominal one: {t}." );
+                Throw.ArgumentException( $"The type must not be 'object', nor a value type and be the oblivious one: {t}." );
             }
-            Debug.Assert( !t.IsPurelyGeneratedType, "Nominal type are not purely generated: its Type can be challenged." );
+            Throw.DebugAssert( "An oblivious type is not purely generated: its Type can be challenged.", !t.IsPurelyGeneratedType );
             // Finds the first type that can be assigned to the new one:
             // the new one must appear before it.
             for( int i = 0; i < _sorted.Count; i++ )

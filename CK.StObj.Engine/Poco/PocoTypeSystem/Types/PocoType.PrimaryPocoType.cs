@@ -96,7 +96,14 @@ namespace CK.Setup
 
             ICompositePocoType ICompositePocoType.ObliviousType => this;
 
+
+            public ExternalNameAttribute? ExternalName => _familyInfo.ExternalName;
+
+            public string ExternalOrCSharpName => _familyInfo.ExternalName?.Name ?? CSharpName;
+
             public override string ImplTypeName => _familyInfo.PocoClass.FullName!;
+
+            public override string StandardName => ExternalOrCSharpName;
 
             public string CSharpBodyConstructorSourceCode => _ctorCode;
 
@@ -147,10 +154,6 @@ namespace CK.Setup
             }
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
-
-            public ExternalNameAttribute? ExternalName => _familyInfo.ExternalName;
-
-            public string ExternalOrCSharpName => _familyInfo.ExternalName?.Name ?? CSharpName;
 
             public IEnumerable<ISecondaryPocoType> SecondaryTypes
             {

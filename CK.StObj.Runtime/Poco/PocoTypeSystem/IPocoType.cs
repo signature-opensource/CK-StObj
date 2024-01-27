@@ -2,6 +2,7 @@ using CK.Core;
 using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
+using System.Runtime.Intrinsics.X86;
 
 namespace CK.Setup
 {
@@ -65,6 +66,30 @@ namespace CK.Setup
         /// Gets the implementation C# type name for this type.
         /// </summary>
         string ImplTypeName { get; }
+
+        /// <summary>
+        /// Gets this type standard name. Nullable type name ends with "?".
+        /// <list type="bullet">
+        ///   <item>
+        ///   For <see cref="PocoTypeKind.Basic"/>, <see cref="PocoTypeKind.AbstractPoco"/> and <see cref="PocoTypeKind.SecondaryPoco"/>
+        ///   it is the <see cref="IPocoType.CSharpName"/> ("object, "int", "CK.Cris.ICommand", etc.).
+        ///   </item>
+        ///   <item>
+        ///   For <see cref="ICollectionPocoType"/> is is "A(T)" for array, "L(T)" for list, "S(T)" for set, "M(TKey,TValue)" for dictionary
+        ///   or "O(TValue)" when the dictionary key is a string.
+        ///   </item>
+        ///   <item>
+        ///   For <see cref="INamedPocoType"/> it is the <see cref="INamedPocoType.ExternalOrCSharpName"/>.
+        ///   </item>
+        ///   <item>
+        ///   For <see cref="PocoTypeKind.AnonymousRecord"/> it is "(T1,T2,T3:Name,T4,...)". The ":Name" only apprars when named field has a name.
+        ///   </item>
+        ///   <item>
+        ///   For <see cref="IUnionPocoType"/> it is "T1|T2|...".
+        ///   </item>
+        /// </list>
+        /// </summary>
+        string StandardName { get; }
 
         /// <summary>
         /// Gets the oblivious type.

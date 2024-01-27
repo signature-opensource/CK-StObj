@@ -6,7 +6,7 @@ using NUnit.Framework;
 using System;
 using static CK.Testing.StObjEngineTestHelper;
 
-namespace CK.StObj.Engine.Tests.PocoJson
+namespace CK.Poco.Exc.Json.Tests
 {
     [TestFixture]
     public class PocoWithGlobalizationTypesTests

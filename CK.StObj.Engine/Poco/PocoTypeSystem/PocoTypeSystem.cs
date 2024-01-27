@@ -746,7 +746,6 @@ namespace CK.Setup
             }
             return (IUnionPocoType)result;
         }
-
     }
 
 }

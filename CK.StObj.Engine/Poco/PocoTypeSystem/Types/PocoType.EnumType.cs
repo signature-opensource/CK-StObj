@@ -106,6 +106,8 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _externalName != null ? _externalName.Name : CSharpName;
 
+            public override string StandardName => ExternalOrCSharpName;
+
             public string? DefaultValueName => _defaultValueName;
 
             /// <summary>

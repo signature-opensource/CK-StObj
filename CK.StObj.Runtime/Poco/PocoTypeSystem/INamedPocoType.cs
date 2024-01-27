@@ -3,8 +3,8 @@ using CK.Core;
 namespace CK.Setup
 {
     /// <summary>
-    /// Named types are <see cref="ICompositePocoType"/> (<see cref="IPrimaryPocoType"/>
-    /// and <see cref="IRecordPocoType"/> for non anonymous records) and <see cref="IEnumPocoType"/>.
+    /// Named types are <see cref="IPrimaryPocoType"/> and <see cref="IRecordPocoType"/> where <see cref="IRecordPocoType.IsAnonymous"/> is false)
+    /// and <see cref="IEnumPocoType"/>.
     /// </summary>
     public interface INamedPocoType
     {
