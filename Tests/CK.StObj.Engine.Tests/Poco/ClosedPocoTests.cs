@@ -72,9 +72,9 @@ namespace CK.StObj.Engine.Tests.Poco
             var all = TestHelper.CreateAutomaticServices( c );
             try
             {
-                var pocoSupportResult = all.CollectorResult.CKTypeResult.PocoDirectory;
-                Debug.Assert( pocoSupportResult != null );
-                pocoSupportResult.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoDirectory() );
+                var pocoDirectory = all.CollectorResult.PocoTypeSystemBuilder.PocoDirectory;
+                Debug.Assert( pocoDirectory != null );
+                pocoDirectory.Should().BeSameAs( all.CollectorResult.DynamicAssembly.GetPocoDirectory() );
                 var services = all.Services;
 
                 var dCloPoc = services.GetRequiredService<IPocoFactory<IDocumentCloPoc>>().Create();
@@ -87,23 +87,23 @@ namespace CK.StObj.Engine.Tests.Poco
                 services.GetService<IPocoFactory<ICloPocPart>>().Should().BeNull( "ICloPocPart is a CKTypeSuperDefiner." );
                 services.GetService<IPocoFactory<IAuthenticatedCloPocPart>>().Should().BeNull( "Since ICloPocPart is a CKTypeSuperDefiner, a command part is NOT Poco." );
 
-                pocoSupportResult.AllInterfaces.Should().HaveCount( 3 );
-                pocoSupportResult.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo(
+                pocoDirectory.AllInterfaces.Should().HaveCount( 3 );
+                pocoDirectory.AllInterfaces.Values.Select( info => info.PocoInterface ).Should().BeEquivalentTo(
                     new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
 
-                pocoSupportResult.OtherInterfaces.Keys.Should().BeEquivalentTo(
+                pocoDirectory.OtherInterfaces.Keys.Should().BeEquivalentTo(
                     new[] { typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
 
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
+                pocoDirectory.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
                     .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );
-                pocoSupportResult.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface.PocoInterface ).Should().BeEquivalentTo(
+                pocoDirectory.OtherInterfaces[typeof( ICloPoc )].Select( info => info.PrimaryInterface.PocoInterface ).Should().BeEquivalentTo(
                     new[] { typeof( IDocumentCloPoc ), typeof( IUserCloPoc ) } );
 
-                pocoSupportResult.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
-                    pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have parts." );
-                pocoSupportResult.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].Should().BeEquivalentTo(
-                    pocoSupportResult.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
-                pocoSupportResult.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo(
+                pocoDirectory.OtherInterfaces[typeof( ICloPocPart )].Should().BeEquivalentTo(
+                    pocoDirectory.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have parts." );
+                pocoDirectory.OtherInterfaces[typeof( IAuthenticatedCloPocPart )].Should().BeEquivalentTo(
+                    pocoDirectory.OtherInterfaces[typeof( ICloPoc )], "Our 2 commands have IAuthenticatedCloPocPart part." );
+                pocoDirectory.OtherInterfaces[typeof( ICultureDependentCloPocPart )].Select( info => info.ClosureInterface ).Should().BeEquivalentTo(
                     new[] { typeof( ICultureUserCloPoc ) } );
 
                 var factoryCultCloPoc = services.GetService<IPocoFactory<ICultureUserCloPoc>>();

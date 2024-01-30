@@ -108,7 +108,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void records_can_be_NOT_ReadOnlyCompliant_when_not_in_a_Poco_field()
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
             {
                 IPocoType p = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( WithFields ) )! )!;
                 var pRec = (IRecordPocoType)p;
@@ -353,7 +353,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void ref_property_or_field_thats_the_question()
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
             var t1 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetValidSetterButNotIdeal ) )! );
             Debug.Assert( t1 != null );
             var t2 = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetSimple ) )! );

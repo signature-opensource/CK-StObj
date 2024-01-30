@@ -16,7 +16,7 @@ namespace CK.Setup.PocoJson
 
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext ctx )
         {
-            var typeSystem = ctx.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystem>();
+            var typeSystem = ctx.CurrentRun.ServiceContainer.GetRequiredService<IPocoTypeSystemBuilder>();
             // Ensures that byte object array and List are registered (there's no reason they couldn't, hence the Throw).
             Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( List<object> ) ) != null );
             Throw.CheckState( typeSystem.RegisterNullOblivious( monitor, typeof( object[] ) ) != null );
@@ -26,19 +26,19 @@ namespace CK.Setup.PocoJson
             return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
         }
 
-        CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystem typeSystem )
+        CSCodeGenerationResult WaitForLockedTypeSystem( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystemBuilder typeSystemBuilder )
         {
-            if( !typeSystem.IsLocked )
+            if( !typeSystemBuilder.IsLocked )
             {
                 return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
             }
-            monitor.Trace( $"PocoTypeSystem is locked. Json code generation can start." );
+            monitor.Trace( $"PocoTypeSystemBuilder is locked. Json serialization code generation can start." );
             return new CSCodeGenerationResult( nameof( GenerateAllCode ) );
         }
 
-        CSCodeGenerationResult GenerateAllCode( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystem typeSystem )
+        CSCodeGenerationResult GenerateAllCode( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoTypeSystemBuilder typeSystemBuilder )
         {
-            _nameMap = new ExchangeableTypeNameBuilder().Generate( monitor, typeSystem, false );
+            _nameMap = new ExchangeableTypeNameBuilder().Generate( monitor, typeSystemBuilder, false );
 
             var ns = c.Assembly.Code.Global.FindOrCreateNamespace( "CK.Poco.Exc.JsonGen" );
 

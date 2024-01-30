@@ -17,7 +17,7 @@ namespace CK.Setup
     {
 
         internal static RecordAnonType CreateAnonymousRecord( IActivityMonitor monitor,
-                                                              PocoTypeSystem s,
+                                                              PocoTypeSystemBuilder s,
                                                               Type tNotNull,
                                                               Type tNull,
                                                               string typeName,
@@ -73,7 +73,7 @@ namespace CK.Setup
             string? _standardName;
 
             public RecordAnonType( IActivityMonitor monitor,
-                                   PocoTypeSystem s,
+                                   PocoTypeSystemBuilder s,
                                    Type tNotNull,
                                    Type tNull,
                                    string typeName,

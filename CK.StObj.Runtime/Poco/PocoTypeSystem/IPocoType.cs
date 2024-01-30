@@ -13,7 +13,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Compact index that uniquely identifies this type
-        /// in the <see cref="IPocoTypeSystem.AllTypes"/> list.
+        /// in the <see cref="IPocoTypeSystemBuilder.AllTypes"/> list.
         /// </summary>
         int Index { get; }
 
@@ -92,7 +92,7 @@ namespace CK.Setup
         string StandardName { get; }
 
         /// <summary>
-        /// Gets the oblivious type.
+        /// Gets the oblivious type (this instance if <see cref="IsOblivious"/> is true).
         /// <list type="bullet">
         ///   <item>
         ///     <term>Nullable Reference Types</term>
@@ -114,6 +114,7 @@ namespace CK.Setup
         ///         are true) and with references to oblivious types (all <see cref="IPocoType.ITypeRef.Type"/> are oblivious).
         ///   </description>
         ///   </item>
+        ///   <item>
         ///   <term>IPoco types</term>
         ///   <description>
         ///         <see cref="ISecondaryPocoType"/>'s oblivious is its non nullable <see cref="IPrimaryPocoType"/>.
@@ -171,12 +172,21 @@ namespace CK.Setup
             ///         </para>
             ///     </item>
             ///     <item>
+            ///         For <see cref="IUnionPocoType"/> union types this is the index in the <see cref="IOneOfPocoType.AllowedTypes"/>.
+            ///     </item>
+            ///     <item>
             ///         For collections, this is the index in the <see cref="ICollectionPocoType.ItemTypes"/>.
             ///     </item>
             ///     <item>
-            ///         For union types, this is the index in the <see cref="IOneOfPocoType.AllowedTypes"/>.
+            ///         For <see cref="IAbstractPocoType"/> that have <see cref="IAbstractPocoType.GenericArguments"/> this is
+            ///         the index of the generic argument.
             ///     </item>
             /// </list>
+            /// This doesn't track the relationship between <see cref="ISecondaryPocoType"/>, <see cref="IAbstractPocoType"/> and
+            /// <see cref="IPrimaryPocoType"/>: these relationships are all exposed by the properties of these types
+            /// (like <see cref="IAbstractPocoType.Generalizations"/> and <see cref="IPrimaryPocoType.AbstractTypes"/>
+            /// <see cref="IAbstractPocoType.Specializations"/>, <see cref="IAbstractPocoType.PrimaryPocoTypes"/>, <see cref="IPrimaryPocoType.SecondaryTypes"/>
+            /// and <see cref="ISecondaryPocoType.PrimaryPocoType"/>).
             /// </summary>
             int Index { get; }
         }

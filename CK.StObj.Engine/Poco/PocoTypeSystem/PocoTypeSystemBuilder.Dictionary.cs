@@ -6,7 +6,7 @@ using System;
 
 namespace CK.Setup
 {
-    public sealed partial class PocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder
     {
         IPocoType? RegisterDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, bool isRegular )
         {

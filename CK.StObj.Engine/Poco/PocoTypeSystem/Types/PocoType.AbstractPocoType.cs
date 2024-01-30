@@ -16,7 +16,7 @@ namespace CK.Setup
     partial class PocoType
     {
         internal static AbstractPocoType CreateAbstractPoco( IActivityMonitor monitor,
-                                                             PocoTypeSystem s,
+                                                             PocoTypeSystemBuilder s,
                                                              Type tAbstract,
                                                              int abstractCount,
                                                              IPocoType[] abstractAndPrimary,
@@ -28,7 +28,7 @@ namespace CK.Setup
         }
 
         internal static AbstractPocoBaseAndClosed CreateAbstractPocoBaseOrClosed( IActivityMonitor monitor,
-                                                                                  PocoTypeSystem s,
+                                                                                  PocoTypeSystemBuilder s,
                                                                                   Type tAbstract,
                                                                                   List<IAbstractPocoType> abstracts,
                                                                                   IPrimaryPocoType[] primaries )
@@ -37,13 +37,13 @@ namespace CK.Setup
             return new AbstractPocoBaseAndClosed( monitor, s, tAbstract, abstracts, primaries );
         }
 
-        internal static OrphanAbstractPoco CreateOrphanAbstractPoco( PocoTypeSystem s,
-                                                                     Type tAbstract,
-                                                                     IReadOnlyList<IAbstractPocoType> generalizations,
-                                                                     PocoGenericTypeDefinition? genericTypeDefinition,
-                                                                     (IPocoGenericParameter Parameter, IPocoType Type)[]? genericArguments )
+        internal static ImplementationLessAbstractPoco CreateImplementationLessAbstractPoco( PocoTypeSystemBuilder s,
+                                                                                             Type tAbstract,
+                                                                                             IReadOnlyList<IAbstractPocoType> generalizations,
+                                                                                             PocoGenericTypeDefinition? genericTypeDefinition,
+                                                                                             (IPocoGenericParameter Parameter, IPocoType Type)[]? genericArguments )
         {
-            return new OrphanAbstractPoco( s, tAbstract, generalizations, genericTypeDefinition, genericArguments );
+            return new ImplementationLessAbstractPoco( s, tAbstract, generalizations, genericTypeDefinition, genericArguments );
         }
 
         sealed class NullAbstractPoco : NullReferenceType, IAbstractPocoType
@@ -85,7 +85,7 @@ namespace CK.Setup
 
         interface IAbstractPocoImpl 
         {
-            void AddOrphanSpecializations( OrphanAbstractPoco s );
+            void AddImplementationLessSpecialization( ImplementationLessAbstractPoco s );
         }
 
         // For all AbstractPoco that have implementations except IPoco and IClosedPoco.
@@ -95,14 +95,14 @@ namespace CK.Setup
             readonly int _abstractCount;
             readonly IPocoGenericTypeDefinition? _genericTypeDefinition;
             (IPocoGenericParameter Parameter, IPocoType Type)[] _genericArguments;
-            List<OrphanAbstractPoco>? _orphanSpecializations;
+            List<ImplementationLessAbstractPoco>? _implLessSpecializations;
             ImmutableArray<IAbstractPocoField> _fields;
             object _generalizations;
             List<IAbstractPocoType>? _minimalGeneralizations;
             int _exchangeableCount;
 
             public AbstractPocoType( IActivityMonitor monitor,
-                                     PocoTypeSystem s,
+                                     PocoTypeSystemBuilder s,
                                      Type tAbstract,
                                      int abstractCount,
                                      IPocoType[] abstractAndPrimary,
@@ -155,11 +155,11 @@ namespace CK.Setup
                 get
                 {
                     var o = _abstractAndPrimary.Take( _abstractCount ).Cast<IAbstractPocoType>();
-                    return _orphanSpecializations != null ? o.Concat( _orphanSpecializations ) : o;
+                    return _implLessSpecializations != null ? o.Concat( _implLessSpecializations ) : o;
                 }
             }
 
-            void IAbstractPocoImpl.AddOrphanSpecializations( OrphanAbstractPoco s ) => (_orphanSpecializations ??= new List<OrphanAbstractPoco>()).Add( s );
+            void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => (_implLessSpecializations ??= new List<ImplementationLessAbstractPoco>()).Add( s );
 
             public IEnumerable<IAbstractPocoType> Generalizations
             {
@@ -167,7 +167,7 @@ namespace CK.Setup
                 {
                     if( _generalizations is not IEnumerable<IAbstractPocoType> g )
                     {
-                        var ts = (PocoTypeSystem)_generalizations;
+                        var ts = (PocoTypeSystemBuilder)_generalizations;
                         _generalizations = g = _type.GetInterfaces()
                                                     .Where( t => t != typeof( IPoco ) )
                                                     .Select( ts.FindByType )
@@ -237,7 +237,7 @@ namespace CK.Setup
 
             public ImmutableArray<IAbstractPocoField> Fields => _fields;
 
-            internal bool CreateFields( IActivityMonitor monitor, PocoTypeSystem pocoTypeSystem )
+            internal bool CreateFields( IActivityMonitor monitor, PocoTypeSystemBuilder pocoTypeSystem )
             {
                 Throw.DebugAssert( _fields.IsDefault );
                 bool success = true;
@@ -272,7 +272,13 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
 
-            public IEnumerable<IPocoType> AllowedTypes => _abstractAndPrimary;
+            public IEnumerable<IPocoType> AllowedTypes
+            {
+                get
+                {
+                    return _implLessSpecializations != null ? _abstractAndPrimary.Concat( _implLessSpecializations ) : _abstractAndPrimary;
+                }
+            }
 
             public override bool CanReadFrom( IPocoType type )
             {
@@ -307,6 +313,11 @@ namespace CK.Setup
             internal void SetGenericArguments( (IPocoGenericParameter Parameter, IPocoType Type)[] arguments )
             {
                 Throw.DebugAssert( _genericTypeDefinition != null && _genericTypeDefinition.Parameters.Count == arguments.Length );
+                for( int i = 0; i < arguments.Length; i++ )
+                {
+                    IPocoType t = arguments[i].Type;
+                    _ = new PocoTypeRef( this, t, ~i );
+                }
                 _genericArguments = arguments;
             }
 
@@ -323,7 +334,7 @@ namespace CK.Setup
             int _exchangeableCount;
 
             public AbstractPocoBaseAndClosed( IActivityMonitor monitor,
-                                              PocoTypeSystem s,
+                                              PocoTypeSystemBuilder s,
                                               Type tAbstract,
                                               List<IAbstractPocoType> abstracts,
                                               IPrimaryPocoType[] primaries )
@@ -361,7 +372,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> Specializations => _abstracts;
 
-            void IAbstractPocoImpl.AddOrphanSpecializations( OrphanAbstractPoco s ) => _abstracts.Add( s );
+            void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => _abstracts.Add( s );
 
             public IEnumerable<IAbstractPocoType> Generalizations => Array.Empty<IAbstractPocoType>();
 
@@ -389,20 +400,20 @@ namespace CK.Setup
 
         }
 
-        // Orphans (no PrimaryPoco). Not exchangeable.
-        internal sealed class OrphanAbstractPoco : PocoType, IAbstractPocoType, IAbstractPocoImpl
+        // ImplementationLess (no PrimaryPoco).
+        internal sealed class ImplementationLessAbstractPoco : PocoType, IAbstractPocoType, IAbstractPocoImpl
         {
             readonly IPocoGenericTypeDefinition? _genericTypeDefinition;
             readonly IReadOnlyList<IAbstractPocoType> _generalizations;
             readonly (IPocoGenericParameter Parameter, IPocoType Type)[] _genericArguments;
-            List<OrphanAbstractPoco>? _orphanSpecializations;
+            List<ImplementationLessAbstractPoco>? _implLessSpecializations;
             List<IAbstractPocoType>? _minimalGeneralizations;
 
-            public OrphanAbstractPoco( PocoTypeSystem s,
-                                       Type tAbstract,
-                                       IReadOnlyList<IAbstractPocoType> generalizations,
-                                       PocoGenericTypeDefinition? genericDefinitionType,
-                                       (IPocoGenericParameter Parameter, IPocoType Type)[]? genericArguments )
+            public ImplementationLessAbstractPoco( PocoTypeSystemBuilder s,
+                                                   Type tAbstract,
+                                                   IReadOnlyList<IAbstractPocoType> generalizations,
+                                                   PocoGenericTypeDefinition? genericDefinitionType,
+                                                   (IPocoGenericParameter Parameter, IPocoType Type)[]? genericArguments )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ), isExchangeable: false )
             {
                 _genericTypeDefinition = genericDefinitionType;
@@ -410,16 +421,16 @@ namespace CK.Setup
                 _generalizations = generalizations;
                 foreach( var g in generalizations )
                 {
-                    ((IAbstractPocoImpl)g).AddOrphanSpecializations( this );
+                    ((IAbstractPocoImpl)g).AddImplementationLessSpecialization( this );
                 }
                 Throw.DebugAssert( !AllowedTypes.Any() );
             }
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
 
-            public IEnumerable<IAbstractPocoType> Specializations => (IEnumerable<IAbstractPocoType>?)_orphanSpecializations ?? Array.Empty<IAbstractPocoType>();
+            public IEnumerable<IAbstractPocoType> Specializations => (IEnumerable<IAbstractPocoType>?)_implLessSpecializations ?? Array.Empty<IAbstractPocoType>();
 
-            void IAbstractPocoImpl.AddOrphanSpecializations( OrphanAbstractPoco s ) => (_orphanSpecializations ??= new List<OrphanAbstractPoco>()).Add( s );
+            void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => (_implLessSpecializations ??= new List<ImplementationLessAbstractPoco>()).Add( s );
 
             public IEnumerable<IAbstractPocoType> Generalizations => _generalizations;
 

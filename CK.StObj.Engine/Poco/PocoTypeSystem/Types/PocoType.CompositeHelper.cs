@@ -28,7 +28,7 @@ namespace CK.Setup
             /// If the result is DefaultValueInfo.Disallowed, then... well, it's disabled: this cannot be used in a Poco field, only in collections
             /// and outside of a Poco.
             /// </summary>
-            public static DefaultValueInfo CreateDefaultValueInfo( PocoTypeSystem.IStringBuilderPool sbPool, IRecordPocoType type )
+            public static DefaultValueInfo CreateDefaultValueInfo( PocoTypeSystemBuilder.IStringBuilderPool sbPool, IRecordPocoType type )
             {
                 var b = sbPool.Get();
                 var r = type.IsAnonymous

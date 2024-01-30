@@ -58,7 +58,7 @@ namespace CK.Setup
 
             internal void AddInstance( AbstractPocoType t ) => _instances.Add( t );
 
-            internal bool InitializeGenericInstanceArguments( IPocoTypeSystem typeSystem, IActivityMonitor monitor )
+            internal bool InitializeGenericInstanceArguments( IPocoTypeSystemBuilder typeSystem, IActivityMonitor monitor )
             {
                 foreach( var i in _instances )
                 {
@@ -70,7 +70,7 @@ namespace CK.Setup
             }
 
             internal (IPocoGenericParameter Parameter, IPocoType Type)[]? CreateArguments( IActivityMonitor monitor,
-                                                                                           IPocoTypeSystem typeSystem,
+                                                                                           IPocoTypeSystemBuilder typeSystem,
                                                                                            Type instanceType )
             {
                 Throw.DebugAssert( instanceType.IsInterface && instanceType.GetGenericTypeDefinition() == _type );

@@ -52,7 +52,7 @@ namespace CK.Setup
         /// <param name="objectName">Name of the "object" (<see cref="PocoTypeKind.Any"/>).</param>
         /// <returns>The resulting <see cref="ExchangeableTypeNameMap"/>.</returns>
         public virtual ExchangeableTypeNameMap Generate( IActivityMonitor monitor,
-                                                         IPocoTypeSystem typeSystem,
+                                                         IPocoTypeSystemBuilder typeSystem,
                                                          bool condemnEnumFromUnderlyingType,
                                                          string objectName = "object" )
         {

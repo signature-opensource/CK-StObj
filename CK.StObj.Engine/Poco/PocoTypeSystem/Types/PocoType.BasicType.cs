@@ -7,12 +7,12 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        internal static PocoType CreateObject( PocoTypeSystem s )
+        internal static PocoType CreateObject( PocoTypeSystemBuilder s )
         {
             return new PocoType( s, typeof(object), "object", PocoTypeKind.Any, static t => new NullReferenceType( t ) );
         }
 
-        internal static BasicRefType CreateBasicRef( PocoTypeSystem s,
+        internal static BasicRefType CreateBasicRef( PocoTypeSystemBuilder s,
                                                      Type type,
                                                      string csharpName,
                                                      FieldDefaultValue defaultValue,
@@ -24,7 +24,7 @@ namespace CK.Setup
             return new BasicRefType( s, type, csharpName, defaultValue, baseType );
         }
 
-        internal static IPocoType CreateBasicValue( PocoTypeSystem s,
+        internal static IPocoType CreateBasicValue( PocoTypeSystemBuilder s,
                                                     Type notNullable,
                                                     Type nullable,
                                                     string csharpName )
@@ -44,7 +44,7 @@ namespace CK.Setup
         {
             readonly IPocoFieldDefaultValue _def;
 
-            public BasicValueTypeWithDefaultValue( PocoTypeSystem s,
+            public BasicValueTypeWithDefaultValue( PocoTypeSystemBuilder s,
                                                    Type notNullable,
                                                    Type nullable,
                                                    string csharpName,
@@ -63,7 +63,7 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly IBasicRefPocoType? _baseType;
 
-            public BasicRefType( PocoTypeSystem s,
+            public BasicRefType( PocoTypeSystemBuilder s,
                                  Type notNullable,
                                  string csharpName,
                                  IPocoFieldDefaultValue defaultValue,

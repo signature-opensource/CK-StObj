@@ -51,7 +51,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void default_values_on_enum_is_the_Unsigned_minimal_value()
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
             var t = ts.RegisterNullOblivious( TestHelper.Monitor, typeof( TypeDefaultIsUnsignedMinimalValue ) );
 
             Debug.Assert( t != null && t.DefaultValueInfo.DefaultValue != null );

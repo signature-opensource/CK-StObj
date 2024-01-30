@@ -13,7 +13,7 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        internal static PrimaryPocoType CreatePrimaryPoco( PocoTypeSystem s, IPocoFamilyInfo family )
+        internal static PrimaryPocoType CreatePrimaryPoco( PocoTypeSystemBuilder s, IPocoFamilyInfo family )
         {
             return new PrimaryPocoType( s, family, family.PrimaryInterface.PocoInterface );
         }
@@ -73,7 +73,7 @@ namespace CK.Setup
             string _ctorCode;
             IReadOnlyList<IAbstractPocoType>? _minimalAbstractTypes;
 
-            public PrimaryPocoType( PocoTypeSystem s,
+            public PrimaryPocoType( PocoTypeSystemBuilder s,
                                     IPocoFamilyInfo family,
                                     Type primaryInterface )
                 : base( s, primaryInterface, primaryInterface.ToCSharpName(), PocoTypeKind.PrimaryPoco, static t => new Null( t ) )
@@ -127,7 +127,7 @@ namespace CK.Setup
                 return true;
             }
 
-            internal void ComputeCtorCode( PocoTypeSystem.IStringBuilderPool sbPool )
+            internal void ComputeCtorCode( PocoTypeSystemBuilder.IStringBuilderPool sbPool )
             {
                 var b = sbPool.Get();
                 foreach( var f in _fields )

@@ -41,7 +41,7 @@ namespace CK.Setup
         }
 
         internal static UnionType CreateUnion( IActivityMonitor monitor,
-                                               PocoTypeSystem s,
+                                               PocoTypeSystemBuilder s,
                                                IPocoType[] allowedTypes,
                                                IPocoType? obliviousType )
         {
@@ -72,7 +72,7 @@ namespace CK.Setup
             readonly IUnionPocoType _obliviousType;
             string? _standardName;
 
-            public UnionType( IActivityMonitor monitor, PocoTypeSystem s, IPocoType[] allowedTypes, IUnionPocoType? obliviousType )
+            public UnionType( IActivityMonitor monitor, PocoTypeSystemBuilder s, IPocoType[] allowedTypes, IUnionPocoType? obliviousType )
                 : base( s,
                         typeof(object),
                         "object",

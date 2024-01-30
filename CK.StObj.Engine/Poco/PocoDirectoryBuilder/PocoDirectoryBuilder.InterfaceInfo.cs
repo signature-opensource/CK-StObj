@@ -2,8 +2,6 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 
-#nullable enable
-
 namespace CK.Setup
 {
     partial class PocoDirectoryBuilder

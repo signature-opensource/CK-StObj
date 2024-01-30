@@ -79,9 +79,9 @@ namespace CK.Setup
                     ws.EnsureAssemblyReference( typeof( Microsoft.Extensions.DependencyInjection.ServiceProvider ) );
 
                     // Model assemblies.
-                    if( CKTypeResult.Assemblies.Count > 0 )
+                    if( _typeResult.Assemblies.Count > 0 )
                     {
-                        ws.EnsureAssemblyReference( CKTypeResult.Assemblies );
+                        ws.EnsureAssemblyReference( _typeResult.Assemblies );
                     }
                     else
                     {
@@ -145,7 +145,7 @@ namespace CK.Setup
                     {
                         int count = 0;
                         int count2ndPass = collector.Count;
-                        foreach( var t in CKTypeResult.TypesToImplement )
+                        foreach( var t in _typeResult.TypesToImplement )
                         {
                             using( monitor.OpenTrace( $"Type implementor n°{count} - {t.GetType():C}." ) )
                             {
@@ -409,7 +409,7 @@ public static IReadOnlyList<IStObjFinalImplementation> FinalRealObjects => _fina
 public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
 " );
             var rootStaticCtor = rootType.CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
-            SetupObjectsGraph( rootStaticCtor, orderedStObjs, CKTypeResult.RealObjects.EngineMap );
+            SetupObjectsGraph( rootStaticCtor, orderedStObjs, _typeResult.RealObjects.EngineMap );
 
             // Construct and Initialize methods takes a monitor and the context instance: we need the instance constructor.
             // We ensure that this StObjMap can be initialized once and only once (static bool _intializeOnce).

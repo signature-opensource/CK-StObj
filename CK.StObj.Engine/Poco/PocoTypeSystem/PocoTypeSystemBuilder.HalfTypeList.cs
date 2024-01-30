@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
 
-    public sealed partial class PocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder
     {
         sealed class HalfTypeList : IReadOnlyList<IPocoType>
         {

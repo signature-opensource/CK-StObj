@@ -1,17 +1,10 @@
-using CK.CodeGen;
 using CK.Core;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Net.Sockets;
-using System.Reflection;
-using static CK.Setup.PocoType;
 
 namespace CK.Setup
 {
-
     partial class PocoDirectoryBuilder
     {
         sealed class PocoPropertyInfo : IPocoPropertyInfo

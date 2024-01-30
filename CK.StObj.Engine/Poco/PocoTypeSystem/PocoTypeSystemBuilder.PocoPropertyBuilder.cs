@@ -9,11 +9,11 @@ using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup
 {
-    public sealed partial class PocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder
     {
         sealed class PocoPropertyBuilder
         {
-            readonly PocoTypeSystem _system;
+            readonly PocoTypeSystemBuilder _system;
             IPocoPropertyInfo? _props;
             IExtPropertyInfo? _bestProperty;
             PocoFieldAccessKind _fieldAccessKind;
@@ -21,7 +21,7 @@ namespace CK.Setup
             IExtMemberInfo? _defaultValueSource;
             FieldDefaultValue? _defaultValue;
 
-            public PocoPropertyBuilder( PocoTypeSystem system )
+            public PocoPropertyBuilder( PocoTypeSystemBuilder system )
             {
                 _system = system;
             }

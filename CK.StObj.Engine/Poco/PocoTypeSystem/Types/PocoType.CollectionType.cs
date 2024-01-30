@@ -11,7 +11,7 @@ namespace CK.Setup
     partial class PocoType
     {
         internal static ListOrSetOrArrayType CreateCollection( IActivityMonitor monitor,
-                                                               PocoTypeSystem s,
+                                                               PocoTypeSystemBuilder s,
                                                                Type tCollection,
                                                                string csharpName,
                                                                string implTypeName,
@@ -23,7 +23,7 @@ namespace CK.Setup
         }
 
         internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
-                                                         PocoTypeSystem s,
+                                                         PocoTypeSystemBuilder s,
                                                          Type tCollection,
                                                          string csharpName,
                                                          string implTypeName,
@@ -34,7 +34,7 @@ namespace CK.Setup
             return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
         }
 
-        internal static AbstractCollectionType CreateAbstractCollection( PocoTypeSystem s,
+        internal static AbstractCollectionType CreateAbstractCollection( PocoTypeSystemBuilder s,
                                                                          Type tCollection,
                                                                          string csharpName,
                                                                          ICollectionPocoType mutable )
@@ -82,7 +82,7 @@ namespace CK.Setup
             string? _standardName;
 
             public ListOrSetOrArrayType( IActivityMonitor monitor,
-                                         PocoTypeSystem s,
+                                         PocoTypeSystemBuilder s,
                                          Type tCollection,
                                          string csharpName,
                                          string implTypeName,
@@ -180,7 +180,7 @@ namespace CK.Setup
             string? _standardName;
 
             public DictionaryType( IActivityMonitor monitor,
-                                   PocoTypeSystem s,
+                                   PocoTypeSystemBuilder s,
                                    Type tCollection,
                                    string csharpName,
                                    string implTypeName,
@@ -288,7 +288,7 @@ namespace CK.Setup
             readonly ICollectionPocoType _mutable;
             readonly IPocoType.ITypeRef? _nextRef;
 
-            public AbstractCollectionType( PocoTypeSystem s,
+            public AbstractCollectionType( PocoTypeSystemBuilder s,
                                            Type tCollection,
                                            string csharpName,
                                            ICollectionPocoType mutable )

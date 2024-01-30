@@ -9,7 +9,7 @@ using System.Collections.Immutable;
 namespace CK.Setup
 {
 
-    public sealed partial class PocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder
     {
         /// <summary>
         /// Initializes this type system with the IPoco discovery result.
@@ -176,7 +176,7 @@ namespace CK.Setup
             var detector = new PocoCycleAndDefaultVisitor();
             foreach( var p in allPrimaries )
             {
-                detector.VisitRoot( monitor, p );
+                detector.VisitRoot( p );
                 // As soon as one cycle is detected, we stop reporting it:
                 // this avoids any dependency on the cycle to be (redundantly) detected
                 // but we continue the process to detect any missing default value.

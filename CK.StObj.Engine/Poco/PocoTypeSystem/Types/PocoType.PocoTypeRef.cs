@@ -1,3 +1,4 @@
+using CK.Core;
 using static CK.Setup.IPocoType;
 
 namespace CK.Setup
@@ -25,6 +26,7 @@ namespace CK.Setup
 
             internal PocoTypeRef( IPocoType owner, IPocoType t, int index )
             {
+                Throw.DebugAssert( index >= 0 || owner is IAbstractPocoType a && ~index < a.GenericArguments.Count );
                 _owner = owner;
                 _type = t;
                 _index = index;

@@ -26,7 +26,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void empty_IPoco_is_not_exchangeable()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ) );
-            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder;
             var e = ts.FindByType( typeof( IEmptyPoco ) );
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeFalse();
@@ -36,7 +36,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void when_no_IPoco_are_exchangeable_IPoco_itself_is_not_exchangeable()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ) );
-            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder;
             var e = ts.FindByType( typeof( IPoco ) );
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeFalse();
@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void not_exchangeable_type_leads_to_unexchangeable_fields()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IRefEmptyPoco ) );
-            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder;
             var e = ts.FindByType( typeof( IRefEmptyPoco ) ) as IPrimaryPocoType;
             Debug.Assert( e != null );
             e.IsExchangeable.Should().BeTrue( "The string Data is still exchangeable." );
@@ -89,7 +89,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void IsExchangeable_through_collections()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IRefEmptyPoco ), typeof( IPocoWithCollection ) );
-            var ts = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoTypeSystem;
+            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder;
 
             var poco = ts.FindByType( typeof( IPoco ) ) as IAbstractPocoType;
             Debug.Assert( poco != null );

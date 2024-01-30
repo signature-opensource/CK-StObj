@@ -14,13 +14,12 @@ namespace CK.Setup
     /// <summary>
     /// Code source generator for <see cref="IPoco"/>.
     /// Generates the implementation of the <see cref="PocoDirectory"/> abstract real object
-    /// and all the Poco final classes.
+    /// and all the Poco final classes and 
     /// </summary>
-    public sealed class PocoDirectoryImpl : CSCodeGeneratorType, ILockedPocoTypeSystem
+    public sealed class PocoDirectoryImpl : CSCodeGeneratorType
     {
-        [AllowNull]
-        IPocoTypeSystem _typeSystem;
-        Action? _isLocked;
+        [AllowNull] IPocoTypeSystemBuilder _typeSystemBuilder;
+        [AllowNull] ICSCodeGenerationContext _context;
         int _lastRegistrationCount;
 
         /// <summary>
@@ -31,32 +30,32 @@ namespace CK.Setup
         /// <param name="classType">The <see cref="PocoDirectory"/> type.</param>
         /// <param name="c">Code generation context.</param>
         /// <param name="scope">The PocoDirectory_CK type scope.</param>
-        /// <returns>Always <see cref="CSCodeGenerationResult.Success"/>.</returns>
+        /// <returns>
+        /// Always a continuation on a private CheckNoMoreRegisteredPocoTypes that monitors the IPocoTypeSystemBuilder for new types
+        /// and calls <see cref="IPocoTypeSystemBuilder.Lock()"/> when no new types appeared.
+        /// </returns>
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
             Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the CK.Core.PocoDirectory_CK type name to reference the PocoDirectory implementation." );
             // Let the PocoDirectory_CK be sealed.
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
-            IPocoDirectory pocoDirectory = c.Assembly.GetPocoDirectory();
-            _typeSystem = c.Assembly.GetPocoTypeSystem();
-            Debug.Assert( pocoDirectory == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoDirectory ) ), "The IPocoDirectory is also available at the GeneratedBinPath." );
-            Debug.Assert( _typeSystem == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystem ) ), "The IPocoTypeSystem is also available at the GeneratedBinPath." );
+            _context = c;
+            _typeSystemBuilder = c.Assembly.GetPocoTypeSystemBuilder();
+            Throw.DebugAssert( "The IPocoTypeSystem is also available at the GeneratedBinPath.", _typeSystemBuilder == c.CurrentRun.ServiceContainer.GetService( typeof( IPocoTypeSystemBuilder ) ) );
 
-            // Adds this ILockedPocoTypeSystem to the DI container right now.
-            // Once [WaitFor] attribute is implemented, this should be done when locking the type system.
-            c.CurrentRun.ServiceContainer.Add<ILockedPocoTypeSystem>( this );
+            IPocoDirectory pocoDirectory = _typeSystemBuilder.PocoDirectory;
             // Catches the current registration count.
-            _lastRegistrationCount = _typeSystem.AllTypes.Count;
+            _lastRegistrationCount = _typeSystemBuilder.Count;
             monitor.Trace( $"PocoTypeSystem has initially {_lastRegistrationCount} registered types." );
 
             // One can immediately generate the Poco related code: poco are registered
             // during PocoTypeSystem initialization. Only other types (collection, records, etc.)
-            // can be registered later (this is typically the case of the ICommand<TResult> results).
+            // can be registered later.
             // Those extra types don't impact the Poco code.
-            ImplementPocoRequiredSupport( monitor, _typeSystem, scope.Workspace );
+            ImplementPocoRequiredSupport( monitor, _typeSystemBuilder, scope.Workspace );
 
-            // PocoDirectory_CK class.
+            // Finds or creates the PocoDirectory_CK class.
             scope.GeneratedByComment().NewLine()
                  .FindOrCreateFunction( "internal PocoDirectory_CK()" )
                  .Append( "Instance = this;" ).NewLine();
@@ -120,7 +119,7 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.Add( new ExtendedTypeName( "IPocoGeneratedClass" ) );
                 tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
-                var pocoType = _typeSystem.FindByType<IPrimaryPocoType>( family.PrimaryInterface.PocoInterface );
+                var pocoType = _typeSystemBuilder.FindByType<IPrimaryPocoType>( family.PrimaryInterface.PocoInterface );
                 Debug.Assert( pocoType != null );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );
@@ -220,10 +219,10 @@ namespace CK.Setup
                                     .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
                                     .Append( " => ref " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
                             }
-                            else if( prop.Type != f.Type.Type )
+                            else
                             {
                                 tB.Append( prop.TypeCSharpName ).Space()
-                                  .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name ).Space()
+                                  .Append( prop.DeclaringType.ToCSharpName() ).Append( "." ).Append( f.Name )
                                   .Append( " => " ).Append( f.PrivateFieldName ).Append( ";" ).NewLine();
 
                             }
@@ -276,7 +275,7 @@ namespace CK.Setup
             return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
         }
 
-        static void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystem pocoTypeSystem, ICodeWorkspace workspace )
+        static void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystemBuilder pocoTypeSystem, ICodeWorkspace workspace )
         {
             var ns = workspace.Global.FindOrCreateNamespace( PocoRequiredSupportType.Namespace );
             ns.GeneratedByComment();
@@ -618,36 +617,16 @@ namespace CK.Setup
 
         CSCodeGenerationResult CheckNoMoreRegisteredPocoTypes( IActivityMonitor monitor )
         {
-            var newCount = _typeSystem.AllTypes.Count;
+            var newCount = _typeSystemBuilder.Count;
             if( newCount != _lastRegistrationCount )
             {
                 monitor.Trace( $"PocoTypeSystem has {newCount - _lastRegistrationCount} new types. Deferring Lock." );
                 _lastRegistrationCount = newCount;
                 return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
             }
-            using( monitor.OpenInfo( $"PocoTypeSystem has no new types, code generation that requires all the Poco types to be known can start." ) )
-            {
-                _typeSystem.Lock( monitor );
-                try
-                {
-                    _isLocked?.Invoke();
-                }
-                catch( Exception ex )
-                {
-                    monitor.Error( "While raising ILockedPocoTypeSystem.IsLocked event.", ex );
-                    return CSCodeGenerationResult.Failed;
-                }
-            }
+            monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires all the Poco types to be known can start." );
+            _context.CurrentRun.ServiceContainer.Add( _typeSystemBuilder.Lock() );
             return CSCodeGenerationResult.Success;
         }
-
-        IPocoTypeSystem ILockedPocoTypeSystem.TypeSystem => _typeSystem;
-
-        event Action ILockedPocoTypeSystem.IsLocked
-        {
-            add => _isLocked += value;
-            remove => _isLocked -= value;
-        }
-
     }
 }

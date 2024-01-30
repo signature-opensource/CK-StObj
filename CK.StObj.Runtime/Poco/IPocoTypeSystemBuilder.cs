@@ -10,7 +10,7 @@ namespace CK.Setup
     /// objects. Additional <see cref="IRecordPocoType"/> and <see cref="ICollectionPocoType"/> can
     /// be registered.
     /// </summary>
-    public interface IPocoTypeSystem
+    public interface IPocoTypeSystemBuilder
     {
         /// <summary>
         /// Gets the low level Poco directory on which this Type System is built.
@@ -23,32 +23,14 @@ namespace CK.Setup
         IPocoType ObjectType { get; }
 
         /// <summary>
-        /// Gets all the registered types by their <see cref="IPocoType.Index"/>.
-        /// This contains both nullable and non nullable types.
+        /// Gets the total count of registered types (nullables and non nulables).
         /// </summary>
-        IReadOnlyList<IPocoType> AllTypes { get; }
+        int Count { get; }
 
         /// <summary>
         /// Gets all the registered non nullable types.
         /// </summary>
         IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
-
-        /// <summary>
-        /// Locks this type system: no more registration can be done,
-        /// <see cref="SetNotExchangeable(IActivityMonitor, IPocoType)"/> cannot be called anymore.
-        /// </summary>
-        /// <param name="monitor"></param>
-        void Lock( IActivityMonitor monitor );
-
-        /// <summary>
-        /// Gets whether this type system has been locked.
-        /// </summary>
-        bool IsLocked { get; }
-
-        /// <summary>
-        /// Gets the set of types that must be generated to support this type system.
-        /// </summary>
-        IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
 
         /// <summary>
         /// Tries to find by type. Not all types can be indexed by types: the most obvious are nullable reference types
@@ -78,6 +60,27 @@ namespace CK.Setup
         /// <param name="type">Type to find. Must be an open generic type (<c>typeof( ICommand<> )</c>).</param>
         /// <returns>The type definition or null.</returns>
         IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type );
+
+        /// <summary>
+        /// Locks this type system: no more registration can be done,
+        /// <see cref="SetNotExchangeable(IActivityMonitor, IPocoType)"/> cannot be called anymore.
+        /// <para>
+        /// This can be called multiple times.
+        /// </para>
+        /// </summary>
+        /// <returns>The built type system.</returns>
+        IPocoTypeSystem Lock();
+
+        /// <summary>
+        /// Gets whether this type system has been locked.
+        /// </summary>
+        bool IsLocked { get; }
+
+        /// <summary>
+        /// Gets the set of types that must be generated to support this type system.
+        /// 
+        /// </summary>
+        IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
         
         /// <summary>
         /// Forbids a type to be <see cref="IPocoType.IsExchangeable"/>. This

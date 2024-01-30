@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    partial class PocoTypeSystem
+    partial class PocoTypeSystemBuilder
     {
         internal sealed class PocoCycleAndDefaultVisitor : PocoTypeVisitor
         {
@@ -56,7 +56,7 @@ namespace CK.Setup
                 return true;
             }
 
-            protected override void OnStartVisit( IActivityMonitor monitor, IPocoType root )
+            protected override void OnStartVisit( IPocoType root )
             {
                 // Reuse the allocated lists as much as possible.
                 for( int i = 0; i < _typedPathCount; i++ ) _path[i].Clear();
@@ -65,31 +65,31 @@ namespace CK.Setup
                 _missingDefault = false;
             }
 
-            protected override bool Visit( IActivityMonitor monitor, IPocoType t )
+            protected override bool Visit( IPocoType t )
             {
                 // Shortcut the visit if a cycle or a missing default has been found.
                 if( _cycleFound || _missingDefault ) return true;
-                return base.Visit( monitor, t );
+                return base.Visit( t );
             }
 
-            protected override void OnAlreadyVisited( IActivityMonitor monitor, IPocoType t )
+            protected override void OnAlreadyVisited( IPocoType t )
             {
                 _cycleFound |= t.Kind == PocoTypeKind.PrimaryPoco | t.Kind == PocoTypeKind.SecondaryPoco;
             }
 
-            protected override void VisitCollection( IActivityMonitor monitor, ICollectionPocoType collection )
+            protected override void VisitCollection( ICollectionPocoType collection )
             {
                 // We are not interested in collection items: their initialization
                 // is under the responsibility of the user code.
             }
 
-            protected override void VisitUnion( IActivityMonitor monitor, IUnionPocoType union )
+            protected override void VisitUnion( IUnionPocoType union )
             {
                 // We are not interested in union type variants since we don't have a [UnionTypeDefault(...)]
                 // or a [UnionType<T>( IsDefault = true)] (yet?).
             }
 
-            protected override void VisitField( IActivityMonitor monitor, IPocoField field )
+            protected override void VisitField( IPocoField field )
             {
                 if( _cycleFound || _missingDefault ) return;
                 // It's only if the field requires an initialization that we
@@ -97,7 +97,7 @@ namespace CK.Setup
                 if( field.DefaultValueInfo.RequiresInit )
                 {
                     bool isAnonymous = PushPath( field );
-                    base.VisitField( monitor, field );
+                    base.VisitField( field );
                     if( !_cycleFound ) PopPath( isAnonymous );
                 }
                 else if( field.DefaultValueInfo.IsDisallowed )
@@ -106,7 +106,7 @@ namespace CK.Setup
                     // Enters the field to try to find the inner culprit if it exists
                     // but stops the visit once done.
                     // We may find both a cycle and a missing default.
-                    base.VisitField( monitor, field );
+                    base.VisitField( field );
                     _missingDefault = true;
                 }
             }

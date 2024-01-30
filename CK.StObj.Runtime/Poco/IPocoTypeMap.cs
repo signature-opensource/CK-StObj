@@ -1,4 +1,4 @@
-﻿namespace CK.Setup
+namespace CK.Setup
 {
     /// <summary>
     /// Associates a <typeparamref name="T"/> for each <see cref="IPocoType"/>
@@ -10,7 +10,7 @@
     /// </para>
     /// </summary>
     /// <typeparam name="T">The associated type.</typeparam>
-    public interface IPocoTypeMap<T>
+    public interface IPocoTypeMap<out T>
     {
         /// <summary>
         /// Gets the type system.

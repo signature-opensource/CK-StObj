@@ -54,7 +54,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                                      typeof( ISecondaryVerySimplePoco ),
                                                      typeof( IProperListDefinition ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            var ts = r.CKTypeResult.PocoTypeSystem;
+            var ts = r.PocoTypeSystemBuilder;
 
             if( !revert )
             {
@@ -132,7 +132,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 tPIR.ObliviousType.Should().BeSameAs( tPRR );
             }
 
-            ICollectionPocoType List_Int_IsOblivious( IPocoTypeSystem ts )
+            ICollectionPocoType List_Int_IsOblivious( IPocoTypeSystemBuilder ts )
             {
                 var tRV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListV ) )! );
                 Debug.Assert( tRV != null );
@@ -144,7 +144,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tRV;
             }
 
-            ICollectionPocoType List_IntN_IsOblivious( IPocoTypeSystem ts )
+            ICollectionPocoType List_IntN_IsOblivious( IPocoTypeSystemBuilder ts )
             {
                 var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNV ) )! );
                 Debug.Assert( tRNV != null );
@@ -156,7 +156,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tRNV;
             }
 
-            ICollectionPocoType IList_Int( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRV )
+            ICollectionPocoType IList_Int( bool revert, IPocoTypeSystemBuilder ts, ICollectionPocoType tRV )
             {
                 var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
                 var tIV = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListV ) ).Type;
@@ -169,7 +169,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tIV;
             }
 
-            ICollectionPocoType IList_IntN( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRNV )
+            ICollectionPocoType IList_IntN( bool revert, IPocoTypeSystemBuilder ts, ICollectionPocoType tRNV )
             {
                 var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
                 var tINV = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListNV ) ).Type;
@@ -182,7 +182,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tINV;
             }
 
-            ICollectionPocoType List_Object_Is_Oblivious( IPocoTypeSystem ts )
+            ICollectionPocoType List_Object_Is_Oblivious( IPocoTypeSystemBuilder ts )
             {
                 var tRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListR ) )! );
                 Debug.Assert( tRR != null );
@@ -194,7 +194,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tRR;
             }
 
-            ICollectionPocoType List_ObjectN( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRR )
+            ICollectionPocoType List_ObjectN( bool revert, IPocoTypeSystemBuilder ts, ICollectionPocoType tRR )
             {
                 var tRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListNR ) )! );
                 Debug.Assert( tRNR != null );
@@ -206,7 +206,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tRNR;
             }
 
-            ICollectionPocoType IList_ObjectN( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRR )
+            ICollectionPocoType IList_ObjectN( bool revert, IPocoTypeSystemBuilder ts, ICollectionPocoType tRR )
             {
                 var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
                 var tINR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListNR ) ).Type;
@@ -218,7 +218,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tINR;
             }
 
-            ICollectionPocoType IList_Object( bool revert, IPocoTypeSystem ts, ICollectionPocoType tRR )
+            ICollectionPocoType IList_Object( bool revert, IPocoTypeSystemBuilder ts, ICollectionPocoType tRR )
             {
                 var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
                 var tIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListR ) ).Type;
@@ -230,7 +230,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tIR;
             }
 
-            ICollectionPocoType List_Poco_IsOblivious( IPocoTypeSystem ts, string n )
+            ICollectionPocoType List_Poco_IsOblivious( IPocoTypeSystemBuilder ts, string n )
             {
                 var tPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPR ) )! );
                 Debug.Assert( tPRR != null );
@@ -242,7 +242,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tPRR;
             }
 
-            ICollectionPocoType List_PocoN( bool revert, IPocoTypeSystem ts, string n, ICollectionPocoType tPRR )
+            ICollectionPocoType List_PocoN( bool revert, IPocoTypeSystemBuilder ts, string n, ICollectionPocoType tPRR )
             {
                 var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListPNR ) )! );
                 Debug.Assert( tPRNR != null );
@@ -254,7 +254,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tPRNR;
             }
 
-            ICollectionPocoType IList_PocoN( bool revert, IPocoTypeSystem ts, string n, ICollectionPocoType tPRR )
+            ICollectionPocoType IList_PocoN( bool revert, IPocoTypeSystemBuilder ts, string n, ICollectionPocoType tPRR )
             {
                 var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
                 var tPINR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPNR ) ).Type;
@@ -266,7 +266,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 return tPINR;
             }
 
-            ICollectionPocoType IList_Poco( bool revert, IPocoTypeSystem ts, string n, ICollectionPocoType tPRNR, ICollectionPocoType tPRR )
+            ICollectionPocoType IList_Poco( bool revert, IPocoTypeSystemBuilder ts, string n, ICollectionPocoType tPRNR, ICollectionPocoType tPRR )
             {
                 var tListDef = ts.FindByType<IPrimaryPocoType>( typeof( IProperListDefinition ) )!;
                 var tPIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPR ) ).Type;
@@ -307,7 +307,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ), typeof( IProperDictionaryDefinition) );
             var r = TestHelper.GetSuccessfulResult( c );
-            var ts = r.CKTypeResult.PocoTypeSystem;
+            var ts = r.PocoTypeSystemBuilder;
 
             // Dictionary of Value type for the value (int)
 
@@ -436,7 +436,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IVerySimplePoco ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            var ts = r.CKTypeResult.PocoTypeSystem;
+            var ts = r.PocoTypeSystemBuilder;
 
             IRecordPocoType? tO = null;
             if( mode == "ObliviousFirst" ) tO = (IRecordPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( AnonymousSampleO ) )! );
@@ -483,7 +483,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [TestCase( "ObliviousLast" )]
         public void oblivious_anonymous_record_and_collections( string mode )
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
 
             ICollectionPocoType? tO = null;
             if( mode == "ObliviousFirst" ) tO = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListCollectionO ) )! );

@@ -14,12 +14,12 @@ using static CK.Core.CheckedWriteStream;
 namespace CK.Setup
 {
     /// <summary>
-    /// Implementation of <see cref="IPocoTypeSystem"/>.
+    /// Implementation of <see cref="IPocoTypeSystemBuilder"/>.
     /// </summary>
-    public sealed partial class PocoTypeSystem : IPocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder : IPocoTypeSystemBuilder
     {
         readonly IExtMemberInfoFactory _memberInfoFactory;
-        // The oblivious caches has 2 types of keys:
+        // The type caches has 2 types of keys:
         // - Type:
         //      - A type is mapped to the oblivious IPocoType
         //      - Or is secondary IPoco interface type mapped to its ISecondaryPocoType (that is not oblivious).
@@ -36,14 +36,14 @@ namespace CK.Setup
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
         // The Poco directory can be EmptyPocoDirectory.Default for testing only 
         readonly IPocoDirectory _pocoDirectory;
-        bool _locked;
+        IPocoTypeSystem? _result;
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
         /// </summary>
         /// <param name="memberInfoFactory">Required factory that cached nullable reference type information.</param>
         /// <param name="pocoDirectory">Optional Poco directory (null for test only: <see cref="EmptyPocoDirectory.EmptyPocoDirectory"/> is used).</param>
-        public PocoTypeSystem( IExtMemberInfoFactory memberInfoFactory, IPocoDirectory? pocoDirectory = null )
+        public PocoTypeSystemBuilder( IExtMemberInfoFactory memberInfoFactory, IPocoDirectory? pocoDirectory = null )
         {
             _stringBuilderPool = new Stack<StringBuilder>();
             _memberInfoFactory = memberInfoFactory;
@@ -74,7 +74,7 @@ namespace CK.Setup
             RegValueType( this, _typeCache, typeof( UserMessage ), typeof( UserMessage? ), "UserMessage" );
             RegValueType( this, _typeCache, typeof( FormattedString ), typeof( FormattedString? ), "FormattedString" );
             
-            static void RegValueType( PocoTypeSystem s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
+            static void RegValueType( PocoTypeSystemBuilder s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
             {
                 var x = PocoType.CreateBasicValue( s, tNotNull, tNull, name );
                 c.Add( tNotNull, x );
@@ -91,7 +91,7 @@ namespace CK.Setup
             RegBasicRefType( this, _typeCache, typeof( MCString ), "MCString", FieldDefaultValue.MCStringDefault, null );
             RegBasicRefType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault, null );
 
-            static IBasicRefPocoType RegBasicRefType( PocoTypeSystem s,
+            static IBasicRefPocoType RegBasicRefType( PocoTypeSystemBuilder s,
                                                       Dictionary<object, IPocoType> c,
                                                       Type t,
                                                       string name,
@@ -105,26 +105,22 @@ namespace CK.Setup
             }
         }
 
-        public bool IsLocked => _locked;
+        public bool IsLocked => _result != null;
 
-        public void Lock( IActivityMonitor monitor )
+        public IPocoTypeSystem Lock()
         {
-            if( _locked )
+            if( _result == null )
             {
-                monitor.Warn( $"TypeSystem is already locked with {_exposedAllTypes.Count} types." );
+                _result = new PocoTypeSystem( _pocoDirectory, _exposedAllTypes, _allTypes, _typeCache, _typeDefinitions );
             }
-            else
-            {
-                _locked = true;
-                monitor.Warn( $"Locking TypeSystem with {_exposedAllTypes.Count} types." );
-            }
+            return _result;
         }
 
         public IPocoDirectory PocoDirectory => _pocoDirectory;
 
         public IPocoType ObjectType => _objectType;
 
-        public IReadOnlyList<IPocoType> AllTypes => _exposedAllTypes;
+        public int Count => _allTypes.Count << 1;
 
         public IReadOnlyList<IPocoType> AllNonNullableTypes => _allTypes;
 
@@ -231,7 +227,7 @@ namespace CK.Setup
             // ...OR it's a IPoco interface that has NO implementation but appears (otherwise we won't be here)
             // as a property or a generic argument.
             // Instead of using the TypeDetector to check whether this is an orphan abstract (and not an excluded one),
-            // we consider it to be an Orphan Abstract. This has side effect: this may "transform" a real property
+            // we consider it to be an ImplementationLess Abstract. This has side effect: this may "transform" a real property
             // into an abstract one... And this is perfectly fine: if everything is evetually successfully resolved
             // the system is valid.
             // If the exluded type is used at a place that requires an instance, this will fail.
@@ -312,7 +308,7 @@ namespace CK.Setup
             // and in such case, it's an error. We can detect this case if a parent interface is a ISecondary or IPrimaryPoco.
             if( !_typeCache.TryGetValue( t, out var result ) )
             {
-                monitor.Warn( $"Abstract IPoco interface '{t:N}' is not implemented by any registered Poco. It won't be exchangeable." );
+                monitor.Warn( $"Abstract IPoco interface '{t:N}' is 'ImplementationLess' (not implemented by any registered Poco)." );
                 bool success = true;
                 var generalizations = new List<IAbstractPocoType>();
                 foreach( var type in t.GetInterfaces() )
@@ -342,7 +338,7 @@ namespace CK.Setup
                     success &= arguments != null;
                 }
                 if( !success ) return null;
-                result = PocoType.CreateOrphanAbstractPoco( this, t, generalizations, typeDefinition, arguments );
+                result = PocoType.CreateImplementationLessAbstractPoco( this, t, generalizations, typeDefinition, arguments );
                 _typeCache.Add( t, result );
             }
             Throw.DebugAssert( result is IAbstractPocoType or ISecondaryPocoType or IPrimaryPocoType );

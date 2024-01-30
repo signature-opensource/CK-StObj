@@ -6,7 +6,7 @@ using System.Collections;
 
 namespace CK.Setup
 {
-    public sealed partial class PocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder
     {
         IPocoType? RegisterListOrSet( IActivityMonitor monitor, bool isList, IExtNullabilityInfo nType, MemberContext ctx, bool isRegular )
         {

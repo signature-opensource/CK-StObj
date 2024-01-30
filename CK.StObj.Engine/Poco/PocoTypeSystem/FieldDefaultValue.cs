@@ -28,13 +28,13 @@ namespace CK.Setup
             ValueCSharpSource = source;
         }
 
-        public FieldDefaultValue( object simpleValue, PocoTypeSystem.IStringBuilderPool sbPool )
+        public FieldDefaultValue( object simpleValue, PocoTypeSystemBuilder.IStringBuilderPool sbPool )
             : this( WriteSourceValue( simpleValue, sbPool ) )
         {
             SimpleValue = simpleValue;
         }
 
-        static string WriteSourceValue( object value, PocoTypeSystem.IStringBuilderPool sbPool )
+        static string WriteSourceValue( object value, PocoTypeSystemBuilder.IStringBuilderPool sbPool )
         {
             var w = new StringCodeWriter( sbPool.Get() );
             var source = w.Append( value ).ToString();
@@ -43,7 +43,7 @@ namespace CK.Setup
         }
 
         public static FieldDefaultValue? CreateFromParameter( IActivityMonitor monitor,
-                                                              PocoTypeSystem.IStringBuilderPool sbPool,
+                                                              PocoTypeSystemBuilder.IStringBuilderPool sbPool,
                                                               ParameterInfo definer )
         {
             if( !definer.HasDefaultValue || definer.DefaultValue == null ) return null;
@@ -51,7 +51,7 @@ namespace CK.Setup
         }
 
         public static FieldDefaultValue? CreateFromAttribute( IActivityMonitor monitor,
-                                                              PocoTypeSystem.IStringBuilderPool sbPool,
+                                                              PocoTypeSystemBuilder.IStringBuilderPool sbPool,
                                                               IExtMemberInfo definer )
         {
             // Use the conversion from the constructor for the value.
@@ -64,7 +64,7 @@ namespace CK.Setup
         }
 
         public static FieldDefaultValue? CreateFromDefaultValue( IActivityMonitor monitor,
-                                                                 PocoTypeSystem.IStringBuilderPool sbPool,
+                                                                 PocoTypeSystemBuilder.IStringBuilderPool sbPool,
                                                                  Type t )
         {
             try
@@ -80,7 +80,7 @@ namespace CK.Setup
             }
         }
 
-        public bool CheckSameOrNone( IActivityMonitor monitor, IExtMemberInfo defaultValueSource, PocoTypeSystem.IStringBuilderPool sbPool, IExtMemberInfo other )
+        public bool CheckSameOrNone( IActivityMonitor monitor, IExtMemberInfo defaultValueSource, PocoTypeSystemBuilder.IStringBuilderPool sbPool, IExtMemberInfo other )
         {
             var a = other.GetCustomAttributes<DefaultValueAttribute>().FirstOrDefault();
             if( a?.Value == null || a.Value == SimpleValue ) return true;

@@ -131,7 +131,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="this">This Dynamic assembly.</param>
         /// <returns>The Poco type system.</returns>
-        public static IPocoTypeSystem GetPocoTypeSystem( this IDynamicAssembly @this ) => (IPocoTypeSystem)@this.Memory[typeof( IPocoTypeSystem )]!;
+        public static IPocoTypeSystemBuilder GetPocoTypeSystemBuilder( this IDynamicAssembly @this ) => (IPocoTypeSystemBuilder)@this.Memory[typeof( IPocoTypeSystemBuilder )]!;
 
     }
 }

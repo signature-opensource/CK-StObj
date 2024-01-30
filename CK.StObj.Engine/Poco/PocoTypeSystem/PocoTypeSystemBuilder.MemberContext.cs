@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace CK.Setup
 {
 
-    public sealed partial class PocoTypeSystem
+    public sealed partial class PocoTypeSystemBuilder
     {
         sealed class MemberContext
         {

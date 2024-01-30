@@ -14,13 +14,13 @@ namespace CK.Setup
         readonly IPocoType[] _exchangeables;
 
         /// <summary>
-        /// Initializes a map from the result of a <see cref="ExchangeableTypeNameBuilder.Generate(IActivityMonitor, IPocoTypeSystem)"/>
+        /// Initializes a map from the result of a <see cref="ExchangeableTypeNameBuilder.Generate(IActivityMonitor, IPocoTypeSystemBuilder)"/>
         /// </summary>
         /// <param name="names">The full type names.</param>
         /// <param name="typeSystem">The type system.</param>
         /// <param name="exchangeableCount">The number of exchangeable types.</param>
         public ExchangeableTypeNameMap( FullExchangeableTypeName[] names,
-                                        IPocoTypeSystem typeSystem,
+                                        IPocoTypeSystemBuilder typeSystem,
                                         int exchangeableCount )
         {
             _names = names;
@@ -42,7 +42,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the type system.
         /// </summary>
-        public IPocoTypeSystem TypeSystem { get; }
+        public IPocoTypeSystemBuilder TypeSystem { get; }
 
         /// <summary>
         /// Gets the non nullable types that are exchangeable.

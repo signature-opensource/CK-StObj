@@ -58,7 +58,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                                      typeof( IPartWithRecAnonymous ),
                                                      typeof( IWithList ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            var ts = r.CKTypeResult.PocoTypeSystem;
+            var builder = r.PocoTypeSystemBuilder;
 
             const int basicTypesCount = 19;
             const int globalizationTypesCount = 7; // SimpleUserMessage, UserMessage, FormattedString, MCString, CodeString, NormalizedCultureInfo, ExtendedCultureInfo.
@@ -67,20 +67,20 @@ namespace CK.StObj.Engine.Tests.Poco
             const int listTypesCount = 1 + 1; // List<(int,string)> and List<(int Count, string Name)>
             const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective oblivious types.
 
-            ts.AllTypes.Count.Should().Be( (basicTypesCount + globalizationTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
+            builder.Count.Should().Be( (basicTypesCount + globalizationTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
-            int before = ts.AllTypes.Count;
-            var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
+            int before = builder.Count;
+            var tRec = builder.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
             Debug.Assert( tRec != null );
-            ts.AllTypes.Count.Should().Be( before + 2 );
+            builder.Count.Should().Be( before + 2 );
             tRec.Kind.Should().Be( PocoTypeKind.Record );
             tRec.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.NamedRec" );
 
-            IPrimaryPocoType wA = ts.FindByType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
+            IPrimaryPocoType wA = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
             wA.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.IPartWithAnonymous" );
             IPocoType countAndName = wA.Fields[0].Type;
 
-            IPrimaryPocoType wR = ts.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
+            IPrimaryPocoType wR = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
             wR.StandardName.Should().Be( "ExternalNameForPartWithRecAnonymous" );
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
 
@@ -96,7 +96,7 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( ILinkedListPart ),
                                                      typeof( IWithList ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            var ts = r.CKTypeResult.PocoTypeSystem;
+            var ts = r.PocoTypeSystemBuilder;
 
             var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
             Debug.Assert( p != null );
@@ -157,7 +157,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                                      typeof( IWithList ),
                                                      impl );
             var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
-            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var abs = ts.FindByType<IAbstractPocoType>( typeof( IAbstractPoco ) );
             Debug.Assert( abs != null );
             abs.Fields.Should().HaveCount( names.Length );
@@ -215,7 +215,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void named_record_embedds_the_default_values()
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
 
             var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
             Debug.Assert( tRec != null );
@@ -261,7 +261,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void an_empty_records_is_handled_but_is_not_exchangeable()
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
             var tEmptyOne = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetAnEmptyOne ) )! );
             Debug.Assert( tEmptyOne != null );
             tEmptyOne.IsExchangeable.Should().BeFalse();

@@ -1,16 +1,11 @@
-using CK.CodeGen;
 using CK.Core;
 using CK.Setup;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {

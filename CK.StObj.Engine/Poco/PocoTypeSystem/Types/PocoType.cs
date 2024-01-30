@@ -212,7 +212,7 @@ namespace CK.Setup
 
         }
 
-        protected PocoType( PocoTypeSystem s,
+        protected PocoType( PocoTypeSystemBuilder s,
                             Type notNullable,
                             string csharpName,
                             PocoTypeKind kind,
@@ -223,7 +223,7 @@ namespace CK.Setup
             Debug.Assert( !csharpName.EndsWith( '?' ) );
             // We register in the AllTypes list only: key for cache is much more complex
             // and is managed externally.
-            _index = s.AllTypes.Count;
+            _index = s.Count;
             _type = notNullable;
             _csharpName = csharpName;
             _kind = kind;

@@ -17,15 +17,13 @@ namespace CK.Setup
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
         internal CKTypeCollectorResult( ISet<Assembly> assemblies,
-                                        IPocoDirectory pocoDirectory,
-                                        PocoTypeSystem pocoTypeSystem,
+                                        PocoTypeSystemBuilder pocoTypeSystemBuilder,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
                                         IReadOnlyDictionary<Type, TypeAttributesCache?> regularTypes,
                                         IAutoServiceKindComputeFacade kindComputeFacade )
         {
-            PocoDirectory = pocoDirectory;
-            PocoTypeSystem = pocoTypeSystem;
+            PocoTypeSystemBuilder = pocoTypeSystemBuilder;
             Assemblies = assemblies;
             RealObjects = c;
             AutoServices = s;
@@ -34,14 +32,9 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Gets all the registered Poco information.
+        /// Gets the Poco Type system builder.
         /// </summary>
-        public IPocoDirectory PocoDirectory { get; }
-
-        /// <summary>
-        /// Gets the Poco Type system.
-        /// </summary>
-        public IPocoTypeSystem PocoTypeSystem { get; }
+        public IPocoTypeSystemBuilder PocoTypeSystemBuilder { get; }
 
         /// <summary>
         /// Gets the set of assemblies for which at least one type has been registered.
@@ -75,7 +68,7 @@ namespace CK.Setup
         /// False to continue the process (only warnings - or error considered as 
         /// warning - occurred), true to stop remaining processes.
         /// </returns>
-        public bool HasFatalError => PocoDirectory == null || RealObjects.HasFatalError || AutoServices.HasFatalError;
+        public bool HasFatalError => RealObjects.HasFatalError || AutoServices.HasFatalError;
 
         /// <summary>
         /// Gets all the <see cref="ImplementableTypeInfo"/>: Abstract types that require a code generation
@@ -130,7 +123,6 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( monitor );
             using( monitor.OpenTrace( $"Collector summary:" ) )
             {
-                if( PocoDirectory == null ) monitor.Fatal( $"Poco support failed!" );
                 RealObjects.LogErrorAndWarnings( monitor );
                 AutoServices.LogErrorAndWarnings( monitor );
             }

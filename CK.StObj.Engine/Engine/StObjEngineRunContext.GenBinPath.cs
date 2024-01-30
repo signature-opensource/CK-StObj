@@ -23,8 +23,9 @@ namespace CK.Setup
                 ConfigurationGroup = group;
                 Memory = new Dictionary<object, object?>();
                 ServiceContainer = new SimpleServiceContainer( _global.ServiceContainer );
-                ServiceContainer.Add( result.DynamicAssembly.GetPocoDirectory() );
-                ServiceContainer.Add( result.DynamicAssembly.GetPocoTypeSystem() );
+                var pocoTypeSystemBuilder = result.DynamicAssembly.GetPocoTypeSystemBuilder();
+                ServiceContainer.Add( pocoTypeSystemBuilder.PocoDirectory );
+                ServiceContainer.Add( pocoTypeSystemBuilder );
             }
 
             public readonly StObjCollectorResult Result;

@@ -1,10 +1,10 @@
 using CK.Core;
 using System.Text;
-using static CK.Setup.PocoTypeSystem;
+using static CK.Setup.PocoTypeSystemBuilder;
 
 namespace CK.Setup
 {
-    public sealed partial class PocoTypeSystem : IStringBuilderPool
+    public sealed partial class PocoTypeSystemBuilder : IStringBuilderPool
     {
         /// <summary>
         /// Reusable pool of string builders.

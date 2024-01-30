@@ -245,7 +245,6 @@ namespace CK.Setup
                 }
             }
 
-
             using( monitor.OpenInfo( "Static Type analysis." ) )
             {
                 IPocoDirectory? pocoDirectory;
@@ -260,20 +259,18 @@ namespace CK.Setup
                     }
                     else
                     {
-                        // On error, we register the Empty result.
-                        _tempAssembly.Memory.Add( typeof( IPocoDirectory ), pocoDirectory = EmptyPocoDirectory.Default );
+                        pocoDirectory = EmptyPocoDirectory.Default;
                     }
-                    Debug.Assert( _tempAssembly.GetPocoDirectory() == pocoDirectory, "The extension method GetPocoDirectory() provides it." );
                 }
-                PocoTypeSystem pocoTypeSystem = new PocoTypeSystem( _memberInfoFactory, pocoDirectory ); 
-                using( monitor.OpenInfo( "Initializing Poco Type System." ) )
+                var pocoTypeSystemBuilder = new PocoTypeSystemBuilder( _memberInfoFactory, pocoDirectory ); 
+                using( monitor.OpenInfo( "Initializing Poco Type System builder." ) )
                 {
-                    if( !pocoTypeSystem.Initialize( monitor ) )
+                    if( !pocoTypeSystemBuilder.Initialize( monitor ) )
                     {
                         monitor.CloseGroup( "Failed" );
                     }
-                    _tempAssembly.Memory.Add( typeof( IPocoTypeSystem ), pocoTypeSystem );
-                    Debug.Assert( _tempAssembly.GetPocoTypeSystem() == pocoTypeSystem, "The extension method GetPocoTypeSystem() provides it." );
+                    _tempAssembly.Memory.Add( typeof( IPocoTypeSystemBuilder ), pocoTypeSystemBuilder );
+                    Debug.Assert( _tempAssembly.GetPocoTypeSystemBuilder() == pocoTypeSystemBuilder, "The extension method GetPocoTypeSystemBuilder() provides it." );
                 }
                 RealObjectCollectorResult realObjects;
                 using( monitor.OpenInfo( "Real objects handling." ) )
@@ -286,7 +283,7 @@ namespace CK.Setup
                 {
                     services = GetAutoServiceResult( monitor, realObjects );
                 }
-                return new CKTypeCollectorResult( _assemblies, pocoDirectory, pocoTypeSystem, realObjects, services, _regularTypeCollector, this );
+                return new CKTypeCollectorResult( _assemblies, pocoTypeSystemBuilder, realObjects, services, _regularTypeCollector, this );
             }
         }
 

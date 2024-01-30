@@ -6,7 +6,7 @@ namespace CK.Setup
 {
     partial class PocoType
     {
-        internal static SecondaryPocoType CreateSecondaryPocoType( PocoTypeSystem s, Type interfaceType, PrimaryPocoType primary )
+        internal static SecondaryPocoType CreateSecondaryPocoType( PocoTypeSystemBuilder s, Type interfaceType, PrimaryPocoType primary )
         {
             return new SecondaryPocoType( s, interfaceType, primary );
         }
@@ -36,7 +36,7 @@ namespace CK.Setup
                 ISecondaryPocoType ISecondaryPocoType.Nullable => this;
             }
 
-            public SecondaryPocoType( PocoTypeSystem s,
+            public SecondaryPocoType( PocoTypeSystemBuilder s,
                                       Type interfaceType,
                                       PrimaryPocoType primary )
                 : base( s, interfaceType, interfaceType.ToCSharpName(), PocoTypeKind.SecondaryPoco, static t => new Null( t ) )

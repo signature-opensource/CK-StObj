@@ -17,7 +17,7 @@ namespace CK.Setup
     {
 
         internal static RecordNamedType CreateNamedRecord( IActivityMonitor monitor,
-                                                           PocoTypeSystem s,
+                                                           PocoTypeSystemBuilder s,
                                                            Type tNotNull,
                                                            Type tNull,
                                                            string typeName,
@@ -68,7 +68,7 @@ namespace CK.Setup
             bool _isReadOnlyCompliant;
 
             public RecordNamedType( IActivityMonitor monitor,
-                                    PocoTypeSystem s,
+                                    PocoTypeSystemBuilder s,
                                     Type tNotNull,
                                     Type tNull,
                                     string typeName,
@@ -82,7 +82,7 @@ namespace CK.Setup
                 _externalName = externalName;
             }
 
-            internal void SetFields( IActivityMonitor monitor, PocoTypeSystem s, bool isReadOnlyCompliant, RecordNamedField[] fields )
+            internal void SetFields( IActivityMonitor monitor, PocoTypeSystemBuilder s, bool isReadOnlyCompliant, RecordNamedField[] fields )
             {
                 _fields = fields;
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );

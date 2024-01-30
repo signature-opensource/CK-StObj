@@ -181,7 +181,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IWithLongTuple ) );
             var result = TestHelper.CreateAutomaticServices( c );
-            var ts = result.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = result.CollectorResult.CKTypeResult.PocoTypeSystemBuilder;
 
             var tPoco = ts.FindByType<IPrimaryPocoType>( typeof( IWithLongTuple ) );
             Debug.Assert( tPoco != null );
@@ -203,7 +203,7 @@ namespace CK.StObj.Engine.Tests.Poco
         [Test]
         public void complex_tuple_names_handling()
         {
-            var ts = new PocoTypeSystem( new ExtMemberInfoFactory() );
+            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
             var t = ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ComplexTupleNames ) )! );
             var r0 = CheckIsTuple( t, "J", "K" );
             var r1 = CheckIsTuple( ((ICollectionPocoType)r0.Fields[0].Type).ItemTypes[0], "A", "I" );

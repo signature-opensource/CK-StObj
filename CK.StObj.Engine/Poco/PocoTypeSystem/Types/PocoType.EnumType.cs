@@ -12,7 +12,7 @@ namespace CK.Setup
     partial class PocoType
     {
         internal static EnumType CreateEnum( IActivityMonitor monitor,
-                                             PocoTypeSystem s,
+                                             PocoTypeSystemBuilder s,
                                              Type tNotNull,
                                              Type tNull,
                                              IPocoType underlyingType,
@@ -53,7 +53,7 @@ namespace CK.Setup
             readonly DefaultValueInfo _defInfo;
 
             public EnumType( IActivityMonitor monitor,
-                             PocoTypeSystem s,
+                             PocoTypeSystemBuilder s,
                              Type tNotNull,
                              Type tNull,
                              IPocoType underlyingType,
@@ -109,17 +109,6 @@ namespace CK.Setup
             public override string StandardName => ExternalOrCSharpName;
 
             public string? DefaultValueName => _defaultValueName;
-
-            /// <summary>
-            /// At this type level, this is not because a basic type becomes (weirdly!) no more exchangeable
-            /// that an enumeration must no more be exchangeable.
-            /// It's up to exchangeable protocols to consider whether an enumeration must not be exchangeable
-            /// if its underlying type is not.
-            /// </summary>
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                Debug.Assert( r.Type == _underlyingType );
-            }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
 

@@ -71,7 +71,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // We generate the code and compile it to check any error.
             var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
             r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var tDef = ts.FindGenericTypeDefinition( typeof( ICommand<> ) );
             Throw.DebugAssert( tDef != null );
             tDef.Type.Should().BeSameAs( typeof( ICommand<> ) );
@@ -100,7 +100,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // We generate the code and compile it to check any error.
             var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
             r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var cmd = ts.FindByType<ISecondaryPocoType>( typeof( IIntCommand ) );
             Throw.DebugAssert( cmd != null );
             cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
@@ -120,7 +120,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public interface IS3Command : IS2Command, ICommand<IAbstractCommand> { }
         public interface IS4Command : IS3Command, ICommand<ICommand<object>> { }
         public interface IS5Command : IS4Command, ICommand<ICommand<ICommand<object>>> { }
-        // ICommand<int> is an Orphan AbstractPoco: it has no implementation.
+        // ICommand<int> is an ImplementationLess AbstractPoco: it has no implementation.
         public interface IS6Command : IS5Command, ICommand<ICommand<ICommand<int>>> { }
 
         [Test]
@@ -130,7 +130,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // We generate the code and compile it to check any error.
             var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
             r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var cmd = ts.FindByType<ISecondaryPocoType>( typeof( IS6Command ) );
             Throw.DebugAssert( cmd != null );
             cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 9 );
@@ -172,7 +172,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // We generate the code and compile it to check any error.
             var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
             r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var cmd = ts.FindByType<ISecondaryPocoType>( typeof( IObjectInput ) );
             Throw.DebugAssert( cmd != null );
             cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 4 );
@@ -190,7 +190,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 .Should().Be( "[AbstractPoco]IInput<object>" );
         }
 
-        // IInput<int> is an Orphan AbstractPoco: it has no implementation.
+        // IInput<int> is an ImplementationLess AbstractPoco: it has no implementation.
         public interface IBaseInput : IInput<IInput<IInput<int>>> { }
         public interface IExt1Input : IBaseInput, IInput<IInput<IInput<object>>> { }
         public interface IExt2Input : IExt1Input, IInput<IInput<object>> { }
@@ -206,7 +206,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // We generate the code and compile it to check any error.
             var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
             r.EngineResult.Success.Should().BeTrue();
-            var ts = r.CollectorResult.CKTypeResult.PocoTypeSystem;
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var cmd = ts.FindByType<IPrimaryPocoType>( typeof( IBaseInput ) );
             Throw.DebugAssert( cmd != null );
             cmd.AbstractTypes.Should().HaveCount( 9 );
