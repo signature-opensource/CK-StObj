@@ -6,22 +6,34 @@ using System.Threading;
 
 namespace CK.Setup
 {
-
     /// <summary>
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
-    /// are available in <see cref="LastVisited"/>.
+    /// are available in <see cref="LastVisited"/> that is a <see cref="IMinimalPocoTypeSet"/>.
     /// <para>
     /// By default:
     /// <list type="bullet">
     ///     <item>
-    ///     Nullable types visit their <see cref="IPocoType.NonNullable"/> and <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/>.
-    ///     <see cref="ISecondaryPocoType.PrimaryPocoType"/> visits its <see cref="IPocoField"/>. Collections visits their <see cref="ICollectionPocoType.ItemTypes"/>
-    ///     and <see cref="IUnionPocoType"/> visits its <see cref="IOneOfPocoType.AllowedTypes"/>
-    ///     are followed.
+    ///     Nullable types visit their <see cref="IPocoType.NonNullable"/>.
+    ///     </item>
+    ///     <item>
+    ///     <see cref="IRecordPocoType"/> visits its <see cref="IRecordPocoField"/>.
+    ///     </item>
+    ///     <item>
+    ///     <see cref="IPrimaryPocoType"/> only visits its <see cref="IPocoField"/>.
+    ///     </item>
+    ///     <item>
+    ///     <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/>.
     ///     </item>
     ///     <item>
     ///     <see cref="VisitAbstractPoco(IAbstractPocoType)"/> does nothing: <see cref="IAbstractPocoType.Specializations"/>
-    ///     (that are the AllowedTypes) and their <see cref="IAbstractPocoType.GenericArguments"/> are not visited.
+    ///     (that are the AllowedTypes), <see cref="IAbstractPocoType.GenericArguments"/> and <see cref="IAbstractPocoType.Generalizations"/>
+    ///     are not visited.
+    ///     </item>
+    ///     <item>
+    ///     Collections visits their <see cref="ICollectionPocoType.ItemTypes"/>.
+    ///     </item>
+    ///     <item>
+    ///     <see cref="IUnionPocoType"/> visits its <see cref="IOneOfPocoType.AllowedTypes"/>.
     ///     </item>
     ///     <item>
     ///     Visiting the <see cref="PocoTypeKind.Any"/> (like any other basic types) don't visit anything else.
@@ -35,31 +47,33 @@ namespace CK.Setup
     /// </list>
     /// </para>
     /// </summary>
-    public class PocoTypeVisitor
+    public class PocoTypeVisitor<T> where T : class, IMinimalPocoTypeSet
     {
-        readonly HashSet<IPocoType> _visited;
+        readonly T _visited;
 
         /// <summary>
-        /// Initializes a new visitor.
+        /// Initializes a new visitor with an existing <see cref="LastVisited"/> instance.
         /// </summary>
-        public PocoTypeVisitor()
+        /// <param name="lastVisited">Already visited types.</param>
+        public PocoTypeVisitor( T lastVisited )
         {
-            _visited = new HashSet<IPocoType>();
+            Throw.CheckNotNullArgument( lastVisited );
+            _visited = lastVisited;
         }
 
         /// <summary>
-        /// Gets the types that have been visited once during the current
+        /// Gets the type bag that have been visited once during the current
         /// or last <see cref="VisitRoot(IPocoType,bool)"/>.
         /// </summary>
-        public IReadOnlySet<IPocoType> LastVisited => _visited;
+        public T LastVisited => _visited;
 
         /// <summary>
-        /// Starts a visit from type. This resets the <see cref="LastVisited"/> by default.
+        /// Starts a visit from type. This resets the <see cref="LastVisited"/> set by default.
         /// </summary>
         /// <param name="t">The type to visit.</param>
         /// <param name="clearLastVisited">False to keep the current <see cref="LastVisited"/> types.</param>
         /// <returns>The <see cref="LastVisited"/>.</returns>
-        public IReadOnlySet<IPocoType> VisitRoot( IPocoType t, bool clearLastVisited = true )
+        public T VisitRoot( IPocoType t, bool clearLastVisited = true )
         {
             if( clearLastVisited ) _visited.Clear();
             else if( _visited.Contains( t ) ) return _visited;
@@ -70,7 +84,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Called by <see cref="VisitRoot( IPocoType)"/> after having
+        /// Called by <see cref="VisitRoot(IPocoType, bool)"/> after having
         /// cleared the <see cref="LastVisited"/> and before the visit itself.
         /// <para>
         /// Does nothing by default.
@@ -216,6 +230,7 @@ namespace CK.Setup
         }
 
         /// <summary>
+        /// <see cref="PocoTypeKind.Basic"/> or <see cref="PocoTypeKind.Any"/>.
         /// Does nothing by default.
         /// </summary>
         /// <param name="basic">The basic poco type. Can be a <see cref="IBasicRefPocoType"/>.</param>

@@ -72,17 +72,17 @@ namespace CK.Setup
         /// <list type="bullet">
         ///   <item>
         ///   For <see cref="PocoTypeKind.Basic"/>, <see cref="PocoTypeKind.AbstractPoco"/> and <see cref="PocoTypeKind.SecondaryPoco"/>
-        ///   it is the <see cref="IPocoType.CSharpName"/> ("object, "int", "CK.Cris.ICommand", etc.).
+        ///   it is the <see cref="CSharpName"/> ("object, "int", "CK.Cris.ICommand", etc.).
         ///   </item>
         ///   <item>
         ///   For <see cref="ICollectionPocoType"/> is is "A(T)" for array, "L(T)" for list, "S(T)" for set, "M(TKey,TValue)" for dictionary
         ///   or "O(TValue)" when the dictionary key is a string.
         ///   </item>
         ///   <item>
-        ///   For <see cref="INamedPocoType"/> it is the <see cref="INamedPocoType.ExternalOrCSharpName"/>.
+        ///   For <see cref="PocoTypeKind.AnonymousRecord"/> it is "(T1,T2,T3:Name,T4,...)". The ":Name" only appears when named field has a name.
         ///   </item>
         ///   <item>
-        ///   For <see cref="PocoTypeKind.AnonymousRecord"/> it is "(T1,T2,T3:Name,T4,...)". The ":Name" only apprars when named field has a name.
+        ///   For <see cref="INamedPocoType"/> (but not anonymous records) it is the <see cref="INamedPocoType.ExternalOrCSharpName"/>.
         ///   </item>
         ///   <item>
         ///   For <see cref="IUnionPocoType"/> it is "T1|T2|...".
@@ -101,31 +101,37 @@ namespace CK.Setup
         ///     </description>
         ///   </item>
         ///   <item>
-        ///   <term>Collection types</term>
-        ///   <description>
-        ///         Specialized covariant collections are erased to be the regular <see cref="List{T}"/>,
-        ///         <see cref="HashSet{T}"/> and <see cref="Dictionary{TKey, TValue}"/>.
-        ///   </description>
+        ///     <term>Collection types</term>
+        ///     <description>
+        ///         Abstract collections (readonly or not) are mapped to their regular <see cref="List{T}"/>,
+        ///         <see cref="HashSet{T}"/> and <see cref="Dictionary{TKey, TValue}"/> where generic arguments
+        ///         are oblivious.
+        ///     </description>
         ///   </item>
         ///   <item>
-        ///   <term>Value Tuple (Anonymous records)</term>
-        ///   <description>
+        ///     <term>Value Tuple (Anonymous records)</term>
+        ///     <description>
         ///         The oblivious type is the value tuple with no field names (all <see cref="IRecordPocoField.IsUnnamed"/>
-        ///         are true) and with references to oblivious types (all <see cref="IPocoType.ITypeRef.Type"/> are oblivious).
-        ///   </description>
+        ///         are true) and with references to oblivious types (all field's types are oblivious).
+        ///     </description>
         ///   </item>
         ///   <item>
-        ///   <term>IPoco types</term>
-        ///   <description>
+        ///     <term>Union types</term>
+        ///     <description>
+        ///         The oblivious type is the union type where all <see cref="IOneOfPocoType.AllowedTypes"/> are oblivious.
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     <term>IPoco types</term>
+        ///     <description>
         ///         <see cref="ISecondaryPocoType"/>'s oblivious is its non nullable <see cref="IPrimaryPocoType"/>.
         ///         (non nullables <see cref="IAbstractPocoType"/> and <see cref="IPrimaryPocoType"/> are their own oblivious).
-        ///   </description>
+        ///     </description>
+        ///   </item>
+        ///   <item>
+        ///     All other types: enum, basic types (non nullable for reference types), any (non nullable), structs (Named record) are their own oblivious.
         ///   </item>
         /// </list>
-        /// <para>
-        /// Anonymous records (value tuples) have a "in depth" ObliviousType: field names are erased
-        /// and all field types are oblivious.
-        /// </para>
         /// </summary>
         IPocoType ObliviousType { get; }
 
@@ -141,7 +147,15 @@ namespace CK.Setup
 
         /// <summary>
         /// Captures a reference from a <see cref="Owner"/> to a <see cref="Type"/>
-        /// that is a linked node to another <see cref="NextRef"/> to the same type.
+        /// that is a linked node to another <see cref="NextRef"/> of the same type.
+        /// <para>
+        /// This captures only the references between types that are not (and cannot be) already exposed
+        /// by the types in BOTH ways: this captures how a type is referenced by another fully independent type
+        /// thanks to a simple <see cref="Index"/> in the Owner (the referencer) type.
+        /// </para>
+        /// <para>
+        /// This is implementd by an efficient linked list (nodes are often embedded in the owner).
+        /// </para>
         /// </summary>
         public interface ITypeRef
         {
@@ -152,6 +166,9 @@ namespace CK.Setup
 
             /// <summary>
             /// Gets the owner of this type reference.
+            /// Can be a a record or primary Poco <see cref="ICompositePocoType"/> (its fields), a <see cref="ICollectionPocoType"/> (its item types),
+            /// a <see cref="IUnionPocoType"/> (its allowed types), a generic <see cref="IAbstractPocoType"/> (its generic arguments) or a
+            /// <see cref="IEnumPocoType"/> (its underlying type).
             /// </summary>
             IPocoType Owner { get; }
 
@@ -164,15 +181,7 @@ namespace CK.Setup
             /// Gets the index of this reference in the <see cref="Owner"/> dedicated list.
             /// <list type="bullet">
             ///     <item>
-            ///         For records and primary Poco, this is the <see cref="ICompositePocoType.Fields"/>.
-            ///         Indexes starts at 0 and are compact: this can be used to handle optimized serialization
-            ///         by index (MessagePack) rather than by name (Json).
-            ///         <para>
-            ///         The generated backing field is named <c>_v{Index}</c> in IPoco generated code.
-            ///         </para>
-            ///     </item>
-            ///     <item>
-            ///         For <see cref="IUnionPocoType"/> union types this is the index in the <see cref="IOneOfPocoType.AllowedTypes"/>.
+            ///         For records and primary Poco, this is the index in the <see cref="ICompositePocoType.Fields"/>.
             ///     </item>
             ///     <item>
             ///         For collections, this is the index in the <see cref="ICollectionPocoType.ItemTypes"/>.
@@ -180,6 +189,16 @@ namespace CK.Setup
             ///     <item>
             ///         For <see cref="IAbstractPocoType"/> that have <see cref="IAbstractPocoType.GenericArguments"/> this is
             ///         the index of the generic argument.
+            ///     </item>
+            ///     <item>
+            ///         For <see cref="IUnionPocoType"/> union types this is the index in the <see cref="IOneOfPocoType.AllowedTypes"/>.
+            ///     </item>
+            ///     <item>
+            ///         For <see cref="IEnumPocoType"/> types this is 0 (the <see cref="IEnumPocoType.UnderlyingType"/>.
+            ///     </item>
+            ///     <item>
+            ///         This index is -1 for a back reference from the <see cref="ObliviousType"/>. This applies to (the Owner can be):
+            ///         a <see cref="IUnionPocoType"/>, a <see cref="ICollectionPocoType"/> or a <see cref="PocoTypeKind.AnonymousRecord"/>.
             ///     </item>
             /// </list>
             /// This doesn't track the relationship between <see cref="ISecondaryPocoType"/>, <see cref="IAbstractPocoType"/> and
@@ -190,11 +209,6 @@ namespace CK.Setup
             /// </summary>
             int Index { get; }
         }
-
-        /// <summary>
-        /// Gets whether this type is exchangeable.
-        /// </summary>
-        bool IsExchangeable { get; }
 
         /// <summary>
         /// Gets the head of a linked list of the <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/>

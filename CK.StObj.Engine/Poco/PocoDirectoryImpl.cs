@@ -120,7 +120,7 @@ namespace CK.Setup
                 tB.Definition.BaseTypes.AddRange( family.Interfaces.Select( i => new ExtendedTypeName( i.PocoInterface.ToCSharpName() ) ) );
 
                 var pocoType = _typeSystemBuilder.FindByType<IPrimaryPocoType>( family.PrimaryInterface.PocoInterface );
-                Debug.Assert( pocoType != null );
+                Throw.DebugAssert( pocoType != null );
 
                 IFunctionScope ctorB = tB.CreateFunction( $"public {family.PocoClass.Name}()" );
                 ctorB.Append( pocoType.CSharpBodyConstructorSourceCode );
@@ -378,8 +378,7 @@ namespace CK.Setup
                                        nonNullableActualTypeNameIfNullable,
                                        typeScope,
                                        isIPoco: true,
-                                       set.ItemType.FamilyInfo.IsClosedPoco,
-                                       set.ItemType.AbstractTypes );
+                                       baseTypes: set.ItemType.AbstractTypes );
         }
 
         static void GenerateHashSetOfAbstractOrBasicRef( INamespaceScope ns, PocoHashSetOfAbstractOrBasicRefRequiredSupport set )
@@ -396,7 +395,6 @@ namespace CK.Setup
                                        nonNullableActualTypeNameIfNullable,
                                        typeScope,
                                        isIPoco,
-                                       addIClosedPoco: false,
                                        baseTypes );
         }
 
@@ -438,7 +436,6 @@ namespace CK.Setup
                                                string? nonNullableActualTypeNameIfNullable,
                                                ITypeScope typeScope,
                                                bool isIPoco,
-                                               bool addIClosedPoco,
                                                IEnumerable<IPocoType> baseTypes )
         {
             bool isNullable = nonNullableActualTypeNameIfNullable != null;
@@ -446,10 +443,6 @@ namespace CK.Setup
             if( isIPoco )
             {
                 AppendReadOnly( typeScope, isNullable ? "IPoco?" : "IPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
-                if( addIClosedPoco )
-                {
-                    AppendReadOnly( typeScope, isNullable ? "IClosedPoco?" : "IClosedPoco", actualTypeName, nonNullableActualTypeNameIfNullable );
-                }
             }
             foreach( var a in baseTypes )
             {
@@ -544,7 +537,6 @@ namespace CK.Setup
                                               typeScope,
                                               k,
                                               isIPoco: true,
-                                              dic.ValueType.FamilyInfo.IsClosedPoco,
                                               dic.ValueType.AbstractTypes );
         }
 
@@ -558,7 +550,6 @@ namespace CK.Setup
                                               typeScope,
                                               k,
                                               isIPoco,
-                                              false,
                                               baseTypes );
         }
 
@@ -585,17 +576,12 @@ namespace CK.Setup
                                                       ITypeScope typeScope,
                                                       string k,
                                                       bool isIPoco,
-                                                      bool addIClosedPoco,
                                                       IEnumerable<IPocoType> baseTypes )
         {
             AppendIReadOnlyDictionary( typeScope, k, "object", pocoClassName );
             if( isIPoco )
             {
                 AppendIReadOnlyDictionary( typeScope, k, "IPoco", pocoClassName );
-                if( addIClosedPoco )
-                {
-                    AppendIReadOnlyDictionary( typeScope, k, "IClosedPoco", pocoClassName );
-                }
             }
             foreach( var a in baseTypes )
             {

@@ -23,12 +23,14 @@ namespace CK.Setup
             // Auto implementation of IReadOnlyList<IAbstractPocoType> AbstractTypes.
             sealed class Null : NullReferenceType, IPrimaryPocoType, IReadOnlyList<IAbstractPocoType>
             {
+                [AllowNull] internal string _extOrCSName;
+
                 public Null( IPocoType notNullable )
                     : base( notNullable )
                 {
                 }
 
-                new PrimaryPocoType NonNullable => Unsafe.As<PrimaryPocoType>( base.NonNullable );
+                public new PrimaryPocoType NonNullable => Unsafe.As<PrimaryPocoType>( base.NonNullable );
 
                 public IPocoFamilyInfo FamilyInfo => NonNullable.FamilyInfo;
 
@@ -41,11 +43,13 @@ namespace CK.Setup
                 ICompositePocoType ICompositePocoType.ObliviousType => NonNullable;
 
                 IPrimaryPocoType IPrimaryPocoType.Nullable => this;
-
                 IPrimaryPocoType IPrimaryPocoType.NonNullable => NonNullable;
 
                 ICompositePocoType ICompositePocoType.Nullable => this;
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
+
+                INamedPocoType INamedPocoType.Nullable => this;
+                INamedPocoType INamedPocoType.NonNullable => NonNullable;
 
                 public string CSharpBodyConstructorSourceCode => NonNullable.CSharpBodyConstructorSourceCode;
 
@@ -55,7 +59,7 @@ namespace CK.Setup
 
                 public ExternalNameAttribute? ExternalName => NonNullable.ExternalName;
 
-                public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
+                public string ExternalOrCSharpName => _extOrCSName;
 
                 public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => NonNullable.MinimalAbstractTypes.Select( a => a.Nullable );
 
@@ -84,18 +88,22 @@ namespace CK.Setup
                 _def = new FieldDefaultValue( $"new {family.PocoClass.FullName}()" );
                 // Constructor will remain the empty string when all fields are DefaultValueInfo.IsAllowed (their C# default value).
                 _ctorCode = string.Empty;
+                if( _familyInfo.ExternalName != null )
+                {
+                    Nullable._extOrCSName = _familyInfo.ExternalName.Name + '?';
+                }
+
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
 
-            new IPrimaryPocoType Nullable => Unsafe.As<IPrimaryPocoType>( _nullable );
+            new Null Nullable => Unsafe.As<Null>( _nullable );
 
             public IPocoFamilyInfo FamilyInfo => _familyInfo;
 
             public IPrimaryPocoType PrimaryInterface => this;
 
             ICompositePocoType ICompositePocoType.ObliviousType => this;
-
 
             public ExternalNameAttribute? ExternalName => _familyInfo.ExternalName;
 
@@ -109,23 +117,7 @@ namespace CK.Setup
 
             public IReadOnlyList<IPrimaryPocoField> Fields => _fields;
 
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                Throw.DebugAssert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
-                if( IsExchangeable )
-                {
-                    CompositeHelper.OnNoMoreExchangeable( monitor, this, _fields, r );
-                }
-            }
-
-            internal bool SetFields( IActivityMonitor monitor, PrimaryPocoField[] fields )
-            {
-                _fields = fields;
-                // Sets the initial IsExchangeable status.
-                // A composite with no field is not exchangeable.
-                CompositeHelper.CheckInitialExchangeable( monitor, this, _fields );
-                return true;
-            }
+            internal void SetFields( PrimaryPocoField[] fields ) => _fields = fields;
 
             internal void ComputeCtorCode( PocoTypeSystemBuilder.IStringBuilderPool sbPool )
             {
@@ -178,10 +170,7 @@ namespace CK.Setup
                 }
                 if( type.Kind == PocoTypeKind.AbstractPoco )
                 {
-                    var t = type.Type;
-                    return t == typeof( IPoco )
-                           || (FamilyInfo.IsClosedPoco && t == typeof( IClosedPoco ))
-                           || FamilyInfo.OtherInterfaces.Any( i => i == t );
+                    return type.Type == typeof( IPoco ) || _abstractTypes.Contains( type );
                 }
                 return false;
             }
@@ -193,12 +182,13 @@ namespace CK.Setup
             public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= AbstractPocoType.ComputeMinimal( _abstractTypes );
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
-
             ICompositePocoType ICompositePocoType.NonNullable => this;
 
             IPrimaryPocoType IPrimaryPocoType.Nullable => Nullable;
-
             IPrimaryPocoType IPrimaryPocoType.NonNullable => this;
+
+            INamedPocoType INamedPocoType.Nullable => Nullable;
+            INamedPocoType INamedPocoType.NonNullable => this;
         }
     }
 

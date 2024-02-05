@@ -2,13 +2,12 @@ using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using static CK.Core.CheckedWriteStream;
 
 namespace CK.Setup
@@ -30,12 +29,18 @@ namespace CK.Setup
         readonly Dictionary<Type, PocoType.PocoGenericTypeDefinition> _typeDefinitions;
         readonly IPocoType _objectType;
         // Contains the not nullable types (PocoType instances are the non nullable types).
-        readonly List<PocoType> _allTypes;
-        readonly HalfTypeList _exposedAllTypes;
+        readonly List<PocoType> _nonNullableTypes;
+        readonly WithNullTypeList _allTypes;
         readonly Stack<StringBuilder> _stringBuilderPool;
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
         // The Poco directory can be EmptyPocoDirectory.Default for testing only 
         readonly IPocoDirectory _pocoDirectory;
+        // Types marked with [NonSerialized] or flagged by SetNonSerialized if any.
+        HashSet<IPocoType>? _nonSerialized;
+        // Types marked with [NonExchangeable] or flagged by SetExchangeable if any.
+        // The actual set of NonExchangeable is a super set of the NonSerialized.
+        HashSet<IPocoType>? _notExchangeable;
+        // Not null when Locked.
         IPocoTypeSystem? _result;
 
         /// <summary>
@@ -48,8 +53,8 @@ namespace CK.Setup
             _stringBuilderPool = new Stack<StringBuilder>();
             _memberInfoFactory = memberInfoFactory;
             _pocoDirectory = pocoDirectory ?? EmptyPocoDirectory.Default;
-            _allTypes = new List<PocoType>( 8192 );
-            _exposedAllTypes = new HalfTypeList( _allTypes );
+            _nonNullableTypes = new List<PocoType>( 8192 );
+            _allTypes = new WithNullTypeList( _nonNullableTypes );
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
             _typeDefinitions = new Dictionary<Type, PocoType.PocoGenericTypeDefinition>();
             _typeCache = new Dictionary<object, IPocoType>();
@@ -109,28 +114,24 @@ namespace CK.Setup
 
         public IPocoTypeSystem Lock()
         {
-            if( _result == null )
-            {
-                _result = new PocoTypeSystem( _pocoDirectory, _exposedAllTypes, _allTypes, _typeCache, _typeDefinitions );
-            }
-            return _result;
+            return _result ??= new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _nonSerialized, _notExchangeable );
         }
 
         public IPocoDirectory PocoDirectory => _pocoDirectory;
 
         public IPocoType ObjectType => _objectType;
 
-        public int Count => _allTypes.Count << 1;
+        public int Count => _nonNullableTypes.Count << 1;
 
-        public IReadOnlyList<IPocoType> AllNonNullableTypes => _allTypes;
+        public IReadOnlyList<IPocoType> AllNonNullableTypes => _nonNullableTypes;
 
         public IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes => _requiredSupportTypes.Values;
 
         internal void AddNew( PocoType t )
         {
             Throw.CheckState( !IsLocked );
-            Throw.DebugAssert( t.Index == _allTypes.Count * 2 );
-            _allTypes.Add( t );
+            Throw.DebugAssert( t.Index == _nonNullableTypes.Count * 2 );
+            _nonNullableTypes.Add( t );
         }
 
         public IPocoType? FindByType( Type type )
@@ -148,17 +149,47 @@ namespace CK.Setup
             return _typeDefinitions.GetValueOrDefault( type );
         }
 
+        public void SetNonSerialized( IActivityMonitor monitor, IPocoType type )
+        {
+            Throw.CheckState( !IsLocked );
+            Throw.CheckNotNullArgument( monitor );
+            Throw.CheckArgument( type != null && type.Index < _allTypes.Count && _allTypes[type.Index] == type );
+            monitor.Info( $"Poco '{type}' is declared to be non serializable. It will also be non exchangeable." );
+            DoSetNonSerialized( type );
+        }
+
+        internal void DoSetNonSerialized( IPocoType type )
+        {
+            _nonSerialized ??= new HashSet<IPocoType>();
+            _nonSerialized.Add( type.NonNullable );
+        }
+
         public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )
         {
             Throw.CheckState( !IsLocked );
             Throw.CheckNotNullArgument( monitor );
-            Throw.CheckArgument( type != null && type.Index < _exposedAllTypes.Count && _exposedAllTypes[type.Index] == type );
-            Throw.CheckArgument( type.Kind != PocoTypeKind.Any );
-            Throw.CheckArgument( "Only the PrimaryPoco can be set to be not exchangeable.", type.Kind != PocoTypeKind.SecondaryPoco );
-            var t = (PocoType)type.NonNullable;
-            if( t.IsExchangeable )
+            Throw.CheckArgument( type != null && type.Index < _allTypes.Count && _allTypes[type.Index] == type );
+            monitor.Info( $"Poco '{type}' is declared to be non exchangeable." );
+            DoSetNotExchangeable( type );
+        }
+
+        internal void DoSetNotExchangeable( IPocoType type )
+        {
+            _notExchangeable ??= new HashSet<IPocoType>();
+            _notExchangeable.Add( type.NonNullable );
+        }
+
+        void HandleNonSerializedAndNotExchangeableAttributes( IActivityMonitor monitor, IPocoType t )
+        {
+            if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NonSerializedAttribute ) ) )
             {
-                t.SetNotExchangeable( monitor, "TypeSystem external call." );
+                monitor.Info( $"Poco '{t}' is [NonSerialized]." );
+                DoSetNonSerialized( t );
+            }
+            if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NotExchangeableAttribute ) ) )
+            {
+                monitor.Info( $"Poco '{t}' is [NotExchangeable]." );
+                DoSetNotExchangeable( t );
             }
         }
 
@@ -339,6 +370,8 @@ namespace CK.Setup
                 }
                 if( !success ) return null;
                 result = PocoType.CreateImplementationLessAbstractPoco( this, t, generalizations, typeDefinition, arguments );
+                // Don't call HandleNonSerializedAndNotExchangeableAttributes( monitor, result ) since this
+                // type is not implemented.
                 _typeCache.Add( t, result );
             }
             Throw.DebugAssert( result is IAbstractPocoType or ISecondaryPocoType or IPrimaryPocoType );
@@ -363,8 +396,7 @@ namespace CK.Setup
                 {
                     // The oblivious array is not registered.
                     var oName = tItem.ObliviousType.CSharpName + "[]";
-                    obliviousType = PocoType.CreateCollection( monitor,
-                                                               this,
+                    obliviousType = PocoType.CreateCollection( this,
                                                                nType.Type,
                                                                oName,
                                                                oName,
@@ -377,8 +409,7 @@ namespace CK.Setup
                 // If the item is oblivious then, it is the oblivious array.
                 if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType.Nullable : obliviousType;
 
-                result = PocoType.CreateCollection( monitor,
-                                                    this,
+                result = PocoType.CreateCollection( this,
                                                     nType.Type,
                                                     chsarpName,
                                                     chsarpName,
@@ -428,16 +459,27 @@ namespace CK.Setup
                 {
                     return null;
                 }
-                // There is necessary the underlying integral type.
+                // Register the underlying integral type (even if we currently preregister all of them, we may change our mind about this).
+                var underlyingType = RegisterNullOblivious( monitor, tNotNull.GetEnumUnderlyingType() );
+                if( underlyingType == null ) return null;
+
                 tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
                 obliviousType = PocoType.CreateEnum( monitor,
                                                      this,
                                                      tNotNull,
                                                      tNull,
-                                                     _typeCache[tNotNull.GetEnumUnderlyingType()],
+                                                     underlyingType,
                                                      externalName );
+                // Even if the enum is invalid, register it correctly to preserve
+                // the invariants.
+                HandleNonSerializedAndNotExchangeableAttributes( monitor, obliviousType );
                 _typeCache.Add( tNotNull, obliviousType );
                 _typeCache.Add( tNull, obliviousType.Nullable );
+                if( obliviousType.DefaultValueInfo.IsDisallowed )
+                {
+                    // An error has been logged.
+                    return null;
+                }
                 return nType.IsNullable ? obliviousType.Nullable : obliviousType;
             }
             IPocoType? record;
@@ -657,18 +699,28 @@ namespace CK.Setup
             var propertyInfos = tNotNull.GetProperties();
             var fieldInfos = tNotNull.GetFields();
             var fields = new RecordNamedField[propertyInfos.Length + fieldInfos.Length];
+            bool success = true;
             for( int i = 0; i < propertyInfos.Length; i++ )
             {
                 var pInfo = _memberInfoFactory.Create( propertyInfos[i] );
                 if( !pInfo.PropertyInfo.CanWrite && !pInfo.Type.IsByRef )
                 {
                     monitor.Error( $"'{pInfo}' is readonly. A record struct must be fully mutable." );
-                    return null;
+                    success = false;
                 }
-                var f = CreateField( monitor, r, i, Register( monitor, pInfo ), pInfo, ctorParams, StringBuilderPool );
-                if( f == null ) return null;
-                isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
-                fields[i] = f;
+                if( success )
+                {
+                    var f = CreateField( monitor, r, i, Register( monitor, pInfo ), pInfo, ctorParams, StringBuilderPool );
+                    if( f == null )
+                    {
+                        success = false;
+                    }
+                    else
+                    {
+                        isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
+                        fields[i] = f;
+                    }
+                }
             }
             int idx = propertyInfos.Length;
             for( int i = 0; i < fieldInfos.Length; i++ )
@@ -677,14 +729,26 @@ namespace CK.Setup
                 if( fInfo.FieldInfo.IsInitOnly )
                 {
                     monitor.Error( $"Field '{fInfo.DeclaringType}.{fInfo.Name}' is readonly. A record struct must be fully mutable." );
-                    return null;
+                    success = false;
                 }
-                var f = CreateField( monitor, r, idx, Register( monitor, fInfo ), fInfo, ctorParams, StringBuilderPool );
-                if( f == null ) return null;
-                isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
-                fields[idx++] = f;
+                else
+                {
+                    var f = CreateField( monitor, r, idx, Register( monitor, fInfo ), fInfo, ctorParams, StringBuilderPool );
+                    if( f == null )
+                    {
+                        success = false;
+                    }
+                    else
+                    {
+                        isReadOnlyCompliant &= MemberContext.IsReadOnlyCompliant( f );
+                        fields[idx++] = f;
+                    }
+                }
             }
+            if( !success ) return null;
+
             r.SetFields( monitor, this, isReadOnlyCompliant, fields );
+            HandleNonSerializedAndNotExchangeableAttributes( monitor, r );
             return nType.IsNullable ? r.Nullable : r;
 
 
@@ -712,32 +776,31 @@ namespace CK.Setup
                 originator ??= fInfo.UnderlyingObject;
                 return new RecordNamedField( r, idx, fInfo.Name, tField, defValue, originator );
             }
-
         }
 
         IUnionPocoType RegisterUnionType( IActivityMonitor monitor, List<IPocoType> types )
         {
-            var a = types.ToArray();
+            var a = types.ToImmutableArray();
             var k = new PocoType.KeyUnionTypes( a, out bool isOblivious );
             IPocoType? obliviousType = null;
             if( !isOblivious )
             {
-                var aO = new IPocoType[a.Length];
+                var bO = ImmutableArray.CreateBuilder<IPocoType>( a.Length );
                 for( int i = 0; i < a.Length; i++ )
                 {
-                    aO[i] = a[i].ObliviousType;
+                    bO.Add( a[i].ObliviousType );
                 }
-                var kO = new PocoType.KeyUnionTypes( aO, out var _ );
-                Debug.Assert( !kO.Equals( k ) );
+                var kO = new PocoType.KeyUnionTypes( bO.MoveToImmutable(), out var _ );
+                Throw.DebugAssert( !kO.Equals( k ) );
                 if( !_typeCache.TryGetValue( kO, out obliviousType ) )
                 {
-                    obliviousType = PocoType.CreateUnion( monitor, this, aO, null );
+                    obliviousType = PocoType.CreateUnion( monitor, this, kO, null );
                     _typeCache.Add( kO, obliviousType );
                 }
             }
             if( !_typeCache.TryGetValue( k, out var result ) )
             {
-                result = PocoType.CreateUnion( monitor, this, a, obliviousType );
+                result = PocoType.CreateUnion( monitor, this, k, obliviousType );
                 _typeCache.Add( k, result );
             }
             return (IUnionPocoType)result;

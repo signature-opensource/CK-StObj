@@ -54,7 +54,7 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 " ).NewLine();
             foreach( var f in type.Fields )
             {
-                if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                if( f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && _nameMap.TypeSet.Contains( f.Type ) )
                 {
                     var camel = JsonNamingPolicy.CamelCase.ConvertName( f.Name );
                     if( camel != f.Name )

@@ -116,9 +116,7 @@ namespace CK.Setup
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
             if( t != null )
             {
-                return kind != AutoServiceKind.None
-                        ? SetAutoServiceKind( monitor, t, kind )
-                        : true;
+                return kind == AutoServiceKind.None || SetAutoServiceKind( monitor, t, kind );
             }
             if( isOptional )
             {
@@ -504,7 +502,7 @@ namespace CK.Setup
                 do
                 {
                     m.ConfigureTopDown( monitor, generalization );
-                    if( _configurator != null ) _configurator.Configure( monitor, m );
+                    _configurator?.Configure( monitor, m );
                 }
                 while( (m = m.Specialization) != null );
             }

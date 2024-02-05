@@ -78,26 +78,34 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the set of types that must be generated to support this type system.
-        /// 
         /// </summary>
         IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
-        
+
         /// <summary>
-        /// Forbids a type to be <see cref="IPocoType.IsExchangeable"/>. This
-        /// condemns all fields that depend on it to be no more <see cref="IPocoField.IsExchangeable"/>
-        /// and can subsequently also condemn other types if all their fields become not exchangeable.
-        /// <para>
-        /// The "object" (<see cref="PocoTypeKind.Any"/>) is necessarily exchangeable: an <see cref="ArgumentException"/>
-        /// is thrown if <paramref name="type"/> is Any. 
+        /// Forbids a type to be exchangeable. This is the same as using the <see cref="NotExchangeableAttribute"/>
+        /// on the type except that this can be called on anonymous records and even basic types.
         /// </para>
         /// <para>
-        /// An argument exception is also thrown if <paramref name="type"/> is a <see cref="PocoTypeKind.SecondaryPoco"/>:
-        /// only the <see cref="IPrimaryPocoType"/> or <see cref="IAbstractPocoType"/> can be set to not exchangeable.
+        /// If <paramref name="type"/> is a <see cref="PocoTypeKind.SecondaryPoco"/> this makes its <see cref="IPrimaryPocoType"/>
+        /// not exchangeable. Similarly, a <see cref="IAbstractPocoType"/> applies to all its <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.
         /// </para>
         /// </summary>
         /// <param name="monitor">Required monitor.</param>
-        /// <param name="type">The type to condemn.</param>
+        /// <param name="type">The type that must not be exchangeable.</param>
         void SetNotExchangeable( IActivityMonitor monitor, IPocoType type );
+
+        /// <summary>
+        /// Forbids a type to be serializable. This is the same as using the <see cref="NonSerializedAttribute"/>
+        /// on the type except that this can be called with anonymous records and even basic types.
+        /// </para>
+        /// <para>
+        /// If <paramref name="type"/> is a <see cref="PocoTypeKind.SecondaryPoco"/> this makes its <see cref="IPrimaryPocoType"/>
+        /// not serializable. Similarly, a <see cref="IAbstractPocoType"/> applies to all its <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">Required monitor.</param>
+        /// <param name="type">The type that must be non serializable.</param>
+        void SetNonSerialized( IActivityMonitor monitor, IPocoType type );
 
         /// <summary>
         /// Tries to register a type.

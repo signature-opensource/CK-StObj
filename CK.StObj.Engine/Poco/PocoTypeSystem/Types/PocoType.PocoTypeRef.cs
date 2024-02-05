@@ -26,7 +26,7 @@ namespace CK.Setup
 
             internal PocoTypeRef( IPocoType owner, IPocoType t, int index )
             {
-                Throw.DebugAssert( index >= 0 || owner is IAbstractPocoType a && ~index < a.GenericArguments.Count );
+                Throw.DebugAssert( "Oblivious back reference is -1.", index >= -1 );
                 _owner = owner;
                 _type = t;
                 _index = index;

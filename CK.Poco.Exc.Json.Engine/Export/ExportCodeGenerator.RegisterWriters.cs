@@ -39,7 +39,7 @@ namespace CK.Setup.PocoJson
             }
             """ );
 
-            foreach( var type in _nameMap.ExchangeableNonNullableTypes )
+            foreach( var type in _nameMap.TypeSet.NonNullableTypes )
             {
                 switch( type.Kind )
                 {

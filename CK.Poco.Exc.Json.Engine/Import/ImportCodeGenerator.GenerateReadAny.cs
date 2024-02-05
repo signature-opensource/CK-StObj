@@ -14,14 +14,14 @@ namespace CK.Setup.PocoJson
             ctor.GeneratedByComment().NewLine()
                 .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
 
-            foreach( var t in _nameMap.ExchangeableNonNullableObliviousTypes )
+            foreach( var t in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
             {
                 if( t.Kind == PocoTypeKind.Any
                     || t.Kind == PocoTypeKind.AbstractPoco
                     || t.Kind == PocoTypeKind.UnionType ) continue;
                 // We cannot directly use the GetReadFunctionName here if the type is a value type: the ReaderFunction
                 // here returns an object: it has to be explicitly boxed.
-                var typeName = _nameMap.GetName( t ).Name;
+                var typeName = _nameMap.GetName( t );
                 var readFunction = GetReadFunctionName( t );
                 if( t.Type.IsValueType )
                 {
@@ -33,7 +33,7 @@ namespace CK.Setup.PocoJson
                         .CloseBlock();
                     // Handle also the nullable value types.
                     var tNull = t.Nullable;
-                    typeName = _nameMap.GetName( tNull ).Name;
+                    typeName = _nameMap.GetName( tNull );
                     readFunction = GetReadFunctionName( tNull );
                     ctor.OpenBlock()
                         .Append( "// Type: " ).Append( tNull.ImplTypeName ).NewLine()

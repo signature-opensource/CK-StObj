@@ -51,7 +51,7 @@ namespace CK.Setup
                 {
                     using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                     {
-                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
+                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs.Cast<MutableItem>() )
                         {
                             item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
                         }
@@ -509,7 +509,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         {
             using var region = rootCtor.Region();
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 if( m.PreConstructProperties != null )
                 {
@@ -582,7 +582,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         static void InitializePostBuildProperties( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             using var region = rootCtor.Region();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 if( m.PostBuildProperties != null )
                 {
@@ -603,7 +603,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         static void CallInitializeMethods( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             using var region = rootCtor.Region();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {

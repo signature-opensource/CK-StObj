@@ -24,8 +24,7 @@ namespace CK.Setup
         /// These are nullable types if this type is nullable.
         /// </para>
         /// <para>
-        /// This never contains the root <see cref="CK.Core.IPoco"/> but can contain
-        /// the <see cref="CK.Core.IClosedPoco"/>.
+        /// This never contains the root <see cref="IPoco"/>.
         /// </para>
         /// </summary>
         IEnumerable<IAbstractPocoType> Generalizations { get; }

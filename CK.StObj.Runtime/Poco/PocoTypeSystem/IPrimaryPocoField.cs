@@ -4,6 +4,9 @@ namespace CK.Setup
     /// Field of <see cref="IPrimaryPocoType"/>.
     /// When this <see cref="IPocoType.ITypeRef.Type"/> is a <see cref="PocoTypeKind.AnonymousRecord"/>
     /// or a <see cref="PocoTypeKind.Record"/> this is a ref property.
+    /// <para>
+    /// The generated backing field is named <c>_v{<see cref="IPocoType.ITypeRef.Index"/>}</c> in IPoco implementation generated code.
+    /// </para>
     /// </summary>
     public interface IPrimaryPocoField : IPocoField
     {

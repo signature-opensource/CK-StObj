@@ -57,8 +57,7 @@ namespace CK.Setup
         {
             if( _stObjProperties == null )
             {
-                _stObjProperties = new List<StObjProperty>();
-                _stObjProperties.Add( new StObjProperty( propertyName, value ) );
+                _stObjProperties = new List<StObjProperty> { new StObjProperty( propertyName, value ) };
             }
             else
             {
@@ -144,12 +143,12 @@ namespace CK.Setup
                     {
                         // We "Set" the value from this source.
                         if( !p.ValueHasBeenSet ) p.Value = c.Value;
-                        else if( p.Value is IMergeable )
+                        else if( p.Value is IMergeable mergeable )
                         {
                             using( var services = new SimpleServiceContainer() )
                             {
                                 services.Add( monitor );
-                                if( !((IMergeable)p.Value).Merge( c.Value, services ) )
+                                if( !mergeable.Merge( c.Value, services ) )
                                 {
                                     monitor.Error( $"Unable to merge StObjProperty '{ToString()}.{p.Value}' with value from {sourceName}." );
                                 }
@@ -177,7 +176,7 @@ namespace CK.Setup
             }
             else
             {
-                result = Generalization != null ? Generalization.GetStObjProperty( propertyName, PropertyResolutionSource.FromGeneralizationAndThenContainer ) : null;
+                result = Generalization?.GetStObjProperty( propertyName, PropertyResolutionSource.FromGeneralizationAndThenContainer );
                 if( result == null && IsOwnContainer ) result = _dContainer!.GetStObjProperty( propertyName, PropertyResolutionSource.FromGeneralizationAndThenContainer );
             }
             return result;

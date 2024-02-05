@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using static CK.CodeGen.TupleTypeName;
 using System.Threading;
 using System.Text;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -17,13 +18,13 @@ namespace CK.Setup
     {
         internal sealed class KeyUnionTypes : IEquatable<KeyUnionTypes>
         {
-            readonly IPocoType[] _types;
+            public readonly ImmutableArray<IPocoType> Types;
             readonly int _hash;
 
-            public KeyUnionTypes( IPocoType[] types, out bool isOblivious )
+            public KeyUnionTypes( ImmutableArray<IPocoType> types, out bool isOblivious )
             {
                 isOblivious = true;
-                _types = types;
+                Types = types;
                 var h = new HashCode();
                 foreach( var t in types )
                 {
@@ -33,7 +34,7 @@ namespace CK.Setup
                 _hash = h.ToHashCode();
             }
 
-            public bool Equals( KeyUnionTypes? other ) => other != null && _types.SequenceEqual( other._types );
+            public bool Equals( KeyUnionTypes? other ) => other != null && Types.SequenceEqual( other.Types );
 
             public override bool Equals( object? obj ) => Equals( obj as KeyUnionTypes );
 
@@ -42,10 +43,10 @@ namespace CK.Setup
 
         internal static UnionType CreateUnion( IActivityMonitor monitor,
                                                PocoTypeSystemBuilder s,
-                                               IPocoType[] allowedTypes,
+                                               KeyUnionTypes key,
                                                IPocoType? obliviousType )
         {
-            return new UnionType( monitor, s, allowedTypes, (IUnionPocoType?)obliviousType );
+            return new UnionType( monitor, s, key, (IUnionPocoType?)obliviousType );
         }
 
         internal sealed class UnionType : PocoType, IUnionPocoType
@@ -68,39 +69,34 @@ namespace CK.Setup
                 IUnionPocoType IUnionPocoType.Nullable => this;
             }
 
-            readonly IReadOnlyList<IPocoType> _allowedTypes;
+            readonly KeyUnionTypes _k;
             readonly IUnionPocoType _obliviousType;
             string? _standardName;
 
-            public UnionType( IActivityMonitor monitor, PocoTypeSystemBuilder s, IPocoType[] allowedTypes, IUnionPocoType? obliviousType )
+            public UnionType( IActivityMonitor monitor, PocoTypeSystemBuilder s, KeyUnionTypes k, IUnionPocoType? obliviousType )
                 : base( s,
-                        typeof(object),
+                        typeof( object ),
                         "object",
                         PocoTypeKind.UnionType,
                         static t => new Null( t ) )
             {
-                _obliviousType = obliviousType ?? this;
-                _allowedTypes = allowedTypes;
-                // Sets the initial IsExchangeable status.
-                bool initialIsExchangeable = false;
-                for( int i = 0; i < allowedTypes.Length; i++ )
+                _k = k;
+                if( obliviousType != null )
                 {
-                    var t = allowedTypes[i];
-                    _ = new PocoTypeRef( this, t, i );
-                    initialIsExchangeable |= t.IsExchangeable;
+                    Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.AllowedTypes.All( t => t.IsOblivious ) );
+                    _obliviousType = obliviousType;
+                    // Registers the back reference to the oblivious type.
+                    _ = new PocoTypeRef( this, obliviousType, -1 );
                 }
-                // Sets the initial IsExchangeable status.
-                if( !initialIsExchangeable )
+                else
                 {
-                    SetNotExchangeable( monitor, "none of its types are exchangeable." );
+                    Throw.DebugAssert( k.Types.All( t => t.IsOblivious ) );
+                    _obliviousType = this;
                 }
-            }
-
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                if( IsExchangeable && !_allowedTypes.Any( t => t.IsExchangeable ) )
+                int i = 0;
+                foreach( var t in _k.Types )
                 {
-                    SetNotExchangeable( monitor, $"its last type '{r.Type}' is not exchangeable." );
+                    _ = new PocoTypeRef( this, t, i++ );
                 }
             }
 
@@ -108,7 +104,7 @@ namespace CK.Setup
             {
                 if( type == this || type.Kind == PocoTypeKind.Any ) return true;
                 // To allow the type to be readable, it must be readable.
-                return type.IsNullable && _allowedTypes.Any( a => a.CanReadFrom( type ) );
+                return type.IsNullable && _k.Types.Any( a => a.CanReadFrom( type ) );
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
@@ -133,9 +129,9 @@ namespace CK.Setup
 
             public override IPocoType ObliviousType => _obliviousType;
 
-            IReadOnlyList<IPocoType> AllowedTypes => _allowedTypes;
+            IReadOnlyList<IPocoType> AllowedTypes => _k.Types;
 
-            IEnumerable<IPocoType> IOneOfPocoType.AllowedTypes => _allowedTypes;
+            IEnumerable<IPocoType> IOneOfPocoType.AllowedTypes => _k.Types;
 
             IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
             IUnionPocoType IUnionPocoType.Nullable => Nullable;

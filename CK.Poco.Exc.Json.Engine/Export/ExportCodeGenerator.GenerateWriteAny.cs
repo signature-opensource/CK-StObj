@@ -1,6 +1,7 @@
 using CK.CodeGen;
 using CK.Core;
 using System.ComponentModel.Design;
+using System.Linq;
 
 namespace CK.Setup.PocoJson
 {
@@ -82,12 +83,12 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             IPocoType? extendedCultureInfo = null;
             IPocoType? normalizedCultureInfo = null;
 
-            foreach( var t in _nameMap.ExchangeableNonNullableObliviousTypes )
+            foreach( var t in _nameMap.TypeSet.NonNullableTypes )
             {
-                if( t.Kind == PocoTypeKind.Any
+                if( !t.IsOblivious
+                    || t.Kind == PocoTypeKind.Any
                     || t.Kind == PocoTypeKind.AbstractPoco
-                    || t.Kind == PocoTypeKind.UnionType
-                    || t.ObliviousType != t )
+                    || t.Kind == PocoTypeKind.UnionType )
                 {
                     continue;
                 }

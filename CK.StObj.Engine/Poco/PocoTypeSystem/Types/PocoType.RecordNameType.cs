@@ -23,13 +23,15 @@ namespace CK.Setup
                                                            string typeName,
                                                            ExternalNameAttribute? externalName )
         {
-            return new RecordNamedType( monitor, s, tNotNull, tNull, typeName, externalName );
+            return new RecordNamedType( s, tNotNull, tNull, typeName, externalName );
         }
 
         internal sealed class RecordNamedType : PocoType, IRecordPocoType
         {
             sealed class Null : NullValueType, IRecordPocoType
             {
+                [AllowNull] internal string _extOrCSName;
+
                 public Null( IPocoType notNullable, Type tNull )
                     : base( notNullable, tNull )
                 {
@@ -49,17 +51,18 @@ namespace CK.Setup
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
+                IRecordPocoType IRecordPocoType.Nullable => this;
                 IRecordPocoType IRecordPocoType.NonNullable => NonNullable;
 
+                ICompositePocoType ICompositePocoType.Nullable => this;
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
 
-                IRecordPocoType IRecordPocoType.Nullable => this;
-
-                ICompositePocoType ICompositePocoType.Nullable => this;
+                INamedPocoType INamedPocoType.Nullable => this;
+                INamedPocoType INamedPocoType.NonNullable => NonNullable;
 
                 public ExternalNameAttribute? ExternalName => NonNullable.ExternalName;
 
-                public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
+                public string ExternalOrCSharpName => _extOrCSName;
             }
 
             [AllowNull] RecordNamedField[] _fields;
@@ -67,8 +70,7 @@ namespace CK.Setup
             DefaultValueInfo _defInfo;
             bool _isReadOnlyCompliant;
 
-            public RecordNamedType( IActivityMonitor monitor,
-                                    PocoTypeSystemBuilder s,
+            public RecordNamedType( PocoTypeSystemBuilder s,
                                     Type tNotNull,
                                     Type tNull,
                                     string typeName,
@@ -79,7 +81,11 @@ namespace CK.Setup
                         PocoTypeKind.Record,
                         t => new Null( t, tNull ) )
             {
-                _externalName = externalName;
+                if( externalName != null )
+                {
+                    _externalName = externalName;
+                    Nullable._extOrCSName = externalName.Name + '?';
+                }
             }
 
             internal void SetFields( IActivityMonitor monitor, PocoTypeSystemBuilder s, bool isReadOnlyCompliant, RecordNamedField[] fields )
@@ -87,7 +93,6 @@ namespace CK.Setup
                 _fields = fields;
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
                 _isReadOnlyCompliant = isReadOnlyCompliant;
-                CompositeHelper.CheckInitialExchangeable( monitor, this, _fields );
             }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
@@ -110,25 +115,16 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            ICompositePocoType ICompositePocoType.Nullable => Nullable;
-
-            ICompositePocoType ICompositePocoType.NonNullable => this;
-
             public bool IsAnonymous => false;
 
-            IRecordPocoType IRecordPocoType.Nullable => Nullable;
+            ICompositePocoType ICompositePocoType.Nullable => Nullable;
+            ICompositePocoType ICompositePocoType.NonNullable => this;
 
+            IRecordPocoType IRecordPocoType.Nullable => Nullable;
             IRecordPocoType IRecordPocoType.NonNullable => this;
 
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
-                if( IsExchangeable )
-                {
-                    CompositeHelper.OnNoMoreExchangeable( monitor, this, _fields, r );
-                }
-            }
+            INamedPocoType INamedPocoType.Nullable => Nullable;
+            INamedPocoType INamedPocoType.NonNullable => this;
         }
-
     }
 }

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CK.Setup
 {
     /// <summary>
@@ -12,10 +14,21 @@ namespace CK.Setup
         IPocoType UnderlyingType { get; }
 
         /// <summary>
-        /// Gets the default value enumeration name.
-        /// It corresponds to the smallest unsigned numerical value: it is usually the name with the 0 value.
+        /// Gets the default value enumeration name in the form "FullName.None".
+        /// It corresponds to the smallest unsigned numerical value: it is usually the name with the 0 (default) value
+        /// of the underlying type.
         /// </summary>
-        string? DefaultValueName { get; }
+        string DefaultValueName { get; }
+
+        /// <summary>
+        /// Gets the enum name and associated values.
+        /// <para>
+        /// This can be empty. It is valid i C# (and in TypeScript) to have enum without values: the
+        /// single default and accepted value is 0.
+        /// This is a pathological case: we accept this but standard <see cref="PocoTypeFilter"/> excludes it by default.
+        /// </para>
+        /// </summary>
+        IReadOnlyDictionary<string, object> Values { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IEnumPocoType Nullable { get; }

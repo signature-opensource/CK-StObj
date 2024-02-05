@@ -7,8 +7,6 @@ using System.Diagnostics;
 using System.Linq;
 using static CK.Testing.StObjEngineTestHelper;
 
-#pragma warning disable IDE0059 // Unnecessary assignment of a value
-
 namespace CK.StObj.Engine.Tests.Poco
 {
     [TestFixture]

@@ -59,8 +59,6 @@ namespace CK.Setup
 
         public object? Originator => null;
 
-        public bool IsExchangeable => _type.IsExchangeable;
-
         public DefaultValueInfo DefaultValueInfo => _type.DefaultValueInfo;
 
         public bool HasOwnDefaultValue => false;

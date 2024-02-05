@@ -14,7 +14,7 @@ namespace CK.Setup.PocoJson
         //         are implemented once for all based on the typed functions reader of their item type.
         void RegisterReaders( List<IPrimaryPocoType> pocos, List<IRecordPocoType> records )
         {
-            foreach( var type in _nameMap.ExchangeableNonNullableTypes )
+            foreach( var type in _nameMap.TypeSet.NonNullableTypes )
             {
                 switch( type.Kind )
                 {

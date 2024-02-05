@@ -13,13 +13,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Initializes this type system with the IPoco discovery result.
-        /// All IPoco interfaces are registered, including the "abstract" ones that are considered union types
-        /// of all the Poco families interfaces that support them.
-        /// The IPoco interface itself and the IClosedPoco are registered as union types.
-        /// <para>
-        /// After this, any IPoco interface that is not already registered here is an excluded type: any type
-        /// that uses it is considered excluded.
-        /// </para>
+        /// All discovered IPoco interfaces are registered.
         /// </summary>
         /// <param name="monitor">Required monitor.</param>
         /// <returns>True on success, false otherwise.</returns>
@@ -56,12 +50,14 @@ namespace CK.Setup
                 // We also index the primary by its generated PocoClass type.
                 //
                 var primary = PocoType.CreatePrimaryPoco( this, family );
+                HandleNonSerializedAndNotExchangeableAttributes( monitor, primary );
                 Throw.DebugAssert( family.Interfaces[0].PocoInterface == primary.Type );
                 _typeCache.Add( primary.Type, primary );
                 _typeCache.Add( primary.CSharpName, primary );
                 foreach( var i in family.Interfaces.Skip( 1 ) )
                 {
                     var sec = PocoType.CreateSecondaryPocoType( this, i.PocoInterface, primary );
+                    HandleNonSerializedAndNotExchangeableAttributes( monitor, sec );
                     _typeCache.Add( i.PocoInterface, sec );
                     _typeCache.Add( sec.CSharpName, sec );
                 }
@@ -92,10 +88,18 @@ namespace CK.Setup
             foreach( var p in allPrimaries )
             {
                 int nbAbstracts = p.FamilyInfo.OtherInterfaces.Count;
+                bool hasClosed = p.FamilyInfo.IsClosedPoco;
+                if( hasClosed ) ++nbAbstracts;
+
                 if( nbAbstracts > 0 )
                 {
                     var abstracts = new IAbstractPocoType[nbAbstracts];
                     int idx = 0;
+                    if( hasClosed )
+                    {
+                        abstracts[0] = allClosed;
+                        idx = 1;
+                    }
                     foreach( var a in p.FamilyInfo.OtherInterfaces )
                     {
                         abstracts[idx++] = (IAbstractPocoType)_typeCache[a];
@@ -130,14 +134,14 @@ namespace CK.Setup
                 }
                 if( success )
                 {
-                    p.SetFields( monitor, fields );
+                    p.SetFields( fields );
                 }
                 else
                 {
                     // We are on an error path. This Poco is invalid, the whole type system will also be invalid.
                     // We can be inefficient here!
                     fields = fields.Where( f => f != null ).ToArray();
-                    p.SetFields( monitor, fields );
+                    p.SetFields( fields );
                 }
             }
             // We are almost done. Now that the Primary Poco fields are resolved, we can resolve the
@@ -173,7 +177,7 @@ namespace CK.Setup
             // Since we visit the IPoco fields and its record types, we also handle missing default values
             // (any field that has a true DefaultValueInfo.IsDisallowed).
             bool cycleError = false;
-            var detector = new PocoCycleAndDefaultVisitor();
+            var detector = new PocoCycleAndDefaultVisitor( _nonNullableTypes.Count );
             foreach( var p in allPrimaries )
             {
                 detector.VisitRoot( p );
@@ -217,6 +221,7 @@ namespace CK.Setup
                 _typeCache.Add( tAbstract, a );
                 allAbstracts.Add( a );
                 if( typeof( IClosedPoco ).IsAssignableFrom( tAbstract ) ) closedAbstracts.Add( a );
+                HandleNonSerializedAndNotExchangeableAttributes( monitor, a );
             }
             return result;
         }

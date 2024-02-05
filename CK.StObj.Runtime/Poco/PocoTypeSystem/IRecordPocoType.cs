@@ -15,7 +15,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether this record type has no mutable reference types: a copy of this value
-        /// is de facto a "readonly" projection of its source in the sense where it cannot be
+        /// is de facto a "readonly" projection of its source in the sense that it cannot be
         /// used to mutate the source data.
         /// </summary>
         bool IsReadOnlyCompliant { get; }

@@ -1,20 +1,18 @@
 namespace CK.Setup.PocoJson
 {
     /// <summary>
-    /// Exposes the Json names of the exchanged types once they have been computed
-    /// and Json serialization code has been generated.
+    /// Exposes the Json names. This service is available after <see cref="IPocoTypeSystemBuilder.Lock()"/>
+    /// has been locked.
     /// </summary>
     public interface IPocoJsonGeneratorService
     {
         /// <summary>
-        /// Gets the Json names of the Poco types used by the Json exchange services
-        /// when it is ready to be used.
+        /// Gets the Json names of the Poco types.
         /// <para>
-        /// This map MAY contain less exchangeable types than the type system has types
-        /// (it's not the case today: all <see cref="IPocoType"/> that are <see cref="IPocoType.IsExchangeable"/>
-        /// are handled and no Json specific mechanism that can remove some of them is implemented).
+        /// This map is bound to the <see cref="IPocoTypeSetManager.AllSerializable"/> and uses
+        /// the standard names described by <see cref="PocoTypeNameMap"/>.
         /// </para>
         /// </summary>
-        ExchangeableTypeNameMap? JsonNames { get; }
+        PocoTypeNameMap JsonNames { get; }
     }
 }

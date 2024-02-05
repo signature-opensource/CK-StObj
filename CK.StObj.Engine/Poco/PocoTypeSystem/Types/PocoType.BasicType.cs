@@ -9,7 +9,7 @@ namespace CK.Setup
     {
         internal static PocoType CreateObject( PocoTypeSystemBuilder s )
         {
-            return new PocoType( s, typeof(object), "object", PocoTypeKind.Any, static t => new NullReferenceType( t ) );
+            return new PocoType( s, typeof( object ), "object", PocoTypeKind.Any, static t => new NullReferenceType( t ) );
         }
 
         internal static BasicRefType CreateBasicRef( PocoTypeSystemBuilder s,

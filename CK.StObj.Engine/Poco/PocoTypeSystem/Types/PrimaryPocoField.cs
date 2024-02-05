@@ -40,8 +40,6 @@ namespace CK.Setup
 
         public object Originator => _p;
 
-        public bool IsExchangeable => _fieldAccesskind != PocoFieldAccessKind.AbstractReadOnly && _type.IsExchangeable;
-
         public int Index => _p.Index;
 
         public string Name => _p.Name;

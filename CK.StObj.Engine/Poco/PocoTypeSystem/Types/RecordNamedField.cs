@@ -4,9 +4,9 @@ namespace CK.Setup
 {
     sealed class RecordNamedField : IRecordPocoField
     {
-        [AllowNull] IPocoType _type;
-        [AllowNull] IRecordPocoType _owner;
-        IPocoType.ITypeRef? _nextRef;
+        readonly IPocoType _type;
+        readonly IRecordPocoType _owner;
+        readonly IPocoType.ITypeRef? _nextRef;
         readonly string _name;
         readonly object _originator;
         readonly int _index;
@@ -42,8 +42,6 @@ namespace CK.Setup
         public IPocoType Type => _type;
 
         IPocoType IPocoType.ITypeRef.Type => _type;
-
-        public bool IsExchangeable => _type.IsExchangeable;
 
         public DefaultValueInfo DefaultValueInfo => _defInfo;
 

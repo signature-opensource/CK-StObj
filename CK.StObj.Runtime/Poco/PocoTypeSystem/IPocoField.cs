@@ -4,6 +4,8 @@ namespace CK.Setup
 {
     /// <summary>
     /// Common field attributes for <see cref="IPrimaryPocoField"/> and <see cref="IRecordPocoField"/>.
+    /// This is a <see cref="IPocoType.ITypeRef"/>: every field has an <see cref="IPocoType.ITypeRef.Index"/>
+    /// in its <see cref="Owner"/>.
     /// </summary>
     public interface IPocoField : IPocoType.ITypeRef
     {
@@ -38,13 +40,6 @@ namespace CK.Setup
         /// same as the <see cref="IPocoType.DefaultValueInfo"/>.
         /// </summary>
         bool HasOwnDefaultValue { get; }
-
-        /// <summary>
-        /// Gets whether this field is exchangeable: the field type must be exchangeable
-        /// and for <see cref="IPrimaryPocoField"/>, <see cref="IPrimaryPocoField.FieldAccess"/>
-        /// must not be <see cref="PocoFieldAccessKind.AbstractReadOnly"/>.
-        /// </summary>
-        bool IsExchangeable { get; }
 
     }
 }

@@ -33,7 +33,7 @@ namespace CK.Setup.PocoJson
                       .Append( "if( !r.Read() ) rCtx.ReadMoreData( ref r );" ).NewLine();
                 foreach( var f in type.Fields )
                 {
-                    if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                    if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
                         GenerateRead( writer, f.Type, $"v.Item{f.Index+1}", !f.DefaultValueInfo.RequiresInit );
                         writer.NewLine();
@@ -58,7 +58,7 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
 " );
                 foreach( var f in type.Fields )
                 {
-                    if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                    if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
                         var camel = JsonNamingPolicy.CamelCase.ConvertName( f.Name );
                         if( camel != f.Name )

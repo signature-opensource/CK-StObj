@@ -140,8 +140,7 @@ namespace CK.Setup
                         var obliviousTypeName = $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>";
                         Throw.DebugAssert( "The only way for the typeName to be the oblivious one here is if a IList<> or ISet<> is requested.",
                                            typeName != obliviousTypeName || !isRegular );
-                        obliviousType = PocoType.CreateCollection( monitor,
-                                                                   this,
+                        obliviousType = PocoType.CreateCollection( this,
                                                                    tOblivious,
                                                                    obliviousTypeName,
                                                                    obliviousTypeName,
@@ -154,8 +153,7 @@ namespace CK.Setup
                     Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"{listOrHashSet}<{tI.ObliviousType.CSharpName}>" );
                 }
                 Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
-                result = PocoType.CreateCollection( monitor,
-                                                    this,
+                result = PocoType.CreateCollection( this,
                                                     t,
                                                     csharpName,
                                                     typeName,

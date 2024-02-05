@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -10,8 +11,7 @@ namespace CK.Setup
 
     partial class PocoType
     {
-        internal static ListOrSetOrArrayType CreateCollection( IActivityMonitor monitor,
-                                                               PocoTypeSystemBuilder s,
+        internal static ListOrSetOrArrayType CreateCollection( PocoTypeSystemBuilder s,
                                                                Type tCollection,
                                                                string csharpName,
                                                                string implTypeName,
@@ -19,11 +19,10 @@ namespace CK.Setup
                                                                IPocoType itemType,
                                                                IPocoType? obliviousType )
         {
-            return new ListOrSetOrArrayType( monitor, s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType );
+            return new ListOrSetOrArrayType( s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType );
         }
 
-        internal static DictionaryType CreateDictionary( IActivityMonitor monitor,
-                                                         PocoTypeSystemBuilder s,
+        internal static DictionaryType CreateDictionary( PocoTypeSystemBuilder s,
                                                          Type tCollection,
                                                          string csharpName,
                                                          string implTypeName,
@@ -31,10 +30,10 @@ namespace CK.Setup
                                                          IPocoType itemType2,
                                                          IPocoType? obliviousType )
         {
-            return new DictionaryType( monitor, s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
+            return new DictionaryType( s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
         }
 
-        internal static AbstractCollectionType CreateAbstractCollection( PocoTypeSystemBuilder s,
+        internal static AbstractReadOnlyCollectionType CreateAbstractCollection( PocoTypeSystemBuilder s,
                                                                          Type tCollection,
                                                                          string csharpName,
                                                                          ICollectionPocoType mutable )
@@ -43,7 +42,7 @@ namespace CK.Setup
                                && !mutable.IsNullable
                                && mutable.IsAbstractCollection
                                && mutable.MutableCollection == mutable );
-            return new AbstractCollectionType( s, tCollection, csharpName, mutable );
+            return new AbstractReadOnlyCollectionType( s, tCollection, csharpName, mutable );
         }
 
         sealed class NullCollection : NullReferenceType, ICollectionPocoType
@@ -63,26 +62,34 @@ namespace CK.Setup
 
             public ICollectionPocoType MutableCollection => NonNullable.MutableCollection.Nullable;
 
+            public ICollectionPocoType? AbstractReadOnlyCollection => NonNullable.AbstractReadOnlyCollection?.NonNullable;
+
             ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( ObliviousType );
 
             ICollectionPocoType ICollectionPocoType.NonNullable => NonNullable;
 
             ICollectionPocoType ICollectionPocoType.Nullable => this;
+
+        }
+
+        interface IRegularCollection : ICollectionPocoType
+        {
+            void SetAbstractReadonly( AbstractReadOnlyCollectionType a );
         }
 
         // List, HashSet, Array.
         // This auto implements IPocoType.ITypeRef for the type parameter.
-        internal sealed class ListOrSetOrArrayType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
+        internal sealed class ListOrSetOrArrayType : PocoType, IRegularCollection, IPocoType.ITypeRef
         {
-            readonly IPocoType[] _itemType;
+            readonly IPocoType[] _itemTypes;
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
+            ICollectionPocoType? _abstractReadOnlyCollection;
             string? _standardName;
 
-            public ListOrSetOrArrayType( IActivityMonitor monitor,
-                                         PocoTypeSystemBuilder s,
+            public ListOrSetOrArrayType( PocoTypeSystemBuilder s,
                                          Type tCollection,
                                          string csharpName,
                                          string implTypeName,
@@ -92,28 +99,32 @@ namespace CK.Setup
                 : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
-                _obliviousType = obliviousType ?? this;
-                _implTypeName = implTypeName;
-                _itemType = new[] { itemType };
-                if( itemType.Kind != PocoTypeKind.Any )
+                if( obliviousType != null )
                 {
-                    _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
+                    Throw.DebugAssert( obliviousType.IsOblivious
+                                       && obliviousType.Kind == kind
+                                       && obliviousType.ItemTypes[0].IsOblivious );
+                    _obliviousType = obliviousType;
+                    // Registers the back reference to the oblivious type.
+                    _ = new PocoTypeRef( this, obliviousType, -1 );
                 }
+                else
+                {
+                    _obliviousType = this;
+                }
+                _implTypeName = implTypeName;
+                _itemTypes = new[] { itemType };
+                _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
                 _def = kind == PocoTypeKind.Array
                         ? new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" )
                         : new FieldDefaultValue( $"new {implTypeName}()" );
-                // Sets the initial IsExchangeable status.
-                if( !itemType.IsExchangeable )
-                {
-                    SetNotExchangeable( monitor, $"since '{itemType}' is not." );
-                }
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
 
             public override string ImplTypeName => _implTypeName;
 
-            public override string StandardName => _standardName ??= $"{Kind switch { PocoTypeKind.Array => 'A', PocoTypeKind.List => 'L', _ => 'S'}}({_itemType[0].StandardName})";
+            public override string StandardName => _standardName ??= $"{Kind switch { PocoTypeKind.Array => 'A', PocoTypeKind.List => 'L', _ => 'S'}}({_itemTypes[0].StandardName})";
 
             public override ICollectionPocoType ObliviousType => _obliviousType;
 
@@ -123,7 +134,11 @@ namespace CK.Setup
 
             public ICollectionPocoType MutableCollection => this;
 
-            public IReadOnlyList<IPocoType> ItemTypes => _itemType;
+            public ICollectionPocoType? AbstractReadOnlyCollection => _abstractReadOnlyCollection;
+
+            public void SetAbstractReadonly( AbstractReadOnlyCollectionType a ) => _abstractReadOnlyCollection = a;
+
+            public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 
@@ -136,7 +151,7 @@ namespace CK.Setup
 
             IPocoType IPocoType.ITypeRef.Owner => this;
 
-            IPocoType IPocoType.ITypeRef.Type => _itemType[0];
+            IPocoType IPocoType.ITypeRef.Type => _itemTypes[0];
 
             #endregion
 
@@ -170,17 +185,17 @@ namespace CK.Setup
 
         // Dictionary.
         // Auto implements the IPocoType.ITypeRef for the Key. The Value uses a dedicated PocoTypeRef.
-        internal sealed class DictionaryType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
+        internal sealed class DictionaryType : PocoType, IRegularCollection, IPocoType.ITypeRef
         {
             readonly IPocoType[] _itemTypes;
             readonly IPocoType.ITypeRef? _nextRefKey;
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
+            ICollectionPocoType? _abstractReadOnlyCollection;
             string? _standardName;
 
-            public DictionaryType( IActivityMonitor monitor,
-                                   PocoTypeSystemBuilder s,
+            public DictionaryType( PocoTypeSystemBuilder s,
                                    Type tCollection,
                                    string csharpName,
                                    string implTypeName,
@@ -191,19 +206,23 @@ namespace CK.Setup
             {
                 _itemTypes = new[] { keyType, valueType };
                 Debug.Assert( !keyType.IsNullable );
-                _obliviousType = obliviousType ?? this;
+                if( obliviousType != null )
+                {
+                    Throw.DebugAssert( obliviousType.IsOblivious
+                                       && obliviousType.Kind == PocoTypeKind.Dictionary
+                                       && obliviousType.ItemTypes.All( i => i.IsOblivious ) );
+                    _obliviousType = obliviousType;
+                    // Registers the back reference to the oblivious type.
+                    _ = new PocoTypeRef( this, obliviousType, -1 );
+                }
+                else
+                {
+                    _obliviousType = this;
+                }
                 _def = new FieldDefaultValue( $"new {implTypeName}()" );
-                // Register back references and sets the initial IsExchangeable status.
-                if( keyType.Kind != PocoTypeKind.Any )
-                {
-                    _nextRefKey = ((PocoType)keyType).AddBackRef( this );
-                    if( !keyType.IsExchangeable ) OnNoMoreExchangeable( monitor, this );
-                }
-                if( valueType.Kind != PocoTypeKind.Any )
-                {
-                    var valueRef = new PocoTypeRef( this, valueType, 1 );
-                    if( IsExchangeable && !valueType.IsExchangeable ) OnNoMoreExchangeable( monitor, valueRef );
-                }
+                // Register back references (key is embedded, value has its own PocoTypeRef).
+                _nextRefKey = ((PocoType)keyType).AddBackRef( this );
+                _ = new PocoTypeRef( this, valueType, 1 );
                 _implTypeName = implTypeName;
             }
 
@@ -235,6 +254,10 @@ namespace CK.Setup
             public bool IsAbstractReadOnly => false;
 
             public ICollectionPocoType MutableCollection => this;
+
+            public ICollectionPocoType? AbstractReadOnlyCollection => _abstractReadOnlyCollection;
+
+            public void SetAbstractReadonly( AbstractReadOnlyCollectionType a ) => _abstractReadOnlyCollection = a;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 
@@ -277,25 +300,23 @@ namespace CK.Setup
                 }
                 return false;
             }
-
         }
 
         // IReadOnlyList, IReadOnlySet or IReadOnlyDictionary.
-        // This auto implements IPocoType.ITypeRef bound to the mutable: this read only exchangeability
-        // is driven by the mutable one.
-        internal sealed class AbstractCollectionType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
+        internal sealed class AbstractReadOnlyCollectionType : PocoType, ICollectionPocoType
         {
             readonly ICollectionPocoType _mutable;
-            readonly IPocoType.ITypeRef? _nextRef;
 
-            public AbstractCollectionType( PocoTypeSystemBuilder s,
-                                           Type tCollection,
-                                           string csharpName,
-                                           ICollectionPocoType mutable )
+            public AbstractReadOnlyCollectionType( PocoTypeSystemBuilder s,
+                                                   Type tCollection,
+                                                   string csharpName,
+                                                   ICollectionPocoType mutable )
                 : base( s, tCollection, csharpName, mutable.Kind, static t => new NullCollection( t ) )
             {
                 _mutable = mutable;
-                _nextRef = ((PocoType)mutable.NonNullable).AddBackRef( this );
+                // Registers the back reference to the oblivious type.
+                _ = new PocoTypeRef( this, _mutable.ObliviousType, -1 );
+                ((IRegularCollection)mutable.NonNullable).SetAbstractReadonly( this );
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
@@ -308,22 +329,13 @@ namespace CK.Setup
 
             public ICollectionPocoType MutableCollection => _mutable;
 
+            public ICollectionPocoType? AbstractReadOnlyCollection => this;
+
             public IReadOnlyList<IPocoType> ItemTypes => _mutable.ItemTypes;
 
             public override ICollectionPocoType ObliviousType => _mutable.ObliviousType;
 
             public override bool CanReadFrom( IPocoType type ) => _mutable.CanReadFrom( type );
-
-            #region ITypeRef auto implementation
-            public IPocoType.ITypeRef? NextRef => _nextRef;
-
-            int IPocoType.ITypeRef.Index => 0;
-
-            IPocoType IPocoType.ITypeRef.Owner => this;
-
-            IPocoType IPocoType.ITypeRef.Type => _mutable;
-
-            #endregion
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

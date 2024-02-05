@@ -53,17 +53,19 @@ namespace CK.Setup
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
 
+                IRecordPocoType IRecordPocoType.Nullable => this;
                 IRecordPocoType IRecordPocoType.NonNullable => NonNullable;
 
                 ICompositePocoType ICompositePocoType.NonNullable => NonNullable;
-
-                IRecordPocoType IRecordPocoType.Nullable => this;
-
                 ICompositePocoType ICompositePocoType.Nullable => this;
 
-                public ExternalNameAttribute? ExternalName => NonNullable.ExternalName;
+                INamedPocoType INamedPocoType.Nullable => this;
+                INamedPocoType INamedPocoType.NonNullable => NonNullable;
 
-                public string ExternalOrCSharpName => NonNullable.ExternalOrCSharpName;
+                public ExternalNameAttribute? ExternalName => null;
+
+                // No external name for anonymous records: simply use the nullable CSharpName.
+                public string ExternalOrCSharpName => CSharpName;
             }
 
             readonly RecordAnonField[] _fields;
@@ -86,13 +88,22 @@ namespace CK.Setup
                         PocoTypeKind.AnonymousRecord,
                         t => new Null( t, tNull ) )
             {
-                Throw.DebugAssert( obliviousType != null || fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
-                _obliviousType = obliviousType ?? this;
+                if( obliviousType != null )
+                {
+                    Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.Fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
+                    _obliviousType = obliviousType;
+                    // Registers the back reference to the oblivious type.
+                    _ = new PocoTypeRef( this, obliviousType, -1 );
+                }
+                else
+                {
+                    Throw.DebugAssert( fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
+                    _obliviousType = this;
+                }
                 _fields = fields;
                 _isReadOnlyCompliant = isReadOnlyCompliant;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
-                CompositeHelper.CheckInitialExchangeable( monitor, this, _fields );
             }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
@@ -143,15 +154,16 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            ICompositePocoType ICompositePocoType.Nullable => Nullable;
-
-            ICompositePocoType ICompositePocoType.NonNullable => this;
-
             public bool IsAnonymous => Kind == PocoTypeKind.AnonymousRecord;
 
-            IRecordPocoType IRecordPocoType.Nullable => Nullable;
+            ICompositePocoType ICompositePocoType.Nullable => Nullable;
+            ICompositePocoType ICompositePocoType.NonNullable => this;
 
+            IRecordPocoType IRecordPocoType.Nullable => Nullable;
             IRecordPocoType IRecordPocoType.NonNullable => this;
+
+            INamedPocoType INamedPocoType.Nullable => Nullable;
+            INamedPocoType INamedPocoType.NonNullable => this;
 
             public override bool CanReadFrom( IPocoType type )
             {
@@ -165,15 +177,6 @@ namespace CK.Setup
                     if( !_fields[i].Type.CanReadFrom( aType._fields[i].Type ) ) return false;
                 }
                 return true;
-            }
-
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, ITypeRef r )
-            {
-                Debug.Assert( r != null && _fields.Any( f => f == r ) && !r.Type.IsExchangeable );
-                if( IsExchangeable )
-                {
-                    CompositeHelper.OnNoMoreExchangeable( monitor, this, _fields, r );
-                }
             }
         }
 

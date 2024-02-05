@@ -53,7 +53,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes();
+        public static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes();
 
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()

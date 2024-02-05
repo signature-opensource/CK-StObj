@@ -97,7 +97,7 @@ namespace CK.Setup
                             }
                             if( s._subsequentRun != null )
                             {
-                                if( next == null ) next = new List<MultiPassCodeGeneration>();
+                                next ??= new List<MultiPassCodeGeneration>();
                                 next.Add( s );
                             }
                         }

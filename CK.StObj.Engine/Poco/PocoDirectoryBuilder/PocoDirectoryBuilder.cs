@@ -79,9 +79,7 @@ namespace CK.Setup
         public bool RegisterInterface( IActivityMonitor monitor, Type t )
         {
             Throw.CheckArgument( t?.IsInterface is true );
-            return _actualPocoPredicate( monitor, t )
-                    ? DoRegisterInterface( monitor, t ) != null
-                    : false;
+            return _actualPocoPredicate( monitor, t ) && DoRegisterInterface( monitor, t ) != null;
         }
 
         InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t )

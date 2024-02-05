@@ -117,6 +117,66 @@ namespace CK.StObj.Engine.Tests.Poco
             impl.Should().BeSameAs( p );
         }
 
+        public record struct EmptyRec();
+
+        public interface IValidEmptyRec : IPoco
+        {
+            ref EmptyRec R { get; }
+        }
+
+        [Test]
+        public void an_empty_record_is_valid_in_the_Poco_world()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IValidEmptyRec ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+            var ts = r.CKTypeResult.PocoTypeSystemBuilder.Lock();
+            var emptyRec = ts.FindByType( typeof( EmptyRec ) );
+            var poco = ts.FindByType( typeof( IValidEmptyRec ) );
+            Throw.DebugAssert( emptyRec != null && poco != null );
+            ts.SetManager.All.Contains( emptyRec ).Should().BeTrue();
+            ts.SetManager.All.Contains( poco ).Should().BeTrue();
+            ts.SetManager.AllSerializable.Should().BeSameAs( ts.SetManager.All );
+            ts.SetManager.AllExchangeable.Should().BeSameAs( ts.SetManager.All );
+
+            // When excluding empty records:
+            var noEmptyRecSet = ts.SetManager.All.ExcludeEmptyRecords();
+            noEmptyRecSet.Contains( emptyRec ).Should().BeFalse();
+            noEmptyRecSet.Contains( poco ).Should().BeTrue();
+
+            // When excluding empty records and empty pocos:
+            var noEmptyRecSetAndPoco1 = noEmptyRecSet.ExcludeEmptyPocos();
+            var noEmptyRecSetAndPoco2 = ts.SetManager.All.ExcludeEmptyRecordsAndPocos();
+
+            noEmptyRecSetAndPoco1.Contains( emptyRec ).Should().BeFalse();
+            noEmptyRecSetAndPoco2.Contains( emptyRec ).Should().BeFalse();
+
+            noEmptyRecSetAndPoco1.Contains( poco ).Should().BeFalse();
+            noEmptyRecSetAndPoco2.Contains( poco ).Should().BeFalse();
+        }
+
+        public enum EmptyEnum
+        {
+        }
+
+        public interface IInvalidEmptyEnum : IPoco
+        {
+            EmptyEnum Invalid { get; set; }
+        }
+
+        [Test]
+        public void even_if_an_empty_enum_is_csharp_valid_it_is_invalid_in_the_Poco_world()
+        {
+            EmptyEnum t = default;
+            t.Should().Be( 0 );
+            t = 0;
+            t.Should().Be( 0 );
+            // Compilation error.
+            // t = 1;
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalidEmptyEnum ) );
+            TestHelper.GetFailedResult( c, "Enum type 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.EmptyEnum' is empty. Empty enum are not valid in a Poco Type System." );
+        }
+
+
         [CKTypeDefiner]
         public interface IAbstractPoco : IPoco
         {
@@ -254,18 +314,6 @@ namespace CK.StObj.Engine.Tests.Poco
             public static bool operator !=( AnEmptyOne left, AnEmptyOne right ) => !(left == right);
 
             public override readonly int GetHashCode() => 0;
-        }
-
-        public static AnEmptyOne GetAnEmptyOne => default;
-
-        [Test]
-        public void an_empty_records_is_handled_but_is_not_exchangeable()
-        {
-            var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
-            var tEmptyOne = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetAnEmptyOne ) )! );
-            Debug.Assert( tEmptyOne != null );
-            tEmptyOne.IsExchangeable.Should().BeFalse();
-            tEmptyOne.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.AnEmptyOne" );
         }
 
     }

@@ -1,5 +1,6 @@
 using CK.Core;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -8,7 +9,26 @@ namespace CK.Setup
 {
     partial class PocoTypeSystemBuilder
     {
-        internal sealed class PocoCycleAndDefaultVisitor : PocoTypeVisitor
+        // Minimal set implementation for PocoCycleAndDefaultVisitor.
+        sealed class MiniTypeSet : IMinimalPocoTypeSet
+        {
+            readonly BitArray _flags;
+
+            public MiniTypeSet( int nonNullableCount ) => _flags = new BitArray( nonNullableCount );
+
+            public bool Contains( IPocoType t ) => _flags[t.Index >> 1];
+
+            public bool Add( IPocoType t )
+            {
+                if( _flags[t.Index >> 1] ) return false;
+                _flags[t.Index >> 1] = true;
+                return true;
+            }
+
+            public void Clear() => _flags.SetAll( false );
+        }
+
+        sealed class PocoCycleAndDefaultVisitor : PocoTypeVisitor<MiniTypeSet>
         {
             // Used to compute a readable path for anonymous types. This displays detected cycles like this:
             //
@@ -16,13 +36,14 @@ namespace CK.Setup
             // '[IPoco]RecursivePocoTests.IHolder', field: 'Pof.DeepInside.Inside.IAmHere' => 
             // '[IPoco]RecursivePocoTests.IOther', field: 'Pof.Inside.IAmHere' => 'RecursivePocoTests.IHolder'.
             //
-            List<List<IPocoField>> _path;
+            readonly List<List<IPocoField>> _path;
             int _typedPathCount;
             // Both will stop the visit.
             bool _cycleFound;
             bool _missingDefault;
 
-            public PocoCycleAndDefaultVisitor()
+            public PocoCycleAndDefaultVisitor( int nonNullableCount )
+                : base( new MiniTypeSet( nonNullableCount ) ) 
             {
                 _path = new List<List<IPocoField>>();
             }

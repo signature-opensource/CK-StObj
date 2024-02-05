@@ -125,25 +125,23 @@ namespace CK.Setup
                 {
                     if( !_typeCache.TryGetValue( tOblivious, out obliviousType ) )
                     {
-                        var obliviousTypeName = $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>";
+                        var obliviousTypeName = $"Dictionary<{tK.ObliviousType.CSharpName},{tV.ObliviousType.CSharpName}>";
                         Throw.DebugAssert( "The only way for the typeName to be the oblivious one here is if a IDictionary<,> is requested.",
                                             typeName != obliviousTypeName || !isRegular );
-                        obliviousType = PocoType.CreateDictionary( monitor,
-                                                                    this,
-                                                                    tOblivious,
-                                                                    obliviousTypeName,
-                                                                    obliviousTypeName,
-                                                                    tK,
-                                                                    tV.ObliviousType,
-                                                                    null );
+                        obliviousType = PocoType.CreateDictionary( this,
+                                                                   tOblivious,
+                                                                   obliviousTypeName,
+                                                                   obliviousTypeName,
+                                                                   tK.ObliviousType,
+                                                                   tV.ObliviousType,
+                                                                   null );
                         _typeCache.Add( tOblivious, obliviousType );
                         _typeCache.Add( obliviousTypeName, obliviousType );
                     }
-                    Debug.Assert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.CSharpName},{tV.ObliviousType.CSharpName}>" );
+                    Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.ObliviousType.CSharpName},{tV.ObliviousType.CSharpName}>" );
                 }
-                Debug.Assert( obliviousType != null || typeName == csharpName, "We have the oblivious type or we are creating it." );
-                result = PocoType.CreateDictionary( monitor,
-                                                    this,
+                Throw.DebugAssert( "We have the oblivious type or we are creating it.", obliviousType != null || typeName == csharpName );
+                result = PocoType.CreateDictionary( this,
                                                     t,
                                                     csharpName,
                                                     typeName,

@@ -20,12 +20,12 @@ namespace CK.Setup.PocoJson
     {
         readonly ITypeScope _importerType;
         readonly ITypeScopePart _readerFunctionsPart;
-        readonly ExchangeableTypeNameMap _nameMap;
+        readonly PocoTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
         readonly CodeReader[] _readers;
         readonly BitArray _readerFunctions;
 
-        public ImportCodeGenerator( ITypeScope importerType, ExchangeableTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
+        public ImportCodeGenerator( ITypeScope importerType, PocoTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
         {
             _importerType = importerType;
             importerType.Append( @"

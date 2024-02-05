@@ -11,10 +11,9 @@ namespace CK.Setup
             return new SecondaryPocoType( s, interfaceType, primary );
         }
 
-        internal sealed class SecondaryPocoType : PocoType, ISecondaryPocoType, IPocoType.ITypeRef
+        internal sealed class SecondaryPocoType : PocoType, ISecondaryPocoType
         {
             readonly IPrimaryPocoType _primary;
-            readonly IPocoType.ITypeRef? _nextRef;
 
             sealed class Null : NullReferenceType, ISecondaryPocoType
             {
@@ -42,7 +41,6 @@ namespace CK.Setup
                 : base( s, interfaceType, interfaceType.ToCSharpName(), PocoTypeKind.SecondaryPoco, static t => new Null( t ) )
             {
                 _primary = primary;
-                _nextRef = ((PocoType)primary.NonNullable).AddBackRef( this );
             }
 
             public override DefaultValueInfo DefaultValueInfo => _primary.DefaultValueInfo;
@@ -50,12 +48,6 @@ namespace CK.Setup
             public override bool CanReadFrom( IPocoType type )
             {
                 return _primary.CanReadFrom( type );
-            }
-
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                Throw.DebugAssert( r.Type == _primary );
-                base.OnNoMoreExchangeable( monitor, r );
             }
 
             new ISecondaryPocoType Nullable => Unsafe.As<ISecondaryPocoType>( _nullable );
@@ -67,15 +59,6 @@ namespace CK.Setup
             public override IPrimaryPocoType ObliviousType => _primary;
 
             IPrimaryPocoType ISecondaryPocoType.PrimaryPocoType => _primary;
-
-            IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRef;
-
-            IPocoType IPocoType.ITypeRef.Owner => this;
-
-            IPocoType IPocoType.ITypeRef.Type => _primary;
-
-            int IPocoType.ITypeRef.Index => 0;
-
         }
     }
 

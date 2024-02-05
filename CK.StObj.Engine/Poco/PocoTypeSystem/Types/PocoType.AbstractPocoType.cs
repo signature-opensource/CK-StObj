@@ -24,7 +24,7 @@ namespace CK.Setup
         {
             Throw.DebugAssert( abstractAndPrimary.Take( abstractCount ).All( t => t is IAbstractPocoType ) );
             Throw.DebugAssert( abstractAndPrimary.Skip( abstractCount ).All( t => t is IPrimaryPocoType ) );
-            return new AbstractPocoType( monitor, s, tAbstract, abstractCount, abstractAndPrimary, genericTypeDefinition );
+            return new AbstractPocoType( s, tAbstract, abstractCount, abstractAndPrimary, genericTypeDefinition );
         }
 
         internal static AbstractPocoBaseAndClosed CreateAbstractPocoBaseOrClosed( IActivityMonitor monitor,
@@ -34,7 +34,7 @@ namespace CK.Setup
                                                                                   IPrimaryPocoType[] primaries )
         {
             Throw.DebugAssert( tAbstract == typeof( IPoco ) || tAbstract == typeof( IClosedPoco ) );
-            return new AbstractPocoBaseAndClosed( monitor, s, tAbstract, abstracts, primaries );
+            return new AbstractPocoBaseAndClosed( s, tAbstract, abstracts, primaries );
         }
 
         internal static ImplementationLessAbstractPoco CreateImplementationLessAbstractPoco( PocoTypeSystemBuilder s,
@@ -99,10 +99,8 @@ namespace CK.Setup
             ImmutableArray<IAbstractPocoField> _fields;
             object _generalizations;
             List<IAbstractPocoType>? _minimalGeneralizations;
-            int _exchangeableCount;
 
-            public AbstractPocoType( IActivityMonitor monitor,
-                                     PocoTypeSystemBuilder s,
+            public AbstractPocoType( PocoTypeSystemBuilder s,
                                      Type tAbstract,
                                      int abstractCount,
                                      IPocoType[] abstractAndPrimary,
@@ -115,29 +113,6 @@ namespace CK.Setup
                 _genericArguments = Array.Empty<(IPocoGenericParameter, IPocoType)>();
                 genericDefinitionType?.AddInstance( this );
                 _generalizations = s;
-                int exchangeableCount = 0;
-                for( int i = abstractCount; i < abstractAndPrimary.Length; i++ )
-                {
-                    IPocoType t = abstractAndPrimary[i];
-                    _ = new PocoTypeRef( this, t, i );
-                    if( t.IsExchangeable ) ++exchangeableCount;
-                }
-                if( (_exchangeableCount = exchangeableCount) == 0 )
-                {
-                    SetNotExchangeable( monitor, "no exchangeable Poco exist that implement it." );
-                }
-            }
-
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                if( IsExchangeable )
-                {
-                    Throw.DebugAssert( r.Owner == this && _abstractAndPrimary.Skip( _abstractCount ).Contains( r.Type ) );
-                    if( --_exchangeableCount == 0 )
-                    {
-                        SetNotExchangeable( monitor, "no more exchangeable Poco implement it." );
-                    }
-                }
             }
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
@@ -331,10 +306,8 @@ namespace CK.Setup
         {
             readonly List<IAbstractPocoType> _abstracts;
             readonly IReadOnlyList<IPrimaryPocoType> _primaries;
-            int _exchangeableCount;
 
-            public AbstractPocoBaseAndClosed( IActivityMonitor monitor,
-                                              PocoTypeSystemBuilder s,
+            public AbstractPocoBaseAndClosed( PocoTypeSystemBuilder s,
                                               Type tAbstract,
                                               List<IAbstractPocoType> abstracts,
                                               IPrimaryPocoType[] primaries )
@@ -342,30 +315,6 @@ namespace CK.Setup
             {
                 _abstracts = abstracts;
                 _primaries = primaries;
-                int exchanchableCount = 0;
-                int counAbstract = abstracts.Count;
-                for( int i = 0; i < primaries.Length; i++ )
-                {
-                    IPrimaryPocoType t = primaries[i];
-                    _ = new PocoTypeRef( this, t, counAbstract + i );
-                    if( t.IsExchangeable ) ++exchanchableCount;
-                }
-                if( (_exchangeableCount = exchanchableCount) == 0 )
-                {
-                    SetNotExchangeable( monitor, "no exchangeable Poco implement it." );
-                }
-            }
-
-            protected override void OnNoMoreExchangeable( IActivityMonitor monitor, IPocoType.ITypeRef r )
-            {
-                if( IsExchangeable )
-                {
-                    Throw.DebugAssert( r.Owner == this && _primaries.Contains( r.Type ) );
-                    if( --_exchangeableCount == 0 )
-                    {
-                        SetNotExchangeable( monitor, "no more exchangeable Poco implement it." );
-                    }
-                }
             }
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
@@ -414,7 +363,7 @@ namespace CK.Setup
                                                    IReadOnlyList<IAbstractPocoType> generalizations,
                                                    PocoGenericTypeDefinition? genericDefinitionType,
                                                    (IPocoGenericParameter Parameter, IPocoType Type)[]? genericArguments )
-                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ), isExchangeable: false )
+                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
             {
                 _genericTypeDefinition = genericDefinitionType;
                 _genericArguments = genericArguments ?? Array.Empty<(IPocoGenericParameter, IPocoType)>();

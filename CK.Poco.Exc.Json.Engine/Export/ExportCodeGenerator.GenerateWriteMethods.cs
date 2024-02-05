@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using System.Linq;
 
 namespace CK.Setup.PocoJson
 {
@@ -9,7 +10,7 @@ namespace CK.Setup.PocoJson
         // Step 2: The actual Write methods are implemented only for the Exchangeable, NonNullable, and Oblivious types.
         void GenerateWriteMethods( IActivityMonitor monitor )
         {
-            foreach( var type in _nameMap.ExchangeableNonNullableObliviousTypes )
+            foreach( var type in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
             {
                 switch( type.Kind )
                 {
@@ -134,7 +135,7 @@ namespace CK.Setup.PocoJson
                     .Append( "w.WriteStartArray();" ).NewLine();
                 foreach( var f in type.Fields )
                 {
-                    if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                    if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
                         GenerateWrite( code, f.Type, $"v.Item{f.Index+1}" );
                     }
@@ -159,7 +160,7 @@ namespace CK.Setup.PocoJson
                               .Append( "w.WriteStartObject();" ).NewLine();
                 foreach( var f in type.Fields )
                 {
-                    if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                    if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
                         GenerateWritePropertyName( code, f.Name );
                         GenerateWrite( code, f.Type, $"v.{f.Name}" );
@@ -200,7 +201,7 @@ namespace CK.Setup.PocoJson
                              {
                                  foreach( var f in type.Fields )
                                  {
-                                     if( f.IsExchangeable && _nameMap.IsExchangeable( f.Type ) )
+                                     if( f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && _nameMap.TypeSet.Contains( f.Type ) )
                                      {
                                          GenerateWritePropertyName( writer, f.Name );
                                          GenerateWrite( writer, f.Type, f.PrivateFieldName );

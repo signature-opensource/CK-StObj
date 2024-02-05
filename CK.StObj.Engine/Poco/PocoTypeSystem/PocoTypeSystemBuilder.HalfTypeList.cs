@@ -6,11 +6,11 @@ namespace CK.Setup
 
     public sealed partial class PocoTypeSystemBuilder
     {
-        sealed class HalfTypeList : IReadOnlyList<IPocoType>
+        sealed class WithNullTypeList : IReadOnlyList<IPocoType>
         {
             readonly List<PocoType> _allTypes;
 
-            public HalfTypeList( List<PocoType> allTypes )
+            public WithNullTypeList( List<PocoType> allTypes )
             {
                 _allTypes = allTypes;
             }

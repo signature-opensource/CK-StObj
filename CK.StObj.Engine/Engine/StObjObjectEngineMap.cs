@@ -113,9 +113,8 @@ namespace CK.Setup
         /// <returns>The most abstract, less specialized, associated StObj.</returns>
         internal MutableItem? ToHighestImpl( Type t )
         {
-            if( t == null ) throw new ArgumentNullException( "t" );
-            MutableItem? c;
-            if( _map.TryGetValue( t, out c ) )
+            Throw.CheckNotNullArgument( t );
+            if( _map.TryGetValue( t, out MutableItem? c ) )
             {
                 if( c.RealObjectType.Type != t )
                 {

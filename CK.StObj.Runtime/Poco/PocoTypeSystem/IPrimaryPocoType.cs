@@ -20,8 +20,7 @@ namespace CK.Setup
         new IReadOnlyList<IPrimaryPocoField> Fields { get; }
 
         /// <summary>
-        /// Gets the <see cref="IAbstractPocoType"/> that this Poco supports,
-        /// excluding the <see cref="CK.Core.IPoco"/> and the <see cref="CK.Core.IClosedPoco"/>.
+        /// Gets the <see cref="IAbstractPocoType"/> that this Poco supports excluding the <see cref="CK.Core.IPoco"/>.
         /// This is the projection of the <see cref="IPocoFamilyInfo.OtherInterfaces"/>.
         /// <para>
         /// The returned types are nullable if this one is the <see cref="Nullable"/>.

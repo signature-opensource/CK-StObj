@@ -48,7 +48,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        readonly Type[] BaseUserAndDocumentCloPocs = new Type[]
+        public readonly Type[] BaseUserAndDocumentCloPocs = new Type[]
         {
             typeof(ICloPoc), typeof(ICloPocPart),
             typeof(IAuthenticatedCloPocPart), typeof(ICultureDependentCloPocPart),
