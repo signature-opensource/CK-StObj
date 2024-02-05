@@ -76,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Poco
                                               .And.NotContain( listEmptyPoco );
             new[] { poco1, guid, str, namedRec, iListNamedRec, listNamedRec }.Should().BeSubsetOf( sNoEmptyPoco.NonNullableTypes );
 
-            sNoEmptyPoco.Include( new[] { empty } ).Should().BeSameAs( sNoEmptyPoco );
+            sNoEmptyPoco.Include( new[] { empty } ).SameContentAs( sNoEmptyPoco ).Should().BeTrue();
         }
 
 

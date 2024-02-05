@@ -18,25 +18,16 @@ namespace CK.Setup
         IPocoDirectory PocoDirectory { get; }
 
         /// <summary>
-        /// Gets the "object" (<see cref="PocoTypeKind.Any"/>) type.
-        /// </summary>
-        IPocoType ObjectType { get; }
-
-        /// <summary>
         /// Gets the total count of registered types (nullables and non nulables).
         /// </summary>
         int Count { get; }
 
         /// <summary>
-        /// Gets all the registered non nullable types.
-        /// </summary>
-        IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
-
-        /// <summary>
-        /// Tries to find by type. Not all types can be indexed by types: the most obvious are nullable reference types
-        /// but collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c>)
-        /// are not. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
+        /// Tries to find by type. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
         /// interfaces can be found by this method.
+        /// <para>
+        /// Notably, collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c> and their IReadOnly)
+        /// cannot be found by this method. 
         /// </summary>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>

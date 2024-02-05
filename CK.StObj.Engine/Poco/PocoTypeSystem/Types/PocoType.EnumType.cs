@@ -58,7 +58,7 @@ namespace CK.Setup
 
                 public string ExternalOrCSharpName => _extOrCSName;
 
-                public string? DefaultValueName => NonNullable.DefaultValueName;
+                public string DefaultValueName => NonNullable.DefaultValueName;
             }
 
             readonly IPocoType _underlyingType;

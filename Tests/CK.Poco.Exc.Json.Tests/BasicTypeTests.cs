@@ -15,6 +15,7 @@ namespace CK.Poco.Exc.Json.Tests
         [ExternalName( "BasicTypes" )]
         public interface IAllBasicTypes : IPoco
         {
+            bool PBool { get; set; }
             byte PByte { get; set; }
             sbyte PSByte { get; set; }
             short PShort { get; set; }

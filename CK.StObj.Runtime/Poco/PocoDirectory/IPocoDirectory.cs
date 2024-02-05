@@ -46,7 +46,7 @@ namespace CK.Setup
         /// doesn't intersect <see cref="AllInterfaces"/>.
         /// </para>
         /// <para>
-        /// Note that <see cref="IPoco"/> and <see cref="IClosedPoco"/> are excluded from this set (as well as from the AllInterfaces).
+        /// Note that <see cref="IPoco"/> is excluded from this set (as well as from the AllInterfaces).
         /// </para>
         /// </summary>
         IReadOnlyDictionary<Type, IReadOnlyList<IPocoFamilyInfo>> OtherInterfaces { get; }

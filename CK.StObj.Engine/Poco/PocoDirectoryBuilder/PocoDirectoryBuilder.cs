@@ -84,7 +84,7 @@ namespace CK.Setup
 
         InterfaceEntry? DoRegisterInterface( IActivityMonitor monitor, Type t )
         {
-            Debug.Assert( t.IsInterface && _actualPocoPredicate( monitor, t ) );
+            Throw.DebugAssert( t.IsInterface && _actualPocoPredicate( monitor, t ) );
             if( !_all.TryGetValue( t, out var p ) )
             {
                 p = TryCreateInterfaceEntry( monitor, t );
@@ -104,7 +104,7 @@ namespace CK.Setup
             InterfaceEntry? singlePrimary = null;
             foreach( Type b in t.GetInterfaces() )
             {
-                if( b == typeof( IPoco ) || b == typeof( IClosedPoco ) ) continue;
+                if( b == typeof( IPoco ) ) continue;
                 // Attempts to register the base if and only if it is not a "definer".
                 if( _actualPocoPredicate( monitor, b ) )
                 {
@@ -153,7 +153,6 @@ namespace CK.Setup
                     r.AllInterfaces.Add( i, iInfo );
                 }
                 cInfo.OtherInterfaces.Remove( typeof( IPoco ) );
-                cInfo.OtherInterfaces.Remove( typeof( IClosedPoco ) );
                 foreach( var t in signature ) cInfo.OtherInterfaces.Remove( t );
                 foreach( var e in cInfo.OtherInterfaces )
                 {

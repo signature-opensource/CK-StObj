@@ -68,13 +68,20 @@ namespace CK.Setup
                 _autoIncludeCollections = autoIncludeCollections;
             }
 
+            public IPocoTypeSystem TypeSystem => _typeSystem;
+
             public bool AllowEmptyRecords => _allowEmptyRecords;
 
             public bool AllowEmptyPocos => _allowEmptyPocos;
 
             public bool AutoIncludeCollections => _autoIncludeCollections;
 
-            public IPocoTypeSystem TypeSystem => _typeSystem;
+            public bool SameContentAs( IPocoTypeSet other )
+            {
+                Throw.CheckNotNullArgument( other );
+                Throw.CheckArgument( TypeSystem == other.TypeSystem );
+                return other.NonNullableTypes.Count == 0;
+            }
 
             public bool Contains( IPocoType t ) => false;
 
@@ -131,13 +138,20 @@ namespace CK.Setup
                 _typeSystem = typeSystem;
             }
 
+            public IPocoTypeSystem TypeSystem => _typeSystem;
+
             public bool AllowEmptyRecords => true;
 
             public bool AllowEmptyPocos => true;
 
             public bool AutoIncludeCollections => true;
 
-            public IPocoTypeSystem TypeSystem => _typeSystem;
+            public bool SameContentAs( IPocoTypeSet other )
+            {
+                Throw.CheckNotNullArgument( other );
+                Throw.CheckArgument( TypeSystem == other.TypeSystem );
+                return other.NonNullableTypes.Count == _typeSystem.AllNonNullableTypes.Count;
+            }
 
             public bool Contains( IPocoType t ) => true;
 
@@ -221,13 +235,22 @@ namespace CK.Setup
                 CheckTypeSetRules( this );
             }
 
+            public IPocoTypeSystem TypeSystem => _raw.TypeSystem;
+
             public bool AllowEmptyRecords => _allowEmptyRecords;
 
             public bool AllowEmptyPocos => _allowEmptyPocos;
 
             public bool AutoIncludeCollections => _autoIncludeCollections;
 
-            public IPocoTypeSystem TypeSystem => _raw.TypeSystem;
+            public bool SameContentAs( IPocoTypeSet other )
+            {
+                Throw.CheckNotNullArgument( other );
+                Throw.CheckArgument( TypeSystem == other.TypeSystem );
+                return other is TypeSet s
+                        ? _raw.SameContentAs( s._raw )
+                        : _raw.Count == other.NonNullableTypes.Count;
+            }
 
             public IReadOnlyCollection<IPocoType> NonNullableTypes => _raw;
 

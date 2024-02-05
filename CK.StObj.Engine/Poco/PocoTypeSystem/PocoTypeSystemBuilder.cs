@@ -1,11 +1,13 @@
 using CK.CodeGen;
 using CK.Core;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using static CK.Core.CheckedWriteStream;
@@ -27,7 +29,6 @@ namespace CK.Setup
         readonly Dictionary<object, IPocoType> _typeCache;
         // Opne generic types collector.
         readonly Dictionary<Type, PocoType.PocoGenericTypeDefinition> _typeDefinitions;
-        readonly IPocoType _objectType;
         // Contains the not nullable types (PocoType instances are the non nullable types).
         readonly List<PocoType> _nonNullableTypes;
         readonly WithNullTypeList _allTypes;
@@ -58,56 +59,6 @@ namespace CK.Setup
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
             _typeDefinitions = new Dictionary<Type, PocoType.PocoGenericTypeDefinition>();
             _typeCache = new Dictionary<object, IPocoType>();
-            RegValueType( this, _typeCache, typeof( bool ), typeof( bool? ), "bool" );
-            RegValueType( this, _typeCache, typeof( int ), typeof( int? ), "int" );
-            RegValueType( this, _typeCache, typeof( long ), typeof( long? ), "long" );
-            RegValueType( this, _typeCache, typeof( short ), typeof( short? ), "short" );
-            RegValueType( this, _typeCache, typeof( byte ), typeof( byte? ), "byte" );
-            RegValueType( this, _typeCache, typeof( double ), typeof( double? ), "double" );
-            RegValueType( this, _typeCache, typeof( float ), typeof( float? ), "float" );
-            RegValueType( this, _typeCache, typeof( DateTime ), typeof( DateTime? ), "DateTime" );
-            RegValueType( this, _typeCache, typeof( DateTimeOffset ), typeof( DateTimeOffset? ), "DateTimeOffset" );
-            RegValueType( this, _typeCache, typeof( TimeSpan ), typeof( TimeSpan? ), "TimeSpan" );
-            RegValueType( this, _typeCache, typeof( Guid ), typeof( Guid? ), "Guid" );
-            RegValueType( this, _typeCache, typeof( decimal ), typeof( decimal? ), "decimal" );
-            RegValueType( this, _typeCache, typeof( System.Numerics.BigInteger ), typeof( System.Numerics.BigInteger? ), "System.Numerics.BigInteger" );
-            RegValueType( this, _typeCache, typeof( uint ), typeof( uint? ), "uint" );
-            RegValueType( this, _typeCache, typeof( ulong ), typeof( ulong? ), "ulong" );
-            RegValueType( this, _typeCache, typeof( ushort ), typeof( ushort? ), "ushort" );
-            RegValueType( this, _typeCache, typeof( sbyte ), typeof( sbyte? ), "sbyte" );
-            RegValueType( this, _typeCache, typeof( SimpleUserMessage ), typeof( SimpleUserMessage? ), "SimpleUserMessage" );
-            RegValueType( this, _typeCache, typeof( UserMessage ), typeof( UserMessage? ), "UserMessage" );
-            RegValueType( this, _typeCache, typeof( FormattedString ), typeof( FormattedString? ), "FormattedString" );
-            
-            static void RegValueType( PocoTypeSystemBuilder s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
-            {
-                var x = PocoType.CreateBasicValue( s, tNotNull, tNull, name );
-                c.Add( tNotNull, x );
-                c.Add( tNull, x.Nullable );
-            }
-
-            _objectType = PocoType.CreateObject( this );
-            _typeCache.Add( "object", _objectType );
-            _typeCache.Add( _objectType.Type, _objectType );
-
-            RegBasicRefType( this, _typeCache, typeof( string ), "string", FieldDefaultValue.StringDefault, null );
-            var extCInfo = RegBasicRefType( this, _typeCache, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault, null );
-            RegBasicRefType( this, _typeCache, typeof( NormalizedCultureInfo ), "NormalizedCultureInfo", FieldDefaultValue.CultureDefault, extCInfo );
-            RegBasicRefType( this, _typeCache, typeof( MCString ), "MCString", FieldDefaultValue.MCStringDefault, null );
-            RegBasicRefType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault, null );
-
-            static IBasicRefPocoType RegBasicRefType( PocoTypeSystemBuilder s,
-                                                      Dictionary<object, IPocoType> c,
-                                                      Type t,
-                                                      string name,
-                                                      FieldDefaultValue defaultValue,
-                                                      IBasicRefPocoType? baseType )
-            {
-                var x = PocoType.CreateBasicRef( s, t, name, defaultValue, baseType );
-                c.Add( t, x );
-                c.Add( name, x );
-                return x;
-            }
         }
 
         public bool IsLocked => _result != null;
@@ -119,11 +70,7 @@ namespace CK.Setup
 
         public IPocoDirectory PocoDirectory => _pocoDirectory;
 
-        public IPocoType ObjectType => _objectType;
-
         public int Count => _nonNullableTypes.Count << 1;
-
-        public IReadOnlyList<IPocoType> AllNonNullableTypes => _nonNullableTypes;
 
         public IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes => _requiredSupportTypes.Values;
 
@@ -224,7 +171,7 @@ namespace CK.Setup
             var result = nInfo.Type.IsValueType
                                   ? OnValueType( monitor, nInfo, ctx )
                                   : OnReferenceType( monitor, nInfo, ctx );
-            Debug.Assert( result == null || result.IsNullable == nInfo.IsNullable );
+            Throw.DebugAssert( result == null || result.IsNullable == nInfo.IsNullable );
             return result;
         }
 
@@ -254,6 +201,10 @@ namespace CK.Setup
                                    || result.Type == typeof( CodeString ) );
                 return nType.IsNullable ? result.Nullable : result;
             }
+            // Not in cache. It may be a basic type.
+            var basic = TryRegisterBasicRefType( t );
+            if( basic != null ) return nType.IsNullable ? basic.Nullable : basic;
+
             // If it's a IPoco we should have found it: it has been excluded or not registered...
             // ...OR it's a IPoco interface that has NO implementation but appears (otherwise we won't be here)
             // as a property or a generic argument.
@@ -273,6 +224,70 @@ namespace CK.Setup
             else
             {
                 monitor.Error( $"Unsupported type: '{t}'." );
+            }
+            return null;
+        }
+
+        IPocoType? TryRegisterBasicRefType( Type t )
+        {
+            if( t == typeof( object ) )
+            {
+                var o = PocoType.CreateObject( this );
+                _typeCache.Add( "object", o );
+                _typeCache.Add( t, o );
+                return o;
+            }
+            if( t == typeof( string ) )
+            {
+                return RegBasicRefType( this, _typeCache, t, "string", FieldDefaultValue.StringDefault, null );
+            }
+            if( t == typeof( MCString ) )
+            {
+                Throw.DebugAssert( t.Name == "MCString" );
+                return RegBasicRefType( this, _typeCache, t, "MCString", FieldDefaultValue.MCStringDefault, null );
+            }
+            if( t == typeof( CodeString ) )
+            {
+                Throw.DebugAssert( t.Name == "CodeString" );
+                return RegBasicRefType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault, null );
+            }
+            if( t == typeof( ExtendedCultureInfo ) )
+            {
+                return RegisterExtendedCultureInfo( this, _typeCache );
+            }
+            if( t == typeof( NormalizedCultureInfo ) )
+            {
+                // We need the ExtendedCultureInfo base type.
+                Throw.DebugAssert( !_typeCache.TryGetValue( typeof( ExtendedCultureInfo ), out var e ) || e is IBasicRefPocoType );
+                if( !_typeCache.TryGetValue( typeof( ExtendedCultureInfo ), out var extCInfo ) )
+                {
+                    extCInfo = RegisterExtendedCultureInfo( this, _typeCache );
+                }
+                return RegBasicRefType( this,
+                                        _typeCache,
+                                        typeof( NormalizedCultureInfo ),
+                                        "NormalizedCultureInfo",
+                                        FieldDefaultValue.CultureDefault,
+                                        Unsafe.As<IBasicRefPocoType>( extCInfo ) );
+            }
+
+            static IBasicRefPocoType RegisterExtendedCultureInfo( PocoTypeSystemBuilder s, Dictionary<object, IPocoType> c )
+            {
+                Throw.DebugAssert( typeof( ExtendedCultureInfo ).Name == "ExtendedCultureInfo" );
+                return RegBasicRefType( s, c, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault, null );
+            }
+
+            static IBasicRefPocoType RegBasicRefType( PocoTypeSystemBuilder s,
+                                                      Dictionary<object, IPocoType> c,
+                                                      Type t,
+                                                      string name,
+                                                      FieldDefaultValue defaultValue,
+                                                      IBasicRefPocoType? baseType )
+            {
+                var x = PocoType.CreateBasicRef( s, t, name, defaultValue, baseType );
+                c.Add( t, x );
+                c.Add( name, x );
+                return x;
             }
             return null;
         }
@@ -437,6 +452,7 @@ namespace CK.Setup
                 tNotNull = nType.Type;
                 tNull = null;
             }
+
             // The not nullable value type is registered in the cache and it is
             // necessarily the oblivious type (except for named record).
             // If we found it, we are done for basic, enum and named record types but for anonymous
@@ -502,12 +518,109 @@ namespace CK.Setup
                     monitor.Error( $"Generic value type cannot be a Poco type: {ctx}." );
                     return null;
                 }
-                // Last chance: may be a new "record struct".
+                // May be a basic value type.
+                var basic = TryRegisterBasicValueType( tNotNull );
+                if( basic != null ) return nType.IsNullable ? basic.Nullable : basic;
+
+                // Last chance: a new "record struct".
                 tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );
                 record = OnTypedRecord( monitor, ctx, nType, tNotNull, tNull );
             }
             Throw.DebugAssert( record is null or IRecordPocoType );
             return record;
+        }
+
+        IPocoType? TryRegisterBasicValueType( Type tNotNull )
+        {
+            if( tNotNull == typeof( bool ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( bool? ), "bool" );
+            }
+            if( tNotNull == typeof( int ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( int? ), "int" );
+            }
+            if( tNotNull == typeof( long ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( long? ), "long" );
+            }
+            if( tNotNull == typeof( short ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( short? ), "short" );
+            }
+            if( tNotNull == typeof( byte ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( byte? ), "byte" );
+            }
+            if( tNotNull == typeof( double ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( double? ), "double" );
+            }
+            if( tNotNull == typeof( float ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( float? ), "float" );
+            }
+            if( tNotNull == typeof( DateTime ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( DateTime? ), "DateTime" );
+            }
+            if( tNotNull == typeof( DateTimeOffset ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( DateTimeOffset? ), "DateTimeOffset" );
+            }
+            if( tNotNull == typeof( TimeSpan ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( TimeSpan? ), "TimeSpan" );
+            }
+            if( tNotNull == typeof( Guid ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( Guid? ), "Guid" );
+            }
+            if( tNotNull == typeof( Decimal ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( decimal? ), "decimal" );
+            }
+            if( tNotNull == typeof( System.Numerics.BigInteger ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( System.Numerics.BigInteger? ), "System.Numerics.BigInteger" );
+            }
+            if( tNotNull == typeof( uint ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( uint? ), "uint" );
+            }
+            if( tNotNull == typeof( ulong ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( ulong? ), "ulong" );
+            }
+            if( tNotNull == typeof( ushort ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( ushort? ), "ushort" );
+            }
+            if( tNotNull == typeof( sbyte ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( sbyte? ), "sbyte" );
+            }
+            if( tNotNull == typeof( SimpleUserMessage ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( SimpleUserMessage? ), "SimpleUserMessage" );
+            }
+            if( tNotNull == typeof( UserMessage ) )
+            {
+                return RegValueType( this, _typeCache, tNotNull, typeof( UserMessage? ), "UserMessage" );
+            }
+            if( tNotNull == typeof( FormattedString ) )
+            {
+                return RegValueType( this, _typeCache, typeof( FormattedString ), typeof( FormattedString? ), "FormattedString" );
+            }
+            return null;
+
+            static IPocoType RegValueType( PocoTypeSystemBuilder s, Dictionary<object, IPocoType> c, Type tNotNull, Type tNull, string name )
+            {
+                var x = PocoType.CreateBasicValue( s, tNotNull, tNull, name );
+                c.Add( tNotNull, x );
+                c.Add( tNull, x.Nullable );
+                return x;
+            }
         }
 
         IPocoType? OnValueTypeAnonymousRecord( IActivityMonitor monitor,

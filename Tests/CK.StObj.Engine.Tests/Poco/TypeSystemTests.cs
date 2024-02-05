@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -50,24 +51,57 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public static NamedRec GetNamedRec => default;
 
+        public interface IWithAllBasicTypes : IPoco
+        {
+            // 6 basic reference types.
+            object? PObject { get; set; } // Must be nullable to have a valid default value.
+            string PString { get; set; }
+            MCString PMCString { get; set; }
+            CodeString PCodeString { get; set; }
+            ExtendedCultureInfo PExtendedCultureInfo { get; set; }
+            NormalizedCultureInfo PNormalizedCultureInfo { get; set; }
+
+            // 20 basic value types.
+            bool PBool { get; set; }
+            int PInt { get; set; }
+            short PShort { get; set; }
+            byte PByte { get; set; }
+            long PLong { get; set; }
+            double PDouble { get; set; }
+            float PFloat { get; set; }
+            DateTime PDateTime { get; set; }
+            DateTimeOffset PDateTimeOffset { get; set; }
+            TimeSpan PTimeSpan { get; set; }
+            Guid PGuid { get; set; }
+            BigInteger PBigInteger { get; set; }
+            decimal PDecimal { get; set; }
+            uint PUInt { get; set; }
+            ulong PULong { get; set; }
+            ushort PUShort { get; set; }
+            sbyte PSByte { get; set; }
+            SimpleUserMessage PSimpleUserMessage { get; set; }
+            UserMessage PUserMessage { get; set; }
+            FormattedString PFormattedString { get; set; }
+        }
+
         [Test]
         public void AllTypes_and_identity_test()
         {
             var c = TestHelper.CreateStObjCollector( typeof( ILinkedListPart ),
                                                      typeof( IPartWithAnonymous ),
                                                      typeof( IPartWithRecAnonymous ),
-                                                     typeof( IWithList ) );
+                                                     typeof( IWithList ),
+                                                     typeof( IWithAllBasicTypes ) );
             var r = TestHelper.GetSuccessfulResult( c );
             var builder = r.PocoTypeSystemBuilder;
 
-            const int basicTypesCount = 19;
-            const int globalizationTypesCount = 7; // SimpleUserMessage, UserMessage, FormattedString, MCString, CodeString, NormalizedCultureInfo, ExtendedCultureInfo.
+            const int basicTypesCount = 26; // See IWithAllBasicTypes.
             const int enumTypesCount = 1; // AnEnum
-            const int pocoTypesCount = 4 + 2; // IPoco and IClosedPoco
+            const int pocoTypesCount = 5 + 1; // The 5 Pocos + the IPoco.
             const int listTypesCount = 1 + 1; // List<(int,string)> and List<(int Count, string Name)>
             const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective oblivious types.
 
-            builder.Count.Should().Be( (basicTypesCount + globalizationTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
+            builder.Count.Should().Be( (basicTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
             int before = builder.Count;
             var tRec = builder.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );

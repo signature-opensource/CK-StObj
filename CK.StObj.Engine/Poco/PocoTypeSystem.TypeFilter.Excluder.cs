@@ -23,18 +23,18 @@ namespace CK.Setup
             //     excluded, the owner type is excluded.
             //   - For IAbstractPocoType we track the number of primaries (and the exclusion of the last back reference excludes the abstract poco type).
             readonly int[] _backRefCount;
-            readonly PocoTypeRawSet _source;
+            readonly PocoTypeRawSet _workingSet;
             IPocoType? _iPoco;
 
             // If we need it, it exists in the TypeSystem.
-            IPocoType Poco => _iPoco ??= _source.TypeSystem.FindByType( typeof( IPoco ) )!;
+            IPocoType Poco => _iPoco ??= _workingSet.TypeSystem.FindByType( typeof( IPoco ) )!;
 
-            internal Excluder( PocoTypeRawSet source, bool allowEmptyRecord, bool allowEmptyPoco, Func<IPocoType, bool> lowLevelFilter )
+            internal Excluder( PocoTypeRawSet workingSet, bool allowEmptyRecord, bool allowEmptyPoco, Func<IPocoType, bool> lowLevelFilter )
             {
-                _source = source;
-                _backRefCount = new int[source.TypeSystem.AllNonNullableTypes.Count];
+                _workingSet = workingSet;
+                _backRefCount = new int[workingSet.TypeSystem.AllNonNullableTypes.Count];
                 List<IPocoType>? toBeExcluded = null;
-                foreach( var t in source )
+                foreach( var t in workingSet )
                 {
                     // Applies the low level filter first.
                     if( !lowLevelFilter( t.NonNullable ) )
@@ -46,7 +46,7 @@ namespace CK.Setup
                     }
                     else
                     {
-                        InitialHandleType( source, t, _backRefCount, allowEmptyRecord, allowEmptyPoco, ref toBeExcluded );
+                        InitialHandleType( workingSet, t, _backRefCount, allowEmptyRecord, allowEmptyPoco, ref toBeExcluded );
                     }
                 }
                 if( toBeExcluded != null )
@@ -141,7 +141,7 @@ namespace CK.Setup
             {
                 ref var count = ref _backRefCount[t.Index >> 1];
                 if( count == 0 ) return;
-                _source.Remove( t );
+                _workingSet.Remove( t );
                 // Prevent reentrancy.
                 count = 0;
                 // Handle back references.

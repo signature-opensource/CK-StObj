@@ -92,7 +92,7 @@ namespace CK.StObj.Engine.Tests.Poco
                     new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ), typeof( IUserCloPoc ) } );
 
                 pocoDirectory.OtherInterfaces.Keys.Should().BeEquivalentTo(
-                    new[] { typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
+                    new[] { typeof( IClosedPoco ), typeof( ICloPoc ), typeof( ICloPocPart ), typeof( IAuthenticatedCloPocPart ), typeof( ICultureDependentCloPocPart ) } );
 
                 pocoDirectory.OtherInterfaces[typeof( ICloPoc )].Select( info => info.ClosureInterface ).Should()
                     .BeEquivalentTo( new[] { typeof( IDocumentCloPoc ), typeof( ICultureUserCloPoc ) } );

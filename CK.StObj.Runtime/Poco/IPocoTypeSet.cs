@@ -62,6 +62,14 @@ namespace CK.Setup
         bool AutoIncludeCollections { get; }
 
         /// <summary>
+        /// Gets whether this set as the same content of the <paramref name="other"/> one regardless
+        /// of its configuration.
+        /// </summary>
+        /// <param name="other">The other set.</param>
+        /// <returns>True if sets are the same set of types.</returns>
+        bool SameContentAs( IPocoTypeSet other );
+
+        /// <summary>
         /// Creates a super set of this set.
         /// </summary>
         /// <param name="types">A set of types that must be included.</param>

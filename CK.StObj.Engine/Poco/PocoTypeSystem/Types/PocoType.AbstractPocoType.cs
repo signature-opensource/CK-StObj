@@ -27,14 +27,12 @@ namespace CK.Setup
             return new AbstractPocoType( s, tAbstract, abstractCount, abstractAndPrimary, genericTypeDefinition );
         }
 
-        internal static AbstractPocoBaseAndClosed CreateAbstractPocoBaseOrClosed( IActivityMonitor monitor,
-                                                                                  PocoTypeSystemBuilder s,
-                                                                                  Type tAbstract,
-                                                                                  List<IAbstractPocoType> abstracts,
-                                                                                  IPrimaryPocoType[] primaries )
+        internal static AbstractPocoBase CreateAbstractPocoBase( IActivityMonitor monitor,
+                                                                 PocoTypeSystemBuilder s,
+                                                                 List<IAbstractPocoType> abstracts,
+                                                                 IPrimaryPocoType[] primaries )
         {
-            Throw.DebugAssert( tAbstract == typeof( IPoco ) || tAbstract == typeof( IClosedPoco ) );
-            return new AbstractPocoBaseAndClosed( s, tAbstract, abstracts, primaries );
+            return new AbstractPocoBase( s, abstracts, primaries );
         }
 
         internal static ImplementationLessAbstractPoco CreateImplementationLessAbstractPoco( PocoTypeSystemBuilder s,
@@ -301,17 +299,16 @@ namespace CK.Setup
             IOneOfPocoType IOneOfPocoType.NonNullable => this;
         }
 
-        // Only for IPoco and IClosedPoco.
-        internal sealed class AbstractPocoBaseAndClosed : PocoType, IAbstractPocoType, IAbstractPocoImpl
+        // Only for IPoco.
+        internal sealed class AbstractPocoBase : PocoType, IAbstractPocoType, IAbstractPocoImpl
         {
             readonly List<IAbstractPocoType> _abstracts;
             readonly IReadOnlyList<IPrimaryPocoType> _primaries;
 
-            public AbstractPocoBaseAndClosed( PocoTypeSystemBuilder s,
-                                              Type tAbstract,
-                                              List<IAbstractPocoType> abstracts,
-                                              IPrimaryPocoType[] primaries )
-                : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
+            public AbstractPocoBase( PocoTypeSystemBuilder s,
+                                     List<IAbstractPocoType> abstracts,
+                                     IPrimaryPocoType[] primaries )
+                : base( s, typeof(IPoco), typeof( IPoco ).ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
             {
                 _abstracts = abstracts;
                 _primaries = primaries;
