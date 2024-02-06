@@ -36,7 +36,8 @@ namespace CK.Setup
         /// </returns>
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
-            Debug.Assert( scope.FullName == "CK.Core.PocoDirectory_CK", "We can use the CK.Core.PocoDirectory_CK type name to reference the PocoDirectory implementation." );
+            Throw.DebugAssert( "We can use the CK.Core.PocoDirectory_CK type name to reference the PocoDirectory implementation.",
+                                scope.FullName == "CK.Core.PocoDirectory_CK" );
             // Let the PocoDirectory_CK be sealed.
             scope.Definition.Modifiers |= Modifiers.Sealed;
 
@@ -74,8 +75,9 @@ namespace CK.Setup
                  .Append( "_factoriesT.Add( f.PocoClassType, f );" ).NewLine()
                  .CloseBlock();
 
-            if( pocoDirectory.AllInterfaces.Count == 0 ) return CSCodeGenerationResult.Success;
-
+            // If there is no families, then we'll generate nothing but we
+            // wait for any other type registration in the builder in order to
+            // lock it an publish the type system.
             foreach( var family in pocoDirectory.Families )
             {
                 // PocoFactory class.
@@ -606,11 +608,11 @@ namespace CK.Setup
             var newCount = _typeSystemBuilder.Count;
             if( newCount != _lastRegistrationCount )
             {
-                monitor.Trace( $"PocoTypeSystem has {newCount - _lastRegistrationCount} new types. Deferring Lock." );
+                monitor.Trace( $"PocoTypeSystemBuilder has {newCount - _lastRegistrationCount} new types. Deferring Lock." );
                 _lastRegistrationCount = newCount;
                 return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
             }
-            monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires all the Poco types to be known can start." );
+            monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem to be known can start." );
             _context.CurrentRun.ServiceContainer.Add( _typeSystemBuilder.Lock( monitor ) );
             return CSCodeGenerationResult.Success;
         }
