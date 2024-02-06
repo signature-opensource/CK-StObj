@@ -10,10 +10,10 @@ namespace CK.Setup
     /// <para>
     /// The root sets exposed here share the same low-level rules that are that any sub ou super set created from them will:
     /// <list type="bullet">
-    ///     <item>Never contain an empty <see cref="IEnumPocoType"/>.</item>
     ///     <item>Never contain a <see cref="IAbstractPocoType"/> without <see cref="IPrimaryPocoType"/> implementations.</item>
     ///     <item>Automatically contain Collections of included types.</item>
     /// </list>
+    /// See <see cref="IPocoTypeSet"/> for the rules that are enforced.
     /// </para>
     /// </summary>
     public interface IPocoTypeSetManager
@@ -35,7 +35,7 @@ namespace CK.Setup
         IPocoTypeSet NoneExchangeable { get; }
 
         /// <summary>
-        /// Set of all the exchangeable types.
+        /// Set of all the exchangeable types. This is a subset of the <see cref="AllSerializable"/>.
         /// </summary>
         IPocoTypeSet AllExchangeable { get; }
 
@@ -45,7 +45,7 @@ namespace CK.Setup
         IPocoTypeSet AllSerializable { get; }
 
         /// <summary>
-        /// Root set with all the types (except empty enums and <see cref="IAbstractPocoType"/> without implementations).
+        /// Root set with all the types (except <see cref="IAbstractPocoType"/> without implementations).
         /// Can be used as a generator of any other set by first using <see cref="IPocoTypeSet.Exclude(IEnumerable{IPocoType})"/>.
         /// </summary>
         IPocoTypeSet All { get; }

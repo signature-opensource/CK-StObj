@@ -332,7 +332,7 @@ namespace CK.Setup
             Dictionary<Type, List<Type>>? interfaceAmbiguities = null;
             foreach( var path in concreteClasses )
             {
-                MutableItem finalType = path[path.Count - 1];
+                MutableItem finalType = path[^1];
                 finalType.RealObjectType.InitializeInterfaces( monitor, this );
                 foreach( var item in path )
                 {

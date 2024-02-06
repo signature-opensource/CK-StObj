@@ -66,7 +66,7 @@ namespace CK.Setup
         /// of its configuration.
         /// </summary>
         /// <param name="other">The other set.</param>
-        /// <returns>True if sets are the same set of types.</returns>
+        /// <returns>True if sets contains the same types.</returns>
         bool SameContentAs( IPocoTypeSet other );
 
         /// <summary>

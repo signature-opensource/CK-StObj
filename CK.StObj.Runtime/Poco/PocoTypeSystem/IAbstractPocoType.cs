@@ -66,7 +66,7 @@ namespace CK.Setup
         /// (primary and abstract Poco types).
         /// </para>
         /// </summary>
-        IEnumerable<IPrimaryPocoType> PrimaryPocoTypes { get; }
+        IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes { get; }
 
         /// <summary>
         /// Gets the fields.

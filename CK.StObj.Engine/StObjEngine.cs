@@ -275,7 +275,7 @@ namespace CK.Setup
                     }
                     return false;
                 }
-                Debug.Assert( t.AssemblyQualifiedName != null, "Since FullName is defined." );
+                Throw.DebugAssert( "Since FullName is defined.", t.AssemblyQualifiedName != null );
                 if( _excludedTypes.Contains( t.Name ) )
                 {
                     monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its Type Name." );

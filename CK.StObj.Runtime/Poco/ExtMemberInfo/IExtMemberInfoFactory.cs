@@ -25,7 +25,7 @@ namespace CK.Setup
         /// Creates the <see cref="IExtMemberInfo" /> for a <see cref="MemberInfo" />.
         /// <para>
         /// Type, PropertyInfo, FieldInfo and EventInfo are MemberInfo but <see cref="ParameterInfo"/>
-        /// is not. This will thrown an <see cref="ArgumentException"/> for <see cref="MethodBase"/>.
+        /// is not. This will throw an <see cref="ArgumentException"/> for <see cref="MethodBase"/>.
         /// </para>
         /// </summary>
         /// <param name="memberInfo">The member for which info must be obtained.</param>

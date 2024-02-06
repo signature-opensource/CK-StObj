@@ -37,7 +37,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void basic_set_tests()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IEmptyPoco ), typeof( IPoco1 ) );
-            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.Lock();
+            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var empty = ts.FindByType( typeof( IEmptyPoco ) );
             var poco1 = ts.FindByType( typeof( IPoco1 ) );
             var guid = ts.FindByType( typeof( Guid ) );

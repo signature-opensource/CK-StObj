@@ -189,8 +189,8 @@ namespace CK.Setup
         public IEnumerable<object> GetCustomAttributes( MemberInfo m, Type attributeType )
         {
             Throw.CheckNotNullArgument( m );
-            Throw.CheckNotNullArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
-            if( attributeType == null ) throw new ArgumentNullException( "attributeType" );
+            Throw.CheckArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
+            Throw.CheckNotNullArgument( attributeType );
             var fromCache = _all.Where( e => e.M == m && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
             if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
             {

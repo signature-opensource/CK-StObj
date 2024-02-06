@@ -92,7 +92,10 @@ namespace CK.Setup
                 {
                     Nullable._extOrCSName = _familyInfo.ExternalName.Name + '?';
                 }
-
+                else
+                {
+                    Nullable._extOrCSName = Nullable.CSharpName;
+                }
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );

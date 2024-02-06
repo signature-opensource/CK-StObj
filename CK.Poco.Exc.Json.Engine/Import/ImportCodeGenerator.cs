@@ -16,6 +16,46 @@ namespace CK.Setup.PocoJson
     /// <param name="variableName">The variable name to read.</param>
     delegate void CodeReader( ICodeWriter write, string variableName );
 
+    /// <summary>
+    /// Before 2024-02 array was "T[]" (instead of "A(T)").
+    /// UnionType, CollectionType and anonymous record types are impacted.
+    /// </summary>
+    sealed class LegacyArrayName : PocoTypeNameMap
+    {
+        readonly PocoTypeNameMap _standard;
+
+        public LegacyArrayName( PocoTypeNameMap standard )
+            : base( standard.TypeSet )
+        {
+            _standard = standard;
+        }
+
+        protected override void MakeCSharpName( IPocoType t, out string name, out string nullableName )
+        {
+            Throw.DebugAssert( !t.IsNullable );
+            name = _standard.GetName( t );
+            nullableName = _standard.GetName( t.Nullable );
+        }
+
+        protected override void MakeNamedType( INamedPocoType namedType, out string name, out string nullableName )
+        {
+            Throw.DebugAssert( !namedType.IsNullable );
+            name = _standard.GetName( namedType );
+            nullableName = _standard.GetName( namedType.Nullable );
+        }
+
+        protected override void MakeCollection( ICollectionPocoType t, out string name, out string nullableName )
+        {
+            if( t.Kind == PocoTypeKind.Array )
+            {
+                name = $"{GetName( t.ItemTypes[0] )}[]";
+                nullableName = name + '?';
+                return;
+            }
+            base.MakeCollection( t, out name, out nullableName );
+        }
+    }
+
     sealed partial class ImportCodeGenerator
     {
         readonly ITypeScope _importerType;
@@ -24,6 +64,7 @@ namespace CK.Setup.PocoJson
         readonly ICSCodeGenerationContext _generationContext;
         readonly CodeReader[] _readers;
         readonly BitArray _readerFunctions;
+        readonly LegacyArrayName _legacyNameMap;
 
         public ImportCodeGenerator( ITypeScope importerType, PocoTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
         {
@@ -100,6 +141,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                         .CreatePart( out _readerFunctionsPart ).NewLine()
                         .Append( "#endregion" ).NewLine();
             _nameMap = nameMap;
+            _legacyNameMap = new LegacyArrayName( nameMap );
             _generationContext = generationContext;
             _readers = new CodeReader[nameMap.TypeSystem.AllNonNullableTypes.Count];
             _readerFunctions = new BitArray( nameMap.TypeSystem.AllTypes.Count );

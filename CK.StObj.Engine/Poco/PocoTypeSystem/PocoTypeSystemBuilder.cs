@@ -1,6 +1,5 @@
 using CK.CodeGen;
 using CK.Core;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -9,8 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using static CK.Core.CheckedWriteStream;
 
 namespace CK.Setup
 {
@@ -36,6 +33,8 @@ namespace CK.Setup
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
         // The Poco directory can be EmptyPocoDirectory.Default for testing only 
         readonly IPocoDirectory _pocoDirectory;
+        // RegisterPocoTypeAttribute types.
+        List<(IExtMemberInfo, Type)>? _registerAttributes;
         // Types marked with [NonSerialized] or flagged by SetNonSerialized if any.
         HashSet<IPocoType>? _nonSerialized;
         // Types marked with [NonExchangeable] or flagged by SetExchangeable if any.
@@ -54,18 +53,26 @@ namespace CK.Setup
             _stringBuilderPool = new Stack<StringBuilder>();
             _memberInfoFactory = memberInfoFactory;
             _pocoDirectory = pocoDirectory ?? EmptyPocoDirectory.Default;
-            _nonNullableTypes = new List<PocoType>( 8192 );
+            _nonNullableTypes = new List<PocoType>( 4096 );
             _allTypes = new WithNullTypeList( _nonNullableTypes );
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
             _typeDefinitions = new Dictionary<Type, PocoType.PocoGenericTypeDefinition>();
-            _typeCache = new Dictionary<object, IPocoType>();
+            _typeCache = new Dictionary<object, IPocoType>( 8192 );
         }
 
         public bool IsLocked => _result != null;
 
-        public IPocoTypeSystem Lock()
+        public IPocoTypeSystem Lock( IActivityMonitor monitor )
         {
-            return _result ??= new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _nonSerialized, _notExchangeable );
+            if( _result == null )
+            {
+                if( !RegisterPocoTypeAttributeTypes( monitor ) )
+                {
+                    Throw.CKException( "Unable to create a valid PocoTypeSystem." );
+                }
+                _result = new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _nonSerialized, _notExchangeable );
+            }
+            return _result;
         }
 
         public IPocoDirectory PocoDirectory => _pocoDirectory;
@@ -140,6 +147,46 @@ namespace CK.Setup
             }
         }
 
+        bool ColectRegisterPocoTypeAttribute( IActivityMonitor monitor, IExtMemberInfo m )
+        {
+            var all = m.CustomAttributesData.Where( a => a.AttributeType.Namespace == "CK.Core"
+                                                         && a.AttributeType.Name == "RegisterPocoTypeAttribute" );
+            var success = true;
+            foreach( var a in all )
+            {
+                var oT = a.ConstructorArguments[0].Value as Type;
+                if( oT == null )
+                {
+                    monitor.Warn( $"Unable to extract a non null Type from attribute [RegisterPocoType] on '{m}'." );
+                    success = false;
+                }
+                else if( !_typeCache.ContainsKey( oT ) )
+                {
+                    _registerAttributes ??= new List<(IExtMemberInfo,Type)>();
+                    _registerAttributes.Add( (m, oT) );
+                }
+            }
+            return success;
+        }
+
+        bool RegisterPocoTypeAttributeTypes( IActivityMonitor monitor )
+        {
+            bool success = true;
+            if( _registerAttributes != null )
+            {
+                foreach( var (m,t) in _registerAttributes )
+                {
+                    if( RegisterNullOblivious( monitor, t ) == null )
+                    {
+                        monitor.Error( $"While registering type '{t:C}' from [RegisterPocoType] on '{m}'." );
+                        success = false;
+                    }
+                }
+                _registerAttributes.Clear();
+            }
+            return success;
+        }
+
         public IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
@@ -167,11 +214,15 @@ namespace CK.Setup
                              MemberContext ctx,
                              IExtNullabilityInfo nInfo )
         {
-            Debug.Assert( !nInfo.Type.IsByRef );
+            Throw.DebugAssert( !nInfo.Type.IsByRef );
             var result = nInfo.Type.IsValueType
                                   ? OnValueType( monitor, nInfo, ctx )
                                   : OnReferenceType( monitor, nInfo, ctx );
             Throw.DebugAssert( result == null || result.IsNullable == nInfo.IsNullable );
+            if( result != null )
+            {
+                ColectRegisterPocoTypeAttribute( monitor, ctx.Root );
+            }
             return result;
         }
 

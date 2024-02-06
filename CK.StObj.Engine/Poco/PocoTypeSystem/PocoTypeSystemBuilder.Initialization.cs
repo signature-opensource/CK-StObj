@@ -83,7 +83,7 @@ namespace CK.Setup
                 int nbAbstracts = p.FamilyInfo.OtherInterfaces.Count;
                 if( nbAbstracts > 0 )
                 {
-                    Throw.DebugAssert( p.FamilyInfo.OtherInterfaces.Distinct().Count() == p.FamilyInfo.OtherInterfaces.Count() );
+                    Throw.DebugAssert( p.FamilyInfo.OtherInterfaces.Distinct().Count() == p.FamilyInfo.OtherInterfaces.Count );
                     var abstracts = new IAbstractPocoType[nbAbstracts];
                     IEnumerable<Type> otherInterfaces = p.FamilyInfo.OtherInterfaces;
                     int idx = 0;
@@ -176,8 +176,8 @@ namespace CK.Setup
                 // constructor code.
                 if( success ) p.ComputeCtorCode( StringBuilderPool );
             }
-            // If there's no error, bind the AbstractPoco fields.
-            return success;
+            // On success, registers any extra [RegisterPocoType] that may have been collected from IPoco roots.
+            return success && RegisterPocoTypeAttributeTypes( monitor );
         }
 
         IPocoType EnsureAbstract( IActivityMonitor monitor,

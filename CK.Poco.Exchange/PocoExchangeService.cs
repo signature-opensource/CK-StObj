@@ -1,3 +1,4 @@
+using CK.Setup;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,11 @@ namespace CK.Core
     /// and resolver of such importers/exporters thanks to available <see cref="IPocoImporterFactory"/>
     /// and <see cref="IPocoImporterFactory"/>.
     /// </summary>
+    /// <remarks>
+    /// Registration of this service triggers the availability of the engine Poco serialization service
+    /// that exposes the standard names for the set of all serializable poco types.
+    /// </remarks>
+    [ContextBoundDelegation( "CK.Setup.PocoSerializableServiceEngineImpl, CK.Poco.Exchange.Engine" )]
     public class PocoExchangeService : ISingletonAutoService
     {
         readonly IPocoImporter[] _importers;

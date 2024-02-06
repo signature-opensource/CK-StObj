@@ -86,6 +86,10 @@ namespace CK.Setup
                     _externalName = externalName;
                     Nullable._extOrCSName = externalName.Name + '?';
                 }
+                else
+                {
+                    Nullable._extOrCSName = Nullable.CSharpName;
+                }
             }
 
             internal void SetFields( IActivityMonitor monitor, PocoTypeSystemBuilder s, bool isReadOnlyCompliant, RecordNamedField[] fields )

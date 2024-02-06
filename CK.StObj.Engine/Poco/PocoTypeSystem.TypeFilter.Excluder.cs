@@ -108,7 +108,7 @@ namespace CK.Setup
                                 Throw.DebugAssert( "Generic AbstractPoco require all their GenericArguments.", t is not IAbstractPocoType a || a.GenericArguments.All( a => source.Contains( a.Type ) ) );
                                 // The count is the number of primaries: back references are for generic arguments and we don't need
                                 // to track them (as soon as a back reference is excluded, the abstract is excluded).
-                                int primaryCount = abs.PrimaryPocoTypes.Count();
+                                int primaryCount = abs.PrimaryPocoTypes.Count;
                                 // Allower may have included an abstract without implementations.
                                 // Fix this now (Rule 7).
                                 if( primaryCount == 0 )

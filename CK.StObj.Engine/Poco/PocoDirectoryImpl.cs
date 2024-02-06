@@ -611,7 +611,7 @@ namespace CK.Setup
                 return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
             }
             monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires all the Poco types to be known can start." );
-            _context.CurrentRun.ServiceContainer.Add( _typeSystemBuilder.Lock() );
+            _context.CurrentRun.ServiceContainer.Add( _typeSystemBuilder.Lock( monitor ) );
             return CSCodeGenerationResult.Success;
         }
     }

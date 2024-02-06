@@ -39,7 +39,7 @@ namespace CK.Setup
         IEnumerable<IAbstractPocoType> MinimalAbstractTypes { get; }
 
         /// <summary>
-        /// Gets the extension interfaces with the same nullability as this one.
+        /// Gets the secondary interfaces with the same nullability as this one.
         /// Corresponds to the <see cref="IPocoFamilyInfo.Interfaces"/> (except the first one that is this primary Poco type).
         /// </summary>
         IEnumerable<ISecondaryPocoType> SecondaryTypes { get; }

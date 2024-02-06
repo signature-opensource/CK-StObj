@@ -21,8 +21,8 @@ namespace CK.Setup
         string? _typeName;
         IExtNullabilityInfo? _rNullabilityInfo;
         IExtNullabilityInfo? _wNullabilityInfo;
-        object[]? _customAttributes;
-        CustomAttributeData[]? _customAttributesData;
+        IReadOnlyList<object>? _customAttributes;
+        IReadOnlyList<CustomAttributeData>? _customAttributesData;
 
         protected ExtMemberInfoBase( ExtMemberInfoFactory factory,
                                      PropertyInfo fake,
@@ -94,8 +94,8 @@ namespace CK.Setup
             {
                 return _customAttributesData ??= _o switch
                     {
-                        MemberInfo m => m.GetCustomAttributesData().ToArray(),
-                        ParameterInfo p => p.GetCustomAttributesData().ToArray(),
+                        MemberInfo m => (IReadOnlyList<CustomAttributeData>)m.GetCustomAttributesData(),
+                        ParameterInfo p => (IReadOnlyList<CustomAttributeData>)p.GetCustomAttributesData(),
                         _ => Throw.NotSupportedException<CustomAttributeData[]>(),
                     };
             }

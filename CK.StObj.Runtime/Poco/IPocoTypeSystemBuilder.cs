@@ -58,9 +58,14 @@ namespace CK.Setup
         /// <para>
         /// This can be called multiple times.
         /// </para>
+        /// <para>
+        /// This may throw a <see cref="CKException"/> if a [<see cref="RegisterPocoTypeAttribute"/>] type
+        /// registration failed.
+        /// </para>
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <returns>The built type system.</returns>
-        IPocoTypeSystem Lock();
+        IPocoTypeSystem Lock( IActivityMonitor monitor );
 
         /// <summary>
         /// Gets whether this type system has been locked.

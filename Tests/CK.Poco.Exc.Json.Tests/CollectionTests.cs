@@ -1,4 +1,5 @@
 using CK.Core;
+using CK.Setup;
 using CommunityToolkit.HighPerformance;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,18 +8,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static CK.Poco.Exc.Json.Tests.CollectionTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
 {
     [TestFixture]
-    public class CollectionTests
+    public partial class CollectionTests
     {
         [ExternalName( "IWithArray" )]
         public interface IWithArray : IPoco
         {
             int[] ArrayOfInt { get; set; }
 
+            [RegisterPocoType( typeof( string ) )]
             object[] ArrayOfObject { get; set; }
 
             long[][] ArrayOfArrayOfLong { get; set; }
@@ -68,16 +71,16 @@ namespace CK.Poco.Exc.Json.Tests
                                 ""Result"": [""string"",""This-is-o1!""]
                             }
                         ],
-                    ""Result"": [""object[]"",
+                    ""Result"": [""A(object)"",
                                     [
-                                        [""int[]"",[1,2]],
-                                        [""object[]"",
+                                        [""A(int)"",[1,2]],
+                                        [""A(object)"",
                                             [
                                                 [""int"",1],
                                                 [""string"",""Hello""]
                                             ]
                                         ],
-                                        [""long[][]"",
+                                        [""A(A(long))"",
                                             [
                                                 [""1"",""2""],
                                                 [""3"",""4"",""5""]
@@ -97,6 +100,7 @@ namespace CK.Poco.Exc.Json.Tests
 
             IList<int?> CovariantListNullableImpl { get; }
 
+            [RegisterPocoType( typeof(object[]) ) ]
             object? Result { get; set; }
         }
 
@@ -131,7 +135,7 @@ namespace CK.Poco.Exc.Json.Tests
                     ""ListOfList"": [[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]],
                     ""CovariantListImpl"": [42,3712],
                     ""CovariantListNullableImpl"": [null,0,null],
-                    ""Result"": [""object[]"",
+                    ""Result"": [""A(object)"",
                                     [
                                         [""L(object)"",[[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]]],
                                         [""L(int)"",[42,3712]],
@@ -189,6 +193,8 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithDictionaries : IPoco
         {
+            [RegisterPocoType( typeof( long ) )]
+            [RegisterPocoType( typeof( string ) )]
             IDictionary<object, object> DicOfDic { get; }
 
             IDictionary<int, int> CovariantDicImpl { get; }

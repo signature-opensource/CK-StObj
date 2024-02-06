@@ -44,7 +44,7 @@ namespace CK.Setup
     /// is raised if the type doesn't belong to the set.
     /// </para>
     /// </summary>
-    public class PocoTypeNameMap
+    public class PocoTypeNameMap : IPocoTypeNameMap
     {
         readonly string[] _names;
         readonly IPocoTypeSet _typeSet;
@@ -71,7 +71,8 @@ namespace CK.Setup
         public IPocoTypeSet TypeSet => _typeSet;
 
         /// <summary>
-        /// Gets a name for a type. The type must be an element of the <see cref="TypeSet"/> otherwise
+        /// Gets a name for a type. When nullable the name is suffixed with "?".
+        /// The type must be an element of the <see cref="TypeSet"/> otherwise
         /// an <see cref="ArgumentException"/> is thrown.
         /// </summary>
         /// <param name="type">The type.</param>
@@ -92,7 +93,7 @@ namespace CK.Setup
                     Throw.InvalidOperationException( $"Invalid MakeXXX override for '{type}': output '{badName}' is null or whitespace." );
                 }
                 _names[type.Index] = name;
-                _names[type.Index+1] = nullableName;
+                _names[type.Index + 1] = nullableName;
                 Throw.DebugAssert( n != null );
             }
             return n;
@@ -107,14 +108,14 @@ namespace CK.Setup
                 case PocoTypeKind.AbstractPoco:
                 case PocoTypeKind.SecondaryPoco:
                     MakeCSharpName( t, out name, out nullableName );
-                    break;
+                    return;
                 case PocoTypeKind.AnonymousRecord:
                     {
                         var r = (IRecordPocoType)t;
                         var fields = r.Fields.Where( f => _typeSet.Contains( f.Type ) );
                         Throw.DebugAssert( fields.Any() );
                         MakeAnonymousRecord( r, fields, out name, out nullableName );
-                        break;
+                        return;
                     }
                 case PocoTypeKind.UnionType:
                     {
@@ -122,7 +123,7 @@ namespace CK.Setup
                         var allowed = u.AllowedTypes.Where( _typeSet.Contains );
                         Throw.DebugAssert( allowed.Any() );
                         MakeUnionType( u, allowed, out name, out nullableName );
-                        break;
+                        return;
                     }
             }
             if( t is INamedPocoType namedType )
@@ -161,7 +162,7 @@ namespace CK.Setup
                 var vN = GetName( t.ItemTypes[1] );
                 name = k.Type == typeof( string )
                                     ? $"O({vN})"
-                                    : $"M({GetName(k)},{vN})";
+                                    : $"M({GetName( k )},{vN})";
             }
             else
             {

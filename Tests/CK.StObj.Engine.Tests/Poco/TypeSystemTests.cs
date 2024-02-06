@@ -163,7 +163,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IValidEmptyRec ) );
             var r = TestHelper.GetSuccessfulResult( c );
-            var ts = r.CKTypeResult.PocoTypeSystemBuilder.Lock();
+            var ts = r.CKTypeResult.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
             var emptyRec = ts.FindByType( typeof( EmptyRec ) );
             var poco = ts.FindByType( typeof( IValidEmptyRec ) );
             Throw.DebugAssert( emptyRec != null && poco != null );

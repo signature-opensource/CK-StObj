@@ -59,7 +59,7 @@ namespace System.Reflection
         readonly Dictionary<MemberInfo, NullabilityState> _context = new();
 
         internal static bool IsSupported { get; } =
-            AppContext.TryGetSwitch( "System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported ) ? isSupported : true;
+            !AppContext.TryGetSwitch( "System.Reflection.NullabilityInfoContext.IsSupported", out bool isSupported ) || isSupported;
 
         [Flags]
         enum NotAnnotatedStatus

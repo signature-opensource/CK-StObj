@@ -29,8 +29,14 @@ namespace CK.Setup.PocoJson
                         .Append( "// Type: " ).Append( t.ImplTypeName ).NewLine()
                         .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                         .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
-                        .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" )
-                        .CloseBlock();
+                        .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" );
+                    bool hasLegacyName = _legacyNameMap.GetName( t ) != typeName;
+                    if( hasLegacyName )
+                    {
+                        ctor.Append( "// Legacy name." ).NewLine()
+                            .Append( "_anyReaders.Add( " ).AppendSourceString( _legacyNameMap.GetName( t ) ).Append( ", d );" );
+                    }
+                    ctor.CloseBlock();
                     // Handle also the nullable value types.
                     var tNull = t.Nullable;
                     typeName = _nameMap.GetName( tNull );
@@ -39,12 +45,21 @@ namespace CK.Setup.PocoJson
                         .Append( "// Type: " ).Append( tNull.ImplTypeName ).NewLine()
                         .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                         .Append( "=>" ).Append( readFunction ).Append( "(ref r, rCtx);" ).NewLine()
-                        .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" )
-                        .CloseBlock();
+                        .Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( ", d );" ).NewLine();
+                    if( hasLegacyName )
+                    {
+                        ctor.Append( "_anyReaders.Add( " ).AppendSourceString( _legacyNameMap.GetName( t ) ).Append( ", d ); // Legacy name." ).NewLine();
+                    }
+                    ctor.CloseBlock();
                 }
                 else
                 {
                     ctor.Append( "_anyReaders.Add( " ).AppendSourceString( typeName ).Append( "," ).Append( readFunction ).Append( ");" ).NewLine();
+                    string legacyName = _legacyNameMap.GetName( t );
+                    if( legacyName != typeName )
+                    {
+                        ctor.Append( "_anyReaders.Add( " ).AppendSourceString( legacyName ).Append( "," ).Append( readFunction ).Append( "); // Legacy name." ).NewLine();
+                    }
                 }
             }
 

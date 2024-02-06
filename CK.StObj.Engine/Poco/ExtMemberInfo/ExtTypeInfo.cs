@@ -12,8 +12,8 @@ namespace CK.Setup
         readonly Type _type;
         IExtTypeInfo? _baseType;
         string? _typeName;
-        object[]? _customAttributes;
-        CustomAttributeData[]? _customAttributesData;
+        IReadOnlyList<object>? _customAttributes;
+        IReadOnlyList<CustomAttributeData>? _customAttributesData;
         IExtNullabilityInfo? _nullabilityInfo;
 
         public ExtTypeInfo( ExtMemberInfoFactory factory, Type type )
@@ -33,7 +33,7 @@ namespace CK.Setup
 
         public string TypeCSharpName => _typeName ??= _type.ToCSharpName();
 
-        public IReadOnlyList<CustomAttributeData> CustomAttributesData => _customAttributesData ??= _type.GetCustomAttributesData().ToArray();
+        public IReadOnlyList<CustomAttributeData> CustomAttributesData => _customAttributesData ??= (IReadOnlyList<CustomAttributeData>)_type.GetCustomAttributesData();
 
         public IReadOnlyList<object> CustomAttributes => _customAttributes ??= _type.GetCustomAttributes( false );
 

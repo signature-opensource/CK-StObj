@@ -32,8 +32,9 @@ namespace CK.Setup
             public MemberContext( IExtMemberInfo root )
             {
                 _root = root;
-                _tupleIndex = 0;
             }
+
+            public IExtMemberInfo Root => _root;
 
             public void Reset()
             {

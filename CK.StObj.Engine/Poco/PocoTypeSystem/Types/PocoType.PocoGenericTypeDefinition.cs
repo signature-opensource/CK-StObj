@@ -83,7 +83,9 @@ namespace CK.Setup
                     var propertyType = instanceType.GetProperty( p._typePropName, BindingFlags.Public | BindingFlags.Static );
                     if( propertyType == null )
                     {
-                        monitor.Error( $"Generic interface '{_type:N}' must define '[AutoImplementationClaim] public static {p.Name} {p._typePropName} => default!;' property. This is required for type analysis." );
+                        monitor.Error( $"Generic interface '{_type:N}' must define " +
+                                       $"'[AutoImplementationClaim] public static {p.Name} {p._typePropName} => default!;' property. " +
+                                       $"This is required for type analysis." );
                         success = false;
                     }
                     if( success )

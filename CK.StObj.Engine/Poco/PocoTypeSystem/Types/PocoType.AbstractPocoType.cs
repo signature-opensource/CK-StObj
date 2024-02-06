@@ -44,7 +44,7 @@ namespace CK.Setup
             return new ImplementationLessAbstractPoco( s, tAbstract, generalizations, genericTypeDefinition, genericArguments );
         }
 
-        sealed class NullAbstractPoco : NullReferenceType, IAbstractPocoType
+        sealed class NullAbstractPoco : NullReferenceType, IAbstractPocoType, IReadOnlyList<IPrimaryPocoType>
         {
             public NullAbstractPoco( IPocoType notNullable )
                 : base( notNullable )
@@ -59,7 +59,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => NonNullable.MinimalGeneralizations.Select( a => a.Nullable );
 
-            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => NonNullable.PrimaryPocoTypes.Select( a => a.Nullable );
+            public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => this;
 
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
@@ -79,6 +79,15 @@ namespace CK.Setup
 
             IOneOfPocoType IOneOfPocoType.NonNullable => NonNullable;
 
+            #region Primaries auto implementation.
+            int IReadOnlyCollection<IPrimaryPocoType>.Count => NonNullable.PrimaryPocoTypes.Count;
+
+            IPrimaryPocoType IReadOnlyList<IPrimaryPocoType>.this[int index] => NonNullable.PrimaryPocoTypes[index].Nullable;
+
+            IEnumerator<IPrimaryPocoType> IEnumerable<IPrimaryPocoType>.GetEnumerator() => NonNullable.PrimaryPocoTypes.Select( t => t.Nullable ).GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => NonNullable.PrimaryPocoTypes.Select( t => t.Nullable ).GetEnumerator();
+            #endregion
         }
 
         interface IAbstractPocoImpl 
@@ -90,7 +99,7 @@ namespace CK.Setup
         internal sealed class AbstractPocoType : PocoType, IAbstractPocoType, IAbstractPocoImpl
         {
             readonly IPocoType[] _abstractAndPrimary;
-            readonly int _abstractCount;
+            readonly ArraySegment<IPrimaryPocoType> _primaries;
             readonly IPocoGenericTypeDefinition? _genericTypeDefinition;
             (IPocoGenericParameter Parameter, IPocoType Type)[] _genericArguments;
             List<ImplementationLessAbstractPoco>? _implLessSpecializations;
@@ -106,7 +115,7 @@ namespace CK.Setup
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
             {
                 _abstractAndPrimary = abstractAndPrimary;
-                _abstractCount = abstractCount;
+                _primaries = new ArraySegment<IPrimaryPocoType>( Unsafe.As<IPrimaryPocoType[]>( _abstractAndPrimary ), abstractCount, abstractAndPrimary.Length - abstractCount );
                 _genericTypeDefinition = genericDefinitionType;
                 _genericArguments = Array.Empty<(IPocoGenericParameter, IPocoType)>();
                 genericDefinitionType?.AddInstance( this );
@@ -127,7 +136,7 @@ namespace CK.Setup
             {
                 get
                 {
-                    var o = _abstractAndPrimary.Take( _abstractCount ).Cast<IAbstractPocoType>();
+                    var o = _abstractAndPrimary.Take( _abstractAndPrimary.Length - _primaries.Count ).Cast<IAbstractPocoType>();
                     return _implLessSpecializations != null ? o.Concat( _implLessSpecializations ) : o;
                 }
             }
@@ -183,7 +192,6 @@ namespace CK.Setup
                 return result;
             }
 
-
             sealed class Field : IAbstractPocoField
             {
                 readonly AbstractPocoType _owner;
@@ -218,10 +226,8 @@ namespace CK.Setup
                 var b = ImmutableArray.CreateBuilder<IAbstractPocoField>( props.Length );
                 foreach( var p in props )
                 {
-                    var primaries = _abstractAndPrimary.AsSpan( _abstractCount );
-                    foreach( var tP in primaries )
+                    foreach( var t in _primaries )
                     {
-                        var t = Unsafe.As<IPrimaryPocoType>( tP );
                         // Ensures that this field is actually implemented and is not an "optional property".
                         if( t.Fields.Any( f => f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && f.Name == p.Name ) )
                         {
@@ -239,7 +245,7 @@ namespace CK.Setup
                 return true;
             }
 
-            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _abstractAndPrimary.Skip( _abstractCount ).Cast<IPrimaryPocoType>();
+            public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 
@@ -324,7 +330,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => Array.Empty<IAbstractPocoType>();
 
-            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
+            public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
@@ -388,7 +394,7 @@ namespace CK.Setup
 
             public IReadOnlyList<(IPocoGenericParameter Parameter, IPocoType Type)> GenericArguments => _genericArguments;
 
-            public IEnumerable<IPrimaryPocoType> PrimaryPocoTypes => Array.Empty<IPrimaryPocoType>();
+            public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => Array.Empty<IPrimaryPocoType>();
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
 

@@ -10,4 +10,5 @@ namespace CK.Core
     public interface IPoco
     {
     }
+
 }

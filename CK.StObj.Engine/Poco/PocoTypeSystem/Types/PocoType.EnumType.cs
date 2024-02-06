@@ -87,6 +87,10 @@ namespace CK.Setup
                     _externalName = externalName;
                     Nullable._extOrCSName = externalName.Name + '?';
                 }
+                else
+                {
+                    Nullable._extOrCSName = Nullable.CSharpName;
+                }
                 _nextRef = ((PocoType)underlyingType.NonNullable).AddBackRef( this );
                 _defInfo = CheckValidAndComputeDefaultValueInfo( monitor, tNotNull, out _values, out _defaultValueName );
             }
