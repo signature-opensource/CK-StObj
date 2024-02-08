@@ -8,7 +8,7 @@ namespace CK.Setup
     /// The <see cref="IPocoTypeSystem.SetManager"/> enables manipulation of always coherent set of types.
     /// This enables easy manipulation of allow and disallow lists for any kind of process or restrictions.
     /// <para>
-    /// The root sets exposed here share the same low-level rules that are that any sub ou super set created from them will:
+    /// The root sets exposed here share the same low-level rules, any sub ou super set created from them will:
     /// <list type="bullet">
     ///     <item>Never contain a <see cref="IAbstractPocoType"/> without <see cref="IPrimaryPocoType"/> implementations.</item>
     ///     <item>Automatically contain Collections of included types.</item>
@@ -21,18 +21,18 @@ namespace CK.Setup
         /// <summary>
         /// Empty root set. Can be used as a generator of any other set by first using <see cref="IPocoTypeSet.Include(IEnumerable{IPocoType}, bool)"/>.
         /// </summary>
-        IPocoTypeSet None { get; }
+        IPocoTypeSet Empty { get; }
 
         /// <summary>
         /// Empty set with a low-level rules that guaranties that no type marked with <see cref="NonSerializedAttribute"/> will ever appear.
         /// </summary>
-        IPocoTypeSet NoneSerializable { get; }
+        IPocoTypeSet EmptySerializable { get; }
 
         /// <summary>
         /// Empty set with a low-level rules that guaranties that no type marked with <see cref="NotExchangeableAttribute"/>
-        /// or with <see cref="NonSerializedAttribute"/> will ever appear (to be exchangeable a type must be serializable).
+        /// (or with <see cref="NonSerializedAttribute"/> will ever appear: to be exchangeable a type must be serializable).
         /// </summary>
-        IPocoTypeSet NoneExchangeable { get; }
+        IPocoTypeSet EmptyExchangeable { get; }
 
         /// <summary>
         /// Set of all the exchangeable types. This is a subset of the <see cref="AllSerializable"/>.
@@ -61,7 +61,7 @@ namespace CK.Setup
         IPocoTypeSet CreateAll( bool allowEmptyRecords, bool allowEmptyPocos, bool autoIncludeCollections, Func<IPocoType, bool> lowLevelFilter );
 
         /// <summary>
-        /// Advanced method that creates a root set with different rules than the default <see cref="None"/>.
+        /// Advanced method that creates a root set with different rules than the default <see cref="Empty"/>.
         /// </summary>
         /// <param name="allowEmptyRecords">Configures the <see cref="IPocoTypeSet.AllowEmptyRecords"/>.</param>
         /// <param name="allowEmptyPocos">Configures the <see cref="IPocoTypeSet.AllowEmptyPocos"/>.</param>

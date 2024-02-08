@@ -28,5 +28,14 @@ namespace CK.Setup
         /// <param name="type">The type.</param>
         /// <returns>The type name.</returns>
         string GetName( IPocoType type );
+
+        /// <summary>
+        /// Clones this name map for another type set that can be a super or sub set.
+        /// This enables a name map to be based on the same underlying implementation as this one
+        /// (without knwowing the actual type).
+        /// </summary>
+        /// <param name="typeSet">The types set to consider. When it is this <see cref="TypeSet"/>, this map should be returned.</param>
+        /// <returns>A name map for the <paramref name="typeSet"/>.</returns>
+        IPocoTypeNameMap Clone( IPocoTypeSet typeSet );
     }
 }

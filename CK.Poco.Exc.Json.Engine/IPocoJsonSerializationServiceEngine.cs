@@ -6,16 +6,12 @@ namespace CK.Setup.PocoJson
     /// Service engine interface is available when the Json serialization
     /// is supported.
     /// </summary>
-    public interface IPocoJsonSerializableServiceEngine
+    public interface IPocoJsonSerializationServiceEngine
     {
         /// <summary>
-        /// Gets the exchangeable Json name map.
-        /// <para>
-        /// Currently, this is the <see cref="IPocoSerializableServiceEngine.ExchangeableNames"/> but
-        /// nothing prevents, in the future, to use different names specifically for Json.
-        /// </para>
+        /// Gets the <see cref="IPocoSerializationServiceEngine"/>.
         /// </summary>
-        IPocoTypeNameMap JsonExchangeableNames { get; }
+        IPocoSerializationServiceEngine SerializableLayer { get; }
 
         /// <summary>
         /// Gets the Exporter type scope.

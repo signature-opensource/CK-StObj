@@ -11,11 +11,11 @@ namespace CK.Setup
 {
     sealed partial class PocoTypeSystem : IPocoTypeSetManager
     {
-        public IPocoTypeSet None => _noneTypeSet;
+        public IPocoTypeSet Empty => _emptyTypeSet;
 
-        public IPocoTypeSet NoneSerializable => _noneSerializableTypeSet;
+        public IPocoTypeSet EmptySerializable => _emptySerializableTypeSet;
 
-        public IPocoTypeSet NoneExchangeable => _noneExchangableTypeSet;
+        public IPocoTypeSet EmptyExchangeable => _emptyExchangableTypeSet;
 
         public IPocoTypeSet AllExchangeable => _allExchangeableTypeSet;
 
@@ -177,7 +177,7 @@ namespace CK.Setup
 
             public IPocoTypeSet ExcludeEmptyRecords()
             {
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, true ),
+                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, all: true ),
                                       allowEmptyRecords: false,
                                       allowEmptyPocos: true,
                                       allowedTypes: null,
@@ -189,7 +189,7 @@ namespace CK.Setup
 
             public IPocoTypeSet ExcludeEmptyPocos()
             {
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, true ),
+                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, all: true ),
                                       allowEmptyRecords: true,
                                       allowEmptyPocos: false,
                                       allowedTypes: null,
@@ -201,7 +201,7 @@ namespace CK.Setup
 
             public IPocoTypeSet ExcludeEmptyRecordsAndPocos()
             {
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, true ),
+                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, all: true ),
                                       allowEmptyRecords: false,
                                       allowEmptyPocos: false,
                                       allowedTypes: null,

@@ -16,14 +16,14 @@ namespace CK.Setup.PocoJson
     sealed partial class ExportCodeGenerator
     {
         readonly ITypeScope _exporterType;
-        readonly PocoTypeNameMap _nameMap;
+        readonly IPocoTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
         // Writers are for the non nullable types, whether they are oblivious types
         // or not: writers for the same "oblivious family" will share the same function.
         readonly CodeWriter[] _writers;
 
         public ExportCodeGenerator( ITypeScope exporterType,
-                                    PocoTypeNameMap nameMap,
+                                    IPocoTypeNameMap nameMap,
                                     ICSCodeGenerationContext generationContext )
         {
             _exporterType = exporterType;

@@ -612,7 +612,7 @@ namespace CK.Setup
                 _lastRegistrationCount = newCount;
                 return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
             }
-            monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem to be known can start." );
+            monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem can start." );
             _context.CurrentRun.ServiceContainer.Add( _typeSystemBuilder.Lock( monitor ) );
             return CSCodeGenerationResult.Success;
         }

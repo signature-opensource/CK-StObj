@@ -1,14 +1,8 @@
 using CK.Core;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup
 {
@@ -60,23 +54,13 @@ namespace CK.Setup
             _names = new string[typeSet.TypeSystem.AllTypes.Count];
         }
 
-        /// <summary>
-        /// Gets the type system.
-        /// </summary>
+        /// <inheritdoc />
         public IPocoTypeSystem TypeSystem => _typeSet.TypeSystem;
 
-        /// <summary>
-        /// Gets the set of types that are handled by this map.
-        /// </summary>
+        /// <inheritdoc />
         public IPocoTypeSet TypeSet => _typeSet;
 
-        /// <summary>
-        /// Gets a name for a type. When nullable the name is suffixed with "?".
-        /// The type must be an element of the <see cref="TypeSet"/> otherwise
-        /// an <see cref="ArgumentException"/> is thrown.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>The type name.</returns>
+        /// <inheritdoc />
         public string GetName( IPocoType type )
         {
             ref var n = ref _names[type.Index];
@@ -97,6 +81,13 @@ namespace CK.Setup
                 Throw.DebugAssert( n != null );
             }
             return n;
+        }
+
+        /// <inheritdoc />
+        public virtual IPocoTypeNameMap Clone( IPocoTypeSet other )
+        {
+            Throw.CheckNotNullArgument( other );
+            return other != _typeSet ? new PocoTypeNameMap( other ) : this;
         }
 
         void Build( IPocoType t, out string name, out string nullableName )

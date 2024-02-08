@@ -18,20 +18,20 @@ namespace CK.Setup.PocoJson
             return new CSCodeGenerationResult( nameof( WaitForPocoSerializableServiceEngine ) );
         }
 
-        sealed class ServiceEngine : IPocoJsonSerializableServiceEngine
+        sealed class ServiceEngine : IPocoJsonSerializationServiceEngine
         {
-            readonly IPocoSerializableServiceEngine _s;
+            readonly IPocoSerializationServiceEngine _s;
             readonly ITypeScope _exporter;
             readonly ITypeScope _importer;
 
-            public ServiceEngine( IPocoSerializableServiceEngine s, ITypeScope exporter, ITypeScope importer )
+            public ServiceEngine( IPocoSerializationServiceEngine s, ITypeScope exporter, ITypeScope importer )
             {
                 _s = s;
                 _exporter = exporter;
                 _importer = importer;
             }
 
-            public IPocoTypeNameMap JsonExchangeableNames => _s.ExchangeableNames;
+            public IPocoSerializationServiceEngine SerializableLayer => _s;
 
             public ITypeScope Exporter => _exporter;
 
@@ -40,7 +40,7 @@ namespace CK.Setup.PocoJson
 
         CSCodeGenerationResult WaitForPocoSerializableServiceEngine( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
-            var s = c.CurrentRun.ServiceContainer.GetService<IPocoSerializableServiceEngine>();
+            var s = c.CurrentRun.ServiceContainer.GetService<IPocoSerializationServiceEngine>();
             if( s == null )
             {
                 return new CSCodeGenerationResult( nameof( WaitForPocoSerializableServiceEngine ) );
@@ -59,7 +59,7 @@ namespace CK.Setup.PocoJson
 
                 // Expose the associated service for the others.
                 var exposedService = new ServiceEngine( s, exporterType, importerType );
-                c.CurrentRun.ServiceContainer.Add<IPocoJsonSerializableServiceEngine>( exposedService );
+                c.CurrentRun.ServiceContainer.Add<IPocoJsonSerializationServiceEngine>( exposedService );
             }
             return CSCodeGenerationResult.Success;
         }

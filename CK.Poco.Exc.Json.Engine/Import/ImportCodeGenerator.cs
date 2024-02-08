@@ -22,9 +22,9 @@ namespace CK.Setup.PocoJson
     /// </summary>
     sealed class LegacyArrayName : PocoTypeNameMap
     {
-        readonly PocoTypeNameMap _standard;
+        readonly IPocoTypeNameMap _standard;
 
-        public LegacyArrayName( PocoTypeNameMap standard )
+        public LegacyArrayName( IPocoTypeNameMap standard )
             : base( standard.TypeSet )
         {
             _standard = standard;
@@ -60,13 +60,13 @@ namespace CK.Setup.PocoJson
     {
         readonly ITypeScope _importerType;
         readonly ITypeScopePart _readerFunctionsPart;
-        readonly PocoTypeNameMap _nameMap;
+        readonly IPocoTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
         readonly CodeReader[] _readers;
         readonly BitArray _readerFunctions;
         readonly LegacyArrayName _legacyNameMap;
 
-        public ImportCodeGenerator( ITypeScope importerType, PocoTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
+        public ImportCodeGenerator( ITypeScope importerType, IPocoTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
         {
             _importerType = importerType;
             importerType.Append( @"
