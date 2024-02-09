@@ -48,6 +48,13 @@ namespace CK.Setup
         IEnumerable<IAbstractPocoType> MinimalAbstractTypes { get; }
 
         /// <summary>
+        /// Gets the minimal set of <see cref="AbstractTypes"/> based on a set that restricts the possibilities.
+        /// </summary>
+        /// <param name="typeSet">The type set to consider.</param>
+        /// <returns>The set of minimal abstract types considering the <paramref name="typeSet"/>.</returns>
+        IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet );
+
+        /// <summary>
         /// Gets the secondary interfaces with the same nullability as this one.
         /// Corresponds to the <see cref="IPocoFamilyInfo.Interfaces"/> (except the first one that is this primary Poco type).
         /// </summary>

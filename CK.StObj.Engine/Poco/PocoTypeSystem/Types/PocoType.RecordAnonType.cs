@@ -72,7 +72,6 @@ namespace CK.Setup
             readonly IRecordPocoType _obliviousType;
             readonly DefaultValueInfo _defInfo;
             readonly bool _isReadOnlyCompliant;
-            string? _standardName;
 
             public RecordAnonType( IActivityMonitor monitor,
                                    PocoTypeSystemBuilder s,
@@ -113,34 +112,6 @@ namespace CK.Setup
             public ExternalNameAttribute? ExternalName => null;
 
             public string ExternalOrCSharpName => CSharpName;
-
-            public override string StandardName
-            {
-                get
-                {
-                    if( _standardName == null )
-                    {
-                        var b = new StringBuilder().Append( '(' );
-                        bool atLeastOne = false;
-                        foreach( var f in _fields )
-                        {
-                            if( atLeastOne )
-                            {
-                                b.Append( ',' );
-                            }
-                            else atLeastOne = true;
-                            b.Append( f.Type.StandardName );
-                            if( !f.IsUnnamed )
-                            {
-                                b.Append( ':' ).Append( f.Name );
-                            }
-                        }
-                        b.Append( ')' );
-                        _standardName = b.ToString();
-                    }
-                    return _standardName;
-                }
-            }
 
             public bool IsReadOnlyCompliant => _isReadOnlyCompliant;
 

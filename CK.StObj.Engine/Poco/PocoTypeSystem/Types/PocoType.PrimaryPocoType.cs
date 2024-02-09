@@ -65,6 +65,8 @@ namespace CK.Setup
 
                 public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => NonNullable.MinimalAbstractTypes.Select( a => a.Nullable );
 
+                public IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet ) => NonNullable.GetMinimalAbstractTypes( typeSet ).Select( t => t.Nullable );
+
                 #region Auto implementation of AbstractTypes
                 int IReadOnlyCollection<IAbstractPocoType>.Count => NonNullable.AbstractTypes.Count;
 
@@ -226,6 +228,12 @@ namespace CK.Setup
             }
 
             public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= AbstractPocoType.ComputeMinimal( _abstractTypes );
+
+            public IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet )
+            {
+                Throw.CheckNotNullArgument( typeSet );
+                return AbstractPocoType.ComputeMinimal( _abstractTypes.Where( typeSet.Contains ) );
+            }
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
             ICompositePocoType ICompositePocoType.NonNullable => this;

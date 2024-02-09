@@ -47,6 +47,13 @@ namespace CK.Setup
         IEnumerable<IAbstractPocoType> MinimalGeneralizations { get; }
 
         /// <summary>
+        /// Gets the minimal set of <see cref="Generalizations"/> based on a set that restricts the possibilities.
+        /// </summary>
+        /// <param name="typeSet">The type set to consider.</param>
+        /// <returns>The set of minimal generalizations considering the <paramref name="typeSet"/>.</returns>
+        IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet );
+
+        /// <summary>
         /// Gets whether this interface is a generic type.
         /// </summary>
         [MemberNotNullWhen( true, nameof( GenericTypeDefinition ) )]

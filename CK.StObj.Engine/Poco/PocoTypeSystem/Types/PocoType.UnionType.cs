@@ -66,7 +66,6 @@ namespace CK.Setup
             readonly KeyUnionTypes _k;
             readonly IUnionPocoType _obliviousType;
             int _implementationCount;
-            string? _standardName;
 
             public UnionType( IActivityMonitor monitor, PocoTypeSystemBuilder s, KeyUnionTypes k, IUnionPocoType? obliviousType )
                 : base( s,
@@ -105,24 +104,6 @@ namespace CK.Setup
             }
 
             new Null Nullable => Unsafe.As<Null>( base.Nullable );
-
-            public override string StandardName
-            {
-                get
-                {
-                    if( _standardName == null )
-                    {
-                        var b = new StringBuilder();
-                        foreach( var a in AllowedTypes )
-                        {
-                            if( b.Length > 0 ) b.Append( '|' );
-                            b.Append( a.StandardName );
-                        }
-                        _standardName = b.ToString();
-                    }
-                    return _standardName;
-                }
-            }
 
             public override IPocoType ObliviousType => _obliviousType;
 

@@ -80,30 +80,6 @@ namespace CK.Setup
         string ImplTypeName { get; }
 
         /// <summary>
-        /// Gets this type standard name. Nullable type name ends with "?".
-        /// <list type="bullet">
-        ///   <item>
-        ///   For <see cref="PocoTypeKind.Basic"/>, <see cref="PocoTypeKind.AbstractPoco"/> and <see cref="PocoTypeKind.SecondaryPoco"/>
-        ///   it is the <see cref="CSharpName"/> ("object, "int", "CK.Cris.ICommand", etc.).
-        ///   </item>
-        ///   <item>
-        ///   For <see cref="ICollectionPocoType"/> is is "A(T)" for array, "L(T)" for list, "S(T)" for set, "M(TKey,TValue)" for dictionary
-        ///   or "O(TValue)" when the dictionary key is a string.
-        ///   </item>
-        ///   <item>
-        ///   For <see cref="PocoTypeKind.AnonymousRecord"/> it is "(T1,T2,T3:Name,T4,...)". The ":Name" only appears when named field has a name.
-        ///   </item>
-        ///   <item>
-        ///   For <see cref="INamedPocoType"/> (but not anonymous records) it is the <see cref="INamedPocoType.ExternalOrCSharpName"/>.
-        ///   </item>
-        ///   <item>
-        ///   For <see cref="IUnionPocoType"/> it is "T1|T2|...".
-        ///   </item>
-        /// </list>
-        /// </summary>
-        string StandardName { get; }
-
-        /// <summary>
         /// Gets the oblivious type (this instance if <see cref="IsOblivious"/> is true).
         /// <list type="bullet">
         ///   <item>

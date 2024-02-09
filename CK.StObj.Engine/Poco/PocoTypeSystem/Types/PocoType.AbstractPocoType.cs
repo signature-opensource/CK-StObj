@@ -61,6 +61,8 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => NonNullable.MinimalGeneralizations.Select( a => a.Nullable );
 
+            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet ) => NonNullable.GetMinimalGeneralizations( typeSet ).Select( t => t.Nullable );
+
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => this;
 
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
@@ -165,6 +167,12 @@ namespace CK.Setup
             public IEnumerable<IAbstractPocoType> Generalizations => AllGeneralizations.Where( g => !g.ImplementationLess );
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= ComputeMinimal( Generalizations );
+
+            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet )
+            {
+                Throw.CheckNotNullArgument( typeSet );
+                return ComputeMinimal( Generalizations.Where( typeSet.Contains ) );
+            }
 
             internal static List<IAbstractPocoType> ComputeMinimal( IEnumerable<IAbstractPocoType> abstractTypes )
             {
@@ -364,6 +372,8 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => Array.Empty<IAbstractPocoType>();
 
+            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet ) => Array.Empty<IAbstractPocoType>();
+
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
@@ -425,6 +435,12 @@ namespace CK.Setup
             public IEnumerable<IAbstractPocoType> AllGeneralizations => _allGeneralizations;
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= AbstractPocoType.ComputeMinimal( Generalizations );
+
+            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet )
+            {
+                Throw.CheckNotNullArgument( typeSet );
+                return AbstractPocoType.ComputeMinimal( Generalizations.Where( typeSet.Contains ) );
+            }
 
             public bool IsGenericType => _genericTypeDefinition != null;
 

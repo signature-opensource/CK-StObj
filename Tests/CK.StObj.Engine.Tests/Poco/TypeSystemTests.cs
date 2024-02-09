@@ -108,19 +108,12 @@ namespace CK.StObj.Engine.Tests.Poco
             Debug.Assert( tRec != null );
             builder.Count.Should().Be( before + 2 );
             tRec.Kind.Should().Be( PocoTypeKind.Record );
-            tRec.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.NamedRec" );
 
             IPrimaryPocoType wA = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithAnonymous ) )!;
-            wA.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.IPartWithAnonymous" );
             IPocoType countAndName = wA.Fields[0].Type;
 
             IPrimaryPocoType wR = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
-            wR.StandardName.Should().Be( "ExternalNameForPartWithRecAnonymous" );
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
-
-            wR.Fields[0].Type.StandardName.Should().Be( "(int:Count,string:Name,(int:Count,string:Name):Inside)" );
-            wR.Fields[1].Type.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.ILinkedListPart?" );
-            wR.Fields[2].Type.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.AnEnum" );
         }
 
 
@@ -313,13 +306,11 @@ namespace CK.StObj.Engine.Tests.Poco
 
             var tRec = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
             Debug.Assert( tRec != null );
-            tRec.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.NamedRec" );
 
             var tNotFieldName = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameFieldNameAsNamedRec ) )! );
             Debug.Assert( tNotFieldName != null );
 
             tNotFieldName.Should().NotBeSameAs( tRec );
-            tNotFieldName.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotSameFieldNameAsNamedRec" );
 
             var tRecDef = tRec.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
             var tNotFieldNameDef = tNotFieldName.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
@@ -330,7 +321,6 @@ namespace CK.StObj.Engine.Tests.Poco
             var tNotSameDefault = ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNotSameDefaultAsNamedRec ) )! );
             Debug.Assert( tNotSameDefault != null );
             tNotSameDefault.Should().NotBeSameAs( tRec );
-            tNotSameDefault.StandardName.Should().Be( "CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotSameDefaultAsNamedRec" );
 
             var tNotSameDefaultDef = tNotSameDefault.DefaultValueInfo.DefaultValue!.ValueCSharpSource;
 

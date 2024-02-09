@@ -138,7 +138,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tRV.Nullable.IsOblivious.Should().BeFalse();
                 tRV.CSharpName.Should().Be( "List<int>" );
                 tRV.ImplTypeName.Should().Be( "List<int>" );
-                tRV.StandardName.Should().Be( "L(int)" );
                 return tRV;
             }
 
@@ -150,7 +149,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tRNV.Nullable.IsOblivious.Should().BeFalse();
                 tRNV.CSharpName.Should().Be( "List<int?>" );
                 tRNV.ImplTypeName.Should().Be( "List<int?>" );
-                tRNV.StandardName.Should().Be( "L(int?)" );
                 return tRNV;
             }
 
@@ -162,7 +160,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tIV.IsOblivious.Should().BeFalse();
                 tIV.CSharpName.Should().Be( "IList<int>" );
                 tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueList<int>" );
-                tIV.StandardName.Should().Be( "L(int)" );
                 if( !revert ) tIV.ObliviousType.Should().BeSameAs( tRV );
                 return tIV;
             }
@@ -175,7 +172,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tINV.IsOblivious.Should().BeFalse();
                 tINV.CSharpName.Should().Be( "IList<int?>" );
                 tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueList<int>" );
-                tINV.StandardName.Should().Be( "L(int?)" );
                 if( !revert ) tINV.ObliviousType.Should().BeSameAs( tRNV );
                 return tINV;
             }
@@ -188,7 +184,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tRR.Nullable.IsOblivious.Should().BeFalse();
                 tRR.CSharpName.Should().Be( "List<object>" );
                 tRR.ImplTypeName.Should().Be( "List<object>" );
-                tRR.StandardName.Should().Be( "L(object)" );
                 return tRR;
             }
 
@@ -199,7 +194,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tRNR.IsOblivious.Should().BeFalse();
                 tRNR.CSharpName.Should().Be( "List<object?>" );
                 tRNR.ImplTypeName.Should().Be( "List<object?>" );
-                tRNR.StandardName.Should().Be( "L(object?)" );
                 if( !revert ) tRNR.ObliviousType.Should().BeSameAs( tRR );
                 return tRNR;
             }
@@ -211,7 +205,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 Debug.Assert( tINR != null && !tINR.IsOblivious );
                 tINR.CSharpName.Should().Be( "IList<object?>" );
                 tINR.ImplTypeName.Should().Be( "List<object?>" );
-                tINR.StandardName.Should().Be( "L(object?)" );
                 if( !revert ) tINR.ObliviousType.Should().BeSameAs( tRR );
                 return tINR;
             }
@@ -223,7 +216,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 Debug.Assert( tIR != null && !tIR.IsOblivious );
                 tIR.CSharpName.Should().Be( "IList<object>" );
                 tIR.ImplTypeName.Should().Be( "List<object>" );
-                tIR.StandardName.Should().Be( "L(object)" );
                 if( !revert ) tIR.ObliviousType.Should().BeSameAs( tRR );
                 return tIR;
             }
@@ -236,7 +228,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tPRR.Nullable.IsOblivious.Should().BeFalse();
                 tPRR.CSharpName.Should().Be( $"List<{n}>" );
                 tPRR.ImplTypeName.Should().Be( $"List<{n}>" );
-                tPRR.StandardName.Should().Be( $"L(ExternalNameForVerySimplePoco)" );
                 return tPRR;
             }
 
@@ -247,7 +238,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 tPRNR.IsOblivious.Should().BeFalse();
                 tPRNR.CSharpName.Should().Be( $"List<{n}?>" );
                 tPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
-                tPRNR.StandardName.Should().Be( $"L(ExternalNameForVerySimplePoco?)" );
                 if( !revert ) tPRNR.ObliviousType.Should().BeSameAs( tPRR );
                 return tPRNR;
             }
@@ -259,7 +249,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 Debug.Assert( tPINR != null && !tPINR.IsOblivious );
                 tPINR.CSharpName.Should().Be( $"IList<{n}?>" );
                 tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoList_*_CK" );
-                tPINR.StandardName.Should().Be( $"L(ExternalNameForVerySimplePoco?)" );
                 if( !revert ) tPINR.ObliviousType.Should().BeSameAs( tPRR );
                 return tPINR;
             }
@@ -270,7 +259,6 @@ namespace CK.StObj.Engine.Tests.Poco
                 var tPIR = (ICollectionPocoType)tListDef.Fields.Single( f => f.Name == nameof( IProperListDefinition.IListPR ) ).Type;
                 Debug.Assert( tPIR != null && !tPIR.IsOblivious );
                 tPIR.CSharpName.Should().Be( $"IList<{n}>" );
-                tPIR.StandardName.Should().Be( $"L(ExternalNameForVerySimplePoco)" );
                 if( !revert )
                 {
                     tPIR.ImplTypeName.Should().Be( tPRR.ImplTypeName, "Same implementation as the IList<IVerySimplePoco?>." );
@@ -315,7 +303,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tRV.IsOblivious.Should().BeTrue();
             tRV.CSharpName.Should().Be( "Dictionary<object,int>" );
             tRV.ImplTypeName.Should().Be( "Dictionary<object,int>" );
-            tRV.StandardName.Should().Be( "M(object,int)" );
 
             // Dictionary<object,int?>: This is the oblivious.
             var tRNV = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicNV ) )! );
@@ -323,7 +310,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tRNV.IsOblivious.Should().BeTrue();
             tRNV.CSharpName.Should().Be( "Dictionary<object,int?>" );
             tRNV.ImplTypeName.Should().Be( "Dictionary<object,int?>" );
-            tRNV.StandardName.Should().Be( "M(object,int?)" );
 
             var defPoco = ts.FindByType<IPrimaryPocoType>( typeof( IProperDictionaryDefinition ) );
             Throw.DebugAssert( defPoco != null );
@@ -334,7 +320,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tIV.IsOblivious.Should().BeFalse();
             tIV.CSharpName.Should().Be( "IDictionary<object,int>" );
             tIV.ImplTypeName.Should().Be( "CovariantHelpers.CovNotNullValueDictionary<object,int>" );
-            tIV.StandardName.Should().Be( "M(object,int)" );
             tIV.ObliviousType.Should().BeSameAs( tRV );
 
             // IDictionary<object,int?>
@@ -343,7 +328,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tINV.IsOblivious.Should().BeFalse();
             tINV.CSharpName.Should().Be( "IDictionary<object,int?>" );
             tINV.ImplTypeName.Should().Be( "CovariantHelpers.CovNullableValueDictionary<object,int>" );
-            tINV.StandardName.Should().Be( "M(object,int?)" );
             tINV.ObliviousType.Should().BeSameAs( tRNV );
 
             ////// Dictionary of reference type (object) for the value.
@@ -361,7 +345,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tRNR.IsOblivious.Should().BeFalse();
             tRNR.CSharpName.Should().Be( "Dictionary<int,object?>" );
             tRNR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tRNR.StandardName.Should().Be( "M(int,object?)" );
             tRNR.ObliviousType.Should().BeSameAs( tRR );
 
             // IDictionary<int,object?>
@@ -370,7 +353,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tINR.IsOblivious.Should().BeFalse();
             tINR.CSharpName.Should().Be( "IDictionary<int,object?>" );
             tINR.ImplTypeName.Should().Be( "Dictionary<int,object?>" );
-            tINR.StandardName.Should().Be( "M(int,object?)" );
             tINR.ObliviousType.Should().BeSameAs( tRR );
 
             // IDictionary<int,object>
@@ -379,7 +361,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tIR.IsOblivious.Should().BeFalse();
             tIR.CSharpName.Should().Be( "IDictionary<int,object>" );
             tIR.ImplTypeName.Should().Be( "Dictionary<int,object>" );
-            tIR.StandardName.Should().Be( "M(int,object)" );
             tIR.ObliviousType.Should().BeSameAs( tRR );
 
             // Dictionary of IPoco type (IVerySimplePoco) for the value.
@@ -391,7 +372,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tPRR.IsOblivious.Should().BeTrue();
             tPRR.CSharpName.Should().Be( $"Dictionary<int,{n}>" );
             tPRR.ImplTypeName.Should().Be( $"Dictionary<int,{n}>" );
-            tPRR.StandardName.Should().Be( $"M(int,ExternalNameForVerySimplePoco)" );
 
             // Dictionary<int,IVerySimplePoco?>
             var tPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( DicPNR ) )! );
@@ -399,7 +379,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tPRNR.IsOblivious.Should().BeFalse();
             tPRNR.CSharpName.Should().Be( $"Dictionary<int,{n}?>" );
             tPRNR.ImplTypeName.Should().Be( $"Dictionary<int,{n}?>" );
-            tPRNR.StandardName.Should().Be( $"M(int,ExternalNameForVerySimplePoco?)" );
             tPRNR.ObliviousType.Should().BeSameAs( tPRR );
 
             // IDictionary<int,IVerySimplePoco?>
@@ -408,7 +387,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tPINR.IsOblivious.Should().BeFalse();
             tPINR.CSharpName.Should().Be( $"IDictionary<int,{n}?>" );
             tPINR.ImplTypeName.Should().MatchEquivalentOf( "CK.GRSupport.PocoDictionary_*_*_CK" );
-            tPINR.StandardName.Should().Be( $"M(int,ExternalNameForVerySimplePoco?)" );
             tPINR.ObliviousType.Should().BeSameAs( tPRR );
 
             // IDictionary<int,IVerySimplePoco>
@@ -417,7 +395,6 @@ namespace CK.StObj.Engine.Tests.Poco
             tPIR.IsOblivious.Should().BeFalse();
             tPIR.CSharpName.Should().Be( $"IDictionary<int,{n}>" );
             tPIR.ImplTypeName.Should().Be( tPINR.ImplTypeName, "Same implementation as the Dictionary<int,IVerySimplePoco?>." );
-            tPIR.StandardName.Should().Be( $"M(int,ExternalNameForVerySimplePoco)" );
             tPIR.ObliviousType.Should().BeSameAs( tPRR );
         }
 
@@ -457,12 +434,6 @@ namespace CK.StObj.Engine.Tests.Poco
             t3.ObliviousType.Should().BeSameAs( tO );
             t4.ObliviousType.Should().BeSameAs( tO );
 
-            tO.StandardName.Should().Be( "(ExternalNameForVerySimplePoco,L(ExternalNameForVerySimplePoco))" );
-            t1.StandardName.Should().Be( "(ExternalNameForVerySimplePoco?,L(ExternalNameForVerySimplePoco):X)" );
-            t2.StandardName.Should().Be( "(ExternalNameForVerySimplePoco:A,L(ExternalNameForVerySimplePoco?):B)" );
-            t3.StandardName.Should().Be( "(ExternalNameForVerySimplePoco:A,L(ExternalNameForVerySimplePoco)?:B)" );
-            t4.StandardName.Should().Be( "(ExternalNameForVerySimplePoco?:A,L(ExternalNameForVerySimplePoco?)?:B)" );
-
             new object[] { tO, t1, t2, t3, t4 }.Distinct().Should().HaveCount( 5, "Different PocoTypes." );
         }
 
@@ -501,14 +472,6 @@ namespace CK.StObj.Engine.Tests.Poco
             oA.IsOblivious.Should().BeTrue();
             oA.Fields.Where( f => !f.IsUnnamed ).Should().BeEmpty( "The oblivious anonymous record has no field name." );
             oA.Fields.Where( f => f.Type != tO ).Should().BeEmpty( "The oblivious anonymous record has oblivious field types." );
-
-            tO.StandardName.Should().Be( "L(S(M(int,object)))" );
-            others.Fields[0].Type.StandardName.Should().Be( "L(S(M(int,object?)))" );
-            others.Fields[1].Type.StandardName.Should().Be( "L(S(M(int,object?)?)?)" );
-            others.Fields[2].Type.StandardName.Should().Be( "L(S(M(int,object)?)?)" );
-            others.Fields[3].Type.StandardName.Should().Be( "L(S(M(int,object)))?" );
-
-            others.StandardName.Should().Be( "(L(S(M(int,object?))):C1,L(S(M(int,object?)?)?):C2,L(S(M(int,object)?)?):C3,L(S(M(int,object)))?:C4,L(S(M(int,object))?):C5,L(S(M(int,object)?)):C6)" );
         }
 
     }

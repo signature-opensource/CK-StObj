@@ -19,7 +19,6 @@ namespace CK.Setup
         {
             readonly IPocoType _nonNullable;
             readonly string _csharpName;
-            string? _standardName;
             AnnotationSetImpl _annotations;
 
             public NullReferenceType( IPocoType notNullable )
@@ -36,19 +35,6 @@ namespace CK.Setup
             public string CSharpName => _csharpName;
 
             public string ImplTypeName => NonNullable.ImplTypeName;
-
-            public string StandardName
-            {
-                get
-                {
-                    if( _standardName == null )
-                    {
-                        var n = NonNullable.StandardName;
-                        _standardName = n == NonNullable.CSharpName ? _csharpName : n + "?";
-                    }
-                    return _standardName;
-                }
-            }
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
@@ -109,7 +95,6 @@ namespace CK.Setup
             readonly IPocoType _nonNullable;
             readonly string _csharpName;
             readonly Type _type;
-            string? _standardName;
             AnnotationSetImpl _annotations;
 
             public NullValueType( IPocoType notNullable, Type type )
@@ -131,19 +116,6 @@ namespace CK.Setup
             public string CSharpName => _csharpName;
 
             public string ImplTypeName => _csharpName;
-
-            public string StandardName
-            {
-                get
-                {
-                    if( _standardName == null)
-                    {
-                        var n = NonNullable.StandardName;
-                        _standardName = n == NonNullable.CSharpName ? _csharpName : n + "?";
-                    }
-                    return _standardName;
-                }
-            }
 
             public bool ImplementationLess => NonNullable.ImplementationLess;
 
