@@ -1,8 +1,6 @@
 using CK.Core;
-using CommunityToolkit.HighPerformance;
 using System;
 using System.Collections.Generic;
-using System.Runtime.Intrinsics.X86;
 
 namespace CK.Setup
 {
@@ -36,6 +34,20 @@ namespace CK.Setup
         /// Gets this type's kind.
         /// </summary>
         PocoTypeKind Kind { get; }
+
+        /// <summary>
+        /// Gets whether this type has no available implementation in the type system.
+        /// <list type="bullet">
+        ///     <item>This starts with <see cref="IAbstractPocoType"/> that have no <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.</item>
+        ///     <item>Collections that references any implementation less types are also implementation less.</item>
+        ///     <item>Generic <see cref="IAbstractPocoType"/> that have any implementation less <see cref="IAbstractPocoType.GenericArguments"/> type are also implementation less.</item>
+        ///     <item><see cref="IUnionPocoType"/> that have all their <see cref="IOneOfPocoType.AllowedTypes"/> implementation less are also implementation less.</item>
+        /// </list>
+        /// <para>
+        /// Implementation less types exist on the C# side and then are modelized but are unused extension points.
+        /// </para>
+        /// </summary>
+        bool ImplementationLess { get; }
 
         /// <summary>
         /// Gets whether this type is disallowed as a field in a <see cref="ICompositePocoType"/>,

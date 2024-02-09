@@ -1,16 +1,10 @@
-using CK.CodeGen;
 using CK.Core;
-using Microsoft.CodeAnalysis.Operations;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using static CK.CodeGen.TupleTypeName;
-using System.Threading;
 using System.Text;
-using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -71,6 +65,7 @@ namespace CK.Setup
 
             readonly KeyUnionTypes _k;
             readonly IUnionPocoType _obliviousType;
+            int _implementationCount;
             string? _standardName;
 
             public UnionType( IActivityMonitor monitor, PocoTypeSystemBuilder s, KeyUnionTypes k, IUnionPocoType? obliviousType )
@@ -97,7 +92,9 @@ namespace CK.Setup
                 foreach( var t in _k.Types )
                 {
                     _ = new PocoTypeRef( this, t, i++ );
+                    if( !t.ImplementationLess ) ++_implementationCount;
                 }
+                if( _implementationCount == 0 ) SetImplementationLess();
             }
 
             public override bool CanReadFrom( IPocoType type )
@@ -132,6 +129,14 @@ namespace CK.Setup
             IReadOnlyList<IPocoType> AllowedTypes => _k.Types;
 
             IEnumerable<IPocoType> IOneOfPocoType.AllowedTypes => _k.Types;
+
+            public override bool ImplementationLess => _implementationCount == 0;
+
+            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            {
+                Throw.DebugAssert( r.Owner == this && _k.Types.Contains( r.Type ) );
+                if( --_implementationCount == 0 ) SetImplementationLess();
+            }
 
             IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
             IUnionPocoType IUnionPocoType.Nullable => Nullable;

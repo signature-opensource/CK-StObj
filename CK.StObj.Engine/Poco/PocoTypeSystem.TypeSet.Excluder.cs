@@ -124,7 +124,8 @@ namespace CK.Setup
                             Throw.DebugAssert( t.Kind == PocoTypeKind.Enum
                                                || t is ICollectionPocoType
                                                || t.Kind == PocoTypeKind.Basic
-                                               || t.Kind == PocoTypeKind.Any );
+                                               || t.Kind == PocoTypeKind.Any
+                                               || t.Kind == PocoTypeKind.SecondaryPoco );
 
                             // Allower ensures these.
                             Throw.DebugAssert( "Enum has only one backref: its underlying type.", t is not IEnumPocoType e || source.Contains( e.UnderlyingType ) );

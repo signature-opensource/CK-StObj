@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// Simple Poco serializer contract.
     /// </summary>

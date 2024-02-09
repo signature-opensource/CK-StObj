@@ -25,8 +25,11 @@ namespace CK.Setup
     ///         <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/> (same as base <see cref="PocoTypeVisitor"/>).
     ///     </item>
     ///     <item>
-    ///         <see cref="IAbstractPocoType"/> visits its <see cref="IAbstractPocoType.GenericArguments"/> and its <see cref="IAbstractPocoType.Generalizations"/>
+    ///         An implemented <see cref="IAbstractPocoType"/> visits its <see cref="IAbstractPocoType.GenericArguments"/> and its <see cref="IAbstractPocoType.Generalizations"/>
     ///         in addition to the IPoco root interface type.
+    ///         <para>
+    ///         Implementation less abstract Poco visits nothing.
+    ///         </para>
     ///         <para>
     ///         If the abstract poco is the visited root, then its <see cref="IAbstractPocoType.PrimaryPocoTypes"/> are also visited: explicit include of an
     ///         abstract Poco includes all its implementations but implicit include doesn't.
@@ -52,8 +55,9 @@ namespace CK.Setup
     /// By default this visitor visits the <see cref="ICollectionPocoType"/> that CAN be visited because their <see cref="ICollectionPocoType.ItemTypes"/>
     /// have been visited. This applies to all types (including <see cref="PocoTypeKind.Any"/>).
     /// </summary>
-    public class PocoTypeIncludeVisitor : PocoTypeVisitor<PocoTypeRawSet>
+    public class PocoTypeIncludeVisitor<T> : PocoTypeVisitor<T> where T : class, IMinimalPocoTypeSet
     {
+        readonly IPocoTypeSystem _typeSystem;
         readonly bool _visitVisitableCollections;
         readonly bool _withAbstractReadOnlyFieldTypes;
         IPocoType? _visitedRoot;
@@ -63,6 +67,7 @@ namespace CK.Setup
         /// <summary>
         /// Initializes a new <see cref="PocoTypeIncludeVisitor"/>.
         /// </summary>
+        /// <param name="typeSystem">The type system that must define the visited types.</param>
         /// <param name="alreadyVisited">Already visited set of types.</param>
         /// <param name="visitVisitableCollections">False to not expand the visit to collections of items that have been visited.</param>
         /// <param name="withAbstractReadOnlyFieldTypes">
@@ -72,17 +77,20 @@ namespace CK.Setup
         /// By default they are skipped. There are very few scenario where including these fields' type makes sense.
         /// </para>
         /// </param>
-        public PocoTypeIncludeVisitor( PocoTypeRawSet alreadyVisited,
+        public PocoTypeIncludeVisitor( IPocoTypeSystem typeSystem,
+                                       T alreadyVisited,
                                        bool visitVisitableCollections = true,
                                        bool withAbstractReadOnlyFieldTypes = false )
             : base( alreadyVisited )
         {
+            Throw.CheckNotNullArgument( typeSystem );
+            _typeSystem = typeSystem;
             _visitVisitableCollections = visitVisitableCollections;
             _withAbstractReadOnlyFieldTypes = withAbstractReadOnlyFieldTypes;
         }
 
         // If we need it, it exists in the TypeSystem.
-        IPocoType Poco => _iPoco ??= LastVisited.TypeSystem.FindByType( typeof( IPoco ) )!;
+        IPocoType Poco => _iPoco ??= _typeSystem.FindByType( typeof( IPoco ) )!;
 
         protected override void OnStartVisit( IPocoType root )
         {
@@ -145,8 +153,11 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="IAbstractPocoType.GenericArguments"/>, <see cref="IAbstractPocoType.Generalizations"/>
+        /// An implemented abstract Poco visits the <see cref="IAbstractPocoType.GenericArguments"/>, <see cref="IAbstractPocoType.Generalizations"/>
         /// and the root IPoco root interface type.
+        /// <para>
+        /// Implementation less abstract Poco visits nothing.
+        /// </para>
         /// <para>
         /// If the abstract poco is the visited root, then its <see cref="IAbstractPocoType.PrimaryPocoTypes"/> are also visited.
         /// </para>
@@ -154,6 +165,7 @@ namespace CK.Setup
         /// <param name="abstractPoco">The abstract poco.</param>
         protected override void VisitAbstractPoco( IAbstractPocoType abstractPoco )
         {
+            if( abstractPoco.PrimaryPocoTypes.Count == 0 ) return;
             Visit( Poco );
             foreach( var a in abstractPoco.GenericArguments )
             {

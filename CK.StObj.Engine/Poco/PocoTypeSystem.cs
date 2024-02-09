@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -14,9 +15,12 @@ namespace CK.Setup
         readonly IPocoTypeSet _emptyTypeSet;
         readonly IPocoTypeSet _emptySerializableTypeSet;
         readonly IPocoTypeSet _emptyExchangableTypeSet;
-        readonly IPocoTypeSet _allTypeFilter;
+        readonly IPocoTypeSet _allTypeSet;
         readonly IPocoTypeSet _allSerializableTypeSet;
         readonly IPocoTypeSet _allExchangeableTypeSet;
+        // Only allocates a stupid array of 0 if required by GetFlagsArray
+        // from any empty set.
+        ImmutableArray<int> _zeros;
 
         internal PocoTypeSystem( IPocoDirectory pocoDirectory,
                                  IReadOnlyList<IPocoType> allTypes,
@@ -32,27 +36,32 @@ namespace CK.Setup
             _typeCache = typeCache;
             _typeDefinitions = typeDefinitions;
             // Initializes the None and Root.
-            _emptyTypeSet = new RootNone( this, true, true, true, NoPocoFilter );
-            _allTypeFilter = new RootAll( this );
+            _emptyTypeSet = new RootNone( this, true, true, true, ImplementationLessFilter );
+            // The All is built with the Excluder. This is NOT overkill:
+            // the initialization of the Excluder takes care of abstract poco without
+            // implementations and propagate this to the collections that reference them.
+            var all = new PocoTypeRawSet( this, all: true );
+            var e = new Excluder( all, true, true, ImplementationLessFilter );
+            _allTypeSet = new TypeSet( all, allowEmptyRecords: true, allowEmptyPocos: true, autoIncludeCollections: true, ImplementationLessFilter );
 
             // First handles the Serializable sets.
             if( nonSerialized == null )
             {
-                // If there's no type marked as NonSerialized, the 2 sets are the same as the None and All.
-                _allSerializableTypeSet = _allTypeFilter;
+                // If there's no type marked as NonSerialized, the 2 sets are the same as the All and Empty.
+                _allSerializableTypeSet = _allTypeSet;
                 _emptySerializableTypeSet = _emptyTypeSet;
             }
             else
             {
                 // First we build the set of all serializable types.
-                _allSerializableTypeSet = _allTypeFilter.Exclude( nonSerialized );
-                // Then we use it as the low level filter of the none (but serializable) set.
+                _allSerializableTypeSet = _allTypeSet.Exclude( nonSerialized );
+                // Then we use it as the low level filter of the empty (but serializable) set.
                 _emptySerializableTypeSet = new RootNone( this, true, true, true, _allSerializableTypeSet.Contains );
             }
             // Then handles the Exchangeable sets (Exchangeable => Serializable).
             if( notExchangeable == null )
             {
-                // If there's no type marked as NotEchangeable, the 2 sets are the same as the Serializable ones.
+                // If there's no type marked as NotExchangeable, the 2 sets are the same as the Serializable ones.
                 _allExchangeableTypeSet = _allSerializableTypeSet;
                 _emptyExchangableTypeSet = _emptySerializableTypeSet;
             }
@@ -60,7 +69,7 @@ namespace CK.Setup
             {
                 // First we build the set of all exchangeable types on the basis on the AllSerializable one.
                 _allExchangeableTypeSet = _allSerializableTypeSet.Exclude( notExchangeable );
-                // Then we use it as the low level filter of the none (but exchangeable) set.
+                // Then we use it as the low level filter of the empty (but exchangeable) set.
                 _emptyExchangableTypeSet = new RootNone( this, true, true, true, _allExchangeableTypeSet.Contains );
             }
         }

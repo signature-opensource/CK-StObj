@@ -2,19 +2,15 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Threading;
-using static CK.Setup.IPocoType;
 
 namespace CK.Setup
 {
-
     partial class PocoType : IPocoType
     {
         readonly IPocoType _nullable;
         readonly Type _type;
         readonly string _csharpName;
-        ITypeRef? _firstRef;
+        IPocoType.ITypeRef? _firstRef;
         AnnotationSetImpl _annotations;
         readonly int _index;
         readonly PocoTypeKind _kind;
@@ -60,13 +56,15 @@ namespace CK.Setup
 
             public PocoTypeKind Kind => NonNullable.Kind;
 
+            public bool ImplementationLess => NonNullable.ImplementationLess;
+
             public IPocoType Nullable => this;
 
             public IPocoType NonNullable => _nonNullable;
 
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
-            public ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+            public IPocoType.ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
 
             /// <summary>
             /// Returning "NonNullable.ObliviousType" always works since we only have to
@@ -147,6 +145,8 @@ namespace CK.Setup
                 }
             }
 
+            public bool ImplementationLess => NonNullable.ImplementationLess;
+
             // We can avoid the Primary/SecondaryPoco test because we are on a value type.
             public bool IsSamePocoType( IPocoType type ) => type == this;
 
@@ -175,7 +175,7 @@ namespace CK.Setup
 
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
-            public ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+            public IPocoType.ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
 
             public bool CanReadFrom( IPocoType type )
             {
@@ -250,6 +250,58 @@ namespace CK.Setup
         public virtual string StandardName => _csharpName;
 
         /// <summary>
+        /// False for basic, record, primary and secondary poco.
+        /// Overridden by abstract poco, collections and union types.
+        /// </summary>
+        public virtual bool ImplementationLess
+        {
+            get
+            {
+                Throw.DebugAssert( "These type must override.",
+                                    Kind != PocoTypeKind.AbstractPoco
+                                    && Kind != PocoTypeKind.Array
+                                    && Kind != PocoTypeKind.List
+                                    && Kind != PocoTypeKind.HashSet
+                                    && Kind != PocoTypeKind.Dictionary
+                                    && Kind != PocoTypeKind.UnionType );
+                return false;
+            }
+        }
+
+        internal virtual void SetImplementationLess()
+        {
+            Throw.DebugAssert( ImplementationLess is true );
+            Throw.DebugAssert( "Only these types can become implementation less.",
+                                Kind == PocoTypeKind.AbstractPoco
+                                || Kind == PocoTypeKind.Array
+                                || Kind == PocoTypeKind.List
+                                || Kind == PocoTypeKind.HashSet
+                                || Kind == PocoTypeKind.Dictionary
+                                || Kind == PocoTypeKind.UnionType );
+            var r = _firstRef;
+            while( r != null )
+            {
+                if( !r.Owner.ImplementationLess )
+                {
+                    ((PocoType)r.Owner).OnBackRefImplementationLess( r );
+                }
+                r = r.NextRef;
+            }
+        }
+
+        protected virtual void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+        {
+            Throw.DebugAssert( ImplementationLess is false );
+            Throw.DebugAssert( "These type must override.",
+                                Kind != PocoTypeKind.AbstractPoco
+                                && Kind != PocoTypeKind.Array
+                                && Kind != PocoTypeKind.List
+                                && Kind != PocoTypeKind.HashSet
+                                && Kind != PocoTypeKind.Dictionary
+                                && Kind != PocoTypeKind.UnionType );
+        }
+
+        /// <summary>
         /// Defaults to "this" that works for everything except for:
         /// <list type="bullet">
         ///     <item>
@@ -316,9 +368,9 @@ namespace CK.Setup
 
         public IPocoType NonNullable => this;
 
-        public ITypeRef? FirstBackReference => _firstRef;
+        public IPocoType.ITypeRef? FirstBackReference => _firstRef;
 
-        internal ITypeRef? AddBackRef( ITypeRef r )
+        internal IPocoType.ITypeRef? AddBackRef( IPocoType.ITypeRef r )
         {
             Debug.Assert( r != null );
             var f = _firstRef;

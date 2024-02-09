@@ -2,9 +2,12 @@ using CK.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace CK.Setup
 {
@@ -13,7 +16,10 @@ namespace CK.Setup
     /// </summary>
     public sealed class PocoTypeRawSet : IReadOnlyCollection<IPocoType>, IMinimalPocoTypeSet
     {
-        readonly int[] _array;
+        // Only TypeSet IPocoTypeSet implementation access to this array to expose
+        // it as an immutable array: a IPocoTypeSet is a immutable object that protects
+        // its PocoTypeRawSet.
+        internal readonly int[] _array;
         readonly IPocoTypeSystem _typeSystem;
         int _count;
 
@@ -48,6 +54,8 @@ namespace CK.Setup
             }
         }
 
+        internal static int[] CreateEmptyArray( IPocoTypeSystem t ) => new int[(int)((uint)(t.AllNonNullableTypes.Count - 1 + (1 << 5)) >> 5)];
+
         /// <summary>
         /// Initializes a new set whose content can be the <see cref="IPocoTypeSystem.AllNonNullableTypes"/>
         /// (when <paramref name="all"/> is true).
@@ -58,19 +66,19 @@ namespace CK.Setup
         {
             Throw.CheckNotNullArgument( typeSystem );
             _typeSystem = typeSystem;
-            var l = typeSystem.AllNonNullableTypes.Count;
-            _array = new int[(int)((uint)(l - 1 + (1 << 5)) >> 5)];
+            _array = CreateEmptyArray( typeSystem );
             if( all )
             {
                 new Span<int>( _array ).Fill( -1 );
                 // Clears high bit values in the last int to be able to use SequenceEquals
                 // on the ints regardless of how the set is initialized.
-                int extraBits = l & 31;
+                int count = typeSystem.AllNonNullableTypes.Count;
+                int extraBits = count & 31;
                 if( extraBits > 0 )
                 {
                     _array[^1] = (1 << extraBits) - 1;
                 }
-                _count = l;
+                _count = count;
             }
         }
 
@@ -146,6 +154,70 @@ namespace CK.Setup
             return other._typeSystem == _typeSystem
                    && other._count == _count
                    && other._array.AsSpan().SequenceEqual( _array );
+        }
+
+        /// <summary>
+        /// Gets whether this set is a super set of another set.
+        /// <para>
+        /// The other <see cref="TypeSystem"/> must be the same as this one otherwise
+        /// an <see cref="ArgumentException"/> is thrown.
+        /// </para>
+        /// </summary>
+        /// <param name="other">The other type set.</param>
+        /// <returns>True if this set is a super set of the other one.</returns>
+        public bool IsSupersetOf( PocoTypeRawSet other )
+        {
+            if( other._typeSystem != _typeSystem || _count < other._count ) return false;
+            if( other == this ) return true;
+
+            Throw.DebugAssert( "This is driven by the initial TypeSystem.", _array.Length == other._array.Length );
+
+            uint count = (uint)_array.Length;
+            int[] tA = _array;
+            int[] oA = other._array;
+            uint i = 0;
+#if NET8_0_OR_GREATER
+            if( _array.Length >= 8 )
+            {
+                ref int left = ref MemoryMarshal.GetArrayDataReference<int>( tA );
+                ref int right = ref MemoryMarshal.GetArrayDataReference<int>( oA );
+
+                if( Vector512.IsHardwareAccelerated && count >= Vector512<int>.Count )
+                {
+                    for( ; i < count - (Vector512<int>.Count - 1u); i += (uint)Vector512<int>.Count )
+                    {
+                        var l = Vector512.LoadUnsafe( ref left, i );
+                        var r = l | Vector512.LoadUnsafe( ref right, i );
+                        if( l != r ) return false;
+                    }
+                }
+                else if( Vector256.IsHardwareAccelerated && count >= Vector256<int>.Count )
+                {
+                    for( ; i < count - (Vector256<int>.Count - 1u); i += (uint)Vector256<int>.Count )
+                    {
+                        var l = Vector256.LoadUnsafe( ref left, i );
+                        var r = l | Vector256.LoadUnsafe( ref right, i );
+                        if( l != r ) return false;
+                    }
+                }
+                else if( Vector128.IsHardwareAccelerated && count >= Vector128<int>.Count )
+                {
+                    for( ; i < count - (Vector128<int>.Count - 1u); i += (uint)Vector128<int>.Count )
+                    {
+                        var l = Vector128.LoadUnsafe( ref left, i );
+                        var r = l | Vector128.LoadUnsafe( ref right, i );
+                        if( l != r ) return false;
+                    }
+                }
+            }
+#endif
+            for( ; i < count; i++ )
+            {
+                var l = tA[ i ];
+                var r = l | oA[i];
+                if( l != r ) return false;
+            }
+            return true;
         }
 
         PocoTypeRawSet( PocoTypeRawSet o )

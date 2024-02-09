@@ -21,7 +21,7 @@ namespace CK.Setup
 
         public IPocoTypeSet AllSerializable => _allSerializableTypeSet;
 
-        public IPocoTypeSet All => _allTypeFilter;
+        public IPocoTypeSet All => _allTypeSet;
 
         public IPocoTypeSet CreateNone( bool allowEmptyRecords,
                                         bool allowEmptyPocos,
@@ -45,17 +45,25 @@ namespace CK.Setup
                                   lowLevelFilter );
         }
 
-        static bool NoPocoFilter( IPocoType t ) => true;
+        static bool ImplementationLessFilter( IPocoType t ) => !t.ImplementationLess;
 
+        ImmutableArray<int> GetZeroFlagArray()
+        {
+            if( _zeros.IsDefault )
+            {
+                _zeros = ImmutableArray.Create( PocoTypeRawSet.CreateEmptyArray( this ) );
+            }
+            return _zeros;
+        }
         sealed class RootNone : IPocoTypeSet
         {
-            readonly IPocoTypeSystem _typeSystem;
+            readonly PocoTypeSystem _typeSystem;
             readonly Func<IPocoType, bool> _lowLevelFilter;
             readonly bool _allowEmptyRecords;
             readonly bool _allowEmptyPocos;
             readonly bool _autoIncludeCollections;
 
-            internal RootNone( IPocoTypeSystem typeSystem,
+            internal RootNone( PocoTypeSystem typeSystem,
                                bool allowEmptyRecords,
                                bool allowEmptyPocos,
                                bool autoIncludeCollections,
@@ -125,92 +133,10 @@ namespace CK.Setup
                             ? new RootNone( _typeSystem, false, false, _autoIncludeCollections, _lowLevelFilter )
                             : this;
             }
-        }
 
-        // RootAll is basically a wrapper around the TypeSystem.AllNonNullableTypes, there is
-        // no low level filter, AllowEmptyRecords, AllowEmptyPocos are AutoIncludeCollections are true. 
-        sealed class RootAll : IPocoTypeSet
-        {
-            readonly IPocoTypeSystem _typeSystem;
+            public bool IsSupersetOf( IPocoTypeSet other ) => SameContentAs( other );
 
-            internal RootAll( IPocoTypeSystem typeSystem )
-            {
-                _typeSystem = typeSystem;
-            }
-
-            public IPocoTypeSystem TypeSystem => _typeSystem;
-
-            public bool AllowEmptyRecords => true;
-
-            public bool AllowEmptyPocos => true;
-
-            public bool AutoIncludeCollections => true;
-
-            public bool SameContentAs( IPocoTypeSet other )
-            {
-                Throw.CheckNotNullArgument( other );
-                Throw.CheckArgument( TypeSystem == other.TypeSystem );
-                return other.NonNullableTypes.Count == _typeSystem.AllNonNullableTypes.Count;
-            }
-
-            public bool Contains( IPocoType t ) => true;
-
-            public IReadOnlyCollection<IPocoType> NonNullableTypes => _typeSystem.AllNonNullableTypes;
-
-            public IPocoTypeSet Include( IEnumerable<IPocoType> types, bool withAbstractReadOnlyFieldTypes = false )
-            {
-                return this;
-            }
-
-            public IPocoTypeSet Exclude( IEnumerable<IPocoType> disallowedTypes )
-            {
-                if( !disallowedTypes.Any() ) return this;
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, true ),
-                                      allowEmptyRecords: true,
-                                      allowEmptyPocos: true,
-                                      allowedTypes: null,
-                                      disallowedTypes,
-                                      autoIncludeCollections: true,
-                                      withAbstractReadOnlyFieldTypes: false,
-                                      NoPocoFilter );
-            }
-
-            public IPocoTypeSet ExcludeEmptyRecords()
-            {
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, all: true ),
-                                      allowEmptyRecords: false,
-                                      allowEmptyPocos: true,
-                                      allowedTypes: null,
-                                      excludedTypes: null,
-                                      autoIncludeCollections: true,
-                                      withAbstractReadOnlyFieldTypes: false,
-                                      NoPocoFilter );
-            }
-
-            public IPocoTypeSet ExcludeEmptyPocos()
-            {
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, all: true ),
-                                      allowEmptyRecords: true,
-                                      allowEmptyPocos: false,
-                                      allowedTypes: null,
-                                      excludedTypes: null,
-                                      autoIncludeCollections: true,
-                                      withAbstractReadOnlyFieldTypes: false,
-                                      NoPocoFilter );
-            }
-
-            public IPocoTypeSet ExcludeEmptyRecordsAndPocos()
-            {
-                return CreateTypeSet( new PocoTypeRawSet( _typeSystem, all: true ),
-                                      allowEmptyRecords: false,
-                                      allowEmptyPocos: false,
-                                      allowedTypes: null,
-                                      excludedTypes: null,
-                                      autoIncludeCollections: true,
-                                      withAbstractReadOnlyFieldTypes: false,
-                                      NoPocoFilter );
-            }
-
+            public ImmutableArray<int> GetFlagArray() => _typeSystem.GetZeroFlagArray();
         }
 
         internal sealed class TypeSet : IPocoTypeSet
@@ -325,6 +251,26 @@ namespace CK.Setup
                                          _lowLevelFilter )
                         : this;
             }
+
+            public bool IsSupersetOf( IPocoTypeSet other )
+            {
+                Throw.CheckNotNullArgument( other );
+                Throw.CheckArgument( TypeSystem == other.TypeSystem );
+                if( other == this ) return true;
+                if( other is not TypeSet o )
+                {
+                    int otherCount = other.NonNullableTypes.Count;
+                    Throw.CheckArgument( "Invalid IPocoTypeSet implementation.", otherCount == 0 || otherCount == _raw.TypeSystem.AllNonNullableTypes.Count );
+                    return _raw.Count == otherCount;
+                }
+                return _raw.IsSupersetOf( o._raw );
+            }
+
+            public ImmutableArray<int> GetFlagArray()
+            {
+                // Waiting for .NET 8 (ImmutableArray<T> AsImmutableArray<T>)
+                return ImmutableArray.Create<int>( _raw._array );
+            }
         }
 
         static IPocoTypeSet CreateTypeSet( PocoTypeRawSet workingSet,
@@ -338,9 +284,10 @@ namespace CK.Setup
         {
             if( allowedTypes != null )
             {
-                var allower = new PocoTypeIncludeVisitor( workingSet,
-                                                          autoIncludeCollections,
-                                                          withAbstractReadOnlyFieldTypes );
+                var allower = new PocoTypeIncludeVisitor<PocoTypeRawSet>( workingSet.TypeSystem,
+                                                                          workingSet,
+                                                                          autoIncludeCollections,
+                                                                          withAbstractReadOnlyFieldTypes );
                 foreach( var type in allowedTypes )
                 {
                     allower.VisitRoot( type.NonNullable, clearLastVisited: false );

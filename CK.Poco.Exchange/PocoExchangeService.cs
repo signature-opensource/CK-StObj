@@ -1,6 +1,7 @@
 using CK.Setup;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace CK.Core
@@ -15,7 +16,7 @@ namespace CK.Core
     /// that exposes the standard names for the set of all serializable poco types.
     /// </remarks>
     [ContextBoundDelegation( "CK.Setup.PocoSerializableServiceEngineImpl, CK.Poco.Exchange.Engine" )]
-    public class PocoExchangeService : ISingletonAutoService
+    public abstract class PocoExchangeService : ISingletonAutoService
     {
         readonly IPocoImporter[] _importers;
         readonly IPocoExporter[] _exporters;
@@ -53,6 +54,11 @@ namespace CK.Core
             _importerFactories = importerFactories.ToArray();
             _exporterFactories = exporterFactories.ToArray();
         }
+
+        /// <summary>
+        /// Gets the available <see cref="ExchangeableRuntimeFilter"/>.
+        /// </summary>
+        public abstract ImmutableArray<ExchangeableRuntimeFilter> RuntimeFilters { get; }
 
         /// <summary>
         /// Gets the available singleton importers.

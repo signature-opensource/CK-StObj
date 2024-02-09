@@ -75,6 +75,7 @@ namespace CK.Setup
                 EnsureAbstract( monitor, abstractTypes, tInterface, allAbstracts );
             }
             // Third, registers the IPoco full sets.
+            // Note that the IPoco is ImplementationLess if there is no registered PrimaryPoco.
             var all = PocoType.CreateAbstractPocoBase( monitor, this, allAbstracts, allPrimaries );
             _typeCache.Add( typeof( IPoco ), all );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
@@ -91,11 +92,11 @@ namespace CK.Setup
                     {
                         abstracts[idx++] = (IAbstractPocoType)_typeCache[a];
                     }
-                    p.SetAbstractTypes( abstracts );
+                    p.SetAllAbstractTypes( abstracts );
                 }
                 else
                 {
-                    p.SetAbstractTypes( Array.Empty<IAbstractPocoType>() );
+                    p.SetAllAbstractTypes( Array.Empty<IAbstractPocoType>() );
                 }
             }
             // Now that all IPoco are known, we can resolve the generic type definition parameters:

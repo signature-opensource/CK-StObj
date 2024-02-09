@@ -392,7 +392,7 @@ namespace CK.Setup
                                                       ref actualTypeName,
                                                       out var nonNullableActualTypeNameIfNullable );
 
-            GetBaseTypes( set.ItemType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes );
+            GetAllBaseTypes( set.ItemType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes );
             AppendIReadOnlySetSupport( actualTypeName,
                                        nonNullableActualTypeNameIfNullable,
                                        typeScope,
@@ -400,12 +400,12 @@ namespace CK.Setup
                                        baseTypes );
         }
 
-        static void GetBaseTypes( IPocoType itemType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes )
+        static void GetAllBaseTypes( IPocoType itemType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes )
         {
             Throw.DebugAssert( itemType is IAbstractPocoType or IBasicRefPocoType );
             if( itemType is IAbstractPocoType a )
             {
-                baseTypes = a.Generalizations;
+                baseTypes = a.AllGeneralizations;
                 isIPoco = true;
             }
             else
@@ -547,7 +547,7 @@ namespace CK.Setup
             var k = dic.KeyType.CSharpName;
             var actualTypeName = dic.ValueType.ImplTypeName;
             ITypeScope typeScope = CreateDictionaryType( ns, dic, k, actualTypeName );
-            GetBaseTypes( dic.ValueType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes );
+            GetAllBaseTypes( dic.ValueType, out bool isIPoco, out IEnumerable<IPocoType> baseTypes );
             AppendIReadOnlyDictionarySupport( actualTypeName,
                                               typeScope,
                                               k,

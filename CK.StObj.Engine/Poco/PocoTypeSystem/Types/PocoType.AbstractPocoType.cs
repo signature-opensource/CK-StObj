@@ -57,6 +57,8 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> Generalizations => NonNullable.Generalizations.Select( a => a.Nullable );
 
+            public IEnumerable<IAbstractPocoType> AllGeneralizations => NonNullable.AllGeneralizations.Select( a => a.Nullable );
+
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => NonNullable.MinimalGeneralizations.Select( a => a.Nullable );
 
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => this;
@@ -95,16 +97,16 @@ namespace CK.Setup
             void AddImplementationLessSpecialization( ImplementationLessAbstractPoco s );
         }
 
-        // For all AbstractPoco that have implementations except IPoco and IClosedPoco.
+        // For all AbstractPoco that have implementations except IPoco.
         internal sealed class AbstractPocoType : PocoType, IAbstractPocoType, IAbstractPocoImpl
         {
             readonly IPocoType[] _abstractAndPrimary;
-            readonly ArraySegment<IPrimaryPocoType> _primaries;
             readonly IPocoGenericTypeDefinition? _genericTypeDefinition;
+            ArraySegment<IPrimaryPocoType> _primaries;
             (IPocoGenericParameter Parameter, IPocoType Type)[] _genericArguments;
             List<ImplementationLessAbstractPoco>? _implLessSpecializations;
             ImmutableArray<IAbstractPocoField> _fields;
-            object _generalizations;
+            object _allGeneralizations;
             List<IAbstractPocoType>? _minimalGeneralizations;
 
             public AbstractPocoType( PocoTypeSystemBuilder s,
@@ -119,7 +121,7 @@ namespace CK.Setup
                 _genericTypeDefinition = genericDefinitionType;
                 _genericArguments = Array.Empty<(IPocoGenericParameter, IPocoType)>();
                 genericDefinitionType?.AddInstance( this );
-                _generalizations = s;
+                _allGeneralizations = s;
             }
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
@@ -130,7 +132,6 @@ namespace CK.Setup
             public IPocoGenericTypeDefinition? GenericTypeDefinition => _genericTypeDefinition;
 
             public IReadOnlyList<(IPocoGenericParameter Parameter, IPocoType Type)> GenericArguments => _genericArguments;
-
 
             public IEnumerable<IAbstractPocoType> Specializations
             {
@@ -143,14 +144,14 @@ namespace CK.Setup
 
             void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => (_implLessSpecializations ??= new List<ImplementationLessAbstractPoco>()).Add( s );
 
-            public IEnumerable<IAbstractPocoType> Generalizations
+            public IEnumerable<IAbstractPocoType> AllGeneralizations
             {
                 get
                 {
-                    if( _generalizations is not IEnumerable<IAbstractPocoType> g )
+                    if( _allGeneralizations is not IEnumerable<IAbstractPocoType> g )
                     {
-                        var ts = (PocoTypeSystemBuilder)_generalizations;
-                        _generalizations = g = _type.GetInterfaces()
+                        var ts = (PocoTypeSystemBuilder)_allGeneralizations;
+                        _allGeneralizations = g = _type.GetInterfaces()
                                                     .Where( t => t != typeof( IPoco ) )
                                                     .Select( ts.FindByType )
                                                     .Where( i => i != null )
@@ -160,6 +161,8 @@ namespace CK.Setup
                     return g;
                 }
             }
+
+            public IEnumerable<IAbstractPocoType> Generalizations => AllGeneralizations.Where( g => !g.ImplementationLess );
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= ComputeMinimal( Generalizations );
 
@@ -292,12 +295,39 @@ namespace CK.Setup
             internal void SetGenericArguments( (IPocoGenericParameter Parameter, IPocoType Type)[] arguments )
             {
                 Throw.DebugAssert( _genericTypeDefinition != null && _genericTypeDefinition.Parameters.Count == arguments.Length );
+                bool hasImplementationLess = false;
                 for( int i = 0; i < arguments.Length; i++ )
                 {
                     IPocoType t = arguments[i].Type;
+                    hasImplementationLess |= t.ImplementationLess;
                     _ = new PocoTypeRef( this, t, ~i );
                 }
                 _genericArguments = arguments;
+                // Initial check for implementation less.
+                if( hasImplementationLess && _primaries.Count != 0 )
+                {
+                    SetImplementationLess();
+                }
+            }
+
+            public override bool ImplementationLess => _primaries.Count == 0;
+
+            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            {
+                if( _primaries.Count != 0 ) SetImplementationLess();
+            }
+
+            internal override void SetImplementationLess()
+            {
+                Throw.DebugAssert( !ImplementationLess );
+                // ImplementationLess propagation MUST occur only during the Initialize step.
+                Throw.DebugAssert( "Generalizations has not been computed yet.", _allGeneralizations is not IEnumerable<IAbstractPocoType> );
+                foreach( var p in _primaries.Cast<PrimaryPocoType>() )
+                {
+                    p.OnAbstractImplementationLess( this );
+                }
+                _primaries = ArraySegment<IPrimaryPocoType>.Empty;
+                base.SetImplementationLess();
             }
 
             IOneOfPocoType IOneOfPocoType.Nullable => Nullable;
@@ -322,11 +352,15 @@ namespace CK.Setup
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
 
+            public override bool ImplementationLess => _primaries.Count == 0;
+
             public IEnumerable<IAbstractPocoType> Specializations => _abstracts;
 
             void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => _abstracts.Add( s );
 
             public IEnumerable<IAbstractPocoType> Generalizations => Array.Empty<IAbstractPocoType>();
+
+            public IEnumerable<IAbstractPocoType> AllGeneralizations => Array.Empty<IAbstractPocoType>();
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => Array.Empty<IAbstractPocoType>();
 
@@ -356,7 +390,7 @@ namespace CK.Setup
         internal sealed class ImplementationLessAbstractPoco : PocoType, IAbstractPocoType, IAbstractPocoImpl
         {
             readonly IPocoGenericTypeDefinition? _genericTypeDefinition;
-            readonly IReadOnlyList<IAbstractPocoType> _generalizations;
+            readonly IReadOnlyList<IAbstractPocoType> _allGeneralizations;
             readonly (IPocoGenericParameter Parameter, IPocoType Type)[] _genericArguments;
             List<ImplementationLessAbstractPoco>? _implLessSpecializations;
             List<IAbstractPocoType>? _minimalGeneralizations;
@@ -370,7 +404,7 @@ namespace CK.Setup
             {
                 _genericTypeDefinition = genericDefinitionType;
                 _genericArguments = genericArguments ?? Array.Empty<(IPocoGenericParameter, IPocoType)>();
-                _generalizations = generalizations;
+                _allGeneralizations = generalizations;
                 foreach( var g in generalizations )
                 {
                     ((IAbstractPocoImpl)g).AddImplementationLessSpecialization( this );
@@ -380,13 +414,17 @@ namespace CK.Setup
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
 
+            public override bool ImplementationLess => true;
+
             public IEnumerable<IAbstractPocoType> Specializations => (IEnumerable<IAbstractPocoType>?)_implLessSpecializations ?? Array.Empty<IAbstractPocoType>();
 
             void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => (_implLessSpecializations ??= new List<ImplementationLessAbstractPoco>()).Add( s );
 
-            public IEnumerable<IAbstractPocoType> Generalizations => _generalizations;
+            public IEnumerable<IAbstractPocoType> Generalizations => _allGeneralizations.Where( g => !g.ImplementationLess );
 
-            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= AbstractPocoType.ComputeMinimal( _generalizations );
+            public IEnumerable<IAbstractPocoType> AllGeneralizations => _allGeneralizations;
+
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= AbstractPocoType.ComputeMinimal( Generalizations );
 
             public bool IsGenericType => _genericTypeDefinition != null;
 

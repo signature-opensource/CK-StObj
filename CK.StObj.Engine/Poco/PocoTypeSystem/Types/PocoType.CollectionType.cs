@@ -87,6 +87,7 @@ namespace CK.Setup
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
             ICollectionPocoType? _abstractReadOnlyCollection;
+            bool _implementationLess;
             string? _standardName;
 
             public ListOrSetOrArrayType( PocoTypeSystemBuilder s,
@@ -118,6 +119,8 @@ namespace CK.Setup
                 _def = kind == PocoTypeKind.Array
                         ? new FieldDefaultValue( $"System.Array.Empty<{itemType.CSharpName}>()" )
                         : new FieldDefaultValue( $"new {implTypeName}()" );
+                // Initial implementation less check.
+                if( itemType.ImplementationLess ) SetImplementationLess();
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );
@@ -139,6 +142,20 @@ namespace CK.Setup
             public void SetAbstractReadonly( AbstractReadOnlyCollectionType a ) => _abstractReadOnlyCollection = a;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
+
+            public override bool ImplementationLess => _implementationLess;
+
+            internal override void SetImplementationLess()
+            {
+                _implementationLess = true;
+                base.SetImplementationLess();
+            }
+
+            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            {
+                Throw.DebugAssert( r.Owner == this && r.Type == ItemTypes[0] || r.Type == _obliviousType );
+                if( !_implementationLess ) SetImplementationLess();
+            }
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 
@@ -193,6 +210,7 @@ namespace CK.Setup
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
             ICollectionPocoType? _abstractReadOnlyCollection;
+            bool _implementationLess;
             string? _standardName;
 
             public DictionaryType( PocoTypeSystemBuilder s,
@@ -224,6 +242,8 @@ namespace CK.Setup
                 _nextRefKey = ((PocoType)keyType).AddBackRef( this );
                 _ = new PocoTypeRef( this, valueType, 1 );
                 _implTypeName = implTypeName;
+                // Initial implementation less check.
+                if( keyType.ImplementationLess || valueType.ImplementationLess ) SetImplementationLess();
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
@@ -260,6 +280,20 @@ namespace CK.Setup
             public void SetAbstractReadonly( AbstractReadOnlyCollectionType a ) => _abstractReadOnlyCollection = a;
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
+
+            public override bool ImplementationLess => _implementationLess;
+
+            internal override void SetImplementationLess()
+            {
+                _implementationLess = true;
+                base.SetImplementationLess();
+            }
+
+            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            {
+                Throw.DebugAssert( r.Owner == this && (r.Type == ItemTypes[0] || r.Type == ItemTypes[1] || r.Type == _obliviousType) );
+                if( !_implementationLess ) SetImplementationLess();
+            }
 
             #region ITypeRef auto implementation for Key type.
 
@@ -303,9 +337,10 @@ namespace CK.Setup
         }
 
         // IReadOnlyList, IReadOnlySet or IReadOnlyDictionary.
-        internal sealed class AbstractReadOnlyCollectionType : PocoType, ICollectionPocoType
+        internal sealed class AbstractReadOnlyCollectionType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
         {
             readonly ICollectionPocoType _mutable;
+            IPocoType.ITypeRef? _nextRefKey;
 
             public AbstractReadOnlyCollectionType( PocoTypeSystemBuilder s,
                                                    Type tCollection,
@@ -314,8 +349,6 @@ namespace CK.Setup
                 : base( s, tCollection, csharpName, mutable.Kind, static t => new NullCollection( t ) )
             {
                 _mutable = mutable;
-                // Registers the back reference to the oblivious type.
-                _ = new PocoTypeRef( this, _mutable.ObliviousType, -1 );
                 ((IRegularCollection)mutable.NonNullable).SetAbstractReadonly( this );
             }
 
@@ -336,6 +369,28 @@ namespace CK.Setup
             public override ICollectionPocoType ObliviousType => _mutable.ObliviousType;
 
             public override bool CanReadFrom( IPocoType type ) => _mutable.CanReadFrom( type );
+
+            // We bind the ImplementationLess to the Oblivious.
+            // There's no need to override SetImplementationLess(), we only need to propagate
+            // the signal to our backrefs.
+            public override bool ImplementationLess => _mutable.ObliviousType.ImplementationLess;
+
+            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            {
+                Throw.DebugAssert( r.Owner == this && r.Type == ObliviousType );
+                base.SetImplementationLess();
+            }
+
+            #region ITypeRef auto implementation for _mutable.ObliviousType.
+
+            IPocoType.ITypeRef? IPocoType.ITypeRef.NextRef => _nextRefKey;
+
+            int IPocoType.ITypeRef.Index => -1;
+
+            IPocoType IPocoType.ITypeRef.Owner => this;
+
+            IPocoType IPocoType.ITypeRef.Type => _mutable.ObliviousType;
+            #endregion
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

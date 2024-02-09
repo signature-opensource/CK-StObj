@@ -19,19 +19,26 @@ namespace CK.Setup
         IEnumerable<IAbstractPocoType> Specializations { get; }
 
         /// <summary>
-        /// Gets the set of abstract IPoco types that generalize this one.
+        /// Gets the set of abstract IPoco types that generalize this one excluding the <see cref="IPoco"/>
+        /// and any <see cref="IPocoType.ImplementationLess"/> abstract poco.
         /// <para>
         /// These are nullable types if this type is nullable.
-        /// </para>
-        /// <para>
-        /// This never contains the root <see cref="IPoco"/>.
         /// </para>
         /// </summary>
         IEnumerable<IAbstractPocoType> Generalizations { get; }
 
         /// <summary>
-        /// Gets the minimal set of <see cref="Generalizations"/>, considering inheritance,
-        /// generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/> and
+        /// Gets the set of abstract IPoco types that generalize this one including any <see cref="IPocoType.ImplementationLess"/> abstract poco
+        /// (the <see cref="IPoco"/> is excluded).
+        /// <para>
+        /// These are nullable types if this type is nullable.
+        /// </para>
+        /// </summary>
+        IEnumerable<IAbstractPocoType> AllGeneralizations { get; }
+
+        /// <summary>
+        /// Gets the minimal set of <see cref="Generalizations"/> (no implementation less abstract poco),
+        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/> and
         /// <see cref="IPocoType.CanWriteTo(IPocoType)"/>.
         /// <para>
         /// The returned types are nullable if this one is the <see cref="Nullable"/>.

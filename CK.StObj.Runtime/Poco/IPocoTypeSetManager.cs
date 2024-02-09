@@ -10,7 +10,7 @@ namespace CK.Setup
     /// <para>
     /// The root sets exposed here share the same low-level rules, any sub ou super set created from them will:
     /// <list type="bullet">
-    ///     <item>Never contain a <see cref="IAbstractPocoType"/> without <see cref="IPrimaryPocoType"/> implementations.</item>
+    ///     <item>Never contain an implementation less poco (<see cref="IPocoType.ImplementationLess"/> is always false).</item>
     ///     <item>Automatically contain Collections of included types.</item>
     /// </list>
     /// See <see cref="IPocoTypeSet"/> for the rules that are enforced.
@@ -52,6 +52,10 @@ namespace CK.Setup
 
         /// <summary>
         /// Advanced method that creates a root set with different low-level rules than the <see cref="All"/>.
+        /// <para>
+        /// Note that the <paramref name="lowLevelFilter"/> should normally include
+        /// a "<see cref="IPocoType.ImplementationLess"/> is false" constraint.
+        /// </para>
         /// </summary>
         /// <param name="allowEmptyRecords">Configures the <see cref="IPocoTypeSet.AllowEmptyRecords"/>.</param>
         /// <param name="allowEmptyPocos">Configures the <see cref="IPocoTypeSet.AllowEmptyPocos"/>.</param>
@@ -62,6 +66,10 @@ namespace CK.Setup
 
         /// <summary>
         /// Advanced method that creates a root set with different rules than the default <see cref="Empty"/>.
+        /// <para>
+        /// Note that the <paramref name="lowLevelFilter"/> should normally include
+        /// a "<see cref="IPocoType.ImplementationLess"/> is false" constraint.
+        /// </para>
         /// </summary>
         /// <param name="allowEmptyRecords">Configures the <see cref="IPocoTypeSet.AllowEmptyRecords"/>.</param>
         /// <param name="allowEmptyPocos">Configures the <see cref="IPocoTypeSet.AllowEmptyPocos"/>.</param>

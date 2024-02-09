@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static CK.StObj.Engine.Tests.Poco.RecursivePocoTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -115,13 +116,143 @@ namespace CK.StObj.Engine.Tests.Poco
             cmd.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Should().Be( "[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoGenericTests.ICommand<int>" );
         }
 
+        // Given ITopCommand : ICommand<object>, a command that returns an object.
+        // 
+        // At the Type System level, we cannot tell that IC : IComman<int>, ICommand<string> is invalid.
+        // Cris checks that all the ICommand<TResult> of a command can be resolved to the most precise
+        // exisitng type. This uses the MinimalAbstractTypes that resolves this with co (out) and contra (in)
+        // generic parameter constraints (we don't use in constraint but it is implemented).
+        IPocoType GetCommandResult( IPrimaryPocoType cmd )
+        {
+            // The Single must not throw!
+            var unique = cmd.MinimalAbstractTypes.Single( a => a.IsGenericType && a.GenericTypeDefinition.Type == typeof( ICommand<> ) );
+            return unique.GenericArguments[0].Type;
+        }
+
+        // IS1Command can be a secondary interface because it exists a IPoco, the ITopCommand itself.
+        // At this stage (without any other concrete Poco in the type system), ITopCommand is condemned to return another ITopCommand.
         public interface IS1Command : ITopCommand, ICommand<IPoco> { }
+        // IS2 and IS3 bring a similar (more restricted) constraint.
         public interface IS2Command : IS1Command, ICommand<ICrisPoco> { }
         public interface IS3Command : IS2Command, ICommand<IAbstractCommand> { }
+        // IS4 states that ITopCommand must return a command that returns an object. Everything is fine: ITopCommand is a command
+        // that returns an object.
         public interface IS4Command : IS3Command, ICommand<ICommand<object>> { }
+        // IS5Command states that ITopCommand must return a command that returns a command that returns an object: this is the case
+        // of ITopCommand. Everything is fine.
         public interface IS5Command : IS4Command, ICommand<ICommand<ICommand<object>>> { }
-        // ICommand<int> is an ImplementationLess AbstractPoco: it has no implementation.
+
+        [Test]
+        public void commands_with_multiple_returns()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IS5Command ) );
+            // We generate the code and compile it to check any error.
+            var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+            r.EngineResult.Success.Should().BeTrue();
+            var ts = r.CollectorResult.PocoTypeSystemBuilder;
+            var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
+            Throw.DebugAssert( cmd != null );
+            cmd.AllAbstractTypes.Should().BeEquivalentTo( cmd.AbstractTypes );
+            cmd.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" ) )
+                .Should().BeEquivalentTo( new[]
+                {
+                    "[AbstractPoco]ICommand<object>",
+                    "[AbstractPoco]IAbstractCommand",
+                    "[AbstractPoco]ICrisPoco",
+                    "[AbstractPoco]ICommand<CK.Core.IPoco>",
+                    "[AbstractPoco]ICommand<ICrisPoco>",
+                    "[AbstractPoco]ICommand<IAbstractCommand>",
+                    "[AbstractPoco]ICommand<ICommand<object>>",
+                    "[AbstractPoco]ICommand<ICommand<ICommand<object>>>"
+                } );
+            GetCommandResult( cmd ).ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
+                .Should().Be( "[AbstractPoco]ICommand<ICommand<object>>?" );
+        }
+
+        // If we introduce a IS6NoWayCommand that states that ITopCommand should actually return an int, this fails because of
+        // IS1Command (and the others).
+        // There's no precedence rule of any kind that would allow a choice: the system is invalid.
+        public interface IS6NoWayCommand1 : IS1Command, ICommand<int> { }
+        public interface IS6NoWayCommand2 : IS5Command, ICommand<int> { }
+
+        [Test]
+        public void conflicting_commands_with_multiple_returns()
+        {
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IS6NoWayCommand1 ) );
+                // We generate the code and compile it to check any error.
+                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+                r.EngineResult.Success.Should().BeTrue();
+                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
+                Throw.DebugAssert( cmd != null );
+                FluentActions.Invoking( () => GetCommandResult( cmd ) ).Should().Throw<Exception>();
+            }
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IS6NoWayCommand2 ) );
+                // We generate the code and compile it to check any error.
+                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+                r.EngineResult.Success.Should().BeTrue();
+                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
+                Throw.DebugAssert( cmd != null );
+                FluentActions.Invoking( () => GetCommandResult( cmd ) ).Should().Throw<Exception>();
+            }
+        }
+
+        // Same if we want IS6 to return a ICommand<int>: it conflicts with IS5Command.
+        public interface IS6ExcludeIS5Command : ITopCommand, ICommand<ICommand<int>> { }
+
+        // Now, what if we introduce IS6Command that states that ITopCommand must return a ICommand<ICommand<int>>. This
+        // doesn't conflict with IS5. But there is an issue: there is no command in the type system that returns an int...
+        // One option would be to consider the whole system invalid. This would prevent "partial" systems to exist and that
+        // doesn't seem to be a great idea: partial/incomplete systems as long as they don't expose contradictions are fine.
+        // A better solution is to kindly "ignore" this unsolvable constraint: the ICommand<ICommand<ICommand<int>>> abstract
+        // interface is marked ImplementationLess but the IS6 secondary poco exists and is taken into account.
         public interface IS6Command : IS5Command, ICommand<ICommand<ICommand<int>>> { }
+
+        // If at least one command that returns an int exists in the Type System, then the command resolution fails.
+        public interface ICommandWithInt : ICommand<int> { }
+
+        [Test]
+        public void ImplementationLess_allows_partial_type_system()
+        {
+            // With only the IS6ExcludeIS5Command, the ITopCommand : ICommand<object> returns an object.
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IS6ExcludeIS5Command ) );
+                // We generate the code and compile it to check any error.
+                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+                r.EngineResult.Success.Should().BeTrue();
+                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
+                Throw.DebugAssert( cmd != null );
+                GetCommandResult( cmd ).ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
+                    .Should().Be( "[Any]object?" );
+            }
+            // With IS6ExcludeIS5Command and IS5Command bu no command that return a int, IS5Command is fine.
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ) );
+                // We generate the code and compile it to check any error.
+                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+                r.EngineResult.Success.Should().BeTrue();
+                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
+                Throw.DebugAssert( cmd != null );
+                GetCommandResult( cmd ).ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
+                    .Should().Be( "[AbstractPoco]ICommand<ICommand<object>>?" );
+            }
+            // With IS6ExcludeIS5Command, IS5Command and a command that return a int, the return cannot be resolved.
+            {
+                var c = TestHelper.CreateStObjCollector( typeof( IS6ExcludeIS5Command ), typeof( IS5Command ), typeof( ICommandWithInt ) );
+                // We generate the code and compile it to check any error.
+                var r = TestHelper.GenerateCode( c, null, generateSourceFile: true, CompileOption.Compile );
+                r.EngineResult.Success.Should().BeTrue();
+                var ts = r.CollectorResult.PocoTypeSystemBuilder;
+                var cmd = ts.FindByType<IPrimaryPocoType>( typeof( ITopCommand ) );
+                Throw.DebugAssert( cmd != null );
+                FluentActions.Invoking( () => GetCommandResult( cmd ) ).Should().Throw<Exception>();
+            }
+        }
 
         [Test]
         public void MinimalAbstractTypes_considers_recurse_generic_parameter_covariance()
@@ -133,9 +264,10 @@ namespace CK.StObj.Engine.Tests.Poco
             var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var cmd = ts.FindByType<ISecondaryPocoType>( typeof( IS6Command ) );
             Throw.DebugAssert( cmd != null );
-            cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 9 );
 
-            cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" ) )
+            // AllAbstractTypes includes ImplementationLess abstract poco.
+            cmd.PrimaryPocoType.AllAbstractTypes.Should().HaveCount( 9 );
+            cmd.PrimaryPocoType.AllAbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" ) )
                 .Should().BeEquivalentTo( new[]
                 {
                     "[AbstractPoco]ICommand<object>",
@@ -148,9 +280,27 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]ICommand<ICommand<ICommand<object>>>",
                     "[AbstractPoco]ICommand<ICommand<ICommand<int>>>"
                 } );
+
+            // AbstractTypes DOES NOT include ImplementationLess abstract poco.
+            cmd.PrimaryPocoType.AllAbstractTypes.Should().StartWith( cmd.PrimaryPocoType.AbstractTypes, "This is how this is currenlty implemented." );
+
+            cmd.PrimaryPocoType.AbstractTypes.Should().HaveCount( 8 );
+            cmd.PrimaryPocoType.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" ) )
+                .Should().BeEquivalentTo( new[]
+                {
+                    "[AbstractPoco]ICommand<object>",
+                    "[AbstractPoco]IAbstractCommand",
+                    "[AbstractPoco]ICrisPoco",
+                    "[AbstractPoco]ICommand<CK.Core.IPoco>",
+                    "[AbstractPoco]ICommand<ICrisPoco>",
+                    "[AbstractPoco]ICommand<IAbstractCommand>",
+                    "[AbstractPoco]ICommand<ICommand<object>>",
+                    "[AbstractPoco]ICommand<ICommand<ICommand<object>>>"
+                } );
+
             cmd.PrimaryPocoType.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmd.PrimaryPocoType.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )
-                .Should().Be( "[AbstractPoco]ICommand<ICommand<ICommand<int>>>" );
+                .Should().Be( "[AbstractPoco]ICommand<ICommand<ICommand<object>>>" );
         }
 
         [CKTypeSuperDefiner]
@@ -209,7 +359,9 @@ namespace CK.StObj.Engine.Tests.Poco
             var ts = r.CollectorResult.PocoTypeSystemBuilder;
             var cmd = ts.FindByType<IPrimaryPocoType>( typeof( IBaseInput ) );
             Throw.DebugAssert( cmd != null );
-            cmd.AbstractTypes.Should().HaveCount( 9 );
+            cmd.AllAbstractTypes.Should().HaveCount( 9 );
+            // IInput<int> is ImplementationLess.
+            cmd.AbstractTypes.Should().HaveCount( 8 );
 
             cmd.AbstractTypes.Select( t => t.ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" ) )
                 .Should().BeEquivalentTo( new[]
@@ -222,7 +374,6 @@ namespace CK.StObj.Engine.Tests.Poco
                     "[AbstractPoco]IInput<IAbstractInput>",
                     "[AbstractPoco]IInput<IInput<object>>",
                     "[AbstractPoco]IInput<IInput<IInput<object>>>",
-                    "[AbstractPoco]IInput<IInput<IInput<int>>>"
                 } );
             cmd.MinimalAbstractTypes.Should().HaveCount( 1 );
             cmd.MinimalAbstractTypes.Single().ToString().Replace( "CK.StObj.Engine.Tests.Poco.PocoGenericTests.", "" )

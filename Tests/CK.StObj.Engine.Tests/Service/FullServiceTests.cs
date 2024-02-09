@@ -178,7 +178,7 @@ namespace CK.StObj.Engine.Tests.Service
             }
         }
 
-        public interface IB : IRealObject
+        public interface IBIsRealObject : IRealObject
         {
             int BCanTalkToYou( IActivityMonitor m, string msg );
         }
@@ -240,7 +240,7 @@ namespace CK.StObj.Engine.Tests.Service
         /// a Service MUST have one and only one public constructor.
         /// An RealObject that implements a Service is an exception to this rule.
         /// </summary>
-        public abstract class B : IB, IAutoServiceCanBeImplementedByRealObject
+        public abstract class B : IBIsRealObject, IAutoServiceCanBeImplementedByRealObject
         {
             void IAutoServiceCanBeImplementedByRealObject.DoSomething( IActivityMonitor m )
             {
@@ -292,11 +292,11 @@ namespace CK.StObj.Engine.Tests.Service
             using( TestHelper.Monitor.CollectEntries( out var entries, LogLevelFilter.Trace, 1000 ) )
             {
                 using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
-                sp.GetRequiredService<IB>()
+                sp.GetRequiredService<IBIsRealObject>()
                     .BCanTalkToYou( TestHelper.Monitor, "Magic!" )
                     .Should().Be( 3172 );
 
-                sp.GetRequiredService<IB>()
+                sp.GetRequiredService<IBIsRealObject>()
                     .Should().BeSameAs( sp.GetRequiredService<B>() )
                     .And.BeSameAs( sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>(), "The Auto Service/Object must be the same instance!" );
 
@@ -342,11 +342,11 @@ namespace CK.StObj.Engine.Tests.Service
                 {
                     using var sp = TestHelper.CreateAutomaticServices( collector, startupServices: startupServices ).Services;
                     sp.GetRequiredService<IA1>().Should().BeSameAs( sp.GetRequiredService<A>() );
-                    sp.GetRequiredService<IB>().Should().BeSameAs( sp.GetRequiredService<B>() );
+                    sp.GetRequiredService<IBIsRealObject>().Should().BeSameAs( sp.GetRequiredService<B>() );
                     using( var scope = sp.CreateScope() )
                     {
                         sp.GetRequiredService<IA1>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IA1>(), "Real object is Singleton." );
-                        sp.GetRequiredService<IB>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IB>(), "Real object is Singleton." );
+                        sp.GetRequiredService<IBIsRealObject>().Should().BeSameAs( scope.ServiceProvider.GetRequiredService<IBIsRealObject>(), "Real object is Singleton." );
                     }
                     // We are using here the default B's implementation.
                     sp.GetRequiredService<IAutoServiceCanBeImplementedByRealObject>().DoSomething( TestHelper.Monitor );

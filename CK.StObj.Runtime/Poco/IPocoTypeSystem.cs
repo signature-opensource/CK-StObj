@@ -26,7 +26,12 @@ namespace CK.Setup
         IReadOnlyList<IPocoType> AllTypes { get; }
 
         /// <summary>
-        /// Gets all the registered non nullable types.
+        /// Gets all the registered non nullable types, including the <see cref="IAbstractPocoType"/> that have
+        /// no <see cref="IPrimaryPocoType"/> implementations.
+        /// <para>
+        /// The <see cref="SetManager"/>'s <see cref="IPocoTypeSetManager.All"/> contains only the abstract Poco that
+        /// have at least one implementation. 
+        /// </para>
         /// </summary>
         IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
 

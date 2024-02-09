@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
     /// <summary>
     /// Immutable type set, factory of new sub or super sets.
+    /// A set never contains an implementation less poco: <see cref="IPocoType.ImplementationLess"/>
+    /// is always false.
     /// <para>
     /// These sets are always coherent. There are 11 rules:
     /// <list type="number">
@@ -16,7 +20,7 @@ namespace CK.Setup
     ///     <item>A generic <see cref="IAbstractPocoType"/> =&gt; all its <see cref="IAbstractPocoType.GenericArguments"/></item>
     ///     <item>A <see cref="IAbstractPocoType"/> =&gt; at least one <see cref="IPrimaryPocoType"/> implements it</item>
     ///     <item>A <see cref="ISecondaryPocoType"/> &lt;=&gt; <see cref="IPrimaryPocoType"/></item>
-    ///     <item>A <see cref="IPrimaryPocoType"/> =&gt; all its <see cref="IAbstractPocoType"/></item>
+    ///     <item>A <see cref="IPrimaryPocoType"/> =&gt; all its <see cref="IPrimaryPocoType.AbstractTypes"/></item>
     ///     <item>A <see cref="PocoTypeKind.AnonymousRecord"/> =&gt; at least one of its <see cref="ICompositePocoType.Fields"/>' type</item>
     /// </list>
     /// If <see cref="AllowEmptyPocos"/> (or <see cref="AllowEmptyRecords"/>) is false, then the same "at least one field" rule as the AnynymousRecord applies
@@ -60,14 +64,6 @@ namespace CK.Setup
         /// or <see cref="IPocoTypeSetManager.CreateNone(bool, bool, bool, System.Func{IPocoType, bool})"/>.
         /// </summary>
         bool AutoIncludeCollections { get; }
-
-        /// <summary>
-        /// Gets whether this set as the same content of the <paramref name="other"/> one regardless
-        /// of its configuration.
-        /// </summary>
-        /// <param name="other">The other set.</param>
-        /// <returns>True if sets contains the same types.</returns>
-        bool SameContentAs( IPocoTypeSet other );
 
         /// <summary>
         /// Creates a super set of this set.
@@ -116,5 +112,31 @@ namespace CK.Setup
         /// </summary>
         /// <returns>A new sub set (or this if nothing changed).</returns>
         IPocoTypeSet ExcludeEmptyRecordsAndPocos();
+
+        /// <summary>
+        /// Gets whether this set as the same content of the <paramref name="other"/> one regardless
+        /// of its configuration.
+        /// </summary>
+        /// <param name="other">The other set.</param>
+        /// <returns>True if sets contains the same types.</returns>
+        bool SameContentAs( IPocoTypeSet other );
+
+        /// <summary>
+        /// Gets whether this set is a super set of another set.
+        /// <para>
+        /// The other <see cref="TypeSystem"/> must be the same as this one otherwise
+        /// an <see cref="ArgumentException"/> is thrown.
+        /// </para>
+        /// </summary>
+        /// <param name="other">The other type set.</param>
+        /// <returns>True if this set is a super set of the other one.</returns>
+        bool IsSupersetOf( IPocoTypeSet other );
+
+        /// <summary>
+        /// Gets an array of flags that describes this set.
+        /// This supports the code generation, this is barely usable for any other operations.
+        /// </summary>
+        /// <returns>An array of flags.</returns>
+        ImmutableArray<int> GetFlagArray();
     }
 }

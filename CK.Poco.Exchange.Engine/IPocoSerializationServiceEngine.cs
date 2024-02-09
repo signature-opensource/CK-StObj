@@ -1,3 +1,5 @@
+using CK.Core;
+
 namespace CK.Setup
 {
     /// <summary>
@@ -37,5 +39,24 @@ namespace CK.Setup
         /// <param name="t">The nullable or non nullable type.</param>
         /// <returns>A unique index in the <see cref="AllSerializable"/> set.</returns>
         int GetSerializableIndex( IPocoType t );
+
+        /// <summary>
+        /// Registers a new <see cref="ExchangeableRuntimeFilter"/> that will be available
+        /// in <see cref="PocoExchangeService.RuntimeFilters"/> service.
+        /// <para>
+        /// Names must be unique and the <paramref name="typeSet"/> must be a subset of the
+        /// <see cref="IPocoTypeSetManager.AllSerializable"/> set.
+        /// </para>
+        /// <para>
+        /// The same named set can be registered multiple times as long as its content is the same
+        /// as the first one.
+        /// </para>
+        /// </summary>
+        /// <param name="monitor">The monitor.</param>
+        /// <param name="name">The runtime filter name.</param>
+        /// <param name="typeSet">The type set.</param>
+        /// <returns>Ture on success, false otherwise.</returns>
+        bool RegisterExchangeableRuntimeFilter( IActivityMonitor monitor, string name, IPocoTypeSet typeSet );
+
     }
 }
