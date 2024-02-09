@@ -3,9 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 
 namespace CK.Core
 {
+
+
     /// <summary>
     /// Simple registry of available <see cref="IPocoImporter"/> and <see cref="IPocoExporter"/>
     /// and resolver of such importers/exporters thanks to available <see cref="IPocoImporterFactory"/>
@@ -16,8 +19,9 @@ namespace CK.Core
     /// that exposes the standard names for the set of all serializable poco types.
     /// </remarks>
     [ContextBoundDelegation( "CK.Setup.PocoSerializableServiceEngineImpl, CK.Poco.Exchange.Engine" )]
-    public abstract class PocoExchangeService : ISingletonAutoService
+    public class PocoExchangeService : ISingletonAutoService
     {
+        readonly IPocoDirectoryExchangeGenerated _pocoDirectory;
         readonly IPocoImporter[] _importers;
         readonly IPocoExporter[] _exporters;
         readonly IPocoImporterFactory[] _importerFactories;
@@ -28,15 +32,18 @@ namespace CK.Core
         /// Unicity of <see cref="IPocoImporter.ProtocolName"/> (and <see cref="IPocoExporter.ProtocolName"/>)
         /// is checked and an <see cref="InvalidOperationException"/> may be thrown if a duplicated name is found.
         /// </summary>
+        /// <param name="pocoDirectory">The poco directory.</param>
         /// <param name="importers">The set of available importers.</param>
         /// <param name="exporters">The set of available exporters.</param>
         /// <param name="importerFactories">The set of available importer factories.</param>
         /// <param name="exporterFactories">The set of available exporter factories.</param>
-        public PocoExchangeService( IEnumerable<IPocoImporter> importers,
+        public PocoExchangeService( PocoDirectory pocoDirectory,
+                                    IEnumerable<IPocoImporter> importers,
                                     IEnumerable<IPocoExporter> exporters,
                                     IEnumerable<IPocoImporterFactory> importerFactories,
                                     IEnumerable<IPocoExporterFactory> exporterFactories )
         {
+            _pocoDirectory = (IPocoDirectoryExchangeGenerated)pocoDirectory;
             _importers = importers.ToArray();
             var dupI = _importers.GroupBy( i => i.ProtocolName ).Where( g => g.Count() > 1 ).ToList();
             if( dupI.Count > 0 )
@@ -58,7 +65,7 @@ namespace CK.Core
         /// <summary>
         /// Gets the available <see cref="ExchangeableRuntimeFilter"/>.
         /// </summary>
-        public abstract ImmutableArray<ExchangeableRuntimeFilter> RuntimeFilters { get; }
+        public IReadOnlyCollection<ExchangeableRuntimeFilter> RuntimeFilters => _pocoDirectory.RuntimeFilters;
 
         /// <summary>
         /// Gets the available singleton importers.

@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Text.Json;
 
@@ -14,15 +15,17 @@ namespace CK.Poco.Exc.Json
         ///     <item>Trailing commas are allowed.</item>
         ///     <item>Json comments are silently skipped.</item>
         ///     <item>The maximal Json depth is 64.</item>
+        ///     <item>The default type filter is "AllExchangeable".</item>
         /// </list>
         /// </summary>
         public static readonly PocoJsonImportOptions Default = new PocoJsonImportOptions();
 
         /// <summary>
-        /// Initializes a new options.
+        /// Initializes a new option.
         /// </summary>
         public PocoJsonImportOptions()
         {
+            TypeFilterName = "AllExchangeable";
             ReaderOptions = new JsonReaderOptions() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
         }
 
@@ -30,5 +33,11 @@ namespace CK.Poco.Exc.Json
         /// Get the reader options. See <see cref="Default"/>.
         /// </summary>
         public JsonReaderOptions ReaderOptions { get; init; }
+
+        /// <summary>
+        /// Gets the name of the type filter to use.
+        /// Defaults to "AllExchangeable".
+        /// </summary>
+        public string TypeFilterName { get; init; }
     }
 }

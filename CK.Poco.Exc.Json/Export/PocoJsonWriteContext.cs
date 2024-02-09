@@ -1,6 +1,7 @@
 using CK.Core;
 using CK.Poco.Exc.Json;
 using System;
+using System.Reflection;
 using System.Text.Json;
 
 namespace CK.Poco.Exc.Json
@@ -17,14 +18,19 @@ namespace CK.Poco.Exc.Json
     public sealed class PocoJsonWriteContext : IDisposable
     {
         readonly PocoJsonExportOptions _options;
+        readonly ExchangeableRuntimeFilter _typeFilter;
 
         /// <summary>
         /// Initialize a new writer context.
         /// </summary>
+        /// <param name="pocoDirectory">The <see cref="PocoDirectory"/>.</param>
         /// <param name="options">Options to use. Defaults to <see cref="PocoJsonExportOptions.Default"/></param>
-        public PocoJsonWriteContext( PocoJsonExportOptions? options = null )
+        public PocoJsonWriteContext( PocoDirectory pocoDirectory, PocoJsonExportOptions? options = null )
         {
-            _options = options ?? PocoJsonExportOptions.Default;
+            Throw.CheckNotNullArgument( pocoDirectory );
+            options ??= PocoJsonExportOptions.Default;
+            _typeFilter = ((IPocoDirectoryExchangeGenerated)pocoDirectory).GetRuntimeFilter( options.TypeFilterName );
+            _options = options;
         }
 
         /// <summary>

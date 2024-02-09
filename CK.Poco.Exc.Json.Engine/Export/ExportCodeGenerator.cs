@@ -88,7 +88,7 @@ namespace CK.Setup.PocoJson
                                                         "object? o, " +
                                                         "Poco.Exc.Json.PocoJsonExportOptions? options)" );
 
-            read.Append( "var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( options );" ).NewLine()
+            read.Append( "var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( this, options );" ).NewLine()
                 .Append( _exporterType.FullName ).Append( ".WriteAny( w, o, wCtx );" );
         }
 

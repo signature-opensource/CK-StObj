@@ -1,3 +1,4 @@
+using CK.Core;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -18,15 +19,23 @@ namespace CK.Poco.Exc.Json
         ///     <item>The maximal Json depth is 1000.</item>
         ///     <item>The <see cref="JsonWriterOptions.Encoder"/> is null (uses the <see cref="JavaScriptEncoder.Default"/>).</item>
         ///     <item><see cref="JsonWriterOptions.SkipValidation"/> is true.</item>
+        ///     <item>The default type filter is "AllExchangeable".</item>
         /// </list>
         /// </summary>
         public static readonly PocoJsonExportOptions Default = new PocoJsonExportOptions();
 
         /// <summary>
         /// Gets a singleton default option that is used by IPoco ToString implementation.
-        /// It is the same as <see cref="Default"/> except that names are written as-is (<see cref="UseCamelCase"/> is false).
+        /// Property names are written as-is (<see cref="UseCamelCase"/> is false), <see cref="TypeLess"/> is false,
+        /// <see cref="TypeFilterName"/> is "AllSerializable" and <see cref="JsonWriterOptions.Encoder"/>
+        /// is <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/>
         /// </summary>
-        public static readonly PocoJsonExportOptions ToStringDefault = new PocoJsonExportOptions() { UseCamelCase = false };
+        public static readonly PocoJsonExportOptions ToStringDefault = new PocoJsonExportOptions()
+        {
+            UseCamelCase = false,
+            TypeFilterName = "AllSerializable",
+            WriterOptions = new JsonWriterOptions{ Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping },
+        };
 
         /// <summary>
         /// Initializes new options.
@@ -34,6 +43,7 @@ namespace CK.Poco.Exc.Json
         public PocoJsonExportOptions()
         {
             UseCamelCase = true;
+            TypeFilterName = "AllExchangeable";
 #if DEBUG
             WriterOptions = new JsonWriterOptions();
 #else
@@ -57,6 +67,13 @@ namespace CK.Poco.Exc.Json
         /// Get the writer options. See <see cref="Default"/>.
         /// </summary>
         public JsonWriterOptions WriterOptions { get; init; }
+
+        /// <summary>
+        /// Gets the name of the type filter to use.
+        /// Defaults to "AllExchangeable".
+        /// </summary>
+        public string TypeFilterName { get; init; }
+
 
     }
 }

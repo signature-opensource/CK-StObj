@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.Json;
+using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Core
 {
@@ -42,11 +43,14 @@ namespace CK.Core
         /// <param name="w">The target writer.</param>
         /// <param name="withType">True to emit this Poco type.</param>
         /// <param name="options">Optional export options.</param>
-        /// <returns>The Utf8 bytes.</returns>
         public static void WriteJson( this IPoco? @this, Utf8JsonWriter w, bool withType = true, PocoJsonExportOptions? options = null )
         {
-            using var wCtx = new PocoJsonWriteContext( options );
-            @this.WriteJson( w, wCtx, withType );
+            if( @this == null ) w.WriteNullValue();
+            else
+            {
+                using var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options );
+                ((IWriter)@this).WriteJson( w, wCtx, withType );
+            }
         }
 
         /// <summary>

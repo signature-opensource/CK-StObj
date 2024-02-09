@@ -32,7 +32,7 @@ namespace CK.Core
         {
             var r = new Utf8JsonReader( utf8Json );
             // Dispose even if it is not currently required (no data provider).
-            using var rCtx = new PocoJsonReadContext( options );
+            using var rCtx = new PocoJsonReadContext( @this, options );
             return @this.ReadAnyJson( ref r, rCtx );
         }
 
@@ -80,14 +80,14 @@ namespace CK.Core
             {
                 var rSeq = new Utf8JsonReader( r.GetReadOnlySequence(), options.ReaderOptions );
                 // Dispose even if it is not currently required (no data provider).
-                using var rSeqCtx = new PocoJsonReadContext( options );
+                using var rSeqCtx = new PocoJsonReadContext( @this, options );
                 return @this.ReadAnyJson( ref rSeq, rSeqCtx );
             }
             Utf8JsonStreamReader sr = Utf8JsonStreamReader.Create( utf8JsonStream,
                                                                    options.ReaderOptions,
                                                                    out var reader,
                                                                    leaveOpened: false );
-            using var rCtx = new PocoJsonReadContext( options, sr );
+            using var rCtx = new PocoJsonReadContext( @this, options, sr );
             return @this.ReadAnyJson( ref reader, rCtx );
         }
 
@@ -108,7 +108,7 @@ namespace CK.Core
         {
             var r = new Utf8JsonReader( utf8Json );
             // Dispose even if it is not currently required (no data provider).
-            using var rCtx = new PocoJsonReadContext( options );
+            using var rCtx = new PocoJsonReadContext( @this.PocoDirectory, options );
             return @this.ReadJson( ref r, rCtx );
         }
 
@@ -151,7 +151,7 @@ namespace CK.Core
         {
             var r = new Utf8JsonReader( utf8Json );
             // Dispose even if it is not currently required (no read context).
-            using var rCtx = new PocoJsonReadContext( options );
+            using var rCtx = new PocoJsonReadContext( @this, options );
             return @this.ReadJson( ref r, rCtx );
         }
 
@@ -199,14 +199,14 @@ namespace CK.Core
             {
                 var rSeq = new Utf8JsonReader( r.GetReadOnlySequence(), options.ReaderOptions );
                 // Dispose even if it is not currently required (no data provider).
-                using var rSeqCtx = new PocoJsonReadContext( options );
+                using var rSeqCtx = new PocoJsonReadContext( @this, options );
                 return @this.ReadJson( ref rSeq, rSeqCtx );
             }
             Utf8JsonStreamReader sr = Utf8JsonStreamReader.Create( utf8JsonStream,
                                                                    options.ReaderOptions,
                                                                    out var reader,
                                                                    leaveOpened: false );
-            using var rCtx = new PocoJsonReadContext( options, sr );
+            using var rCtx = new PocoJsonReadContext( @this, options, sr );
             return @this.ReadJson( ref reader, rCtx );
         }
 

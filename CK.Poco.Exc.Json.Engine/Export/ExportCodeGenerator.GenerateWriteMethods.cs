@@ -221,7 +221,7 @@ namespace CK.Setup.PocoJson
                             .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
                             .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
                             .OpenBlock()
-                            .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext(CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault);" ).NewLine()
+                            .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( PocoDirectory_CK.Instance, CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault );" ).NewLine()
                             .Append( "WriteJson( w, wCtx );" ).NewLine()
                             .Append( "w.Flush();" ).NewLine()
                             .CloseBlock()

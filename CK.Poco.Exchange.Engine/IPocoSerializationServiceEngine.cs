@@ -33,6 +33,12 @@ namespace CK.Setup
         IPocoTypeSet AllExchangeable { get; }
 
         /// <summary>
+        /// Gets the name of the "GetFilter" static function to call with a string to obtain
+        /// the named <see cref="ExchangeableRuntimeFilter"/>.
+        /// </summary>
+        string GetExchangeableRuntimeFilterStaticFunctionName { get; }
+
+        /// <summary>
         /// Gets a unique compact index for a type (that must be serializable).
         /// A nullable type has the negative value of its non nullable counterpart.
         /// </summary>

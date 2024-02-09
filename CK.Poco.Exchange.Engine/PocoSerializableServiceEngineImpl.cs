@@ -7,30 +7,40 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.Setup
 {
-    public sealed class PocoSerializableServiceEngineImpl : CSCodeGeneratorType, IPocoSerializationServiceEngine
+    public sealed class PocoSerializableServiceEngineImpl : ICSCodeGenerator, IPocoSerializationServiceEngine
     {
         IPocoTypeSystem? _pocoTypeSystem;
         PocoTypeNameMap? _nameMap;
+        string? _getExchangeableRuntimeFilterFuncName;
         int[]? _indexes;
         ITypeScopePart? _filterPart;
         List<(string, IPocoTypeSet)>? _registeredFilters;
 
-        public override CSCodeGenerationResult Implement( IActivityMonitor monitor,
-                                                          Type classType,
-                                                          ICSCodeGenerationContext c,
-                                                          ITypeScope scope )
+        public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
-            scope.Append( "static readonly ExchangeableRuntimeFilter[] _arrayFilter = new ExchangeableRuntimeFilter[] {" ).NewLine()
-                 .CreatePart( out _filterPart )
-                 .Append("};" ).NewLine();
+            ITypeScope pocoDirectory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            pocoDirectory.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.IPocoDirectoryExchangeGenerated" ) );
 
-            // Waiting for .NET 8 https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.immutablecollectionsmarshal.asimmutablearray?view=net-8.0
-            scope.Append( "static readonly System.Collections.Immutable.ImmutableArray<ExchangeableRuntimeFilter> _filters = System.Runtime.CompilerServices.Unsafe.As<ExchangeableRuntimeFilter[], System.Collections.Immutable.ImmutableArray<ExchangeableRuntimeFilter>>( ref _arrayFilter );" );
+            _getExchangeableRuntimeFilterFuncName = pocoDirectory.FullName + ".GetExchangeableRuntimeFilter";
+            using( pocoDirectory.Region() )
+            {
+                pocoDirectory.Append( "public static readonly ExchangeableRuntimeFilter[] _exRTFilter = new ExchangeableRuntimeFilter[] {" ).NewLine()
+                             .CreatePart( out _filterPart )
+                             .Append( "};" ).NewLine();
 
-            scope.Append( "public override System.Collections.Immutable.ImmutableArray<ExchangeableRuntimeFilter> RuntimeFilters => _filters;" ).NewLine();
+                pocoDirectory.Append( "public static ExchangeableRuntimeFilter GetExchangeableRuntimeFilter( string name )" )
+                             .OpenBlock()
+                             .Append( "foreach( var f in _exRTFilter ) if( f.Name == name ) return f;" ).NewLine()
+                             .Append( @"return Throw.ArgumentException<ExchangeableRuntimeFilter>( nameof(name), $""ExchangeableRuntimeFilter named '{name}' not found. Availables are: {_exRTFilter.Select( f => f.Name ).Concatenate()}."" );" )
+                             .CloseBlock();
+
+                pocoDirectory.Append( "IReadOnlyCollection<ExchangeableRuntimeFilter> IPocoDirectoryExchangeGenerated.RuntimeFilters => _exRTFilter;" ).NewLine()
+                             .Append( "ExchangeableRuntimeFilter IPocoDirectoryExchangeGenerated.GetRuntimeFilter( string name ) => GetExchangeableRuntimeFilter( name );" ).NewLine();
+            }
 
             // Wait for the type system to be locked.
             return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
@@ -43,10 +53,16 @@ namespace CK.Setup
                 return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
             }
             monitor.Trace( $"PocoTypeSystemBuilder is locked: Registering the IPocoSerializableServiceEngine. Serialization code generation can start." );
-            _registeredFilters = null;
+            _registeredFilters = new List<(string, IPocoTypeSet)>();
             _indexes = null;
+            // Gets the type system by locking again the builder.
             _pocoTypeSystem = typeSystemBuilder.Lock( monitor );
             _nameMap = new PocoTypeNameMap( _pocoTypeSystem.SetManager.AllSerializable );
+
+            // Generate the "AllSerializable" and "AllExchangeable" runtime type filter.
+            RegisterExchangeableRuntimeFilter( monitor, "AllSerializable", _pocoTypeSystem.SetManager.AllSerializable );
+            RegisterExchangeableRuntimeFilter( monitor, "AllExchangeable", _pocoTypeSystem.SetManager.AllExchangeable );
+
             c.CurrentRun.ServiceContainer.Add<IPocoSerializationServiceEngine>( this );
             return CSCodeGenerationResult.Success;
         }
@@ -59,12 +75,14 @@ namespace CK.Setup
 
         IPocoTypeSet IPocoSerializationServiceEngine.AllExchangeable => _pocoTypeSystem!.SetManager.AllExchangeable;
 
-        bool IPocoSerializationServiceEngine.RegisterExchangeableRuntimeFilter( IActivityMonitor monitor, string name, IPocoTypeSet typeSet )
+        string IPocoSerializationServiceEngine.GetExchangeableRuntimeFilterStaticFunctionName => _getExchangeableRuntimeFilterFuncName!;
+
+        public bool RegisterExchangeableRuntimeFilter( IActivityMonitor monitor, string name, IPocoTypeSet typeSet )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( name );
             Throw.CheckNotNullArgument( typeSet );
 
-            Throw.DebugAssert( _nameMap != null && _filterPart != null );
+            Throw.DebugAssert( _nameMap != null && _registeredFilters != null && _filterPart != null );
 
             var allSerializable = _nameMap!.TypeSet;
             if( !allSerializable.IsSupersetOf( typeSet ) )
@@ -73,10 +91,10 @@ namespace CK.Setup
                 return false;
             }
 
-            var exists = _registeredFilters?.FirstOrDefault( f => name.Equals( f.Item1, StringComparison.OrdinalIgnoreCase ) );
-            if( exists.HasValue )
+            var exists = _registeredFilters.FirstOrDefault( f => name.Equals( f.Item1, StringComparison.OrdinalIgnoreCase ) );
+            if( exists.Item1 != null  )
             {
-                if( !typeSet.SameContentAs( exists.Value.Item2 ) )
+                if( !typeSet.SameContentAs( exists.Item2 ) )
                 {
                     monitor.Error( $"Trying to register a ExchangeableRuntimeFilter named '{name}' that is already registered with a different type set." );
                     return false;
@@ -89,8 +107,6 @@ namespace CK.Setup
                        .AppendArray( typeSet.GetFlagArray() )
                        .Append( " )," ).NewLine();
 
-
-            _registeredFilters ??= new List<(string, IPocoTypeSet)>();
             _registeredFilters.Add( (name,typeSet) );
             return true;
         }
