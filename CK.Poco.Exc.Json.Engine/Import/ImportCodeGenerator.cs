@@ -227,7 +227,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                 // This is crappy and inefficient.
                 // This is because even if we can get the reference to the Nullable value field to fill it,
                 // we miss the capability to set its HasValue to true. So we recopy the read value as the
-                // value (thanks to GetValueOrDefault that does'nt check the HasValue and returns the value as-is).
+                // value (thanks to GetValueOrDefault that doesn't check the HasValue and returns the value as-is).
                 string? originName = null;
                 if( t.IsNullable && (t.Kind == PocoTypeKind.AnonymousRecord || t.Kind == PocoTypeKind.Record) )
                 {

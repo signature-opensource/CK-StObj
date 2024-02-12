@@ -47,14 +47,14 @@ namespace CK.Setup
                 // We also index the primary by its generated PocoClass type.
                 //
                 var primary = PocoType.CreatePrimaryPoco( this, family );
-                HandleNonSerializedAndNotExchangeableAttributes( monitor, primary );
+                HandleNotSerializableAndNotExchangeableAttributes( monitor, primary );
                 Throw.DebugAssert( family.Interfaces[0].PocoInterface == primary.Type );
                 _typeCache.Add( primary.Type, primary );
                 _typeCache.Add( primary.CSharpName, primary );
                 foreach( var i in family.Interfaces.Skip( 1 ) )
                 {
                     var sec = PocoType.CreateSecondaryPocoType( this, i.PocoInterface, primary );
-                    HandleNonSerializedAndNotExchangeableAttributes( monitor, sec );
+                    HandleNotSerializableAndNotExchangeableAttributes( monitor, sec );
                     _typeCache.Add( i.PocoInterface, sec );
                     _typeCache.Add( sec.CSharpName, sec );
                 }
@@ -207,7 +207,7 @@ namespace CK.Setup
                 result = a;
                 _typeCache.Add( tAbstract, a );
                 allAbstracts.Add( a );
-                HandleNonSerializedAndNotExchangeableAttributes( monitor, a );
+                HandleNotSerializableAndNotExchangeableAttributes( monitor, a );
             }
             return result;
         }

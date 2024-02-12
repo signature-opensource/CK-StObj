@@ -48,6 +48,7 @@ namespace CK.Setup.PocoJson
                 else
                 {
                     _writers[t.Index >> 1].Invoke( writer, variableName );
+                    writer.NewLine();
                 }
             }
             else

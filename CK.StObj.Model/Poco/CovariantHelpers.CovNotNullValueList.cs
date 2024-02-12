@@ -32,9 +32,20 @@ namespace CK.Core
 
             T? IReadOnlyList<T?>.this[int index] => this[index];
 
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() => this.Cast<object>().GetEnumerator();
 
-            IEnumerator<T?> IEnumerable<T?>.GetEnumerator() => this.Cast<T?>().GetEnumerator();
+            IEnumerator<object> IEnumerable<object>.GetEnumerator()
+            {
+                // Don't use this.Cast<object>().GetEnumerator(): stack overflow.
+                var e = GetEnumerator();
+                while( e.MoveNext() ) yield return e.Current;
+            }
+
+            IEnumerator<T?> IEnumerable<T?>.GetEnumerator()
+            {
+                // Don't use this.Cast<T?>().GetEnumerator(): stack overflow.
+                var e = GetEnumerator();
+                while( e.MoveNext() ) yield return e.Current;
+            }
         }
 
     }

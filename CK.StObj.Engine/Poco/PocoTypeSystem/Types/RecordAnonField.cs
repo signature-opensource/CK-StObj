@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace CK.Setup
 {
@@ -28,7 +29,7 @@ namespace CK.Setup
         internal RecordAnonField( RecordAnonField f )
         {
             _index = f._index;
-            _name = f._name;
+            _name = GetItemName( _index );
             _isUnnamed = true;
             SetType( f.Type.ObliviousType );
         }
@@ -71,15 +72,20 @@ namespace CK.Setup
 
         internal void SetType( IPocoType t )
         {
-            Debug.Assert( _type == null && t != null );
-            if( t.Kind != PocoTypeKind.Any )
-            {
-                _nextRef = ((PocoType)t.NonNullable).AddBackRef( this );
-            }
+            // We cannot register the backref here because we don't
+            // know yet if the record that owns this field is not
+            // already registered.
+            Throw.DebugAssert( _type == null && t != null );
             _type = t;
         }
 
-        internal void SetOwner( PocoType.RecordAnonType record ) => _owner = record;
+        internal void SetOwner( PocoType.RecordAnonType record )
+        {
+            Throw.DebugAssert( _type != null );
+            Throw.DebugAssert( _owner == null && record != null && !record.IsNullable );
+            _owner = record;
+            _nextRef = ((PocoType)_type.NonNullable).AddBackRef( this );
+        }
 
         public override string ToString() => $"{(_type == null ? "(no type)" : _type)} {Name}";
 

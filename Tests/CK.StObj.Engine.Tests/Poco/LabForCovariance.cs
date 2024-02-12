@@ -748,6 +748,13 @@ namespace CK.StObj.Engine.Tests.Poco
             }
             dCmd.Count.Should().Be( 10 );
             dThing[0].Power.Should().Be( 0 );
+            int idx = 0;
+            foreach( var kv in dCmd )
+            {
+                kv.Key.Should().Be( idx );
+                ((Thing_CK)kv.Value).Power.Should().Be( idx );
+                idx++;
+            }
             // This uses an Unsafe.As<ICollection<IThing>>...
             dThing.Values.Should().OnlyContain( v => v.Power >= 0 && v.Power < 10 );
             // This uses an Unsafe.As<KeyValuePair<TKey, TImpl>[]> to adapt the target...

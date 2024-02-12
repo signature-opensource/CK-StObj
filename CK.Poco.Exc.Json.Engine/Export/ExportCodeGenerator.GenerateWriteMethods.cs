@@ -153,7 +153,7 @@ namespace CK.Setup.PocoJson
                 {
                     if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
-                        GenerateWriteField( writer, f, $"v.{f.Name}" );
+                        GenerateWriteField( writer, f, $"v.{f.Name}", requiresCopy: f.Type is IRecordPocoType );
                     }
                 }
                 writer.Append( "w.WriteEndObject();" ).NewLine()
@@ -194,7 +194,9 @@ namespace CK.Setup.PocoJson
                                      if( f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly
                                          && _nameMap.TypeSet.Contains( f.Type ) )
                                      {
-                                         GenerateWriteField( writer, f, f.PrivateFieldName );
+                                         Throw.DebugAssert( "If the field is a struct, it is by ref.",
+                                                            f.Type is not IRecordPocoType r || f.FieldAccess == PocoFieldAccessKind.IsByRef );
+                                         GenerateWriteField( writer, f, f.PrivateFieldName, requiresCopy: false );
                                      }
                                  }
                              } )
@@ -223,12 +225,20 @@ namespace CK.Setup.PocoJson
             }
         }
 
-        void GenerateWriteField( ITypeScope writer, IPocoField f, string implFieldName )
+        void GenerateWriteField( ITypeScope writer, IPocoField f, string implFieldName, bool requiresCopy )
         {
             Throw.DebugAssert( _nameMap.TypeSet.Contains( f.Type ) );
-            
+            writer.Append( "if( wCtx.CanExport( " ).Append( f.Type.Index >> 1 ).Append( " ) )" )
+                  .OpenBlock();
             GenerateWritePropertyName( writer, f.Name );
+            if( requiresCopy )
+            {
+                var local = "loc" + f.Name;
+                writer.Append( "var " ).Append( local ).Append( " = " ).Append( implFieldName ).Append( ";" ).NewLine();
+                implFieldName = local;
+            }
             GenerateWrite( writer, f.Type, implFieldName );
+            writer.CloseBlock();
         }
 
         static void GenerateWritePropertyName( ICodeWriter writer, string name )

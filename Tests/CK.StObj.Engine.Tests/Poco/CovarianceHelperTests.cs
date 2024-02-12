@@ -1,6 +1,7 @@
 using CK.Core;
 using FluentAssertions;
 using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +13,37 @@ namespace CK.StObj.Engine.Tests.Poco
 {
     public class CovarianceHelperTests
     {
+        [Test]
+        public void Covariant_List_GetEnumerator()
+        {
+            {
+                var l = new CovariantHelpers.CovNotNullValueList<int>() { 1, 2 };
+                foreach( var e in (IEnumerable)l )
+                {
+                    ((int)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 3 );
+                }
+                foreach( var e in (IEnumerable<object>)l )
+                {
+                    ((int)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 3 );
+                }
+                foreach( var e in (IEnumerable<int?>)l )
+                {
+                    ((int?)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 3 );
+                }
+            }
+            {
+                var l = new CovariantHelpers.CovNullableValueList<int>() { 1, 2 };
+                foreach( var e in (IEnumerable)l )
+                {
+                    ((int?)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 3 );
+                }
+                foreach( var e in (IEnumerable<object?>)l )
+                {
+                    ((int?)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 3 );
+                }
+            }
+        }
+
         [Test]
         public void CovNotNullValueHashSet_T_is_IReadOnlySet_object()
         {
@@ -92,6 +124,18 @@ namespace CK.StObj.Engine.Tests.Poco
             nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
             nSet.Overlaps( otherSet ).Should().BeFalse();
             nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
+
+            foreach( var e in nSet )
+            {
+                e.Should().BeOfType<int>();
+                ((int)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 4 );
+            }
+
+            foreach( var e in (IEnumerable<int?>)nSet )
+            {
+                e.HasValue.Should().BeTrue();
+                ((int?)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 4 );
+            }
         }
 
         [Test]
@@ -256,6 +300,18 @@ namespace CK.StObj.Engine.Tests.Poco
                 nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
                 nSet.Overlaps( otherSet ).Should().BeFalse();
                 nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
+
+                foreach( var e in nSet )
+                {
+                    ((int?)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 4 );
+                }
+
+                foreach( var e in (IEnumerable<int?>)nSet )
+                {
+                    e.HasValue.Should().BeTrue();
+                    ((int?)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 4 );
+                }
+
             }
             // With null inside.
             {
@@ -335,6 +391,16 @@ namespace CK.StObj.Engine.Tests.Poco
                 nSet.Overlaps( subSet2.Concat( subSet2 ) ).Should().BeTrue();
                 nSet.Overlaps( otherSet ).Should().BeFalse();
                 nSet.Overlaps( otherSet.Concat( otherSet ) ).Should().BeFalse();
+
+                foreach( var e in nSet )
+                {
+                    if( e != null ) ((int)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 4 );
+                }
+
+                foreach( var e in (IEnumerable<int?>)nSet )
+                {
+                    if( e.HasValue ) ((int)e).Should().BeGreaterThan( 0 ).And.BeLessThan( 4 );
+                }
             }
         }
 

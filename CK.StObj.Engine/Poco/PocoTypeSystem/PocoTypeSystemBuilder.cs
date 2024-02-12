@@ -35,10 +35,10 @@ namespace CK.Setup
         readonly IPocoDirectory _pocoDirectory;
         // RegisterPocoTypeAttribute types.
         List<(IExtMemberInfo, Type)>? _registerAttributes;
-        // Types marked with [NonSerialized] or flagged by SetNonSerialized if any.
-        HashSet<IPocoType>? _nonSerialized;
+        // Types marked with [NotSerializable] or flagged by SetNotSerializable if any.
+        HashSet<IPocoType>? _notSerializable;
         // Types marked with [NonExchangeable] or flagged by SetExchangeable if any.
-        // The actual set of NonExchangeable is a super set of the NonSerialized.
+        // The actual set of NonExchangeable is a super set of the NotSerializable.
         HashSet<IPocoType>? _notExchangeable;
         // Not null when Locked.
         IPocoTypeSystem? _result;
@@ -70,7 +70,7 @@ namespace CK.Setup
                 {
                     Throw.CKException( "Unable to create a valid PocoTypeSystem." );
                 }
-                _result = new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _nonSerialized, _notExchangeable );
+                _result = new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _notSerializable, _notExchangeable );
             }
             return _result;
         }
@@ -103,19 +103,19 @@ namespace CK.Setup
             return _typeDefinitions.GetValueOrDefault( type );
         }
 
-        public void SetNonSerialized( IActivityMonitor monitor, IPocoType type )
+        public void SetNotSerializable( IActivityMonitor monitor, IPocoType type )
         {
             Throw.CheckState( !IsLocked );
             Throw.CheckNotNullArgument( monitor );
             Throw.CheckArgument( type != null && type.Index < _allTypes.Count && _allTypes[type.Index] == type );
             monitor.Info( $"Poco '{type}' is declared to be non serializable. It will also be non exchangeable." );
-            DoSetNonSerialized( type );
+            DoSetNotSerializable( type );
         }
 
-        internal void DoSetNonSerialized( IPocoType type )
+        internal void DoSetNotSerializable( IPocoType type )
         {
-            _nonSerialized ??= new HashSet<IPocoType>();
-            _nonSerialized.Add( type.NonNullable );
+            _notSerializable ??= new HashSet<IPocoType>();
+            _notSerializable.Add( type.NonNullable );
         }
 
         public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )
@@ -133,12 +133,12 @@ namespace CK.Setup
             _notExchangeable.Add( type.NonNullable );
         }
 
-        void HandleNonSerializedAndNotExchangeableAttributes( IActivityMonitor monitor, IPocoType t )
+        void HandleNotSerializableAndNotExchangeableAttributes( IActivityMonitor monitor, IPocoType t )
         {
-            if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NonSerializedAttribute ) ) )
+            if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NotSerializableAttribute ) ) )
             {
-                monitor.Info( $"Poco '{t}' is [NonSerialized]." );
-                DoSetNonSerialized( t );
+                monitor.Info( $"Poco '{t}' is [NotSerializable]." );
+                DoSetNotSerializable( t );
             }
             if( t.Type.CustomAttributes.Any( a => a.AttributeType == typeof( NotExchangeableAttribute ) ) )
             {
@@ -436,7 +436,7 @@ namespace CK.Setup
                 }
                 if( !success ) return null;
                 result = PocoType.CreateImplementationLessAbstractPoco( this, t, generalizations, typeDefinition, arguments );
-                // Don't call HandleNonSerializedAndNotExchangeableAttributes( monitor, result ) since this
+                // Don't call HandleNotSerializableAndNotExchangeableAttributes( monitor, result ) since this
                 // type is not implemented.
                 _typeCache.Add( t, result );
             }
@@ -539,7 +539,7 @@ namespace CK.Setup
                                                      externalName );
                 // Even if the enum is invalid, register it correctly to preserve
                 // the invariants.
-                HandleNonSerializedAndNotExchangeableAttributes( monitor, obliviousType );
+                HandleNotSerializableAndNotExchangeableAttributes( monitor, obliviousType );
                 _typeCache.Add( tNotNull, obliviousType );
                 _typeCache.Add( tNull, obliviousType.Nullable );
                 if( obliviousType.DefaultValueInfo.IsDisallowed )
@@ -719,7 +719,13 @@ namespace CK.Setup
                 {
                     // We build it.
                     var obliviousName = b.ToString();
-                    obliviousType = PocoType.CreateAnonymousRecord( monitor, this, tNotNull, tNull, obliviousName, fields, isReadOnlyCompliant, null );
+                    obliviousType = PocoType.CreateAnonymousRecord( monitor,
+                                                                    this,
+                                                                    tNotNull,
+                                                                    tNull,
+                                                                    obliviousName,
+                                                                    fields,
+                                                                    isReadOnlyCompliant, null );
                     _typeCache.Add( tNotNull, obliviousType );
                     _typeCache.Add( tNull, obliviousType.Nullable );
                 }
@@ -912,7 +918,7 @@ namespace CK.Setup
             if( !success ) return null;
 
             r.SetFields( monitor, this, isReadOnlyCompliant, fields );
-            HandleNonSerializedAndNotExchangeableAttributes( monitor, r );
+            HandleNotSerializableAndNotExchangeableAttributes( monitor, r );
             return nType.IsNullable ? r.Nullable : r;
 
 

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace CK.Core
@@ -30,7 +30,12 @@ namespace CK.Core
 
             object? IReadOnlyList<object?>.this[int index] => this[index];
 
-            IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this.Cast<object?>().GetEnumerator();
+            IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
+            {
+                // Don't use this.Cast<object>().GetEnumerator(): stack overflow.
+                var e = GetEnumerator();
+                while( e.MoveNext() ) yield return e.Current;
+            }
         }
 
     }

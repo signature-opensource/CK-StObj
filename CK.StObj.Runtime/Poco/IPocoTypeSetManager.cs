@@ -24,13 +24,13 @@ namespace CK.Setup
         IPocoTypeSet Empty { get; }
 
         /// <summary>
-        /// Empty set with a low-level rules that guaranties that no type marked with <see cref="NonSerializedAttribute"/> will ever appear.
+        /// Empty set with a low-level rules that guaranties that no type marked with <see cref="NotSerializableAttribute"/> will ever appear.
         /// </summary>
         IPocoTypeSet EmptySerializable { get; }
 
         /// <summary>
         /// Empty set with a low-level rules that guaranties that no type marked with <see cref="NotExchangeableAttribute"/>
-        /// (or with <see cref="NonSerializedAttribute"/> will ever appear: to be exchangeable a type must be serializable).
+        /// (or with <see cref="NotSerializableAttribute"/> will ever appear: to be exchangeable a type must be serializable).
         /// </summary>
         IPocoTypeSet EmptyExchangeable { get; }
 

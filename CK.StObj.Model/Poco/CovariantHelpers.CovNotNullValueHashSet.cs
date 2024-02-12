@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -63,7 +63,12 @@ namespace CK.Core
 
             bool IReadOnlySet<object>.SetEquals( IEnumerable<object> other ) => CovariantHelpers.SetEquals( this, other );
 
-            IEnumerator<object> IEnumerable<object>.GetEnumerator() => this.Cast<object>().GetEnumerator();
+            IEnumerator<object> IEnumerable<object>.GetEnumerator()
+            {
+                // Don't use this.Cast<object>().GetEnumerator(): stack overflow.
+                var e = GetEnumerator();
+                while( e.MoveNext() ) yield return e.Current;
+            }
 
             #region Nullable item support.
 

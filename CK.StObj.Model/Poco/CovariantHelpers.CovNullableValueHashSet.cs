@@ -62,7 +62,12 @@ namespace CK.Core
 
             bool IReadOnlySet<object?>.SetEquals( IEnumerable<object?> other ) => CovariantHelpers.NullableSetEquals( this, other );
 
-            IEnumerator<object?> IEnumerable<object?>.GetEnumerator() => this.Cast<object?>().GetEnumerator();
+            IEnumerator<object?> IEnumerable<object?>.GetEnumerator()
+            {
+                // Don't use this.Cast<object>().GetEnumerator(): stack overflow.
+                var e = GetEnumerator();
+                while( e.MoveNext() ) yield return e.Current;
+            }
         }
 
     }

@@ -198,4 +198,5 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
             holder2.Should().BeEquivalentTo( holder );
         }
     }
+
 }

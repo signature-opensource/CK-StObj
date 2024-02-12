@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 
 namespace CK.Setup
 {
@@ -27,7 +28,7 @@ namespace CK.Setup
                                  IReadOnlyList<IPocoType> nonNullableTypes,
                                  Dictionary<object, IPocoType> typeCache,
                                  Dictionary<Type, PocoType.PocoGenericTypeDefinition> typeDefinitions,
-                                 HashSet<IPocoType>? nonSerialized,
+                                 HashSet<IPocoType>? notSerializable,
                                  HashSet<IPocoType>? notExchangeable )
         {
             _pocoDirectory = pocoDirectory;
@@ -41,20 +42,21 @@ namespace CK.Setup
             // the initialization of the Excluder takes care of abstract poco without
             // implementations and propagate this to the collections that reference them.
             var all = new PocoTypeRawSet( this, all: true );
+            Throw.DebugAssert( all.OfType<IRecordPocoType>().SelectMany( r => r.Fields ).All( f => f.Owner != null ) );
             var e = new Excluder( all, true, true, ImplementationLessFilter );
             _allTypeSet = new TypeSet( all, allowEmptyRecords: true, allowEmptyPocos: true, autoIncludeCollections: true, ImplementationLessFilter );
 
             // First handles the Serializable sets.
-            if( nonSerialized == null )
+            if( notSerializable == null )
             {
-                // If there's no type marked as NonSerialized, the 2 sets are the same as the All and Empty.
+                // If there's no type marked as NotSerializable, the 2 sets are the same as the All and Empty.
                 _allSerializableTypeSet = _allTypeSet;
                 _emptySerializableTypeSet = _emptyTypeSet;
             }
             else
             {
                 // First we build the set of all serializable types.
-                _allSerializableTypeSet = _allTypeSet.Exclude( nonSerialized );
+                _allSerializableTypeSet = _allTypeSet.Exclude( notSerializable );
                 // Then we use it as the low level filter of the empty (but serializable) set.
                 _emptySerializableTypeSet = new RootNone( this, true, true, true, _allSerializableTypeSet.Contains );
             }

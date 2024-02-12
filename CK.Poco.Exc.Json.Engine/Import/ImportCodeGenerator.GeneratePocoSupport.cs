@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using System.Diagnostics;
 using System.Text.Json;
+using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Setup.PocoJson
 {
@@ -64,9 +65,11 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                     pocoClass.Append( "case " ).AppendSourceString( f.Name ).Append( ":" )
                              .OpenBlock();
 
+                    pocoClass.Append( "if( !rCtx.CanImport( " ).Append( f.Type.Index >> 1 ).Append( ") ) goto default;" ).NewLine();
                     GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
 
-                    pocoClass.Append("break;").CloseBlock();
+                    pocoClass.Append("break;")
+                             .CloseBlock();
                 }
             }
             pocoClass.Append( @"

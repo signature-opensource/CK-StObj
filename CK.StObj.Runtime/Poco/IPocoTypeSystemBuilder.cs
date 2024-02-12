@@ -91,7 +91,7 @@ namespace CK.Setup
         void SetNotExchangeable( IActivityMonitor monitor, IPocoType type );
 
         /// <summary>
-        /// Forbids a type to be serializable. This is the same as using the <see cref="NonSerializedAttribute"/>
+        /// Forbids a type to be serializable. This is the same as using the <see cref="NotSerializableAttribute"/>
         /// on the type except that this can be called with anonymous records and even basic types.
         /// </para>
         /// <para>
@@ -101,7 +101,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">Required monitor.</param>
         /// <param name="type">The type that must be non serializable.</param>
-        void SetNonSerialized( IActivityMonitor monitor, IPocoType type );
+        void SetNotSerializable( IActivityMonitor monitor, IPocoType type );
 
         /// <summary>
         /// Tries to register a type.
