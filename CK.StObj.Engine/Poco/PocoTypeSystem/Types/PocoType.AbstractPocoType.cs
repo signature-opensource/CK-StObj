@@ -53,7 +53,7 @@ namespace CK.Setup
 
             new IAbstractPocoType NonNullable => Unsafe.As<IAbstractPocoType>( base.NonNullable );
 
-            public IEnumerable<IAbstractPocoType> Specializations => NonNullable.Specializations.Select( a => a.Nullable );
+            public IEnumerable<IAbstractPocoType> AllSpecializations => NonNullable.AllSpecializations.Select( a => a.Nullable );
 
             public IEnumerable<IAbstractPocoType> Generalizations => NonNullable.Generalizations.Select( a => a.Nullable );
 
@@ -135,7 +135,7 @@ namespace CK.Setup
 
             public IReadOnlyList<(IPocoGenericParameter Parameter, IPocoType Type)> GenericArguments => _genericArguments;
 
-            public IEnumerable<IAbstractPocoType> Specializations
+            public IEnumerable<IAbstractPocoType> AllSpecializations
             {
                 get
                 {
@@ -362,7 +362,7 @@ namespace CK.Setup
 
             public override bool ImplementationLess => _primaries.Count == 0;
 
-            public IEnumerable<IAbstractPocoType> Specializations => _abstracts;
+            public IEnumerable<IAbstractPocoType> AllSpecializations => _abstracts;
 
             void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => _abstracts.Add( s );
 
@@ -426,7 +426,7 @@ namespace CK.Setup
 
             public override bool ImplementationLess => true;
 
-            public IEnumerable<IAbstractPocoType> Specializations => (IEnumerable<IAbstractPocoType>?)_implLessSpecializations ?? Array.Empty<IAbstractPocoType>();
+            public IEnumerable<IAbstractPocoType> AllSpecializations => (IEnumerable<IAbstractPocoType>?)_implLessSpecializations ?? Array.Empty<IAbstractPocoType>();
 
             void IAbstractPocoImpl.AddImplementationLessSpecialization( ImplementationLessAbstractPoco s ) => (_implLessSpecializations ??= new List<ImplementationLessAbstractPoco>()).Add( s );
 
@@ -452,7 +452,7 @@ namespace CK.Setup
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
-            public IEnumerable<IPocoType> AllowedTypes => Specializations;
+            public IEnumerable<IPocoType> AllowedTypes => AllSpecializations;
 
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 

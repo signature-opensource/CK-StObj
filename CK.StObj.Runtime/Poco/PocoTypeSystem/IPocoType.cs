@@ -192,7 +192,7 @@ namespace CK.Setup
             /// This doesn't track the relationship between <see cref="ISecondaryPocoType"/>, <see cref="IAbstractPocoType"/> and
             /// <see cref="IPrimaryPocoType"/>: these relationships are all exposed by the properties of these types
             /// (like <see cref="IAbstractPocoType.Generalizations"/> and <see cref="IPrimaryPocoType.AbstractTypes"/>
-            /// <see cref="IAbstractPocoType.Specializations"/>, <see cref="IAbstractPocoType.PrimaryPocoTypes"/>, <see cref="IPrimaryPocoType.SecondaryTypes"/>
+            /// <see cref="IAbstractPocoType.AllSpecializations"/>, <see cref="IAbstractPocoType.PrimaryPocoTypes"/>, <see cref="IPrimaryPocoType.SecondaryTypes"/>
             /// and <see cref="ISecondaryPocoType.PrimaryPocoType"/>).
             /// </summary>
             int Index { get; }

@@ -12,7 +12,7 @@ namespace CK.Setup
         /// Gets the set of allowed types.
         /// <para>
         /// For <see cref="IAbstractPocoType"/> this set contains the <see cref="IAbstractPocoType.PrimaryPocoTypes"/>
-        /// and <see cref="IAbstractPocoType.Specializations"/>.
+        /// and <see cref="IAbstractPocoType.AllSpecializations"/>.
         /// </para>
         /// </summary>
         IEnumerable<IPocoType> AllowedTypes { get; }

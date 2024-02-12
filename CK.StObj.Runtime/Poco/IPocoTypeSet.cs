@@ -9,11 +9,12 @@ namespace CK.Setup
     /// A set never contains an implementation less poco: <see cref="IPocoType.ImplementationLess"/>
     /// is always false.
     /// <para>
-    /// These sets are always coherent. There are 11 rules:
+    /// These sets are always coherent. There are 12 rules:
     /// <list type="number">
     ///     <item>Nullable &lt;=&gt; Non Nullable (this why only non nullable types need to be exposed by a set)</item>
     ///     <item>Any type =&gt; its <see cref="IPocoType.ObliviousType"/></item>
     ///     <item>A <see cref="IUnionPocoType"/> =&gt; at least one of its <see cref="IOneOfPocoType.AllowedTypes"/></item>
+    ///     <item>A <see cref="IBasicRefPocoType"/> =&gt; all its <see cref="IBasicRefPocoType.BaseTypes"/>.</item>
     ///     <item>A IReadOnlyList/Set/Dictionary =&gt; its <see cref="ICollectionPocoType.MutableCollection"/></item>
     ///     <item>Any collection =&gt; all its <see cref="ICollectionPocoType.ItemTypes"/></item>
     ///     <item>An enum type =&gt; its <see cref="IEnumPocoType.UnderlyingType"/></item>

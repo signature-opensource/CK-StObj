@@ -2,6 +2,9 @@ using System.Diagnostics;
 using System;
 using System.Data.SqlTypes;
 using System.Collections.Generic;
+using CK.Core;
+using System.Runtime.CompilerServices;
+using System.Linq;
 
 namespace CK.Setup
 {
@@ -62,6 +65,27 @@ namespace CK.Setup
         {
             readonly IPocoFieldDefaultValue _def;
             readonly IBasicRefPocoType? _baseType;
+            IBasicRefPocoType[] _specializations;
+
+            sealed class Null : NullReferenceType, IBasicRefPocoType
+            {
+                public Null( IPocoType notNullable )
+                    : base( notNullable )
+                {
+                }
+
+                public IBasicRefPocoType? BaseType => NonNullable.BaseType?.Nullable;
+
+                public IEnumerable<IBasicRefPocoType> BaseTypes => NonNullable.BaseTypes.Select( t => t.Nullable );
+
+                public IEnumerable<IBasicRefPocoType> Specializations => NonNullable.Specializations.Select( t => t.Nullable );
+
+                new IBasicRefPocoType NonNullable => Unsafe.As<IBasicRefPocoType>( base.NonNullable );
+
+                IBasicRefPocoType IBasicRefPocoType.NonNullable => NonNullable;
+
+                IBasicRefPocoType IBasicRefPocoType.Nullable => this;
+            }
 
             public BasicRefType( PocoTypeSystemBuilder s,
                                  Type notNullable,
@@ -72,6 +96,11 @@ namespace CK.Setup
             {
                 _def = defaultValue;
                 _baseType = baseType;
+                _specializations = Array.Empty<IBasicRefPocoType>();
+                if( baseType != null )
+                {
+                    ((BasicRefType)baseType).AddSpecialization( this );
+                }
             }
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
@@ -91,6 +120,26 @@ namespace CK.Setup
                 }
             }
 
+            public IEnumerable<IBasicRefPocoType> Specializations => _specializations;
+
+            void AddSpecialization( BasicRefType s )
+            {
+                if( _specializations.Length == 0 )
+                {
+                    _specializations = new IBasicRefPocoType[]{ s };
+                }
+                else
+                {
+                    var a = new IBasicRefPocoType[_specializations.Length + 1];
+                    Array.Copy( _specializations, 0, a, 0, _specializations.Length );
+                    a[_specializations.Length] = s;
+                    _specializations = a;
+                }
+            }
+
+            IBasicRefPocoType IBasicRefPocoType.Nullable => Unsafe.As<IBasicRefPocoType>( base.Nullable );
+
+            IBasicRefPocoType IBasicRefPocoType.NonNullable => this;
         }
 
     }

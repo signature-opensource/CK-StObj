@@ -49,7 +49,9 @@ namespace CK.Setup
     ///         All <see cref="IPocoType.ObliviousType"/> are visited.
     ///     </item>
     ///     <item>
-    ///         Basic types (<see cref="PocoTypeKind.Basic"/> and <see cref="PocoTypeKind.Any"/>) visit nothing else (same as base <see cref="PocoTypeVisitor"/>).
+    ///         Basic types (<see cref="PocoTypeKind.Basic"/> and <see cref="PocoTypeKind.Any"/>) visit nothing else
+    ///         except for <see cref="IBasicRefPocoType"/> where the <see cref="IBasicRefPocoType.BaseType"/> is visited if there's one
+    ///         (including a bas type doesn't include its <see cref="IBasicRefPocoType.Specializations"/>).
     ///     </item>
     /// </list>
     /// By default this visitor visits the <see cref="ICollectionPocoType"/> that CAN be visited because their <see cref="ICollectionPocoType.ItemTypes"/>
@@ -214,6 +216,19 @@ namespace CK.Setup
         protected override void VisitEnum( IEnumPocoType e )
         {
             Visit( e.UnderlyingType );
+        }
+
+        /// <summary>
+        /// If the basic is a <see cref="IBasicRefPocoType"/>, its <see cref="IBasicRefPocoType.BaseType"/> is visited.
+        /// </summary>
+        /// <param name="basic">The basic type.</param>
+        protected override void VisitBasic( IPocoType basic )
+        {
+            if( basic is IBasicRefPocoType b
+                && b.BaseType != null )
+            {
+                Visit( b.BaseType );
+            }
         }
 
     }

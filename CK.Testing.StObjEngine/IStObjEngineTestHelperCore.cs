@@ -132,11 +132,13 @@ namespace CK.Testing.StObjEngine
         /// configurations.
         /// </para>
         /// </param>
+        /// <param name="alterPocoTypeSystem">Optional configurator for the <see cref="IPocoTypeSystemBuilder"/>.</param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
         AutomaticServicesResult CreateAutomaticServices( StObjCollector c,
                                                          Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                         Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem = null,
                                                          SimpleServiceContainer? startupServices = null,
                                                          Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 

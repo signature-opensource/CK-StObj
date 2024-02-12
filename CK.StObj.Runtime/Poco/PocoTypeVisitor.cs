@@ -25,7 +25,7 @@ namespace CK.Setup
     ///     <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/>.
     ///     </item>
     ///     <item>
-    ///     <see cref="VisitAbstractPoco(IAbstractPocoType)"/> does nothing: <see cref="IAbstractPocoType.Specializations"/>
+    ///     <see cref="VisitAbstractPoco(IAbstractPocoType)"/> does nothing: <see cref="IAbstractPocoType.AllSpecializations"/>
     ///     (that are the AllowedTypes), <see cref="IAbstractPocoType.GenericArguments"/> and <see cref="IAbstractPocoType.Generalizations"/>
     ///     are not visited.
     ///     </item>

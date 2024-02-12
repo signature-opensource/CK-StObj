@@ -155,11 +155,12 @@ namespace CK.Testing
 
         AutomaticServicesResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
                                                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                    Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem,
                                                                                     SimpleServiceContainer? startupServices,
                                                                                     Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
             var loadResult = DoCompileAndLoadStObjMap( c, engineConfigurator );
-
+            alterPocoTypeSystem?.Invoke( loadResult.CollectorResult.PocoTypeSystemBuilder );
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             configureServices?.Invoke( reg );
             reg.AddStObjMap( loadResult.Map ).Should().BeTrue( "Service configuration succeed." );

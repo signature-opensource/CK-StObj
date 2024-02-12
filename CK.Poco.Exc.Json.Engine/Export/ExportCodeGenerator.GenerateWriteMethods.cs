@@ -144,31 +144,21 @@ namespace CK.Setup.PocoJson
                     .CloseBlock();
             }
 
-            void GenerateWritePropertyName( ICodeWriter writer, string name )
+            void GenerateNamedRecordWriteMethod( ITypeScope writer, IRecordPocoType type )
             {
-                writer.Append( "w.WritePropertyName( wCtx.Options.UseCamelCase ? " )
-                      .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( name ) )
-                      .Append( " : " )
-                      .AppendSourceString( name )
-                      .Append( " );" ).NewLine();
-            }
-
-            void GenerateNamedRecordWriteMethod( ITypeScope code, IRecordPocoType type )
-            {
-                GenerateWriteJsonMethodHeader( code, type );
-                code.OpenBlock()
+                GenerateWriteJsonMethodHeader( writer, type );
+                writer.OpenBlock()
                               .Append( "w.WriteStartObject();" ).NewLine();
                 foreach( var f in type.Fields )
                 {
                     if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
-                        GenerateWritePropertyName( code, f.Name );
-                        GenerateWrite( code, f.Type, $"v.{f.Name}" );
-                        code.NewLine();
+                        GenerateWriteField( writer, f, $"v.{f.Name}" );
                     }
                 }
-                code.Append( "w.WriteEndObject();" ).NewLine()
+                writer.Append( "w.WriteEndObject();" ).NewLine()
                               .CloseBlock();
+
             }
 
             void GeneratePocoWriteMethod( IActivityMonitor monitor, ICSCodeGenerationContext generationContext, IPrimaryPocoType type )
@@ -201,10 +191,10 @@ namespace CK.Setup.PocoJson
                              {
                                  foreach( var f in type.Fields )
                                  {
-                                     if( f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly && _nameMap.TypeSet.Contains( f.Type ) )
+                                     if( f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly
+                                         && _nameMap.TypeSet.Contains( f.Type ) )
                                      {
-                                         GenerateWritePropertyName( writer, f.Name );
-                                         GenerateWrite( writer, f.Type, f.PrivateFieldName );
+                                         GenerateWriteField( writer, f, f.PrivateFieldName );
                                      }
                                  }
                              } )
@@ -232,6 +222,24 @@ namespace CK.Setup.PocoJson
 
             }
         }
+
+        void GenerateWriteField( ITypeScope writer, IPocoField f, string implFieldName )
+        {
+            Throw.DebugAssert( _nameMap.TypeSet.Contains( f.Type ) );
+            
+            GenerateWritePropertyName( writer, f.Name );
+            GenerateWrite( writer, f.Type, implFieldName );
+        }
+
+        static void GenerateWritePropertyName( ICodeWriter writer, string name )
+        {
+            writer.Append( "w.WritePropertyName( wCtx.Options.UseCamelCase ? " )
+                  .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( name ) )
+                  .Append( " : " )
+                  .AppendSourceString( name )
+                  .Append( " );" ).NewLine();
+        }
+
 
     }
 }

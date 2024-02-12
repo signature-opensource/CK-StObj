@@ -11,12 +11,12 @@ namespace CK.Setup
     public interface IAbstractPocoType : IOneOfPocoType
     {
         /// <summary>
-        /// Gets the set of other abstract IPoco types that specialize this one.
+        /// Gets the set of all other abstract IPoco types that specialize this one.
         /// <para>
         /// These are nullable types if this type is nullable.
         /// </para>
         /// </summary>
-        IEnumerable<IAbstractPocoType> Specializations { get; }
+        IEnumerable<IAbstractPocoType> AllSpecializations { get; }
 
         /// <summary>
         /// Gets the set of abstract IPoco types that generalize this one excluding the <see cref="IPoco"/>

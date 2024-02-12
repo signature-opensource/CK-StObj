@@ -198,8 +198,15 @@ namespace CK.Setup
                         {
                             DecrementRefCount( abs );
                         }
-                        // Handle the Poco that doesn't appear in the AbstractTypes.
+                        // Handle the IPoco that doesn't appear in the AbstractTypes.
                         DecrementRefCount( Poco );
+                    }
+                    else if( t is IBasicRefPocoType basic )
+                    {
+                        foreach( var s in basic.Specializations )
+                        {
+                            DoExclude( s, false );
+                        }
                     }
                 }
             }
