@@ -230,7 +230,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            _monitor.Error( errorPath.ToStringPath() );
+                            _monitor.Error( errorPath.ToStringPath( elementSeparator: $"{Environment.NewLine}-> ") );
                         }
                     }
                     // Always runs the aspects Termination.
