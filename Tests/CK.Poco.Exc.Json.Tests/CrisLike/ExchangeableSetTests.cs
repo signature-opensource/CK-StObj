@@ -186,27 +186,27 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
             var factory = directory.Find<ICannotBeSpoofed2>();
             Throw.DebugAssert( factory != null );
 
-            //// Forged payload with array syntax: the number of cells are incorrect, reading this throws.
-            //var attack1 = """{"SafeData":[{"SecureName":"EVIL-1"},{"LocalName":"LOCAL-IN-1"}],"More":[[{"SecureName":"EVIL-1"},{"LocalName":"LOCAL-IN-2"}]]}""";
+            // Forged payload with array syntax: the number of cells are incorrect, reading this throws.
+            var attack1 = """{"SafeData":[{"SecureName":"EVIL-1"},{"LocalName":"LOCAL-IN-1"}],"More":[[{"SecureName":"EVIL-1"},{"LocalName":"LOCAL-IN-2"}]]}""";
 
-            //FluentActions.Invoking( () => factory.ReadJson( attack1, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } ) )
-            //             .Should().Throw<JsonException>();
+            FluentActions.Invoking( () => factory.ReadJson( attack1, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } ) )
+                         .Should().Throw<JsonException>();
 
             // Using the object syntax that is allowed by anonymous records:
             var attack2 = """{"SafeData":{"Item1":{"SecureName":"EVIL-1"},"Local":{"LocalName":"LOCAL-IN-1"}},"More":[{"Memory":{"SecureName":"EVIL-1"},"Item2":{"LocalName":"LOCAL-IN-2"}}]}""";
-            //// Reading with "AllSerializable": [NotSerializable] types are ignored.
-            //var r1 = factory.ReadJson( attack2, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } )!;
-            //r1.SafeData.Item1.SecureName.Should().Be( "" );
-            //r1.SafeData.Local.LocalName.Should().Be( "LOCAL-IN-1" );
-            //r1.More.Should().HaveCount( 1 );
-            //r1.More[0].Memory.SecureName.Should().Be( "" );
-            //r1.More[0].Item2.LocalName.Should().Be( "LOCAL-IN-2" );
+            // Reading with "AllSerializable": [NotSerializable] types are ignored.
+            var r1 = factory.ReadJson( attack2, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } )!;
+            r1.SafeData.Item1.SecureName.Should().Be( "" );
+            r1.SafeData.Local.LocalName.Should().Be( "LOCAL-IN-1" );
+            r1.More.Should().HaveCount( 1 );
+            r1.More[0].Memory.SecureName.Should().Be( "" );
+            r1.More[0].Item2.LocalName.Should().Be( "LOCAL-IN-2" );
 
             // Reading with "AllExchangeable": [NotExchangeable] types are also ignored.
             var r2 = factory.ReadJson( attack2, new PocoJsonImportOptions { TypeFilterName = "AllExchangeable" } )!;
             r2.SafeData.Item1.SecureName.Should().Be( "" );
             r2.SafeData.Local.LocalName.Should().Be( "" );
-            r2.More.Should().HaveCount( 0, "The List itself is excluded in the type set!" );
+            r2.More.Should().HaveCount( 0, "The List itself is excluded from the type set!" );
         }
 
     }
