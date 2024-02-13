@@ -111,6 +111,20 @@ namespace CK.Setup
                                       _lowLevelFilter );
             }
 
+            public IPocoTypeSet IncludeAndExclude( IEnumerable<IPocoType> include, IEnumerable<IPocoType> exclude )
+            {
+                if( !include.Any() && !exclude.Any() ) return this;
+                // The working set is a new empty raw set.
+                return CreateTypeSet( workingSet: new PocoTypeRawSet( _typeSystem ),
+                                      _allowEmptyRecords,
+                                      _allowEmptyPocos,
+                                      allowedTypes: include,
+                                      excludedTypes: exclude,
+                                      _autoIncludeCollections,
+                                      withAbstractReadOnlyFieldTypes: false,
+                                      _lowLevelFilter );
+            }
+
             public IPocoTypeSet Exclude( IEnumerable<IPocoType> disallowedTypes ) => this;
 
             public IPocoTypeSet ExcludeEmptyRecords()
@@ -195,6 +209,19 @@ namespace CK.Setup
                                       _autoIncludeCollections,
                                       withAbstractReadOnlyFieldTypes,
                                       _lowLevelFilter );
+            }
+
+            public IPocoTypeSet IncludeAndExclude( IEnumerable<IPocoType> include, IEnumerable<IPocoType> exclude )
+            {
+                if( !include.Any() && !exclude.Any() ) return this;
+                return CreateTypeSet( _raw.Clone(),
+                               _allowEmptyRecords,
+                               _allowEmptyPocos,
+                               allowedTypes: include,
+                               excludedTypes: exclude,
+                               _autoIncludeCollections,
+                               withAbstractReadOnlyFieldTypes: false,
+                               _lowLevelFilter );
             }
 
             public IPocoTypeSet Exclude( IEnumerable<IPocoType> disallowedTypes )

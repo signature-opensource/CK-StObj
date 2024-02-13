@@ -88,6 +88,20 @@ namespace CK.Setup
         IPocoTypeSet Exclude( IEnumerable<IPocoType> types );
 
         /// <summary>
+        /// Combines includes and excludes in a single resolution. Note that a type can be in both set:
+        /// while including it, its dependent types will also be included and then the type will be excluded but
+        /// the dependent types that don't require it will remain in the set.
+        /// <para>
+        /// Fields where <see cref="IPrimaryPocoField.FieldAccess"/> is <see cref="PocoFieldAccessKind.AbstractReadOnly"/> are skipped.
+        /// </para>
+        /// </summary>
+        /// <param name="include">The types to include in the set.</param>
+        /// <param name="exclude">The types to exclude.</param>
+        /// <returns>A new set (or this if nothing changed).</returns>
+        IPocoTypeSet IncludeAndExclude( IEnumerable<IPocoType> include, IEnumerable<IPocoType> exclude );
+
+
+        /// <summary>
         /// Excludes named records that have all their field's type excluded.
         /// The returned set has <see cref="AllowEmptyRecords"/> set to false and will not be able to
         /// contain such empty records anymore.
