@@ -13,7 +13,12 @@ namespace CK.Setup
     /// The behavior regarding nullability depends on the <see cref="LastVisited"/> <see cref="IMinimalPocoTypeSet"/>
     /// implementation: if the set tracks nullables and non nullables differently then both will be visited (<c>int?</c> and <c>int</c>).
     /// In practice, sets handle half of the types (only the non nullables): visiting a nullable is the same as visiting its non nullable
-    /// associated type.
+    /// associated type. As a safety net, visit methods are always called with non nullable types by default (this can be changed by the
+    /// constructor <c>allowNullableVisit</c> parameter).
+    /// </para>
+    /// <para>
+    /// To visit the nullables as distinct types, a "nullable aware" <see cref="IMinimalPocoTypeSet"/> must be provided and <c>allowNullableVisit</c>
+    /// should be set to true.
     /// </para>
     /// <para>
     /// By default:
@@ -53,15 +58,21 @@ namespace CK.Setup
     public class PocoTypeVisitor<T> where T : class, IMinimalPocoTypeSet
     {
         readonly T _visited;
+        readonly bool _allowNullableVisit;
 
         /// <summary>
         /// Initializes a new visitor with an existing <see cref="LastVisited"/> instance.
         /// </summary>
         /// <param name="lastVisited">Already visited types.</param>
-        public PocoTypeVisitor( T lastVisited )
+        /// <param name="allowNullableVisit">
+        /// Optionally allows the visit methods to receive a nullable type.
+        /// By default, visit methods are called only with the non nullable type version.
+        /// </param>
+        public PocoTypeVisitor( T lastVisited, bool allowNullableVisit = false )
         {
             Throw.CheckNotNullArgument( lastVisited );
             _visited = lastVisited;
+            _allowNullableVisit = allowNullableVisit;
         }
 
         /// <summary>
@@ -116,6 +127,7 @@ namespace CK.Setup
                 OnAlreadyVisited( t );
                 return false;
             }
+            if( !_allowNullableVisit ) t = t.NonNullable;
             switch( t )
             {
                 case IPrimaryPocoType primary: VisitPrimaryPoco( primary ); break;
@@ -126,9 +138,7 @@ namespace CK.Setup
                 case IUnionPocoType union: VisitUnion( union ); break;
                 case IEnumPocoType e: VisitEnum( e ); break;
                 default:
-                    Throw.DebugAssert( t.GetType().Name == "PocoType"
-                                        || t.GetType().Name == "BasicValueTypeWithDefaultValue"
-                                        || t.GetType().Name == "BasicRefType" );
+                    Throw.DebugAssert( t.Kind == PocoTypeKind.Any || t.Kind == PocoTypeKind.Basic );
                     VisitBasic( t );
                     break;
             }
