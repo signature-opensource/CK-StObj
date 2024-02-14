@@ -92,68 +92,82 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( ITestNormalizedCultureInfo ) );
             var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
-            var poco = ts.FindByType( typeof( ITestNormalizedCultureInfo  ) );
+            var poco = ts.FindByType( typeof( ITestNormalizedCultureInfo ) );
             Throw.DebugAssert( poco != null );
 
             var setEx = ts.SetManager.AllExchangeable.Include( new[] { poco } );
-            setEx.NonNullableTypes.Should().HaveCount( 6 );
-            setEx.NonNullableTypes.Select( t => t.ToString() ).Should()
-                .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
-                .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
-                .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
-                .And.Contain( "[Basic]int" )
-                .And.Contain( "[Basic]ExtendedCultureInfo" )
-                .And.Contain( "[Basic]NormalizedCultureInfo" );
+            CheckSet( setEx );
 
             var setSe = ts.SetManager.AllSerializable.Include( new[] { poco } );
-            setSe.NonNullableTypes.Should().HaveCount( 6 );
-            setSe.NonNullableTypes.Select( t => t.ToString() ).Should()
-                .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
-                .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
-                .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
-                .And.Contain( "[Basic]int" )
-                .And.Contain( "[Basic]ExtendedCultureInfo" )
-                .And.Contain( "[Basic]NormalizedCultureInfo" );
+            CheckSet( setSe );
 
             var setAll = ts.SetManager.All.Include( new[] { poco } );
-            setAll.NonNullableTypes.Should().HaveCount( 6 );
-            setAll.NonNullableTypes.Select( t => t.ToString() ).Should()
-                .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
-                .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
-                .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
-                .And.Contain( "[Basic]int" )
-                .And.Contain( "[Basic]ExtendedCultureInfo" )
-                .And.Contain( "[Basic]NormalizedCultureInfo" );
+            CheckSet( setAll );
 
             var setEEx = ts.SetManager.EmptyExchangeable.Include( new[] { poco } );
-            setEEx.NonNullableTypes.Should().HaveCount( 6 );
-            setEEx.NonNullableTypes.Select( t => t.ToString() ).Should()
-                .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
-                .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
-                .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
-                .And.Contain( "[Basic]int" )
-                .And.Contain( "[Basic]ExtendedCultureInfo" )
-                .And.Contain( "[Basic]NormalizedCultureInfo" );
+            CheckSet( setEEx );
 
             var setESer = ts.SetManager.EmptySerializable.Include( new[] { poco } );
-            setESer.NonNullableTypes.Should().HaveCount( 6 );
-            setESer.NonNullableTypes.Select( t => t.ToString() ).Should()
-                .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
-                .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
-                .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
-                .And.Contain( "[Basic]int" )
-                .And.Contain( "[Basic]ExtendedCultureInfo" )
-                .And.Contain( "[Basic]NormalizedCultureInfo" );
+            CheckSet( setESer );
 
             var setE = ts.SetManager.Empty.Include( new[] { poco } );
-            setE.NonNullableTypes.Should().HaveCount( 6 );
-            setE.NonNullableTypes.Select( t => t.ToString() ).Should()
-                .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
-                .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
-                .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
-                .And.Contain( "[Basic]int" )
-                .And.Contain( "[Basic]ExtendedCultureInfo" )
-                .And.Contain( "[Basic]NormalizedCultureInfo" );
+            CheckSet( setE );
+
+            static void CheckSet( IPocoTypeSet setEx )
+            {
+                setEx.NonNullableTypes.Should().HaveCount( 6 );
+                setEx.NonNullableTypes.Select( t => t.ToString() ).Should()
+                    .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNormalizedCultureInfo" )
+                    .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
+                    .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
+                    .And.Contain( "[Basic]int" )
+                    .And.Contain( "[Basic]ExtendedCultureInfo" )
+                    .And.Contain( "[Basic]NormalizedCultureInfo" );
+            }
+        }
+
+        public interface ITestNullNormalizedCultureInfo : IPoco
+        {
+            ref WithNormalized? N { get; }
+        }
+
+        [Test]
+        public void Nullable_visit_doesnt_hide_type()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ITestNullNormalizedCultureInfo ) );
+            var ts = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+            var poco = ts.FindByType( typeof( ITestNullNormalizedCultureInfo ) );
+            Throw.DebugAssert( poco != null );
+
+            var setEx = ts.SetManager.AllExchangeable.Include( new[] { poco } );
+            CheckSet( setEx );
+
+            var setSe = ts.SetManager.AllSerializable.Include( new[] { poco } );
+            CheckSet( setSe );
+
+            var setAll = ts.SetManager.All.Include( new[] { poco } );
+            CheckSet( setAll );
+
+            var setEEx = ts.SetManager.EmptyExchangeable.Include( new[] { poco } );
+            CheckSet( setEEx );
+
+            var setESer = ts.SetManager.EmptySerializable.Include( new[] { poco } );
+            CheckSet( setESer );
+
+            var setE = ts.SetManager.Empty.Include( new[] { poco } );
+            CheckSet( setE );
+
+            static void CheckSet( IPocoTypeSet setEx )
+            {
+                setEx.NonNullableTypes.Should().HaveCount( 6 );
+                setEx.NonNullableTypes.Select( t => t.ToString() ).Should()
+                    .Contain( "[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.ITestNullNormalizedCultureInfo" )
+                    .And.Contain( "[AbstractPoco]CK.Core.IPoco" )
+                    .And.Contain( "[Record]CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.WithNormalized" )
+                    .And.Contain( "[Basic]int" )
+                    .And.Contain( "[Basic]ExtendedCultureInfo" )
+                    .And.Contain( "[Basic]NormalizedCultureInfo" );
+            }
         }
     }
 }

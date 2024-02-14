@@ -10,11 +10,14 @@ namespace CK.Setup
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
     /// are available in <see cref="LastVisited"/> that is a <see cref="IMinimalPocoTypeSet"/>.
     /// <para>
+    /// The behavior regarding nullability depends on the <see cref="LastVisited"/> <see cref="IMinimalPocoTypeSet"/>
+    /// implementation: if the set tracks nullables and non nullables differently then both will be visited (<c>int?</c> and <c>int</c>).
+    /// In practice, sets handle half of the types (only the non nullables): visiting a nullable is the same as visiting its non nullable
+    /// associated type.
+    /// </para>
+    /// <para>
     /// By default:
     /// <list type="bullet">
-    ///     <item>
-    ///     Nullable types visit their <see cref="IPocoType.NonNullable"/>.
-    ///     </item>
     ///     <item>
     ///     <see cref="IRecordPocoType"/> visits its <see cref="IRecordPocoField"/>.
     ///     </item>
@@ -64,6 +67,11 @@ namespace CK.Setup
         /// <summary>
         /// Gets the type bag that have been visited once during the current
         /// or last <see cref="VisitRoot(IPocoType,bool)"/>.
+        /// <para>
+        /// Note that this set can contain both a nullable and its non nullable associated type if
+        /// its implementation differentiates them. In practice, set implementations merge them: in such case
+        /// this set can contain the nullable or the non nullable version of the same type but not both of them.
+        /// </para>
         /// </summary>
         public T LastVisited => _visited;
 
@@ -108,28 +116,21 @@ namespace CK.Setup
                 OnAlreadyVisited( t );
                 return false;
             }
-            if( t.IsNullable )
+            switch( t )
             {
-                VisitNullable( t );
-            }
-            else
-            {
-                switch( t )
-                {
-                    case IPrimaryPocoType primary: VisitPrimaryPoco( primary ); break;
-                    case ISecondaryPocoType secondary: VisitSecondaryPoco( secondary ); break;
-                    case IAbstractPocoType abstractPoco: VisitAbstractPoco( abstractPoco ); break;
-                    case ICollectionPocoType collection: VisitCollection( collection ); break;
-                    case IRecordPocoType record: VisitRecord( record ); break;
-                    case IUnionPocoType union: VisitUnion( union ); break;
-                    case IEnumPocoType e: VisitEnum( e ); break;
-                    default:
-                        Throw.DebugAssert( t.GetType().Name == "PocoType"
-                                           || t.GetType().Name == "BasicValueTypeWithDefaultValue"
-                                           || t.GetType().Name == "BasicRefType" );
-                        VisitBasic( t );
-                        break;
-                }
+                case IPrimaryPocoType primary: VisitPrimaryPoco( primary ); break;
+                case ISecondaryPocoType secondary: VisitSecondaryPoco( secondary ); break;
+                case IAbstractPocoType abstractPoco: VisitAbstractPoco( abstractPoco ); break;
+                case ICollectionPocoType collection: VisitCollection( collection ); break;
+                case IRecordPocoType record: VisitRecord( record ); break;
+                case IUnionPocoType union: VisitUnion( union ); break;
+                case IEnumPocoType e: VisitEnum( e ); break;
+                default:
+                    Throw.DebugAssert( t.GetType().Name == "PocoType"
+                                        || t.GetType().Name == "BasicValueTypeWithDefaultValue"
+                                        || t.GetType().Name == "BasicRefType" );
+                    VisitBasic( t );
+                    break;
             }
             return true;
         }
@@ -143,15 +144,6 @@ namespace CK.Setup
         /// <param name="t">The already visited type.</param>
         protected virtual void OnAlreadyVisited( IPocoType t )
         {
-        }
-
-        /// <summary>
-        /// Visits the <see cref="IPocoType.NonNullable"/>.
-        /// </summary>
-        /// <param name="t">A nullable type.</param>
-        protected virtual void VisitNullable( IPocoType t )
-        {
-            Visit( t.NonNullable );
         }
 
         /// <summary>
