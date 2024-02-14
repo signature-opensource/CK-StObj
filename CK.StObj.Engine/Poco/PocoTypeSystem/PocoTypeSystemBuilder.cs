@@ -147,7 +147,7 @@ namespace CK.Setup
             }
         }
 
-        bool ColectRegisterPocoTypeAttribute( IActivityMonitor monitor, IExtMemberInfo m )
+        bool CollectRegisterPocoTypeAttribute( IActivityMonitor monitor, IExtMemberInfo m )
         {
             var all = m.CustomAttributesData.Where( a => a.AttributeType.Namespace == "CK.Core"
                                                          && a.AttributeType.Name == "RegisterPocoTypeAttribute" );
@@ -221,7 +221,7 @@ namespace CK.Setup
             Throw.DebugAssert( result == null || result.IsNullable == nInfo.IsNullable );
             if( result != null )
             {
-                ColectRegisterPocoTypeAttribute( monitor, ctx.Root );
+                CollectRegisterPocoTypeAttribute( monitor, ctx.Root );
             }
             return result;
         }

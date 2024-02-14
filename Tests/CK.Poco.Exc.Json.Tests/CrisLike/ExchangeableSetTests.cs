@@ -208,6 +208,5 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
             r2.SafeData.Local.LocalName.Should().Be( "" );
             r2.More.Should().HaveCount( 0, "The List itself is excluded from the type set!" );
         }
-
     }
 }

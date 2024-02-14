@@ -144,9 +144,16 @@ namespace CK.Setup
                     VisitField( f );
                 }
             }
-            foreach( var a in primary.AbstractTypes )
+            if( primary.AbstractTypes.Count == 0 )
             {
-                Visit( a );
+                Visit( Poco );
+            }
+            else
+            {
+                foreach( var a in primary.AbstractTypes )
+                {
+                    Visit( a );
+                }
             }
             foreach( var s in primary.SecondaryTypes )
             {

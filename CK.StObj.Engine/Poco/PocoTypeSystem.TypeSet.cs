@@ -198,9 +198,7 @@ namespace CK.Setup
 
             public IPocoTypeSet Include( IEnumerable<IPocoType> types, bool withAbstractReadOnlyFieldTypes = false )
             {
-                // If withAbstractReadOnlyFieldTypes is true, we don't take any risk and compute the set:
-                // AbstractReadOnly fields of existing types may be followed.
-                if( !withAbstractReadOnlyFieldTypes && types.All( _raw.Contains ) ) return this;
+                if( !types.Any() ) return this;
                 return CreateTypeSet( _raw.Clone(),
                                       _allowEmptyRecords,
                                       _allowEmptyPocos,
@@ -215,18 +213,18 @@ namespace CK.Setup
             {
                 if( !include.Any() && !exclude.Any() ) return this;
                 return CreateTypeSet( _raw.Clone(),
-                               _allowEmptyRecords,
-                               _allowEmptyPocos,
-                               allowedTypes: include,
-                               excludedTypes: exclude,
-                               _autoIncludeCollections,
-                               withAbstractReadOnlyFieldTypes: false,
-                               _lowLevelFilter );
+                                      _allowEmptyRecords,
+                                      _allowEmptyPocos,
+                                      allowedTypes: include,
+                                      excludedTypes: exclude,
+                                      _autoIncludeCollections,
+                                      withAbstractReadOnlyFieldTypes: false,
+                                      _lowLevelFilter );
             }
 
             public IPocoTypeSet Exclude( IEnumerable<IPocoType> disallowedTypes )
             {
-                if( !disallowedTypes.Any( _raw.Contains ) ) return this;
+                if( !disallowedTypes.Any() ) return this;
                 return CreateTypeSet( _raw.Clone(),
                                       _allowEmptyRecords,
                                       _allowEmptyPocos,
