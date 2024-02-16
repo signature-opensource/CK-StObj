@@ -42,12 +42,12 @@ namespace CK.Setup.PocoJson
                           .Append( "else" )
                           .OpenBlock();
                     var v = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})";
-                    _writers[t.Index >> 1].Invoke( writer, v );
+                    _writers[t.ObliviousType.Index >> 1].Invoke( writer, v );
                     writer.CloseBlock();
                 }
                 else
                 {
-                    _writers[t.Index >> 1].Invoke( writer, variableName );
+                    _writers[t.ObliviousType.Index >> 1].Invoke( writer, variableName );
                     writer.NewLine();
                 }
             }
@@ -57,7 +57,7 @@ namespace CK.Setup.PocoJson
                 writer.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
                       .Append( "else" )
                       .OpenBlock();
-                _writers[t.Index >> 1].Invoke( writer, variableName );
+                _writers[t.ObliviousType.Index >> 1].Invoke( writer, variableName );
                 writer.CloseBlock();
             }
         }
@@ -66,6 +66,7 @@ namespace CK.Setup.PocoJson
         // and GenerateWriteAny().
         void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable, bool honorOption )
         {
+            Throw.DebugAssert( nonNullable.IsOblivious );
             var typeName = _nameMap.GetName( nonNullable );
             if( honorOption ) writer.Append( $"if(!wCtx.Options.TypeLess)" );
             writer.Append( "w.WriteStringValue(" ).AppendSourceString( typeName ).Append( ");" ).NewLine();

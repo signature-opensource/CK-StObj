@@ -8,7 +8,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Builds a type standardized name that is not the <see cref="IPocoType.CSharpName"/> for types in a <see cref="TypeSet"/>.
-    /// By default nullable type names are suffixed by "?" but this may be changed by overriding the virtual name factories.
+    /// By default nullable type names are suffixed by "?" but this may be changed by overriding the name factories.
     /// <list type="bullet">
     ///   <item>
     ///   For <see cref="PocoTypeKind.Basic"/>, <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/> and
@@ -28,7 +28,7 @@ namespace CK.Setup
     ///   This can be changed by overriding <see cref="MakeNamedType"/>.
     ///   </item>
     ///   <item>
-    ///   For <see cref="ICollectionPocoType"/> ts defaults to "A(T)" for array, "L(T)" for list, "S(T)" for set, "M(TKey,TValue)" for dictionary
+    ///   For <see cref="ICollectionPocoType"/> it defaults to "A(T)" for array, "L(T)" for list, "S(T)" for set, "M(TKey,TValue)" for dictionary
     ///   or "O(TValue)" when the dictionary key is a string.
     ///   This can be changed by overriding <see cref="MakeCollection"/>.
     ///   </item>

@@ -193,7 +193,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
                          .Should().Throw<JsonException>();
 
             // Using the object syntax that is allowed by anonymous records:
-            var attack2 = """{"SafeData":{"Item1":{"SecureName":"EVIL-1"},"Local":{"LocalName":"LOCAL-IN-1"}},"More":[{"Memory":{"SecureName":"EVIL-1"},"Item2":{"LocalName":"LOCAL-IN-2"}}]}""";
+            var attack2 = """{"SafeData":{"Item1":{"SecureName":"EVIL-1"},"Item2":{"LocalName":"LOCAL-IN-1"}},"More":[{"Memory":{"SecureName":"EVIL-1"},"Item2":{"LocalName":"LOCAL-IN-2"}}]}""";
             // Reading with "AllSerializable": [NotSerializable] types are ignored.
             var r1 = factory.ReadJson( attack2, new PocoJsonImportOptions { TypeFilterName = "AllSerializable" } )!;
             r1.SafeData.Item1.SecureName.Should().Be( "" );

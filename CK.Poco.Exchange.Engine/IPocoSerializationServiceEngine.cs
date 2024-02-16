@@ -16,7 +16,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the names of the serializable Poco types.
         /// <para>
-        /// This map is bound (see <see cref="PocoTypeNameMap.TypeSet"/>) to the <see cref="IPocoTypeSetManager.AllSerializable"/>
+        /// This map is bound (see <see cref="IPocoTypeNameMap.TypeSet"/>) to the <see cref="IPocoTypeSetManager.AllSerializable"/>
         /// and uses the standard names described by <see cref="PocoTypeNameMap"/>.
         /// </para>
         /// </summary>

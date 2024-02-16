@@ -83,7 +83,7 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             IPocoType? extendedCultureInfo = null;
             IPocoType? normalizedCultureInfo = null;
 
-            foreach( var t in _nameMap.TypeSet.NonNullableTypes )
+            foreach( var t in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
             {
                 if( !t.IsOblivious
                     || t.Kind == PocoTypeKind.Any

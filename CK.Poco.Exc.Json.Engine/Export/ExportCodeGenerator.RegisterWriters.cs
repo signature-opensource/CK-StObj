@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using static CK.Core.PocoJsonExportSupport;
 using System.Reflection.Metadata;
+using System.Linq;
 
 namespace CK.Setup.PocoJson
 {
@@ -39,7 +40,7 @@ namespace CK.Setup.PocoJson
             }
             """ );
 
-            foreach( var type in _nameMap.TypeSet.NonNullableTypes )
+            foreach( var type in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
             {
                 switch( type.Kind )
                 {

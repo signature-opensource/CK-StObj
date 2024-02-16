@@ -4,17 +4,18 @@ using System.Numerics;
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CK.Setup.PocoJson
 {
     sealed partial class ImportCodeGenerator
     {
-        // Step 1: The _readers array is filled with Reader delegates for all Serializable and NonNullable types.
+        // Step 1: The _readers array is filled with Reader delegates for all Serializable and NonNullable oblivious types.
         //         Among them, only IPoco and Records require an explicit generation of their methods since collections
-        //         are implemented once for all based on the typed functions reader of their item type.
+        //         are implemented once for all based on the typed functions reader of their item types.
         void RegisterReaders( List<IPrimaryPocoType> pocos, List<IRecordPocoType> records )
         {
-            foreach( var type in _nameMap.TypeSet.NonNullableTypes )
+            foreach( var type in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
             {
                 switch( type.Kind )
                 {

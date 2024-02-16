@@ -234,7 +234,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
                     originName = variableName;
                     variableName = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
                 }
-                readers[t.Index >> 1].Invoke( writer, variableName );
+                readers[t.ObliviousType.Index >> 1].Invoke( writer, variableName );
                 if( originName != null )
                 {
                     writer.NewLine().Append( originName ).Append( " = " ).Append( originName ).Append( ".GetValueOrDefault();" );
