@@ -46,12 +46,15 @@ namespace CK.Core
         /// <summary>
         /// Gets the Poco name.
         /// When no [<see cref="ExternalNameAttribute"/>] is defined, this name defaults
-        /// to the <see cref="Type.FullName"/> of the primary interface of the Poco.
+        /// to the <see cref="CK.Core.TypeExtensions.ToCSharpName(Type?, bool, bool, bool)"/>
+        /// (with the default true parameters withNamespace, typeDeclaration and useValueTupleParentheses)
+        /// of the primary interface of the Poco.
         /// </summary>
         string Name { get; }
 
         /// <summary>
         /// Gets the previous names of this Poco if any.
+        /// These previous names can be defined by the [<see cref="ExternalNameAttribute"/>].
         /// </summary>
         IReadOnlyList<string> PreviousNames { get; }
 

@@ -53,13 +53,13 @@ namespace CK.StObj.Engine.Tests.Poco
         {
         }
 
-        static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes();
+        public static readonly IEnumerable<Type> TheseValidNestedTypes = typeof( PocoInterfacesAndOtherInterfacesTests ).GetNestedTypes();
 
         [Test]
         public void Poco_OtherInterfaces_contains_the_definers_that_are_used()
         {
             var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.ToArray() );
-            var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
+            var poco = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.PocoDirectory;
             Debug.Assert( poco != null );
 
             poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IFinal2 ), typeof( IIndependent ) } );
@@ -77,7 +77,7 @@ namespace CK.StObj.Engine.Tests.Poco
             // With IFinal1 only: ICommandAuthDeviceId is not here.
             {
                 var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => t != typeof( IFinal2 ) ).ToArray() );
-                var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
+                var poco = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.PocoDirectory;
                 Debug.Assert( poco != null );
 
                 poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IFinal1 ), typeof( IIndependent ) } );
@@ -90,25 +90,13 @@ namespace CK.StObj.Engine.Tests.Poco
             // Without IPoco at all: no definers are referenced.
             {
                 var c = TestHelper.CreateStObjCollector( TheseValidNestedTypes.Where( t => !t.Name.StartsWith( "IFinal", StringComparison.Ordinal ) ).ToArray() );
-                var poco = TestHelper.GetSuccessfulResult( c ).CKTypeResult.PocoSupport;
+                var poco = TestHelper.GetSuccessfulResult( c ).PocoTypeSystemBuilder.PocoDirectory;
                 Debug.Assert( poco != null );
 
                 poco.AllInterfaces.Keys.Should().BeEquivalentTo( new[] { typeof( IIndependent ) } );
                 poco.OtherInterfaces.Keys.Should().BeEmpty();
             }
         }
-
-        //public interface IAlien { }
-
-        //public interface ICannotBe : IPoco, IAlien { }
-
-
-        //[Test]
-        //public void Poco_OtherInterfaces_MUST_be_IPoco()
-        //{
-        //    var c = TestHelper.CreateStObjCollector( typeof( ICannotBe ) );
-        //    TestHelper.GetFailedResult( c );
-        //}
 
     }
 }

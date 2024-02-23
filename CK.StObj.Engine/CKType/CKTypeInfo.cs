@@ -266,7 +266,7 @@ namespace CK.Setup
         /// <param name="t">The type that must be associated to this most specialized type.</param>
         /// <param name="k">The kind from the <see cref="CKTypeKindDetector"/>.</param>
         /// <param name="collector">The type collector.</param>
-        internal void AddMultipleMapping( Type t, CKTypeKind k, CKTypeCollector collector )
+        internal void AddMultipleMapping( IActivityMonitor monitor, Type t, CKTypeKind k, CKTypeCollector collector )
         {
             Debug.Assert( !IsSpecialized, "We are on the leaf." );
             Debug.Assert( t != Type, $"Multiple mapping {ToString()} must not be mapped to itself." );
@@ -276,7 +276,7 @@ namespace CK.Setup
             Debug.Assert( (k & CKTypeKind.IsMultipleService) != 0 );
             _multipleMappings ??= new List<Type>();
             _multipleMappings.Add( t );
-            collector.RegisterMultipleInterfaces( t, k, this );
+            collector.RegisterMultipleInterfaces( monitor, t, k, this );
         }
 
         /// <summary>

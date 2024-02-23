@@ -265,7 +265,8 @@ namespace CK.StObj.Engine.Tests.Endpoint
             var collector = TestHelper.CreateStObjCollector( typeof( ManySingleton ),
                                                              typeof( ManyConsumer ),
                                                              typeof( ManyAsScopedEndpointDefinition ) );
-            TestHelper.GetFailedAutomaticServicesConfiguration( collector );
+            TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                                                                "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'." );
         }
 
 
@@ -319,6 +320,7 @@ namespace CK.StObj.Engine.Tests.Endpoint
                                                              typeof( ManyConsumer ),
                                                              typeof( ManyAsScopedEndpointDefinition ) );
             var result = TestHelper.GetFailedAutomaticServicesConfiguration( collector,
+                                                                             "The IEnumerable<MultipleMappingsEndpointTests.IMany> of [IsMultiple] is a Singleton that contains externally defined Scoped mappings (endpoint 'ManyAsScoped'): 'CK.StObj.Engine.Tests.Endpoint.MultipleMappingsEndpointTests.ManyNothing'.",
                                                                              configureServices: s =>
                                                                              {
                                                                                  s.Services.AddScoped<ManyNothing>();

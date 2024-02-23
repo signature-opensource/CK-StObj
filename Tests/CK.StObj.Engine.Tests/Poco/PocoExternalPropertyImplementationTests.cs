@@ -27,7 +27,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
             {
-                foreach( var poco in c.Assembly.GetPocoSupportResult().Roots )
+                foreach( var poco in c.Assembly.GetPocoDirectory().Families )
                 {
                     foreach( var p in poco.ExternallyImplementedPropertyList )
                     {

@@ -1,16 +1,14 @@
-using System;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Xml.Linq;
 using CK.Core;
 using CK.Setup;
 using CK.Testing.StObjEngine;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace CK.Testing
 {
@@ -43,40 +41,61 @@ namespace CK.Testing
 
         StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( Func<Type, bool>? typeFilter ) => DoCreateStObjCollector( typeFilter );
 
-        StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
+        static StObjCollector DoCreateStObjCollector( Func<Type, bool>? typeFilter )
         {
-            return new StObjCollector( _monitor.Monitor,
-                                       new SimpleServiceContainer(),
+            return new StObjCollector( new SimpleServiceContainer(),
                                        typeFilter: typeFilter != null ? new TypeFilter( typeFilter ) : null );
         }
 
         StObjCollector IStObjEngineTestHelperCore.CreateStObjCollector( params Type[] types )
         {
             var c = DoCreateStObjCollector( null );
-            c.RegisterTypes( types );
+            c.RegisterTypes( _monitor.Monitor, types );
             return c;
         }
 
-        StObjCollectorResult IStObjEngineTestHelperCore.GetSuccessfulResult( StObjCollector c ) => DoGetSuccessfulResult( c );
+        StObjCollectorResult IStObjEngineTestHelperCore.GetSuccessfulResult( StObjCollector c ) => DoGetSuccessfulResult( _monitor.Monitor, c );
 
-        static StObjCollectorResult DoGetSuccessfulResult( StObjCollector c )
+        static StObjCollectorResult DoGetSuccessfulResult( IActivityMonitor monitor, StObjCollector c )
         {
-            c.RegisteringFatalOrErrorCount.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
-            StObjCollectorResult? r = c.GetResult();
+            c.FatalOrErrors.Count.Should().Be( 0, "There must be no registration error (CKTypeCollector must be successful)." );
+            StObjCollectorResult? r = c.GetResult( monitor );
             r.HasFatalError.Should().Be( false, "There must be no error." );
             return r;
         }
 
-        StObjCollectorResult? IStObjEngineTestHelperCore.GetFailedResult( StObjCollector c )
+        StObjCollectorResult? IStObjEngineTestHelperCore.GetFailedResult( StObjCollector c, string message, params string[] otherMessages )
         {
-            if( c.RegisteringFatalOrErrorCount != 0 )
+            if( c.FatalOrErrors.Count != 0 )
             {
-                TestHelper.Monitor.Error( $"GetFailedResult: {c.RegisteringFatalOrErrorCount} fatal or error during StObjCollector registration. (Everything is fine since an error was expected.)" );
+                TestHelper.Monitor.Error( $"GetFailedResult: {c.FatalOrErrors.Count} fatal or error during StObjCollector registration." );
+                CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
                 return null;
             }
-            var r = c.GetResult();
+            var r = c.GetResult( _monitor.Monitor );
             r.HasFatalError.Should().Be( true, "GetFailedResult: StObjCollector.GetResult() must have failed with at least one fatal error." );
+            CheckExpectedMessages( c.FatalOrErrors, message, otherMessages );
             return r;
+        }
+
+        static void CheckExpectedMessages( IEnumerable<string> fatalOrErrors, string message, IEnumerable<string>? otherMessages )
+        {
+            CheckMessage( fatalOrErrors, message );
+            if( otherMessages != null )
+            {
+                foreach( var m in otherMessages ) CheckMessage( fatalOrErrors, m );
+            }
+
+            static void CheckMessage( IEnumerable<string> fatalOrErrors, string m )
+            {
+                if( !String.IsNullOrEmpty( m ) )
+                {
+                    m = m.ReplaceLineEndings();
+                    var errors = fatalOrErrors.Select( m => m.ReplaceLineEndings() );
+                    errors.Any( e => e.Contains( m, StringComparison.OrdinalIgnoreCase ) ).Should()
+                        .BeTrue( $"Expected '{m}' to be found in: {Environment.NewLine}{errors.Concatenate( Environment.NewLine )}" );
+                }
+            }
         }
 
         GenerateCodeResult IStObjEngineTestHelperCore.GenerateCode( StObjCollector c,
@@ -132,11 +151,12 @@ namespace CK.Testing
 
         AutomaticServicesResult IStObjEngineTestHelperCore.CreateAutomaticServices( StObjCollector c,
                                                                                     Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
+                                                                                    Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem,
                                                                                     SimpleServiceContainer? startupServices,
                                                                                     Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
             var loadResult = DoCompileAndLoadStObjMap( c, engineConfigurator );
-
+            alterPocoTypeSystem?.Invoke( loadResult.CollectorResult.PocoTypeSystemBuilder );
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
             configureServices?.Invoke( reg );
             reg.AddStObjMap( loadResult.Map ).Should().BeTrue( "Service configuration succeed." );
@@ -145,14 +165,20 @@ namespace CK.Testing
         }
 
         StObjContextRoot.ServiceRegister IStObjEngineTestHelperCore.GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                                             string message,
+                                                                                                             IEnumerable<string>? otherMessages,
                                                                                                              Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator,
                                                                                                              SimpleServiceContainer? startupServices,
                                                                                                              Action<StObjContextRoot.ServiceRegister>? configureServices )
         {
             IStObjMap map = DoCompileAndLoadStObjMap( c, engineConfigurator ).Map;
             var reg = new StObjContextRoot.ServiceRegister( TestHelper.Monitor, new ServiceCollection(), startupServices );
-            configureServices?.Invoke( reg );
-            reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
+            using( TestHelper.Monitor.CollectEntries( out var entries ) )
+            {
+                configureServices?.Invoke( reg );
+                reg.AddStObjMap( map ).Should().BeFalse( "Service configuration failed." );
+                CheckExpectedMessages( entries.Select( e => e.Text + CKExceptionData.CreateFrom( e.Exception )?.ToString() ), message, otherMessages );
+            }
             return reg;
         }
 

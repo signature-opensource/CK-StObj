@@ -15,8 +15,8 @@ namespace CK.Setup
     /// of the Aspect they configure.
     /// </para>
     /// <para>
-    /// Aspects can implement <see cref="ICSCodeGenerator"/> if they need to directly participate to
-    /// code generation. When implemented <see cref="ICSCodeGenerator.Implement(IActivityMonitor, ICSCodeGenerationContext)"/>
+    /// Aspects can implement <see cref="ICSCodeGeneratorType"/> if they need to directly participate to
+    /// code generation. When implemented <see cref="ICSCodeGeneratorType.Implement(IActivityMonitor, ICSCodeGenerationContext)"/>
     /// is called (for each <see cref="ICodeGenerationContext.CurrentRun"/>) after <see cref="RunPreCode(IActivityMonitor, IStObjEngineRunContext)"/>
     /// and before <see cref="RunPostCode(IActivityMonitor, IStObjEnginePostCodeRunContext)"/>.
     /// </para>

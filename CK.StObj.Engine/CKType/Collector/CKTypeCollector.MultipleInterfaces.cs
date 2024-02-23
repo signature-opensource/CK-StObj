@@ -239,7 +239,7 @@ namespace CK.Setup
             }
         }
 
-        internal void RegisterMultipleInterfaces( Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
+        internal void RegisterMultipleInterfaces( IActivityMonitor monitor, Type tAbstraction, CKTypeKind enumeratedKind, CKTypeInfo final )
         {
             Debug.Assert( !final.IsSpecialized );
             if( !_multipleMappings.TryGetValue( tAbstraction, out var multiple ) )

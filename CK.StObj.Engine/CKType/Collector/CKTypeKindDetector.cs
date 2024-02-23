@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 
 namespace CK.Setup
 {
@@ -273,7 +272,6 @@ namespace CK.Setup
                         Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                         Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                         Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                        Debug.Assert( typeof( PocoClassAttribute ).Name == "PocoClassAttribute" );
                         Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
                         Debug.Assert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
                         bool hasSuperDefiner = false;

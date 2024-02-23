@@ -44,11 +44,11 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector );
+                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a Endpoint or Process service (type is a class)." );
             }
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );
-                TestHelper.GetFailedResult( collector );
+                TestHelper.GetFailedResult( collector , "RealObject cannot be a Endpoint or Process service (type is a class)." );
             }
         }
 
@@ -62,7 +62,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void currently_Endpoint_services_only_propagate_their_lifetime_1()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof(EndpointService1), typeof( EndpointDependentService1 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( EndpointService1 ), typeof( EndpointDependentService1 ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );

@@ -15,6 +15,12 @@ namespace CK.Setup
     /// Attribute inheritance is ignored: only attributes applied to the member are considered. 
     /// When used with another type or a member of another type from the one provided 
     /// in the constructor, an exception is thrown.
+    /// <para>
+    /// TODO: this should be heavily re-factored as a ubiquitous type cache with <see cref="IExtMemberInfo"/>.
+    /// A IServiceCollection/IServicePorvider should be central and configured with the aspects: instantiation
+    /// of the attribute implementation must benefit of the central provider.
+    /// I can't say whether this is a heavy or easily doable refactoring without trying :(.
+    /// </para>
     /// </summary>
     public class TypeAttributesCache : ITypeAttributesCache
     {
@@ -59,7 +65,7 @@ namespace CK.Setup
                              bool includeBaseClasses,
                              Action<Type> alsoRegister )
         {
-            if( type == null ) throw new ArgumentNullException( nameof( type ) );
+            Throw.CheckNotNullArgument( type );
 
             // This is ready to be injected in the delegated attribute constructor: no other attributes are visible.
             // If other attributes must be accessed, then the IAttributeContextBoundInitializer interface must be used.
@@ -164,9 +170,10 @@ namespace CK.Setup
         /// <returns>True if at least one attribute exists.</returns>
         public bool IsDefined( MemberInfo m, Type attributeType )
         {
-            if( m == null ) throw new ArgumentNullException( nameof(m) );
-            if( attributeType == null ) throw new ArgumentNullException( nameof(attributeType) );
-            return _all.Any( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) && attributeType.IsAssignableFrom( e.Attr.GetType() ) )
+            Throw.CheckNotNullArgument( m );
+            Throw.CheckNotNullArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
+            Throw.CheckNotNullArgument( attributeType );
+            return _all.Any( e => e.M == m && attributeType.IsAssignableFrom( e.Attr.GetType() ) )
                     || ( (m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type ))) 
                          && m.GetCustomAttributes(false).Any( a => attributeType.IsAssignableFrom( a.GetType()) ) );
         }
@@ -181,9 +188,10 @@ namespace CK.Setup
         /// <returns>A set of attributes that are guaranteed to be assignable to <paramref name="attributeType"/>.</returns>
         public IEnumerable<object> GetCustomAttributes( MemberInfo m, Type attributeType )
         {
-            if( m == null ) throw new ArgumentNullException( "m" );
-            if( attributeType == null ) throw new ArgumentNullException( "attributeType" );
-            var fromCache = _all.Where( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
+            Throw.CheckNotNullArgument( m );
+            Throw.CheckArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
+            Throw.CheckNotNullArgument( attributeType );
+            var fromCache = _all.Where( e => e.M == m && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
             if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
             {
                 return fromCache
@@ -202,8 +210,9 @@ namespace CK.Setup
         /// <returns>A set of typed attributes.</returns>
         public IEnumerable<T> GetCustomAttributes<T>( MemberInfo m )
         {
-            if( m == null ) throw new ArgumentNullException( "m" );
-            var fromCache = _all.Where( e => CK.Reflection.MemberInfoEqualityComparer.Default.Equals( e.M, m ) && e.Attr is T ).Select( e => (T)e.Attr );
+            Throw.CheckNotNullArgument( m );
+            Throw.CheckNotNullArgument( "Members must always be retrieved through its DeclaringType.", m.DeclaringType == m.ReflectedType );
+            var fromCache = _all.Where( e => e.M == m && e.Attr is T ).Select( e => (T)e.Attr );
             if( m.DeclaringType == Type || (_includeBaseClasses && m.DeclaringType != null && m.DeclaringType.IsAssignableFrom( Type )) )
             {
                 return fromCache

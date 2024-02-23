@@ -10,6 +10,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
     [CKTypeDefiner]
     public interface ICommand<out TResult> : ICommand
     {
+        [AutoImplementationClaim] public static TResult TResultType => default!;
     }
 
 

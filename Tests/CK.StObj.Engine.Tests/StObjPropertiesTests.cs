@@ -35,9 +35,8 @@ namespace CK.StObj.Engine.Tests
         public void OneObject()
         {
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( SimpleContainer ) );
-                var result = collector.GetResult().EngineMap!.StObjs;
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( SimpleContainer ) );
+                var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
                 result.OrderedStObjs
                       .Single( o => o.FinalImplementation.Implementation is SimpleContainer )
                       .GetStObjProperty( "OneIntValue" ).Should().Be( 3712 );
@@ -81,12 +80,12 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void SchmurtzPropagation()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), configurator: new SchmurtzConfigurator() );
-            collector.RegisterType( typeof( SimpleContainer ) );
-            collector.RegisterType( typeof( SpecializedContainer ) );
-            collector.RegisterType( typeof( BaseObject ) );
-            collector.RegisterType( typeof( SpecializedObject ) );
-            collector.RegisterType( typeof( SpecializedObjectWithExplicitContainer ) );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), configurator: new SchmurtzConfigurator() );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleContainer ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SpecializedContainer ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( BaseObject ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SpecializedObject ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SpecializedObjectWithExplicitContainer ) );
             var result = TestHelper.GetSuccessfulResult( collector ).EngineMap!.StObjs;
 
             Assert.That( result.OrderedStObjs.First( s => s.ClassType == typeof( BaseObject ) ).GetStObjProperty( "SchmurtzProp" )!.ToString(),

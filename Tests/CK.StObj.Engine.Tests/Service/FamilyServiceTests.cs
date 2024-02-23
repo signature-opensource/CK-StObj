@@ -34,15 +34,12 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 // NotALinkBetweenFamilies supports all the services (IS1, IS2 and IOtherServiceBase).
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( NotALinkBetweenFamilies ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( NotALinkBetweenFamilies ) );
                 TestHelper.GetSuccessfulResult( collector );
             }
             {
                 // OnlyForS, that covers NotALinkBetweenFamilies, is the final best for IS1 and IS2.
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( NotALinkBetweenFamilies ) );
-                collector.RegisterType( typeof( OnlyForS ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( NotALinkBetweenFamilies ), typeof( OnlyForS ) );
                 var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
                 map.Services.Mappings[typeof( IS1 )].ClassType.Should().BeSameAs( typeof( OnlyForS ) );

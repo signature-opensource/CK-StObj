@@ -127,17 +127,17 @@ namespace CK.StObj.Engine.Tests.ActorZoneTests
         public void LayeredArchitecture()
         {
             var valueResolver = new ValueResolver();
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer(), valueResolver: valueResolver );
-            collector.RegisterType( typeof( BasicPackage ) );
-            collector.RegisterType( typeof( BasicActor ) );
-            collector.RegisterType( typeof( BasicUser ) );
-            collector.RegisterType( typeof( BasicGroup ) );
-            collector.RegisterType( typeof( ZonePackage ) );
-            collector.RegisterType( typeof( ZoneGroup ) );
-            collector.RegisterType( typeof( SecurityZone ) );
-            collector.RegisterType( typeof( AuthenticationPackage ) );
-            collector.RegisterType( typeof( AuthenticationUser ) );
-            collector.RegisterType( typeof( SqlDefaultDatabase ) );
+            StObjCollector collector = new StObjCollector( new SimpleServiceContainer(), valueResolver: valueResolver );
+            collector.RegisterTypes( TestHelper.Monitor, new[] { typeof( BasicPackage ),
+                                                                 typeof( BasicActor ),
+                                                                 typeof( BasicUser ),
+                                                                 typeof( BasicGroup ),
+                                                                 typeof( ZonePackage ),
+                                                                 typeof( ZoneGroup ),
+                                                                 typeof( SecurityZone ),
+                                                                 typeof( AuthenticationPackage ),
+                                                                 typeof( AuthenticationUser ),
+                                                                 typeof( SqlDefaultDatabase ) } );
             collector.DependencySorterHookInput = items => items.Trace( TestHelper.Monitor );
             collector.DependencySorterHookOutput = sortedItems => sortedItems.Trace( TestHelper.Monitor );
             

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace CK.Core
 {
+
     /// <summary>
     /// The Poco directory registers the <see cref="IPocoFactory"/> by their
     /// <see cref="IPocoFactory.Name"/> and <see cref="IPocoFactory.PreviousNames"/>.
@@ -28,7 +29,7 @@ namespace CK.Core
         /// <summary>
         /// Gets a typed factory from a IPoco interface.
         /// </summary>
-        /// <param name="pocoInterface">The Poco interface.</param>
+        /// <typeparam name="T">The IPoco interface type.</typeparam>
         /// <returns>The factory or null if not found.</returns>
         public IPocoFactory<T>? Find<T>() where T : class, IPoco => (IPocoFactory<T>?)Find( typeof( T ) );
 

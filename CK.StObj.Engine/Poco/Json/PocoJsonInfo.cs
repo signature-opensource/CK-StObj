@@ -5,7 +5,7 @@ namespace CK.Setup.Json
 {
     sealed class PocoJsonInfo : IPocoJsonInfo
     {
-        internal PocoJsonInfo( IPocoRootInfo i, bool isECMAStandardCompliant, IReadOnlyList<PocoJsonPropertyInfo> properties )
+        internal PocoJsonInfo( IPocoFamilyInfo i, bool isECMAStandardCompliant, IReadOnlyList<PocoJsonPropertyInfo> properties )
         {
             PocoInfo = i;
             IsECMAStandardCompliant = isECMAStandardCompliant;
@@ -13,7 +13,7 @@ namespace CK.Setup.Json
             JsonProperties = properties;
         }
 
-        public IPocoRootInfo PocoInfo { get; }
+        public IPocoFamilyInfo PocoInfo { get; }
 
         public bool IsECMAStandardCompliant { get; }
 

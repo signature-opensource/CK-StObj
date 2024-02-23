@@ -33,7 +33,7 @@ namespace CK.Core
             }
             else
             {
-                if( !(_a is object?[] a) )
+                if( _a is not object?[] a )
                 {
                     _a = new object?[] { _a, annotation };
                 }
@@ -52,12 +52,12 @@ namespace CK.Core
         }
 
         /// <inheritdoc />
-        public object? Annotation( Type type )
+        public readonly object? Annotation( Type type )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             if( _a != null )
             {
-                if( !(_a is object?[] a) )
+                if( _a is not object?[] a )
                 {
                     if( IsInstanceOfType( _a, type ) ) return _a;
                 }
@@ -75,11 +75,11 @@ namespace CK.Core
         }
 
         /// <inheritdoc />
-        public T? Annotation<T>() where T : class
+        public readonly T? Annotation<T>() where T : class
         {
             if( _a != null )
             {
-                if( !(_a is object?[] a) ) return _a as T;
+                if( _a is not object?[] a ) return _a as T;
                 for( int i = 0; i < a.Length; i++ )
                 {
                     object? obj = a[i];
@@ -91,17 +91,17 @@ namespace CK.Core
         }
 
         /// <inheritdoc />
-        public IEnumerable<object> Annotations( Type type )
+        public readonly IEnumerable<object> Annotations( Type type )
         {
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             return AnnotationsIterator( type );
         }
 
-        private IEnumerable<object> AnnotationsIterator( Type type )
+        private readonly IEnumerable<object> AnnotationsIterator( Type type )
         {
             if( _a != null )
             {
-                if( !(_a is object?[] a) )
+                if( _a is not object?[] a )
                 {
                     if( IsInstanceOfType( _a, type ) ) yield return _a;
                 }
@@ -118,11 +118,11 @@ namespace CK.Core
         }
 
         /// <inheritdoc />
-        public IEnumerable<T> Annotations<T>() where T : class
+        public readonly IEnumerable<T> Annotations<T>() where T : class
         {
             if( _a != null )
             {
-                if( !(_a is object?[] a) )
+                if( _a is not object?[] a )
                 {
                     if( _a is T result ) yield return result;
                 }
@@ -144,7 +144,7 @@ namespace CK.Core
             if( type == null ) throw new ArgumentNullException( nameof( type ) );
             if( _a != null )
             {
-                if( !(_a is object?[] a) )
+                if( _a is not object?[] a )
                 {
                     if( IsInstanceOfType( _a, type ) ) _a = null;
                 }
@@ -175,7 +175,7 @@ namespace CK.Core
         {
             if( _a != null )
             {
-                if( !(_a is object?[] a) )
+                if( _a is not object?[] a )
                 {
                     if( _a is T ) _a = null;
                 }
@@ -186,7 +186,7 @@ namespace CK.Core
                     {
                         object? obj = a[i];
                         if( obj == null ) break;
-                        if( !(obj is T) ) a[j++] = obj;
+                        if( obj is not T ) a[j++] = obj;
                         i++;
                     }
                     if( j == 0 )

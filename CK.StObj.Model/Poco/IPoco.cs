@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CK.Core
 {
     /// <summary>
@@ -8,4 +10,5 @@ namespace CK.Core
     public interface IPoco
     {
     }
+
 }

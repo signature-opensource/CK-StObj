@@ -6,8 +6,6 @@ using System.Diagnostics;
 using System.Xml.Linq;
 using System.IO;
 
-#pragma warning disable CA1001 // Types that own disposable fields should be disposable (StObjEngine._status is used only 
-
 #nullable enable
 
 namespace CK.Setup
@@ -232,7 +230,7 @@ namespace CK.Setup
                         }
                         else
                         {
-                            _monitor.Error( errorPath.ToStringPath() );
+                            _monitor.Error( errorPath.ToStringPath( elementSeparator: $"{Environment.NewLine}-> ") );
                         }
                     }
                     // Always runs the aspects Termination.
@@ -270,10 +268,14 @@ namespace CK.Setup
                 // In all cases, we emit a warn and filters this beast out.
                 if( t.FullName == null )
                 {
-                    monitor.Warn( $"Type has no FullName: '{t.Name}'. It is excluded." );
+                    // Warn only if it's not a generic type definition.
+                    if( !t.IsGenericTypeDefinition )
+                    {
+                        monitor.Warn( $"Type has no FullName: '{t:C}'. It is excluded." );
+                    }
                     return false;
                 }
-                Debug.Assert( t.AssemblyQualifiedName != null, "Since FullName is defined." );
+                Throw.DebugAssert( "Since FullName is defined.", t.AssemblyQualifiedName != null );
                 if( _excludedTypes.Contains( t.Name ) )
                 {
                     monitor.Info( $"Type {t.AssemblyQualifiedName} is filtered out by its Type Name." );
@@ -318,8 +320,7 @@ namespace CK.Setup
                 var configurator = _startContext.Configurator.FirstLayer;
                 // When head.IsUnifiedPure the type filter keeps only the IPoco and IRealObject.
                 var typeFilter = new TypeFilterFromConfiguration( group, configurator );
-                StObjCollector stObjC = new StObjCollector( _monitor,
-                                                            _startContext.ServiceContainer,
+                StObjCollector stObjC = new StObjCollector( _startContext.ServiceContainer,
                                                             _config.Configuration.TraceDependencySorterInput,
                                                             _config.Configuration.TraceDependencySorterOutput,
                                                             typeFilter,
@@ -337,23 +338,21 @@ namespace CK.Setup
                         {
                             // When c.Kind is None, !Optional is challenged.
                             // The Type is always resolved.
-                            stObjC.SetAutoServiceKind( c.Name, c.Kind, c.Optional );
+                            stObjC.SetAutoServiceKind( _monitor, c.Name, c.Kind, c.Optional );
                         }
                     }
                     // Then registers the types from the assemblies.
-                    stObjC.RegisterAssemblyTypes( group.Configuration.Assemblies );
+                    stObjC.RegisterAssemblyTypes( _monitor, group.Configuration.Assemblies );
                     // Explicitly registers the non optional Types.
-                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( group.Configuration.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
+                    if( !group.IsUnifiedPure ) stObjC.RegisterTypes( _monitor, group.Configuration.Types.Where( c => c.Optional == false ).Select( c => c.Name ).ToList() );
                     // Finally, registers the code based explicitly registered types.
-                    foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( t );
-
-                    Debug.Assert( stObjC.RegisteringFatalOrErrorCount == 0 || hasError, "stObjC.RegisteringFatalOrErrorCount > 0 ==> An error has been logged." );
+                    foreach( var t in _startContext.ExplicitRegisteredTypes ) stObjC.RegisterType( _monitor, t );
                 }
-                if( stObjC.RegisteringFatalOrErrorCount == 0 )
+                if( stObjC.FatalOrErrors.Count == 0 )
                 {
                     using( _monitor.OpenInfo( "Resolving Real Objects & AutoService dependency graph." ) )
                     {
-                        result = stObjC.GetResult();
+                        result = stObjC.GetResult( _monitor );
                         Debug.Assert( !result.HasFatalError || hasError, "result.HasFatalError ==> An error has been logged." );
                     }
                     if( !result.HasFatalError ) return result;

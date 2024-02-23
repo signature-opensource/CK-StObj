@@ -7,8 +7,7 @@ namespace CK.Setup
     /// <summary>
     /// Classes that implement this interface can participate in CSharp code generation or any other kind of generation.
     /// It is independent of any type and can use the <see cref="CSCodeGenerationResult"/> to redirect
-    /// with a method that expects one or more specific service (like <see cref="Json.JsonSerializationCodeGen"/>
-    /// for instance).
+    /// with a method that expects one or more specific service provided by others.
     /// <para>
     /// See <see cref="CSCodeGeneratorType"/> to implement a code generator for a Type. 
     /// </para>

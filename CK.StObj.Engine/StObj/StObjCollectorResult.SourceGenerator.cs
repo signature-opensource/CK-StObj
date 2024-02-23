@@ -47,11 +47,11 @@ namespace CK.Setup
             {
                 Debug.Assert( _valueCollector != null );
                 using( monitor.OpenInfo( $"Generating source code (first pass) for: {codeGenContext.CurrentRun.ConfigurationGroup.Names}." ) )
-                using( monitor.CollectEntries( out var errorSummary ) )
+                using( monitor.CollectEntries( out var entries ) )
                 {
                     using( monitor.OpenInfo( "Registering direct properties as PostBuildProperties." ) )
                     {
-                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs )
+                        foreach( MutableItem item in EngineMap.StObjs.OrderedStObjs.Cast<MutableItem>() )
                         {
                             item.RegisterRemainingDirectPropertiesAsPostBuildProperties( _valueCollector );
                         }
@@ -79,9 +79,9 @@ namespace CK.Setup
                     ws.EnsureAssemblyReference( typeof( Microsoft.Extensions.DependencyInjection.ServiceProvider ) );
 
                     // Model assemblies.
-                    if( CKTypeResult.Assemblies.Count > 0 )
+                    if( _typeResult.Assemblies.Count > 0 )
                     {
-                        ws.EnsureAssemblyReference( CKTypeResult.Assemblies );
+                        ws.EnsureAssemblyReference( _typeResult.Assemblies );
                     }
                     else
                     {
@@ -116,28 +116,49 @@ namespace CK.Setup
                     // Generates the StObjContextRoot implementation.
                     CreateGeneratedRootContext( monitor, nsStObj, EngineMap.StObjs.OrderedStObjs );
 
-                    // Calls all ICSCodeGenerator items.
-                    foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
-                                               .Concat( aspectsGenerators ) )
+                    using( monitor.OpenTrace( "Calls all ICSCodeGenerator items." ) )
                     {
-                        var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
-                        if( second != null ) collector.Add( second );
+                        int count = 0;
+                        int count2ndPass = 0;
+                        foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
+                                                   .Concat( aspectsGenerators ) )
+                        {
+                            ++count;
+                            using( monitor.OpenTrace( $"ICSCodeGenerator n°{count} - {g.GetType():C}." ) )
+                            {
+                                var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
+                                if( second != null )
+                                {
+                                    ++count2ndPass;
+                                    collector.Add( second );
+                                }
+                            }
+                        }
+                        monitor.CloseGroup( $"{count} generator, {count2ndPass} second passes required." );
                     }
 
                     // Asks every ImplementableTypeInfo to generate their code. 
                     // This step MUST always be done, even if CompileOption is None and GenerateSourceFiles is false
                     // since during this step, side effects MAY occur (this is typically the case of the first run where
                     // the "reality cache" is created).
-                    foreach( var t in CKTypeResult.TypesToImplement )
+                    using( monitor.OpenTrace( "Calls all Type implementor items." ) )
                     {
-                        t.RunFirstPass( monitor, codeGenContext, collector );
-                    }
-
-                    if( errorSummary.Count > 0 )
-                    {
-                        using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                        int count = 0;
+                        int count2ndPass = collector.Count;
+                        foreach( var t in _typeResult.TypesToImplement )
                         {
-                            foreach( var e in errorSummary )
+                            using( monitor.OpenTrace( $"Type implementor n°{count} - {t.GetType():C}." ) )
+                            {
+                                t.RunFirstPass( monitor, codeGenContext, collector );
+                            }
+                        }
+                        monitor.CloseGroup( $"{count} Type implementors, {collector.Count - count2ndPass} second passes required." );
+                    }
+                    if( entries.Count != 0 )
+                    {
+                        using( monitor.OpenFatal( $"{entries.Count} error(s). Summary:" ) )
+                        {
+                            foreach( var e in entries )
                             {
                                 monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
                             }
@@ -145,7 +166,6 @@ namespace CK.Setup
                         return false;
                     }
                 }
-
                 return true;
             }
             catch( Exception ex )
@@ -167,14 +187,14 @@ namespace CK.Setup
             try
             {
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {configurationGroup.Names}." ) )
-                using( monitor.CollectEntries( out var errorSummary ) )
+                using( monitor.CollectEntries( out var entries ) )
                 {
                     MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
-                    if( errorSummary.Count > 0 )
+                    if( entries.Count != 0 )
                     {
-                        using( monitor.OpenFatal( $"{errorSummary.Count} error(s). Summary:" ) )
+                        using( monitor.OpenFatal( $"{entries.Count} error(s). Summary:" ) )
                         {
-                            foreach( var e in errorSummary )
+                            foreach( var e in entries )
                             {
                                 monitor.Trace( $"{e.MaskedLevel} - {e.Text}" );
                             }
@@ -389,7 +409,7 @@ public static IReadOnlyList<IStObjFinalImplementation> FinalRealObjects => _fina
 public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryGetValue( t, out var s ) ? s : null;
 " );
             var rootStaticCtor = rootType.CreateFunction( $"static {StObjContextRoot.RootContextTypeName}()" );
-            SetupObjectsGraph( rootStaticCtor, orderedStObjs, CKTypeResult.RealObjects.EngineMap );
+            SetupObjectsGraph( rootStaticCtor, orderedStObjs, _typeResult.RealObjects.EngineMap );
 
             // Construct and Initialize methods takes a monitor and the context instance: we need the instance constructor.
             // We ensure that this StObjMap can be initialized once and only once (static bool _intializeOnce).
@@ -489,7 +509,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         {
             using var region = rootCtor.Region();
             var propertyCache = new Dictionary<ValueTuple<Type, string>, string>();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 if( m.PreConstructProperties != null )
                 {
@@ -562,7 +582,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         static void InitializePostBuildProperties( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             using var region = rootCtor.Region();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 if( m.PostBuildProperties != null )
                 {
@@ -583,7 +603,7 @@ public static IStObjFinalImplementation? ToRealObjectLeaf( Type t ) => _map.TryG
         static void CallInitializeMethods( IFunctionScope rootCtor, IReadOnlyList<IStObjResult> orderedStObjs )
         {
             using var region = rootCtor.Region();
-            foreach( MutableItem m in orderedStObjs )
+            foreach( MutableItem m in orderedStObjs.Cast<MutableItem>() )
             {
                 foreach( MethodInfo init in m.RealObjectType.AllStObjInitialize )
                 {

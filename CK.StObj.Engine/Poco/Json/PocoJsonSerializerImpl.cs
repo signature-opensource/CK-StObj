@@ -48,9 +48,9 @@ namespace CK.Setup.Json
         // Step 1: Allows the registered Poco types on the JsonSerializationCodeGen.
         //         Creates the CodeReader/Writer for the Poco classes that use the Poco.Write
         //         and the Poco deserialization constructor that will be generated in the next step.
-        CSCodeGenerationResult AllowAllPocoTypes( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
+        CSCodeGenerationResult AllowAllPocoTypes( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoDirectory pocoSupport, JsonSerializationCodeGen jsonCodeGen )
         { 
-            if( pocoSupport.Roots.Count == 0 )
+            if( pocoSupport.Families.Count == 0 )
             {
                 monitor.Info( "No Poco available. Skipping Poco serialization code generation." );
                 return new CSCodeGenerationResult( nameof( FinalizeJsonSupport ) );
@@ -129,7 +129,7 @@ namespace CK.Setup.Json
                 } );
 
 
-            using( monitor.OpenInfo( $"Allowing Poco Json serialization C# code generation for {pocoSupport.Roots.Count} Pocos." ) )
+            using( monitor.OpenInfo( $"Allowing Poco Json serialization C# code generation for {pocoSupport.Families.Count} Pocos." ) )
             {
                 // IPoco and IClosedPoco are not in the "OtherInterfaces".
                 jsonCodeGen.AllowInterfaceToUntyped( typeof( IPoco ) );
@@ -142,7 +142,7 @@ namespace CK.Setup.Json
 
                 bool success = true;
                 // Registers TypeInfo for the PocoClass and maps its interfaces to the PocoClass.
-                foreach( var root in pocoSupport.Roots )
+                foreach( var root in pocoSupport.Families )
                 {
                     var typeInfo = jsonCodeGen.AllowTypeInfo( root.PocoClass, root.Name, root.PreviousNames )?.Configure(
                                     ( ICodeWriter write, string variableName )
@@ -189,7 +189,7 @@ namespace CK.Setup.Json
 
         // Step 2: Generates the Read & Write methods.
         //         This is where the Poco's properties types are transitively allowed.
-        CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoSupportResult pocoSupport, JsonSerializationCodeGen jsonCodeGen )
+        CSCodeGenerationResult GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext c, IPocoDirectory pocoSupport, JsonSerializationCodeGen jsonCodeGen )
         {
             using var gLog = monitor.OpenInfo( $"Generating C# Json serialization code." );
 
@@ -209,7 +209,7 @@ namespace CK.Setup.Json
 
             bool success = true;
             // Generates the factory and the Poco class code.
-            foreach( var root in pocoSupport.Roots )
+            foreach( var root in pocoSupport.Families )
             {
                 var factory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, root.PocoFactoryClass );
                 foreach( var i in root.Interfaces )
@@ -236,7 +236,7 @@ namespace CK.Setup.Json
                     : CSCodeGenerationResult.Failed;
         }
 
-        bool ExtendPocoClass( IActivityMonitor monitor, IPocoRootInfo pocoInfo, JsonSerializationCodeGen jsonCodeGen, ITypeScope pocoClass )
+        bool ExtendPocoClass( IActivityMonitor monitor, IPocoFamilyInfo pocoInfo, JsonSerializationCodeGen jsonCodeGen, ITypeScope pocoClass )
         {
             bool success = true;
 
@@ -321,19 +321,19 @@ namespace CK.Setup.Json
                         var fieldName = "_v" + p.Index;
 
                         write.Append( "w.WritePropertyName( usePascalCase ? " )
-                             .AppendSourceString( p.PropertyName )
+                             .AppendSourceString( p.Name )
                              .Append( " : " )
-                             .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( p.PropertyName ) )
+                             .AppendSourceString( System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( p.Name ) )
                              .Append( " );" ).NewLine();
                         mainHandler.GenerateWrite( write, fieldName );
                         write.NewLine();
 
-                        var camel = System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( p.PropertyName );
-                        if( camel != p.PropertyName )
+                        var camel = System.Text.Json.JsonNamingPolicy.CamelCase.ConvertName( p.Name );
+                        if( camel != p.Name )
                         {
                             read.Append( "case " ).AppendSourceString( camel ).Append( ": " );
                         }
-                        read.Append( "case " ).AppendSourceString( p.PropertyName ).Append( ": " )
+                        read.Append( "case " ).AppendSourceString( p.Name ).Append( ": " )
                             .OpenBlock();
                         mainHandler.GenerateRead( read, fieldName, assignOnly: !p.IsReadOnly );
                         read.Append( "break; " )
@@ -366,7 +366,7 @@ namespace CK.Setup.Json
         /// <param name="pocoInfo">The poco root information.</param>
         /// <param name="pocoClass">The target class to generate.</param>
         /// <returns>A header part and the part in the switch statement.</returns>
-        static (ITypeScopePart,ITypeScopePart) GenerateReadBody( IPocoRootInfo pocoInfo, ITypeScope pocoClass )
+        static (ITypeScopePart,ITypeScopePart) GenerateReadBody( IPocoFamilyInfo pocoInfo, ITypeScope pocoClass )
         {
             pocoClass.GeneratedByComment().NewLine().Append( "public void Read( ref System.Text.Json.Utf8JsonReader r, PocoJsonSerializerOptions options )" )
               .OpenBlock()

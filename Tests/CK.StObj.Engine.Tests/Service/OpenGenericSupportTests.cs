@@ -35,8 +35,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void super_definer_applies_to_final_class()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ClassService ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ClassService ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
@@ -60,8 +59,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void super_definer_applies_to_final_interface()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ClassFromInterfaceService ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ClassFromInterfaceService ) );
             var r = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( r.CollectorResult.EngineMap != null, "No initialization error." );
 
@@ -103,7 +101,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void device_host_model()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ADeviceHost ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( ADeviceHost ) );
             using var s = TestHelper.CreateAutomaticServices( collector ).Services;
 
             s.GetService<ADeviceHost>().Should().NotBeNull(); 

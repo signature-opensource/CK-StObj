@@ -8,9 +8,8 @@ using System.Reflection.PortableExecutable;
 
 namespace CK.Setup
 {
-
     /// <summary>
-    /// Discovers available structure objects and instantiates them. 
+    /// Discovers <see cref="IRealObject"/> . 
     /// Once Types are registered, the <see cref="GetResult"/> method initializes the full object graph.
     /// </summary>
     public partial class StObjCollector
@@ -18,21 +17,17 @@ namespace CK.Setup
         readonly CKTypeCollector _cc;
         readonly IStObjStructuralConfigurator? _configurator;
         readonly IStObjValueResolver? _valueResolver;
-
-        /// <summary>
-        /// No _ prefix to ease the merge and cherry picks into refactored branch "poco-refactoring"
-        /// where the monitor uses regular parameter injection.
-        /// </summary>
-        readonly IActivityMonitor monitor;
-
         readonly DynamicAssembly _tempAssembly;
-        int _registerFatalOrErrorCount;
+        readonly bool _traceDepencySorterInput;
+        readonly bool _traceDepencySorterOutput;
+        readonly List<string> _errorEntries;
+
+        bool _wellKnownServiceKindRegistered;
         bool _computedResult;
 
         /// <summary>
         /// Initializes a new <see cref="StObjCollector"/>.
         /// </summary>
-        /// <param name="monitor">Logger to use. Can not be null.</param>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="traceDependencySorterInput">True to trace in <paramref name="monitor"/> the input of dependency graph.</param>
         /// <param name="traceDependencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
@@ -43,8 +38,7 @@ namespace CK.Setup
         /// See <see cref="IStObjValueResolver"/>.
         /// </param>
         /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
-        public StObjCollector( IActivityMonitor monitor,
-                               IServiceProvider serviceProvider,
+        public StObjCollector( IServiceProvider serviceProvider,
                                bool traceDependencySorterInput = false,
                                bool traceDependencySorterOutput = false,
                                IStObjTypeFilter? typeFilter = null,
@@ -52,24 +46,21 @@ namespace CK.Setup
                                IStObjValueResolver? valueResolver = null,
                                IEnumerable<string>? names = null )
         {
-            Throw.CheckNotNullArgument( monitor );
-            this.monitor = monitor;
+            _errorEntries = new List<string>();
             _tempAssembly = new DynamicAssembly();
             Func<IActivityMonitor, Type, bool>? tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
-            _cc = new CKTypeCollector( this.monitor, serviceProvider, _tempAssembly, tFilter, names );
+            _cc = new CKTypeCollector( serviceProvider, _tempAssembly, tFilter, names );
             _configurator = configurator;
             _valueResolver = valueResolver;
-            if( traceDependencySorterInput ) DependencySorterHookInput = i => i.Trace( monitor );
-            if( traceDependencySorterOutput ) DependencySorterHookOutput = i => i.Trace( monitor );
-
-            AddWellKnownServices();
+            _traceDepencySorterInput = traceDependencySorterInput;
+            _traceDepencySorterOutput = traceDependencySorterOutput;
         }
 
         /// <summary>
-        /// Gets the count of error or fatal that occurred during types registration.
+        /// Gets error or fatal errors that occurred during types registration.
         /// </summary>
-        public int RegisteringFatalOrErrorCount => _registerFatalOrErrorCount;
+        public IReadOnlyList<string> FatalOrErrors => _errorEntries;
 
         /// <summary>
         /// Gets ors sets whether the ordering of StObj that share the same rank in the dependency graph must be inverted.
@@ -92,18 +83,19 @@ namespace CK.Setup
         /// <param name="type">The type to register.</param>
         /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool SetAutoServiceKind( Type type, AutoServiceKind kind )
+        public bool SetAutoServiceKind( IActivityMonitor monitor, Type type, AutoServiceKind kind )
         {
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
             if( _cc.RegisteredTypeCount > 0 )
             {
-                monitor.Error( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
+                Throw.InvalidOperationException( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
             else if( _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null )
             {
-                _cc.RegisterAssembly( type );
+                _cc.RegisterAssembly( monitor, type );
                 return true;
             }
-            ++_registerFatalOrErrorCount;
             return false;
         }
 
@@ -116,22 +108,21 @@ namespace CK.Setup
         /// <param name="kind">The kind of service. Can be <see cref="AutoServiceKind.None"/> (nothing is done except the type resolution).</param>
         /// <param name="isOptional">True to warn if the type is not found instead of logging an error and returning false.</param>
         /// <returns>True on success, false on error.</returns>
-        public bool SetAutoServiceKind( string typeName, AutoServiceKind kind, bool isOptional )
+        public bool SetAutoServiceKind( IActivityMonitor monitor, string typeName, AutoServiceKind kind, bool isOptional )
         {
-            if( String.IsNullOrWhiteSpace( typeName ) ) throw new ArgumentNullException( nameof( typeName ) );
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
+            Throw.CheckNotNullOrEmptyArgument( typeName );
             var t = SimpleTypeFinder.WeakResolver( typeName, false );
             if( t != null )
             {
-                return kind != AutoServiceKind.None
-                        ? SetAutoServiceKind( t, kind )
-                        : true;
+                return kind == AutoServiceKind.None || SetAutoServiceKind( monitor, t, kind );
             }
             if( isOptional )
             {
                 monitor.Warn( $"Type name '{typeName}' not found. It is ignored (SetAutoServiceKind: {kind})." );
                 return true;
             }
-            ++_registerFatalOrErrorCount;
             monitor.Error( $"Unable to resolve expected type named '{typeName}' (SetAutoServiceKind: {kind})." );
             return false;
         }
@@ -143,11 +134,12 @@ namespace CK.Setup
         /// </summary>
         /// <param name="assemblyNames">The assembly names to register.</param>
         /// <returns>The number of new discovered classes.</returns>
-        public int RegisterAssemblyTypes( IReadOnlyCollection<string> assemblyNames )
+        public int RegisterAssemblyTypes( IActivityMonitor monitor, IReadOnlyCollection<string> assemblyNames )
         {
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
             Throw.CheckNotNullArgument( assemblyNames );
             int totalRegistered = 0;
-            using( monitor.OnError( () => ++_registerFatalOrErrorCount ) )
             using( monitor.OpenTrace( $"Registering {assemblyNames.Count} assemblies." ) )
             {
                 foreach( var one in assemblyNames )
@@ -166,7 +158,7 @@ namespace CK.Setup
                         if( a != null )
                         {
                             int nbAlready = _cc.RegisteredTypeCount;
-                            _cc.RegisterTypes( a.GetTypes() );
+                            _cc.RegisterTypes( monitor, a.GetTypes() );
                             int delta = _cc.RegisteredTypeCount - nbAlready;
                             monitor.CloseGroup( $"{delta} types(s) registered." );
                             totalRegistered += delta;
@@ -182,18 +174,17 @@ namespace CK.Setup
         /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
         /// </summary>
         /// <param name="t">Type to register. Must not be null.</param>
-        public void RegisterType( Type t )
+        public void RegisterType( IActivityMonitor monitor, Type t )
         {
-            using( monitor.OnError( () => ++_registerFatalOrErrorCount ) )
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
+            try
             {
-                try
-                {
-                    _cc.RegisterType( t );
-                }
-                catch( Exception ex )
-                {
-                    monitor.Error( $"While registering type '{t.AssemblyQualifiedName}'.", ex );
-                }
+                _cc.RegisterType( monitor, t );
+            }
+            catch( Exception ex )
+            {
+                monitor.Error( $"While registering type '{t.AssemblyQualifiedName}'.", ex );
             }
         }
 
@@ -202,10 +193,12 @@ namespace CK.Setup
         /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
         /// </summary>
         /// <param name="types">Types to register.</param>
-        public void RegisterTypes( IReadOnlyCollection<Type> types )
+        public void RegisterTypes( IActivityMonitor monitor, IReadOnlyCollection<Type> types )
         {
-            if( types == null ) throw new ArgumentNullException( nameof( types ) );
-            DoRegisterTypes( types, types.Count );
+            Throw.CheckNotNullArgument( types );
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
+            DoRegisterTypes( monitor, types, types.Count );
         }
 
         /// <summary>
@@ -214,29 +207,38 @@ namespace CK.Setup
         /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
         /// </summary>
         /// <param name="typeNames">Assembly qualified names of the types to register.</param>
-        public void RegisterTypes( IReadOnlyCollection<string> typeNames )
+        public void RegisterTypes( IActivityMonitor monitor, IReadOnlyCollection<string> typeNames )
         {
-            if( typeNames == null ) throw new ArgumentNullException( nameof( typeNames ) );
-            DoRegisterTypes( typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ), typeNames.Count );
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
+            Throw.CheckNotNullArgument( typeNames );
+            DoRegisterTypes( monitor, typeNames.Select( n => SimpleTypeFinder.WeakResolver( n, true ) ).Select( t => t! ), typeNames.Count );
         }
 
-        void DoRegisterTypes( IEnumerable<Type> types, int count )
+        void DoRegisterTypes( IActivityMonitor monitor, IEnumerable<Type> types, int count )
         {
-            SafeTypesHandler( "Explicitly registering IPoco interfaces, or Real Objects or Service classes", types, count, ( m, cc, t ) => cc.RegisterType( t ), false );
+            SafeTypesHandler( monitor,
+                              "Explicitly registering IPoco interfaces, or Real Objects or Service classes",
+                              types,
+                              count,
+                              ( m, cc, t ) => cc.RegisterType( m, t ), false );
         }
 
-        void SafeTypesHandler( string registrationType, IEnumerable<Type> types, int count, Action<IActivityMonitor,CKTypeCollector,Type> a, bool defineExternalCall = true )
+        void SafeTypesHandler( IActivityMonitor monitor,
+                               string registrationType,
+                               IEnumerable<Type> types,
+                               int count,
+                               Action<IActivityMonitor,CKTypeCollector,Type> a,
+                               bool defineExternalCall = true )
         {
             Debug.Assert( types != null );
             if( count == 0 ) return;
             if( defineExternalCall && _cc.RegisteredTypeCount > 0 )
             {
-                ++_registerFatalOrErrorCount;
                 monitor.Error( $"External definition lifetime, cardinality or Front services must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
             else
             {
-                using( monitor.OnError( () => ++_registerFatalOrErrorCount ) )
                 using( monitor.OpenTrace( $"{registrationType}: handling {count} type(s)." ) )
                 {
                     try
@@ -270,20 +272,22 @@ namespace CK.Setup
         /// If <see cref="RegisteringFatalOrErrorCount"/> is not equal to 0, this throws a <see cref="InvalidOperationException"/>.
         /// </summary>
         /// <returns>The result.</returns>
-        public StObjCollectorResult GetResult()
+        public StObjCollectorResult GetResult( IActivityMonitor monitor )
         {
-            Throw.CheckState( $"There are {_registerFatalOrErrorCount} registration errors.", _registerFatalOrErrorCount == 0 );
             Throw.CheckState( "Must be called once and only once.", !_computedResult );
+            using var errorTracker = monitor.OnError( _errorEntries.Add );
+            if( !_wellKnownServiceKindRegistered ) AddWellKnownServices( monitor );
             _computedResult = true;
+            if( _errorEntries.Count != 0 ) Throw.InvalidOperationException( $"There are {_errorEntries.Count} registration errors." );
             try
             {
                 // Systematically registers the EndpointTypeManager and the EndpointUbiquitousInfo: unit tests don't have to do it.
                 // (Note that the PocoDirectory is registered by the CKTypeCollector.
-                _cc.RegisterClass( typeof( EndpointTypeManager ) );
-                _cc.RegisterClass( typeof( EndpointUbiquitousInfo ) );
+                _cc.RegisterClass( monitor, typeof( EndpointTypeManager ) );
+                _cc.RegisterClass( monitor, typeof( EndpointUbiquitousInfo ) );
 
                 EndpointResult? endpoints = null;
-                var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults();
+                var (typeResult, orderedItems, buildValueCollector) = CreateTypeAndObjectResults( monitor );
                 if( orderedItems != null )
                 {
                     // Now that Real objects and core AutoServices are settled, creates the EndpointResult.
@@ -299,7 +303,7 @@ namespace CK.Setup
                     // not exist and be replaced with intermediate - functional-like - value results).
                     // This is awful!
                     typeResult.SetFinalOrderedResults( orderedItems, endpoints, typeResult.KindComputeFacade.MultipleMappings );
-                    if( !ServiceFinalHandling( typeResult ) )
+                    if( !ServiceFinalHandling( monitor, typeResult ) )
                     {
                         // Setting the valueCollector to null indicates the error to the StObjCollectorResult.
                         buildValueCollector = null;
@@ -331,7 +335,7 @@ namespace CK.Setup
             }
         }
 
-        (CKTypeCollectorResult, IReadOnlyList<MutableItem>?, BuildValueCollector?) CreateTypeAndObjectResults()
+        (CKTypeCollectorResult, IReadOnlyList<MutableItem>?, BuildValueCollector?) CreateTypeAndObjectResults( IActivityMonitor monitor )
         {
             bool error = false;
             using( monitor.OnError( () => error = true ) )
@@ -341,15 +345,15 @@ namespace CK.Setup
                 {
                     using( monitor.OpenInfo( "Collecting Real Objects, Services, Endpoints and Poco." ) )
                     {
-                        typeResult = _cc.GetResult();
+                        typeResult = _cc.GetResult( monitor );
                         typeResult.LogErrorAndWarnings( monitor );
                     }
                     if( !error && !typeResult.HasFatalError )
                     {
-                        Debug.Assert( _tempAssembly.GetPocoSupportResult() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
+                        Debug.Assert( _tempAssembly.GetPocoDirectory() != null, "PocoSupportResult has been successfully computed since CKTypeCollector.GetResult() succeeded." );
                         using( monitor.OpenInfo( "Creating final objects and configuring items." ) )
                         {
-                            int nbItems = ConfigureMutableItems( typeResult.RealObjects );
+                            int nbItems = ConfigureMutableItems( monitor, typeResult.RealObjects );
                             monitor.CloseGroup( $"{nbItems} items configured." );
                         }
                     }
@@ -394,8 +398,8 @@ namespace CK.Setup
                                                    new DependencySorterOptions()
                                                    {
                                                        SkipDependencyToContainer = true,
-                                                       HookInput = DependencySorterHookInput,
-                                                       HookOutput = DependencySorterHookOutput,
+                                                       HookInput = _traceDepencySorterInput ? i => i.Trace(monitor) : null,
+                                                       HookOutput = _traceDepencySorterOutput ? i => i.Trace( monitor ) : null,
                                                        ReverseName = RevertOrderingNames
                                                    } );
                     Debug.Assert( sortResult.HasRequiredMissing == false,
@@ -466,7 +470,7 @@ namespace CK.Setup
         /// (see <see cref="MutableItem.ConfigureTopDown(IActivityMonitor, MutableItem)"/>).
         /// This is the very first step.
         /// </summary>
-        int ConfigureMutableItems( RealObjectCollectorResult typeResult )
+        int ConfigureMutableItems( IActivityMonitor monitor, RealObjectCollectorResult typeResult )
         {
             var concreteClasses = typeResult.ConcreteClasses;
             int nbItems = 0;
@@ -498,7 +502,7 @@ namespace CK.Setup
                 do
                 {
                     m.ConfigureTopDown( monitor, generalization );
-                    if( _configurator != null ) _configurator.Configure( monitor, m );
+                    _configurator?.Configure( monitor, m );
                 }
                 while( (m = m.Specialization) != null );
             }

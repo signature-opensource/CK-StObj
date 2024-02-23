@@ -3,13 +3,10 @@ using CK.Core;
 using System.Reflection;
 using System.Linq;
 using System.Diagnostics;
-using CK.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.CodeAnalysis;
 using CK.CodeGen;
 using System.Collections.Generic;
-
-#nullable enable
 
 namespace CK.Setup
 {
@@ -100,7 +97,7 @@ namespace CK.Setup
                             }
                             if( s._subsequentRun != null )
                             {
-                                if( next == null ) next = new List<MultiPassCodeGeneration>();
+                                next ??= new List<MultiPassCodeGeneration>();
                                 next.Add( s );
                             }
                         }

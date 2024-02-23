@@ -159,13 +159,12 @@ namespace CK.Setup
             /// <summary>
             /// Recursive function to collect/merge Ambient Properties, InjectObject and StObj Properties on base (non IRealObject) types.
             /// </summary>
-            static void CreateAllAmbientPropertyList(
-                IActivityMonitor monitor,
-                Type type,
-                int specializationLevel,
-                List<StObjPropertyInfo> stObjProperties,
-                out IReadOnlyList<AmbientPropertyInfo> apListResult,
-                out IReadOnlyList<InjectObjectInfo> acListResult )
+            static void CreateAllAmbientPropertyList( IActivityMonitor monitor,
+                                                      Type type,
+                                                      int specializationLevel,
+                                                      List<StObjPropertyInfo> stObjProperties,
+                                                      out IReadOnlyList<AmbientPropertyInfo> apListResult,
+                                                      out IReadOnlyList<InjectObjectInfo> acListResult )
             {
                 if( type == typeof( object ) )
                 {
@@ -214,15 +213,15 @@ namespace CK.Setup
             {
                 if( String.IsNullOrWhiteSpace( p.PropertyName ) )
                 {
-                    monitor.Error( $"Unnamed or whitespace StObj property on '{t.FullName}'. Attribute must be configured with a valid PropertyName." );
+                    monitor.Error( $"Unnamed or whitespace StObj property on '{t:N}'. Attribute must be configured with a valid PropertyName." );
                 }
                 else if( p.PropertyType == null )
                 {
-                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t.FullName}' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
+                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t:N}' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
                 }
                 else if( stObjProperties.Find( sP => sP.Name == p.PropertyName ) != null )
                 {
-                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t.FullName}' is defined more than once. It should be declared only once." );
+                    monitor.Error( $"StObj property named '{p.PropertyName}' for '{t:N}' is defined more than once. It should be declared only once." );
                 }
                 else
                 {
@@ -543,7 +542,7 @@ namespace CK.Setup
             }
         }
 
-        internal void InitializeInterfaces( IActivityMonitor m, CKTypeCollector collector )
+        internal void InitializeInterfaces( IActivityMonitor monitor, CKTypeCollector collector )
         {
             // If there is a path ambiguity we'll reach an already initialized parent set of interfaces.
             if( _realObjectInterfaces == null )
@@ -551,7 +550,7 @@ namespace CK.Setup
                 List<Type> all = null;
                 foreach( Type tI in Interfaces )
                 {
-                    var k = collector.KindDetector.GetValidKind( m, tI );
+                    var k = collector.KindDetector.GetValidKind( monitor, tI );
                     if( (k & CKTypeKind.RealObject) == CKTypeKind.RealObject )
                     {
                         if( all == null ) all = new List<Type>();
@@ -559,11 +558,11 @@ namespace CK.Setup
                     }
                     else if( (k & CKTypeKind.IsMultipleService) != 0 && SpecializationsCount == 0 )
                     {
-                        AddMultipleMapping( tI, k, collector );
+                        AddMultipleMapping( monitor, tI, k, collector );
                     }
                 }
                 _realObjectInterfaces = (IReadOnlyList<Type>?)all ?? Type.EmptyTypes;
-                Generalization?.InitializeInterfaces( m, collector );
+                Generalization?.InitializeInterfaces( monitor, collector );
             }
         }
 

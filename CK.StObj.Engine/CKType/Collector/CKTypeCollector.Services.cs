@@ -4,7 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using CK.Setup;
 using CK.Core;
-using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 using System.Reflection;
 using System.Data;
 
@@ -22,30 +22,30 @@ namespace CK.Setup
         int _serviceInterfaceCount;
         int _serviceRootInterfaceCount;
 
-        AutoServiceClassInfo? RegisterServiceClassInfo( Type t, bool isExcluded, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
+        AutoServiceClassInfo RegisterServiceClassInfo( IActivityMonitor monitor, Type t, bool isExcluded, AutoServiceClassInfo? parent, RealObjectClassInfo? objectInfo )
         {
             var serviceInfo = new AutoServiceClassInfo( monitor, _serviceProvider, parent, t, isExcluded, objectInfo, _alsoRegister );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
-                RegisterAssembly( t );
+                RegisterAssembly( monitor, t );
                 if( serviceInfo.Generalization == null ) _serviceRoots.Add( serviceInfo );
             }
             _serviceCollector.Add( t, serviceInfo );
             return serviceInfo;
         }
 
-        bool IsAutoService( Type t ) => (KindDetector.GetRawKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
+        bool IsAutoService( IActivityMonitor monitor, Type t ) => (KindDetector.GetRawKind( monitor, t ) & CKTypeKind.IsAutoService) != 0;
 
-        internal AutoServiceClassInfo? FindServiceClassInfo( Type t )
+        internal AutoServiceClassInfo? FindServiceClassInfo( IActivityMonitor monitor, Type t )
         {
-            Debug.Assert( IsAutoService( t ) && t.IsClass );
+            Debug.Assert( IsAutoService( monitor, t ) && t.IsClass );
             _serviceCollector.TryGetValue( t, out var info );
             return info;
         }
 
-        internal AutoServiceInterfaceInfo? FindServiceInterfaceInfo( Type t )
+        internal AutoServiceInterfaceInfo? FindServiceInterfaceInfo( IActivityMonitor monitor, Type t )
         {
-            Debug.Assert( IsAutoService( t ) && t.IsInterface );
+            Debug.Assert( IsAutoService( monitor, t ) && t.IsInterface );
             _serviceInterfaces.TryGetValue( t, out var info );
             return info;
         }
@@ -54,7 +54,7 @@ namespace CK.Setup
         /// Returns null if and only if the interface type is excluded.
         /// This is only called by RegisterServiceInterfaces below (and recursively calls it).
         /// </summary>
-        AutoServiceInterfaceInfo? RegisterServiceInterface( Type t, CKTypeKind lt )
+        AutoServiceInterfaceInfo? RegisterServiceInterface( IActivityMonitor monitor, Type t, CKTypeKind lt )
         {
             Debug.Assert( t.IsInterface && lt == KindDetector.GetRawKind( monitor, t ) );
             if( !_serviceInterfaces.TryGetValue( t, out var info ) )
@@ -62,7 +62,7 @@ namespace CK.Setup
                 if( (lt & CKTypeKind.IsExcludedType) == 0 )
                 {
                     var attr = new TypeAttributesCache( monitor, t, _serviceProvider, false, _alsoRegister );
-                    info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( t.GetInterfaces() ) );
+                    info = new AutoServiceInterfaceInfo( attr, lt, RegisterServiceInterfaces( monitor, t.GetInterfaces() ) );
                     ++_serviceInterfaceCount;
                     if( info.Interfaces.Count == 0 ) ++_serviceRootInterfaceCount;
                 }
@@ -72,8 +72,9 @@ namespace CK.Setup
             return info;
         }
 
-        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IEnumerable<Type> interfaces,
-                                                                                  Action<Type,CKTypeKind,CKTypeCollector>? multipleImplementation = null )
+        internal IEnumerable<AutoServiceInterfaceInfo> RegisterServiceInterfaces( IActivityMonitor monitor,
+                                                                                  IEnumerable<Type> interfaces,
+                                                                                  Action<IActivityMonitor,Type,CKTypeKind,CKTypeCollector>? multipleImplementation = null )
         {
             foreach( var iT in interfaces )
             {
@@ -82,22 +83,22 @@ namespace CK.Setup
                 {
                     if( (k & CKTypeKind.IsMultipleService) != 0 )
                     {
-                        multipleImplementation?.Invoke( iT, k, this );
+                        multipleImplementation?.Invoke( monitor, iT, k, this );
                     }
                     else if( (k & CKTypeKind.IsAutoService) != 0 )
                     {
-                        var r = RegisterServiceInterface( iT, k );
+                        var r = RegisterServiceInterface( monitor, iT, k );
                         if( r != null ) yield return r;
                     }
                 }
             }
         }
 
-        AutoServiceCollectorResult GetAutoServiceResult( RealObjectCollectorResult contracts )
+        AutoServiceCollectorResult GetAutoServiceResult( IActivityMonitor monitor, RealObjectCollectorResult contracts )
         {
             bool success = true;
             List<Type>? abstractTails = null;
-            success &= InitializeRootServices( contracts.EngineMap, out var classAmbiguities, ref abstractTails );
+            success &= InitializeRootServices( monitor, contracts.EngineMap, out var classAmbiguities, ref abstractTails );
             List<AutoServiceClassInfo> subGraphs = new List<AutoServiceClassInfo>();
             if( success && classAmbiguities == null )
             {
@@ -136,7 +137,8 @@ namespace CK.Setup
                                                    subGraphs );
         }
 
-        bool InitializeRootServices( StObjObjectEngineMap engineMap,
+        bool InitializeRootServices( IActivityMonitor monitor,
+                                     StObjObjectEngineMap engineMap,
                                      out IReadOnlyList<IReadOnlyList<AutoServiceClassInfo>>? classAmbiguities,
                                      ref List<Type>? abstractTails )
         {

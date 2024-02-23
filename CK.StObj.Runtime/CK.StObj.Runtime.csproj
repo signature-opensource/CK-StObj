@@ -5,8 +5,13 @@
 This is a SetupDependency of CK.StObj.Model that is dynamically resolved by CKSetup.
     </Description>
     <Nullable>enable</Nullable>
-    <LangVersion>9</LangVersion>
+    <LangVersion>11</LangVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Poco\Json\**" />
+    <EmbeddedResource Remove="Poco\Json\**" />
+    <None Remove="Poco\Json\**" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
     <PackageReference Include="CK.CodeGen" Version="9.0.0" />

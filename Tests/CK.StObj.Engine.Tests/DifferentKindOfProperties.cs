@@ -41,22 +41,16 @@ namespace CK.StObj.Engine.Tests
         public void StObjAndAmbientPropertiesAreIncompatible()
         {
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( ObjB ) );
-                collector.RegisterType( typeof( ObjA ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount == 1 );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjB ), typeof( ObjA ) );
+                TestHelper.GetFailedResult( collector, "Property named 'TwoAttributes' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjB' can not be both an Ambient Singleton, an Ambient Property or a StObj property." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( ObjA ) );
-                collector.RegisterType( typeof( ObjSpecA ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount == 1 );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjA ), typeof( ObjSpecA ) );
+                TestHelper.GetFailedResult( collector, "[StObjProperty] property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjSpecA.NoProblem' is declared as a '[AmbientProperty]' property by 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjA'. Property names must be distinct." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( ObjA ) );
-                collector.RegisterType( typeof( ObjSpecA2 ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount == 1 );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( ObjA ), typeof( ObjSpecA2 ) );
+                TestHelper.GetFailedResult( collector, "[StObjProperty] property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjSpecA2.NoProblem' is declared as a '[AmbientProperty]' property by 'CK.StObj.Engine.Tests.DifferentKindOfProperties+ObjA'. Property names must be distinct." );
             }
         }
 
@@ -82,19 +76,16 @@ namespace CK.StObj.Engine.Tests
         public void InvalidStObjProperties()
         {
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( MissingStObjPropertyType ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount == 1 );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( MissingStObjPropertyType ) );
+                TestHelper.GetFailedResult( collector, "StObj property named 'AProperty' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyType' has no PropertyType defined. It should be typeof(object) to explicitly express that any type is accepted." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( MissingStObjPropertyName ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount == 1 );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( MissingStObjPropertyName ) );
+                TestHelper.GetFailedResult( collector, "Unnamed or whitespace StObj property on 'CK.StObj.Engine.Tests.DifferentKindOfProperties.MissingStObjPropertyName'. Attribute must be configured with a valid PropertyName." );
             }
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( DuplicateStObjProperty ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount == 1 );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( DuplicateStObjProperty ) );
+                TestHelper.GetFailedResult( collector, "StObj property named 'Albert' for 'CK.StObj.Engine.Tests.DifferentKindOfProperties.DuplicateStObjProperty' is defined more than once. It should be declared only once." );
             }
         }
 
@@ -109,11 +100,8 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void InjectSingleton_must_not_be_scoped_service()
         {
-            {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( InvalidRealObjectProperty ) );
-                collector.GetResult().HasFatalError.Should().BeTrue();
-            }
+            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( InvalidRealObjectProperty ) );
+            TestHelper.GetFailedResult( collector, "Inject Object 'NotAnRealObjectPropertyType' of 'CK.StObj.Engine.Tests.DifferentKindOfProperties+InvalidRealObjectProperty': CK.StObj.Engine.Tests.DifferentKindOfProperties+ScopedService not found." );
         }
 
         #region Covariance support
@@ -158,9 +146,7 @@ namespace CK.StObj.Engine.Tests
         [Test]
         public void CovariantPropertiesSupport()
         {
-            StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-            collector.RegisterType( typeof( CB3 ) );
-            collector.RegisterType( typeof( CA3 ) );
+            StObjCollector collector = TestHelper.CreateStObjCollector( typeof( CB3 ), typeof( CA3 ) );
 
             var r = TestHelper.GetSuccessfulResult( collector );
             Debug.Assert( r.EngineMap != null, "No initialization error." );
@@ -180,10 +166,8 @@ namespace CK.StObj.Engine.Tests
         public void SetterMustExistOnTopDefiner()
         {
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( CMissingSetterOnTopDefiner ) );
-                collector.RegisterType( typeof( CA2 ) );
-                Assert.That( collector.RegisteringFatalOrErrorCount, Is.EqualTo( 1 ) );
+                StObjCollector collector = TestHelper.CreateStObjCollector( typeof( CMissingSetterOnTopDefiner ), typeof( CA2 ) );
+                TestHelper.GetFailedResult( collector, "Property 'CK.StObj.Engine.Tests.DifferentKindOfProperties+CMissingSetterOnTopDefiner.A' must have a setter (since it is the first declaration of the property)." );
             }
         }
 
@@ -197,9 +181,7 @@ namespace CK.StObj.Engine.Tests
         public void PrivateSetterWorks()
         {
             {
-                StObjCollector collector = new StObjCollector( TestHelper.Monitor, new SimpleServiceContainer() );
-                collector.RegisterType( typeof( CPrivateSetter ) );
-                collector.RegisterType( typeof( CA2 ) );
+                StObjCollector collector = TestHelper.CreateStObjCollector(  typeof( CPrivateSetter ), typeof( CA2 ) );
                 var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( map != null, "No initialization error." );
 

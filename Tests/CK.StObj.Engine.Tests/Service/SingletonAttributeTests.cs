@@ -40,7 +40,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void without_SingletonServiceAttribute_scope_lifetime_fails()
         {
             var c = TestHelper.CreateStObjCollector( typeof( SomeSingletonFailed ), typeof( NotConstructibleServiceNaked ) );
-            TestHelper.GetFailedResult( c );
+            TestHelper.GetFailedResult( c, "is marked as IsSingleton but parameter 'c' of type 'NotConstructibleServiceNaked' in constructor is Scoped" );
         }
 
         public class SomeScoped : IScopedAutoService

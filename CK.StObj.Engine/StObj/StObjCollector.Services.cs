@@ -262,7 +262,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="typeResult">The types discovery result.</param>
         /// <returns>True on success, false on error.</returns>
-        bool ServiceFinalHandling( CKTypeCollectorResult typeResult )
+        bool ServiceFinalHandling( IActivityMonitor monitor, CKTypeCollectorResult typeResult )
         {
             var engineMap = typeResult.RealObjects.EngineMap;
             using( monitor.OpenInfo( $"Services final handling." ) )

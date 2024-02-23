@@ -38,9 +38,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void ReplaceAutoService_works_with_type()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SampleService ) );
-            collector.RegisterType( typeof( SampleService2 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SampleService ), typeof( SampleService2 ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
@@ -56,10 +54,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void ReplaceAutoService_works_with_assembly_qualified_name_and_locally_defined_attribute()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SampleService ) );
-            collector.RegisterType( typeof( SampleService2 ) );
-            collector.RegisterType( typeof( SampleService3 ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SampleService ), typeof( SampleService2 ), typeof( SampleService3 ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
 
@@ -79,9 +74,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void IActivityMonitor_is_Scoped_by_default()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( UseActivityMonitor ) );
-            TestHelper.GetFailedResult( collector );
+            var collector = TestHelper.CreateStObjCollector( typeof( UseActivityMonitor ) );
+            TestHelper.GetFailedResult( collector, "is marked as IsSingleton but parameter 'm' of type 'IActivityMonitor' in constructor is Scoped." );
         }
 
         public class Obj : IRealObject, ISampleService
@@ -102,8 +96,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_RealObject_class_can_be_an_IAutoService_but_an_interface_cannot()
         {
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( Obj ) );
+                var collector = TestHelper.CreateStObjCollector( typeof( Obj ) );
                 var (collectorResult, map, reg, sp) = TestHelper.CreateAutomaticServices( collector );
                 Debug.Assert( collectorResult.EngineMap != null );
                 try
@@ -128,9 +121,8 @@ namespace CK.StObj.Engine.Tests.Service
 
             }
             {
-                var collector = TestHelper.CreateStObjCollector();
-                collector.RegisterType( typeof( ObjInvalid ) );
-                TestHelper.GetFailedResult( collector );
+                var collector = TestHelper.CreateStObjCollector( typeof( ObjInvalid ) );
+                TestHelper.GetFailedResult( collector, "IRealObject interface cannot be a IAutoService (type is an interface)." );
             }
         }
 
@@ -141,8 +133,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_RealObject_class_and_IAutoService_with_specialization()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ObjSpec ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ObjSpec ) );
             var (collectorResult, map, reg, sp) = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
             try
@@ -184,8 +175,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_RealObject_class_and_IAutoService_with_deep_specializations()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ObjSpecFinal ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ObjSpecFinal ) );
             var (collectorResult, map, reg, sp) = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( collectorResult.EngineMap != null, "No initialization error." );
             try
@@ -244,9 +234,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void service_can_be_implemented_by_RealObjects()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( ODep ) );
-            collector.RegisterType( typeof( OBase ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( ODep ), typeof( OBase ) );
             using var sp = TestHelper.CreateAutomaticServices( collector ).Services;
             var oDep = sp.GetRequiredService<ODep>();
             sp.GetRequiredService<IBase>().Should().BeSameAs( oDep );
@@ -272,10 +260,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void services_class_cyclic_dependencies_are_detected()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( StupidService1 ) );
-            collector.RegisterType( typeof( StupidService2 ) );
-            TestHelper.GetFailedResult( collector );
+            var collector = TestHelper.CreateStObjCollector( typeof( StupidService1 ), typeof( StupidService2 ) );
+            TestHelper.GetFailedResult( collector, "Cyclic constructor dependency detected:" );
         }
 
         public class StupidServiceViaInterface1 : IBase
@@ -296,10 +282,8 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void services_via_interfaces_cyclic_dependencies_are_detected()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( StupidServiceViaInterface1 ) );
-            collector.RegisterType( typeof( StupidServiceViaInterface2 ) );
-            TestHelper.GetFailedResult( collector );
+            var collector = TestHelper.CreateStObjCollector( typeof( StupidServiceViaInterface1 ), typeof( StupidServiceViaInterface2 ) );
+            TestHelper.GetFailedResult( collector, "Service class dependency cycle detected:" );
         }
 
         #region issue https://gitlab.com/signature-code/CK-Setup/issues/3 (wrong repository :D).
@@ -326,10 +310,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void scoped_dependency_detection()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( A ) );
-            collector.RegisterType( typeof( B ) );
-            collector.RegisterType( typeof( SqlCallContext ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( A ), typeof( B ), typeof( SqlCallContext ) );
             var r = TestHelper.CreateAutomaticServices( collector );
             Debug.Assert( r.CollectorResult.EngineMap != null, "No initialization error." );
             try
@@ -373,9 +354,7 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void StObjGen_attribute_excludes_the_type()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( SampleServiceGenerated ) );
-            collector.RegisterType( typeof( SampleService ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( SampleServiceGenerated ), typeof( SampleService ) );
             using var s = TestHelper.CreateAutomaticServices( collector ).Services;
             s.GetRequiredService<ISampleService>().Should().BeOfType<SampleService>();
         }

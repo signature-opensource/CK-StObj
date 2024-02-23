@@ -52,7 +52,10 @@ namespace CK.Testing.StObjEngine
         }
 
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-        public void Deconstruct( out StObjCollectorResult collector, out IStObjMap map, out StObjContextRoot.ServiceRegister serviceRegister, out ServiceProvider services )
+        public void Deconstruct( out StObjCollectorResult collector,
+                                 out IStObjMap map,
+                                 out StObjContextRoot.ServiceRegister serviceRegister,
+                                 out ServiceProvider services )
         {
             collector = CollectorResult;
             map = Map;

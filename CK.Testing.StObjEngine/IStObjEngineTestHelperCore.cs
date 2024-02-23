@@ -6,6 +6,7 @@ using FluentAssertions.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,10 +43,17 @@ namespace CK.Testing.StObjEngine
         /// <summary>
         /// Ensures that there are registration errors or a fatal error during the creation of the <see cref="StObjCollectorResult"/>
         /// and returns it if it has been created on error.
+        /// <para>
+        /// This methods expects at least a substring that must appear in a Error or Fatal emitted log. Testing a failure
+        /// should always challenge that the failure cause is what it should be.
+        /// To disable this (but this is NOT recommended), <paramref name="message"/> may be set to the empty string.
+        /// </para>
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
+        /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <returns>The failed collector result or null if the error prevented its creation.</returns>
-        StObjCollectorResult? GetFailedResult( StObjCollector c );
+        StObjCollectorResult? GetFailedResult( StObjCollector c, string message, params string[] otherMessages );
 
         /// <summary>
         /// Runs the <see cref="StObjEngine"/> on a <see cref="GetSuccessfulResult(StObjCollector)"/>.
@@ -124,11 +132,13 @@ namespace CK.Testing.StObjEngine
         /// configurations.
         /// </para>
         /// </param>
+        /// <param name="alterPocoTypeSystem">Optional configurator for the <see cref="IPocoTypeSystemBuilder"/>.</param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <param name="configureServices">Optional services configurator.</param>
         /// <returns>The (successful) collector result, the ready-to-use map, the intermediate service registrar and the final, fully configured, service provider.</returns>
         AutomaticServicesResult CreateAutomaticServices( StObjCollector c,
                                                          Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
+                                                         Action<IPocoTypeSystemBuilder>? alterPocoTypeSystem = null,
                                                          SimpleServiceContainer? startupServices = null,
                                                          Action<StObjContextRoot.ServiceRegister>? configureServices = null );
 
@@ -136,6 +146,8 @@ namespace CK.Testing.StObjEngine
         /// Attempts to build and configure a IServiceProvider and ensures that this fails while configuring the Services.
         /// </summary>
         /// <param name="c">The collector.</param>
+        /// <param name="message">Expected error or fatal message substring that must be emitted.</param>
+        /// <param name="otherMessages">More fatal messages substring that must be emitted.</param>
         /// <param name="engineConfigurator">
         /// Optional hook to configure the <see cref="StObjEngineConfiguration"/> or to substitute it by a new one.
         /// <para>
@@ -151,6 +163,8 @@ namespace CK.Testing.StObjEngine
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
         /// <returns>The (failed) service register.</returns>
         StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
+                                                                                  string message,
+                                                                                  IEnumerable<string>? otherMessages = null,
                                                                                   Func<StObjEngineConfiguration, StObjEngineConfiguration>? engineConfigurator = null,
                                                                                   SimpleServiceContainer? startupServices = null,
                                                                                   Action<StObjContextRoot.ServiceRegister>? configureServices = null );

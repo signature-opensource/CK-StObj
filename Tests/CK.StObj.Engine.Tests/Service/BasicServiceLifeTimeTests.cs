@@ -28,7 +28,6 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassSingleton ),
                                                              typeof( SimpleClassScoped ),
                                                              typeof( SimpleClassAmbient ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             r.Services.Mappings[typeof( SimpleClassSingleton )].IsScoped.Should().BeFalse();
@@ -42,8 +41,7 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_class_with_both_scopes_is_an_error()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( BuggyDoubleScopeClassAmbient ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 1 );
-            TestHelper.GetFailedResult( collector );
+            TestHelper.GetFailedResult( collector, "Invalid CK type combination 'IsAutoService|IsScopedService|IsSingleton': An interface or an implementation cannot be both Scoped and Singleton" );
         }
 
         public class LifetimeErrorClassAmbientBecauseOfScoped : Core.ISingletonAutoService
@@ -56,10 +54,10 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void a_singleton_that_depends_on_scoped_is_an_error()
         {
-            var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassScoped ),
+            var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassScoped ), 
                                                              typeof( LifetimeErrorClassAmbientBecauseOfScoped ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
-            TestHelper.GetFailedResult( collector );
+            collector.FatalOrErrors.Count.Should().Be( 0, "Detected by GetResult()." );
+            TestHelper.GetFailedResult( collector, "is marked as IsSingleton but parameter 'd' of type 'SimpleClassScoped' in constructor is Scoped." );
         }
 
         public interface IExternalService { }
@@ -75,16 +73,16 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_that_depends_on_an_unknown_external_is_not_possible()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( LifetimeOfExternalBoostToSingleton ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
-            TestHelper.GetFailedResult( collector );
+            collector.FatalOrErrors.Count.Should().Be( 0, "Detected by GetResult()." );
+            TestHelper.GetFailedResult( collector, "is marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." );
         }
 
         [Test]
         public void a_singleton_that_depends_on_external_that_is_defined_as_a_singleton_is_fine()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsSingleton );
-            collector.RegisterType( typeof( LifetimeOfExternalBoostToSingleton ) );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsSingleton );
+            collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
             TestHelper.GetSuccessfulResult( collector );
         }
 
@@ -92,9 +90,9 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_that_depends_on_external_that_is_defined_as_a_Scoped_is_an_error()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsScoped );
-            collector.RegisterType( typeof( LifetimeOfExternalBoostToSingleton ) );
-            TestHelper.GetFailedResult( collector );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsScoped );
+            collector.RegisterType( TestHelper.Monitor, typeof( LifetimeOfExternalBoostToSingleton ) );
+            TestHelper.GetFailedResult( collector, "s marked as IsSingleton but parameter 'e' of type 'IExternalService' in constructor is Scoped." );
         }
 
         public class SingletonThatDependsOnSingleton : Core.ISingletonAutoService
@@ -109,7 +107,6 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassSingleton ),
                                                              typeof( SingletonThatDependsOnSingleton ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             TestHelper.GetSuccessfulResult( collector );
         }
 
@@ -125,7 +122,6 @@ namespace CK.StObj.Engine.Tests.Service
         {
             var collector = TestHelper.CreateStObjCollector( typeof( SimpleClassSingleton ),
                                                              typeof( AmbientThatDependsOnSingleton ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             r.Services.Mappings[typeof( AmbientThatDependsOnSingleton )].IsScoped.Should().BeFalse();
@@ -139,7 +135,6 @@ namespace CK.StObj.Engine.Tests.Service
         public void an_auto_service_that_depends_on_nothing_is_singleton()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( AmbientThatDependsOnNothing ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             r.Services.Mappings[typeof( IAmbientThatDependsOnNothing )].IsScoped.Should().BeFalse();
@@ -157,7 +152,6 @@ namespace CK.StObj.Engine.Tests.Service
         public void an_auto_service_that_depends_on_an_external_service_is_Scoped()
         {
             var collector = TestHelper.CreateStObjCollector( typeof( AmbientThatDependsOnExternal ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             r.Services.Mappings[typeof( AmbientThatDependsOnExternal )].IsScoped.Should().BeTrue();
@@ -194,14 +188,13 @@ namespace CK.StObj.Engine.Tests.Service
         public void an_auto_service_that_depends_on_all_kind_of_singletons_is_singleton()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsSingleton );
-            collector.RegisterType( typeof( AmbientThatDependsOnAllKindOfSingleton ) );
-            collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
-            collector.RegisterType( typeof( SampleRealObject ) );
-            collector.RegisterType( typeof( AmbientThatDependsOnSingleton ) );
-            collector.RegisterType( typeof( SimpleClassSingleton ) );
-            collector.RegisterType( typeof( AmbientThatWillBeResolvedAsSingleton ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsSingleton );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAllKindOfSingleton ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnExternal ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SampleRealObject ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnSingleton ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleClassSingleton ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatWillBeResolvedAsSingleton ) );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             r.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingleton )].IsScoped.Should().BeFalse();
@@ -234,18 +227,17 @@ namespace CK.StObj.Engine.Tests.Service
         public void a_singleton_service_that_depends_on_all_kind_of_singletons_is_singleton( string mode )
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( IExternalService ), AutoServiceKind.IsSingleton );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService ), AutoServiceKind.IsSingleton );
             if( mode == "WithSingletonLifetimeOnExternalService" )
             {
-                collector.SetAutoServiceKind( typeof( IOtherExternalService ), AutoServiceKind.IsSingleton );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IOtherExternalService ), AutoServiceKind.IsSingleton );
             }
-            collector.RegisterType( typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService ) );
-            collector.RegisterType( typeof( AmbientThatDependsOnExternal ) );
-            collector.RegisterType( typeof( SampleRealObject ) );
-            collector.RegisterType( typeof( AmbientThatDependsOnSingleton ) );
-            collector.RegisterType( typeof( SimpleClassSingleton ) );
-            collector.RegisterType( typeof( AmbientThatDependsOnAnotherExternalService ) );
-            collector.RegisteringFatalOrErrorCount.Should().Be( 0 );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnExternal ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SampleRealObject ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnSingleton ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( SimpleClassSingleton ) );
+            collector.RegisterType( TestHelper.Monitor, typeof( AmbientThatDependsOnAnotherExternalService ) );
             var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( r != null, "No initialization error." );
             bool isScoped = r.Services.Mappings[typeof( AmbientThatDependsOnAllKindOfSingletonAndAnOtherExternalService )].IsScoped;
@@ -264,10 +256,10 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
-                collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
-                collector.RegisterType( typeof( ExtS ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
+                collector.RegisterType( TestHelper.Monitor, typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
@@ -276,10 +268,10 @@ namespace CK.StObj.Engine.Tests.Service
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
-                collector.SetAutoServiceKind( typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
-                collector.SetAutoServiceKind( typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
-                collector.RegisterType( typeof( ExtS ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IExternalService3 ), AutoServiceKind.IsMarshallable );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( IAmbientThatDependsOnNothing ), AutoServiceKind.IsScoped );
+                collector.RegisterType( TestHelper.Monitor, typeof( ExtS ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.Mappings[typeof( ExtS )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
@@ -303,10 +295,10 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
-                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsProcessService );
-                collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
-                collector.RegisterType( typeof( ExtSC ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase3 ), AutoServiceKind.IsMarshallable );
+                collector.RegisterType( TestHelper.Monitor, typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
@@ -315,11 +307,11 @@ namespace CK.StObj.Engine.Tests.Service
             }
             {
                 var collector = TestHelper.CreateStObjCollector();
-                collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsProcessService );
-                collector.SetAutoServiceKind( typeof( CBase3 ), AutoServiceKind.IsMarshallable );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsProcessService );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase3 ), AutoServiceKind.IsMarshallable );
                 // CBase1 is set last: without the "base type flattening" step, the ExtSC below would be a Singleton!
-                collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
-                collector.RegisterType( typeof( ExtSC ) );
+                collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
+                collector.RegisterType( TestHelper.Monitor, typeof( ExtSC ) );
                 var r = TestHelper.GetSuccessfulResult( collector ).EngineMap;
                 Debug.Assert( r != null, "No initialization error." );
                 r.Services.Mappings[typeof( ExtSC )].AutoServiceKind.Should().Be( AutoServiceKind.IsAutoService
@@ -332,9 +324,9 @@ namespace CK.StObj.Engine.Tests.Service
         public void SetAutoServiceKind_a_class_does_not_mean_registering_it()
         {
             var collector = TestHelper.CreateStObjCollector();
-            collector.SetAutoServiceKind( typeof( CBase1 ), AutoServiceKind.IsScoped );
-            collector.SetAutoServiceKind( typeof( CBase2 ), AutoServiceKind.IsProcessService );
-            collector.RegisterType( typeof( CBase1 ) );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase1 ), AutoServiceKind.IsScoped );
+            collector.SetAutoServiceKind( TestHelper.Monitor, typeof( CBase2 ), AutoServiceKind.IsProcessService );
+            collector.RegisterType( TestHelper.Monitor, typeof( CBase1 ) );
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
             Debug.Assert( map != null, "No initialization error." );
             map.Services.Mappings.ContainsKey( typeof( CBase1 ) ).Should().BeTrue();
@@ -364,12 +356,9 @@ namespace CK.StObj.Engine.Tests.Service
         [Test]
         public void propagation_through_an_intermediate_service_1()
         {
-            var collector = TestHelper.CreateStObjCollector();
-            collector.RegisterType( typeof( Scoped ) );
-            collector.RegisterType( typeof( Unknown ) );
-            collector.RegisterType( typeof( OneSingleton ) );
+            var collector = TestHelper.CreateStObjCollector( typeof( Scoped ), typeof( Unknown ), typeof( OneSingleton ) );
 
-            TestHelper.GetFailedResult( collector );
+            TestHelper.GetFailedResult( collector, "OneSingleton' is marked as IsSingleton but parameter 'dep' of type 'IUnknown' in constructor is Scoped." );
         }
 
         [Test]
