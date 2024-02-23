@@ -21,9 +21,9 @@ new CKSetupComponent( "CK.StObj.Model", "net6.0" ),
 new CKSetupComponent( "CK.StObj.Runtime", "net6.0" ),
 new CKSetupComponent( "CK.StObj.Engine", "net6.0" ),
 new CKSetupComponent( "CK.Poco.Exchange", "net6.0" ),
-new CKSetupComponent( "CK.Poco.Exchange.Engine", "net6.0" ),
 new CKSetupComponent( "CK.Poco.Exc.Json", "net6.0" ),
-new CKSetupComponent( "CK.Poco.Exc.Json.Engine", "net6.0" )
+new CKSetupComponent( "CK.Poco.Exc.Json.Engine", "net6.0" ),
+new CKSetupComponent( "CK.Poco.Exchange.Engine", "net6.0" )
 };
         }
 
