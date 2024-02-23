@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -7,12 +6,10 @@
       Defines the IPocoSerializer/IPocoDeserializer, IPocoImporter/IPocoExpporter interfaces and PocoExchangeRegistry auto service.
     </Description>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="CK.Globalization" Version="0.5.0" />
+    <PackageReference Include="CK.Globalization" Version="0.5.1--0003-develop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.StObj.Model\CK.StObj.Model.csproj" />
   </ItemGroup>
-
 </Project>
