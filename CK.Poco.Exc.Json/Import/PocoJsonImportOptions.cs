@@ -15,10 +15,30 @@ namespace CK.Poco.Exc.Json
         ///     <item>Trailing commas are allowed.</item>
         ///     <item>Json comments are silently skipped.</item>
         ///     <item>The maximal Json depth is 64.</item>
-        ///     <item>The default type filter is "AllExchangeable".</item>
+        ///     <item>The type filter name is "AllExchangeable".</item>
         /// </list>
         /// </summary>
         public static readonly PocoJsonImportOptions Default = new PocoJsonImportOptions();
+
+        /// <summary>
+        /// Gets a singleton option that mirrors <see cref="PocoJsonExportOptions.ToStringDefault"/>:
+        /// <list type="bullet">
+        ///     <item>Trailing commas are allowed.</item>
+        ///     <item>Json comments are silently skipped.</item>
+        ///     <item>The maximal Json depth is 1000.</item>
+        ///     <item>The type filter name is "AllSerializable".</item>
+        /// </list>
+        /// </summary>
+        public static readonly PocoJsonImportOptions ToStringDefault = new PocoJsonImportOptions()
+        {
+            ReaderOptions = new JsonReaderOptions()
+            {
+                AllowTrailingCommas = true,
+                CommentHandling = JsonCommentHandling.Skip,
+                MaxDepth = 1000                
+            },
+            TypeFilterName = "AllSerializable"
+        };
 
         /// <summary>
         /// Initializes a new option.
