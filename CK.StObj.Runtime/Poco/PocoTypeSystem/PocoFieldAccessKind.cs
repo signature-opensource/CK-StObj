@@ -23,8 +23,8 @@ namespace CK.Setup
         ///     <item><c>object?</c> as the ultimate representation of anything.</item>
         ///     <item>A <see cref="PocoTypeKind.AbstractPoco"/> (also nullable) as the specification of a set of possible IPoco families.</item>
         ///     <item>
-        ///     A collection that is a <see cref="ICollectionPocoType.IsAbstractReadOnly"/> as the specification of any <see cref="IList{T}"/>, <see cref="ISet{T}"/>
-        ///     or <see cref="IReadOnlyDictionary{TKey, TValue}"/> where T or TValue 
+        ///     A collection that is a <see cref="ICollectionPocoType.IsAbstractReadOnly"/> (that is the specification of any <see cref="IList{T}"/>, <see cref="ISet{T}"/>
+        ///     or <see cref="IReadOnlyDictionary{TKey, TValue}"/> where T or TValue are covariant with the readonly collection type).
         ///     </item>
         /// </list>
         /// There is no point to allow records to be Abstract Read Only properties for 2 reasons:

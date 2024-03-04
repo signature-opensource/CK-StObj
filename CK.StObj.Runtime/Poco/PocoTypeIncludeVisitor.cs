@@ -25,8 +25,11 @@ namespace CK.Setup
     ///         <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/> (same as base <see cref="PocoTypeVisitor"/>).
     ///     </item>
     ///     <item>
-    ///         An implemented <see cref="IAbstractPocoType"/> visits its <see cref="IAbstractPocoType.GenericArguments"/> and its <see cref="IAbstractPocoType.Generalizations"/>
-    ///         in addition to the IPoco root interface type.
+    ///         An implemented <see cref="IAbstractPocoType"/> visits its <see cref="IAbstractPocoType.GenericArguments"/>, its <see cref="IAbstractPocoType.Generalizations"/>
+    ///         the IPoco root interface type and <see cref="IAbstractPocoType.Fields"/>' types. This is useful to discover the AbstractReadOnly collections
+    ///         (IReadOnly List/Set/Dictionary) that are referenced by a abstract Poco (other fields types will be discovered through the primaries anyway).
+    ///          Note that fields that have no "real implementations" (all their implementation frileds are <see cref="PocoFieldAccessKind.AbstractReadOnly"/>)
+    ///          are skipped by default (unless "withAbstractReadOnlyFieldTypes" constructor parameter has been specified).
     ///         <para>
     ///         Implementation less abstract Poco visits nothing.
     ///         </para>
@@ -163,7 +166,8 @@ namespace CK.Setup
 
         /// <summary>
         /// An implemented abstract Poco visits the <see cref="IAbstractPocoType.GenericArguments"/>, <see cref="IAbstractPocoType.Generalizations"/>
-        /// and the root IPoco root interface type.
+        /// the IPoco root interface type but also the <see cref="IAbstractPocoType.Fields"/>' types: this is specially useful to discover any
+        /// <see cref="ICollectionPocoType.IsAbstractReadOnly"/> collections that cannot be "invented" by visiting the primaries poco fields.
         /// <para>
         /// Implementation less abstract Poco visits nothing.
         /// </para>
@@ -194,6 +198,18 @@ namespace CK.Setup
                 foreach( var a in abstractPoco.Generalizations )
                 {
                     Visit( a );
+                }
+            }
+            // Visiting the fields' types. This is useful to discover the AbstractReadOnly collections
+            // (IReadOnly List/Set/Dictionary) that are referenced by a abstract Poco (other fields types
+            // will be discovered through the primaries).
+            // Note that fields that have no "real implementations" (all their implementation frileds are PocoFieldAccessKind.AbstractReadOnly)
+            // are skipped by default (unless "withAbstractReadOnlyFieldTypes" parameter has been specified).
+            foreach( IAbstractPocoField f in abstractPoco.Fields )
+            {
+                if( _withAbstractReadOnlyFieldTypes || f.Implementations.Any( impl => impl.FieldAccess != PocoFieldAccessKind.AbstractReadOnly ) )
+                {
+                    Visit( f.Type );
                 }
             }
         }
