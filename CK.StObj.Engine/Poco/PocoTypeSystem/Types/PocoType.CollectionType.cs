@@ -321,7 +321,7 @@ namespace CK.Setup
         internal sealed class AbstractReadOnlyCollectionType : PocoType, ICollectionPocoType, IPocoType.ITypeRef
         {
             readonly ICollectionPocoType _mutable;
-            IPocoType.ITypeRef? _nextRefKey;
+            readonly IPocoType.ITypeRef? _nextRefKey;
 
             public AbstractReadOnlyCollectionType( PocoTypeSystemBuilder s,
                                                    Type tCollection,
@@ -330,6 +330,7 @@ namespace CK.Setup
                 : base( s, tCollection, csharpName, mutable.Kind, static t => new NullCollection( t ) )
             {
                 _mutable = mutable;
+                _nextRefKey = ((PocoType)_mutable.ObliviousType).AddBackRef( this );
                 ((IRegularCollection)mutable.NonNullable).SetAbstractReadonly( this );
             }
 

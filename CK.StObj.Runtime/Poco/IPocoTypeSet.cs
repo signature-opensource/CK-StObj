@@ -100,7 +100,6 @@ namespace CK.Setup
         /// <returns>A new set (or this if nothing changed).</returns>
         IPocoTypeSet IncludeAndExclude( IEnumerable<IPocoType> include, IEnumerable<IPocoType> exclude );
 
-
         /// <summary>
         /// Excludes named records that have all their field's type excluded.
         /// The returned set has <see cref="AllowEmptyRecords"/> set to false and will not be able to

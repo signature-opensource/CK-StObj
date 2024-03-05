@@ -50,6 +50,14 @@ namespace CK.Setup
         bool ImplementationLess { get; }
 
         /// <summary>
+        /// Gets whether this type is polymorphic.
+        /// Polymorphic types are <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/>
+        /// and <see cref="PocoTypeKind.UnionType"/> (and the <see cref="PocoTypeKind.Basic"/> <see cref="ExtendedCultureInfo"/>
+        /// because it can be a <see cref="NormalizedCultureInfo"/>). 
+        /// </summary>
+        bool IsPolymorphic { get; }
+
+        /// <summary>
         /// Gets whether this type is disallowed as a field in a <see cref="ICompositePocoType"/>,
         /// or always allowed, or allowed but requires the <see cref="DefaultValueInfo.DefaultValue"/> to be set.
         /// <para>

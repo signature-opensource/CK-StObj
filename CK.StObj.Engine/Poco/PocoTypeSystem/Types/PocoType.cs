@@ -58,6 +58,8 @@ namespace CK.Setup
             /// </summary>
             public IPocoType ObliviousType => _nonNullable.ObliviousType;
 
+            public bool IsPolymorphic => NonNullable.IsPolymorphic;
+
             public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
 
             public bool CanReadFrom( IPocoType type )
@@ -148,6 +150,8 @@ namespace CK.Setup
             public bool IsPurelyGeneratedType => NonNullable.IsPurelyGeneratedType;
 
             public IPocoType.ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+
+            public bool IsPolymorphic => NonNullable.IsPolymorphic;
 
             public bool CanReadFrom( IPocoType type )
             {
@@ -272,6 +276,12 @@ namespace CK.Setup
                                 && Kind != PocoTypeKind.Dictionary
                                 && Kind != PocoTypeKind.UnionType );
         }
+
+        /// <summary>
+        /// Only <see cref="BasicRefType"/> overrides this: if the reference type has at least one specialization,
+        /// it is polymorphic.
+        /// </summary>
+        public virtual bool IsPolymorphic => _kind is PocoTypeKind.Any or PocoTypeKind.AbstractPoco or PocoTypeKind.UnionType;
 
         /// <summary>
         /// Defaults to "this" that works for everything except for:

@@ -137,6 +137,8 @@ namespace CK.Setup
                 }
             }
 
+            public override bool IsPolymorphic => _specializations.Length > 0;
+
             IBasicRefPocoType IBasicRefPocoType.Nullable => Unsafe.As<IBasicRefPocoType>( base.Nullable );
 
             IBasicRefPocoType IBasicRefPocoType.NonNullable => this;

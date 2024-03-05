@@ -33,14 +33,9 @@ namespace CK.Setup
         IPocoTypeSet AllExchangeable { get; }
 
         /// <summary>
-        /// Gets the name of the "GetFilter" static function to call with a string to obtain
-        /// the named <see cref="ExchangeableRuntimeFilter"/>.
-        /// </summary>
-        string GetExchangeableRuntimeFilterStaticFunctionName { get; }
-
-        /// <summary>
         /// Gets a unique compact index for a type (that must be serializable).
         /// A nullable type has the negative value of its non nullable counterpart.
+        /// The index 0 is not used.
         /// </summary>
         /// <param name="t">The nullable or non nullable type.</param>
         /// <returns>A unique index in the <see cref="AllSerializable"/> set.</returns>
@@ -61,8 +56,14 @@ namespace CK.Setup
         /// <param name="monitor">The monitor.</param>
         /// <param name="name">The runtime filter name.</param>
         /// <param name="typeSet">The type set.</param>
-        /// <returns>Ture on success, false otherwise.</returns>
+        /// <returns>True on success, false otherwise.</returns>
         bool RegisterExchangeableRuntimeFilter( IActivityMonitor monitor, string name, IPocoTypeSet typeSet );
+
+        /// <summary>
+        /// Gets the name of the "GetFilter" static function to call with a string to obtain
+        /// the named <see cref="ExchangeableRuntimeFilter"/>.
+        /// </summary>
+        string GetExchangeableRuntimeFilterStaticFunctionName { get; }
 
     }
 }
