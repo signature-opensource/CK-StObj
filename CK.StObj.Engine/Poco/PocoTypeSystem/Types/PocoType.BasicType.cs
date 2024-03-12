@@ -1,10 +1,8 @@
-using System.Diagnostics;
 using System;
-using System.Data.SqlTypes;
 using System.Collections.Generic;
-using CK.Core;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -138,6 +136,8 @@ namespace CK.Setup
             }
 
             public override bool IsPolymorphic => _specializations.Length > 0;
+
+            public override bool IsNonNullableFinalType => !Type.IsAbstract;
 
             IBasicRefPocoType IBasicRefPocoType.Nullable => Unsafe.As<IBasicRefPocoType>( base.Nullable );
 

@@ -81,8 +81,8 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             IPocoType? extendedCultureInfo = null;
             IPocoType? normalizedCultureInfo = null;
 
-            // Non nullable, oblivious and non polymorphic: these are the types that need to be written.
-            foreach( var t in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious && !t.IsPolymorphic ) )
+            // Non nullable final types that are serializables: these are the types that need to be written.
+            foreach( var t in _nameMap.TypeSystem.NonNullableFinalTypes.Where( _nameMap.TypeSet.Contains ) )
             {
                 switch( t.Kind )
                 {

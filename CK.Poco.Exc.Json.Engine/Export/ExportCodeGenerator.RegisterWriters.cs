@@ -215,7 +215,7 @@ namespace CK.Setup.PocoJson
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Exporter.Write_" )
                                               .Append( type.ObliviousType.Index )
                                               .Append( "(w," )
-                                              .Append( v ).Append( ",wCtx);" );
+                                              .Append( v ).Append( ", wCtx);" );
             }
 
             static CodeWriter GetRecordObliviousCodeWriter( IPocoType type )

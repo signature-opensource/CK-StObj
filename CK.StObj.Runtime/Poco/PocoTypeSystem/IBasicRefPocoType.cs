@@ -6,7 +6,6 @@ namespace CK.Setup
     /// <summary>
     /// Basic reference types are the wellknown types: string, <see cref="ExtendedCultureInfo"/>, <see cref="NormalizedCultureInfo"/>, <see cref="MCString"/>
     /// and <see cref="CodeString"/>.
-    /// Like the other <see cref="PocoTypeKind.Basic"/> types they are registered by default.
     /// </summary>
     public interface IBasicRefPocoType : IPocoType
     {

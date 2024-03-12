@@ -28,16 +28,23 @@ namespace CK.Setup
         /// <para>
         /// Notably, collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c> and their IReadOnly)
         /// cannot be found by this method. 
+        /// <para>
+        /// This can find only the <see cref="IPocoType.IsOblivious"/> types and <see cref="ISecondaryPocoType"/> types.
+        /// </para>
         /// </summary>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
         IPocoType? FindByType( Type type );
 
         /// <summary>
-        /// Tries to find by type. Not all types can be indexed by types: the most obvious are nullable reference types
-        /// but collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c>)
-        /// are not. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
+        /// Tries to find by type. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
         /// interfaces can be found by this method.
+        /// <para>
+        /// Notably, collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c> and their IReadOnly)
+        /// cannot be found by this method. 
+        /// <para>
+        /// This can find only the <see cref="IPocoType.IsOblivious"/> types and <see cref="ISecondaryPocoType"/> types.
+        /// </para>
         /// </summary>
         /// <typeparam name="T">The expected <see cref="IPocoType"/>.</typeparam>
         /// <param name="type">The type to find.</param>
@@ -75,7 +82,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the set of types that must be generated to support this type system.
         /// </summary>
-        IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes { get; }
+        IReadOnlyCollection<IPocoRequiredSupportType> RequiredSupportTypes { get; }
 
         /// <summary>
         /// Forbids a type to be exchangeable. This is the same as using the <see cref="NotExchangeableAttribute"/>

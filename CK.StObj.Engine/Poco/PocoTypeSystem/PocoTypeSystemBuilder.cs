@@ -70,6 +70,13 @@ namespace CK.Setup
                 {
                     Throw.CKException( "Unable to create a valid PocoTypeSystem." );
                 }
+                Throw.DebugAssert( "All Oblivious types are indexed by type.",
+                                   _nonNullableTypes.Where( t => ((IPocoType)t).IsOblivious ).All( t => _typeCache.ContainsKey( t.Type ) ) );
+                Throw.DebugAssert( "All types that are indexed are the oblivious ones or Secondary poco interfaces.",
+                                   _typeCache.Where( kv => kv.Key is Type ).All( kv => kv.Value.Kind == PocoTypeKind.SecondaryPoco || kv.Value.IsOblivious ) );
+                Throw.DebugAssert( "Any abstract basic ref type must have specialization (currently all basic ref types are concrete).",
+                                   _typeCache.Values.OfType<IBasicRefPocoType>().All( t => t.IsNonNullableFinalType || t.Specializations.Any() ) );
+
                 _result = new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _notSerializable, _notExchangeable );
             }
             return _result;
@@ -79,7 +86,7 @@ namespace CK.Setup
 
         public int Count => _nonNullableTypes.Count << 1;
 
-        public IReadOnlyCollection<PocoRequiredSupportType> RequiredSupportTypes => _requiredSupportTypes.Values;
+        public IReadOnlyCollection<IPocoRequiredSupportType> RequiredSupportTypes => _requiredSupportTypes.Values;
 
         internal void AddNew( PocoType t )
         {

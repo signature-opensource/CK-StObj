@@ -20,6 +20,7 @@ namespace CK.Setup
     {
         [AllowNull] IPocoTypeSystemBuilder _typeSystemBuilder;
         [AllowNull] ICSCodeGenerationContext _context;
+        [AllowNull] ITypeScopePart _finalTypeIndex;
         int _lastRegistrationCount;
 
         /// <summary>
@@ -65,9 +66,11 @@ namespace CK.Setup
                  // The _factories field 
                  .Append( "static readonly Dictionary<string,IPocoFactory> _factoriesN = new Dictionary<string,IPocoFactory>( " ).Append( pocoDirectory.NamedFamilies.Count ).Append( " );" ).NewLine()
                  .Append( "static readonly Dictionary<Type,IPocoFactory> _factoriesT = new Dictionary<Type,IPocoFactory>( " ).Append( pocoDirectory.AllInterfaces.Count ).Append( " );" ).NewLine()
+                 .CreatePart( out _finalTypeIndex )
                  .Append( "public override IPocoFactory Find( string name ) => _factoriesN.GetValueOrDefault( name );" ).NewLine()
                  .Append( "public override IPocoFactory Find( Type t ) => _factoriesT.GetValueOrDefault( t );" ).NewLine()
-                 .Append( "internal static void Register( IPocoFactory f )" ).OpenBlock()
+                 .Append( "internal static void Register( IPocoFactory f )" )
+                 .OpenBlock()
                  .Append( "_factoriesN.Add( f.Name, f );" ).NewLine()
                  .Append( "foreach( var n in f.PreviousNames ) _factoriesN.Add( n, f );" ).NewLine()
                  .Append( "foreach( var i in f.Interfaces ) _factoriesT.Add( i, f );" ).NewLine()
@@ -77,7 +80,7 @@ namespace CK.Setup
 
             // If there is no families, then we'll generate nothing but we
             // wait for any other type registration in the builder in order to
-            // lock it an publish the type system.
+            // lock it and publish the type system.
             foreach( var family in pocoDirectory.Families )
             {
                 // PocoFactory class.
@@ -279,31 +282,33 @@ namespace CK.Setup
 
         static void ImplementPocoRequiredSupport( IActivityMonitor monitor, IPocoTypeSystemBuilder pocoTypeSystem, ICodeWorkspace workspace )
         {
-            var ns = workspace.Global.FindOrCreateNamespace( PocoRequiredSupportType.Namespace );
-            ns.GeneratedByComment();
-            foreach( var t in pocoTypeSystem.RequiredSupportTypes )
+            var ns = workspace.Global.FindOrCreateNamespace( IPocoRequiredSupportType.Namespace );
+            using( ns.Region() )
             {
-                switch( t )
+                foreach( var t in pocoTypeSystem.RequiredSupportTypes )
                 {
-                    case PocoListOrHashSetRequiredSupport listOrSet:
-                        if( listOrSet.IsList ) GeneratePocoList( monitor, ns, listOrSet );
-                        else GeneratePocoHashSet( monitor, ns, listOrSet );
-                        break;
-                    case PocoDictionaryRequiredSupport dic:
-                        GeneratePocoDictionary( monitor, ns, dic );
-                        break;
-                    case PocoHashSetOfAbstractOrBasicRefRequiredSupport set:
-                        GenerateHashSetOfAbstractOrBasicRef( ns, set );
-                        break;
-                    case PocoDictionaryOfAbstractOrBasicRefRequiredSupport dic:
-                        GeneratePocoDictionaryOfAbstractBasicRef( monitor, ns, dic );
-                        break;
-                    default: throw new NotSupportedException();
+                    switch( t )
+                    {
+                        case IPocoListOrHashSetRequiredSupport listOrSet:
+                            if( listOrSet.IsList ) GeneratePocoList( monitor, ns, listOrSet );
+                            else GeneratePocoHashSet( monitor, ns, listOrSet );
+                            break;
+                        case IPocoDictionaryRequiredSupport dic:
+                            GeneratePocoDictionary( monitor, ns, dic );
+                            break;
+                        case IPocoHashSetOfAbstractOrBasicRefRequiredSupport set:
+                            GenerateHashSetOfAbstractOrBasicRef( ns, set );
+                            break;
+                        case IPocoDictionaryOfAbstractOrBasicRefRequiredSupport dic:
+                            GeneratePocoDictionaryOfAbstractBasicRef( monitor, ns, dic );
+                            break;
+                        //default: throw new NotSupportedException();
+                    }
                 }
             }
         }
 
-        static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport list )
+        static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, IPocoListOrHashSetRequiredSupport list )
         {
             Debug.Assert( list.ItemType.ImplTypeName == list.ItemType.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
             var pocoClassName = list.ItemType.ImplTypeName;
@@ -326,7 +331,7 @@ namespace CK.Setup
 
         }
 
-        static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, PocoListOrHashSetRequiredSupport set )
+        static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, IPocoListOrHashSetRequiredSupport set )
         {
             var actualTypeName = set.ItemType.ImplTypeName;
             ITypeScope typeScope = CreateHashSetType( ns,
@@ -383,7 +388,7 @@ namespace CK.Setup
                                        baseTypes: set.ItemType.AbstractTypes );
         }
 
-        static void GenerateHashSetOfAbstractOrBasicRef( INamespaceScope ns, PocoHashSetOfAbstractOrBasicRefRequiredSupport set )
+        static void GenerateHashSetOfAbstractOrBasicRef( INamespaceScope ns, IPocoHashSetOfAbstractOrBasicRefRequiredSupport set )
         {
             var actualTypeName = set.ItemType.CSharpName;
             ITypeScope typeScope = CreateHashSetType( ns,
@@ -416,7 +421,7 @@ namespace CK.Setup
         }
 
         static ITypeScope CreateHashSetType( INamespaceScope ns,
-                                             PocoRequiredSupportType supportType,
+                                             IPocoRequiredSupportType supportType,
                                              bool isNullable,
                                              ref string actualTypeName,
                                              out string? nonNullableActualTypeNameIfNullable )
@@ -503,7 +508,7 @@ namespace CK.Setup
            .NewLine();
         }
 
-        static void GeneratePocoDictionary( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryRequiredSupport dic )
+        static void GeneratePocoDictionary( IActivityMonitor monitor, INamespaceScope ns, IPocoDictionaryRequiredSupport dic )
         {
             var k = dic.KeyType.CSharpName;
             var actualTypeName = dic.ValueType.ImplTypeName;
@@ -542,7 +547,7 @@ namespace CK.Setup
                                               dic.ValueType.AbstractTypes );
         }
 
-        static void GeneratePocoDictionaryOfAbstractBasicRef( IActivityMonitor monitor, INamespaceScope ns, PocoDictionaryOfAbstractOrBasicRefRequiredSupport dic )
+        static void GeneratePocoDictionaryOfAbstractBasicRef( IActivityMonitor monitor, INamespaceScope ns, IPocoDictionaryOfAbstractOrBasicRefRequiredSupport dic )
         {
             var k = dic.KeyType.CSharpName;
             var actualTypeName = dic.ValueType.ImplTypeName;
@@ -555,7 +560,7 @@ namespace CK.Setup
                                               baseTypes );
         }
 
-        static ITypeScope CreateDictionaryType( INamespaceScope ns, PocoRequiredSupportType dic, string k, string actualTypeName )
+        static ITypeScope CreateDictionaryType( INamespaceScope ns, IPocoRequiredSupportType dic, string k, string actualTypeName )
         {
             var typeScope = ns.CreateType( $"sealed class {dic.TypeName} : Dictionary<{k},{actualTypeName}>" );
             typeScope.Append( "bool TGV<TOut>( " ).Append( k ).Append( " key, out TOut? value ) where TOut : class" ).NewLine()
@@ -613,7 +618,17 @@ namespace CK.Setup
                 return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
             }
             monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem can start." );
-            _context.CurrentRun.ServiceContainer.Add( _typeSystemBuilder.Lock( monitor ) );
+            IPocoTypeSystem ts = _typeSystemBuilder.Lock( monitor );
+
+            _finalTypeIndex.Append( "static readonly Dictionary<Type,int> _finalTypes = new Dictionary<Type,int>( " ).Append( ts.NonNullableFinalTypes.Count ).Append( " ) {" ).NewLine();
+            foreach( var type in ts.NonNullableFinalTypes )
+            {
+                _finalTypeIndex.Append( "{typeof(" ).Append( type.ImplTypeName ).Append( ")," ).Append( type.Index ).Append( "}," ).NewLine();
+            }
+            _finalTypeIndex.Append( "};" ).NewLine()
+                           .Append( "public override int GetNonNullableFinalTypeIndex( Type t ) => _finalTypes.GetValueOrDefault( t, -1 );" ).NewLine();
+
+            _context.CurrentRun.ServiceContainer.Add( ts );
             return CSCodeGenerationResult.Success;
         }
     }

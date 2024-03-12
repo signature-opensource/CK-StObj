@@ -2,10 +2,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    /// <summary>
-    /// Defines the "multi variance" dictionary for a Poco.
-    /// </summary>
-    public sealed class PocoDictionaryRequiredSupport : PocoRequiredSupportType
+    sealed class PocoDictionaryRequiredSupport : PocoRequiredSupportType, IPocoDictionaryRequiredSupport
     {
         public PocoDictionaryRequiredSupport( IPocoType key, IPrimaryPocoType value, string typeName )
             : base( typeName )
@@ -17,14 +14,8 @@ namespace CK.Setup
             ValueType = value;
         }
 
-        /// <summary>
-        /// Gets the necessary non nullable key type.
-        /// </summary>
         public IPocoType KeyType { get; }
 
-        /// <summary>
-        /// Gets the not nullable value type.
-        /// </summary>
         public IPrimaryPocoType ValueType { get; }
     }
 }

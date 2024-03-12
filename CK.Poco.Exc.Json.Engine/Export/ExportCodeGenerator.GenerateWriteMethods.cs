@@ -58,27 +58,51 @@ namespace CK.Setup.PocoJson
                 if( type.ItemTypes[0].Type == typeof( string ) )
                 {
                     code.Append( "w.WriteStartObject();" ).NewLine()
-                                    .Append( "foreach( var item in v )" )
-                                    .OpenBlock()
-                                    .Append( "w.WritePropertyName( item.Key );" ).NewLine()
-                                    .Append( "var vLoc = item.Value;" ).NewLine()
-                                    .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "vLoc" ) ).NewLine()
-                                    .CloseBlock()
-                                    .Append( "w.WriteEndObject();" );
+                        .Append( "foreach( var item in v )" )
+                        .OpenBlock();
+                    //if( type.ItemTypes[1].Type.IsValueType )
+                    {
+                        code.Append( "w.WritePropertyName( item.Key );" ).NewLine()
+                            .Append( "var vLoc = item.Value;" ).NewLine()
+                            .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "vLoc" ) ).NewLine();
+                    }
+                    //else if( type.ItemTypes[1].IsPolymorphic )
+                    //{
+                    //    code.Append( """
+                    //        if( item.Value == null )
+                    //        {
+                    //            w.WritePropertyName( item.Key );
+                    //            w.WriteNullValue();
+                    //        }
+                    //        else
+                    //        {
+                    //            int index = PocoDirectory_CK.
+                    //        }
+
+                    //        """ );
+
+                    //}
+                    //else
+                    //{
+                    //    code.Append( "w.WritePropertyName( item.Key );" ).NewLine()
+                    //        .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "item.Value" ) ).NewLine();
+                    //}
+                    code.CloseBlock()
+                        .Append( "w.WriteEndObject();" );
                 }
                 else
                 {
                     code.Append( "w.WriteStartArray();" ).NewLine()
-                                    .Append( "foreach( var (k,e) in v )" )
-                                    .OpenBlock()
-                                    .Append( "w.WriteStartArray();" ).NewLine()
-                                    .Append( "var tK = k;" ).NewLine()
-                                    .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "tK" ) ).NewLine()
-                                    .Append( "var tE = e;" ).NewLine()
-                                    .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "tE" ) ).NewLine()
-                                    .Append( "w.WriteEndArray();" ).NewLine()
-                                    .CloseBlock()
-                                    .Append( "w.WriteEndArray();" );
+                        .Append( "foreach( var (k,e) in v )" )
+                        .OpenBlock()
+                        .Append( "w.WriteStartArray();" ).NewLine()
+                        .Append( "var tK = k;" ).NewLine()
+                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "tK" ) ).NewLine()
+                        .Append( "var tE = e;" ).NewLine()
+                        .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "tE" ) ).NewLine()
+                        .Append( "w.WriteEndArray();" ).NewLine()
+                        .CloseBlock()
+                        .Append( "w.WriteEndArray();" );
                 }
                 code.CloseBlock();
             }

@@ -2,10 +2,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    /// <summary>
-    /// Defines the "multi variance" set for Poco abstractions and BasicRefType.
-    /// </summary>
-    public sealed class PocoHashSetOfAbstractOrBasicRefRequiredSupport : PocoRequiredSupportType
+    sealed class PocoHashSetOfAbstractOrBasicRefRequiredSupport : PocoRequiredSupportType, IPocoHashSetOfAbstractOrBasicRefRequiredSupport
     {
         public PocoHashSetOfAbstractOrBasicRefRequiredSupport( IPocoType itemType, string typeName )
             : base( typeName )
@@ -16,9 +13,6 @@ namespace CK.Setup
             ItemType = itemType;
         }
 
-        /// <summary>
-        /// Gets the non nullable item type: a <see cref="IBasicRefPocoType"/> or <see cref="IAbstractPocoType"/>.
-        /// </summary>
         public IPocoType ItemType { get; }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -36,6 +37,11 @@ namespace CK.Setup
         IReadOnlyList<IPocoType> AllNonNullableTypes { get; }
 
         /// <summary>
+        /// Gets the set of types that are <see cref="IPocoType.IsNonNullableFinalType"/>.
+        /// </summary>
+        IReadOnlyCollection<IPocoType> NonNullableFinalTypes { get; }
+
+        /// <summary>
         /// Tries to find by type. Only types that are oblivious (see <see cref="IPocoType.ObliviousType"/>) and IPoco
         /// interfaces can be found by this method.
         /// <para>
@@ -69,7 +75,6 @@ namespace CK.Setup
         /// Gets the type set manager.
         /// </summary>
         IPocoTypeSetManager SetManager { get; }
-
     }
 
 }

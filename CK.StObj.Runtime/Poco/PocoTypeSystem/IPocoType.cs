@@ -58,6 +58,17 @@ namespace CK.Setup
         bool IsPolymorphic { get; }
 
         /// <summary>
+        /// Gets whether this type is final. A final type is a on nullable <see cref="ObliviousType"/> that is not
+        /// the <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractPoco"/>, a <see cref="PocoTypeKind.SecondaryPoco"/>
+        /// or a <see cref="PocoTypeKind.UnionType"/> or a <see cref="IBasicRefPocoType"/> with an abstract <see cref="IPocoType.Type"/>.
+        /// <para>
+        /// A final type can be based on oblivious types that are not final: <c>List&lt;objet&gt;</c> is a final type even if <c>object</c>
+        /// is not. Final types are the "concrete" types that are ultimately serialized (if they belong to the <see cref="IPocoTypeSetManager.AllSerializable"/>).
+        /// </para>
+        /// </summary>
+        bool IsNonNullableFinalType { get; }
+
+        /// <summary>
         /// Gets whether this type is disallowed as a field in a <see cref="ICompositePocoType"/>,
         /// or always allowed, or allowed but requires the <see cref="DefaultValueInfo.DefaultValue"/> to be set.
         /// <para>
@@ -89,6 +100,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the oblivious type (this instance if <see cref="IsOblivious"/> is true).
+        /// Oblivious types are actual C# types based only on oblivious types.
         /// <list type="bullet">
         ///   <item>
         ///     <term>Nullable Reference Types</term>
@@ -125,7 +137,8 @@ namespace CK.Setup
         ///     </description>
         ///   </item>
         ///   <item>
-        ///     All other types: enum, basic types (non nullable for reference types), any (non nullable), structs (Named record) are their own oblivious.
+        ///     All other types: enum, basic types (non nullable for reference types), any (non nullable), structs (Named record)
+        ///     are their own oblivious.
         ///   </item>
         /// </list>
         /// </summary>

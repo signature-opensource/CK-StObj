@@ -2,10 +2,7 @@ using CK.Core;
 
 namespace CK.Setup
 {
-    /// <summary>
-    /// Defines the "multi variance" list or set for a Poco.
-    /// </summary>
-    public sealed class PocoListOrHashSetRequiredSupport : PocoRequiredSupportType
+    sealed class PocoListOrHashSetRequiredSupport : PocoRequiredSupportType, IPocoListOrHashSetRequiredSupport
     {
         public PocoListOrHashSetRequiredSupport( IPrimaryPocoType itemType, string typeName, bool isList )
             : base( typeName )
@@ -17,14 +14,8 @@ namespace CK.Setup
             IsList = isList;
         }
 
-        /// <summary>
-        /// Gets the not nullable item type.
-        /// </summary>
         public IPrimaryPocoType ItemType { get; }
 
-        /// <summary>
-        /// Gets whether this is a list (or a hash set).
-        /// </summary>
         public bool IsList { get; }
     }
 }

@@ -13,6 +13,7 @@ namespace CK.Setup
         readonly IReadOnlyList<IPocoType> _nonNullableTypes;
         readonly Dictionary<object, IPocoType> _typeCache;
         readonly Dictionary<Type, PocoType.PocoGenericTypeDefinition> _typeDefinitions;
+        readonly ImmutableArray<IPocoType> _nonNullableFinalTypes;
         readonly IPocoTypeSet _emptyTypeSet;
         readonly IPocoTypeSet _emptySerializableTypeSet;
         readonly IPocoTypeSet _emptyExchangableTypeSet;
@@ -36,6 +37,7 @@ namespace CK.Setup
             _nonNullableTypes = nonNullableTypes;
             _typeCache = typeCache;
             _typeDefinitions = typeDefinitions;
+            _nonNullableFinalTypes = _nonNullableTypes.Where( t => t.IsNonNullableFinalType ).ToImmutableArray();
             // Initializes the None and Root.
             _emptyTypeSet = new RootNone( this, true, true, true, ImplementationLessFilter );
             // The All is built with the Excluder. This is NOT overkill:
@@ -83,6 +85,8 @@ namespace CK.Setup
         public IReadOnlyList<IPocoType> AllTypes => _allTypes;
 
         public IReadOnlyList<IPocoType> AllNonNullableTypes => _nonNullableTypes;
+
+        public IReadOnlyCollection<IPocoType> NonNullableFinalTypes => _nonNullableFinalTypes;
 
         public IPocoType? FindByType( Type type ) => _typeCache.GetValueOrDefault( type );
 

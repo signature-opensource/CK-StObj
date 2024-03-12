@@ -44,6 +44,7 @@ namespace CK.Setup
                 var t = nType.Type;
                 Type? tOblivious = null;
                 string? typeName = null;
+                PocoRequiredSupportType? supportType = null;
                 if( !isRegular )
                 {
                     // IList or ISet
@@ -56,13 +57,25 @@ namespace CK.Setup
                         // create useless TupleNamesAttribute, the oblivious has no field names.
                         if( tI.IsNullable )
                         {
+                            Throw.DebugAssert( typeof( CovariantHelpers.CovNullableValueList<> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
+                                               == "CK.Core.CovariantHelpers.CovNullableValueList<>" );
+                            Throw.DebugAssert( typeof( CovariantHelpers.CovNullableValueHashSet<> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
+                                               == "CK.Core.CovariantHelpers.CovNullableValueHashSet<>" );
+
                             typeName = $"CovariantHelpers.CovNullableValue{listOrHashSet}<{tI.NonNullable.ObliviousType.ImplTypeName}>";
+                            supportType = EnsureExistingSupportType( "CK.Core", typeName );
                             t = (isList ? typeof( CovariantHelpers.CovNullableValueList<> ) : typeof( CovariantHelpers.CovNullableValueHashSet<> ))
                                 .MakeGenericType( tI.NonNullable.Type );
                         }
                         else
                         {
+                            Throw.DebugAssert( typeof( CovariantHelpers.CovNotNullValueList<> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
+                                               == "CK.Core.CovariantHelpers.CovNotNullValueList<>" );
+                            Throw.DebugAssert( typeof( CovariantHelpers.CovNotNullValueHashSet<> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
+                                               == "CK.Core.CovariantHelpers.CovNotNullValueHashSet<>" );
+
                             typeName = $"CovariantHelpers.CovNotNullValue{listOrHashSet}<{tI.ObliviousType.ImplTypeName}>";
+                            supportType = EnsureExistingSupportType( "CK.Core", typeName );
                             t = (isList ? typeof( CovariantHelpers.CovNotNullValueList<> ) : (typeof( CovariantHelpers.CovNotNullValueHashSet<> )))
                                 .MakeGenericType( tI.Type );
                         }
@@ -84,7 +97,8 @@ namespace CK.Setup
                             if( !isList || isSecondary || poco.FamilyInfo.Interfaces.Count > 1 )
                             {
                                 // We choose the non nullable item type to follow the C# "oblivious nullable reference type" that is non nullable. 
-                                typeName = EnsurePocoListOrHashSetType( monitor, poco, isList, listOrHashSet );
+                                supportType = EnsurePocoListOrHashSetType( poco, isList, listOrHashSet );
+                                typeName = supportType.FullName;
                                 t = IDynamicAssembly.PurelyGeneratedType;
                                 // Since we are on a reference type, the oblivious is the non nullable.
                                 Debug.Assert( poco.IsOblivious );
@@ -98,7 +112,8 @@ namespace CK.Setup
                             // AbstractPoco, string and other basic reference types.
                             if( !isList )
                             {
-                                typeName = EnsurePocoHashSetOfAbstractOrBasicRefType( monitor, tI.NonNullable );
+                                supportType = EnsurePocoHashSetOfAbstractOrBasicRefType( tI.NonNullable );
+                                typeName = supportType.FullName;
                                 t = IDynamicAssembly.PurelyGeneratedType;
                                 // We are obviously not the oblivious.
                                 tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
@@ -167,6 +182,7 @@ namespace CK.Setup
                     Throw.DebugAssert( result.IsOblivious && csharpName == typeName );
                     _typeCache.Add( result.Type, result );
                 }
+                supportType?.SetSupportedType( result );
             }
             return nType.IsNullable ? result.Nullable : result;
         }
@@ -178,26 +194,28 @@ namespace CK.Setup
             return valid ? tI : null;
         }
 
-        string EnsurePocoListOrHashSetType( IActivityMonitor monitor, IPrimaryPocoType tI, bool isList, string listOrHasSet )
+        PocoRequiredSupportType EnsurePocoListOrHashSetType( IPrimaryPocoType tI, bool isList, string listOrHasSet )
         {
             Debug.Assert( !tI.IsNullable );
             var genTypeName = $"Poco{listOrHasSet}_{tI.Index}_CK";
             if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
             {
-                _requiredSupportTypes.Add( genTypeName, g = new PocoListOrHashSetRequiredSupport( tI, genTypeName, isList ) );
+                g = new PocoListOrHashSetRequiredSupport( tI, genTypeName, isList );
+                _requiredSupportTypes.Add( g.FullName, g );
             }
-            return g.FullName;
+            return g;
         }
 
-        string EnsurePocoHashSetOfAbstractOrBasicRefType( IActivityMonitor monitor, IPocoType tI )
+        PocoRequiredSupportType EnsurePocoHashSetOfAbstractOrBasicRefType( IPocoType tI )
         {
             Debug.Assert( !tI.IsNullable );
             var genTypeName = $"PocoHashSet_{tI.Index}_CK";
             if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
             {
-                _requiredSupportTypes.Add( genTypeName, g = new PocoHashSetOfAbstractOrBasicRefRequiredSupport( tI, genTypeName ) );
+                g = new PocoHashSetOfAbstractOrBasicRefRequiredSupport( tI, genTypeName );
+                _requiredSupportTypes.Add( g.FullName, g );
             }
-            return g.FullName;
+            return g;
         }
     }
 
