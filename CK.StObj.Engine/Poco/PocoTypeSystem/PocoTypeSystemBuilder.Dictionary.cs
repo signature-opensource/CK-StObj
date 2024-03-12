@@ -66,7 +66,6 @@ namespace CK.Setup
                 var t = nType.Type;
                 Type? tOblivious = null;
                 string? typeName = null;
-                PocoRequiredSupportType? supportType = null;
                 if( !isRegular )
                 {
                     if( tV.Type.IsValueType )
@@ -77,7 +76,6 @@ namespace CK.Setup
                             Throw.DebugAssert( typeof( CovariantHelpers.CovNullableValueDictionary<,> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
                                                 == "CK.Core.CovariantHelpers.CovNullableValueDictionary<,>" );
                             typeName = $"CovariantHelpers.CovNullableValueDictionary<{tK.ImplTypeName},{tV.NonNullable.ObliviousType.ImplTypeName}>";
-                            supportType = EnsureExistingSupportType( "CK.Core", typeName );
                             t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.NonNullable.Type );
                         }
                         else
@@ -85,8 +83,6 @@ namespace CK.Setup
                             Throw.DebugAssert( typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
                                                 == "CK.Core.CovariantHelpers.CovNotNullValueDictionary<,>" );
                             typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.ImplTypeName},{tV.ObliviousType.ImplTypeName}>";
-                            supportType = EnsureExistingSupportType( "CK.Core", typeName );
-                            typeName = supportType.FullName;
                             t = typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                         }
                         tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
@@ -100,8 +96,7 @@ namespace CK.Setup
                             var poco = isSecondary
                                             ? ((ISecondaryPocoType)tV.NonNullable).PrimaryPocoType
                                             : (IPrimaryPocoType)tV.NonNullable;
-                            supportType = EnsurePocoDictionaryType( tK, poco );
-                            typeName = supportType.FullName;
+                            typeName = EnsurePocoDictionaryType( tK, poco );
                             t = IDynamicAssembly.PurelyGeneratedType;
                             tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                         }
@@ -109,7 +104,7 @@ namespace CK.Setup
                         {
                             // IReadOnlyDictionary<TKey,TValue> is NOT covariant on TValue: we always need an adapter.
                             // We support it here for AbstractPoco, string and other basic reference types.
-                            supportType = EnsurePocoDictionaryOfAbstractOrBasicRefType( tK, tV.NonNullable );
+                            typeName = EnsurePocoDictionaryOfAbstractOrBasicRefType( tK, tV.NonNullable );
                             t = IDynamicAssembly.PurelyGeneratedType;
                             tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
                         }
@@ -163,43 +158,32 @@ namespace CK.Setup
                     Throw.DebugAssert( result.IsOblivious && csharpName == typeName );
                     _typeCache.Add( result.Type, result );
                 }
-                supportType?.SetSupportedType( result );
             }
             return nType.IsNullable ? result.Nullable : result;
         }
 
-        PocoRequiredSupportType EnsureExistingSupportType( string @namespace, string typeName )
-        {
-            if( !_requiredSupportTypes.TryGetValue( typeName, out var g ) )
-            {
-                g = new PocoExistingSupportType( @namespace, typeName );
-                _requiredSupportTypes.Add( g.FullName, g );
-            }
-            return g;
-        }
-
-        PocoRequiredSupportType EnsurePocoDictionaryType( IPocoType tK, IPrimaryPocoType tV )
+        string EnsurePocoDictionaryType( IPocoType tK, IPrimaryPocoType tV )
         {
             Debug.Assert( !tV.IsNullable );
             var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
             if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
             {
                 g = new PocoDictionaryRequiredSupport( tK, tV, genTypeName );
-                _requiredSupportTypes.Add( g.FullName, g );
+                _requiredSupportTypes.Add( genTypeName, g );
             }
-            return g;
+            return g.FullName;
         }
 
-        PocoRequiredSupportType EnsurePocoDictionaryOfAbstractOrBasicRefType( IPocoType tK, IPocoType tV )
+        string EnsurePocoDictionaryOfAbstractOrBasicRefType( IPocoType tK, IPocoType tV )
         {
             Debug.Assert( !tV.IsNullable );
             var genTypeName = $"PocoDictionary_{tK.Index}_{tV.Index}_CK";
             if( !_requiredSupportTypes.TryGetValue( genTypeName, out var g ) )
             {
                 g = new PocoDictionaryOfAbstractOrBasicRefRequiredSupport( tK, tV, genTypeName );
-                _requiredSupportTypes.Add( g.FullName, g );
+                _requiredSupportTypes.Add( genTypeName, g );
             }
-            return g;
+            return g.FullName;
         }
     }
 

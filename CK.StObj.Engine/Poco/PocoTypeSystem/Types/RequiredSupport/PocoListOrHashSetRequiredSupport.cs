@@ -7,9 +7,9 @@ namespace CK.Setup
         public PocoListOrHashSetRequiredSupport( IPrimaryPocoType itemType, string typeName, bool isList )
             : base( typeName )
         {
-            Throw.CheckNotNullArgument( itemType );
-            Throw.CheckArgument( !itemType.IsNullable );
-            Throw.CheckArgument( typeName == (isList ? $"PocoList_{itemType.Index}_CK" : $"PocoHashSet_{itemType.Index}_CK") );
+            Throw.DebugAssert( itemType != null );
+            Throw.DebugAssert( !itemType.IsNullable );
+            Throw.DebugAssert( typeName == (isList ? $"PocoList_{itemType.Index}_CK" : $"PocoHashSet_{itemType.Index}_CK") );
             ItemType = itemType;
             IsList = isList;
         }

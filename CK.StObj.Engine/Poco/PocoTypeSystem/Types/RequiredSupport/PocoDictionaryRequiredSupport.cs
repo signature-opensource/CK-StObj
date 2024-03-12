@@ -7,9 +7,9 @@ namespace CK.Setup
         public PocoDictionaryRequiredSupport( IPocoType key, IPrimaryPocoType value, string typeName )
             : base( typeName )
         {
-            Throw.CheckNotNullArgument( value );
-            Throw.CheckArgument( !value.IsNullable );
-            Throw.CheckArgument( typeName == $"PocoDictionary_{key.Index}_{value.Index}_CK" );
+            Throw.DebugAssert( value != null );
+            Throw.DebugAssert( !value.IsNullable );
+            Throw.DebugAssert( typeName == $"PocoDictionary_{key.Index}_{value.Index}_CK" );
             KeyType = key;
             ValueType = value;
         }

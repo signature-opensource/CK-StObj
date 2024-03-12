@@ -302,7 +302,7 @@ namespace CK.Setup
                         case IPocoDictionaryOfAbstractOrBasicRefRequiredSupport dic:
                             GeneratePocoDictionaryOfAbstractBasicRef( monitor, ns, dic );
                             break;
-                        //default: throw new NotSupportedException();
+                        default: throw new NotSupportedException();
                     }
                 }
             }
