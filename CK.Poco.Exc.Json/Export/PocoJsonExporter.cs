@@ -1,4 +1,5 @@
 using CK.Core;
+using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -20,12 +21,19 @@ namespace CK.Poco.Exc.Json
         public void Write( IActivityMonitor monitor, Stream output, IPoco? data )
         {
             using Utf8JsonWriter w = new Utf8JsonWriter( output );
-            data.WriteJson( w, true, PocoJsonExportOptions.Default );
+            if( !data.WriteJson( w, true, PocoJsonExportOptions.Default ) )
+            {
+                Throw.InvalidOperationException( $"Poco type '{((IPocoGeneratedClass)data!).Factory.Name}' is not Exchangeable." );
+            }
         }
 
         public Task WriteAsync( IActivityMonitor monitor, Stream output, IPoco? data, CancellationToken cancel = default )
         {
-            Write( monitor, output, data );
+            using Utf8JsonWriter w = new Utf8JsonWriter( output );
+            if( !data.WriteJson( w, true, PocoJsonExportOptions.Default ) )
+            {
+                return Task.FromException( new InvalidOperationException( $"Poco type '{((IPocoGeneratedClass)data!).Factory.Name}' is not Exchangeable." ) );
+            }
             return Task.CompletedTask;
         }
     }

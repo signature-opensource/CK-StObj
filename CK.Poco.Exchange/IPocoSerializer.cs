@@ -12,6 +12,11 @@ namespace CK.Core
     {
        /// <summary>
         /// Synchronous serialization (throws on error).
+        /// <para>
+        /// This must throw if the <paramref name="data"/> cannot be written because it is
+        /// invalid in any way or is rejected by the <see cref="PocoExchangeService.RuntimeFilters"/>
+        /// selected by the implementation.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that may be used.</param>
         /// <param name="output">The output stream.</param>
@@ -20,6 +25,11 @@ namespace CK.Core
 
         /// <summary>
         /// Asynchronous serialization (throws on error).
+        /// <para>
+        /// This must throw if the <paramref name="data"/> cannot be written because it is
+        /// invalid in any way or is rejected by the <see cref="PocoExchangeService.RuntimeFilters"/>
+        /// selected by the implementation.
+        /// </para>
         /// </summary>
         /// <param name="monitor">The monitor that may be used.</param>
         /// <param name="output">The output stream.</param>

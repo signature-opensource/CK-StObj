@@ -20,7 +20,7 @@ namespace CK.Poco.Exc.Json.Tests
         /// <param name="exportOptions">The export options to use.</param>
         /// <param name="importOptions">The import options to use.</param>
         /// <param name="text">Optional Json text hook called on success.</param>
-        /// <returns>The deserialized Poco.</returns>
+        /// <returns>The deserialized Poco. Null if <see cref="PocoJsonExportOptions.TypeFilterName"/> rejected the Poco.</returns>
         [return: NotNullIfNotNull( nameof( o ) )]
         public static T? Roundtrip<T>( PocoDirectory directory,
                                        T? o,
@@ -41,6 +41,11 @@ namespace CK.Poco.Exc.Json.Tests
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
                     text?.Invoke( bin1Text );
+                    if( bin1.Length == 0 )
+                    {
+                        // Filtered out by the option's TypeFilterName.
+                        return null;
+                    }
                 }
                 catch( Exception )
                 {

@@ -9,7 +9,7 @@ namespace CK.Setup.PocoJson
     {
         // Step 3: Generating the WriteAny that routes any object to its registered Oblivious type.
         //         This is basically a big switch case on the object.GetType() except that it is broken
-        //         into smaller pieces for better performance.
+        //         into smaller pieces for readability (and hopefully better performance if there are a lot of types).
         void GenerateWriteAny()
         {
             _exporterType
@@ -17,7 +17,6 @@ namespace CK.Setup.PocoJson
                 .Append( @"
 internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
 {
-    if( !wCtx.Options.TypeLess ) w.WriteStartArray();
     var t = o.GetType();
     if( t.IsValueType )
     {
@@ -70,7 +69,6 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             default: w.ThrowJsonException( $""Unregistered type: {t.ToCSharpName(false)}"" ); break;
         }
     }
-    if( !wCtx.Options.TypeLess ) w.WriteEndArray();
 }" );
             // Builds the different sorters for cases that must be ordered: arrays and collections
             // only since these are the only reference types except the basic ones (that 
@@ -83,15 +81,9 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
             IPocoType? extendedCultureInfo = null;
             IPocoType? normalizedCultureInfo = null;
 
-            foreach( var t in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
+            // Non nullable, oblivious and non polymorphic: these are the types that need to be written.
+            foreach( var t in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious && !t.IsPolymorphic ) )
             {
-                if( !t.IsOblivious
-                    || t.Kind == PocoTypeKind.Any
-                    || t.Kind == PocoTypeKind.AbstractPoco
-                    || t.Kind == PocoTypeKind.UnionType )
-                {
-                    continue;
-                }
                 switch( t.Kind )
                 {
                     case PocoTypeKind.Basic:
@@ -174,16 +166,19 @@ internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.P
 
             void WriteCase( ITypeScopePart code, IPocoType t, string? typeName = null )
             {
-                code.Append( "case " ).Append( typeName ?? t.ImplTypeName ).Append( " v:" )
+                Throw.DebugAssert( t.IsOblivious );
+                code.Append( "case " ).Append( typeName ?? t.ImplTypeName ).Append( " v: if( wCtx.RuntimeFilter.Contains(" ).Append( t.Index >> 1 ).Append( ") )" )
                     .OpenBlock()
-                    .Append( writer =>
-                    {
-                        GenerateTypeHeader( writer, t, true );
-                        GenerateWrite( writer, t, "v" );
-                    } )
-                    .NewLine()
-                    .Append( "break;" )
+                    .Append( "if( !wCtx.Options.TypeLess )" )
+                    .OpenBlock()
+                        .Append( "w.WriteStartArray();" )
+                        .Append( "w.WriteStringValue(" ).AppendSourceString( _nameMap.GetName( t ) ).Append( ");" )
                     .CloseBlock();
+                _writers[t.Index >> 1].Invoke( code, "v" );
+                code.NewLine()
+                    .Append( "if( !wCtx.Options.TypeLess ) w.WriteEndArray();" ).NewLine()
+                    .CloseBlock()
+                    .Append( "break;" );
             }
         }
 

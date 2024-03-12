@@ -401,7 +401,6 @@ namespace CK.StObj.Engine.Tests.Poco
         public void CovPocoHashSet_CANNOT_be_used_when_set_CAN_contain_null()
         {
             var t1 = new Thing_CK() { Power = 1 };
-            var t2 = new Thing_CK() { Power = 2 };
             var t3 = new Thing_CK() { Power = 3 };
             // Forgive null warnings here.
             var set = new CovPocoHashSet_CK<Thing_CK>() { t1, null!, t3 };
@@ -767,6 +766,7 @@ namespace CK.StObj.Engine.Tests.Poco
         class Animal { }
         class Dog : Animal { }
 
+        // We consider arrays to be strictly invariant because....
         [Test]
         public void array_IsAssignableFrom_is_covariant_but_this_is_a_dangerous_lie()
         {

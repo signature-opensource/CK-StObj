@@ -13,7 +13,7 @@ namespace CK.Poco.Exc.Json
     /// </para>
     /// </summary>
     /// <remarks>
-    /// This currently only holds the <see cref="Options"/>. This is an extension point.
+    /// This holds the <see cref="Options"/> and the <see cref="RuntimeFilter"/>.
     /// </remarks>
     public sealed class PocoJsonWriteContext : IDisposable
     {
@@ -39,14 +39,9 @@ namespace CK.Poco.Exc.Json
         public PocoJsonExportOptions Options => _options;
 
         /// <summary>
-        /// Gets whether a type can be exported or not depending on <see cref="PocoJsonExportOptions.TypeFilterName"/>.
-        /// <para>
-        /// This is not intended to be used directly: this is used by the serialization generated code.
-        /// </para>
+        /// Gets the type filter from the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
         /// </summary>
-        /// <param name="index">The type index.</param>
-        /// <returns>True if the type can be exported, false otherwise.</returns>
-        public bool CanExport( int index ) => (_typeFilter.Flags[index >> 5] & (1 << index)) != 0;
+        public ExchangeableRuntimeFilter RuntimeFilter => _typeFilter;
 
         /// <summary>
         /// Disposes this context.

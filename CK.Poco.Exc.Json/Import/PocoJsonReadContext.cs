@@ -39,6 +39,11 @@ namespace CK.Poco.Exc.Json
         public PocoJsonImportOptions Options => _options;
 
         /// <summary>
+        /// Gets the type filter from the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+        /// </summary>
+        public ExchangeableRuntimeFilter RuntimeFilter => _typeFilter;
+
+        /// <summary>
         /// Disposes this context (disposing the <see cref="IUtf8JsonReaderContext"/> if
         /// any and if it is disposable).
         /// </summary>
@@ -52,17 +57,6 @@ namespace CK.Poco.Exc.Json
 
         /// <inheritdoc />
         public void SkipMoreData( ref Utf8JsonReader reader ) => _inner?.SkipMoreData( ref reader );
-
-        /// <summary>
-        /// Gets whether a type can be imported or not depending on <see cref="PocoJsonImportOptions.TypeFilterName"/>.
-        /// <para>
-        /// This is not intended to be used directly: this is used by the deserialization generated code.
-        /// </para>
-        /// </summary>
-        /// <param name="index">The type index.</param>
-        /// <returns>True if the type can be imported, false otherwise.</returns>
-        public bool CanImport( int index ) => (_typeFilter.Flags[index >> 5] & (1 << index)) != 0;
-
     }
 }
 

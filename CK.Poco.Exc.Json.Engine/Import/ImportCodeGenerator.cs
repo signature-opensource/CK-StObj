@@ -267,7 +267,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             var read = pocoDirectory.CreateFunction( "object? CK.Core.IPocoDirectoryJsonImportGenerated.ReadAnyJson( " +
                                                         "ref System.Text.Json.Utf8JsonReader r, " +
                                                         "Poco.Exc.Json.PocoJsonReadContext context)" );
-            read.Append( "Throw.CheckNotNullArgument( context );" )
+            read.Append( "Throw.CheckNotNullArgument( context );" ).NewLine()
                 .Append( "return " ).Append( _importerType.FullName )
                                     .Append( ".ReadAny( ref r, context );" );
         }

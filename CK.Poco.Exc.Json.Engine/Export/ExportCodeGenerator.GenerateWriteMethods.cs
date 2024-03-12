@@ -89,10 +89,18 @@ namespace CK.Setup.PocoJson
                 code.OpenBlock();
                 code.Append( "w.WriteStartArray();" ).NewLine()
                     .Append( "foreach( var item in v )" )
-                    .OpenBlock()
-                    .Append( "var loc = item;" ).NewLine()
-                    .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "loc" ) )
-                    .CloseBlock()
+                    .OpenBlock();
+
+                if( type.ItemTypes[0].Type.IsValueType )
+                {
+                    code.Append( "var loc = item;" ).NewLine()
+                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "loc" ) );
+                }
+                else
+                {
+                    code.Append( writer => GenerateWrite( writer, type.ItemTypes[0], "item" ) );
+                }
+                code.CloseBlock()
                     .Append( "w.WriteEndArray();" ).NewLine()
                     .CloseBlock();
             }
@@ -170,21 +178,33 @@ namespace CK.Setup.PocoJson
                 using( pocoClass.Region() )
                 {
                     // The Write method.
-                    pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx, bool withType )" )
+                    pocoClass.Append( "public bool WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx, bool withType )" )
+                             .OpenBlock()
+                             .Append( "if( wCtx.RuntimeFilter.Contains(" ).Append( type.Index >> 1 ).Append( ") )")
                              .OpenBlock()
                              .Append( "if( withType )" )
                              .OpenBlock()
                              .Append( "w.WriteStartArray();" ).NewLine()
-                             .Append( writer => GenerateTypeHeader( writer, type, honorOption: false ) )
+                             .Append( "w.WriteStringValue(" ).AppendSourceString( _nameMap.GetName( type ) ).Append( ");" ).NewLine()
                              .CloseBlock()
-                             .Append( "WriteJson( w, wCtx );" ).NewLine()
-                             .Append( "if( withType )" )
-                             .OpenBlock()
-                             .Append( "w.WriteEndArray();" ).NewLine()
+                             .Append( "DoWriteJson( w, wCtx );" ).NewLine()
+                             .Append( "if( withType ) w.WriteEndArray();" ).NewLine()
+                             .Append( "return true;" )
                              .CloseBlock()
+                             .Append( "return false;" )
                              .CloseBlock();
 
-                    pocoClass.Append( "public void WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
+                    pocoClass.Append( "public bool WriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
+                             .OpenBlock()
+                             .Append( "if( wCtx.RuntimeFilter.Contains(" ).Append( type.Index >> 1 ).Append( ") )" )
+                             .OpenBlock()
+                             .Append( "DoWriteJson( w, wCtx );" ).NewLine()
+                             .Append( "return true;" ).NewLine()
+                             .CloseBlock()
+                             .Append( "return false;" ).NewLine()
+                             .CloseBlock();
+
+                    pocoClass.Append( "void DoWriteJson( System.Text.Json.Utf8JsonWriter w, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
                              .OpenBlock()
                              .Append( "w.WriteStartObject();" ).NewLine()
                              .Append( writer =>
@@ -228,7 +248,7 @@ namespace CK.Setup.PocoJson
         void GenerateWriteField( ITypeScope writer, IPocoField f, string implFieldName, bool requiresCopy )
         {
             Throw.DebugAssert( _nameMap.TypeSet.Contains( f.Type ) );
-            writer.Append( "if( wCtx.CanExport( " ).Append( f.Type.Index >> 1 ).Append( " ) )" )
+            writer.Append( "if( wCtx.RuntimeFilter.Contains(" ).Append( f.Type.Index >> 1 ).Append( ") )" )
                   .OpenBlock();
             GenerateWritePropertyName( writer, f.Name );
             if( requiresCopy )

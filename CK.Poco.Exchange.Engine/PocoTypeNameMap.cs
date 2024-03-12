@@ -84,6 +84,9 @@ namespace CK.Setup
         }
 
         /// <inheritdoc />
+        public string GetName( int index ) => _names[index] ?? GetName( _typeSet.TypeSystem.AllTypes[index] );
+
+        /// <inheritdoc />
         public virtual IPocoTypeNameMap Clone( IPocoTypeSet other )
         {
             Throw.CheckNotNullArgument( other );

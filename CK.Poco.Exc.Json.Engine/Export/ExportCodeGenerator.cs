@@ -62,16 +62,6 @@ namespace CK.Setup.PocoJson
             }
         }
 
-        // Used by GenerateWriteMethods.GeneratePocoWriteMethod for the WriteJson( w, withType, options )
-        // and GenerateWriteAny().
-        void GenerateTypeHeader( ICodeWriter writer, IPocoType nonNullable, bool honorOption )
-        {
-            Throw.DebugAssert( nonNullable.IsOblivious );
-            var typeName = _nameMap.GetName( nonNullable );
-            if( honorOption ) writer.Append( $"if(!wCtx.Options.TypeLess)" );
-            writer.Append( "w.WriteStringValue(" ).AppendSourceString( typeName ).Append( ");" ).NewLine();
-        }
-
         public bool Run( IActivityMonitor monitor )
         {
             RegisterWriters();
@@ -90,8 +80,12 @@ namespace CK.Setup.PocoJson
                                                         "object? o, " +
                                                         "Poco.Exc.Json.PocoJsonExportOptions? options)" );
 
-            read.Append( "var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( this, options );" ).NewLine()
-                .Append( _exporterType.FullName ).Append( ".WriteAny( w, o, wCtx );" );
+            read.Append( "if( o == null ) w.WriteNullValue();" ).NewLine()
+                .Append( "else" )
+                .OpenBlock()
+                .Append( "var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( this, options );" ).NewLine()
+                .Append( _exporterType.FullName ).Append( ".WriteAny( w, o, wCtx );" )
+                .CloseBlock();
         }
 
     }

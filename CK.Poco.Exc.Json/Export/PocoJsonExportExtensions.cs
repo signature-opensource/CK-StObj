@@ -21,6 +21,10 @@ namespace CK.Core
 
         /// <summary>
         /// Serializes this Poco (that can be null) into UTF-8 Json bytes.
+        /// <para>
+        /// If this Poco is not in the <see cref="PocoJsonExportOptions.TypeFilterName"/>, nothing is written,
+        /// the result is empty.
+        /// </para>
         /// </summary>
         /// <param name="this">The poco (can be null).</param>
         /// <param name="withType">True to emit this Poco type.</param>
@@ -37,35 +41,40 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/>.
+        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/> if it is null
+        /// or allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
         /// </summary>
         /// <param name="this">The poco (can be null).</param>
         /// <param name="w">The target writer.</param>
         /// <param name="withType">True to emit this Poco type.</param>
         /// <param name="options">Optional export options.</param>
-        public static void WriteJson( this IPoco? @this, Utf8JsonWriter w, bool withType = true, PocoJsonExportOptions? options = null )
+        /// <returns>True if this Poco (or <c>null</c>) has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+        public static bool WriteJson( this IPoco? @this, Utf8JsonWriter w, bool withType = true, PocoJsonExportOptions? options = null )
         {
             if( @this == null ) w.WriteNullValue();
             else
             {
                 using var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options );
-                ((IWriter)@this).WriteJson( w, wCtx, withType );
+                return ((IWriter)@this).WriteJson( w, wCtx, withType );
             }
+            return true;
         }
 
         /// <summary>
-        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/>.
+        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/> if it is null
+        /// or allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
         /// </summary>
         /// <param name="this">The poco (can be null).</param>
         /// <param name="utf8JsonStream">The target stream.</param>
         /// <param name="withType">True to emit this Poco type.</param>
         /// <param name="options">Optional export options.</param>
         /// <returns>The Utf8 bytes.</returns>
-        public static void WriteJson( this IPoco? @this, Stream utf8JsonStream, bool withType = true, PocoJsonExportOptions? options = null )
+        /// <returns>True if this Poco (or <c>null</c>) has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+        public static bool WriteJson( this IPoco? @this, Stream utf8JsonStream, bool withType = true, PocoJsonExportOptions? options = null )
         {
             using( var w = new Utf8JsonWriter( utf8JsonStream ) )
             {
-                WriteJson( @this, w, withType, options );
+                return WriteJson( @this, w, withType, options );
             }
         }
 

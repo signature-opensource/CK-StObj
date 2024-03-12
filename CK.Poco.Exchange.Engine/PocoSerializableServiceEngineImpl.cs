@@ -11,8 +11,9 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.Setup
 {
-    public sealed class PocoSerializableServiceEngineImpl : ICSCodeGenerator, IPocoSerializationServiceEngine
+    public sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGenerator, IPocoSerializationServiceEngine
     {
+        ITypeScope? _pocoDirectory;
         IPocoTypeSystem? _pocoTypeSystem;
         PocoTypeNameMap? _nameMap;
         string? _getExchangeableRuntimeFilterFuncName;
@@ -22,23 +23,23 @@ namespace CK.Setup
 
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
-            ITypeScope pocoDirectory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
-            pocoDirectory.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.IPocoDirectoryExchangeGenerated" ) );
+            _pocoDirectory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
+            _pocoDirectory.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.IPocoDirectoryExchangeGenerated" ) );
 
-            _getExchangeableRuntimeFilterFuncName = pocoDirectory.FullName + ".GetExchangeableRuntimeFilter";
-            using( pocoDirectory.Region() )
+            _getExchangeableRuntimeFilterFuncName = _pocoDirectory.FullName + ".GetExchangeableRuntimeFilter";
+            using( _pocoDirectory.Region() )
             {
-                pocoDirectory.Append( "public static readonly ExchangeableRuntimeFilter[] _exRTFilter = new ExchangeableRuntimeFilter[] {" ).NewLine()
+                _pocoDirectory.Append( "public static readonly ExchangeableRuntimeFilter[] _exRTFilter = new ExchangeableRuntimeFilter[] {" ).NewLine()
                              .CreatePart( out _filterPart )
                              .Append( "};" ).NewLine();
 
-                pocoDirectory.Append( "public static ExchangeableRuntimeFilter GetExchangeableRuntimeFilter( string name )" )
+                _pocoDirectory.Append( "public static ExchangeableRuntimeFilter GetExchangeableRuntimeFilter( string name )" )
                              .OpenBlock()
                              .Append( "foreach( var f in _exRTFilter ) if( f.Name == name ) return f;" ).NewLine()
                              .Append( @"return Throw.ArgumentException<ExchangeableRuntimeFilter>( nameof(name), $""ExchangeableRuntimeFilter named '{name}' not found. Availables are: {_exRTFilter.Select( f => f.Name ).Concatenate()}."" );" )
                              .CloseBlock();
 
-                pocoDirectory.Append( "IReadOnlyCollection<ExchangeableRuntimeFilter> IPocoDirectoryExchangeGenerated.RuntimeFilters => _exRTFilter;" ).NewLine()
+                _pocoDirectory.Append( "IReadOnlyCollection<ExchangeableRuntimeFilter> IPocoDirectoryExchangeGenerated.RuntimeFilters => _exRTFilter;" ).NewLine()
                              .Append( "ExchangeableRuntimeFilter IPocoDirectoryExchangeGenerated.GetRuntimeFilter( string name ) => GetExchangeableRuntimeFilter( name );" ).NewLine();
             }
 
@@ -62,6 +63,10 @@ namespace CK.Setup
             // Generate the "AllSerializable" and "AllExchangeable" runtime type filter.
             RegisterExchangeableRuntimeFilter( monitor, "AllSerializable", _pocoTypeSystem.SetManager.AllSerializable );
             RegisterExchangeableRuntimeFilter( monitor, "AllExchangeable", _pocoTypeSystem.SetManager.AllExchangeable );
+
+            //// Now that we have the name map we can generate the GetWritableTypeIndex function.
+            //Throw.DebugAssert( _pocoDirectory != null );
+            //GenerateGetWritableTypeIndexAndName( _pocoDirectory, _nameMap );
 
             c.CurrentRun.ServiceContainer.Add<IPocoSerializationServiceEngine>( this );
             return CSCodeGenerationResult.Success;

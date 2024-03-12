@@ -172,7 +172,6 @@ namespace CK.StObj.Engine.Tests.Poco
             vNonNullInfoW.ReflectsWriteState.Should().Be( true );
         }
 
-
         public class NoConstraint<T> { }
 
         public class NotNullConstraint<T> where T : notnull { }
@@ -218,6 +217,22 @@ namespace CK.StObj.Engine.Tests.Poco
             var nncod = f.CreateNullabilityInfo( NotNullConstraintObjectDirect );
             nncod.IsNullable.Should().BeFalse();
             nncod.GenericTypeArguments[0].IsNullable.Should().BeFalse();
+        }
+
+        // A boxed nullable value type don't exist unless awful tricks are applied.
+        [Test]
+        public void object_reference_cannot_hold_a_nullable_value_type()
+        {
+            object? o = null;
+            int? v = 5;
+
+            o = v;
+            o.GetType().Should().Be( typeof(int) );
+            v = null;
+
+            o = v;
+            o.Should().BeNull();
+
         }
     }
 }

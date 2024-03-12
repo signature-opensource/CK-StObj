@@ -15,7 +15,7 @@ namespace CK.Core
         public interface IWriter
         {
             /// <summary>
-            /// Writes this IPoco as Json.
+            /// Writes this IPoco as Json if it is allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
             /// </summary>
             /// <param name="writer">The Json writer.</param>
             /// <param name="context">Writer context.</param>
@@ -27,35 +27,17 @@ namespace CK.Core
             /// option.
             /// </para>
             /// </param>
-            void WriteJson( Utf8JsonWriter writer, PocoJsonWriteContext context, bool withType );
+            /// <returns>True if this Poco has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+            bool WriteJson( Utf8JsonWriter writer, PocoJsonWriteContext context, bool withType );
 
             /// <summary>
-            /// Writes this IPoco as Json without its type.
+            /// Writes this IPoco as Json without its type if it is allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
             /// </summary>
             /// <param name="writer">The Json writer.</param>
             /// <param name="context">Writer context.</param>
-            void WriteJson( Utf8JsonWriter writer, PocoJsonWriteContext context );
+            /// <returns>True if this Poco has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+            bool WriteJson( Utf8JsonWriter writer, PocoJsonWriteContext context );
         }
-
-        ///// <summary>
-        ///// Writes this IPoco (that can be null) as Json.
-        ///// When this is null, the Json null value is written.
-        ///// </summary>
-        ///// <param name="o">This Poco (that can be null).</param>
-        ///// <param name="writer">The Json writer.</param>
-        ///// <param name="context">Writer context.</param>
-        ///// <param name="withType">
-        ///// When true (the default), a 2-cells array contains the Poco's <see cref="IPocoFactory.Name"/> first
-        ///// and then the Poco's value.
-        ///// When false, the Poco's value object is directly written.
-        ///// </param>
-        //public static void WriteJson( this IPoco? o, Utf8JsonWriter writer, PocoJsonWriteContext context, bool withType = true )
-        //{
-        //    Throw.CheckNotNullArgument( writer );
-        //    Throw.CheckNotNullArgument( context );
-        //    if( o == null ) writer.WriteNullValue();
-        //    else ((IWriter)o).WriteJson( writer, context, withType );
-        //}
 
     }
 }

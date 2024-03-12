@@ -92,11 +92,7 @@ namespace CK.Setup
         /// </summary>
         public int Count => _count;
 
-        /// <summary>
-        /// Gets whether the given type is contained in this bag.
-        /// </summary>
-        /// <param name="t">The type to challenge.</param>
-        /// <returns>True if the type is contained, false otherwise.</returns>
+        /// <inheritdoc />
         public bool Contains( IPocoType t ) => Get( t.Index >> 1 );
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]

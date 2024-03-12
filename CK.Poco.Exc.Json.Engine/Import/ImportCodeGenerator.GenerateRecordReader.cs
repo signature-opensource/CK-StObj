@@ -38,7 +38,7 @@ namespace CK.Setup.PocoJson
             {
                 if( _nameMap.TypeSet.Contains( f.Type ) )
                 {
-                    writer.Append( "if( rCtx.CanImport( " ).Append( f.Type.Index >> 1 ).Append( ") )" )
+                    writer.Append( "if( rCtx.RuntimeFilter.Contains( " ).Append( f.Type.Index >> 1 ).Append( ") )" )
                           .OpenBlock();
                     GenerateRecordFieldRead( writer, f, $"v.Item{f.Index + 1}" );
                     writer.CloseBlock()
@@ -90,7 +90,7 @@ namespace CK.Setup.PocoJson
                     }
                     writer.Append( "case " ).AppendSourceString( f.Name ).Append( ":" )
                             .OpenBlock();
-                    writer.Append( "if( !rCtx.CanImport( " ).Append( f.Type.Index >> 1 ).Append( ") ) goto default;" ).NewLine();
+                    writer.Append( "if( !rCtx.RuntimeFilter.Contains( " ).Append( f.Type.Index >> 1 ).Append( ") ) goto default;" ).NewLine();
                     GenerateRecordFieldRead( writer, f, $"v.{f.Name}" );
                     writer.Append( "break;" )
                             .CloseBlock();

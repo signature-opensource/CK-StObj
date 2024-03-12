@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reflection;
 
 namespace CK.Core
 {
@@ -35,5 +36,17 @@ namespace CK.Core
         /// Gets the opaque filter flags.
         /// </summary>
         public ImmutableArray<int> Flags => _flags;
+
+        /// <summary>
+        /// Gets whether a type can be exported or imported.
+        /// <para>
+        /// This is not intended to be used directly: this is used by the serialization and deserialization generated code.
+        /// </para>
+        /// </summary>
+        /// <param name="index">The type index.</param>
+        /// <returns>True if the type can be exported or imported, false otherwise.</returns>
+        public bool Contains( int index ) => (_flags[index >> 5] & (1 << index)) != 0;
+
+
     }
 }

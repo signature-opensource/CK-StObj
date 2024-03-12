@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using static CK.Poco.Exc.Json.Tests.CollectionTests;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -298,5 +299,88 @@ namespace CK.Poco.Exc.Json.Tests
             oBackA.Should().BeEquivalentTo( oBack );
         }
 
+
+
+        public interface IAllCollectionOfObjects : IPoco
+        {
+            IList<object> List { get; }
+            ISet<object> Set { get; }
+            IDictionary<object, object> Dictionary { get; }
+        }
+
+        [NotExchangeable]
+        public interface IThing : IPoco
+        {
+            string Name { get; set; }
+            int Power { get; set; }
+        }
+
+        [Test]
+        public void PocoTypeSet_filters_out_instances_from_collections()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IAllCollectionOfObjects ), typeof( IThing ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
+
+            var oneThing = directory.Create<IThing>( c => { c.Name = "Here"; c.Power = 42; } );
+            var o = directory.Create<IAllCollectionOfObjects>( o =>
+            {
+                o.List.Add( "One" );
+                o.List.Add( 1 );
+                o.List.Add( oneThing );
+
+                o.Set.Add( "One" );
+                o.Set.Add( 1 );
+                o.Set.Add( oneThing );
+
+                o.Dictionary.Add( "One", 1 );
+                o.Dictionary.Add( 1, "One" );
+                o.Dictionary.Add( oneThing, directory.Create<IThing>( c => c.Name = "World!") );
+            } );
+
+            var allW = new PocoJsonExportOptions() { TypeFilterName = "AllSerializable" };
+            var allR = new PocoJsonImportOptions() { TypeFilterName = "AllSerializable" };
+            {
+                string? sText = null;
+                var o2 = JsonTestHelper.Roundtrip( directory, o, allW, allR, text => sText = text );
+                sText.Should().Be( """
+                ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
+                {
+                    "list":[["string","One"],["int",1],["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]],
+                    "set":[["string","One"],["int",1],["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]],
+                    "dictionary":[
+                        [["string","One"],["int",1]],
+                        [["int",1],["string","One"]],
+                        [ ["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}],
+                          ["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"World!","power":0}]]]
+                }]
+                """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
+                o2.List.Should().HaveCount( 3 );
+                o2.Set.Should().HaveCount( 3 );
+                o2.Dictionary.Should().HaveCount( 3 );
+            }
+
+            var excW = new PocoJsonExportOptions() { TypeFilterName = "AllExchangeable" };
+            var excR = new PocoJsonImportOptions() { TypeFilterName = "AllExchangeable" };
+            {
+                string? sText = null;
+                var o2 = JsonTestHelper.Roundtrip( directory, o, excW, excR, text => sText = text );
+                sText.Should().Be( """
+                ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
+                {
+                    "list":[["string","One"],["int",1]],
+                    "set":[["string","One"],["int",1]],
+                    "dictionary":[
+                        [["string","One"],["int",1]],
+                        [["int",1],["string","One"]]]
+                }]
+                """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
+                o2.List.Should().HaveCount( 2 );
+                o2.Set.Should().HaveCount( 2 );
+                o2.Dictionary.Should().HaveCount( 2 );
+            }
+
+
+        }
     }
 }
