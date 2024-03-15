@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace CK.Setup.PocoJson
@@ -82,6 +83,16 @@ internal static void FillListOrSet<T>( ref System.Text.Json.Utf8JsonReader r, IC
     if( !r.Read() ) rCtx.ReadMoreData( ref r );
 }
 
+internal static void FillListOrSetOfAny<T>( ref System.Text.Json.Utf8JsonReader r, ICollection<T> c, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
+{
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
+    while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
+    {
+        c.Add( (T)ReadAny( ref r, rCtx ) );
+    }
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
+}
+
 internal static void FillDictionary<TKey,TValue>( ref System.Text.Json.Utf8JsonReader r, IDictionary<TKey,TValue> c, TypedReader<TKey> kR, TypedReader<TValue> vR, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
 {
     if( !r.Read() ) rCtx.ReadMoreData( ref r );
@@ -134,6 +145,18 @@ internal static T[] ReadArray<T>( ref System.Text.Json.Utf8JsonReader r, TypedRe
     return c.ToArray();
 }
 
+internal static T[] ReadArrayOfAny<T>( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx )
+{
+    var c = new List<T>();
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
+    while( r.TokenType != System.Text.Json.JsonTokenType.EndArray )
+    {
+        c.Add( (T)ReadAny( ref r, rCtx ) );
+    }
+    if( !r.Read() ) rCtx.ReadMoreData( ref r );
+    return c.ToArray();
+}
+
 delegate object ObjectReader( ref System.Text.Json.Utf8JsonReader r, CK.Poco.Exc.Json.PocoJsonReadContext rCtx );
 static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<string, ObjectReader>();
 
@@ -155,6 +178,7 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             }
             if( t.Kind == PocoTypeKind.SecondaryPoco )
             {
+                Throw.DebugAssert( t.ObliviousType is IPrimaryPocoType );
                 t = t.ObliviousType;
             }
             // Allow reference types to be null here (oblivious NRT mode).
@@ -164,17 +188,16 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             {
                 _readerFunctions[tFunc.Index] = true;
                 var tActual = t.Type.IsValueType ? t : t.Nullable;
-                Debug.Assert( tFunc.ImplTypeName == t.ImplTypeName && tActual.ImplTypeName == t.ImplTypeName );
+                Throw.DebugAssert( tFunc.ImplTypeName == t.ImplTypeName && tActual.ImplTypeName == t.ImplTypeName );
                 _readerFunctionsPart.Append( "internal static " ).Append( t.ImplTypeName ).Append( " FRead_" ).Append( tFunc.Index )
                                     .Append( "(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
                                     .OpenBlock();
-
                 _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
                 // Use the potentially nullable reference type here to generate the actual read.
                 GenerateRead( _readerFunctionsPart, tActual, "o", true );
                 _readerFunctionsPart.NewLine()
-                    .Append( "return o;" )
-                    .CloseBlock();
+                    .Append( "return o;" );
+                _readerFunctionsPart.CloseBlock();
             }
             return $"CK.Poco.Exc.JsonGen.Importer.FRead_{tFunc.Index}";
         }

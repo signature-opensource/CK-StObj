@@ -1,16 +1,17 @@
 using CK.CodeGen;
 using CK.Core;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace CK.Setup.PocoJson
 {
 
     sealed partial class ExportCodeGenerator
     {
-        // Step 2: The actual Write methods are implemented only for the Exchangeable, NonNullable, and Oblivious types.
+        // Step 2: The actual Write methods are implemented only for the final types (that are not handled by a generic helper).
         void GenerateWriteMethods( IActivityMonitor monitor )
         {
-            foreach( var type in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
+            foreach( var type in _nameMap.TypeSet.NonNullableTypes )
             {
                 switch( type.Kind )
                 {
@@ -18,7 +19,7 @@ namespace CK.Setup.PocoJson
                         GeneratePocoWriteMethod( monitor, _generationContext, (IPrimaryPocoType)type );
                         break;
                     case PocoTypeKind.AnonymousRecord:
-                        GenerateAnonymousRecordWriteMethod( _exporterType, (IRecordPocoType)type );
+                        GenerateAnonymousRecordObliviousWriteMethod( _exporterType, (IRecordPocoType)type );
                         break;
                     case PocoTypeKind.Record:
                         GenerateNamedRecordWriteMethod( _exporterType, (IRecordPocoType)type );
@@ -27,11 +28,11 @@ namespace CK.Setup.PocoJson
                         ICollectionPocoType tA = (ICollectionPocoType)type;
                         if( tA.ItemTypes[0].Type != typeof( byte ) )
                         {
-                            GenerateListOrArrayWriteMethod( _exporterType, tA );
+                            GenerateEnumerableObliviousWriteMethod( _exporterType, tA );
                         }
                         break;
                     case PocoTypeKind.List:
-                        GenerateListOrArrayWriteMethod( _exporterType, (ICollectionPocoType)type );
+                        GenerateEnumerableObliviousWriteMethod( _exporterType, (ICollectionPocoType)type );
                         break;
                     case PocoTypeKind.HashSet:
                         GenerateHashSetWriteMethod( _exporterType, (ICollectionPocoType)type );
@@ -55,87 +56,165 @@ namespace CK.Setup.PocoJson
             {
                 GenerateWriteJsonMethodHeader( code, type );
                 code.OpenBlock();
-                if( type.ItemTypes[0].Type == typeof( string ) )
+                IPocoType tKey = type.ItemTypes[0];
+                IPocoType tValue = type.ItemTypes[1];
+                // String key: we write it as a JSON object.
+                if( tKey.Type == typeof( string ) )
                 {
                     code.Append( "w.WriteStartObject();" ).NewLine()
-                        .Append( "foreach( var item in v )" )
+                        .Append( "foreach( var (k,e) in v )" )
                         .OpenBlock();
-                    //if( type.ItemTypes[1].Type.IsValueType )
+                    if( tValue is IRecordPocoType )
                     {
-                        code.Append( "w.WritePropertyName( item.Key );" ).NewLine()
-                            .Append( "var vLoc = item.Value;" ).NewLine()
-                            .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "vLoc" ) ).NewLine();
+                        code.Append( "w.WritePropertyName( k );" ).NewLine()
+                            .Append( "var vLoc = e;" ).NewLine();
+                        _writerMap.GenerateWrite( code, tValue, "vLoc" );
+                        code.NewLine();
                     }
-                    //else if( type.ItemTypes[1].IsPolymorphic )
-                    //{
-                    //    code.Append( """
-                    //        if( item.Value == null )
-                    //        {
-                    //            w.WritePropertyName( item.Key );
-                    //            w.WriteNullValue();
-                    //        }
-                    //        else
-                    //        {
-                    //            int index = PocoDirectory_CK.
-                    //        }
+                    else if( tValue.IsPolymorphic )
+                    {
+                        code.Append( """
+                            if( e == null )
+                            {
+                                w.WritePropertyName( k );
+                                w.WriteNullValue();
+                            }
+                            else
+                            {
+                                int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( e.GetType(), -1 );
+                                if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {e.GetType().ToCSharpName(false)}" );
+                                if( !wCtx.RuntimeFilter.Contains( index >> 1 ) ) continue;
+                                w.WritePropertyName( k );
+                                CK.Poco.Exc.JsonGen.Exporter.WriteNonNullableFinalType( w, wCtx, index, e );
+                            }
 
-                    //        """ );
-
-                    //}
-                    //else
-                    //{
-                    //    code.Append( "w.WritePropertyName( item.Key );" ).NewLine()
-                    //        .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "item.Value" ) ).NewLine();
-                    //}
+                            """ );
+                    }
+                    else
+                    {
+                        code.Append( "w.WritePropertyName( k );" ).NewLine();
+                        _writerMap.GenerateWrite( code, tValue, "e", trustNonNullableRef: true );
+                        code.NewLine();
+                    }
                     code.CloseBlock()
                         .Append( "w.WriteEndObject();" );
                 }
                 else
                 {
+                    // Key is not polymorphic: this is the same as the JSON object above (the value may be polymorphic).
+                    Throw.DebugAssert( !tKey.IsPolymorphic );
+
                     code.Append( "w.WriteStartArray();" ).NewLine()
                         .Append( "foreach( var (k,e) in v )" )
-                        .OpenBlock()
-                        .Append( "w.WriteStartArray();" ).NewLine()
-                        .Append( "var tK = k;" ).NewLine()
-                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "tK" ) ).NewLine()
-                        .Append( "var tE = e;" ).NewLine()
-                        .Append( writer => GenerateWrite( writer, type.ItemTypes[1], "tE" ) ).NewLine()
-                        .Append( "w.WriteEndArray();" ).NewLine()
-                        .CloseBlock()
+                        .OpenBlock();
+
+                    if( tValue is IRecordPocoType )
+                    {
+                        WriteStartEntry( code, _writerMap, tKey );
+                        code.NewLine().Append( "var vLoc = e;" ).NewLine();
+                        _writerMap.GenerateWrite( code, tValue, "vLoc" );
+                        WriteEndEntry( code );
+                    }
+                    else if( tValue.IsPolymorphic )
+                    {
+                        code.Append( "if( e == null )" )
+                            .OpenBlock();
+                        WriteStartEntry( code, _writerMap, tKey );
+                        code.Append( "w.WriteNullValue();" );
+                        WriteEndEntry( code );
+                        code.CloseBlock()
+                            .Append( "else" )
+                            .OpenBlock()
+                            .Append( """
+                                int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( e.GetType(), -1 );
+                                if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {e.GetType().ToCSharpName(false)}" );
+                                if( !wCtx.RuntimeFilter.Contains( index >> 1 ) ) continue;
+
+                                """ );
+                        WriteStartEntry( code, _writerMap, tKey );
+                        code.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteNonNullableFinalType( w, wCtx, index, e );" );
+                        WriteEndEntry( code );
+                        code.CloseBlock();
+                    }
+                    else
+                    {
+                        WriteStartEntry( code, _writerMap, tKey );
+                        _writerMap.GenerateWrite( code, tValue, "e", trustNonNullableRef: true );
+                        WriteEndEntry( code );
+                    }
+                    code.CloseBlock()
                         .Append( "w.WriteEndArray();" );
                 }
                 code.CloseBlock();
+
+                static void WriteStartEntry( ITypeScope code, WriterMap wMap, IPocoType tKey )
+                {
+                    code.Append( "w.WriteStartArray();" ).NewLine();
+                    if( tKey is IRecordPocoType )
+                    {
+                        code.Append( "var kLoc = k;" ).NewLine();
+                        wMap.GenerateWrite( code, tKey, "kLoc" );
+                    }
+                    else
+                    {
+                        wMap.GenerateWrite( code, tKey, "k", trustNonNullableRef: true );
+                    }
+                }
+
+                static void WriteEndEntry( ITypeScope code )
+                {
+                    code.NewLine().Append( "w.WriteEndArray();" ).NewLine();
+                }
             }
 
             void GenerateHashSetWriteMethod( ITypeScope code, ICollectionPocoType type )
             {
+                // If the type is not the oblivious one, skip it.
+                if( !type.IsOblivious ) return;
+
+                var tI = type.ItemTypes[0];
+                // If the item is polymorphic or a Poco it is handled by generic helpers.
+                if( tI.IsPolymorphic || tI.Kind is PocoTypeKind.PrimaryPoco or PocoTypeKind.SecondaryPoco )
+                {
+                    return;
+                }
                 GenerateWriteJsonMethodHeader( code, type );
                 code.OpenBlock();
                 code.Append( "w.WriteStartArray();" ).NewLine()
                     .Append( "foreach( var item in v )" )
                     .OpenBlock();
 
-                if( type.ItemTypes[0].Type.IsValueType )
+                if( type.ItemTypes[0] is IRecordPocoType )
                 {
-                    code.Append( "var loc = item;" ).NewLine()
-                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "loc" ) );
+                    code.Append( "var loc = item;" ).NewLine();
+                    _writerMap.GenerateWrite( code, tI, "loc" );
                 }
                 else
                 {
-                    code.Append( writer => GenerateWrite( writer, type.ItemTypes[0], "item" ) );
+                    _writerMap.GenerateWrite( code, tI, "item" );
                 }
                 code.CloseBlock()
                     .Append( "w.WriteEndArray();" ).NewLine()
                     .CloseBlock();
             }
 
-            void GenerateListOrArrayWriteMethod( ITypeScope code, ICollectionPocoType type )
+            void GenerateEnumerableObliviousWriteMethod( ITypeScope code, ICollectionPocoType type )
             {
+                // If the type is not the oblivious one, skip it.
+                if( !type.IsOblivious ) return;
+
+                var tI = type.ItemTypes[0];
+                // If the item is polymorphic or a Poco it is handled by generic helpers.
+                if( tI.IsPolymorphic || tI.Kind is PocoTypeKind.PrimaryPoco or PocoTypeKind.SecondaryPoco )
+                {
+                    return;
+                }
                 GenerateWriteJsonMethodHeader( code, type );
                 code.OpenBlock();
                 code.Append( "w.WriteStartArray();" ).NewLine();
-                if( type.ItemTypes[0].Type.IsValueType )
-                {
+                //if( type.ItemTypes[0].Type.IsValueType )
+                //{
+
                     if( type.Kind == PocoTypeKind.Array )
                     {
                         code.Append( "var a = v.AsSpan();" ).NewLine();
@@ -145,23 +224,27 @@ namespace CK.Setup.PocoJson
                         code.Append( "var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );" ).NewLine();
                     }
                     code.Append( "for( int i = 0; i < a.Length; ++i )" )
-                        .OpenBlock()
-                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "a[i]" ) )
-                        .CloseBlock();
-                }
-                else
-                {
-                    code.Append( "foreach( var e in v )" )
-                        .OpenBlock()
-                        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "e" ) )
-                        .CloseBlock();
-                }
+                        .OpenBlock();
+                    _writerMap.GenerateWrite( code, tI, "a[i]" );
+                    code.CloseBlock();
+
+                //}
+                //else
+                //{
+                //    code.Append( "foreach( var e in v )" )
+                //        .OpenBlock()
+                //        .Append( writer => GenerateWrite( writer, type.ItemTypes[0], "e" ) )
+                //        .CloseBlock();
+                //}
                 code.Append( "w.WriteEndArray();" ).NewLine();
                 code.CloseBlock();
             }
 
-            void GenerateAnonymousRecordWriteMethod( ITypeScope code, IRecordPocoType type )
+            void GenerateAnonymousRecordObliviousWriteMethod( ITypeScope code, IRecordPocoType type )
             {
+                // Skip non oblivious ones.
+                if( !type.IsOblivious ) return;
+
                 GenerateWriteJsonMethodHeader( code, type );
                 code.OpenBlock()
                     .Append( "w.WriteStartArray();" ).NewLine();
@@ -169,32 +252,35 @@ namespace CK.Setup.PocoJson
                 {
                     if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
-                        GenerateWrite( code, f.Type, $"v.Item{f.Index+1}" );
+                        _writerMap.GenerateWrite( code, f.Type, $"v.Item{f.Index+1}" );
                     }
                 }
                 code.Append( "w.WriteEndArray();" ).NewLine()
                     .CloseBlock();
             }
 
-            void GenerateNamedRecordWriteMethod( ITypeScope writer, IRecordPocoType type )
+            void GenerateNamedRecordWriteMethod( ITypeScope code, IRecordPocoType type )
             {
-                GenerateWriteJsonMethodHeader( writer, type );
-                writer.OpenBlock()
+                Throw.DebugAssert( "Named records are their own oblivious.", type.IsOblivious );
+                GenerateWriteJsonMethodHeader( code, type );
+                code.OpenBlock()
                               .Append( "w.WriteStartObject();" ).NewLine();
                 foreach( var f in type.Fields )
                 {
                     if( _nameMap.TypeSet.Contains( f.Type ) )
                     {
-                        GenerateWriteField( writer, f, $"v.{f.Name}", requiresCopy: f.Type is IRecordPocoType );
+                        GenerateWriteField( code, f, $"v.{f.Name}", requiresCopy: f.Type is IRecordPocoType );
                     }
                 }
-                writer.Append( "w.WriteEndObject();" ).NewLine()
+                code.Append( "w.WriteEndObject();" ).NewLine()
                               .CloseBlock();
 
             }
 
             void GeneratePocoWriteMethod( IActivityMonitor monitor, ICSCodeGenerationContext generationContext, IPrimaryPocoType type )
             {
+                Throw.DebugAssert( "Poco are their own oblivious.", type.IsOblivious );
+
                 // Each Poco class is a PocoJsonExportSupport.IWriter.
                 var pocoClass = generationContext.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
                 pocoClass.Definition.BaseTypes.Add( new ExtendedTypeName( "PocoJsonExportSupport.IWriter" ) );
@@ -238,7 +324,7 @@ namespace CK.Setup.PocoJson
                                      if( f.FieldAccess != PocoFieldAccessKind.AbstractReadOnly
                                          && _nameMap.TypeSet.Contains( f.Type ) )
                                      {
-                                         Throw.DebugAssert( "If the field is a struct, it is by ref.",
+                                         Throw.DebugAssert( "If the field is a struct, it is by ref: we don't need a copy even for records.",
                                                             f.Type is not IRecordPocoType r || f.FieldAccess == PocoFieldAccessKind.IsByRef );
                                          GenerateWriteField( writer, f, f.PrivateFieldName, requiresCopy: false );
                                      }
@@ -264,25 +350,44 @@ namespace CK.Setup.PocoJson
                             .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
                     }
                 }
-
-
             }
         }
 
-        void GenerateWriteField( ITypeScope writer, IPocoField f, string implFieldName, bool requiresCopy )
+        void GenerateWriteField( ITypeScope code, IPocoField f, string implFieldName, bool requiresCopy )
         {
             Throw.DebugAssert( _nameMap.TypeSet.Contains( f.Type ) );
-            writer.Append( "if( wCtx.RuntimeFilter.Contains(" ).Append( f.Type.Index >> 1 ).Append( ") )" )
-                  .OpenBlock();
-            GenerateWritePropertyName( writer, f.Name );
-            if( requiresCopy )
+            if( f.Type.IsPolymorphic )
             {
-                var local = "loc" + f.Name;
-                writer.Append( "var " ).Append( local ).Append( " = " ).Append( implFieldName ).Append( ";" ).NewLine();
-                implFieldName = local;
+                code.Append( "if( " ).Append( implFieldName ).Append( " == null )" )
+                    .OpenBlock();
+                GenerateWritePropertyName( code, f.Name );
+                code.Append( "w.WriteNullValue();" )
+                    .CloseBlock()
+                    .Append("else")
+                    .OpenBlock()
+                    .Append( "int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( " ).Append( implFieldName ).Append( ".GetType(), -1 );" ).NewLine()
+                    .Append( """if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {""" ).Append( implFieldName ).Append( """.GetType()}" );""" ).NewLine()
+                    .Append( "if( wCtx.RuntimeFilter.Contains( index >> 1 ) )" )
+                    .OpenBlock();
+                GenerateWritePropertyName( code, f.Name );
+                code.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteNonNullableFinalType( w, wCtx, index, " ).Append( implFieldName ).Append( " );" )
+                    .CloseBlock()
+                    .CloseBlock();
             }
-            GenerateWrite( writer, f.Type, implFieldName );
-            writer.CloseBlock();
+            else
+            {
+                code.Append( "if( wCtx.RuntimeFilter.Contains(" ).Append( f.Type.Index >> 1 ).Append( ") )" )
+                    .OpenBlock();
+                GenerateWritePropertyName( code, f.Name );
+                if( requiresCopy )
+                {
+                    var local = "loc" + f.Name;
+                    code.Append( "var " ).Append( local ).Append( " = " ).Append( implFieldName ).Append( ";" ).NewLine();
+                    implFieldName = local;
+                }
+                _writerMap.GenerateWrite( code, f.Type, implFieldName, trustNonNullableRef: true );
+                code.CloseBlock();
+            }
         }
 
         static void GenerateWritePropertyName( ICodeWriter writer, string name )

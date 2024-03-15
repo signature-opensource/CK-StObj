@@ -115,6 +115,8 @@ namespace CK.Setup
 
             public bool IsReadOnlyCompliant => _isReadOnlyCompliant;
 
+            public override bool IsHashSafe => _isReadOnlyCompliant;
+
             public override IPocoType ObliviousType => _obliviousType;
 
             ICompositePocoType ICompositePocoType.ObliviousType => _obliviousType;

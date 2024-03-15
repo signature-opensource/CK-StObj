@@ -66,8 +66,14 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                              .OpenBlock();
 
                     pocoClass.Append( "if( !rCtx.RuntimeFilter.Contains( " ).Append( f.Type.Index >> 1 ).Append( ") ) goto default;" ).NewLine();
-                    GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
-
+                    if( f.Type.IsPolymorphic )
+                    {
+                        pocoClass.Append( f.PrivateFieldName ).Append( " = (" ).Append( f.Type.ImplTypeName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
+                    }
+                    else
+                    {
+                        GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
+                    }
                     pocoClass.Append("break;")
                              .CloseBlock();
                 }

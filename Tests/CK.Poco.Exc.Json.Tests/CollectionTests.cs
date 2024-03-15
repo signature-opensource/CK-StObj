@@ -97,6 +97,10 @@ namespace CK.Poco.Exc.Json.Tests
         {
             IList<object> ListOfList { get; }
 
+            IList<NormalizedCultureInfo> ListOfNC { get; }
+
+            IList<ExtendedCultureInfo> ListOfEC { get; }
+
             IList<int> CovariantListImpl { get; }
 
             IList<int?> CovariantListNullableImpl { get; }
@@ -117,12 +121,14 @@ namespace CK.Poco.Exc.Json.Tests
             {
                 o.ListOfList.Add( new List<int> { 1, 2 } );
                 o.ListOfList.Add( new List<int> { 3, 4, 5 } );
+                o.ListOfNC.AddRangeArray( NormalizedCultureInfo.Invariant, NormalizedCultureInfo.CodeDefault );
+                o.ListOfEC.AddRangeArray( NormalizedCultureInfo.CodeDefault, ExtendedCultureInfo.GetExtendedCultureInfo( "es,fr,de" ) );
                 o.CovariantListImpl.Add( 42 );
                 o.CovariantListImpl.Add( 3712 );
                 o.CovariantListNullableImpl.Add( null );
                 o.CovariantListNullableImpl.Add( 0 );
                 o.CovariantListNullableImpl.Add( null );
-                o.Result = new object[] { o.ListOfList, o.CovariantListImpl, o.CovariantListNullableImpl };
+                o.Result = new object[] { o.ListOfNC, o.ListOfEC, o.ListOfList, o.CovariantListImpl, o.CovariantListNullableImpl };
             } );
             CheckToString( oL );
 
@@ -134,26 +140,50 @@ namespace CK.Poco.Exc.Json.Tests
                 oD.ToString().Should().Be( @"
                 {
                     ""ListOfList"": [[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]],
+                    ""ListOfNC"": ["""",""en""],
+                    ""ListOfEC"": [[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,fr,de""]],
                     ""CovariantListImpl"": [42,3712],
                     ""CovariantListNullableImpl"": [null,0,null],
                     ""Result"": [""A(object)"",
                                     [
-                                        [""L(object)"",[[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]]],
-                                        [""L(int)"",[42,3712]],
-                                        [""L(int?)"",[null,0,null]]
+                                        [""L(NormalizedCultureInfo)"", ["""",""en""]],
+                                        [""L(ExtendedCultureInfo)"", [[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,fr,de""]]],
+                                        [""L(object)"",[[""L(int)"", [1,2]],[""L(int)"",[3,4,5]]]],
+                                        [""L(int)"", [42,3712]],
+                                        [""L(int?)"", [null,0,null]]
                                     ]
                                 ]
                 }".Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
             }
         }
 
+        [CKTypeDefiner]
+        public interface ISomeAbstract : IPoco
+        {
+            string Name { get; set; }
+        }
+
+        [ExternalName("Concrete")]
+        public interface IConcrete : ISomeAbstract
+        {
+        }
+
+        public interface ISecondary : IConcrete
+        {
+        }
+
         public interface IWithSets : IPoco
         {
-            ISet<object> SetOfSet { get; }
+            ISet<NormalizedCultureInfo> SetOfNC { get; }
+
+            ISet<ExtendedCultureInfo> SetOfEC { get; }
 
             ISet<int> CovariantSetImpl { get; }
 
             ISet<int?> CovariantSetNullableImpl { get; }
+
+            [RegisterPocoType( typeof( object[] ) )]
+            object? Result { get; set; }
         }
 
         [Test]
@@ -163,16 +193,16 @@ namespace CK.Poco.Exc.Json.Tests
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
             var directory = s.GetRequiredService<PocoDirectory>();
 
-            var f = s.GetRequiredService<IPocoFactory<IWithSets>>();
-            var oS = f.Create( o =>
+            var oS = directory.Create<IWithSets>( o =>
             {
-                o.SetOfSet.Add( new HashSet<int> { 1, 2 } );
-                o.SetOfSet.Add( new HashSet<int> { 3, 4, 5 } );
+                o.SetOfNC.AddRangeArray( NormalizedCultureInfo.Invariant, NormalizedCultureInfo.CodeDefault );
+                o.SetOfEC.AddRangeArray( NormalizedCultureInfo.CodeDefault, ExtendedCultureInfo.GetExtendedCultureInfo( "es, de, fr" ) );
                 o.CovariantSetImpl.Add( 42 );
                 o.CovariantSetImpl.Add( 3712 );
                 o.CovariantSetNullableImpl.Add( null );
                 o.CovariantSetNullableImpl.Add( 0 );
                 o.CovariantSetNullableImpl.Add( 1 );
+                o.Result = new object[] { o.SetOfNC, o.SetOfEC, o.CovariantSetImpl, o.CovariantSetNullableImpl };
             } );
 
             CheckToString( oS );
@@ -184,9 +214,18 @@ namespace CK.Poco.Exc.Json.Tests
             {
                 o.ToString().Should().Be( @"
                 {
-                    ""SetOfSet"":[[""S(int)"",[1,2]],[""S(int)"",[3,4,5]]],
+                    ""SetOfNC"":["""",""en""],
+                    ""SetOfEC"":[[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,de,fr""]],
                     ""CovariantSetImpl"":[42,3712],
-                    ""CovariantSetNullableImpl"":[null,0,1]
+                    ""CovariantSetNullableImpl"":[null,0,1],
+                    ""Result"": [""A(object)"",
+                                    [
+                                        [""S(NormalizedCultureInfo)"",["""",""en""]],
+                                        [""S(ExtendedCultureInfo)"",[[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,de,fr""]]],
+                                        [""S(int)"",[42,3712]],
+                                        [""S(int?)"",[null,0,1]]
+                                    ]
+                                ]
                 }"
                 .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
             }
@@ -195,12 +234,16 @@ namespace CK.Poco.Exc.Json.Tests
         public interface IWithDictionaries : IPoco
         {
             [RegisterPocoType( typeof( long ) )]
-            [RegisterPocoType( typeof( string ) )]
-            IDictionary<object, object> DicOfDic { get; }
+            [RegisterPocoType( typeof( Dictionary<string, object> ) )]
+            [RegisterPocoType( typeof( Dictionary<int,object> ) )]
+            IDictionary<string, object> DicOfDic { get; }
 
             IDictionary<int, int> CovariantDicImpl { get; }
 
             IDictionary<int, bool?> CovariantDicNullableImpl { get; }
+
+            [RegisterPocoType( typeof( object[] ) )]
+            object? Result { get; set; }
         }
 
         [Test]
@@ -213,13 +256,14 @@ namespace CK.Poco.Exc.Json.Tests
             var f = s.GetRequiredService<IPocoFactory<IWithDictionaries>>();
             var oD = f.Create( o =>
             {
-                o.DicOfDic.Add( 1, new Dictionary<object, object?> { { 1, 2L }, { "Hello", "World!" }, { "Goodbye", null } } );
-                o.DicOfDic.Add( 2, new Dictionary<object, object?> { { 3, 4 }, { "Hello2", "World2!" } } );
+                o.DicOfDic.Add( "One", new Dictionary<string, object?> { { "Hi...", 42L }, { "Hello", "World!" }, { "Goodbye", null } } );
+                o.DicOfDic.Add( "Two", new Dictionary<int, object?> { { 1, -1L }, { 2, "World2!" }, { 42, null } } );
                 o.CovariantDicImpl.Add( 42, 3712 );
                 o.CovariantDicImpl.Add( 3712, 42 );
                 o.CovariantDicNullableImpl.Add( 1, true );
                 o.CovariantDicNullableImpl.Add( 2, null );
                 o.CovariantDicNullableImpl.Add( 3, false );
+                o.Result = new object[] { o.DicOfDic, o.CovariantDicImpl, o.CovariantDicNullableImpl };
             } );
             CheckToString( oD );
 
@@ -231,25 +275,22 @@ namespace CK.Poco.Exc.Json.Tests
                 o.ToString().Should().Be( @"
                 {
                     ""DicOfDic"":
-                        [
-                            [[""int"",1],
-                              [""M(object,object)"",
-                                [
-                                  [[""int"",1],[""long"",""2""]],
-                                  [[""string"",""Hello""],[""string"",""World!""]],
-                                  [[""string"",""Goodbye""],null]
-                                ]
-                              ]
-                            ],
-                            [[""int"",2],
-                              [""M(object,object)"",
-                                [
-                                  [[""int"",3],[""int"",4]],
-                                  [[""string"",""Hello2""],[""string"",""World2!""]]
-                                ]
-                              ]
-                            ]
-                        ],
+                        {
+                            ""One"": [""O(object)"",
+                                         {
+                                           ""Hi..."": [""long"",""42""],
+                                           ""Hello"": [""string"",""World!""],
+                                           ""Goodbye"": null
+                                         }
+                                     ],
+                            ""Two"": [""M(int,object)"",
+                                         [
+                                           [1,[""long"",""-1""]],
+                                           [2,[""string"",""World2!""]],
+                                           [42,null]
+                                         ]
+                                     ]
+                        },
                     ""CovariantDicImpl"":
                         [
                             [42,3712],
@@ -260,7 +301,42 @@ namespace CK.Poco.Exc.Json.Tests
                             [1,true],
                             [2,null],
                             [3,false]
-                        ]
+                        ],
+                    ""Result"": [""A(object)"",
+                                    [
+                                        [""O(object)"",
+                                            {
+                                                ""One"": [""O(object)"",
+                                                             {
+                                                               ""Hi..."": [""long"",""42""],
+                                                               ""Hello"": [""string"",""World!""],
+                                                               ""Goodbye"": null
+                                                             }
+                                                         ],
+                                                ""Two"": [""M(int,object)"",
+                                                             [
+                                                               [1,[""long"",""-1""]],
+                                                               [2,[""string"",""World2!""]],
+                                                               [42,null]
+                                                             ]
+                                                         ]
+                                            }
+                                        ],
+                                        [""M(int,int)"",
+                                            [
+                                                [42,3712],
+                                                [3712,42]
+                                            ]
+                                        ],
+                                        [""M(int,bool?)"",
+                                            [
+                                                [1,true],
+                                                [2,null],
+                                                [3,false]
+                                            ]
+                                        ]
+                                    ]
+                                ]
                 }"
                 .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
             }
@@ -298,7 +374,6 @@ namespace CK.Poco.Exc.Json.Tests
             Debug.Assert( oBackA != null );
             oBackA.Should().BeEquivalentTo( oBack );
         }
-
 
 
         public interface IAllCollectionOfObjects : IPoco
@@ -379,8 +454,148 @@ namespace CK.Poco.Exc.Json.Tests
                 o2.Set.Should().HaveCount( 2 );
                 o2.Dictionary.Should().HaveCount( 2 );
             }
-
-
         }
+
+        public interface IWithListsA : IPoco
+        {
+            IList<ISomeAbstract> ListOfAbstract { get; }
+
+            IList<IConcrete> ListOfConcrete { get; }
+
+            IList<ISecondary> ListOfSecondary { get; }
+
+            IList<ISomeAbstract?> ListOfNullableAbstract { get; }
+
+            IList<IConcrete?> ListOfNullableConcrete { get; }
+
+            IList<ISecondary?> ListOfNullableSecondary { get; }
+
+            [RegisterPocoType( typeof( object[] ) )]
+            object? Result { get; set; }
+        }
+
+        [Test]
+        public void lists_serialization_with_abstracts()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithListsA ), typeof( ISecondary ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
+
+            var p1 = directory.Create<IConcrete>( o => o.Name = "c" );
+            var p2 = directory.Create<ISecondary>( o => o.Name = "s" );
+            var oL = directory.Create<IWithListsA>( oL =>
+            {
+                oL.ListOfAbstract.AddRangeArray( p1, p2 );
+                oL.ListOfConcrete.AddRangeArray( p1, p2 );
+                oL.ListOfSecondary.Add( p2 );
+                oL.ListOfNullableAbstract.Add( null );
+                oL.ListOfNullableConcrete.Add( null );
+                oL.ListOfNullableSecondary.Add( null );
+                oL.Result = new object[] { oL.ListOfAbstract, oL.ListOfConcrete, oL.ListOfSecondary, oL.ListOfNullableAbstract, oL.ListOfNullableConcrete, oL.ListOfNullableSecondary };
+            } );
+            CheckToString( oL );
+
+            var oL2 = JsonTestHelper.Roundtrip( directory, oL );
+            CheckToString( oL2 );
+
+            static void CheckToString( IWithListsA oL )
+            {
+                oL.ToString().Should().Be( """
+                {
+                    "ListOfAbstract":
+                        [
+                            ["Concrete",{"Name":"c"}],
+                            ["Concrete",{"Name":"s"}]
+                        ],
+                    "ListOfConcrete": [{"Name":"c"},{"Name":"s"}],
+                    "ListOfSecondary":[{"Name":"s"}],
+                    "ListOfNullableAbstract":[null],
+                    "ListOfNullableConcrete":[null],
+                    "ListOfNullableSecondary":[null],
+                    "Result":
+                        ["A(object)",
+                            [
+                                ["L(CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract)",
+                                    [
+                                        ["Concrete",{"Name":"c"}],
+                                        ["Concrete",{"Name":"s"}]
+                                    ]
+                                ],
+                                ["L(Concrete)",[{"Name":"c"},{"Name":"s"}]],
+                                ["L(Concrete)",[{"Name":"s"}]],
+                                ["L(CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract)",[null]],
+                                ["L(Concrete)",[null]],
+                                ["L(Concrete)",[null]]
+                            ]
+                        ]
+                }
+                """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
+            }
+        }
+
+        public interface IWithDicsA : IPoco
+        {
+            IDictionary<NormalizedCultureInfo,ISomeAbstract> DicOfAbstract { get; }
+
+            IDictionary<NormalizedCultureInfo, IConcrete> DicOfConcrete { get; }
+
+            IDictionary<NormalizedCultureInfo,ISecondary> DicOfSecondary { get; }
+
+            IDictionary<int,ISomeAbstract?> DicOfNullableAbstract { get; }
+
+            IDictionary<int,IConcrete?> DicOfNullableConcrete { get; }
+
+            IDictionary<int,ISecondary?> DicOfNullableSecondary { get; }
+
+            [RegisterPocoType( typeof( object[] ) )]
+            object? Result { get; set; }
+        }
+
+        [Test]
+        public void dictionaries_serialization_with_abstracts()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IWithDicsA ), typeof( ISecondary ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var directory = s.GetRequiredService<PocoDirectory>();
+
+            var c1 = NormalizedCultureInfo.GetNormalizedCultureInfo( "es" );
+            var c2 = NormalizedCultureInfo.GetNormalizedCultureInfo( "de" );
+            var p1 = directory.Create<IConcrete>( o => o.Name = "c" );
+            var p2 = directory.Create<ISecondary>( o => o.Name = "s" );
+            var oD = directory.Create<IWithDicsA>( oD =>
+            {
+                oD.DicOfAbstract.Add( c1, p1 );
+                oD.DicOfAbstract.Add( c2, p2 );
+                oD.DicOfConcrete.Add( c1, p1 );
+                oD.DicOfConcrete.Add( c2, p2 );
+                oD.DicOfSecondary.Add( NormalizedCultureInfo.CodeDefault, p2 );
+                oD.DicOfNullableAbstract.Add( 0, null );
+                oD.DicOfNullableConcrete.Add( 0, null );
+                oD.DicOfNullableSecondary.Add( 0, null );
+                oD.Result = new object[] { oD.DicOfAbstract, oD.DicOfConcrete, oD.DicOfSecondary, oD.DicOfNullableAbstract, oD.DicOfNullableConcrete, oD.DicOfNullableSecondary };
+            } );
+            CheckToString( oD );
+
+            var oL2 = JsonTestHelper.Roundtrip( directory, oD );
+            CheckToString( oL2 );
+
+            static void CheckToString( IWithDicsA oD )
+            {
+                oD.ToString().Should().Be( @"
+                {
+                    ""ListOfAbstract"": [[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]],
+                    ""ListOfConcrete"": [42,3712],
+                    ""CovariantListNullableImpl"": [null,0,null],
+                    ""Result"": [""A(object)"",
+                                    [
+                                        [""L(object)"",[[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]]],
+                                        [""L(int)"",[42,3712]],
+                                        [""L(int?)"",[null,0,null]]
+                                    ]
+                                ]
+                }".Replace( " ", "" ).ReplaceLineEndings( "" ) );
+            }
+        }
+
     }
 }

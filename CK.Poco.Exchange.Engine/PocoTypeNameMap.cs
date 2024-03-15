@@ -141,15 +141,6 @@ namespace CK.Setup
         /// <param name="nullableName">Name for the nullable type.</param>
         protected virtual void MakeCollection( ICollectionPocoType t, out string name, out string nullableName )
         {
-            // Shortcut for the IReadOnlyXXX: use their mutable type names.
-            // They share the same ItemTypes and the IPocoTypeSet guaranties that if a IReadOnlyXXX is included then its
-            // Mutable counter part is in the set (the reverse is not true).
-            if( t.IsAbstractReadOnly )
-            {
-                Throw.DebugAssert( t.MutableCollection != t && t.ItemTypes == t.MutableCollection.ItemTypes && _typeSet.Contains( t.MutableCollection ) );
-                name = GetName( t.MutableCollection );
-                nullableName = _names[t.MutableCollection.Index + 1];
-            }
             if( t.Kind == PocoTypeKind.Dictionary )
             {
                 var k = t.ItemTypes[0];

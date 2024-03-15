@@ -62,13 +62,15 @@ namespace CK.Setup
 
             public bool IsNonNullableFinalType => false;
 
+            public bool IsHashSafe => NonNullable.IsHashSafe;
+
             public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
 
             public bool CanReadFrom( IPocoType type )
             {
                 // We are on a nullable: if the the type is non nullable, it's over because we
                 // cannot read a non nullable from a nullable.
-                // Non nullable IsReadableType predicates don't care of the
+                // Non nullable CanReadFrom don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
                 return type.IsNullable && NonNullable.CanReadFrom( type );
@@ -157,6 +159,8 @@ namespace CK.Setup
 
             public bool IsNonNullableFinalType => false;
 
+            public bool IsHashSafe => NonNullable.IsHashSafe;
+
             public bool CanReadFrom( IPocoType type )
             {
                 // We are on a nullable: if the the type is non nullable, it's over because we
@@ -225,11 +229,6 @@ namespace CK.Setup
         public virtual string ImplTypeName => _csharpName;
 
         /// <summary>
-        /// Applies to Basic, AbstractPoco and SecondaryPoco.
-        /// </summary>
-        public virtual string StandardName => _csharpName;
-
-        /// <summary>
         /// False for basic, record, primary and secondary poco.
         /// Overridden by abstract poco, collections and union types.
         /// </summary>
@@ -247,6 +246,12 @@ namespace CK.Setup
                 return false;
             }
         }
+
+        /// <summary>
+        /// Overridden by <see cref="BasicRefType"/> (true for Extended and NormalizedCultureInfo),
+        /// <see cref="RecordNamedType"/> and <see cref="RecordAnonType"/> (true if <see cref="IRecordPocoType.IsReadOnlyCompliant"/>).
+        /// </summary>
+        public virtual bool IsHashSafe => _kind == PocoTypeKind.Basic;
 
         internal virtual void SetImplementationLess()
         {
@@ -288,14 +293,18 @@ namespace CK.Setup
         public virtual bool IsPolymorphic => _kind is PocoTypeKind.Any or PocoTypeKind.AbstractPoco or PocoTypeKind.UnionType;
 
         /// <summary>
-        /// Only <see cref="BasicRefType"/> overrides this to check that the actual type is not abstract
+        /// <see cref="BasicRefType"/> overrides this to check that the actual type is not abstract
         /// (even if currently all basic reference types are concrete).
+        /// <see cref="AbstractReadOnlyCollectionType"/> overrides this to always be false.
+        /// <see cref="ListOrSetOrArrayType"/> and <see cref="DictionaryType"/> override this with:
+        /// !ImplementationLess && (IsOblivious || (IsAbstractCollection && Itemtypes are oblivious && ObliviousType.ImplTypeName != ImplTypeName )).
         /// </summary>
-        public virtual bool IsNonNullableFinalType => ObliviousType == this
-                                                       && _kind is not PocoTypeKind.Any
-                                                                and not PocoTypeKind.SecondaryPoco
-                                                                and not PocoTypeKind.AbstractPoco
-                                                                and not PocoTypeKind.UnionType;
+        public virtual bool IsNonNullableFinalType => !ImplementationLess
+                                                      && ObliviousType == this
+                                                      && _kind is not PocoTypeKind.Any
+                                                               and not PocoTypeKind.SecondaryPoco
+                                                               and not PocoTypeKind.AbstractPoco
+                                                               and not PocoTypeKind.UnionType;
 
         /// <summary>
         /// Defaults to "this" that works for everything except for:

@@ -143,8 +143,6 @@ namespace CK.Setup
 
             public override string ImplTypeName => _familyInfo.PocoClass.FullName!;
 
-            public override string StandardName => ExternalOrCSharpName;
-
             public string CSharpBodyConstructorSourceCode => _ctorCode;
 
             public IReadOnlyList<IPrimaryPocoField> Fields => _fields;

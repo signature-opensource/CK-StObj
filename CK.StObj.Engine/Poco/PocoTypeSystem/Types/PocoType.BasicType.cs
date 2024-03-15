@@ -17,12 +17,14 @@ namespace CK.Setup
                                                      Type type,
                                                      string csharpName,
                                                      FieldDefaultValue defaultValue,
+                                                     bool isHashSafe,
+                                                     bool isPolymorphic,
                                                      IBasicRefPocoType? baseType )
         {
             Debug.Assert( !type.IsValueType );
             Debug.Assert( type != typeof( object ) );
             Debug.Assert( defaultValue != null );
-            return new BasicRefType( s, type, csharpName, defaultValue, baseType );
+            return new BasicRefType( s, type, csharpName, defaultValue, isHashSafe, isPolymorphic, baseType );
         }
 
         internal static IPocoType CreateBasicValue( PocoTypeSystemBuilder s,
@@ -64,6 +66,8 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly IBasicRefPocoType? _baseType;
             IBasicRefPocoType[] _specializations;
+            readonly bool _isHashSafe;
+            readonly bool _isPolymorphic;
 
             sealed class Null : NullReferenceType, IBasicRefPocoType
             {
@@ -89,10 +93,14 @@ namespace CK.Setup
                                  Type notNullable,
                                  string csharpName,
                                  IPocoFieldDefaultValue defaultValue,
+                                 bool isHashSafe,
+                                 bool isPolymorphic,
                                  IBasicRefPocoType? baseType )
                 : base( s, notNullable, csharpName, PocoTypeKind.Basic, static t => new NullReferenceType( t ) )
             {
                 _def = defaultValue;
+                _isHashSafe = isHashSafe;
+                _isPolymorphic = isPolymorphic;
                 _baseType = baseType;
                 _specializations = Array.Empty<IBasicRefPocoType>();
                 if( baseType != null )
@@ -135,7 +143,18 @@ namespace CK.Setup
                 }
             }
 
-            public override bool IsPolymorphic => _specializations.Length > 0;
+            /// <summary>
+            /// This should be "_specializations.Length > 0" but whether a type is polymorphic or not
+            /// has a strong impact on serialization. Since we don't have versioned serialization available,
+            /// we currently consider that polymorphism is intrinsic regardless of the registered types.
+            /// <para>
+            /// If, one day, a more aggressive approach is possible, this would require to also handle this
+            /// for Abstract Poco: an AbstractPoco that has a single implementation would not be polymorphic.
+            /// But this would have to be computed in the context of a PocoTypeSet: one could have the same
+            /// PocoType polymorphic in one set and non polymorphic in another one.
+            /// </para>
+            /// </summary>
+            public override bool IsPolymorphic => _isPolymorphic;
 
             public override bool IsNonNullableFinalType => !Type.IsAbstract;
 

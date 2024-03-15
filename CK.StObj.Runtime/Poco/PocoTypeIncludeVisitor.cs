@@ -39,8 +39,7 @@ namespace CK.Setup
     ///         </para>
     ///     </item>
     ///     <item>
-    ///         Collections visit their <see cref="ICollectionPocoType.ItemTypes"/> AbstractReadOnly ones (IReadOnlyXXX) visit their
-    ///         <see cref="ICollectionPocoType.MutableCollection"/>.
+    ///         Collections visit their <see cref="ICollectionPocoType.ItemTypes"/>.
     ///     </item>
     ///     <item>
     ///         <see cref="IUnionPocoType"/> visits its <see cref="IOneOfPocoType.AllowedTypes"/> (same as base <see cref="PocoTypeVisitor"/>).
@@ -211,24 +210,6 @@ namespace CK.Setup
                 {
                     Visit( f.Type );
                 }
-            }
-        }
-
-        /// <summary>
-        /// Visit the <see cref="ICollectionPocoType.ItemTypes"/> and the <see cref="ICollectionPocoType.MutableCollection"/>.
-        /// </summary>
-        /// <param name="collection">The collection type.</param>
-        protected override void VisitCollection( ICollectionPocoType collection )
-        {
-            if( collection.IsAbstractCollection )
-            {
-                Throw.DebugAssert( collection.ItemTypes == collection.MutableCollection.ItemTypes );
-                Visit( collection.MutableCollection );
-            }
-            else
-            {
-                // Visit the ItemTypes.
-                base.VisitCollection( collection );
             }
         }
 

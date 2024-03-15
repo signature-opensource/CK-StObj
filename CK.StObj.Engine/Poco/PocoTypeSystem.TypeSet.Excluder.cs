@@ -164,50 +164,47 @@ namespace CK.Setup
                     }
                     b = b.NextRef;
                 }
-                // Handles Collection AbstractReadOnly => MutableCollection.
-                if( t is ICollectionPocoType c && !c.IsAbstractReadOnly && c.AbstractReadOnlyCollection != null )
+                switch( t )
                 {
-                    DoExclude( c.AbstractReadOnlyCollection, false );
-                }
-                else
-                {
-                    // Handles Poco types: the Primary is the key.
-                    // Primary and Secondary are "unified".
-                    // Abstract impacts their primaries only if they are explicitly excluded (isRoot is true).
-                    if( t is IAbstractPocoType a )
-                    {
-                        if( isRoot )
+                    case IAbstractPocoType a:
                         {
-                            foreach( var p in a.PrimaryPocoTypes )
+                            if( isRoot )
                             {
-                                DoExclude( p, false );
+                                foreach( var p in a.PrimaryPocoTypes )
+                                {
+                                    DoExclude( p, false );
+                                }
                             }
+                            break;
                         }
-                    }
-                    else if( t is ISecondaryPocoType secondary )
-                    {
+
+                    case ISecondaryPocoType secondary:
                         DoExclude( secondary.PrimaryPocoType, false );
-                    }
-                    else if( t is IPrimaryPocoType primary )
-                    {
-                        foreach( var s in primary.SecondaryTypes )
+                        break;
+                    case IPrimaryPocoType primary:
                         {
-                            DoExclude( s, false );
+                            foreach( var s in primary.SecondaryTypes )
+                            {
+                                DoExclude( s, false );
+                            }
+                            foreach( var abs in primary.AbstractTypes )
+                            {
+                                DecrementRefCount( abs );
+                            }
+                            // Handle the IPoco that doesn't appear in the AbstractTypes.
+                            DecrementRefCount( Poco );
+                            break;
                         }
-                        foreach( var abs in primary.AbstractTypes )
+
+                    case IBasicRefPocoType basic:
                         {
-                            DecrementRefCount( abs );
+                            foreach( var s in basic.Specializations )
+                            {
+                                DoExclude( s, false );
+                            }
+
+                            break;
                         }
-                        // Handle the IPoco that doesn't appear in the AbstractTypes.
-                        DecrementRefCount( Poco );
-                    }
-                    else if( t is IBasicRefPocoType basic )
-                    {
-                        foreach( var s in basic.Specializations )
-                        {
-                            DoExclude( s, false );
-                        }
-                    }
                 }
             }
 

@@ -92,6 +92,8 @@ namespace CK.Setup
                 var tB = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, family.PocoClass );
                 tB.Definition.Modifiers |= Modifiers.Sealed;
 
+                using var _ = tB.Region();
+
                 var fieldPart = tB.CreatePart();
 
                 // The Poco's static _factory field is internal and its type is the exact class: extended code
@@ -563,7 +565,7 @@ namespace CK.Setup
         static ITypeScope CreateDictionaryType( INamespaceScope ns, IPocoRequiredSupportType dic, string k, string actualTypeName )
         {
             var typeScope = ns.CreateType( $"sealed class {dic.TypeName} : Dictionary<{k},{actualTypeName}>" );
-            typeScope.Append( "bool TGV<TOut>( " ).Append( k ).Append( " key, out TOut? value ) where TOut : class" ).NewLine()
+            typeScope.Append( "bool TGV<TOut>( " ).Append( k ).Append( " key, out TOut? value ) where TOut : class" )
                      .OpenBlock()
                      .Append( """
                             if( base.TryGetValue( key, out var v ) )
@@ -620,13 +622,14 @@ namespace CK.Setup
             monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem can start." );
             IPocoTypeSystem ts = _typeSystemBuilder.Lock( monitor );
 
-            _finalTypeIndex.Append( "static readonly Dictionary<Type,int> _finalTypes = new Dictionary<Type,int>( " ).Append( ts.NonNullableFinalTypes.Count ).Append( " ) {" ).NewLine();
+            _finalTypeIndex.GeneratedByComment( "Public access for code generator (will be a Frozen, readonly dictionary in .NET8)." )
+                           .Append( "public static readonly Dictionary<Type,int> NonNullableFinalTypes = new Dictionary<Type,int>( " ).Append( ts.NonNullableFinalTypes.Count ).Append( " ) {" ).NewLine();
             foreach( var type in ts.NonNullableFinalTypes )
             {
                 _finalTypeIndex.Append( "{typeof(" ).Append( type.ImplTypeName ).Append( ")," ).Append( type.Index ).Append( "}," ).NewLine();
             }
             _finalTypeIndex.Append( "};" ).NewLine()
-                           .Append( "public override int GetNonNullableFinalTypeIndex( Type t ) => _finalTypes.GetValueOrDefault( t, -1 );" ).NewLine();
+                           .Append( "public override int GetNonNullableFinalTypeIndex( Type t ) => NonNullableFinalTypes.GetValueOrDefault( t, -1 );" ).NewLine();
 
             _context.CurrentRun.ServiceContainer.Add( ts );
             return CSCodeGenerationResult.Success;

@@ -46,6 +46,7 @@ namespace CK.Poco.Exc.Json.Tests
             var p = s.GetRequiredService<IPocoFactory<IWithGlobalization>>().Create();
 
             JsonTestHelper.Roundtrip( s.GetRequiredService<PocoDirectory>(), p, text: t => TestHelper.Monitor.Info( $"IWithGlobalization (default) serialization: " + t ) );
+
             ExtendedCultureInfo someCulture = ExtendedCultureInfo.GetExtendedCultureInfo( "fr-CA, es" );
 
             var name = "me";

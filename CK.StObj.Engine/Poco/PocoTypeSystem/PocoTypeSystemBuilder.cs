@@ -297,42 +297,54 @@ namespace CK.Setup
             }
             if( t == typeof( string ) )
             {
-                return RegBasicRefType( this, _typeCache, t, "string", FieldDefaultValue.StringDefault, null );
+                return RegBasicRefType( this, _typeCache, t, "string", FieldDefaultValue.StringDefault, isHashSafe: true, isPolymorphic: false, null );
             }
             if( t == typeof( MCString ) )
             {
                 Throw.DebugAssert( t.Name == "MCString" );
-                return RegBasicRefType( this, _typeCache, t, "MCString", FieldDefaultValue.MCStringDefault, null );
+                return RegBasicRefType( this, _typeCache, t, "MCString", FieldDefaultValue.MCStringDefault, isHashSafe: false, isPolymorphic: false, null );
             }
             if( t == typeof( CodeString ) )
             {
                 Throw.DebugAssert( t.Name == "CodeString" );
-                return RegBasicRefType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault, null );
+                return RegBasicRefType( this, _typeCache, typeof( CodeString ), "CodeString", FieldDefaultValue.CodeStringDefault, isHashSafe: false, isPolymorphic: false, null );
             }
-            if( t == typeof( ExtendedCultureInfo ) )
+            //
+            // To avoid a [RegisterPocoType] here, ExtendedCultureInfo triggers a registration of NormalizedCultureInfo.
+            // This is optional but this simplifies life and as IsPolymorphic is structural (it doesn't depend on the type set),
+            // this has no impact.
+            //
+            if( t == typeof( ExtendedCultureInfo ) || t == typeof( NormalizedCultureInfo ) )
             {
-                return RegisterExtendedCultureInfo( this, _typeCache );
-            }
-            if( t == typeof( NormalizedCultureInfo ) )
-            {
-                // We need the ExtendedCultureInfo base type.
+                // We need the ExtendedCultureInfo base type to register the NormalizedCultureInfo.
                 Throw.DebugAssert( !_typeCache.TryGetValue( typeof( ExtendedCultureInfo ), out var e ) || e is IBasicRefPocoType );
                 if( !_typeCache.TryGetValue( typeof( ExtendedCultureInfo ), out var extCInfo ) )
                 {
                     extCInfo = RegisterExtendedCultureInfo( this, _typeCache );
                 }
-                return RegBasicRefType( this,
-                                        _typeCache,
-                                        typeof( NormalizedCultureInfo ),
-                                        "NormalizedCultureInfo",
-                                        FieldDefaultValue.CultureDefault,
-                                        Unsafe.As<IBasicRefPocoType>( extCInfo ) );
+                var nCInfo = RegBasicRefType( this,
+                                              _typeCache,
+                                              typeof( NormalizedCultureInfo ),
+                                              "NormalizedCultureInfo",
+                                              FieldDefaultValue.CultureDefault,
+                                              isHashSafe: true,
+                                              isPolymorphic: false,
+                                              Unsafe.As<IBasicRefPocoType>( extCInfo ) );
+                return t == typeof( ExtendedCultureInfo )
+                        ? extCInfo
+                        : nCInfo;
             }
 
             static IBasicRefPocoType RegisterExtendedCultureInfo( PocoTypeSystemBuilder s, Dictionary<object, IPocoType> c )
             {
                 Throw.DebugAssert( typeof( ExtendedCultureInfo ).Name == "ExtendedCultureInfo" );
-                return RegBasicRefType( s, c, typeof( ExtendedCultureInfo ), "ExtendedCultureInfo", FieldDefaultValue.CultureDefault, null );
+                return RegBasicRefType( s,
+                                        c, typeof( ExtendedCultureInfo ),
+                                        "ExtendedCultureInfo",
+                                        FieldDefaultValue.CultureDefault,
+                                        isHashSafe: true,
+                                        isPolymorphic: true,
+                                        baseType: null );
             }
 
             static IBasicRefPocoType RegBasicRefType( PocoTypeSystemBuilder s,
@@ -340,9 +352,11 @@ namespace CK.Setup
                                                       Type t,
                                                       string name,
                                                       FieldDefaultValue defaultValue,
+                                                      bool isHashSafe,
+                                                      bool isPolymorphic,
                                                       IBasicRefPocoType? baseType )
             {
-                var x = PocoType.CreateBasicRef( s, t, name, defaultValue, baseType );
+                var x = PocoType.CreateBasicRef( s, t, name, defaultValue, isHashSafe, isPolymorphic, baseType );
                 c.Add( t, x );
                 c.Add( name, x );
                 return x;

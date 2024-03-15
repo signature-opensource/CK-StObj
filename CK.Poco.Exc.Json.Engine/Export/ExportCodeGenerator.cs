@@ -18,9 +18,7 @@ namespace CK.Setup.PocoJson
         readonly ITypeScope _exporterType;
         readonly IPocoTypeNameMap _nameMap;
         readonly ICSCodeGenerationContext _generationContext;
-        // Writers are for the non nullable types, whether they are oblivious types
-        // or not: writers for the same "oblivious family" will share the same function.
-        readonly CodeWriter[] _writers;
+        readonly WriterMap _writerMap;
 
         public ExportCodeGenerator( ITypeScope exporterType,
                                     IPocoTypeNameMap nameMap,
@@ -29,43 +27,14 @@ namespace CK.Setup.PocoJson
             _exporterType = exporterType;
             _nameMap = nameMap;
             _generationContext = generationContext;
-            _writers = new CodeWriter[nameMap.TypeSystem.AllNonNullableTypes.Count];
-        }
-
-        void GenerateWrite( ICodeWriter writer, IPocoType t, string variableName )
-        {
-            if( t.Type.IsValueType )
-            {
-                if( t.IsNullable )
-                {
-                    writer.Append( "if( !" ).Append( variableName ).Append( ".HasValue ) w.WriteNullValue();" ).NewLine()
-                          .Append( "else" )
-                          .OpenBlock();
-                    var v = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference(ref {variableName})";
-                    _writers[t.ObliviousType.Index >> 1].Invoke( writer, v );
-                    writer.CloseBlock();
-                }
-                else
-                {
-                    _writers[t.ObliviousType.Index >> 1].Invoke( writer, variableName );
-                    writer.NewLine();
-                }
-            }
-            else
-            {
-                // Since we are working in oblivious mode, any reference type MAY be null.
-                writer.Append( "if( " ).Append( variableName ).Append( " == null ) w.WriteNullValue();" ).NewLine()
-                      .Append( "else" )
-                      .OpenBlock();
-                _writers[t.ObliviousType.Index >> 1].Invoke( writer, variableName );
-                writer.CloseBlock();
-            }
+            _writerMap = new WriterMap( nameMap );
         }
 
         public bool Run( IActivityMonitor monitor )
         {
-            RegisterWriters();
+            InitializeWriterMap();
             GenerateWriteMethods( monitor );
+            GenerateWriteNonNullableFinalType();
             GenerateWriteAny();
             SupportPocoDirectoryJsonExportGenerated( monitor );
             return true;

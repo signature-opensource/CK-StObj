@@ -269,7 +269,7 @@ namespace CK.StObj.Engine.Tests.Poco
             string BasicRefType { get; }
             int[] Array { get; }
             IPoco Poco { get; }
-            IReadOnlySet<IPoco> ReadOnlySet { get; }
+            IReadOnlyList<IPoco> ReadOnlyList { get; }
         }
 
         // None of the properties are nullable.
@@ -281,7 +281,7 @@ namespace CK.StObj.Engine.Tests.Poco
             new string BasicRefType { get; set; }
             new int[] Array { get; set; }
             new IRealCommand Poco { get; set; }
-            new ISet<IRealCommand> ReadOnlySet { get; }
+            new IList<IRealCommand> ReadOnlyList { get; }
         }
 
         [Test]
@@ -296,10 +296,10 @@ namespace CK.StObj.Engine.Tests.Poco
             impl.ValueType = 42;
             impl.BasicRefType = "foo";
             impl.Array = new int[] { 1, 2, 3 };
-            impl.ReadOnlySet.Add( impl.Poco );
+            impl.ReadOnlyList.Add( impl.Poco );
             impl.Poco = d.Create<IRealCommand>( c => c.V = "Changed!" );
-            impl.ReadOnlySet.Add( impl.Poco );
-            impl.ReadOnlySet.Should().HaveCount( 2 );
+            impl.ReadOnlyList.Add( impl.Poco );
+            impl.ReadOnlyList.Should().HaveCount( 2 );
 
 
             var abs = (IHaveLotOfAbstractProperties)impl;
@@ -307,7 +307,7 @@ namespace CK.StObj.Engine.Tests.Poco
             abs.ValueType.Should().Be( 42 );
             abs.BasicRefType.Should().Be( "foo" );
             abs.Array.Should().BeSameAs( impl.Array );
-            abs.ReadOnlySet.Should().BeSameAs( impl.ReadOnlySet );
+            abs.ReadOnlyList.Should().BeSameAs( impl.ReadOnlyList );
         }
     }
 }

@@ -114,9 +114,13 @@ namespace CK.Setup.PocoJson
 
         void GenerateRecordFieldRead( ITypeScope writer, IRecordPocoField f, string implFieldName )
         {
-            // Struct are not by ref in a struct: use the reader function instead of the ref reader code.
-            if( f.Type is IRecordPocoType )
+            if( f.Type.IsPolymorphic )
             {
+                writer.Append( implFieldName ).Append( " = (" ).Append( f.Type.ImplTypeName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
+            }
+            else if( f.Type is IRecordPocoType )
+            {
+                // Struct are not by ref in a struct: use the reader function instead of the ref reader code.
                 writer.Append( implFieldName ).Append( " = " ).Append( GetReadFunctionName( f.Type ) ).Append( "( ref r, rCtx );" );
             }
             else

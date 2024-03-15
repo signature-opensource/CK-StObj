@@ -212,7 +212,15 @@ namespace CK.Setup.PocoJson
 
             CodeReader GetArrayCodeReader( ICollectionPocoType type )
             {
-                var readerFunction = GetReadFunctionName( type.ItemTypes[0] );
+                IPocoType tI = type.ItemTypes[0];
+                if( tI.IsPolymorphic )
+                {
+                    return ( writer, v ) => writer.Append( v )
+                                                  .Append( "=CK.Poco.Exc.JsonGen.Importer.ReadArrayOfAny<" )
+                                                  .Append( tI.ImplTypeName )
+                                                  .Append( ">(ref r, rCtx);" );
+                }
+                var readerFunction = GetReadFunctionName( tI );
                 return ( writer, v ) => writer.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadArray(ref r," )
                                               .Append( readerFunction )
                                               .Append( ",rCtx);" );
@@ -220,7 +228,14 @@ namespace CK.Setup.PocoJson
 
             CodeReader GetListOrSetCodeReader( ICollectionPocoType type )
             {
-                var readerFunction = GetReadFunctionName( type.ItemTypes[0] );
+                IPocoType tI = type.ItemTypes[0];
+                if( tI.IsPolymorphic )
+                {
+                    return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillListOrSetOfAny(ref r," )
+                                                  .Append( v )
+                                                  .Append( ",rCtx);" );
+                }
+                var readerFunction = GetReadFunctionName( tI );
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillListOrSet(ref r," )
                                               .Append( v )
                                               .Append( "," )

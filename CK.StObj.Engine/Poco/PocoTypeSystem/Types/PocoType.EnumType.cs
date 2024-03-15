@@ -142,8 +142,6 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
 
-            public override string StandardName => ExternalOrCSharpName;
-
             public string DefaultValueName => _defaultValueName;
 
             public IReadOnlyDictionary<string, object> Values => _values;

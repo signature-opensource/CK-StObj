@@ -13,7 +13,21 @@ namespace CK.Setup
             var listOrHashSet = isList ? "List" : "HashSet";
             var tI = RegisterItemType( monitor, nType, ctx, isRegular, listOrHashSet );
             if( tI == null ) return null;
+            if( !isList && !CheckHashSetItemType( monitor, nType, ctx, tI ) )
+            {
+                return null;
+            }
             return RegisterListOrSetCore( monitor, isList, nType, isRegular, listOrHashSet, tI );
+        }
+
+        static bool CheckHashSetItemType( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, IPocoType tI )
+        {
+            if( !tI.IsHashSafe )
+            {
+                monitor.Error( $"{ctx}: '{nType.Type:C}' item type cannot be '{tI.CSharpName}' because this type is not \"hash safe\"." );
+                return false;
+            }
+            return true;
         }
 
         IPocoType? RegisterReadOnlyListOrSet( IActivityMonitor monitor, bool isList, IExtNullabilityInfo nType, MemberContext ctx )
@@ -21,14 +35,43 @@ namespace CK.Setup
             var listOrHashSet = isList ? "List" : "HashSet";
             var tI = RegisterItemType( monitor, nType, ctx, false, listOrHashSet );
             if( tI == null ) return null;
-
+            // IReadOnlySet<object> is allowed.
+            if( !isList && tI.Kind != PocoTypeKind.Any && !CheckHashSetItemType( monitor, nType, ctx, tI ) )
+            {
+                return null;
+            }
             var csharpName = $"IReadOnly{(isList ? "List" : "Set")}<{tI.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
             {
-                var mType = nType.SetReferenceTypeDefinition( isList ? typeof( IList<> ) : typeof( ISet<> ), nullable: false );
-                var mutable = RegisterListOrSetCore( monitor, isList, mType, false, listOrHashSet, tI );
-                Throw.DebugAssert( "RegisterListOrSetCore cannot fail.", mutable is ICollectionPocoType );
-                result = PocoType.CreateAbstractCollection( this, nType.Type, csharpName, (ICollectionPocoType)mutable );
+                IPocoType? obliviousType = null;
+                if( !tI.IsOblivious )
+                {
+                    var tOblivious = (isList ? typeof( IReadOnlyList<> ) : typeof( IReadOnlySet<> ))
+                                        .MakeGenericType( tI.ObliviousType.Type );
+                    if( _typeCache.TryGetValue( tOblivious, out obliviousType ) )
+                    {
+                        var obliviousTypeName = $"IReadOnly{(isList ? "List" : "Set")}<{tI.ObliviousType.CSharpName}>";
+                        obliviousType = PocoType.CreateAbstractCollection( this,
+                                                                           tOblivious,
+                                                                           obliviousTypeName,
+                                                                           isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
+                                                                           new[] { tI.ObliviousType },
+                                                                           null );
+                        _typeCache.Add( obliviousTypeName, obliviousType );
+                        _typeCache.Add( tOblivious, obliviousType );
+                    }
+                }
+
+                result = PocoType.CreateAbstractCollection( this,
+                                                            nType.Type,
+                                                            csharpName,
+                                                            isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
+                                                            new[] { tI },
+                                                            obliviousType );
+                if( obliviousType == null )
+                {
+                    _typeCache.Add( result.Type, result );
+                }
                 _typeCache.Add( csharpName, result );
             }
             return nType.IsNullable ? result.Nullable : result;
@@ -77,7 +120,7 @@ namespace CK.Setup
                                 .MakeGenericType( tI.Type );
                         }
                         // We are obviously not the oblivious.
-                        tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+                        tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.ObliviousType.Type );
                     }
                     else
                     {
@@ -97,22 +140,22 @@ namespace CK.Setup
                                 typeName = EnsurePocoListOrHashSetType( poco, isList, listOrHashSet );
                                 t = IDynamicAssembly.PurelyGeneratedType;
                                 // Since we are on a reference type, the oblivious is the non nullable.
-                                Debug.Assert( poco.IsOblivious );
-                                // We are obviously not the oblivious.
-                                tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+                                Throw.DebugAssert( poco.IsOblivious );
                             }
+                            // We are obviously not the oblivious.
+                            tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
                         }
-                        else if( tI.Kind != PocoTypeKind.Any )
+                        else
                         {
                             // HashSet<> is not natively covariant. We support it here for
                             // AbstractPoco, string and other basic reference types.
-                            if( !isList )
+                            if( !isList && tI.Kind != PocoTypeKind.Any )
                             {
                                 typeName = EnsurePocoHashSetOfAbstractOrBasicRefType( tI.NonNullable );
                                 t = IDynamicAssembly.PurelyGeneratedType;
-                                // We are obviously not the oblivious.
-                                tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
                             }
+                            // We are obviously not the oblivious.
+                            tOblivious = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.ObliviousType.Type );
                         }
                     }
                 }

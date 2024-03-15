@@ -36,13 +36,18 @@ namespace CK.Setup
                 //       captured at the PocoDirectory level and may be used to restore a detailed
                 //       "IPoco definition" knowledge.
                 //
-                //  Note: The 2023-12-13, the "IConcretePoco" is back and named ISecondaryPocoType...
-                //        Because we want ISuperUserInfo (that is a IUserInfo) to appear in the system type.
-                //        Eradicating secondary interfaces worked fine, except that such "specialization" cannot
-                //        appear in the exposed types. We eventually considered that this was not a good idea and
-                //        had to handle this. The ISecondaryPocoType has its primary as its oblivious type, and
-                //        relay IsSameType/IsReadableType/IsWritableType and DefaultValueInfo to its primary.
-                //        
+                // Note: The 2023-12-13, the "IConcretePoco" is back and named ISecondaryPocoType...
+                //       Because we want ISuperUserInfo (that is a IUserInfo) to appear in the system type.
+                //       Eradicating secondary interfaces worked fine, except that such "specialization" cannot
+                //       appear in the exposed types. We eventually considered that this was not a good idea and
+                //       had to handle this. The ISecondaryPocoType has its primary as its oblivious type, and
+                //       relay IsSameType/IsReadableType/IsWritableType and DefaultValueInfo to its primary.
+                //
+                // Note: The 2024-03-15, the ISecondaryPocoType.ObliviousType is no more the Primary :'(.
+                //       The ISecondaryPocoType.ObliviousType is itself... The ultimate reason for this breacking change
+                //       is the non covariance of the IReadOnlyDictionary on its value. More generally this enables
+                //       collection of ISecondaryPocoType to also exist as oblivious dictionaries.
+                //       The ISecondaryPocoType was erased and is now a first class citizen... 
                 // 
                 // We also index the primary by its generated PocoClass type.
                 //

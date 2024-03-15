@@ -107,9 +107,9 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
 
-            public override string StandardName => ExternalOrCSharpName;
-
             public bool IsReadOnlyCompliant => _isReadOnlyCompliant;
+
+            public override bool IsHashSafe => _isReadOnlyCompliant;
 
             ICompositePocoType ICompositePocoType.ObliviousType => this;
 

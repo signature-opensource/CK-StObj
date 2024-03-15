@@ -338,22 +338,21 @@ namespace CK.Setup
                 Throw.DebugAssert( $"Rule 2, Type = {t}.", set.Contains( t.ObliviousType ) );
                 Throw.DebugAssert( $"Rule 3, Type = {t}.", t is not IUnionPocoType u3 || u3.AllowedTypes.Any( set.Contains ) );
                 Throw.DebugAssert( $"Rule 4, Type = {t}.", t is not IBasicRefPocoType r4 || r4.BaseTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 5, Type = {t}.", (t is not ICollectionPocoType c5 || !c5.IsAbstractReadOnly) || set.Contains( c5.MutableCollection ) );
-                Throw.DebugAssert( $"Rule 6, Type = {t}.", t is not ICollectionPocoType c6 || c6.ItemTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 7, Type = {t}.", t is not IEnumPocoType e7 || set.Contains( e7.UnderlyingType ) );
-                Throw.DebugAssert( $"Rule 8, Type = {t}.", t is not IAbstractPocoType a8 || a8.GenericArguments.All( a => set.Contains( a.Type ) ) );
-                Throw.DebugAssert( $"Rule 9, Type = {t}.", t is not IAbstractPocoType a9 || a9.PrimaryPocoTypes.Any( set.Contains ) );
-                Throw.DebugAssert( $"Rule 10a, Type = {t}.", t is not ISecondaryPocoType s10a || set.Contains( s10a.PrimaryPocoType ) );
-                Throw.DebugAssert( $"Rule 10b, Type = {t}.", t is not IPrimaryPocoType s10b || s10b.SecondaryTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 11, Type = {t}.", t is not IPrimaryPocoType p11 || p11.AbstractTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 12, Type = {t}.", t.Kind != PocoTypeKind.AnonymousRecord || ((IRecordPocoType)t).Fields.Any( f => set.Contains( f.Type ) ) );
+                Throw.DebugAssert( $"Rule 5, Type = {t}.", t is not ICollectionPocoType c6 || c6.ItemTypes.All( set.Contains ) );
+                Throw.DebugAssert( $"Rule 6, Type = {t}.", t is not IEnumPocoType e7 || set.Contains( e7.UnderlyingType ) );
+                Throw.DebugAssert( $"Rule 7, Type = {t}.", t is not IAbstractPocoType a8 || a8.GenericArguments.All( a => set.Contains( a.Type ) ) );
+                Throw.DebugAssert( $"Rule 8, Type = {t}.", t is not IAbstractPocoType a9 || a9.PrimaryPocoTypes.Any( set.Contains ) );
+                Throw.DebugAssert( $"Rule 9a, Type = {t}.", t is not ISecondaryPocoType s10a || set.Contains( s10a.PrimaryPocoType ) );
+                Throw.DebugAssert( $"Rule 9b, Type = {t}.", t is not IPrimaryPocoType s10b || s10b.SecondaryTypes.All( set.Contains ) );
+                Throw.DebugAssert( $"Rule 10, Type = {t}.", t is not IPrimaryPocoType p11 || p11.AbstractTypes.All( set.Contains ) );
+                Throw.DebugAssert( $"Rule 11, Type = {t}.", t.Kind != PocoTypeKind.AnonymousRecord || ((IRecordPocoType)t).Fields.Any( f => set.Contains( f.Type ) ) );
                 if( !set.AllowEmptyRecords )
                 {
-                    Throw.DebugAssert( "Rule 13.", t is not IRecordPocoType r13 || r13.Fields.Any( f => set.Contains( f.Type ) ) );
+                    Throw.DebugAssert( "Rule 12.", t is not IRecordPocoType r13 || r13.Fields.Any( f => set.Contains( f.Type ) ) );
                 }
                 if( !set.AllowEmptyPocos )
                 {
-                    Throw.DebugAssert( "Rule 14.", t is not IPrimaryPocoType p14 || p14.Fields.Any( f => set.Contains( f.Type ) ) );
+                    Throw.DebugAssert( "Rule 13.", t is not IPrimaryPocoType p14 || p14.Fields.Any( f => set.Contains( f.Type ) ) );
                 }
             }
         }

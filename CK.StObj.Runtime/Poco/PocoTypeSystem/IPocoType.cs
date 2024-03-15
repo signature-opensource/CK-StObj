@@ -39,9 +39,14 @@ namespace CK.Setup
         /// Gets whether this type has no available implementation in the type system.
         /// <list type="bullet">
         ///     <item>This starts with <see cref="IAbstractPocoType"/> that have no <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.</item>
-        ///     <item>Collections that references any implementation less types are also implementation less.</item>
         ///     <item>Generic <see cref="IAbstractPocoType"/> that have any implementation less <see cref="IAbstractPocoType.GenericArguments"/> type are also implementation less.</item>
         ///     <item><see cref="IUnionPocoType"/> that have all their <see cref="IOneOfPocoType.AllowedTypes"/> implementation less are also implementation less.</item>
+        ///     <item>Collections that references any implementation less types are also implementation less.</item>
+        ///     <item>
+        ///     Abstract read only collections (<see cref="ICollectionPocoType.IsAbstractReadOnly"/>) are implementation less.
+        ///     As these beasts resides on the C# side (as abstract readonly properties), it is rather useless to expose them:
+        ///     by considering them implementation less, they are excluded from any IPocoTypeSet.
+        ///     </item>
         /// </list>
         /// <para>
         /// Implementation less types exist on the C# side and then are modelized but are unused extension points.
@@ -58,15 +63,49 @@ namespace CK.Setup
         bool IsPolymorphic { get; }
 
         /// <summary>
-        /// Gets whether this type is final. A final type is a on nullable <see cref="ObliviousType"/> that is not
-        /// the <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractPoco"/>, a <see cref="PocoTypeKind.SecondaryPoco"/>
-        /// or a <see cref="PocoTypeKind.UnionType"/> or a <see cref="IBasicRefPocoType"/> with an abstract <see cref="IPocoType.Type"/>.
+        /// Gets whether this type is final. Final types:
+        /// <list type="bullet">
+        ///     <item>Are always non nullable.</item>
+        ///     <item>Have at least one implementation (<see cref="ImplementationLess"/> is false).</item>
+        ///     <item>Are either:
+        ///     <list type="bullet">
+        ///         <item>
+        ///         All the <see cref="ObliviousType"/> that are not the <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractPoco"/>,
+        ///         a <see cref="PocoTypeKind.SecondaryPoco"/>, a <see cref="PocoTypeKind.UnionType"/> or a <see cref="IBasicRefPocoType"/> with an
+        ///         abstract <see cref="Type"/>.
+        ///         </item>
+        ///         <item>
+        ///         The mutable abstract <see cref="ICollectionPocoType"/> (IList, ISet and IDictionary) if their <see cref="ImplTypeName"/>
+        ///         is not the same as their <see cref="ObliviousType"/>.
+        ///         </item>
+        ///     </list>
+        ///     </item>
+        /// </list>
         /// <para>
-        /// A final type can be based on oblivious types that are not final: <c>List&lt;objet&gt;</c> is a final type even if <c>object</c>
-        /// is not. Final types are the "concrete" types that are ultimately serialized (if they belong to the <see cref="IPocoTypeSetManager.AllSerializable"/>).
+        /// A final type can be based on types that are not final: <c>List&lt;object&gt;</c> or <c>List&lt;int?&gt;</c> are final
+        /// types even if <c>object</c> and <c>int?</c> are not.
         /// </para>
         /// </summary>
         bool IsNonNullableFinalType { get; }
+
+        /// <summary>
+        /// Gets whether this type can be used in a <see cref="ISet{T}"/> or as a key in a <see cref="IDictionary{TKey, TValue}"/>.
+        /// Note that to be a key in a dictionary, the key type must also be non nullable and non polymorphic (<see cref="IsNullable"/>
+        /// and <see cref="IsPolymorphic"/> must be false).
+        /// <para>
+        /// A reference type must be immutable and have a value equality semantics, either by implementing <see cref="IEquatable{T}"/>
+        /// (like the <see cref="string"/>) or because the instance is unique by design, like the <see cref="ExtendedCultureInfo"/>
+        /// and <see cref="NormalizedCultureInfo"/>.
+        /// </para>
+        /// <para>
+        /// Value types can be immutable (all <see cref="PocoTypeKind.Basic"/> value types are immutable) but can also be "readonly compliant":
+        /// anonymous or named records that are <see cref="IRecordPocoType.IsReadOnlyCompliant"/> are "hash safe".
+        /// </para>
+        /// <para>
+        /// Mutable types like Poco and collections cannot be used in a set or as a dictionary key. 
+        /// </para>
+        /// </summary>
+        bool IsHashSafe { get; }
 
         /// <summary>
         /// Gets whether this type is disallowed as a field in a <see cref="ICompositePocoType"/>,
@@ -111,9 +150,8 @@ namespace CK.Setup
         ///   <item>
         ///     <term>Collection types</term>
         ///     <description>
-        ///         Abstract collections (readonly or not) are mapped to their regular <see cref="List{T}"/>,
-        ///         <see cref="HashSet{T}"/> and <see cref="Dictionary{TKey, TValue}"/> where generic arguments
-        ///         are oblivious.
+        ///         Abstract collections (readonly or not) are mapped to their equivalent type where generic
+        ///         parameters are oblivious.
         ///     </description>
         ///   </item>
         ///   <item>
@@ -133,12 +171,11 @@ namespace CK.Setup
         ///     <term>IPoco types</term>
         ///     <description>
         ///         <see cref="ISecondaryPocoType"/>'s oblivious is its non nullable <see cref="IPrimaryPocoType"/>.
-        ///         (non nullables <see cref="IAbstractPocoType"/> and <see cref="IPrimaryPocoType"/> are their own oblivious).
         ///     </description>
         ///   </item>
         ///   <item>
-        ///     All other types: enum, basic types (non nullable for reference types), any (non nullable), structs (Named record)
-        ///     are their own oblivious.
+        ///     All other types: enum, basic types (non nullable for reference types), any (non nullable), structs (Named record),
+        ///     <see cref="IAbstractPocoType"/> and <see cref="IPrimaryPocoType"/> are their own oblivious.
         ///   </item>
         /// </list>
         /// </summary>

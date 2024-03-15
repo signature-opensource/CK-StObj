@@ -18,29 +18,10 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this is a <see cref="IReadOnlyList{T}"/>, <see cref="IReadOnlySet{T}"/> or <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
         /// <para>
-        /// <see cref="IsAbstractCollection"/> is true and <see cref="MutableCollection"/> is not this instance.
-        /// Such type can only appear in IPoco fields.
+        /// <see cref="IsAbstractCollection"/> is true. Such type can only appear in IPoco fields.
         /// </para>
         /// </summary>
         bool IsAbstractReadOnly { get; }
-
-        /// <summary>
-        /// Gets the mutable collection type (the <see cref="IList{T}"/>, <see cref="ISet{T}"/> or <see cref="IDictionary{TKey, TValue}"/>).
-        /// <para>
-        /// This is this collection if this collection is mutable (<see cref="IsAbstractReadOnly"/> is false).
-        /// </para>
-        /// </summary>
-        ICollectionPocoType MutableCollection { get; }
-
-        /// <summary>
-        /// Gets the associated <see cref="IReadOnlyList{T}"/>, <see cref="IReadOnlySet{T}"/>, <see cref="IReadOnlyDictionary{TKey, TValue}"/>
-        /// if it has been detected among the types.
-        /// <para>
-        /// This is not null only if the abstract readonly collection exists: it is this collection if <see cref="IsAbstractReadOnly"/> is true
-        /// and the associated one if this is a mutable one that has a readonly one.
-        /// </para>
-        /// </summary>
-        ICollectionPocoType? AbstractReadOnlyCollection { get; }
 
         /// <summary>
         /// Gets the generic arguments or this collection.

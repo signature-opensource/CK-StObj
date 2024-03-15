@@ -28,8 +28,6 @@ namespace CK.Setup
 
                 ISecondaryPocoType ISecondaryPocoType.NonNullable => NonNullable;
 
-                IPocoType IPocoType.ObliviousType => NonNullable.ObliviousType;
-
                 IPrimaryPocoType ISecondaryPocoType.ObliviousType => NonNullable.ObliviousType;
 
                 ISecondaryPocoType ISecondaryPocoType.Nullable => this;
