@@ -39,11 +39,10 @@ namespace CK.Setup
             Throw.CheckNotNullArgument( t );
             if( t.Kind == PocoTypeKind.Any
                 || t.Type.IsValueType
-                || t.ObliviousType != t )
+                || !t.IsOblivious )
             {
                 Throw.ArgumentException( $"The type must not be 'object', nor a value type and be the oblivious one: {t}." );
             }
-            Throw.DebugAssert( "An oblivious type is not purely generated: its Type can be challenged.", !t.IsPurelyGeneratedType );
             // Finds the first type that can be assigned to the new one:
             // the new one must appear before it.
             for( int i = 0; i < _sorted.Count; i++ )

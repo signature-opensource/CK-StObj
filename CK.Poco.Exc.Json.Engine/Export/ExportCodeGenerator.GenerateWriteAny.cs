@@ -12,7 +12,7 @@ namespace CK.Setup.PocoJson
             _exporterType.Append( "static string[] _typeNames = new string[] {" );
             foreach( var type in _nameMap.TypeSystem.AllNonNullableTypes )
             {
-                if( type.IsNonNullableFinalType && _nameMap.TypeSet.Contains( type ) )
+                if( type.IsFinalType && _nameMap.TypeSet.Contains( type ) )
                 {
                     _exporterType.AppendSourceString( _nameMap.GetName( type ) );
                 }
@@ -41,7 +41,7 @@ namespace CK.Setup.PocoJson
                         switch( index )
                         {
                     """ );
-            var types = _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsNonNullableFinalType );
+            var types = _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsFinalType );
             foreach( var t in types )
             {
                 _exporterType.Append( "case " ).Append( t.Index >> 1 ).Append( ":" )

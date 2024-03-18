@@ -33,6 +33,13 @@ namespace CK.Setup
         readonly Dictionary<string, PocoRequiredSupportType> _requiredSupportTypes;
         // The Poco directory can be EmptyPocoDirectory.Default for testing only 
         readonly IPocoDirectory _pocoDirectory;
+        readonly bool _autoRegisterListForBasicTypes;
+        readonly bool _autoRegisterListForNamedRecordTypes;
+        readonly bool _autoRegisterListForAnonymousRecordTypes;
+        readonly bool _autoRegisterListForPrimaryPocoTypes;
+        readonly bool _autoRegisterListForAbstractPocoTypes;
+        readonly bool _autoRegisterListForSecondaryPocoTypes;
+
         // RegisterPocoTypeAttribute types.
         List<(IExtMemberInfo, Type)>? _registerAttributes;
         // Types marked with [NotSerializable] or flagged by SetNotSerializable if any.
@@ -45,14 +52,35 @@ namespace CK.Setup
 
         /// <summary>
         /// Initializes a new type system with only the basic types registered.
+        /// <para>
+        /// Optional automatic registration of <see cref="List{T}"/> is done when <see cref="Lock(IActivityMonitor)"/> is called.
+        /// </para>
         /// </summary>
         /// <param name="memberInfoFactory">Required factory that cached nullable reference type information.</param>
         /// <param name="pocoDirectory">Optional Poco directory (null for test only: <see cref="EmptyPocoDirectory.EmptyPocoDirectory"/> is used).</param>
-        public PocoTypeSystemBuilder( IExtMemberInfoFactory memberInfoFactory, IPocoDirectory? pocoDirectory = null )
+        /// <param name="autoRegisterListForBasicTypes">True to automatically register <see cref="List{T}"/> for <see cref="PocoTypeKind.Basic"/> types.</param>
+        /// <param name="autoRegisterListForNamedRecordTypes">True to automatically register <see cref="List{T}"/> for <see cref="PocoTypeKind.Record"/> types.</param>
+        /// <param name="autoRegisterListForAnonymousRecordTypes">True to automatically register <see cref="List{T}"/> for <see cref="PocoTypeKind.AnonymousRecord"/> types.</param>
+        /// <param name="autoRegisterListForAbstractPocoTypes">True to automatically register <see cref="List{T}"/> for <see cref="PocoTypeKind.AbstractPoco"/> types.</param>
+        /// <param name="autoRegisterListForSecondaryPocoTypes">True to automatically register <see cref="List{T}"/> for <see cref="PocoTypeKind.SecondaryPoco"/> types.</param>
+        public PocoTypeSystemBuilder( IExtMemberInfoFactory memberInfoFactory,
+                                      IPocoDirectory? pocoDirectory = null,
+                                      bool autoRegisterListForBasicTypes = false,
+                                      bool autoRegisterListForNamedRecordTypes = false,
+                                      bool autoRegisterListForAnonymousRecordTypes = false,
+                                      bool autoRegisterListForPrimaryPocoTypes = false,
+                                      bool autoRegisterListForAbstractPocoTypes = false,
+                                      bool autoRegisterListForSecondaryPocoTypes = false )
         {
             _stringBuilderPool = new Stack<StringBuilder>();
             _memberInfoFactory = memberInfoFactory;
             _pocoDirectory = pocoDirectory ?? EmptyPocoDirectory.Default;
+            _autoRegisterListForBasicTypes = autoRegisterListForBasicTypes;
+            _autoRegisterListForNamedRecordTypes = autoRegisterListForNamedRecordTypes;
+            _autoRegisterListForAnonymousRecordTypes = autoRegisterListForAnonymousRecordTypes;
+            _autoRegisterListForPrimaryPocoTypes = autoRegisterListForPrimaryPocoTypes;
+            _autoRegisterListForAbstractPocoTypes = autoRegisterListForAbstractPocoTypes;
+            _autoRegisterListForSecondaryPocoTypes = autoRegisterListForSecondaryPocoTypes;
             _nonNullableTypes = new List<PocoType>( 4096 );
             _allTypes = new WithNullTypeList( _nonNullableTypes );
             _requiredSupportTypes = new Dictionary<string, PocoRequiredSupportType>();
@@ -70,14 +98,49 @@ namespace CK.Setup
                 {
                     Throw.CKException( "Unable to create a valid PocoTypeSystem." );
                 }
+                var finalTypeBuilder = ImmutableArray.CreateBuilder<IPocoType>();
+                int initialCount = _nonNullableTypes.Count;
+                for( int i = 0; i < initialCount; i++ )
+                {
+                    PocoType? t = _nonNullableTypes[i];
+                    if( t.IsFinalType ) finalTypeBuilder.Add( t );
+                    if( (_autoRegisterListForBasicTypes && t.Kind == PocoTypeKind.Basic && t.IsOblivious)
+                        || (_autoRegisterListForPrimaryPocoTypes && t.Kind == PocoTypeKind.PrimaryPoco && t.IsOblivious)
+                        || (_autoRegisterListForNamedRecordTypes && t.Kind == PocoTypeKind.Record && t.IsOblivious )
+                        || (_autoRegisterListForAnonymousRecordTypes && t.Kind == PocoTypeKind.AnonymousRecord && t.IsOblivious)
+                        || (_autoRegisterListForAbstractPocoTypes && t.Kind == PocoTypeKind.AbstractPoco && t.IsOblivious)
+                        || (_autoRegisterListForSecondaryPocoTypes && t.Kind == PocoTypeKind.SecondaryPoco && t.IsOblivious) )
+                    {
+                        var listName = $"List<{t.CSharpName}>";
+                        if( !_typeCache.ContainsKey( listName ) )
+                        {
+                            RegisterOblivious( monitor, typeof( List<> ).MakeGenericType( t.Type ) );
+                        }
+                    }
+                }
                 Throw.DebugAssert( "All Oblivious types are indexed by type.",
                                    _nonNullableTypes.Where( t => ((IPocoType)t).IsOblivious ).All( t => _typeCache.ContainsKey( t.Type ) ) );
                 Throw.DebugAssert( "All types that are indexed are the oblivious ones or Secondary poco interfaces.",
                                    _typeCache.Where( kv => kv.Key is Type ).All( kv => kv.Value.Kind == PocoTypeKind.SecondaryPoco || kv.Value.IsOblivious ) );
                 Throw.DebugAssert( "Any abstract basic ref type must have specialization (currently all basic ref types are concrete).",
-                                   _typeCache.Values.OfType<IBasicRefPocoType>().All( t => t.IsNonNullableFinalType || t.Specializations.Any() ) );
+                                   _typeCache.Values.OfType<IBasicRefPocoType>().All( t => t.IsFinalType || t.Specializations.Any() ) );
 
-                _result = new PocoTypeSystem( _pocoDirectory, _allTypes, _nonNullableTypes, _typeCache, _typeDefinitions, _notSerializable, _notExchangeable );
+                monitor.Info( _allTypes.Where( t => !(t.IsPolymorphic || t.StructuralFinalType != null) )
+                                       .Select( t => $"{t} - {t.IsPolymorphic}, {t.StructuralFinalType?.ToString() ?? "null"}" )
+                                       .Concatenate( Environment.NewLine ) );
+
+                Throw.DebugAssert( "(StructuralFinalType == null) => IsPolymorphic " +
+                                   "(and contraposition) !IsPolymorphic => StructuralFinalType != null.",
+                                   _allTypes.All( t => t.IsPolymorphic || t.StructuralFinalType != null ) );
+
+                _result = new PocoTypeSystem( _pocoDirectory,
+                                              _allTypes,
+                                              _nonNullableTypes,
+                                              finalTypeBuilder.ToImmutableArray(),
+                                              _typeCache,
+                                              _typeDefinitions,
+                                              _notSerializable,
+                                              _notExchangeable );
             }
             return _result;
         }
@@ -183,7 +246,7 @@ namespace CK.Setup
             {
                 foreach( var (m,t) in _registerAttributes )
                 {
-                    if( RegisterNullOblivious( monitor, t ) == null )
+                    if( RegisterOblivious( monitor, t ) == null )
                     {
                         monitor.Error( $"While registering type '{t:C}' from [RegisterPocoType] on '{m}'." );
                         success = false;
@@ -194,7 +257,7 @@ namespace CK.Setup
             return success;
         }
 
-        public IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
+        public IPocoType? RegisterOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
@@ -270,7 +333,7 @@ namespace CK.Setup
             // we consider it to be an ImplementationLess Abstract. This has side effect: this may "transform" a real property
             // into an abstract one... And this is perfectly fine: if everything is evetually successfully resolved
             // the system is valid.
-            // If the exluded type is used at a place that requires an instance, this will fail.
+            // If the implementation less type is used at a place that requires an instance, this will fail.
             if( typeof( IPoco ).IsAssignableFrom( t ) )
             {
                 if( t.IsInterface )
@@ -471,17 +534,16 @@ namespace CK.Setup
 
             bool valid = ctx.EnterArray( monitor, nType );
 
-            // The oblivious array type is the array of its oblivious item type
-            // (value type or nullable reference type).
             var tItem = Register( monitor, ctx, nType.ElementType );
             if( tItem == null || !valid ) return null;
 
             var chsarpName = tItem.CSharpName + "[]";
             if( !_typeCache.TryGetValue( chsarpName, out var result ) )
             {
+                // The oblivious array type is the array of its oblivious item type
+                // and is the final type.
                 if( !_typeCache.TryGetValue( nType.Type, out var obliviousType ) )
                 {
-                    // The oblivious array is not registered.
                     var oName = tItem.ObliviousType.CSharpName + "[]";
                     obliviousType = PocoType.CreateCollection( this,
                                                                nType.Type,
@@ -489,6 +551,7 @@ namespace CK.Setup
                                                                oName,
                                                                PocoTypeKind.Array,
                                                                tItem.ObliviousType,
+                                                               null,
                                                                null );
                     _typeCache.Add( nType.Type, obliviousType );
                     _typeCache.Add( oName, obliviousType );
@@ -502,6 +565,7 @@ namespace CK.Setup
                                                     chsarpName,
                                                     PocoTypeKind.Array,
                                                     tItem,
+                                                    obliviousType,
                                                     obliviousType );
                 _typeCache.Add( chsarpName, result );
             }
@@ -548,7 +612,7 @@ namespace CK.Setup
                     return null;
                 }
                 // Register the underlying integral type (even if we currently preregister all of them, we may change our mind about this).
-                var underlyingType = RegisterNullOblivious( monitor, tNotNull.GetEnumUnderlyingType() );
+                var underlyingType = RegisterOblivious( monitor, tNotNull.GetEnumUnderlyingType() );
                 if( underlyingType == null ) return null;
 
                 tNull ??= typeof( Nullable<> ).MakeGenericType( tNotNull );

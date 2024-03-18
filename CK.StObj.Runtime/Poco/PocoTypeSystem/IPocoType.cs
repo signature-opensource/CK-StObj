@@ -18,17 +18,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets the Type. When this is a value type and <see cref="IsNullable"/> is true,
         /// this is a <see cref="Nullable{T}"/>.
-        /// <para>
-        /// This is the <see cref="IDynamicAssembly.PurelyGeneratedType"/> marker type if <see cref="IsPurelyGeneratedType"/> is true.
-        /// </para>
         /// </summary>
         Type Type { get; }
-
-        /// <summary>
-        /// Gets whether the <see cref="Type"/> is a purely generated type.
-        /// When true, the Type property is <see cref="IDynamicAssembly.PurelyGeneratedType"/>.
-        /// </summary>
-        bool IsPurelyGeneratedType { get; }
 
         /// <summary>
         /// Gets this type's kind.
@@ -41,7 +32,7 @@ namespace CK.Setup
         ///     <item>This starts with <see cref="IAbstractPocoType"/> that have no <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.</item>
         ///     <item>Generic <see cref="IAbstractPocoType"/> that have any implementation less <see cref="IAbstractPocoType.GenericArguments"/> type are also implementation less.</item>
         ///     <item><see cref="IUnionPocoType"/> that have all their <see cref="IOneOfPocoType.AllowedTypes"/> implementation less are also implementation less.</item>
-        ///     <item>Collections that references any implementation less types are also implementation less.</item>
+        ///     <item>Collections with any implementation less generic parameter types are also implementation less.</item>
         ///     <item>
         ///     Abstract read only collections (<see cref="ICollectionPocoType.IsAbstractReadOnly"/>) are implementation less.
         ///     As these beasts resides on the C# side (as abstract readonly properties), it is rather useless to expose them:
@@ -49,7 +40,7 @@ namespace CK.Setup
         ///     </item>
         /// </list>
         /// <para>
-        /// Implementation less types exist on the C# side and then are modelized but are unused extension points.
+        /// Implementation less types exist on the C# side and are modelized but are unused extension points.
         /// </para>
         /// </summary>
         bool ImplementationLess { get; }
@@ -58,35 +49,13 @@ namespace CK.Setup
         /// Gets whether this type is polymorphic.
         /// Polymorphic types are <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/>
         /// and <see cref="PocoTypeKind.UnionType"/> (and the <see cref="PocoTypeKind.Basic"/> <see cref="ExtendedCultureInfo"/>
-        /// because it can be a <see cref="NormalizedCultureInfo"/>). 
-        /// </summary>
-        bool IsPolymorphic { get; }
-
-        /// <summary>
-        /// Gets whether this type is final. Final types:
-        /// <list type="bullet">
-        ///     <item>Are always non nullable.</item>
-        ///     <item>Have at least one implementation (<see cref="ImplementationLess"/> is false).</item>
-        ///     <item>Are either:
-        ///     <list type="bullet">
-        ///         <item>
-        ///         All the <see cref="ObliviousType"/> that are not the <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractPoco"/>,
-        ///         a <see cref="PocoTypeKind.SecondaryPoco"/>, a <see cref="PocoTypeKind.UnionType"/> or a <see cref="IBasicRefPocoType"/> with an
-        ///         abstract <see cref="Type"/>.
-        ///         </item>
-        ///         <item>
-        ///         The mutable abstract <see cref="ICollectionPocoType"/> (IList, ISet and IDictionary) if their <see cref="ImplTypeName"/>
-        ///         is not the same as their <see cref="ObliviousType"/>.
-        ///         </item>
-        ///     </list>
-        ///     </item>
-        /// </list>
+        /// because it can be a <see cref="NormalizedCultureInfo"/>).
         /// <para>
-        /// A final type can be based on types that are not final: <c>List&lt;object&gt;</c> or <c>List&lt;int?&gt;</c> are final
-        /// types even if <c>object</c> and <c>int?</c> are not.
+        /// <see cref="ICollectionPocoType.IsAbstractReadOnly"/> are also polymorphic (but <see cref="ICollectionPocoType.IsAbstractCollection"/>
+        /// are not).
         /// </para>
         /// </summary>
-        bool IsNonNullableFinalType { get; }
+        bool IsPolymorphic { get; }
 
         /// <summary>
         /// Gets whether this type can be used in a <see cref="ISet{T}"/> or as a key in a <see cref="IDictionary{TKey, TValue}"/>.
@@ -123,11 +92,6 @@ namespace CK.Setup
         bool IsNullable { get; }
 
         /// <summary>
-        /// Gets whether this type oblivious. See <see cref="ObliviousType"/>.
-        /// </summary>
-        bool IsOblivious => ObliviousType == this;
-
-        /// <summary>
         /// Gets the C# name with namespaces and nullabilities of this type.
         /// </summary>
         string CSharpName { get; }
@@ -136,6 +100,11 @@ namespace CK.Setup
         /// Gets the implementation C# type name for this type.
         /// </summary>
         string ImplTypeName { get; }
+
+        /// <summary>
+        /// Gets whether this type oblivious. See <see cref="ObliviousType"/>.
+        /// </summary>
+        bool IsOblivious { get; }
 
         /// <summary>
         /// Gets the oblivious type (this instance if <see cref="IsOblivious"/> is true).
@@ -180,6 +149,51 @@ namespace CK.Setup
         /// </list>
         /// </summary>
         IPocoType ObliviousType { get; }
+
+        /// <summary>
+        /// Gets whether this is a final type. See <see cref="StructuralFinalType"/>.
+        /// </summary>
+        bool IsStructuralFinalType { get; }
+
+        /// <summary>
+        /// Gets the final type associated to this type (this instance if <see cref="IsStructuralFinalType"/> is true)
+        /// even if <see cref="ImplementationLess"/> is true.
+        /// <para>
+        /// Usually <see cref="FinalType"/>, that accounts for <see cref="ImplementationLess"/>, should be used.
+        /// </para>
+        /// </summary>
+        IPocoType? StructuralFinalType { get; }
+
+        /// <summary>
+        /// Gets whether this type is final. Final types:
+        /// <list type="bullet">
+        ///     <item>Are always non nullable.</item>
+        ///     <item>Have at least one implementation (<see cref="ImplementationLess"/> is false).</item>
+        ///     <item>Are either:
+        ///     <list type="bullet">
+        ///         <item>
+        ///         All the <see cref="ObliviousType"/> that are not the <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractPoco"/>,
+        ///         a <see cref="PocoTypeKind.SecondaryPoco"/>, a <see cref="PocoTypeKind.UnionType"/> or a <see cref="IBasicRefPocoType"/> with an
+        ///         abstract <see cref="Type"/>.
+        ///         </item>
+        ///         <item>
+        ///         The mutable abstract <see cref="ICollectionPocoType"/> (IList, ISet and IDictionary) if their <see cref="ImplTypeName"/>
+        ///         is not the same as their <see cref="ObliviousType"/>.
+        ///         </item>
+        ///     </list>
+        ///     </item>
+        /// </list>
+        /// <para>
+        /// A final type can be based on types that are not final: <c>List&lt;object&gt;</c> or <c>List&lt;int?&gt;</c> are final
+        /// types even if <c>object</c> and <c>int?</c> are not.
+        /// </para>
+        /// </summary>
+        bool IsFinalType { get; }
+
+        /// <summary>
+        /// Gets the final type associated to this type (this instance if <see cref="IsFinalType"/> is true).
+        /// </summary>
+        IPocoType? FinalType { get; }
 
         /// <summary>
         /// Gets the nullable associated type (this if <see cref="IsNullable"/> is true).

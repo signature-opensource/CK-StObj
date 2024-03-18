@@ -126,6 +126,8 @@ namespace CK.Setup
                 }
             }
 
+            public override bool IsHashSafe => _isHashSafe;
+
             public IEnumerable<IBasicRefPocoType> Specializations => _specializations;
 
             void AddSpecialization( BasicRefType s )
@@ -156,7 +158,7 @@ namespace CK.Setup
             /// </summary>
             public override bool IsPolymorphic => _isPolymorphic;
 
-            public override bool IsNonNullableFinalType => !Type.IsAbstract;
+            public override IPocoType? StructuralFinalType => Type.IsAbstract ? null : this;
 
             IBasicRefPocoType IBasicRefPocoType.Nullable => Unsafe.As<IBasicRefPocoType>( base.Nullable );
 

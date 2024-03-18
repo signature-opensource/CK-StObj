@@ -125,6 +125,8 @@ namespace CK.Setup
 
             new NullAbstractPoco Nullable => Unsafe.As<NullAbstractPoco>( base.Nullable );
 
+            public override IPocoType? StructuralFinalType => null;
+
             [MemberNotNullWhen( true, nameof(GenericTypeDefinition), nameof(GenericArguments))]
             public bool IsGenericType => _genericTypeDefinition != null;
 
@@ -382,6 +384,8 @@ namespace CK.Setup
             public IEnumerable<IPocoType> AllowedTypes => ((IEnumerable<IPocoType>)_abstracts).Concat( _primaries );
 
             public bool IsGenericType => false;
+
+            public override IPocoType? StructuralFinalType => null;
 
             public IPocoGenericTypeDefinition? GenericTypeDefinition => null;
 

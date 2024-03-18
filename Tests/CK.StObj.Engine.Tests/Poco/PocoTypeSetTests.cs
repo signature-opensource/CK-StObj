@@ -31,6 +31,8 @@ namespace CK.StObj.Engine.Tests.Poco
             int Age { get; set; }
             bool IsAdmin { get; set; }
             IList<IEmptyPoco> ListEmptyPoco { get; }
+
+            [RegisterPocoType( typeof( List<NamedRecord> ) )]
             IList<NamedRecord> ListNamedRecord { get; }
         }
 
@@ -43,11 +45,12 @@ namespace CK.StObj.Engine.Tests.Poco
             var poco1 = ts.FindByType( typeof( IPoco1 ) );
             var guid = ts.FindByType( typeof( Guid ) );
             var str = ts.FindByType( typeof( string ) );
-            var iListEmptyPoco = ts.AllNonNullableTypes.Single( t => t.CSharpName == "IList<CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.IEmptyPoco>" );
+            var iListEmptyPoco = ts.FindByType( typeof( IList<IEmptyPoco> ) );
             var listEmptyPoco = ts.FindByType( typeof( List<IEmptyPoco> ) );
             var namedRec = ts.FindByType( typeof( NamedRecord ) );
-            var iListNamedRec = ts.AllNonNullableTypes.Single( t => t.CSharpName == "IList<CK.StObj.Engine.Tests.Poco.PocoTypeSetTests.NamedRecord>" );
+            var iListNamedRec = ts.FindByType( typeof( IList<NamedRecord> ) );
             var listNamedRec = ts.FindByType( typeof( List<NamedRecord> ) );
+
             Throw.DebugAssert( empty != null && poco1 != null && guid != null && str != null
                                && iListEmptyPoco != null && listEmptyPoco != null
                                && namedRec != null && iListNamedRec != null && listNamedRec != null

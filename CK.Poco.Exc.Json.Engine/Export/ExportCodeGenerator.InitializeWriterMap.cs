@@ -99,46 +99,55 @@ namespace CK.Setup.PocoJson
                 var w = _writers[t.Index >> 1];
                 if( w == null )
                 {
-                    switch( t.Kind )
+                    var final = t.FinalType;
+                    Throw.DebugAssert( t.IsPolymorphic || final != null );
+                    if( t != final && final != null )
                     {
-                        case PocoTypeKind.UnionType:
-                        case PocoTypeKind.AbstractPoco:
-                        case PocoTypeKind.Any:
-                            w = ObjectWriter;
-                            break;
-                        case PocoTypeKind.PrimaryPoco:
-                        case PocoTypeKind.SecondaryPoco:
-                            w = PocoWriter;
-                            break;
-                        case PocoTypeKind.Basic:
-                            w = GetBasicTypeCodeWriter( t );
-                            break;
-                        case PocoTypeKind.Array:
-                            {
-                                var type = (ICollectionPocoType)t;
-                                w = type.ItemTypes[0].Type == typeof( byte )
-                                                                ? ByteArrayWriter
-                                                                : GetEnumerableObliviousWriter( type );
+                        w = GetWriter( final );
+                    }
+                    else
+                    {
+                        switch( t.Kind )
+                        {
+                            case PocoTypeKind.UnionType:
+                            case PocoTypeKind.AbstractPoco:
+                            case PocoTypeKind.Any:
+                                w = ObjectWriter;
                                 break;
-                            }
-                        case PocoTypeKind.List:
-                        case PocoTypeKind.HashSet:
-                            w = GetEnumerableObliviousWriter( (ICollectionPocoType)t );
-                            break;
-                        case PocoTypeKind.Dictionary:
-                            w = GetDictionaryWriter( (ICollectionPocoType)t );
-                            break;
-                        case PocoTypeKind.Record:
-                        case PocoTypeKind.AnonymousRecord:
-                            w = GetRecordObliviousCodeWriter( t );
-                            break;
-                        case PocoTypeKind.Enum:
-                            {
-                                var tE = (IEnumPocoType)t;
-                                w = ( writer, v ) => GenerateWrite( writer, tE.UnderlyingType, $"(({tE.UnderlyingType.CSharpName}){v})" );
+                            case PocoTypeKind.PrimaryPoco:
+                            case PocoTypeKind.SecondaryPoco:
+                                w = PocoWriter;
                                 break;
-                            }
-                        default: throw new NotSupportedException( t.Kind.ToString() );
+                            case PocoTypeKind.Basic:
+                                w = GetBasicTypeCodeWriter( t );
+                                break;
+                            case PocoTypeKind.Array:
+                                {
+                                    var type = (ICollectionPocoType)t;
+                                    w = type.ItemTypes[0].Type == typeof( byte )
+                                                                    ? ByteArrayWriter
+                                                                    : GetEnumerableObliviousWriter( type );
+                                    break;
+                                }
+                            case PocoTypeKind.List:
+                            case PocoTypeKind.HashSet:
+                                w = GetEnumerableObliviousWriter( (ICollectionPocoType)t );
+                                break;
+                            case PocoTypeKind.Dictionary:
+                                w = GetDictionaryWriter( (ICollectionPocoType)t );
+                                break;
+                            case PocoTypeKind.Record:
+                            case PocoTypeKind.AnonymousRecord:
+                                w = GetRecordObliviousCodeWriter( t );
+                                break;
+                            case PocoTypeKind.Enum:
+                                {
+                                    var tE = (IEnumPocoType)t;
+                                    w = ( writer, v ) => GenerateWrite( writer, tE.UnderlyingType, $"(({tE.UnderlyingType.CSharpName}){v})" );
+                                    break;
+                                }
+                            default: throw new NotSupportedException( t.Kind.ToString() );
+                        }
                     }
                     _writers[t.Index >> 1] = w;
                 }

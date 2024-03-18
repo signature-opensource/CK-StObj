@@ -152,7 +152,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The type that must be registered.</param>
         /// <returns>The poco type on success, null otherwise.</returns>
-        IPocoType? RegisterNullOblivious( IActivityMonitor monitor, Type t );
+        IPocoType? RegisterOblivious( IActivityMonitor monitor, Type t );
     }
 
 }

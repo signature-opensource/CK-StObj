@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System;
+using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -16,7 +18,7 @@ namespace CK.Setup
                 {
                     return null;
                 }
-                return RegisterDictionaryCore( monitor, nType, isRegular, tK, tV );
+                return RegisterDictionaryCore( nType, isRegular, tK, tV );
             }
             return null;
         }
@@ -99,112 +101,135 @@ namespace CK.Setup
             return true;
         }
 
-        IPocoType RegisterDictionaryCore( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isRegular, IPocoType tK, IPocoType tV )
+        IPocoType RegisterDictionaryCore( IExtNullabilityInfo nType, bool isRegular, IPocoType tK, IPocoType tV )
         {
             var csharpName = isRegular
                                 ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
                                 : $"IDictionary<{tK.CSharpName},{tV.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
             {
-                var t = nType.Type;
-                Type? tOblivious = null;
-                string? typeName = null;
-                if( !isRegular )
+                Type t = nType.Type;
+                // Type erasure of SecondaryPoco to PrimaryPoco for abstract collection only.
+                if( !isRegular && tV.Kind == PocoTypeKind.SecondaryPoco )
                 {
-                    if( tV.Type.IsValueType )
+                    Throw.DebugAssert( tV.ObliviousType is IPrimaryPocoType );
+                    t = typeof( IDictionary<,> ).MakeGenericType( tK.Type, tV.ObliviousType.Type );
+                }
+                if( !_typeCache.TryGetValue( t, out var obliviousType ) )
+                {
+                    IPocoType? finalType = null;
+                    string oName, oTypeName;
+                    if( isRegular )
                     {
-                        Throw.DebugAssert( "Value types are implemented by themselves.", tV.ImplTypeName == tV.CSharpName );
-                        if( tV.IsNullable )
-                        {
-                            Throw.DebugAssert( typeof( CovariantHelpers.CovNullableValueDictionary<,> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
-                                                == "CK.Core.CovariantHelpers.CovNullableValueDictionary<,>" );
-                            typeName = $"CovariantHelpers.CovNullableValueDictionary<{tK.ImplTypeName},{tV.NonNullable.ObliviousType.ImplTypeName}>";
-                            t = typeof( CovariantHelpers.CovNullableValueDictionary<,> ).MakeGenericType( tK.Type, tV.NonNullable.Type );
-                        }
-                        else
-                        {
-                            Throw.DebugAssert( typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
-                                                == "CK.Core.CovariantHelpers.CovNotNullValueDictionary<,>" );
-                            typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.ImplTypeName},{tV.ObliviousType.ImplTypeName}>";
-                            t = typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                        }
-                        tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.ObliviousType.Type, tV.ObliviousType.Type );
+                        // The regular is the Oblivious and Final type.
+                        oName = $"Dictionary<{tK.ObliviousType.CSharpName},{tV.ObliviousType.CSharpName}>";
+                        oTypeName = oName;
                     }
                     else
                     {
-                        bool isSecondary = tV.Kind == PocoTypeKind.SecondaryPoco;
-                        if( isSecondary || tV.Kind == PocoTypeKind.PrimaryPoco )
+                        oName = $"IDictionary<{tK.ObliviousType.CSharpName},{tV.ObliviousType.CSharpName}>";
+                        oTypeName = GetAbstractionImplTypeSupport( tK.ObliviousType, tV.ObliviousType, out var isFinal );
+                        if( !isFinal )
                         {
-                            // The adapter enables Primary and Secondary inputs and AbstractPoco outputs.
-                            var poco = isSecondary
-                                            ? ((ISecondaryPocoType)tV.NonNullable).PrimaryPocoType
-                                            : (IPrimaryPocoType)tV.NonNullable;
-                            typeName = EnsurePocoDictionaryType( tK, poco );
-                            t = IDynamicAssembly.PurelyGeneratedType;
-                            tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.ObliviousType.Type, tV.Type );
-                        }
-                        else 
-                        {
-                            if( tV.Kind != PocoTypeKind.Any )
+                            Throw.DebugAssert( oTypeName == oName.Substring( 1 ) );
+                            if( !_typeCache.TryGetValue( oTypeName, out finalType ) )
                             {
-                                // IReadOnlyDictionary<TKey,TValue> is NOT covariant on TValue: we always need an adapter.
-                                // We support it here for AbstractPoco, string and other basic reference types.
-                                typeName = EnsurePocoDictionaryOfAbstractOrBasicRefType( tK, tV.NonNullable );
-                                t = IDynamicAssembly.PurelyGeneratedType;
+                                var tFinal = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+                                finalType = PocoType.CreateDictionary( this,
+                                                                       tFinal,
+                                                                       oTypeName,
+                                                                       oTypeName,
+                                                                       tK.ObliviousType,
+                                                                       tV.ObliviousType,
+                                                                       obliviousType: null,
+                                                                       finalType: null );
+                                _typeCache.Add( tFinal, finalType );
+                                Throw.DebugAssert( oTypeName == finalType.CSharpName );
+                                _typeCache.Add( oTypeName, finalType );
                             }
-                            tOblivious = typeof( Dictionary<,> ).MakeGenericType( tK.ObliviousType.Type, tV.ObliviousType.Type );
                         }
-                    }                    
-                }
-                if( typeName == null )
-                {
-                    t = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
-                    if( isRegular && tV.IsOblivious )
-                    {
-                        typeName = csharpName;
                     }
-                    else
-                    {
-                        tOblivious = t;
-                        typeName = isRegular ? csharpName : $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
-                    }
+                    obliviousType = PocoType.CreateDictionary( this,
+                                                               t,
+                                                               oName,
+                                                               oTypeName,
+                                                               tK.ObliviousType,
+                                                               tV.ObliviousType,
+                                                               obliviousType: null,
+                                                               finalType );
+                    _typeCache.Add( t, obliviousType );
+                    _typeCache.Add( oName, obliviousType );
                 }
-                IPocoType? obliviousType = null;
-                if( tOblivious != null )
+                Throw.DebugAssert( "We are the oblivious if the items are oblivious.",
+                                   (tK.IsOblivious && tV.IsOblivious) == (obliviousType.CSharpName == csharpName) );
+                if( tK.IsOblivious && tV.IsOblivious )
                 {
-                    if( !_typeCache.TryGetValue( tOblivious, out obliviousType ) )
-                    {
-                        var obliviousTypeName = $"Dictionary<{tK.ObliviousType.CSharpName},{tV.ObliviousType.CSharpName}>";
-                        Throw.DebugAssert( "The only way for the typeName to be the oblivious one here is if a IDictionary<,> is requested.",
-                                            typeName != obliviousTypeName || !isRegular );
-                        obliviousType = PocoType.CreateDictionary( this,
-                                                                   tOblivious,
-                                                                   obliviousTypeName,
-                                                                   obliviousTypeName,
-                                                                   tK.ObliviousType,
-                                                                   tV.ObliviousType,
-                                                                   null );
-                        _typeCache.Add( tOblivious, obliviousType );
-                        _typeCache.Add( obliviousTypeName, obliviousType );
-                    }
-                    Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.CSharpName == $"Dictionary<{tK.ObliviousType.CSharpName},{tV.ObliviousType.CSharpName}>" );
+                    result = obliviousType;
                 }
-                Throw.DebugAssert( "We have the oblivious type or we are creating it.", obliviousType != null || typeName == csharpName );
-                result = PocoType.CreateDictionary( this,
-                                                    t,
-                                                    csharpName,
-                                                    typeName,
-                                                    tK,
-                                                    tV,
-                                                    obliviousType );
-                _typeCache.Add( csharpName, result );
-                if( obliviousType == null )
+                else
                 {
-                    Throw.DebugAssert( result.IsOblivious && csharpName == typeName );
-                    _typeCache.Add( result.Type, result );
+                    result = PocoType.CreateDictionary( this,
+                                                        t,
+                                                        csharpName,
+                                                        obliviousType.ImplTypeName,
+                                                        tK,
+                                                        tV,
+                                                        obliviousType,
+                                                        obliviousType.StructuralFinalType );
+                    _typeCache.Add( csharpName, result );
                 }
             }
             return nType.IsNullable ? result.Nullable : result;
+
+            string GetAbstractionImplTypeSupport( IPocoType tK, IPocoType tV, out bool isFinal )
+            {
+                string? typeName = null;
+                if( tV.Type.IsValueType )
+                {
+                    Throw.DebugAssert( "Value types are implemented by themselves.", tV.ImplTypeName == tV.CSharpName );
+                    if( tV.IsNullable )
+                    {
+                        Throw.DebugAssert( typeof( CovariantHelpers.CovNullableValueDictionary<,> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
+                                            == "CK.Core.CovariantHelpers.CovNullableValueDictionary<,>" );
+                        Throw.DebugAssert( tV.NonNullable.IsOblivious );
+                        typeName = $"CovariantHelpers.CovNullableValueDictionary<{tK.ImplTypeName},{tV.NonNullable.ImplTypeName}>";
+                    }
+                    else
+                    {
+                        Throw.DebugAssert( typeof( CovariantHelpers.CovNotNullValueDictionary<,> ).ToCSharpName( withNamespace: true, typeDeclaration: false )
+                                            == "CK.Core.CovariantHelpers.CovNotNullValueDictionary<,>" );
+                        typeName = $"CovariantHelpers.CovNotNullValueDictionary<{tK.ImplTypeName},{tV.ImplTypeName}>";
+                    }
+                }
+                else
+                {
+                    Throw.DebugAssert( "We are on the oblivious items.", tV.Kind != PocoTypeKind.SecondaryPoco && !tV.IsNullable );
+                    if( tV.Kind == PocoTypeKind.PrimaryPoco )
+                    {
+                        // The adapter enables Primary and Secondary inputs/outputs and AbstractPoco outputs.
+                        typeName = EnsurePocoDictionaryType( tK, Unsafe.As<IPrimaryPocoType>( tV ) );
+                    }
+                    else
+                    {
+                        if( tV.Kind != PocoTypeKind.Any )
+                        {
+                            // IReadOnlyDictionary<TKey,TValue> is NOT covariant on TValue: we always need an adapter.
+                            // We support it here for AbstractPoco, string and other basic reference types.
+                            typeName = EnsurePocoDictionaryOfAbstractOrBasicRefType( tK, tV );
+                        }
+                    }
+                }
+                // If there is no specific support implementation, the regular and final Dictionary is
+                // the implementation type.
+                isFinal = typeName != null;
+                if( !isFinal )
+                {
+                    typeName = $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
+                }
+                return typeName!;
+            }
+
+
         }
 
         string EnsurePocoDictionaryType( IPocoType tK, IPrimaryPocoType tV )

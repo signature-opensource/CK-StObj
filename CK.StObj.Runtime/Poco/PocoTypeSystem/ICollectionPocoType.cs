@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using static CK.Setup.IPocoType;
 
 namespace CK.Setup
 {
@@ -12,6 +11,9 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this is a <see cref="IList{T}"/>, <see cref="ISet{T}"/>, <see cref="IDictionary{TKey, TValue}"/>
         /// or a <see cref="IReadOnlyList{T}"/>, <see cref="IReadOnlySet{T}"/>, <see cref="IReadOnlyDictionary{TKey, TValue}"/>.
+        /// <para>
+        /// Such type can only appear in IPoco fields.
+        /// </para>
         /// </summary>
         bool IsAbstractCollection { get; }
 
@@ -30,6 +32,18 @@ namespace CK.Setup
 
         /// <inheritdoc cref="IPocoType.ObliviousType" />
         new ICollectionPocoType ObliviousType { get; }
+
+        /// <summary>
+        /// Gets the structural final type (<see cref="IPocoType.ImplementationLess"/> can be true).
+        /// This is null when <see cref="IsAbstractReadOnly"/> is true.
+        /// </summary>
+        new ICollectionPocoType? StructuralFinalType { get; }
+
+        /// <summary>
+        /// Gets the final type.
+        /// This is null when <see cref="IPocoType.ImplementationLess"/> or <see cref="IsAbstractReadOnly"/> is true.
+        /// </summary>
+        new ICollectionPocoType? FinalType { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
         new ICollectionPocoType Nullable { get; }

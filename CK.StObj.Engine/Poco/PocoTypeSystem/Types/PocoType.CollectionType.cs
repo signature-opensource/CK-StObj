@@ -17,9 +17,10 @@ namespace CK.Setup
                                                                string implTypeName,
                                                                PocoTypeKind kind,
                                                                IPocoType itemType,
-                                                               IPocoType? obliviousType )
+                                                               IPocoType? obliviousType,
+                                                               IPocoType? finalType )
         {
-            return new ListOrSetOrArrayType( s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType );
+            return new ListOrSetOrArrayType( s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType, (ICollectionPocoType?)finalType );
         }
 
         internal static DictionaryType CreateDictionary( PocoTypeSystemBuilder s,
@@ -28,9 +29,10 @@ namespace CK.Setup
                                                          string implTypeName,
                                                          IPocoType itemType1,
                                                          IPocoType itemType2,
-                                                         IPocoType? obliviousType )
+                                                         IPocoType? obliviousType,
+                                                         IPocoType? finalType )
         {
-            return new DictionaryType( s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType );
+            return new DictionaryType( s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType, (ICollectionPocoType?)finalType );
         }
 
         internal static AbstractReadOnlyCollectionType CreateAbstractCollection( PocoTypeSystemBuilder s,
@@ -64,6 +66,9 @@ namespace CK.Setup
 
             ICollectionPocoType ICollectionPocoType.Nullable => this;
 
+            ICollectionPocoType? ICollectionPocoType.StructuralFinalType => NonNullable.StructuralFinalType;
+
+            ICollectionPocoType? ICollectionPocoType.FinalType => NonNullable.FinalType;
         }
 
         interface IRegularCollection : ICollectionPocoType
@@ -80,6 +85,7 @@ namespace CK.Setup
             readonly IPocoType.ITypeRef? _nextRef;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
+            readonly ICollectionPocoType _finalType;
             bool _implementationLess;
 
             public ListOrSetOrArrayType( PocoTypeSystemBuilder s,
@@ -88,7 +94,8 @@ namespace CK.Setup
                                          string implTypeName,
                                          PocoTypeKind kind,
                                          IPocoType itemType,
-                                         ICollectionPocoType? obliviousType )
+                                         ICollectionPocoType? obliviousType,
+                                         ICollectionPocoType? finalType )
                 : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
@@ -105,6 +112,7 @@ namespace CK.Setup
                 {
                     _obliviousType = this;
                 }
+                _finalType = finalType ?? this;
                 _implTypeName = implTypeName;
                 _itemTypes = new[] { itemType };
                 _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
@@ -121,15 +129,15 @@ namespace CK.Setup
 
             public override ICollectionPocoType ObliviousType => _obliviousType;
 
+            public override IPocoType? StructuralFinalType => _finalType;
+
+            ICollectionPocoType? ICollectionPocoType.StructuralFinalType => _finalType;
+
+            ICollectionPocoType? ICollectionPocoType.FinalType => _finalType;
+
             public bool IsAbstractCollection => Kind != PocoTypeKind.Array && CSharpName[0] == 'I';
 
             public bool IsAbstractReadOnly => false;
-
-            public override bool IsNonNullableFinalType => !_implementationLess
-                                                           && (_obliviousType == this
-                                                               || (IsAbstractCollection
-                                                                   && _itemTypes[0].IsOblivious && _itemTypes[0].Kind != PocoTypeKind.SecondaryPoco
-                                                                   && _obliviousType.ImplTypeName != _implTypeName));
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 
@@ -199,6 +207,7 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
+            readonly ICollectionPocoType _finalType;
             ICollectionPocoType? _abstractReadOnlyCollection;
             bool _implementationLess;
 
@@ -208,7 +217,8 @@ namespace CK.Setup
                                    string implTypeName,
                                    IPocoType keyType,
                                    IPocoType valueType,
-                                   ICollectionPocoType? obliviousType )
+                                   ICollectionPocoType? obliviousType,
+                                   ICollectionPocoType? finalType )
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, static t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
@@ -226,6 +236,7 @@ namespace CK.Setup
                 {
                     _obliviousType = this;
                 }
+                _finalType = finalType ?? this;
                 _def = new FieldDefaultValue( $"new {implTypeName}()" );
                 // Register back references (key is embedded, value has its own PocoTypeRef).
                 _nextRefKey = ((PocoType)keyType).AddBackRef( this );
@@ -243,16 +254,15 @@ namespace CK.Setup
 
             public override ICollectionPocoType ObliviousType => _obliviousType;
 
+            public override IPocoType? StructuralFinalType => _finalType;
+
+            ICollectionPocoType? ICollectionPocoType.StructuralFinalType => _finalType;
+
+            ICollectionPocoType? ICollectionPocoType.FinalType => _finalType;
+
             public bool IsAbstractCollection => CSharpName[0] == 'I';
 
             public bool IsAbstractReadOnly => false;
-
-            public override bool IsNonNullableFinalType => !_implementationLess
-                                                           && (_obliviousType == this
-                                                               || (IsAbstractCollection
-                                                                   && _itemTypes[0].IsOblivious
-                                                                   && _itemTypes[1].IsOblivious && _itemTypes[1].Kind != PocoTypeKind.SecondaryPoco
-                                                                   && _obliviousType.ImplTypeName != _implTypeName));
 
             public ICollectionPocoType? AbstractReadOnlyCollection => _abstractReadOnlyCollection;
 
@@ -343,9 +353,9 @@ namespace CK.Setup
 
             public IReadOnlyList<IPocoType> ItemTypes => _itemTypes;
 
-            public override ICollectionPocoType ObliviousType => _obliviousType;
+            public override bool IsPolymorphic => true;
 
-            public override bool IsNonNullableFinalType => false;
+            public override ICollectionPocoType ObliviousType => _obliviousType;
 
             public override bool CanReadFrom( IPocoType type )
             {
@@ -357,6 +367,13 @@ namespace CK.Setup
             // there is currently no point to expose them: by considering them implementation
             // less, they are excluded from any IPocoTypeSet.
             public override bool ImplementationLess => true;
+
+            // Abstract ReadOnly collections have no final type.
+            public override IPocoType? StructuralFinalType => null;
+
+            ICollectionPocoType? ICollectionPocoType.StructuralFinalType => null;
+
+            ICollectionPocoType? ICollectionPocoType.FinalType => null;
 
             ICollectionPocoType ICollectionPocoType.Nullable => Nullable;
 

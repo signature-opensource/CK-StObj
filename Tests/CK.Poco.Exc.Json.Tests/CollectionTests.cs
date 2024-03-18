@@ -101,6 +101,7 @@ namespace CK.Poco.Exc.Json.Tests
 
             IList<ExtendedCultureInfo> ListOfEC { get; }
 
+            [RegisterPocoType(typeof(List<int>))]
             IList<int> CovariantListImpl { get; }
 
             IList<int?> CovariantListNullableImpl { get; }
@@ -375,12 +376,14 @@ namespace CK.Poco.Exc.Json.Tests
             oBackA.Should().BeEquivalentTo( oBack );
         }
 
+        public record struct Rec( object Obj );
 
         public interface IAllCollectionOfObjects : IPoco
         {
+            [RegisterPocoType( typeof( Rec ) )]
             IList<object> List { get; }
-            ISet<object> Set { get; }
-            IDictionary<object, object> Dictionary { get; }
+
+            IDictionary<int, object> Dictionary { get; }
         }
 
         [NotExchangeable]
@@ -403,14 +406,14 @@ namespace CK.Poco.Exc.Json.Tests
                 o.List.Add( "One" );
                 o.List.Add( 1 );
                 o.List.Add( oneThing );
+                o.List.Add( new Rec( oneThing ) );
+                o.List.Add( new Rec( "a string" ) );
 
-                o.Set.Add( "One" );
-                o.Set.Add( 1 );
-                o.Set.Add( oneThing );
-
-                o.Dictionary.Add( "One", 1 );
-                o.Dictionary.Add( 1, "One" );
-                o.Dictionary.Add( oneThing, directory.Create<IThing>( c => c.Name = "World!") );
+                o.Dictionary.Add( 1, 1 );
+                o.Dictionary.Add( 2, "One" );
+                o.Dictionary.Add( 3, directory.Create<IThing>( c => c.Name = "World!" ) );
+                o.Dictionary.Add( 4, new Rec( Obj: oneThing ) );
+                o.Dictionary.Add( 5, new Rec( Obj: 3712 ) );
             } );
 
             var allW = new PocoJsonExportOptions() { TypeFilterName = "AllSerializable" };
@@ -421,18 +424,26 @@ namespace CK.Poco.Exc.Json.Tests
                 sText.Should().Be( """
                 ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
                 {
-                    "list":[["string","One"],["int",1],["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]],
-                    "set":[["string","One"],["int",1],["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]],
-                    "dictionary":[
-                        [["string","One"],["int",1]],
-                        [["int",1],["string","One"]],
-                        [ ["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}],
-                          ["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"World!","power":0}]]]
+                    "list":
+                        [
+                            ["string","One"],
+                            ["int",1],
+                            ["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}],
+                            ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]}],
+                            ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":"a string"}]
+                        ],
+                    "dictionary":
+                        [
+                            [1,["int",1]],
+                            [2,["string","One"]],
+                            [3,["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"World!","power":0}]],
+                            [4,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]}]],
+                            [5,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":3712}]]
+                        ],
                 }]
                 """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
-                o2.List.Should().HaveCount( 3 );
-                o2.Set.Should().HaveCount( 3 );
-                o2.Dictionary.Should().HaveCount( 3 );
+                o2.List.Should().HaveCount( 5 );
+                o2.Dictionary.Should().HaveCount( 5 );
             }
 
             var excW = new PocoJsonExportOptions() { TypeFilterName = "AllExchangeable" };
@@ -451,7 +462,6 @@ namespace CK.Poco.Exc.Json.Tests
                 }]
                 """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
                 o2.List.Should().HaveCount( 2 );
-                o2.Set.Should().HaveCount( 2 );
                 o2.Dictionary.Should().HaveCount( 2 );
             }
         }

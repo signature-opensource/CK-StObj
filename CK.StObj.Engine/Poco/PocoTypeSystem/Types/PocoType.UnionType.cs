@@ -107,6 +107,8 @@ namespace CK.Setup
 
             public override IPocoType ObliviousType => _obliviousType;
 
+            public override IPocoType? StructuralFinalType => null;
+
             IReadOnlyList<IPocoType> AllowedTypes => _k.Types;
 
             IEnumerable<IPocoType> IOneOfPocoType.AllowedTypes => _k.Types;
