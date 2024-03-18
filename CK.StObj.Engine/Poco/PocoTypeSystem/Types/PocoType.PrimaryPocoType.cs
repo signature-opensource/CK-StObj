@@ -44,7 +44,8 @@ namespace CK.Setup
 
                 public IEnumerable<ISecondaryPocoType> SecondaryTypes => NonNullable.SecondaryTypes.Select( s => s.Nullable );
 
-                ICompositePocoType ICompositePocoType.ObliviousType => NonNullable;
+                public override IPrimaryPocoType ObliviousType => this;
+                ICompositePocoType ICompositePocoType.ObliviousType => this;
 
                 IPrimaryPocoType IPrimaryPocoType.Nullable => this;
                 IPrimaryPocoType IPrimaryPocoType.NonNullable => NonNullable;
@@ -135,7 +136,9 @@ namespace CK.Setup
 
             public IPrimaryPocoType PrimaryInterface => this;
 
-            ICompositePocoType ICompositePocoType.ObliviousType => this;
+            public override IPrimaryPocoType ObliviousType => Nullable;
+            // Required... C# "Covarint return type" can do better!
+            ICompositePocoType ICompositePocoType.ObliviousType => Nullable;
 
             public ExternalNameAttribute? ExternalName => _familyInfo.ExternalName;
 

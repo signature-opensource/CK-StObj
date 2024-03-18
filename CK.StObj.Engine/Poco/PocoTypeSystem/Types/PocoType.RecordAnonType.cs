@@ -41,13 +41,12 @@ namespace CK.Setup
 
                 public bool IsAnonymous => true;
 
-                public override IPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
+                public override IRecordPocoType ObliviousType => NonNullable.ObliviousType;
+                ICompositePocoType ICompositePocoType.ObliviousType => NonNullable.ObliviousType;
 
                 public bool IsReadOnlyCompliant => NonNullable.IsReadOnlyCompliant;
 
-                ICompositePocoType ICompositePocoType.ObliviousType => Unsafe.As<ICompositePocoType>( ObliviousType );
 
-                IRecordPocoType IRecordPocoType.ObliviousType => Unsafe.As<IRecordPocoType>( ObliviousType );
 
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
@@ -97,7 +96,7 @@ namespace CK.Setup
                 else
                 {
                     Throw.DebugAssert( fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
-                    _obliviousType = this;
+                    _obliviousType = Nullable;
                 }
                 _fields = fields;
                 _isReadOnlyCompliant = isReadOnlyCompliant;
@@ -117,11 +116,9 @@ namespace CK.Setup
 
             public override bool IsHashSafe => _isReadOnlyCompliant;
 
-            public override IPocoType ObliviousType => _obliviousType;
-
+            public override IRecordPocoType ObliviousType => _obliviousType;
+            // Required... C# "Covariant return type" can do better...
             ICompositePocoType ICompositePocoType.ObliviousType => _obliviousType;
-
-            IRecordPocoType IRecordPocoType.ObliviousType => _obliviousType;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 

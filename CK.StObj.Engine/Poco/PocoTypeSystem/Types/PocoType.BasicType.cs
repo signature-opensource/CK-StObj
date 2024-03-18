@@ -145,6 +145,8 @@ namespace CK.Setup
                 }
             }
 
+            public override IPocoType ObliviousType => Nullable;
+
             /// <summary>
             /// This should be "_specializations.Length > 0" but whether a type is polymorphic or not
             /// has a strong impact on serialization. Since we don't have versioned serialization available,

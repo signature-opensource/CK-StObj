@@ -108,12 +108,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the oblivious type (this instance if <see cref="IsOblivious"/> is true).
-        /// Oblivious types are actual C# types based only on oblivious types.
+        /// Oblivious types are actual C# types.
         /// <list type="bullet">
         ///   <item>
         ///     <term>Nullable Reference Types</term>
         ///     <description>
-        ///         Oblivious type of a reference type is always the <see cref="NonNullable"/>.
+        ///         Oblivious type of a reference type is always the <see cref="Nullable"/>.
         ///     </description>
         ///   </item>
         ///   <item>
@@ -137,14 +137,8 @@ namespace CK.Setup
         ///     </description>
         ///   </item>
         ///   <item>
-        ///     <term>IPoco types</term>
-        ///     <description>
-        ///         <see cref="ISecondaryPocoType"/>'s oblivious is its non nullable <see cref="IPrimaryPocoType"/>.
-        ///     </description>
-        ///   </item>
-        ///   <item>
-        ///     All other types: enum, basic types (non nullable for reference types), any (non nullable), structs (Named record),
-        ///     <see cref="IAbstractPocoType"/> and <see cref="IPrimaryPocoType"/> are their own oblivious.
+        ///     All other types: enum, basic types (nullable for reference types), any (nullable), structs (Named record),
+        ///     <see cref="IAbstractPocoType"/>, <see cref="ISecondaryPocoType"/> and <see cref="IPrimaryPocoType"/> are their own oblivious.
         ///   </item>
         /// </list>
         /// </summary>
@@ -159,39 +153,34 @@ namespace CK.Setup
         /// Gets the final type associated to this type (this instance if <see cref="IsStructuralFinalType"/> is true)
         /// even if <see cref="ImplementationLess"/> is true.
         /// <para>
-        /// Usually <see cref="FinalType"/>, that accounts for <see cref="ImplementationLess"/>, should be used.
+        /// Usually <see cref="FinalType"/>, that considers only false <see cref="ImplementationLess"/>, should be used.
         /// </para>
-        /// </summary>
-        IPocoType? StructuralFinalType { get; }
-
-        /// <summary>
-        /// Gets whether this type is final. Final types:
+        /// Structural final types:
         /// <list type="bullet">
         ///     <item>Are always non nullable.</item>
-        ///     <item>Have at least one implementation (<see cref="ImplementationLess"/> is false).</item>
-        ///     <item>Are either:
-        ///     <list type="bullet">
-        ///         <item>
-        ///         All the <see cref="ObliviousType"/> that are not the <see cref="PocoTypeKind.Any"/>, a <see cref="PocoTypeKind.AbstractPoco"/>,
-        ///         a <see cref="PocoTypeKind.SecondaryPoco"/>, a <see cref="PocoTypeKind.UnionType"/> or a <see cref="IBasicRefPocoType"/> with an
-        ///         abstract <see cref="Type"/>.
-        ///         </item>
-        ///         <item>
-        ///         The mutable abstract <see cref="ICollectionPocoType"/> (IList, ISet and IDictionary) if their <see cref="ImplTypeName"/>
-        ///         is not the same as their <see cref="ObliviousType"/>.
-        ///         </item>
-        ///     </list>
-        ///     </item>
+        ///     <item><see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/> and <see cref="PocoTypeKind.UnionType"/> have no final type.</item>
+        ///     <item>Abstract read only collections (see <see cref="ICollectionPocoType.IsAbstractReadOnly"/>) have no final type.</item>
+        ///     <item>A <see cref="IBasicRefPocoType"/> with an abstract <see cref="Type"/> has no final type. For other basic type it is their non nullable.</item>
+        ///     <item>For mutable collections, <see cref="ICollectionPocoType.StructuralFinalType"/> it is the non nullable equivalent type with oblivious generic parameters.
+        ///     <item><see cref="<see cref="ISecondaryPocoType.StructuralFinalType"/> is its nullable <see cref="IPrimaryPocoType"/>.</item>
+        ///     <item>For <see cref="PocoTypeKind.PrimaryPoco"/>, <see cref="PocoTypeKind.Enum"/>, <see cref="PocoTypeKind.Record"/> it is their non nullable.</item>
+        ///     <item>For <see cref="PocoTypeKind.AnonymousRecord"/> it is the oblivious's non nullable.</item>
         /// </list>
         /// <para>
         /// A final type can be based on types that are not final: <c>List&lt;object&gt;</c> or <c>List&lt;int?&gt;</c> are final
         /// types even if <c>object</c> and <c>int?</c> are not.
         /// </para>
         /// </summary>
+        IPocoType? StructuralFinalType { get; }
+
+        /// <summary>
+        /// Gets whether this type is it its own <see cref="FinalType"/>.
+        /// </summary>
         bool IsFinalType { get; }
 
         /// <summary>
-        /// Gets the final type associated to this type (this instance if <see cref="IsFinalType"/> is true).
+        /// Gets the final type associated to this. Null if <see cref="ImplementationLess"/> is true otherwise
+        /// it is the <see cref="StructuralFinalType"/> (that can be null).
         /// </summary>
         IPocoType? FinalType { get; }
 

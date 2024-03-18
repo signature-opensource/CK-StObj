@@ -25,7 +25,7 @@ namespace CK.Setup
         /// <para>
         /// This can be empty. It is valid i C# (and in TypeScript) to have enum without values: the
         /// single default and accepted value is 0.
-        /// This is a pathological case: we accept this but standard <see cref="PocoTypeFilter"/> excludes it by default.
+        /// This is a pathological case: we accept this but <see cref="IPocoTypeSet"/> excludes it by default.
         /// </para>
         /// </summary>
         IReadOnlyDictionary<string, object> Values { get; }

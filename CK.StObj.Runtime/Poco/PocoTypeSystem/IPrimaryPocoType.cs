@@ -60,6 +60,12 @@ namespace CK.Setup
         /// </summary>
         IEnumerable<ISecondaryPocoType> SecondaryTypes { get; }
 
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        /// <remarks>
+        /// Gets the <see cref="NonNullable"/>.
+        /// </remarks>
+        new IPrimaryPocoType ObliviousType { get; }
+
         /// <summary>
         /// Gets the constructor source code.
         /// </summary>

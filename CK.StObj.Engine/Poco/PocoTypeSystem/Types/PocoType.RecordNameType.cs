@@ -41,9 +41,9 @@ namespace CK.Setup
 
                 public bool IsAnonymous => NonNullable.IsAnonymous;
 
-                ICompositePocoType ICompositePocoType.ObliviousType => Unsafe.As<ICompositePocoType>( this );
-
-                IRecordPocoType IRecordPocoType.ObliviousType => Unsafe.As<IRecordPocoType>( this );
+                public override IRecordPocoType ObliviousType => this;
+                // Required... C# "Covariant return type" cand do better...
+                ICompositePocoType ICompositePocoType.ObliviousType => this;
 
                 public bool IsReadOnlyCompliant => NonNullable.IsReadOnlyCompliant;
 
@@ -111,9 +111,9 @@ namespace CK.Setup
 
             public override bool IsHashSafe => _isReadOnlyCompliant;
 
-            ICompositePocoType ICompositePocoType.ObliviousType => this;
-
-            IRecordPocoType IRecordPocoType.ObliviousType => this;
+            public override IRecordPocoType ObliviousType => Nullable;
+            // Required... C# "Covariant return type" can do better.
+            ICompositePocoType ICompositePocoType.ObliviousType => Nullable;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 

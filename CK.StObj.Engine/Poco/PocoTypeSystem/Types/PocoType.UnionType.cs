@@ -79,13 +79,11 @@ namespace CK.Setup
                 {
                     Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.AllowedTypes.All( t => t.IsOblivious ) );
                     _obliviousType = obliviousType;
-                    // Registers the back reference to the oblivious type.
-                    _ = new PocoTypeRef( this, obliviousType, -1 );
                 }
                 else
                 {
                     Throw.DebugAssert( k.Types.All( t => t.IsOblivious ) );
-                    _obliviousType = this;
+                    _obliviousType = Nullable;
                 }
                 int i = 0;
                 foreach( var t in _k.Types )

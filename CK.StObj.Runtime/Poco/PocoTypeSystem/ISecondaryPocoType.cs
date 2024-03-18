@@ -17,10 +17,11 @@ namespace CK.Setup
         /// </summary>
         IPrimaryPocoType PrimaryPocoType { get; }
 
-        /// <summary>
-        /// Gets the non nullable <see cref="IPrimaryPocoType"/>.
-        /// </summary>
-        new IPrimaryPocoType ObliviousType { get; }
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        /// <remarks>
+        /// Gets the <see cref="NonNullable"/>.
+        /// </remarks>
+        new ISecondaryPocoType ObliviousType { get; }
     }
 
 }

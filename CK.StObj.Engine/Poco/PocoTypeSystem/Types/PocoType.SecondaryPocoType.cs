@@ -28,7 +28,7 @@ namespace CK.Setup
 
                 ISecondaryPocoType ISecondaryPocoType.NonNullable => NonNullable;
 
-                IPrimaryPocoType ISecondaryPocoType.ObliviousType => NonNullable.ObliviousType;
+                ISecondaryPocoType ISecondaryPocoType.ObliviousType => this;
 
                 ISecondaryPocoType ISecondaryPocoType.Nullable => this;
             }
@@ -54,7 +54,7 @@ namespace CK.Setup
 
             ISecondaryPocoType ISecondaryPocoType.NonNullable => this;
 
-            public override IPrimaryPocoType ObliviousType => _primary;
+            public override ISecondaryPocoType ObliviousType => Nullable;
 
             // This conflicts (warning) with the nested PocoType.PrimaryPocoType class.
             // Using explicit implementation (could also have used new masking operator).

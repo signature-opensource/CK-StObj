@@ -76,6 +76,8 @@ namespace CK.Setup
 
             IAbstractPocoType IAbstractPocoType.NonNullable => NonNullable;
 
+            IAbstractPocoType IAbstractPocoType.ObliviousType => this;
+
             IOneOfPocoType IOneOfPocoType.Nullable => this;
 
             IOneOfPocoType IOneOfPocoType.NonNullable => NonNullable;
@@ -257,6 +259,8 @@ namespace CK.Setup
 
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
+            public override IAbstractPocoType ObliviousType => Nullable;
+
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
@@ -377,6 +381,8 @@ namespace CK.Setup
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
+            public override IAbstractPocoType ObliviousType => Nullable;
+
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 
             IAbstractPocoType IAbstractPocoType.NonNullable => this;
@@ -454,6 +460,8 @@ namespace CK.Setup
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
             public IEnumerable<IPocoType> AllowedTypes => AllSpecializations;
+
+            public override IAbstractPocoType ObliviousType => Nullable;
 
             IAbstractPocoType IAbstractPocoType.Nullable => Nullable;
 

@@ -93,5 +93,11 @@ namespace CK.Setup
         /// <inheritdoc cref="IPocoType.NonNullable" />
         new IAbstractPocoType NonNullable { get; }
 
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        /// <remarks>
+        /// Gets the <see cref="NonNullable"/>.
+        /// </remarks>
+        new IAbstractPocoType ObliviousType { get; }
+
     }
 }

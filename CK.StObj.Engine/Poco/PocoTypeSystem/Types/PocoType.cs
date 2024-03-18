@@ -50,13 +50,12 @@ namespace CK.Setup
 
             public IPocoType.ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
 
-            public bool IsOblivious => false;
+            public bool IsOblivious => ObliviousType == this;
 
             /// <summary>
-            /// Returning "NonNullable.ObliviousType" always works since we only have to
-            /// erase this nullability.
+            /// Returning "NonNullable.ObliviousType" by default (that can be this instance).
             /// </summary>
-            public IPocoType ObliviousType => _nonNullable.ObliviousType;
+            public virtual IPocoType ObliviousType => _nonNullable.ObliviousType;
 
             public bool IsStructuralFinalType => false;
 
@@ -148,14 +147,13 @@ namespace CK.Setup
             public bool IsOblivious => ObliviousType == this;
 
             /// <summary>
-            /// Returning this works for basic value types, enumerations and named records
-            /// but not for anonymous records.
+            /// For basic value types and enumerations.
             /// </summary>
             public virtual IPocoType ObliviousType
             {
                 get
                 {
-                    Debug.Assert( Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Enum || Kind == PocoTypeKind.Record );
+                    Throw.DebugAssert( "Other types override.", Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Enum );
                     return this;
                 }
             }
@@ -316,41 +314,20 @@ namespace CK.Setup
         public bool IsOblivious => ObliviousType == this;
 
         /// <summary>
-        /// Defaults to "this" that works for everything except for:
-        /// <list type="bullet">
-        ///     <item>
-        ///     Anonymous records: their oblivious are value tuples that have no field name and oblivious field types.
-        ///     </item>
-        ///     <item>
-        ///     Collections: their oblivious is composed only of oblivious types.
-        ///     </item>
-        ///     <item>
-        ///     Union types: their oblivious is composed only of oblivious types.
-        ///     </item>
-        ///     <item>
-        ///     SecondaryPoco: their oblivious is the PrimaryPoco.
-        ///     </item>
-        /// </list>
+        /// This base PocoType implements Any and all the basic value types.
+        /// Value types oblivious are themselves: returns this for <see cref="PocoTypeKind.Basic"/> otherwise <see cref="Nullable"/>.
+        /// <see cref="IBasicRefPocoType"/> overrides this to correct this "basic" default behavior.
+        /// Reference types oblivious is <see cref="Nullable"/>: this implementation (that returns the nullable for them) could work
+        /// for the Abstract, Primary and Secondary poco but they override this to provide strongly typed oblivious.
         /// </summary>
         public virtual IPocoType ObliviousType
         {
             get
             {
-                Throw.DebugAssert( "These type must override.",
-                                    Kind != PocoTypeKind.AnonymousRecord
-                                    && Kind != PocoTypeKind.Array
-                                    && Kind != PocoTypeKind.List
-                                    && Kind != PocoTypeKind.HashSet
-                                    && Kind != PocoTypeKind.Dictionary
-                                    && Kind != PocoTypeKind.UnionType
-                                    && Kind != PocoTypeKind.SecondaryPoco );
-                Throw.DebugAssert( Kind == PocoTypeKind.Any
-                                   || Kind == PocoTypeKind.Basic
-                                   || Kind == PocoTypeKind.Enum
-                                   || Kind == PocoTypeKind.Record
-                                   || Kind == PocoTypeKind.PrimaryPoco
-                                   || Kind == PocoTypeKind.AbstractPoco );
-                return this;
+                Throw.DebugAssert( "All other types must override.",
+                                   Kind == PocoTypeKind.Any
+                                   || (Kind == PocoTypeKind.Basic && this is not IBasicRefPocoType) );
+                return Kind == PocoTypeKind.Basic ? this : Nullable;
             }
         }
 
@@ -361,7 +338,7 @@ namespace CK.Setup
         public bool IsStructuralFinalType => StructuralFinalType == this;
 
         /// <summary>
-        /// Returns the ObliviousType by default except for <see cref="PocoTypeKind.Any"/> (that is not a final type).
+        /// Returns the ObliviousType.NonNullable by default except for <see cref="PocoTypeKind.Any"/> (that is not a final type).
         /// <see cref="BasicRefType"/> overrides this to return null if its Type is abstract.
         /// <see cref="AbstractPocoType"/> and <see cref="AbstractPocoBase"/>, <see cref="AbstractReadOnlyCollectionType"/>
         /// and <see cref="UnionType"/>override this to always return null.
