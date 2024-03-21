@@ -1,8 +1,4 @@
 using CK.Core;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
 
 namespace CK.Setup
 {
@@ -217,7 +213,6 @@ namespace CK.Setup
         /// Visits the <see cref="IRecordPocoType.Fields"/>, calling <see cref="VisitField(IPocoField)"/>.
         /// </summary>
         /// <param name="record">A record type.</param>
-        /// 
         protected virtual void VisitRecord( IRecordPocoType record )
         {
             foreach( var f in record.Fields ) VisitField( f );

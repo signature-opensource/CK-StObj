@@ -4,23 +4,22 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 
 namespace CK.Setup
 {
     /// <summary>
-    /// Basic set backed by a bit flag used as a faster <see cref="HashSet{T}"/>.
+    /// Basic set backed by a bit flag used as a faster <see cref="HashSet{T}"/> that handles
+    /// both nullable and non nullable types at the same time (the <see cref="Count"/> is always even).
     /// </summary>
-    public sealed class PocoTypeRawSet : IReadOnlyCollection<IPocoType>, IMinimalPocoTypeSet
+    public sealed class PocoTypeRawSet : IReadOnlyPocoTypeSet, IMinimalPocoTypeSet
     {
         // Only TypeSet IPocoTypeSet implementation access to this array to expose
         // it as an immutable array: a IPocoTypeSet is a immutable object that protects
         // its PocoTypeRawSet.
         internal readonly int[] _array;
         readonly IPocoTypeSystem _typeSystem;
+        readonly NonNullableSet _nonNullables;
         int _count;
 
         /// <summary>
@@ -33,7 +32,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Initializes a new set whose content is based on a predicate.
+        /// Initializes a new set with a content based on a predicate.
         /// </summary>
         /// <param name="typeSystem">The type system that defines the types manipulated by this set.</param>
         /// <param name="filter">The filter to apply to fill the set.</param>
@@ -48,13 +47,11 @@ namespace CK.Setup
                 {
                     ref int segment = ref _array[i >> 5];
                     segment |= (1 << i);
-                    ++i;
                     ++_count;
                 }
+                ++i;
             }
         }
-
-        internal static int[] CreateEmptyArray( IPocoTypeSystem t ) => new int[(int)((uint)(t.AllNonNullableTypes.Count - 1 + (1 << 5)) >> 5)];
 
         /// <summary>
         /// Initializes a new set whose content can be the <see cref="IPocoTypeSystem.AllNonNullableTypes"/>
@@ -66,7 +63,7 @@ namespace CK.Setup
         {
             Throw.CheckNotNullArgument( typeSystem );
             _typeSystem = typeSystem;
-            _array = CreateEmptyArray( typeSystem );
+            _array = new int[(int)((uint)(typeSystem.AllNonNullableTypes.Count - 1 + (1 << 5)) >> 5)];
             if( all )
             {
                 new Span<int>( _array ).Fill( -1 );
@@ -80,6 +77,7 @@ namespace CK.Setup
                 }
                 _count = count;
             }
+            _nonNullables = new NonNullableSet( this );
         }
 
         /// <summary>
@@ -89,8 +87,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the number of contained types.
+        /// This is necessarily even since nullable and non nullable types are coupled.
         /// </summary>
-        public int Count => _count;
+        public int Count => _count << 1;
 
         /// <inheritdoc />
         public bool Contains( IPocoType t ) => Get( t.Index >> 1 );
@@ -99,7 +98,7 @@ namespace CK.Setup
         bool Get( int index ) => (_array[index >> 5] & (1 << index)) != 0;
 
         /// <summary>
-        /// Adds a type to this bag.
+        /// Adds a type to this set.
         /// </summary>
         /// <param name="t">The type to add.</param>
         /// <returns>True if the type has been added, false if it already exists.</returns>
@@ -115,7 +114,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Removes a type from this bag.
+        /// Removes a type from this set.
         /// </summary>
         /// <param name="t">The type to add.</param>
         /// <returns>True if the type has been removed, false if it doesn't belong to this bag.</returns>
@@ -138,6 +137,25 @@ namespace CK.Setup
             new Span<int>( _array ).Fill( 0 );
             _count = 0;
         }
+
+        /// <summary>
+        /// Gets the non nullable types contained in this set.
+        /// </summary>
+        public IReadOnlyPocoTypeSet NonNullableTypes => _nonNullables;
+
+        /// <summary>
+        /// Gets an immutable array of the internal flags.
+        /// </summary>
+        /// <returns>An immutable array with the internal flags.</returns>
+        public ImmutableArray<int> CreateFlagArray()
+        {
+            return ImmutableArray.Create<int>( _array );
+        }
+
+        /// <summary>
+        /// Gets the internal flag array.
+        /// </summary>
+        public IReadOnlyList<int> FlagArray => _array;
 
         /// <summary>
         /// Implements equality on the content.
@@ -219,8 +237,9 @@ namespace CK.Setup
         PocoTypeRawSet( PocoTypeRawSet o )
         {
             _array = (int[])o._array.Clone();
-            _count = o.Count;
+            _count = o._count;
             _typeSystem = o.TypeSystem;
+            _nonNullables = new NonNullableSet( this );
         }
 
         /// <summary>
@@ -232,9 +251,27 @@ namespace CK.Setup
         /// <summary>
         /// Gets the enumerator.
         /// </summary>
-        public IEnumerator<IPocoType> GetEnumerator() => _typeSystem.AllNonNullableTypes.Where( Contains ).GetEnumerator();
+        public IEnumerator<IPocoType> GetEnumerator() => _typeSystem.AllTypes.Where( Contains ).GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        IEnumerator<IPocoType> GetNonNullableEnumerator() => _typeSystem.AllNonNullableTypes.Where( Contains ).GetEnumerator();
+
+        sealed class NonNullableSet : IReadOnlyPocoTypeSet
+        {
+            readonly PocoTypeRawSet _s;
+
+            public NonNullableSet( PocoTypeRawSet s ) => _s = s;
+
+            public int Count => _s._count;
+
+            public bool Contains( IPocoType t ) => !t.IsNullable && _s.Contains( t );
+
+            public IEnumerator<IPocoType> GetEnumerator() => _s.GetNonNullableEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => _s.GetNonNullableEnumerator();
+        }
+
     }
 
 }

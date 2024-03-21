@@ -9,12 +9,13 @@ namespace CK.Setup
     /// A set never contains an implementation less poco: <see cref="IPocoType.ImplementationLess"/>
     /// is always false.
     /// <para>
-    /// These sets are always coherent. There are 11 rules:
+    /// These sets are always coherent. There are 12 rules:
     /// <list type="number">
     ///     <item>Nullable &lt;=&gt; Non Nullable (this why only non nullable types need to be exposed by a set)</item>
     ///     <item>Any type =&gt; its <see cref="IPocoType.ObliviousType"/></item>
     ///     <item>A <see cref="IUnionPocoType"/> =&gt; at least one of its <see cref="IOneOfPocoType.AllowedTypes"/></item>
     ///     <item>A <see cref="IBasicRefPocoType"/> =&gt; all its <see cref="IBasicRefPocoType.BaseTypes"/>.</item>
+    ///     <item>A <see cref="IAnonymousRecordPocoType"/> =&gt; its <see cref="IAnonymousRecordPocoType.UnnamedRecord"/>.</item>
     ///     <item>Any collection =&gt; all its <see cref="ICollectionPocoType.ItemTypes"/></item>
     ///     <item>An enum type =&gt; its <see cref="IEnumPocoType.UnderlyingType"/></item>
     ///     <item>A generic <see cref="IAbstractPocoType"/> =&gt; all its <see cref="IAbstractPocoType.GenericArguments"/></item>
@@ -27,7 +28,7 @@ namespace CK.Setup
     /// to <see cref="IPrimaryPocoType"/> (or named <see cref="IRecordPocoType"/>).
     /// </para>
     /// </summary>
-    public interface IPocoTypeSet
+    public interface IPocoTypeSet : IReadOnlyPocoTypeSet
     {
         /// <summary>
         /// Gets the type system.
@@ -35,16 +36,9 @@ namespace CK.Setup
         IPocoTypeSystem TypeSystem { get; }
 
         /// <summary>
-        /// Gets whether the given type is allowed.
-        /// </summary>
-        /// <param name="t">The type to challenge.</param>
-        /// <returns>True if the type is contained in this set, false otherwise.</returns>
-        bool Contains( IPocoType t );
-
-        /// <summary>
         /// Gets the set of non nullable types.
         /// </summary>
-        IReadOnlyCollection<IPocoType> NonNullableTypes { get; }
+        IReadOnlyPocoTypeSet NonNullableTypes { get; }
 
         /// <summary>
         /// Gets whether empty named records are automatically excluded
@@ -60,8 +54,8 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether when including new types, collections of these types are automatically included.
         /// This is almost always true.
-        /// To work with sets that don't have this behavior, use <see cref="IPocoTypeSetManager.CreateAll(bool, System.Func{IPocoType, bool})"/>
-        /// or <see cref="IPocoTypeSetManager.CreateNone(bool, bool, bool, System.Func{IPocoType, bool})"/>.
+        /// To work with sets that don't have this behavior, use <see cref="IPocoTypeSetManager.CreateAll(bool, Func{IPocoType, bool})"/>
+        /// or <see cref="IPocoTypeSetManager.CreateNone(bool, bool, bool, Func{IPocoType, bool})"/>.
         /// </summary>
         bool AutoIncludeCollections { get; }
 
@@ -146,10 +140,10 @@ namespace CK.Setup
         bool IsSupersetOf( IPocoTypeSet other );
 
         /// <summary>
-        /// Gets an array of flags that describes this set.
+        /// Gets the internal array of flags that describes this set.
         /// This supports the code generation, this is barely usable for any other operations.
         /// </summary>
         /// <returns>An array of flags.</returns>
-        ImmutableArray<int> GetFlagArray();
+        IReadOnlyList<int> FlagArray { get; }
     }
 }

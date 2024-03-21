@@ -60,7 +60,8 @@ namespace CK.Setup
 
             public IReadOnlyList<IPocoType> ItemTypes => NonNullable.ItemTypes;
 
-            ICollectionPocoType ICollectionPocoType.ObliviousType => Unsafe.As<ICollectionPocoType>( ObliviousType );
+            // Same as base NullReferenceType.ObliviousType (but uses Covariant return type).
+            public override ICollectionPocoType ObliviousType => NonNullable.ObliviousType;
 
             ICollectionPocoType ICollectionPocoType.NonNullable => NonNullable;
 
@@ -69,11 +70,6 @@ namespace CK.Setup
             ICollectionPocoType? ICollectionPocoType.StructuralFinalType => NonNullable.StructuralFinalType;
 
             ICollectionPocoType? ICollectionPocoType.FinalType => NonNullable.FinalType;
-        }
-
-        interface IRegularCollection : ICollectionPocoType
-        {
-            void SetAbstractReadonly( AbstractReadOnlyCollectionType a );
         }
 
         // List, HashSet, Array.
@@ -110,9 +106,10 @@ namespace CK.Setup
                 }
                 else
                 {
-                    _obliviousType = this;
+                    _obliviousType = Nullable;
                 }
-                _finalType = finalType ?? this;
+                Throw.DebugAssert( "A final reference type is nullable.", finalType == null || (finalType.IsNullable && finalType.IsStructuralFinalType) );
+                _finalType = finalType ?? Nullable;
                 _implTypeName = implTypeName;
                 _itemTypes = new[] { itemType };
                 _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
@@ -129,9 +126,7 @@ namespace CK.Setup
 
             public override ICollectionPocoType ObliviousType => _obliviousType;
 
-            public override IPocoType? StructuralFinalType => _finalType;
-
-            ICollectionPocoType? ICollectionPocoType.StructuralFinalType => _finalType;
+            public override ICollectionPocoType? StructuralFinalType => _finalType;
 
             ICollectionPocoType? ICollectionPocoType.FinalType => _finalType;
 
@@ -222,21 +217,22 @@ namespace CK.Setup
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, static t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
-                Debug.Assert( !keyType.IsNullable );
+                Throw.DebugAssert( !keyType.IsNullable && keyType.IsReadOnlyCompliant && !keyType.IsPolymorphic );
                 if( obliviousType != null )
                 {
                     Throw.DebugAssert( obliviousType.IsOblivious
                                        && obliviousType.Kind == PocoTypeKind.Dictionary
-                                       && obliviousType.ItemTypes.All( i => i.IsOblivious ) );
+                                       && obliviousType.ItemTypes[1].IsOblivious );
                     _obliviousType = obliviousType;
                     // Registers the back reference to the oblivious type.
                     _ = new PocoTypeRef( this, obliviousType, -1 );
                 }
                 else
                 {
-                    _obliviousType = this;
+                    _obliviousType = Nullable;
                 }
-                _finalType = finalType ?? this;
+                Throw.DebugAssert( "A final reference type is nullable.", finalType == null || (finalType.IsNullable && finalType.IsStructuralFinalType) );
+                _finalType = finalType ?? Nullable;
                 _def = new FieldDefaultValue( $"new {implTypeName}()" );
                 // Register back references (key is embedded, value has its own PocoTypeRef).
                 _nextRefKey = ((PocoType)keyType).AddBackRef( this );
@@ -342,7 +338,7 @@ namespace CK.Setup
                 : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
             {
                 _itemTypes = itemTypes;
-                _obliviousType = obliviousType ?? this;
+                _obliviousType = obliviousType ?? Nullable;
             }
 
             new NullCollection Nullable => Unsafe.As<NullCollection>( _nullable );

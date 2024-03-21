@@ -92,13 +92,6 @@ namespace CK.Setup
                 return true;
             }
 
-            internal static bool IsReadOnlyCompliant( IRecordPocoField field )
-            {
-                var invalid = field.Type.Kind is PocoTypeKind.AbstractPoco or PocoTypeKind.SecondaryPoco or PocoTypeKind.PrimaryPoco
-                                              or PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary or PocoTypeKind.Array;
-                return !invalid && (field.Type is not IRecordPocoType r || r.IsReadOnlyCompliant);
-            }
-
             public RecordAnonField[] EnterValueTuple( int count, out int state )
             {
                 state = _forbidConcreteCollections ? 1 : 0;

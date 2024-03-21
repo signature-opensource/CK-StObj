@@ -22,7 +22,7 @@ namespace CK.Setup
         readonly IPocoTypeSet _allExchangeableTypeSet;
         // Only allocates a stupid array of 0 if required by GetFlagsArray
         // from any empty set.
-        ImmutableArray<int> _zeros;
+        PocoTypeRawSet? _zeros;
 
         internal PocoTypeSystem( IPocoDirectory pocoDirectory,
                                  IReadOnlyList<IPocoType> allTypes,

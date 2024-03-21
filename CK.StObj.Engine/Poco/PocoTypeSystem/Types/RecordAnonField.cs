@@ -25,13 +25,13 @@ namespace CK.Setup
         readonly int _index;
         readonly bool _isUnnamed;
 
-        // Used to build the oblivious type fields.
-        internal RecordAnonField( RecordAnonField f )
+        // Used to build the oblivious or unnamed type fields.
+        internal RecordAnonField( RecordAnonField f, bool isOblivious )
         {
             _index = f._index;
             _name = GetItemName( _index );
             _isUnnamed = true;
-            SetType( f.Type.ObliviousType );
+            SetType( isOblivious ? f.Type.ObliviousType : f.Type );
         }
 
         public RecordAnonField( int index, string? name )

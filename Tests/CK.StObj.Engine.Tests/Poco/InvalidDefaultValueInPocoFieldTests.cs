@@ -1,6 +1,5 @@
 using CK.Core;
 using NUnit.Framework;
-using System.Collections.Generic;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -14,15 +13,15 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IInvalidObject1 : IPoco
         {
-            ref (int Ok, object NoWay) P { get; }
+            ref (int Ok, UserMessage NoWay) P { get; }
         }
 
         public interface IInvalidObject2 : IPoco
         {
-            ref (int Ok, (object NoWay, string Works) Sub) P { get; }
+            ref (int Ok, (UserMessage NoWay, string Works) Sub) P { get; }
         }
 
-        public record struct Thing( int Ok, (object NoWay, string Works) Sub );
+        public record struct Thing( int Ok, (UserMessage NoWay, string Works) Sub );
 
         public interface IInvalidObject3 : IPoco
         {
@@ -44,19 +43,23 @@ namespace CK.StObj.Engine.Tests.Poco
         }
 
         // Note that error is different for:
-        //  - Any kind of Poco (abstract or not) and concrete collections (including arrays): Invalid mutable reference types in '...'
+        //  - Any  or Poco (abstract or not) and concrete collections (including arrays): Non read-only compliant types in '...'
         //      ==> This is the "ReadOnlyCompliant rule" that applies.
         //  - Abstract collections: Invalid abstract collection 'IList<int>' in Property '...'. It must be a List.
         //      ==> This is the "Covariance can only be managed by the IPoco" restriction.
+        //
+        // So here we use the UserMessage that like SimpleUserMessage and FormattedString is a basic value type for which we rejected the default
+        // value as it is not valid.
+        //
         [Test]
-        public void non_nullable_object_is_invalid()
+        public void UserMessage_has_no_default()
         {
             {
                 var c = TestHelper.CreateStObjCollector( typeof( IInvalidObject1 ) );
                 TestHelper.GetFailedResult( c, """
                 Required computable default value is missing in Poco:
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject1', field: 'P.NoWay' has no default value.
-                No default can be synthesized for non nullable '[Any]object'.
+                No default can be synthesized for non nullable '[Basic]UserMessage'.
                 """ );
             }
             {
@@ -64,7 +67,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 TestHelper.GetFailedResult( c, """
                 Required computable default value is missing in Poco:
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject2', field: 'P.Sub.NoWay' has no default value.
-                No default can be synthesized for non nullable '[Any]object'.
+                No default can be synthesized for non nullable '[Basic]UserMessage'.
                 """ );
             }
             {
@@ -73,7 +76,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 Required computable default value is missing in Poco:
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject3', field: 'P' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Thing', field: 'Sub.NoWay' has no default value.
-                No default can be synthesized for non nullable '[Any]object'.
+                No default can be synthesized for non nullable '[Basic]UserMessage'.
                 """ );
             }
             {
@@ -83,7 +86,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 '[PrimaryPoco]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.IInvalidObject4', field: 'P.Intermediate' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Intermediate', field: 'Inner' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Thing', field: 'Sub.NoWay' has no default value.
-                No default can be synthesized for non nullable '[Any]object'.
+                No default can be synthesized for non nullable '[Basic]UserMessage'.
                 """ );
             }
             {
@@ -94,7 +97,7 @@ namespace CK.StObj.Engine.Tests.Poco
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.JustForFun', field: 'Another.Intermediate' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Intermediate', field: 'Inner' has no default value.
                 Because '[Record]CK.StObj.Engine.Tests.Poco.InvalidDefaultValueInPocoFieldTests.Thing', field: 'Sub.NoWay' has no default value.
-                No default can be synthesized for non nullable '[Any]object'.
+                No default can be synthesized for non nullable '[Basic]UserMessage'.
                 """ );
             }
         }

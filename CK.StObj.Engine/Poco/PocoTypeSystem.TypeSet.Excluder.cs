@@ -149,7 +149,7 @@ namespace CK.Setup
                 var b = t.FirstBackReference;
                 while( b != null )
                 {
-                    // b.Index == -1: Oblivious to non oblivious Owner reference: we exclude the Owner.
+                    // b.Index == -1: Oblivious (or Unnamed record) to non oblivious Owner reference: we exclude the Owner.
                     // b.Owner is IAbstractPocoType: Owner is a IAbstractPocoType, its backRefCount is its number of
                     //                               primaries. Back reference tracks its generic arguments and the excluded
                     //                               type is a generic argument: exclude it.

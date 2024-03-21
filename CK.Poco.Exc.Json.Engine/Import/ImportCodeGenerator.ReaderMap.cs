@@ -1,106 +1,185 @@
 using CK.CodeGen;
 using CK.Core;
-using System.Numerics;
 using System;
 using System.Diagnostics;
-using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace CK.Setup.PocoJson
 {
     sealed partial class ImportCodeGenerator
     {
-        // Step 1: The _readers array is filled with Reader delegates for all Serializable and NonNullable oblivious types.
-        //         Among them, only IPoco and Records require an explicit generation of their methods since collections
-        //         are implemented once for all based on the typed functions reader of their item types.
-        void RegisterReaders( List<IPrimaryPocoType> pocos, List<IRecordPocoType> records )
+        sealed class ReaderMap
         {
-            foreach( var type in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
+            readonly CodeReader[] _readers;
+            readonly IPocoTypeNameMap _nameMap;
+
+            public ReaderMap( IPocoTypeNameMap nameMap )
             {
-                switch( type.Kind )
+                _nameMap = nameMap;
+                _readers = new CodeReader[nameMap.TypeSet.NonNullableTypes.Count];
+            }
+
+            public IPocoTypeNameMap NameMap => _nameMap;
+
+            public void Initialize( ReaderFunctionMap functionMap )
+            {
+                foreach( var type in _nameMap.TypeSet.NonNullableTypes )
                 {
-                    case PocoTypeKind.UnionType:
-                    case PocoTypeKind.Any:
-                        _readers[type.Index >> 1] = ObjectReader;
-                        break;
-                    case PocoTypeKind.AbstractPoco:
-                        _readers[type.Index >> 1] = GetAbstractPocoReader( type );
-                        break;
-                    case PocoTypeKind.PrimaryPoco:
-                        {
-                            var r = GetPocoReader( type );
-                            var t = (IPrimaryPocoType)type;
-                            _readers[type.Index >> 1] = r;
-                            foreach( var sec in t.SecondaryTypes )
-                            {
-                                _readers[sec.Index >> 1] = r;
-                            }
-                            pocos.Add( t );
-                            break;
-                        }
-                    case PocoTypeKind.Basic:
-                        _readers[type.Index >> 1] = GetBasicTypeCodeReader( type );
-                        break;
-                    case PocoTypeKind.Array:
-                        {
-                            var tA = (ICollectionPocoType)type;
-                            _readers[type.Index >> 1] = tA.ItemTypes[0].Type == typeof( byte )
-                                                            ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.ReadMoreData(ref r);" )
-                                                            : GetArrayCodeReader( tA );
-                            break;
-                        }
-                    case PocoTypeKind.List:
-                    case PocoTypeKind.HashSet:
-                        _readers[type.Index >> 1] = GetListOrSetCodeReader( (ICollectionPocoType)type );
-                        break;
-                    case PocoTypeKind.Dictionary:
-                        _readers[type.Index >> 1] = GetDictionaryCodeReader( (ICollectionPocoType)type );
-                        break;
-                    case PocoTypeKind.Record:
-                    case PocoTypeKind.AnonymousRecord:
-                        _readers[type.Index >> 1] = GetRecordCodeReader( type );
-                        records.Add( (IRecordPocoType)type );
-                        break;
-                    case PocoTypeKind.Enum:
-                        {
-                            var tE = (IEnumPocoType)type;
-                            _readers[type.Index >> 1] = ( w, v ) =>
-                            {
-                                w.OpenBlock()
-                                 .Append( "var " );
-                                GenerateRead( w, tE.UnderlyingType, "u", false );
-                                w.NewLine().Append( v ).Append( "=(" ).Append( tE.CSharpName ).Append( ")u;" )
-                                 .CloseBlock();
-                            };
-                            break;
-                        }
+                    GetReader( type, functionMap );
                 }
             }
-            return;
+
+            public void GenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
+            {
+                if( t.IsNullable )
+                {
+                    writer.Append( "if(r.TokenType==System.Text.Json.JsonTokenType.Null)" )
+                            .OpenBlock()
+                            .Append( variableName ).Append( "=default;" ).NewLine()
+                            .Append( "if(!r.Read()) rCtx.ReadMoreData(ref r);" )
+                            .CloseBlock()
+                            .Append( "else" )
+                            .OpenBlock();
+                    DoGenerateRead( _readers, writer, t, variableName, requiresInit );
+                    writer.CloseBlock();
+                }
+                else
+                {
+                    DoGenerateRead( _readers, writer, t, variableName, requiresInit );
+                }
+
+                static string? GetInitSource( IPocoType t )
+                {
+                    // BasicTypes will be assigned from low-level reader functions.
+                    // Enum are read by casting the underlying type.
+                    if( t.Kind == PocoTypeKind.Basic || t.Kind == PocoTypeKind.Enum ) return null;
+                    // If the type has a default value source, use it.
+                    var def = t.DefaultValueInfo;
+                    if( def.RequiresInit ) return def.DefaultValue.ValueCSharpSource;
+                    // If the type is a struct it will be read by ref: the variable needs to be assigned
+                    // before ref can be used.
+                    if( t.Type.IsValueType ) return "default";
+                    // Reference types should have a DefaultValue.
+                    return null;
+                }
+
+                static void DoGenerateRead( CodeReader[] readers, ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
+                {
+                    if( requiresInit )
+                    {
+                        var init = GetInitSource( t.NonNullable );
+                        if( init != null )
+                        {
+                            writer.Append( variableName ).Append( "=" ).Append( init ).Append( ";" ).NewLine();
+                        }
+                    }
+                    // For nullable records, we need this adapter.
+                    // This is crappy and inefficient.
+                    // This is because even if we can get the reference to the Nullable value field to fill it,
+                    // we miss the capability to set its HasValue to true. So we recopy the read value as the
+                    // value (thanks to GetValueOrDefault that doesn't check the HasValue and returns the value as-is).
+                    string? originName = null;
+                    if( t.IsNullable && (t.Kind == PocoTypeKind.AnonymousRecord || t.Kind == PocoTypeKind.Record) )
+                    {
+                        originName = variableName;
+                        variableName = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
+                    }
+                    readers[t.Index >> 1].Invoke( writer, variableName );
+                    if( originName != null )
+                    {
+                        writer.NewLine().Append( originName ).Append( " = " ).Append( originName ).Append( ".GetValueOrDefault();" );
+                    }
+                }
+            }
+
+            CodeReader GetReader( IPocoType type, ReaderFunctionMap functionMap )
+            {
+                Throw.DebugAssert( _nameMap.TypeSet.Contains( type ) && !type.IsNullable );
+                var r = _readers[type.Index >> 1];
+                if( r == null )
+                {
+                    switch( type.Kind )
+                    {
+                        case PocoTypeKind.UnionType:
+                        case PocoTypeKind.Any:
+                            r = ObjectReader;
+                            break;
+                        case PocoTypeKind.AbstractPoco:
+                            r = GetAbstractPocoReader( type );
+                            break;
+                        case PocoTypeKind.SecondaryPoco:
+                        case PocoTypeKind.PrimaryPoco:
+                            {
+                                r = PocoReader;
+                                break;
+                            }
+                        case PocoTypeKind.Basic:
+                            r = GetBasicTypeCodeReader( type );
+                            break;
+                        case PocoTypeKind.Array:
+                            {
+                                var tA = (ICollectionPocoType)type;
+                                r = tA.ItemTypes[0].Type == typeof( byte )
+                                           ? ( w, v ) => w.Append( v ).Append( "=r.GetBytesFromBase64();if(!r.Read())rCtx.ReadMoreData(ref r);" )
+                                           : GetArrayCodeReader( tA, functionMap );
+                                break;
+                            }
+                        case PocoTypeKind.List:
+                        case PocoTypeKind.HashSet:
+                            r = GetListOrSetCodeReader( (ICollectionPocoType)type, functionMap );
+                            break;
+                        case PocoTypeKind.Dictionary:
+                            r = GetDictionaryCodeReader( (ICollectionPocoType)type, functionMap );
+                            break;
+                        case PocoTypeKind.Record:
+                        case PocoTypeKind.AnonymousRecord:
+                            r = GetRecordCodeReader( type );
+                            break;
+                        case PocoTypeKind.Enum:
+                            {
+                                var tE = (IEnumPocoType)type;
+                                r = ( w, v ) =>
+                                {
+                                    w.OpenBlock()
+                                     .Append( "var " );
+                                    GenerateRead( w, tE.UnderlyingType, "u", false );
+                                    w.NewLine().Append( v ).Append( "=(" ).Append( tE.CSharpName ).Append( ")u;" )
+                                     .CloseBlock();
+                                };
+                                break;
+                            }
+                        default: throw new NotSupportedException( type.Kind.ToString() );
+                    }
+                    _readers[type.Index >> 1] = r;
+                }
+                return r;
+            }
 
             static void ObjectReader( ICodeWriter writer, string variableName )
             {
                 writer.Append( variableName ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
             }
 
+            static void PocoReader( ICodeWriter writer, string variableName )
+            {
+                writer.Append( variableName ).Append( ".ReadJson( ref r, rCtx );" );
+            }
+
             static CodeReader GetAbstractPocoReader( IPocoType type )
             {
+                Throw.DebugAssert( !type.IsNullable );
                 return ( w, v ) =>
                 {
                     w.Append( v ).Append( "=(" ).Append( type.CSharpName ).Append( ")CK.Poco.Exc.JsonGen.Importer.ReadAny( ref r, rCtx );" );
                 };
             }
 
-            static CodeReader GetPocoReader( IPocoType type )
-            {
-                return ( w, v ) => w.Append( v ).Append( ".ReadJson( ref r, rCtx );" );
-            }
-
             static CodeReader GetBasicTypeCodeReader( IPocoType type )
             {
-                if( type.Type == typeof(int) )
+                if( type.Type == typeof( int ) )
                 {
-                    return (w,v) => w.Append( v ).Append( "=r.GetInt32();if(!r.Read())rCtx.ReadMoreData(ref r);" );
+                    return ( w, v ) => w.Append( v ).Append( "=r.GetInt32();if(!r.Read())rCtx.ReadMoreData(ref r);" );
                 }
                 if( type.Type == typeof( bool ) )
                 {
@@ -210,7 +289,7 @@ namespace CK.Setup.PocoJson
                 return Throw.NotSupportedException<CodeReader>( type.CSharpName );
             }
 
-            CodeReader GetArrayCodeReader( ICollectionPocoType type )
+            static CodeReader GetArrayCodeReader( ICollectionPocoType type, ReaderFunctionMap functionMap )
             {
                 IPocoType tI = type.ItemTypes[0];
                 if( tI.IsPolymorphic )
@@ -220,13 +299,13 @@ namespace CK.Setup.PocoJson
                                                   .Append( tI.ImplTypeName )
                                                   .Append( ">(ref r, rCtx);" );
                 }
-                var readerFunction = GetReadFunctionName( tI );
+                var readerFunction = functionMap.GetReadFunctionName( tI );
                 return ( writer, v ) => writer.Append( v ).Append( "=CK.Poco.Exc.JsonGen.Importer.ReadArray(ref r," )
                                               .Append( readerFunction )
                                               .Append( ",rCtx);" );
             }
 
-            CodeReader GetListOrSetCodeReader( ICollectionPocoType type )
+            CodeReader GetListOrSetCodeReader( ICollectionPocoType type, ReaderFunctionMap functionMap )
             {
                 IPocoType tI = type.ItemTypes[0];
                 if( tI.IsPolymorphic )
@@ -235,7 +314,7 @@ namespace CK.Setup.PocoJson
                                                   .Append( v )
                                                   .Append( ",rCtx);" );
                 }
-                var readerFunction = GetReadFunctionName( tI );
+                var readerFunction = functionMap.GetReadFunctionName( tI );
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillListOrSet(ref r," )
                                               .Append( v )
                                               .Append( "," )
@@ -243,10 +322,10 @@ namespace CK.Setup.PocoJson
                                               .Append( ",rCtx);" );
             }
 
-            CodeReader GetDictionaryCodeReader( ICollectionPocoType type )
+            CodeReader GetDictionaryCodeReader( ICollectionPocoType type, ReaderFunctionMap functionMap )
             {
                 var keyType = type.ItemTypes[0];
-                var valueFunction = GetReadFunctionName( type.ItemTypes[1] );
+                var valueFunction = functionMap.GetReadFunctionName( type.ItemTypes[1] );
                 if( keyType.Type == typeof( string ) )
                 {
                     return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillDynamicObject(ref r," )
@@ -255,7 +334,7 @@ namespace CK.Setup.PocoJson
                                                   .Append( valueFunction )
                                                   .Append( ",rCtx);" );
                 }
-                var keyFunction = GetReadFunctionName( type.ItemTypes[0] );
+                var keyFunction = functionMap.GetReadFunctionName( type.ItemTypes[0] );
                 return ( writer, v ) => writer.Append( "CK.Poco.Exc.JsonGen.Importer.FillDictionary(ref r," )
                                               .Append( v )
                                               .Append( "," )

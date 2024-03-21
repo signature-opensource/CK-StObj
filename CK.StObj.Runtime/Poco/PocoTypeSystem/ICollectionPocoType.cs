@@ -33,10 +33,10 @@ namespace CK.Setup
         /// <inheritdoc cref="IPocoType.ObliviousType" />
         new ICollectionPocoType ObliviousType { get; }
 
-        /// <summary>
-        /// Gets the structural final type (<see cref="IPocoType.ImplementationLess"/> can be true).
+        /// <inheritdoc cref="IPocoType.StructuralFinalType" />
+        /// <remarks>
         /// This is null when <see cref="IsAbstractReadOnly"/> is true.
-        /// </summary>
+        /// </remarks>
         new ICollectionPocoType? StructuralFinalType { get; }
 
         /// <summary>

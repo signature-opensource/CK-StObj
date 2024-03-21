@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using CK.CodeGen;
 using CK.Core;
 
 #nullable enable
@@ -66,6 +67,8 @@ namespace CK.Setup
             bool ICSCodeGenerationContext.SaveSource => ConfigurationGroup.SaveSource;
 
             CompileOption ICSCodeGenerationContext.CompileOption => ConfigurationGroup.CompileOption;
+
+            INamespaceScope ICSCodeGenerationContext.GeneratedCode => Result.DynamicAssembly.Code.Global;
         }
 
     }

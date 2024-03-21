@@ -47,14 +47,15 @@ namespace CK.Setup
 
         static bool ImplementationLessFilter( IPocoType t ) => !t.ImplementationLess;
 
-        ImmutableArray<int> GetZeroFlagArray()
+        IReadOnlyList<int> GetZeroFlagArray()
         {
-            if( _zeros.IsDefault )
+            if( _zeros == null )
             {
-                _zeros = ImmutableArray.Create( PocoTypeRawSet.CreateEmptyArray( this ) );
+                _zeros = new PocoTypeRawSet( this );
             }
-            return _zeros;
+            return _zeros.FlagArray;
         }
+
         sealed class RootNone : IPocoTypeSet
         {
             readonly PocoTypeSystem _typeSystem;
@@ -76,6 +77,8 @@ namespace CK.Setup
                 _autoIncludeCollections = autoIncludeCollections;
             }
 
+            public int Count => 0;
+
             public IPocoTypeSystem TypeSystem => _typeSystem;
 
             public bool AllowEmptyRecords => _allowEmptyRecords;
@@ -93,7 +96,7 @@ namespace CK.Setup
 
             public bool Contains( IPocoType t ) => false;
 
-            public IReadOnlyCollection<IPocoType> NonNullableTypes => Array.Empty<IPocoType>();
+            public IReadOnlyPocoTypeSet NonNullableTypes => IReadOnlyPocoTypeSet.Empty;
 
             public Func<IPocoType, bool> LowLevelFilter => _lowLevelFilter;
 
@@ -150,7 +153,11 @@ namespace CK.Setup
 
             public bool IsSupersetOf( IPocoTypeSet other ) => SameContentAs( other );
 
-            public ImmutableArray<int> GetFlagArray() => _typeSystem.GetZeroFlagArray();
+            public IReadOnlyList<int> FlagArray => _typeSystem.GetZeroFlagArray();
+
+            public IEnumerator<IPocoType> GetEnumerator() => IReadOnlyPocoTypeSet.Empty.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
         internal sealed class TypeSet : IPocoTypeSet
@@ -175,6 +182,8 @@ namespace CK.Setup
                 CheckTypeSetRules( this );
             }
 
+            public int Count => _raw.Count;
+
             public IPocoTypeSystem TypeSystem => _raw.TypeSystem;
 
             public bool AllowEmptyRecords => _allowEmptyRecords;
@@ -189,10 +198,10 @@ namespace CK.Setup
                 Throw.CheckArgument( TypeSystem == other.TypeSystem );
                 return other is TypeSet s
                         ? _raw.SameContentAs( s._raw )
-                        : _raw.Count == other.NonNullableTypes.Count;
+                        : _raw.Count == other.Count;
             }
 
-            public IReadOnlyCollection<IPocoType> NonNullableTypes => _raw;
+            public IReadOnlyPocoTypeSet NonNullableTypes => _raw.NonNullableTypes;
 
             public bool Contains( IPocoType t ) => _raw.Contains( t );
 
@@ -285,17 +294,17 @@ namespace CK.Setup
                 if( other is not TypeSet o )
                 {
                     int otherCount = other.NonNullableTypes.Count;
-                    Throw.CheckArgument( "Invalid IPocoTypeSet implementation.", otherCount == 0 || otherCount == _raw.TypeSystem.AllNonNullableTypes.Count );
+                    Throw.CheckArgument( "Invalid IPocoTypeSet implementation.", otherCount == 0 );
                     return _raw.Count == otherCount;
                 }
                 return _raw.IsSupersetOf( o._raw );
             }
 
-            public ImmutableArray<int> GetFlagArray()
-            {
-                // Waiting for .NET 8 (ImmutableArray<T> AsImmutableArray<T>)
-                return ImmutableArray.Create<int>( _raw._array );
-            }
+            public IEnumerator<IPocoType> GetEnumerator() => _raw.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => _raw.GetEnumerator();
+
+            public IReadOnlyList<int> FlagArray => _raw.FlagArray;
         }
 
         static IPocoTypeSet CreateTypeSet( PocoTypeRawSet workingSet,
@@ -338,14 +347,15 @@ namespace CK.Setup
                 Throw.DebugAssert( $"Rule 2, Type = {t}.", set.Contains( t.ObliviousType ) );
                 Throw.DebugAssert( $"Rule 3, Type = {t}.", t is not IUnionPocoType u3 || u3.AllowedTypes.Any( set.Contains ) );
                 Throw.DebugAssert( $"Rule 4, Type = {t}.", t is not IBasicRefPocoType r4 || r4.BaseTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 5, Type = {t}.", t is not ICollectionPocoType c6 || c6.ItemTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 6, Type = {t}.", t is not IEnumPocoType e7 || set.Contains( e7.UnderlyingType ) );
-                Throw.DebugAssert( $"Rule 7, Type = {t}.", t is not IAbstractPocoType a8 || a8.GenericArguments.All( a => set.Contains( a.Type ) ) );
-                Throw.DebugAssert( $"Rule 8, Type = {t}.", t is not IAbstractPocoType a9 || a9.PrimaryPocoTypes.Any( set.Contains ) );
-                Throw.DebugAssert( $"Rule 9a, Type = {t}.", t is not ISecondaryPocoType s10a || set.Contains( s10a.PrimaryPocoType ) );
-                Throw.DebugAssert( $"Rule 9b, Type = {t}.", t is not IPrimaryPocoType s10b || s10b.SecondaryTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 10, Type = {t}.", t is not IPrimaryPocoType p11 || p11.AbstractTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 11, Type = {t}.", t.Kind != PocoTypeKind.AnonymousRecord || ((IRecordPocoType)t).Fields.Any( f => set.Contains( f.Type ) ) );
+                Throw.DebugAssert( $"Rule 5, Type = {t}.", t is not IAnonymousRecordPocoType a5 || set.Contains( a5.UnnamedRecord ) );
+                Throw.DebugAssert( $"Rule 6, Type = {t}.", t is not ICollectionPocoType c6 || c6.ItemTypes.All( set.Contains ) );
+                Throw.DebugAssert( $"Rule 7, Type = {t}.", t is not IEnumPocoType e7 || set.Contains( e7.UnderlyingType ) );
+                Throw.DebugAssert( $"Rule 8, Type = {t}.", t is not IAbstractPocoType a8 || a8.GenericArguments.All( a => set.Contains( a.Type ) ) );
+                Throw.DebugAssert( $"Rule 9, Type = {t}.", t is not IAbstractPocoType a9 || a9.PrimaryPocoTypes.Any( set.Contains ) );
+                Throw.DebugAssert( $"Rule 10a, Type = {t}.", t is not ISecondaryPocoType s10a || set.Contains( s10a.PrimaryPocoType ) );
+                Throw.DebugAssert( $"Rule 10b, Type = {t}.", t is not IPrimaryPocoType s10b || s10b.SecondaryTypes.All( set.Contains ) );
+                Throw.DebugAssert( $"Rule 11, Type = {t}.", t is not IPrimaryPocoType p11 || p11.AbstractTypes.All( set.Contains ) );
+                Throw.DebugAssert( $"Rule 12, Type = {t}.", t.Kind != PocoTypeKind.AnonymousRecord || ((IRecordPocoType)t).Fields.Any( f => set.Contains( f.Type ) ) );
                 if( !set.AllowEmptyRecords )
                 {
                     Throw.DebugAssert( "Rule 12.", t is not IRecordPocoType r13 || r13.Fields.Any( f => set.Contains( f.Type ) ) );

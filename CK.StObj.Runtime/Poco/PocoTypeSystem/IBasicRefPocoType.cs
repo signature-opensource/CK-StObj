@@ -27,6 +27,12 @@ namespace CK.Setup
         /// </summary>
         IEnumerable<IBasicRefPocoType> Specializations { get; }
 
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        /// <remarks>
+        /// <see cref="IBasicRefPocoType"/> returns the <see cref="Nullable"/>.
+        /// </remarks>
+        new IBasicRefPocoType ObliviousType { get; }
+
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IBasicRefPocoType Nullable { get; }
 

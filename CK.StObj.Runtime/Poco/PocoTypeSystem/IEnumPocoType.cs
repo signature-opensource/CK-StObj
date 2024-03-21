@@ -30,6 +30,12 @@ namespace CK.Setup
         /// </summary>
         IReadOnlyDictionary<string, object> Values { get; }
 
+        /// <inheritdoc cref="IPocoType.ObliviousType"/>
+        /// <remarks>
+        /// <see cref="IEnumPocoType"/> returns this.
+        /// </remarks>
+        new IEnumPocoType ObliviousType { get; }
+
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IEnumPocoType Nullable { get; }
 

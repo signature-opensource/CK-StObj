@@ -4,21 +4,15 @@ namespace CK.Setup
 {
     /// <summary>
     /// Type for <see cref="PocoTypeKind.Record"/> (fully mutable structs)
-    /// and <see cref="PocoTypeKind.AnonymousRecord"/>.
+    /// and <see cref="PocoTypeKind.AnonymousRecord"/> (this is a <see cref="IAnonymousRecordPocoType"/>).
     /// </summary>
     public interface IRecordPocoType : ICompositePocoType
     {
         /// <summary>
-        /// Gets whether this is a value tuple that defines this record.
+        /// Gets whether this is a value tuple that defines this record:
+        /// this is a <see cref="IAnonymousRecordPocoType"/>.
         /// </summary>
         bool IsAnonymous { get; }
-
-        /// <summary>
-        /// Gets whether this record type has no mutable reference types: a copy of this value
-        /// is de facto a "readonly" projection of its source in the sense that it cannot be
-        /// used to mutate the source data.
-        /// </summary>
-        bool IsReadOnlyCompliant { get; }
 
         /// <inheritdoc cref="ICompositePocoType.Fields"/>
         new IReadOnlyList<IRecordPocoField> Fields { get; }

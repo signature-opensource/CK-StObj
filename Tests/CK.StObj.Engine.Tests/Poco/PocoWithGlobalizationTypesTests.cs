@@ -16,16 +16,17 @@ namespace CK.StObj.Engine.Tests.Poco
             // Default must be NormalizedCultureInfo.CodeDefault.
             NormalizedCultureInfo NormalizedCultureInfo { get; set; }
 
-            // Default is a SimpleUserMessage.IsValid == false.
-            SimpleUserMessage SimpleUserMessage { get; set; }
-            // Default is a UserMessage.IsValid == false.
-            UserMessage UserMessage { get; set; }
+            // Default of SimpleUserMessage, UserMessage and FormattedString are not valid.
+            // We forbid the default for them: they can't be Poco fields.
+            //
+            // UserMessage UserMessage { get; set; }
+            // SimpleUserMessage SimpleUserMessage { get; set; }
+            // FormattedString FormattedString { get; set; }
+
             // Default must be MCString.Empty.
             MCString MCString { get; set; }
             // Default must be CodeString.Empty.
             CodeString CodeString { get; set; }
-            // Default must be FormattedString.Empty.
-            FormattedString FormattedString { get; set; }
 
             ExtendedCultureInfo? NExtendedCultureInfo { get; set; }
             NormalizedCultureInfo? NNormalizedCultureInfo { get; set; }
@@ -45,11 +46,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             p.ExtendedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
             p.NormalizedCultureInfo.Should().BeSameAs( NormalizedCultureInfo.CodeDefault );
-            p.SimpleUserMessage.IsValid.Should().BeFalse();
-            p.UserMessage.IsValid.Should().BeFalse();
             p.MCString.Should().BeSameAs( MCString.Empty );
             p.CodeString.Should().BeSameAs( CodeString.Empty );
-            p.FormattedString.Should().BeEquivalentTo( FormattedString.Empty );
 
             p.NExtendedCultureInfo.Should().BeNull();
             p.NNormalizedCultureInfo.Should().BeNull();

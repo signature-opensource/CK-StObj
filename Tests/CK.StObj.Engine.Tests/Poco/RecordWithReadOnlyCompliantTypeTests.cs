@@ -93,12 +93,12 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IFailedWithStruct2 ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2.WithProperties':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2.WithProperties':",
                 "  List<int>? Values" );
 
             c = TestHelper.CreateStObjCollector( typeof( IFailedWithStruct1 ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1.WithFields':", 
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1.WithFields':", 
                 "  List<int> Values" );
         }
 
@@ -169,13 +169,13 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IRecordWithPoco ), typeof( IFailedWithStruct1 ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IRecordWithPoco.Pof':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IRecordWithPoco.Pof':",
                 "  in '(CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1 IAmHere,int B) Inside':",
                 "    CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1 IAmHere" );
 
             c = TestHelper.CreateStObjCollector( typeof( IRecordWithPoco2 ), typeof( IFailedWithStruct2 ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IRecordWithPoco2.Pof':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IRecordWithPoco2.Pof':",
                 "  CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2 IAmHere" );
         }
 
@@ -191,7 +191,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecList ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecList.P':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecList.P':",
                 "List<CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecList.Rec> R" );
         }
 
@@ -207,7 +207,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecArray ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecArray.P':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecArray.P':",
                 "  CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecArray.Rec[] R" );
         }
 
@@ -223,7 +223,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecDic ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecDic.P':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecDic.P':",
                 "  Dictionary<int,CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecDic.Rec> R" );
         }
 
@@ -242,12 +242,12 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IAnonymousRecordWithPoco ), typeof( IFailedWithStruct1 ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IAnonymousRecordWithPoco.Pof':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IAnonymousRecordWithPoco.Pof':",
                 "  CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct1 A" );
 
             c = TestHelper.CreateStObjCollector( typeof( IAnonymousRecordWithPoco2 ), typeof( IFailedWithStruct2 ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IAnonymousRecordWithPoco2.Pof':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IAnonymousRecordWithPoco2.Pof':",
                 "  in '(CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2 IAmHere,int B) Inside':",
                 "    CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IFailedWithStruct2 IAmHere" );
         }
@@ -262,7 +262,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldAnonymousRecList ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecList.P':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecList.P':",
                 "List<int> R" );
         }
 
@@ -276,7 +276,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldAnonymousRecArray ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecArray.P':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldAnonymousRecArray.P':",
                 "  in '(int[] R,bool B) Inside':",
                 "    int[] R" );
         }
@@ -291,7 +291,7 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IHoldRecAnonymousDic ) );
             TestHelper.GetFailedResult( c,
-                "Invalid mutable reference types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecAnonymousDic.P':",
+                "Non read-only compliant types in 'CK.StObj.Engine.Tests.Poco.RecordWithReadOnlyCompliantTypeTests.IHoldRecAnonymousDic.P':",
                 "  Dictionary<int,long> R" );
         }
 

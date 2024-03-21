@@ -19,7 +19,7 @@ namespace CK.Setup
 
         /// <inheritdoc cref="IPocoType.ObliviousType"/>
         /// <remarks>
-        /// Gets the <see cref="NonNullable"/>.
+        /// <see cref="ISecondaryPocoType"/> returns the <see cref="Nullable"/>.
         /// </remarks>
         new ISecondaryPocoType ObliviousType { get; }
     }

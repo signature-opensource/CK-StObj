@@ -28,50 +28,50 @@ namespace CK.Setup
                 _csharpName = notNullable.CSharpName + '?';
             }
 
-            public int Index => NonNullable.Index + 1;
-
             public bool IsNullable => true;
+
+            public int Index => _nonNullable.Index + 1;
 
             public string CSharpName => _csharpName;
 
-            public string ImplTypeName => NonNullable.ImplTypeName;
+            public string ImplTypeName => _nonNullable.ImplTypeName;
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
-            public Type Type => NonNullable.Type;
+            public Type Type => _nonNullable.Type;
 
-            public PocoTypeKind Kind => NonNullable.Kind;
+            public PocoTypeKind Kind => _nonNullable.Kind;
 
-            public bool ImplementationLess => NonNullable.ImplementationLess;
+            public bool ImplementationLess => _nonNullable.ImplementationLess;
 
             public IPocoType Nullable => this;
 
             public IPocoType NonNullable => _nonNullable;
 
-            public IPocoType.ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+            public IPocoType.ITypeRef? FirstBackReference => _nonNullable.FirstBackReference;
 
             public bool IsOblivious => ObliviousType == this;
 
+            public bool IsStructuralFinalType => StructuralFinalType == this;
+
+            public bool IsFinalType => FinalType == this;
+
             /// <summary>
-            /// Returning "NonNullable.ObliviousType" by default (that can be this instance).
+            /// Returning "NonNullable.ObliviousType" by default (that can be this instance: oblivious reference type are always nullable).
             /// </summary>
             public virtual IPocoType ObliviousType => _nonNullable.ObliviousType;
 
-            public bool IsStructuralFinalType => false;
-
-            public bool IsFinalType => false;
-
             /// <summary>
-            /// Returning "NonNullable.FinalType" always works.
+            /// Returning "NonNullable.FinalType": it is the non nullable implementation that handles it,
+            /// potentially returning this nullable (final reference type are always nullable).
             /// </summary>
             public IPocoType? StructuralFinalType => _nonNullable.StructuralFinalType;
 
-            public bool IsPolymorphic => NonNullable.IsPolymorphic;
+            public bool IsPolymorphic => _nonNullable.IsPolymorphic;
 
+            public bool IsReadOnlyCompliant => _nonNullable.IsReadOnlyCompliant;
 
-            public bool IsHashSafe => NonNullable.IsHashSafe;
-
-            public IPocoType? FinalType => NonNullable.FinalType;
+            public IPocoType? FinalType => _nonNullable.FinalType;
 
             public bool IsSamePocoType( IPocoType type ) => PocoType.IsSamePocoType( this, type );
 
@@ -82,7 +82,7 @@ namespace CK.Setup
                 // Non nullable CanReadFrom don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return type.IsNullable && NonNullable.CanReadFrom( type );
+                return type.IsNullable && _nonNullable.CanReadFrom( type );
             }
 
             public bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
@@ -124,9 +124,9 @@ namespace CK.Setup
                 _csharpName = notNullable.CSharpName + '?';
             }
 
-            public int Index => NonNullable.Index + 1;
-
             public bool IsNullable => true;
+
+            public int Index => _nonNullable.Index + 1;
 
             public string CSharpName => _csharpName;
 
@@ -136,7 +136,7 @@ namespace CK.Setup
             {
                 get
                 {
-                    Throw.DebugAssert( NonNullable.ImplementationLess is false );
+                    Throw.DebugAssert( _nonNullable.ImplementationLess is false );
                     return false;
                 }
             }
@@ -158,29 +158,29 @@ namespace CK.Setup
                 }
             }
 
+            // For value type, a final type is always non nullable.
             public bool IsStructuralFinalType => false;
-
             public bool IsFinalType => false;
 
-            public IPocoType? StructuralFinalType => NonNullable.StructuralFinalType;
+            public IPocoType? StructuralFinalType => _nonNullable.StructuralFinalType;
 
-            public IPocoType? FinalType => NonNullable.FinalType;
+            public IPocoType? FinalType => _nonNullable.FinalType;
 
             public DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Allowed;
 
             public Type Type => _type;
 
-            public PocoTypeKind Kind => NonNullable.Kind;
+            public PocoTypeKind Kind => _nonNullable.Kind;
 
             public IPocoType Nullable => this;
 
             public IPocoType NonNullable => _nonNullable;
 
-            public IPocoType.ITypeRef? FirstBackReference => NonNullable.FirstBackReference;
+            public IPocoType.ITypeRef? FirstBackReference => _nonNullable.FirstBackReference;
 
-            public bool IsPolymorphic => NonNullable.IsPolymorphic;
+            public bool IsPolymorphic => _nonNullable.IsPolymorphic;
 
-            public bool IsHashSafe => NonNullable.IsHashSafe;
+            public bool IsReadOnlyCompliant => _nonNullable.IsReadOnlyCompliant;
 
             public bool CanReadFrom( IPocoType type )
             {
@@ -189,7 +189,7 @@ namespace CK.Setup
                 // Non nullable IsReadableType predicates don't care of the
                 // type nullability (a nullable can always be read from it's non nullable): we
                 // simply relay the type here.
-                return type.IsNullable && NonNullable.CanReadFrom( type );
+                return type.IsNullable && _nonNullable.CanReadFrom( type );
             }
 
             public bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
@@ -270,7 +270,7 @@ namespace CK.Setup
         /// Overridden by <see cref="BasicRefType"/> (true for Extended and NormalizedCultureInfo),
         /// <see cref="RecordNamedType"/> and <see cref="RecordAnonType"/> (true if <see cref="IRecordPocoType.IsReadOnlyCompliant"/>).
         /// </summary>
-        public virtual bool IsHashSafe => _kind == PocoTypeKind.Basic;
+        public virtual bool IsReadOnlyCompliant => _kind == PocoTypeKind.Basic;
 
         internal virtual void SetImplementationLess()
         {
@@ -338,11 +338,12 @@ namespace CK.Setup
         public bool IsStructuralFinalType => StructuralFinalType == this;
 
         /// <summary>
-        /// Returns the ObliviousType.NonNullable by default except for <see cref="PocoTypeKind.Any"/> (that is not a final type).
+        /// Returns the ObliviousType by default except for <see cref="PocoTypeKind.Any"/> (that is not a final type).
         /// <see cref="BasicRefType"/> overrides this to return null if its Type is abstract.
         /// <see cref="AbstractPocoType"/> and <see cref="AbstractPocoBase"/>, <see cref="AbstractReadOnlyCollectionType"/>
-        /// and <see cref="UnionType"/>override this to always return null.
-        /// Mutable collections (<see cref="ListOrSetOrArrayType"/> and <see cref="DictionaryType"/>) are the only one to have their own final type.
+        /// and <see cref="UnionType"/> override this to always return null.
+        /// Mutable collections (<see cref="ListOrSetOrArrayType"/> and <see cref="DictionaryType"/>) and <see cref="RecordNamedType"/> are the
+        /// only ones to have their own final type.
         /// </summary>
         public virtual IPocoType? StructuralFinalType => _kind != PocoTypeKind.Any ? ObliviousType : null;
 
@@ -353,6 +354,10 @@ namespace CK.Setup
         /// The only case where we disallow is object (Any), AbstractPoco, abstract readonly list/set/dictionary and UnionType:
         /// union type default is handled at the field level based on the DefaultValue attribute (like the others)
         /// or based on the first type in the variants definition that can provide a default value.
+        /// </para>
+        /// <para>
+        /// The <see cref="UserMessage"/>, <see cref="SimpleUserMessage"/> and <see cref="FormattedString"/> value types are special cases as
+        /// we don't allow their <c>default</c> value because it is invalid.
         /// </para>
         /// </summary>
         public virtual DefaultValueInfo DefaultValueInfo

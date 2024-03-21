@@ -11,7 +11,7 @@ namespace CK.Setup
         bool IsList { get; }
 
         /// <summary>
-        /// Gets the non nullable item type.
+        /// Gets the nullable item type.
         /// </summary>
         IPrimaryPocoType ItemType { get; }
     }

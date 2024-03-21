@@ -2,6 +2,7 @@ using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -12,7 +13,11 @@ namespace CK.Setup
     ///         Nullable types visit their <see cref="IPocoType.NonNullable"/> (same as base <see cref="PocoTypeVisitor"/>).
     ///     </item>
     ///     <item>
+    ///         All <see cref="IPocoType.ObliviousType"/> are visited.
+    ///     </item>
+    ///     <item>
     ///         <see cref="IRecordPocoType"/> visits its <see cref="IRecordPocoField"/> (same as base <see cref="PocoTypeVisitor"/>).
+    ///         <see cref="IAnonymousRecordPocoType"/> visits its <see cref="IAnonymousRecordPocoType.UnnamedRecord"/>.
     ///     </item>
     ///     <item>
     ///         <see cref="IPrimaryPocoType"/> visits its <see cref="IPrimaryPocoField"/> and its <see cref="IPrimaryPocoType.SecondaryTypes"/>.
@@ -46,9 +51,6 @@ namespace CK.Setup
     ///     </item>
     ///     <item>
     ///         <see cref="IEnumPocoType"/> visits its <see cref="IEnumPocoType.UnderlyingType"/>.
-    ///     </item>
-    ///     <item>
-    ///         All <see cref="IPocoType.ObliviousType"/> are visited.
     ///     </item>
     ///     <item>
     ///         Basic types (<see cref="PocoTypeKind.Basic"/> and <see cref="PocoTypeKind.Any"/>) visit nothing else
@@ -131,6 +133,20 @@ namespace CK.Setup
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Visits the <see cref="IRecordPocoType.Fields"/> and if the record is a <see cref="IAnonymousRecordPocoType"/>,
+        /// its <see cref="IAnonymousRecordPocoType.UnnamedRecord"/>.
+        /// </summary>
+        /// <param name="record">A record type.</param>
+        protected override void VisitRecord( IRecordPocoType record )
+        {
+            base.VisitRecord( record );
+            if( record is IAnonymousRecordPocoType a && !a.IsUnnamed )
+            {
+                Visit( a.UnnamedRecord );
+            }
         }
 
         /// <summary>

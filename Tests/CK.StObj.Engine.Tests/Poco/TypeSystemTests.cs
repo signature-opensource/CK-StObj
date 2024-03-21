@@ -80,9 +80,12 @@ namespace CK.StObj.Engine.Tests.Poco
             ulong PULong { get; set; }
             ushort PUShort { get; set; }
             sbyte PSByte { get; set; }
-            SimpleUserMessage PSimpleUserMessage { get; set; }
-            UserMessage PUserMessage { get; set; }
-            FormattedString PFormattedString { get; set; }
+
+            // Default of SimpleUserMessage, UserMessage and FormattedString are not valid.
+            // We forbid the default for them: they can't be Poco fields unless they are nullables.
+            SimpleUserMessage? PSimpleUserMessage { get; set; }
+            UserMessage? PUserMessage { get; set; }
+            FormattedString? PFormattedString { get; set; }
         }
 
         [Test]
@@ -100,13 +103,13 @@ namespace CK.StObj.Engine.Tests.Poco
             const int enumTypesCount = 1; // AnEnum
             const int pocoTypesCount = 5 + 1; // The 5 Pocos + the IPoco.
             const int listTypesCount = 1 + 1; // List<(int,string)> and List<(int Count, string Name)>
-            const int anonymousTypesCount = 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective oblivious types.
+            const int anonymousTypesCount = 2 + 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective unnamed and oblivious types.
 
             builder.Count.Should().Be( (basicTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );
 
             int before = builder.Count;
             var tRec = builder.Register( TestHelper.Monitor, GetType().GetProperty( nameof( GetNamedRec ) )! );
-            Debug.Assert( tRec != null );
+            Throw.DebugAssert( tRec != null );
             builder.Count.Should().Be( before + 2 );
             tRec.Kind.Should().Be( PocoTypeKind.Record );
             ((IRecordPocoType)tRec).IsReadOnlyCompliant.Should().BeTrue();
@@ -116,6 +119,18 @@ namespace CK.StObj.Engine.Tests.Poco
 
             IPrimaryPocoType wR = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
+
+            var tAnonymous = ((IRecordPocoType)tRec).Fields.Single( f => f.Name == "Inside" ).Type as IAnonymousRecordPocoType;
+            Throw.DebugAssert( tAnonymous != null );
+            tAnonymous.IsOblivious.Should().BeFalse();
+            tAnonymous.IsUnnamed.Should().BeFalse();
+            tAnonymous.UnnamedRecord.Should().NotBeSameAs( tAnonymous );
+            tAnonymous.UnnamedRecord.IsUnnamed.Should().BeTrue();
+            tAnonymous.UnnamedRecord.IsOblivious.Should().BeFalse();
+
+            tAnonymous.UnnamedRecord.ObliviousType.Should().NotBeSameAs( tAnonymous ).And.NotBeSameAs( tAnonymous.UnnamedRecord );
+            tAnonymous.UnnamedRecord.ObliviousType.Should().BeSameAs( tAnonymous.ObliviousType );
+            tAnonymous.ObliviousType.IsUnnamed.Should().BeTrue();
         }
 
 
@@ -129,8 +144,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             var p = ts.FindByType<IPrimaryPocoType>( typeof( IWithList ) );
             Debug.Assert( p != null );
-            p.IsNullable.Should().BeFalse();
             p.IsOblivious.Should().BeTrue();
+            p.IsNullable.Should().BeTrue();
             p.Should().BeAssignableTo<IPrimaryPocoType>();
 
             var p2 = ts.FindByType( typeof( IWithList ) );
@@ -138,6 +153,8 @@ namespace CK.StObj.Engine.Tests.Poco
 
             var a = ts.FindByType( typeof( ILinkedListPart ) );
             Debug.Assert( a != null );
+            a.IsOblivious.Should().BeTrue();
+            a.IsNullable.Should().BeTrue();
             a.Should().BeAssignableTo<IAbstractPocoType>();
 
             ((IAbstractPocoType)a).AllowedTypes.Should().Contain( p );
@@ -344,86 +361,86 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public record struct NotReadOnlyCompliant( List<int> Mutable );
 
-        public HashSet<NamedRec> SetHashSafeValid => default!;
+        public HashSet<NamedRec> SetROCompliantValid => default!;
 
-        public HashSet<NotReadOnlyCompliant> SetHashSafeInvalid => default!;
-        public HashSet<IPoco> SetHashSafeInvalidPoco => default!;
-        public HashSet<object> SetHashSafeInvalidObject => default!;
+        public HashSet<NotReadOnlyCompliant> SetROCompliantInvalid => default!;
+        public HashSet<IPoco> SetROCompliantInvalidPoco => default!;
+        public HashSet<object> SetROCompliantInvalidObject => default!;
 
-        public Dictionary<NamedRec, object> DicHashSafeValid => default!;
+        public Dictionary<NamedRec, object> DicROCompliantValid => default!;
 
-        public Dictionary<NotReadOnlyCompliant, object> DicHashSafeInvalid => default!;
-        public Dictionary<IPoco, object> DicHashSafeInvalidPoco => default!;
-        public Dictionary<object, object> DicHashSafeInvalidObject => default!;
+        public Dictionary<NotReadOnlyCompliant, object> DicROCompliantInvalid => default!;
+        public Dictionary<IPoco, object> DicROCompliantInvalidPoco => default!;
+        public Dictionary<object, object> DicROCompliantInvalidObject => default!;
 
-        public IReadOnlySet<object> ROSetHashSafeValidObject => default!;
-        public IReadOnlyDictionary<object, object> RODicHashSafeValidObject => default!;
+        public IReadOnlySet<object> ROSetROCompliantValidObject => default!;
+        public IReadOnlyDictionary<object, object> RODicROCompliantValidObject => default!;
 
-        public IReadOnlySet<NamedRec> ROSetHashSafeValid => default!;
+        public IReadOnlySet<NamedRec> ROSetROCompliantValid => default!;
 
-        public IReadOnlySet<NotReadOnlyCompliant> ROSetHashSafeInvalid => default!;
-        public IReadOnlySet<IPoco> ROSetHashSafeInvalidPoco => default!;
+        public IReadOnlySet<NotReadOnlyCompliant> ROSetROCompliantInvalid => default!;
+        public IReadOnlySet<IPoco> ROSetROCompliantInvalidPoco => default!;
 
-        public IReadOnlyDictionary<NamedRec, object> RODicHashSafeValid => default!;
+        public IReadOnlyDictionary<NamedRec, object> RODicROCompliantValid => default!;
 
-        public IReadOnlyDictionary<NotReadOnlyCompliant, object> RODicHashSafeInvalid => default!;
-        public IReadOnlyDictionary<IPoco, object> RODicHashSafeInvalidPoco => default!;
+        public IReadOnlyDictionary<NotReadOnlyCompliant, object> RODicROCompliantInvalid => default!;
+        public IReadOnlyDictionary<IPoco, object> RODicROCompliantInvalidPoco => default!;
 
         [Test]
-        public void IsHashSafe_tests()
+        public void IsROCompliant_tests()
         {
             var ts = new PocoTypeSystemBuilder( new ExtMemberInfoFactory() );
 
             // Readonly compliant records are valid keys.
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetHashSafeValid ) )! ).Should().NotBeNull();
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicHashSafeValid ) )! ).Should().NotBeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantValid ) )! ).Should().NotBeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantValid ) )! ).Should().NotBeNull();
             // Non readonly compliant records and Poco are invalid.
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetHashSafeInvalid ) )! ).Should().BeNull();
-                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.SetHashSafeInvalid': " +
+                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalid ) )! ).Should().BeNull();
+                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.SetROCompliantInvalid': " +
                                        "'HashSet<TypeSystemTests.NotReadOnlyCompliant>' item type cannot be " +
-                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not \"hash safe\"." );
+                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
             }
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicHashSafeInvalid ) )! ).Should().BeNull();
-                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.DicHashSafeInvalid': " +
+                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalid ) )! ).Should().BeNull();
+                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.DicROCompliantInvalid': " +
                                        "'Dictionary<TypeSystemTests.NotReadOnlyCompliant,object>' key cannot be " +
-                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not \"hash safe\"." );
+                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
             }
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetHashSafeInvalidPoco ) )! ).Should().BeNull();
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicHashSafeInvalidPoco ) )! ).Should().BeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalidPoco ) )! ).Should().BeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalidPoco ) )! ).Should().BeNull();
 
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetHashSafeInvalidObject ) )! ).Should().BeNull();
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicHashSafeInvalidObject ) )! ).Should().BeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( SetROCompliantInvalidObject ) )! ).Should().BeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( DicROCompliantInvalidObject ) )! ).Should().BeNull();
 
             // ReadOnly
             // This is the same for IReadOnlySet/Dictionary, except that IReadOnlySet/Dictionary<object> is allowed.
 
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetHashSafeValidObject ) )! ).Should().NotBeNull( "IReadOnlySet<object> is valid." );
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicHashSafeValidObject ) )! ).Should().NotBeNull( "IReadOnlyDictionary<object,...> is valid." );
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantValidObject ) )! ).Should().NotBeNull( "IReadOnlySet<object> is valid." );
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantValidObject ) )! ).Should().NotBeNull( "IReadOnlyDictionary<object,...> is valid." );
 
             // Readonly compliant records are valid keys.
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetHashSafeValid ) )! ).Should().NotBeNull();
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicHashSafeValid ) )! ).Should().NotBeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantValid ) )! ).Should().NotBeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantValid ) )! ).Should().NotBeNull();
             // Non readonly compliant records and Poco are invalid.
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetHashSafeInvalid ) )! ).Should().BeNull();
-                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.ROSetHashSafeInvalid': " +
+                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantInvalid ) )! ).Should().BeNull();
+                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.ROSetROCompliantInvalid': " +
                                        "'IReadOnlySet<TypeSystemTests.NotReadOnlyCompliant>' item type cannot be " +
-                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not \"hash safe\"." );
+                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
             }
             using( TestHelper.Monitor.CollectTexts( out var logs ) )
             {
-                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicHashSafeInvalid ) )! ).Should().BeNull();
-                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.RODicHashSafeInvalid': " +
+                ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantInvalid ) )! ).Should().BeNull();
+                logs.Should().Contain( "Property 'CK.StObj.Engine.Tests.Poco.TypeSystemTests.RODicROCompliantInvalid': " +
                                        "'IReadOnlyDictionary<TypeSystemTests.NotReadOnlyCompliant,object>' key cannot be " +
-                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not \"hash safe\"." );
+                                       "'CK.StObj.Engine.Tests.Poco.TypeSystemTests.NotReadOnlyCompliant' because this type is not read-only compliant." );
             }
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetHashSafeInvalidPoco ) )! ).Should().BeNull();
-            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicHashSafeInvalidPoco ) )! ).Should().BeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( ROSetROCompliantInvalidPoco ) )! ).Should().BeNull();
+            ts.Register( TestHelper.Monitor, GetType().GetProperty( nameof( RODicROCompliantInvalidPoco ) )! ).Should().BeNull();
 
 
         }

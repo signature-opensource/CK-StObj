@@ -330,8 +330,8 @@ namespace CK.Setup
                     if( !record.IsReadOnlyCompliant )
                     {
                         var b = new StringBuilder();
-                        DumpReadOnlyCompliant( b, record, 1 );
-                        monitor.Error( $"Invalid mutable reference types in '{p.DeclaringType:N}.{p.Name}':{b}" );
+                        DumpNonReadOnlyCompliantFields( b, record, 1 );
+                        monitor.Error( $"Non read-only compliant types in '{p.DeclaringType:N}.{p.Name}':{b}" );
                         return false;
                     }
                 }
@@ -385,8 +385,8 @@ namespace CK.Setup
                     var isSecondaryPoco = reg.Kind is PocoTypeKind.SecondaryPoco;
                     if( isSecondaryPoco )
                     {
-                        Throw.DebugAssert( reg.ObliviousType is IPrimaryPocoType );
-                        reg = reg.ObliviousType;
+                        // "Type erasure" from Secondary to its Primary (same nullability).
+                        reg = Unsafe.As<ISecondaryPocoType>( reg ).PrimaryPocoType;
                     }
                     if( isSecondaryPoco || reg.Kind == PocoTypeKind.PrimaryPoco )
                     {
@@ -417,16 +417,16 @@ namespace CK.Setup
                 return true;
             }
 
-            static void DumpReadOnlyCompliant( StringBuilder b, IRecordPocoType record, int depth )
+            static void DumpNonReadOnlyCompliantFields( StringBuilder b, IRecordPocoType record, int depth )
             {
                 Throw.DebugAssert( !record.IsReadOnlyCompliant );
                 foreach( var f in record.Fields )
                 {
-                    if( MemberContext.IsReadOnlyCompliant( f ) ) continue;
+                    if( f.Type.IsReadOnlyCompliant ) continue;
                     if( f.Type is IRecordPocoType r )
                     {
                         b.AppendLine().Append( ' ', depth * 2 ).Append( "in '" ).Append( f.Type.CSharpName ).Append( ' ' ).Append( f.Name ).Append( "':" );
-                        DumpReadOnlyCompliant( b, r, depth + 1 );
+                        DumpNonReadOnlyCompliantFields( b, r, depth + 1 );
                     }
                     else
                     {

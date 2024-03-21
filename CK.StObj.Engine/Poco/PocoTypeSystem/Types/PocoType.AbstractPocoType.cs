@@ -117,6 +117,7 @@ namespace CK.Setup
                                      PocoGenericTypeDefinition? genericDefinitionType )
                 : base( s, tAbstract, tAbstract.ToCSharpName(), PocoTypeKind.AbstractPoco, static t => new NullAbstractPoco( t ) )
             {
+                Throw.DebugAssert( abstractAndPrimary.All( a => !a.IsNullable ) );
                 _abstractAndPrimary = abstractAndPrimary;
                 _primaries = new ArraySegment<IPrimaryPocoType>( Unsafe.As<IPrimaryPocoType[]>( _abstractAndPrimary ), abstractCount, abstractAndPrimary.Length - abstractCount );
                 _genericTypeDefinition = genericDefinitionType;
@@ -158,6 +159,7 @@ namespace CK.Setup
                                                     .Where( t => t != typeof( IPoco ) )
                                                     .Select( ts.FindByType )
                                                     .Where( i => i != null )
+                                                    .Select( i => i!.NonNullable )
                                                     .Cast<IAbstractPocoType>()
                                                     .ToArray();
                     }
@@ -422,6 +424,7 @@ namespace CK.Setup
                 _genericTypeDefinition = genericDefinitionType;
                 _genericArguments = genericArguments ?? Array.Empty<(IPocoGenericParameter, IPocoType)>();
                 _allGeneralizations = generalizations;
+                Throw.DebugAssert( generalizations.All( g => !g.IsNullable ) );
                 foreach( var g in generalizations )
                 {
                     ((IAbstractPocoImpl)g).AddImplementationLessSpecialization( this );

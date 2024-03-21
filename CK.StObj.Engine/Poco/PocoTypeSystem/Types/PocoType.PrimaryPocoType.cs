@@ -26,12 +26,10 @@ namespace CK.Setup
             sealed class Null : NullReferenceType, IPrimaryPocoType, IReadOnlyList<IAbstractPocoType>
             {
                 [AllowNull] internal string _extOrCSName;
-                readonly IReadOnlyList<IAbstractPocoType> _allAbstractTypes;
 
                 public Null( IPocoType notNullable )
                     : base( notNullable )
                 {
-                    _allAbstractTypes = new AllAbstract( NonNullable.AllAbstractTypes );
                 }
 
                 public new PrimaryPocoType NonNullable => Unsafe.As<PrimaryPocoType>( base.NonNullable );
@@ -71,7 +69,7 @@ namespace CK.Setup
                 #region Auto implementation of AbstractTypes
                 int IReadOnlyCollection<IAbstractPocoType>.Count => NonNullable.AbstractTypes.Count;
 
-                public IReadOnlyList<IAbstractPocoType> AllAbstractTypes => _allAbstractTypes;
+                public IReadOnlyList<IAbstractPocoType> AllAbstractTypes => NonNullable._allAbstractHolder;
 
                 IAbstractPocoType IReadOnlyList<IAbstractPocoType>.this[int index] => NonNullable.AbstractTypes[index].Nullable;
 
@@ -80,32 +78,52 @@ namespace CK.Setup
                 IEnumerator IEnumerable.GetEnumerator() => NonNullable.AbstractTypes.Select( a => a.Nullable ).GetEnumerator();
                 #endregion
 
-                sealed class AllAbstract : IReadOnlyList<IAbstractPocoType>
+            }
+
+            /// <summary>
+            /// Holds and manage the <see cref="AllAbstractTypes"/> and <see cref="AbstractTypes"/>, implements
+            /// the <see cref="Null.AllAbstractTypes"/> (of nullables). The <see cref="Null.AbstractTypes"/> is auto implemented
+            /// by the <see cref="Null"/>.
+            /// </summary>
+            sealed class AllAbstractHolder : IReadOnlyList<IAbstractPocoType>
+            {
+                IAbstractPocoType[] _allAbstractTypes;
+                ArraySegment<IAbstractPocoType> _abstractTypes;
+
+                public AllAbstractHolder( IAbstractPocoType[] allAbstractTypes )
                 {
-                    readonly IReadOnlyList<IAbstractPocoType> _all;
-
-                    public AllAbstract( IReadOnlyList<IAbstractPocoType> all )
-                    {
-                        _all = all;
-                    }
-
-                    public IAbstractPocoType this[int index] => _all[index].Nullable;
-
-                    public int Count => _all.Count;
-
-                    public IEnumerator<IAbstractPocoType> GetEnumerator() => _all.Select( t => t.Nullable ).GetEnumerator();
-
-                    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_all.Select( t => t.Nullable ) ).GetEnumerator();
+                    _allAbstractTypes = allAbstractTypes;
+                    _abstractTypes = allAbstractTypes;
                 }
+
+                public IReadOnlyList<IAbstractPocoType> AllAbstractTypes => _allAbstractTypes;
+
+                public IReadOnlyList<IAbstractPocoType> AbstractTypes => _abstractTypes;
+
+                public void OnAbstractImplementationLess( IAbstractPocoType a )
+                {
+                    Throw.DebugAssert( _allAbstractTypes.Contains( a ) );
+                    int idx = Array.IndexOf( _allAbstractTypes, a );
+                    Array.Copy( _allAbstractTypes, idx + 1, _allAbstractTypes, idx, _allAbstractTypes.Length - idx - 1 );
+                    _allAbstractTypes[^1] = a;
+                    _abstractTypes = new ArraySegment<IAbstractPocoType>( _allAbstractTypes, 0, _abstractTypes.Count - 1 );
+                }
+
+                IAbstractPocoType IReadOnlyList<IAbstractPocoType>.this[int index] => _allAbstractTypes[index].Nullable;
+
+                int IReadOnlyCollection<IAbstractPocoType>.Count => _allAbstractTypes.Length;
+
+                IEnumerator<IAbstractPocoType> IEnumerable<IAbstractPocoType>.GetEnumerator() => _allAbstractTypes.Select( t => t.Nullable ).GetEnumerator();
+
+                IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)_allAbstractTypes.Select( t => t.Nullable )).GetEnumerator();
             }
 
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoFamilyInfo _familyInfo;
-            [AllowNull] IAbstractPocoType[] _allAbstractTypes;
             [AllowNull] PrimaryPocoField[] _fields;
             string _ctorCode;
             IReadOnlyList<IAbstractPocoType>? _minimalAbstractTypes;
-            ArraySegment<IAbstractPocoType> _abstractTypes;
+            [AllowNull] AllAbstractHolder _allAbstractHolder;
 
             public PrimaryPocoType( PocoTypeSystemBuilder s,
                                     IPocoFamilyInfo family,
@@ -203,37 +221,33 @@ namespace CK.Setup
                 }
                 if( type.Kind == PocoTypeKind.AbstractPoco )
                 {
-                    return type.Type == typeof( IPoco ) || _allAbstractTypes.Contains( type );
+                    return type.Type == typeof( IPoco ) || _allAbstractHolder.AllAbstractTypes.Contains( type );
                 }
                 return false;
             }
 
-            public IReadOnlyList<IAbstractPocoType> AbstractTypes => _abstractTypes;
+            public IReadOnlyList<IAbstractPocoType> AbstractTypes => _allAbstractHolder.AbstractTypes;
 
-            public IReadOnlyList<IAbstractPocoType> AllAbstractTypes => _allAbstractTypes;
+            public IReadOnlyList<IAbstractPocoType> AllAbstractTypes => _allAbstractHolder.AllAbstractTypes;
 
             internal void SetAllAbstractTypes( IAbstractPocoType[] types )
             {
-                _allAbstractTypes = types;
-                _abstractTypes = types;
+                _allAbstractHolder = new AllAbstractHolder( types );
             }
 
             internal void OnAbstractImplementationLess( IAbstractPocoType a )
             {
-                Throw.DebugAssert( _allAbstractTypes.Contains( a ) );
                 Throw.DebugAssert( "ImplementationLess must be done in the initialization step.", _minimalAbstractTypes == null );
-                int idx = Array.IndexOf( _allAbstractTypes, a );
-                Array.Copy( _allAbstractTypes, idx+1, _allAbstractTypes, idx, _allAbstractTypes.Length - idx - 1 );
-                _allAbstractTypes[^1] = a;
-                _abstractTypes = new ArraySegment<IAbstractPocoType>( _allAbstractTypes, 0, _abstractTypes.Count - 1 ); 
+                Throw.DebugAssert( _allAbstractHolder != null );
+                _allAbstractHolder.OnAbstractImplementationLess( a );
             }
 
-            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= AbstractPocoType.ComputeMinimal( _abstractTypes );
+            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= AbstractPocoType.ComputeMinimal( _allAbstractHolder.AbstractTypes );
 
             public IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet )
             {
                 Throw.CheckNotNullArgument( typeSet );
-                return AbstractPocoType.ComputeMinimal( _abstractTypes.Where( typeSet.Contains ) );
+                return AbstractPocoType.ComputeMinimal( _allAbstractHolder.AbstractTypes.Where( typeSet.Contains ) );
             }
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;

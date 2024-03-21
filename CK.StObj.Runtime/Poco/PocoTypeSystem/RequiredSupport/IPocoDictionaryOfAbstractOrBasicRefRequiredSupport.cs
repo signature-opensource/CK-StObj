@@ -6,12 +6,12 @@ namespace CK.Setup
     public interface IPocoDictionaryOfAbstractOrBasicRefRequiredSupport : IPocoRequiredSupportType
     {
         /// <summary>
-        /// Gets the necessary non nullable key type.
+        /// Gets the necessary non nullable, <see cref="IPocoType.IsReadOnlyCompliant"/> and not <see cref="IPocoType.IsPolymorphic"/> key type.
         /// </summary>
         IPocoType KeyType { get; }
 
         /// <summary>
-        /// Gets the non nullable item type: a <see cref="IBasicRefPocoType"/> or <see cref="IAbstractPocoType"/>.
+        /// Gets the oblivious (nullable) item type: a <see cref="IBasicRefPocoType"/> or <see cref="IAbstractPocoType"/>.
         /// </summary>
         IPocoType ValueType { get; }
     }

@@ -2,14 +2,16 @@ using CK.CodeGen;
 using CK.Core;
 using System.Diagnostics;
 using System.Text.Json;
-using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Setup.PocoJson
 {
 
     sealed partial class ImportCodeGenerator
     {
-        public void GeneratePocoSupport( IActivityMonitor monitor, ICSCodeGenerationContext ctx, IPrimaryPocoType type )
+        void GeneratePocoSupport( IActivityMonitor monitor,
+                                  ICSCodeGenerationContext ctx,
+                                  IPrimaryPocoType type,
+                                  ReaderMap readerMap )
         {
             var pocoClass = ctx.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, type.FamilyInfo.PocoClass );
             Debug.Assert( type.FamilyInfo.PocoClass.Name == pocoClass.Name );
@@ -72,7 +74,7 @@ while( r.TokenType == System.Text.Json.JsonTokenType.PropertyName )
                     }
                     else
                     {
-                        GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
+                        readerMap.GenerateRead( pocoClass, f.Type, f.PrivateFieldName, !f.DefaultValueInfo.RequiresInit );
                     }
                     pocoClass.Append("break;")
                              .CloseBlock();

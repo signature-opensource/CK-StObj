@@ -51,6 +51,8 @@ namespace CK.Setup
 
                 IEnumPocoType IEnumPocoType.Nullable => this;
 
+                public override IEnumPocoType ObliviousType => this;
+
                 INamedPocoType INamedPocoType.Nullable => this;
                 INamedPocoType INamedPocoType.NonNullable => NonNullable;
 
@@ -147,6 +149,8 @@ namespace CK.Setup
             public IReadOnlyDictionary<string, object> Values => _values;
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
+
+            public override IEnumPocoType ObliviousType => this;
 
             IEnumPocoType IEnumPocoType.Nullable => Nullable;
             IEnumPocoType IEnumPocoType.NonNullable => this;

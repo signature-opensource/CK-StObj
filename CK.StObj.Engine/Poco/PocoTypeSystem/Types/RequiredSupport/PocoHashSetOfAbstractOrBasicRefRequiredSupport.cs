@@ -8,7 +8,7 @@ namespace CK.Setup
             : base( typeName )
         {
             Throw.DebugAssert( itemType is IAbstractPocoType or IBasicRefPocoType );
-            Throw.DebugAssert( !itemType.IsNullable );
+            Throw.DebugAssert( itemType.IsNullable );
             Throw.DebugAssert( typeName == $"PocoHashSet_{itemType.Index}_CK" );
             ItemType = itemType;
         }

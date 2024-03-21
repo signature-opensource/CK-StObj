@@ -1,15 +1,8 @@
-using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using static CK.CodeGen.TupleTypeName;
-using static CK.Setup.IPocoType;
 
 namespace CK.Setup
 {
@@ -44,8 +37,6 @@ namespace CK.Setup
                 public override IRecordPocoType ObliviousType => this;
                 // Required... C# "Covariant return type" cand do better...
                 ICompositePocoType ICompositePocoType.ObliviousType => this;
-
-                public bool IsReadOnlyCompliant => NonNullable.IsReadOnlyCompliant;
 
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
@@ -107,13 +98,11 @@ namespace CK.Setup
 
             public string ExternalOrCSharpName => _externalName?.Name ?? CSharpName;
 
-            public bool IsReadOnlyCompliant => _isReadOnlyCompliant;
+            public override bool IsReadOnlyCompliant => _isReadOnlyCompliant;
 
-            public override bool IsHashSafe => _isReadOnlyCompliant;
-
-            public override IRecordPocoType ObliviousType => Nullable;
+            public override IRecordPocoType ObliviousType => this;
             // Required... C# "Covariant return type" can do better.
-            ICompositePocoType ICompositePocoType.ObliviousType => Nullable;
+            ICompositePocoType ICompositePocoType.ObliviousType => this;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 

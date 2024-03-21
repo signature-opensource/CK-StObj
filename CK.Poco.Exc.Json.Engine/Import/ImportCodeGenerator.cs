@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -62,10 +63,8 @@ namespace CK.Setup.PocoJson
         readonly ITypeScope _importerType;
         readonly ITypeScopePart _readerFunctionsPart;
         readonly IPocoTypeNameMap _nameMap;
-        readonly ICSCodeGenerationContext _generationContext;
-        readonly CodeReader[] _readers;
-        readonly BitArray _readerFunctions;
         readonly LegacyArrayName _legacyNameMap;
+        readonly ICSCodeGenerationContext _generationContext;
 
         public ImportCodeGenerator( ITypeScope importerType, IPocoTypeNameMap nameMap, ICSCodeGenerationContext generationContext )
         {
@@ -166,119 +165,22 @@ static readonly Dictionary<string, ObjectReader> _anyReaders = new Dictionary<st
             _nameMap = nameMap;
             _legacyNameMap = new LegacyArrayName( nameMap );
             _generationContext = generationContext;
-            _readers = new CodeReader[nameMap.TypeSystem.AllNonNullableTypes.Count];
-            _readerFunctions = new BitArray( nameMap.TypeSystem.AllTypes.Count );
-        }
-
-        string GetReadFunctionName( IPocoType t )
-        {
-            if( t.Kind == PocoTypeKind.Any )
-            {
-                return "CK.Poco.Exc.JsonGen.Importer.ReadAny";
-            }
-            if( t.Kind == PocoTypeKind.SecondaryPoco )
-            {
-                Throw.DebugAssert( t.ObliviousType is IPrimaryPocoType );
-                t = t.ObliviousType;
-            }
-            // Allow reference types to be null here (oblivious NRT mode).
-            // The function is bound to the non null type, but it handles the nullable.
-            var tFunc = t.Type.IsValueType ? t : t.NonNullable;
-            if( !_readerFunctions[tFunc.Index] )
-            {
-                _readerFunctions[tFunc.Index] = true;
-                var tActual = t.Type.IsValueType ? t : t.Nullable;
-                Throw.DebugAssert( tFunc.ImplTypeName == t.ImplTypeName && tActual.ImplTypeName == t.ImplTypeName );
-                _readerFunctionsPart.Append( "internal static " ).Append( t.ImplTypeName ).Append( " FRead_" ).Append( tFunc.Index )
-                                    .Append( "(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
-                                    .OpenBlock();
-                _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
-                // Use the potentially nullable reference type here to generate the actual read.
-                GenerateRead( _readerFunctionsPart, tActual, "o", true );
-                _readerFunctionsPart.NewLine()
-                    .Append( "return o;" );
-                _readerFunctionsPart.CloseBlock();
-            }
-            return $"CK.Poco.Exc.JsonGen.Importer.FRead_{tFunc.Index}";
-        }
-
-        void GenerateRead( ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
-        {
-            if( t.IsNullable )
-            {
-                writer.Append( "if(r.TokenType==System.Text.Json.JsonTokenType.Null)" )
-                        .OpenBlock()
-                        .Append( variableName ).Append( "=default;" ).NewLine()
-                        .Append( "if(!r.Read()) rCtx.ReadMoreData(ref r);" )
-                        .CloseBlock()
-                        .Append( "else" )
-                        .OpenBlock();
-                DoGenerateRead( _readers, writer, t, variableName, requiresInit );
-                writer.CloseBlock();
-            }
-            else
-            {
-                DoGenerateRead( _readers, writer, t, variableName, requiresInit );
-            }
-
-            static string? GetInitSource( IPocoType t )
-            {
-                // BasicTypes will be assigned from low-level reader functions.
-                // Enum are read by casting the underlying type.
-                if( t.Kind == PocoTypeKind.Basic || t.Kind == PocoTypeKind.Enum ) return null;
-                // If the type has a default value source, use it.
-                var def = t.DefaultValueInfo;
-                if( def.RequiresInit ) return def.DefaultValue.ValueCSharpSource;
-                // If the type is a struct it will be read by ref: the variable needs to be assigned
-                // before ref can be used.
-                if( t.Type.IsValueType ) return "default";
-                // Reference types should have a DefaultValue.
-                return null;
-            }
-
-            static void DoGenerateRead( CodeReader[] readers, ICodeWriter writer, IPocoType t, string variableName, bool requiresInit )
-            {
-                if( requiresInit )
-                {
-                    var init = GetInitSource( t.NonNullable );
-                    if( init != null )
-                    {
-                        writer.Append( variableName ).Append( "=" ).Append( init ).Append( ";" ).NewLine();
-                    }
-                }
-                // For nullable records, we need this adapter.
-                // This is crappy and inefficient.
-                // This is because even if we can get the reference to the Nullable value field to fill it,
-                // we miss the capability to set its HasValue to true. So we recopy the read value as the
-                // value (thanks to GetValueOrDefault that doesn't check the HasValue and returns the value as-is).
-                string? originName = null;
-                if( t.IsNullable && (t.Kind == PocoTypeKind.AnonymousRecord || t.Kind == PocoTypeKind.Record) )
-                {
-                    originName = variableName;
-                    variableName = $"CommunityToolkit.HighPerformance.NullableExtensions.DangerousGetValueOrDefaultReference( ref {variableName} )";
-                }
-                readers[t.ObliviousType.Index >> 1].Invoke( writer, variableName );
-                if( originName != null )
-                {
-                    writer.NewLine().Append( originName ).Append( " = " ).Append( originName ).Append( ".GetValueOrDefault();" );
-                }
-            }
         }
 
         public bool Run( IActivityMonitor monitor )
         {
-            var pocos = new List<IPrimaryPocoType>();
-            var records = new List<IRecordPocoType>(); 
-            RegisterReaders( pocos, records );
-            foreach( var p in pocos )
+            var readerMap = new ReaderMap( _nameMap );
+            var functionMap = new ReaderFunctionMap( _nameMap, readerMap, _readerFunctionsPart );
+            readerMap.Initialize( functionMap );
+            foreach( var p in _nameMap.TypeSet.NonNullableTypes.OfType<IPrimaryPocoType>() )
             {
-                GeneratePocoSupport( monitor, _generationContext, p );
+                GeneratePocoSupport( monitor, _generationContext, p, readerMap );
             }
-            foreach( var r in records )
+            foreach( var r in _nameMap.TypeSet.NonNullableTypes.OfType<IRecordPocoType>() )
             {
-                GenerateRecordReader( monitor, _importerType, r );
+                GenerateRecordReader( _importerType, r, readerMap, functionMap );
             }
-            GenerateReadAny();
+            GenerateReadAny( functionMap );
             SupportPocoDirectoryJsonImportGenerated( monitor );
             return true;
         }

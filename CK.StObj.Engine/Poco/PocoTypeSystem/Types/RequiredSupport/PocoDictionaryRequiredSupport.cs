@@ -8,7 +8,7 @@ namespace CK.Setup
             : base( typeName )
         {
             Throw.DebugAssert( value != null );
-            Throw.DebugAssert( !value.IsNullable );
+            Throw.DebugAssert( value.IsNullable );
             Throw.DebugAssert( typeName == $"PocoDictionary_{key.Index}_{value.Index}_CK" );
             KeyType = key;
             ValueType = value;

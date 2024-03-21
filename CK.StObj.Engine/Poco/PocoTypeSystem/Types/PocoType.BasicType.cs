@@ -40,6 +40,17 @@ namespace CK.Setup
                      : new PocoType( s, notNullable, csharpName, PocoTypeKind.Basic, t => new NullValueType( t, nullable ) );
         }
 
+        internal static IPocoType CreateNoDefaultBasicValue( PocoTypeSystemBuilder s,
+                                                             Type notNullable,
+                                                             Type nullable,
+                                                             string csharpName )
+        {
+            Debug.Assert( notNullable.IsValueType );
+            // A basic value type is always initializable.
+            // DateTime use, by default, CK.Core.Util.UtcMinValue: DateTime must be UTC.
+            return new BasicValueTypeWithoutDefaultValue( s, notNullable, nullable, csharpName );
+        }
+
         /// <summary>
         /// Currently only for DateTime.
         /// </summary>
@@ -61,6 +72,20 @@ namespace CK.Setup
 
         }
 
+        internal sealed class BasicValueTypeWithoutDefaultValue : PocoType
+        {
+            public BasicValueTypeWithoutDefaultValue( PocoTypeSystemBuilder s,
+                                                   Type notNullable,
+                                                   Type nullable,
+                                                   string csharpName )
+                : base( s, notNullable, csharpName, PocoTypeKind.Basic, t => new NullValueType( t, nullable ) )
+            {
+            }
+
+            public override DefaultValueInfo DefaultValueInfo => DefaultValueInfo.Disallowed;
+        }
+
+
         internal sealed class BasicRefType : PocoType, IBasicRefPocoType
         {
             readonly IPocoFieldDefaultValue _def;
@@ -76,13 +101,15 @@ namespace CK.Setup
                 {
                 }
 
+                new IBasicRefPocoType NonNullable => Unsafe.As<IBasicRefPocoType>( base.NonNullable );
+
                 public IBasicRefPocoType? BaseType => NonNullable.BaseType?.Nullable;
 
                 public IEnumerable<IBasicRefPocoType> BaseTypes => NonNullable.BaseTypes.Select( t => t.Nullable );
 
                 public IEnumerable<IBasicRefPocoType> Specializations => NonNullable.Specializations.Select( t => t.Nullable );
 
-                new IBasicRefPocoType NonNullable => Unsafe.As<IBasicRefPocoType>( base.NonNullable );
+                public override IBasicRefPocoType ObliviousType => this;
 
                 IBasicRefPocoType IBasicRefPocoType.NonNullable => NonNullable;
 
@@ -96,7 +123,7 @@ namespace CK.Setup
                                  bool isHashSafe,
                                  bool isPolymorphic,
                                  IBasicRefPocoType? baseType )
-                : base( s, notNullable, csharpName, PocoTypeKind.Basic, static t => new NullReferenceType( t ) )
+                : base( s, notNullable, csharpName, PocoTypeKind.Basic, static t => new Null( t ) )
             {
                 _def = defaultValue;
                 _isHashSafe = isHashSafe;
@@ -108,6 +135,8 @@ namespace CK.Setup
                     ((BasicRefType)baseType).AddSpecialization( this );
                 }
             }
+
+            new IBasicRefPocoType Nullable => Unsafe.As<IBasicRefPocoType>( base.Nullable );
 
             public override DefaultValueInfo DefaultValueInfo => new DefaultValueInfo( _def );
 
@@ -126,7 +155,7 @@ namespace CK.Setup
                 }
             }
 
-            public override bool IsHashSafe => _isHashSafe;
+            public override bool IsReadOnlyCompliant => _isHashSafe;
 
             public IEnumerable<IBasicRefPocoType> Specializations => _specializations;
 
@@ -145,7 +174,7 @@ namespace CK.Setup
                 }
             }
 
-            public override IPocoType ObliviousType => Nullable;
+            public override IBasicRefPocoType ObliviousType => Nullable;
 
             /// <summary>
             /// This should be "_specializations.Length > 0" but whether a type is polymorphic or not
@@ -160,9 +189,9 @@ namespace CK.Setup
             /// </summary>
             public override bool IsPolymorphic => _isPolymorphic;
 
-            public override IPocoType? StructuralFinalType => Type.IsAbstract ? null : this;
+            public override IPocoType? StructuralFinalType => Type.IsAbstract ? null : Nullable;
 
-            IBasicRefPocoType IBasicRefPocoType.Nullable => Unsafe.As<IBasicRefPocoType>( base.Nullable );
+            IBasicRefPocoType IBasicRefPocoType.Nullable => Nullable;
 
             IBasicRefPocoType IBasicRefPocoType.NonNullable => this;
         }

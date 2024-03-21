@@ -40,7 +40,7 @@ namespace CK.Setup
                                                KeyUnionTypes key,
                                                IPocoType? obliviousType )
         {
-            return new UnionType( monitor, s, key, (IUnionPocoType?)obliviousType );
+            return new UnionType( s, key, (IUnionPocoType?)obliviousType );
         }
 
         internal sealed class UnionType : PocoType, IUnionPocoType
@@ -67,7 +67,7 @@ namespace CK.Setup
             readonly IUnionPocoType _obliviousType;
             int _implementationCount;
 
-            public UnionType( IActivityMonitor monitor, PocoTypeSystemBuilder s, KeyUnionTypes k, IUnionPocoType? obliviousType )
+            public UnionType( PocoTypeSystemBuilder s, KeyUnionTypes k, IUnionPocoType? obliviousType )
                 : base( s,
                         typeof( object ),
                         "object",

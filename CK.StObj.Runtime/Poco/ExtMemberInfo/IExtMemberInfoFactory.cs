@@ -110,10 +110,10 @@ namespace CK.Setup
 
         /// <summary>
         /// Obtains an oblivious <see cref="IExtNullabilityInfo" /> for a type
-        /// (all reference types are non nullable).
+        /// (all reference types are nullable).
         /// </summary>
         /// <param name="type">The type for which nullability info must be obtained.</param>
-        /// <returns>The non nullable <see cref="IExtNullabilityInfo"/>.</returns>
+        /// <returns>The nullable <see cref="IExtNullabilityInfo"/>.</returns>
         IExtNullabilityInfo CreateNullabilityInfo( Type type );
     }
 }

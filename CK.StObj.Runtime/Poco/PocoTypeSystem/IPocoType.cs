@@ -67,14 +67,15 @@ namespace CK.Setup
         /// and <see cref="NormalizedCultureInfo"/>.
         /// </para>
         /// <para>
-        /// Value types can be immutable (all <see cref="PocoTypeKind.Basic"/> value types are immutable) but can also be "readonly compliant":
-        /// anonymous or named records that are <see cref="IRecordPocoType.IsReadOnlyCompliant"/> are "hash safe".
+        /// Value types can be immutable (all <see cref="PocoTypeKind.Basic"/> value types are immutable) but anonymous or named records that
+        /// have no mutable reference types are also readonly compliant since a copy of the value is de facto a "read-only" projection of its source
+        /// in the sense that it cannot be used to mutate the source data.
         /// </para>
         /// <para>
-        /// Mutable types like Poco and collections cannot be used in a set or as a dictionary key. 
+        /// Mutable types like Poco and collections are not read-only compliant and cannot be used in a set or as a dictionary key. 
         /// </para>
         /// </summary>
-        bool IsHashSafe { get; }
+        bool IsReadOnlyCompliant { get; }
 
         /// <summary>
         /// Gets whether this type is disallowed as a field in a <see cref="ICompositePocoType"/>,
@@ -120,7 +121,9 @@ namespace CK.Setup
         ///     <term>Collection types</term>
         ///     <description>
         ///         Abstract collections (readonly or not) are mapped to their equivalent type where generic
-        ///         parameters are oblivious.
+        ///         parameters are oblivious except for the dictionary key that is always non nullable (ie. for
+        ///         a reference type this is not the oblivious type - note that only some <see cref="IBasicRefPocoType"/>
+        ///         can be dictionary key).
         ///     </description>
         ///   </item>
         ///   <item>
@@ -133,7 +136,8 @@ namespace CK.Setup
         ///   <item>
         ///     <term>Union types</term>
         ///     <description>
-        ///         The oblivious type is the union type where all <see cref="IOneOfPocoType.AllowedTypes"/> are oblivious.
+        ///         The oblivious type is the union type where all <see cref="IOneOfPocoType.AllowedTypes"/> are oblivious
+        ///         and is the nullable (a union type is considered as a reference type).
         ///     </description>
         ///   </item>
         ///   <item>
@@ -155,15 +159,21 @@ namespace CK.Setup
         /// <para>
         /// Usually <see cref="FinalType"/>, that considers only false <see cref="ImplementationLess"/>, should be used.
         /// </para>
-        /// Structural final types:
+        /// The set of the Final types is a subset of the Oblivious types.
         /// <list type="bullet">
-        ///     <item>Are always non nullable.</item>
+        ///     <item>Final type of a value type is its non nullable.</item>
+        ///     <item>Final type of a reference type is either null or its nullable (oblivious reference types are nullable).</item>
         ///     <item><see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/> and <see cref="PocoTypeKind.UnionType"/> have no final type.</item>
         ///     <item>Abstract read only collections (see <see cref="ICollectionPocoType.IsAbstractReadOnly"/>) have no final type.</item>
-        ///     <item>A <see cref="IBasicRefPocoType"/> with an abstract <see cref="Type"/> has no final type. For other basic type it is their non nullable.</item>
-        ///     <item>For mutable collections, <see cref="ICollectionPocoType.StructuralFinalType"/> it is the non nullable equivalent type with oblivious generic parameters.
-        ///     <item><see cref="<see cref="ISecondaryPocoType.StructuralFinalType"/> is its nullable <see cref="IPrimaryPocoType"/>.</item>
-        ///     <item>For <see cref="PocoTypeKind.PrimaryPoco"/>, <see cref="PocoTypeKind.Enum"/>, <see cref="PocoTypeKind.Record"/> it is their non nullable.</item>
+        ///     <item>A <see cref="IBasicRefPocoType"/> with an abstract <see cref="Type"/> has no final type.</item>
+        ///     <item>
+        ///     For mutable collections, <see cref="ICollectionPocoType.StructuralFinalType"/> it is the nullable
+        ///     equivalent type with oblivious generic parameters.
+        ///     </item>
+        ///     <item>
+        ///     <see cref="ISecondaryPocoType.StructuralFinalType"/> is its <see cref="IPrimaryPocoType"/> (that is oblivious, hence nullable).
+        ///     </item>
+        ///     <item>For <see cref="PocoTypeKind.Enum"/>, <see cref="PocoTypeKind.Record"/> it is their non nullable.</item>
         ///     <item>For <see cref="PocoTypeKind.AnonymousRecord"/> it is the oblivious's non nullable.</item>
         /// </list>
         /// <para>

@@ -1,13 +1,8 @@
 using CK.CodeGen;
 using CK.Core;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace CK.Setup
 {
@@ -109,7 +104,7 @@ namespace CK.Setup
             }
             _filterPart.Append( "new ExchangeableRuntimeFilter( " )
                        .AppendSourceString( name ).Append( ", " )
-                       .AppendArray( typeSet.GetFlagArray() )
+                       .AppendArray( typeSet.FlagArray )
                        .Append( " )," ).NewLine();
 
             _registeredFilters.Add( (name,typeSet) );

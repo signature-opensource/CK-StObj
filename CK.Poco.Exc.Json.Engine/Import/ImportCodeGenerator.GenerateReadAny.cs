@@ -6,7 +6,7 @@ namespace CK.Setup.PocoJson
 {
     sealed partial class ImportCodeGenerator
     {
-        void GenerateReadAny()
+        void GenerateReadAny( ReaderFunctionMap functionMap )
         {
             // Configures the _typeReaders dictionary in the type initializer.
             var ctor = _importerType.FindOrCreateFunction( "static Importer()" );
@@ -14,15 +14,16 @@ namespace CK.Setup.PocoJson
             ctor.GeneratedByComment().NewLine()
                 .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
 
-            foreach( var t in _nameMap.TypeSet.NonNullableTypes.Where( t => t.IsOblivious ) )
+            foreach( var t in _nameMap.TypeSet.Where( t => t.IsFinalType ).Select( t => t.Type.IsValueType ? t : t.NonNullable ) )
             {
                 if( t.Kind == PocoTypeKind.Any
                     || t.Kind == PocoTypeKind.AbstractPoco
                     || t.Kind == PocoTypeKind.UnionType ) continue;
-                // We cannot directly use the GetReadFunctionName here if the type is a value type: the ReaderFunction
+
+                // We cannot directly use the GetReadFunctionName for value types if the type is a value type: the ReaderFunction
                 // here returns an object: it has to be explicitly boxed.
                 var typeName = _nameMap.GetName( t );
-                var readFunction = GetReadFunctionName( t );
+                var readFunction = functionMap.GetReadFunctionName( t );
                 if( t.Type.IsValueType )
                 {
                     ctor.OpenBlock()
@@ -40,7 +41,7 @@ namespace CK.Setup.PocoJson
                     // Handle also the nullable value types.
                     var tNull = t.Nullable;
                     typeName = _nameMap.GetName( tNull );
-                    readFunction = GetReadFunctionName( tNull );
+                    readFunction = functionMap.GetReadFunctionName( tNull );
                     ctor.OpenBlock()
                         .Append( "// Type: " ).Append( tNull.ImplTypeName ).NewLine()
                         .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )

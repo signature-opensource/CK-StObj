@@ -1,5 +1,7 @@
-﻿namespace CK.Setup
+namespace CK.Setup
 {
+
+
     /// <summary>
     /// Minimal set of type required by the <see cref="PocoTypeVisitor{T}"/>.
     /// </summary>

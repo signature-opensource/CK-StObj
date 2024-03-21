@@ -54,17 +54,17 @@ namespace CK.Setup
                 var primary = PocoType.CreatePrimaryPoco( this, family );
                 HandleNotSerializableAndNotExchangeableAttributes( monitor, primary );
                 Throw.DebugAssert( family.Interfaces[0].PocoInterface == primary.Type );
-                _typeCache.Add( primary.Type, primary );
+                _typeCache.Add( primary.Type, primary.ObliviousType );
                 _typeCache.Add( primary.CSharpName, primary );
                 foreach( var i in family.Interfaces.Skip( 1 ) )
                 {
                     var sec = PocoType.CreateSecondaryPocoType( this, i.PocoInterface, primary );
                     HandleNotSerializableAndNotExchangeableAttributes( monitor, sec );
-                    _typeCache.Add( i.PocoInterface, sec );
+                    _typeCache.Add( i.PocoInterface, sec.ObliviousType );
                     _typeCache.Add( sec.CSharpName, sec );
                 }
                 // Extra registration for the implementation class type.
-                _typeCache.Add( family.PocoClass, primary );
+                _typeCache.Add( family.PocoClass, primary.ObliviousType );
 
                 allPrimaries[iPrimary++] = primary;
             }
@@ -79,10 +79,12 @@ namespace CK.Setup
             {
                 EnsureAbstract( monitor, abstractTypes, tInterface, allAbstracts );
             }
+            Throw.DebugAssert( allAbstracts.All( a => !a.IsNullable ) );
+            Throw.DebugAssert( allPrimaries.All( p => !p.IsNullable ) );
             // Third, registers the IPoco full sets.
             // Note that the IPoco is ImplementationLess if there is no registered PrimaryPoco.
             var all = PocoType.CreateAbstractPocoBase( monitor, this, allAbstracts, allPrimaries );
-            _typeCache.Add( typeof( IPoco ), all );
+            _typeCache.Add( typeof( IPoco ), all.ObliviousType );
             // Fourth, initializes the PrimaryPocoType.AbstractTypes.
             foreach( var p in allPrimaries )
             {
@@ -95,7 +97,7 @@ namespace CK.Setup
                     int idx = 0;
                     foreach( var a in otherInterfaces )
                     {
-                        abstracts[idx++] = (IAbstractPocoType)_typeCache[a];
+                        abstracts[idx++] = (IAbstractPocoType)_typeCache[a].NonNullable;
                     }
                     p.SetAllAbstractTypes( abstracts );
                 }
@@ -149,16 +151,26 @@ namespace CK.Setup
                     success &= a.CreateFields( monitor, this );
                 }
             }
-            // Oblivious check: all reference type registered by types are non nullable.
+            // Oblivious check: all reference type registered by types are nullable.
             // Only Value Types are oblivious and registered for nullable and non nullable.
+
+            //foreach( var kv in _typeCache.Where( kv => kv.Key is Type ) )
+            //{
+            //    monitor.Info( kv.Value.ToString() );
+            //    var x = kv.Value;
+            //    monitor.Info( $"IsOblivious: {x.IsOblivious}, " +
+            //        $"V={x.Type.IsValueType && (x.IsNullable == (Nullable.GetUnderlyingType( x.Type ) != null))} " +
+            //        $"R={(!x.Type.IsValueType && x.IsNullable)}" );
+            //}
+
             Throw.DebugAssert( _typeCache.Where( kv => kv.Key is Type )
                                          .Select( kv => (Type: (Type)kv.Key, PocoType: kv.Value) )
-                                         .All( x => (x.PocoType.IsOblivious || x.PocoType.Kind == PocoTypeKind.SecondaryPoco )
+                                         .All( x => x.PocoType.IsOblivious
                                                     &&
                                                     (
                                                         (x.Type.IsValueType && (x.PocoType.IsNullable == (Nullable.GetUnderlyingType(x.Type) != null)))
                                                         ||
-                                                        (!x.Type.IsValueType && !x.PocoType.IsNullable)
+                                                        (!x.Type.IsValueType && x.PocoType.IsNullable)
                                                     )
                                              ) );
             // Even if an error occurred, we can detect any instantiation cycle error and missing defaults
@@ -199,18 +211,19 @@ namespace CK.Setup
                 int i = 0;
                 foreach( var other in abstractSubTypes )
                 {
-                    subTypes[i++] = EnsureAbstract( monitor, abstractTypes, other, allAbstracts );
+                    subTypes[i++] = EnsureAbstract( monitor, abstractTypes, other, allAbstracts ).NonNullable;
                 }
                 foreach( var f in families )
                 {
-                    subTypes[i++] = _typeCache[f.PrimaryInterface.PocoInterface];
+                    subTypes[i++] = _typeCache[f.PrimaryInterface.PocoInterface].NonNullable;
                 }
                 PocoType.PocoGenericTypeDefinition? typeDefinition = tAbstract.IsGenericType
                                                                         ? EnsureTypeDefinition( tAbstract.GetGenericTypeDefinition() )
                                                                         : null;
                 var a = PocoType.CreateAbstractPoco( monitor, this, tAbstract, abstractSubTypes.Count, subTypes, typeDefinition );
+                Throw.DebugAssert( !a.IsNullable );
                 result = a;
-                _typeCache.Add( tAbstract, a );
+                _typeCache.Add( tAbstract, a.ObliviousType );
                 allAbstracts.Add( a );
                 HandleNotSerializableAndNotExchangeableAttributes( monitor, a );
             }

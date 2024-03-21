@@ -54,11 +54,11 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IWithValueTuple2 : IPoco
         {
-            ref (int, string, string?, object?) Power { get; }
+            ref (int, string, string?, Guid?) Power { get; }
         }
 
         [Test]
-        public void nullable_string_and_objects_are_let_to_null()
+        public void nullables_are_let_to_null()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IWithValueTuple2 ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;

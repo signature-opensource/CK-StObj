@@ -7,7 +7,11 @@ namespace CK.Core
     {
         /// <summary>
         /// Dictionary for non nullable value type of <typeparamref name="TValue"/> that is also
-        /// IReadOnlyDictionary&lt;TKey, TValue?&gt; a IReadOnlyDictionary&lt;TKey, object&gt;.
+        /// IReadOnlyDictionary&lt;TKey, TValue?&gt; and a IReadOnlyDictionary&lt;TKey, object&gt;.
+        /// <para>
+        /// It should also be a IReadOnlyDictionary&lt;object, TValue&gt;, IReadOnlyDictionary&lt;object, TValue?&gt; and
+        /// a IReadOnlyDictionary&lt;object, object&gt; but unfortunately this is not possible (Compiler Error CS0695).
+        /// </para>
         /// </summary>
         /// <typeparam name="TKey">The type of the key. This is invariant.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>

@@ -61,9 +61,12 @@ namespace CK.Poco.Exc.Json.Tests
 
         public interface IWithCollections : IPoco
         {
-            IList<(string, int)> List { get; }
+            IList<(string Name, int Power)> List { get; }
+            IList<(string, int)?> ListN { get; }
             ISet<(string, int)> Set { get; }
+            ISet<(string, int)?> SetN { get; }
             IDictionary<string, (string, int)> Dic { get; }
+            IDictionary<string, (string Code, int id)?> DicN { get; }
         }
 
         [Test]

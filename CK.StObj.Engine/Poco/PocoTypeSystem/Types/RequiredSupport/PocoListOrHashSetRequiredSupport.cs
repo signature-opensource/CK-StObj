@@ -8,7 +8,7 @@ namespace CK.Setup
             : base( typeName )
         {
             Throw.DebugAssert( itemType != null );
-            Throw.DebugAssert( !itemType.IsNullable );
+            Throw.DebugAssert( itemType.IsNullable );
             Throw.DebugAssert( typeName == (isList ? $"PocoList_{itemType.Index}_CK" : $"PocoHashSet_{itemType.Index}_CK") );
             ItemType = itemType;
             IsList = isList;

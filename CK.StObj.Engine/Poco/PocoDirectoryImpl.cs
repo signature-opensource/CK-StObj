@@ -292,8 +292,8 @@ namespace CK.Setup
                     switch( t )
                     {
                         case IPocoListOrHashSetRequiredSupport listOrSet:
-                            if( listOrSet.IsList ) GeneratePocoList( monitor, ns, listOrSet );
-                            else GeneratePocoHashSet( monitor, ns, listOrSet );
+                            if( listOrSet.IsList ) GeneratePocoList( ns, listOrSet );
+                            else GeneratePocoHashSet( ns, listOrSet );
                             break;
                         case IPocoDictionaryRequiredSupport dic:
                             GeneratePocoDictionary( monitor, ns, dic );
@@ -310,7 +310,7 @@ namespace CK.Setup
             }
         }
 
-        static void GeneratePocoList( IActivityMonitor monitor, INamespaceScope ns, IPocoListOrHashSetRequiredSupport list )
+        static void GeneratePocoList( INamespaceScope ns, IPocoListOrHashSetRequiredSupport list )
         {
             Debug.Assert( list.ItemType.ImplTypeName == list.ItemType.FamilyInfo.PocoClass.FullName, "Because generated type is not nested." );
             var pocoClassName = list.ItemType.ImplTypeName;
@@ -333,7 +333,7 @@ namespace CK.Setup
 
         }
 
-        static void GeneratePocoHashSet( IActivityMonitor monitor, INamespaceScope ns, IPocoListOrHashSetRequiredSupport set )
+        static void GeneratePocoHashSet( INamespaceScope ns, IPocoListOrHashSetRequiredSupport set )
         {
             var actualTypeName = set.ItemType.ImplTypeName;
             ITypeScope typeScope = CreateHashSetType( ns,
@@ -432,8 +432,7 @@ namespace CK.Setup
             nonNullableActualTypeNameIfNullable = null;
             if( isNullable )
             {
-                nonNullableActualTypeNameIfNullable = actualTypeName;
-                actualTypeName += "?";
+                nonNullableActualTypeNameIfNullable = actualTypeName.Substring( 0, actualTypeName.Length - 1 );
             }
             var typeScope = ns.CreateType( $"sealed class {supportType.TypeName} : HashSet<{actualTypeName}>" );
             typeScope.Append( "public bool IsReadOnly => false;" ).NewLine();

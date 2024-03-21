@@ -196,27 +196,28 @@ namespace CK.StObj.Engine.Tests.Poco
 
             var ncif = f.CreateNullabilityInfo( GetType().GetField( nameof( NoConstraintIntField ) )! );
             ncif.IsNullable.Should().BeFalse();
-            ncif.GenericTypeArguments[0].IsNullable.Should().BeFalse();
+            ncif.GenericTypeArguments[0].IsNullable.Should().BeFalse( "Value type: no issue." );
 
-            var ncid = f.CreateNullabilityInfo( NoConstraintIntDirect );
-            ncid.IsNullable.Should().BeFalse();
-            ncid.GenericTypeArguments[0].IsNullable.Should().BeFalse();
+            var ncid = f.CreateNullabilityInfo( typeof( NoConstraint<int> ) );
+            ncid.IsNullable.Should().BeTrue();
+            ncid.GenericTypeArguments[0].IsNullable.Should().BeFalse( "Value type: no issue." );
 
             var ncof = f.CreateNullabilityInfo( GetType().GetField( nameof( NoConstraintObjectField ) )! );
             ncof.IsNullable.Should().BeFalse();
-            ncof.GenericTypeArguments[0].IsNullable.Should().BeFalse();
+            ncof.GenericTypeArguments[0].IsNullable.Should().BeFalse( "Through member, nullability is detected." );
 
-            var ncod = f.CreateNullabilityInfo( NoConstraintObjectDirect );
-            ncod.IsNullable.Should().BeFalse();
-            ncod.GenericTypeArguments[0].IsNullable.Should().BeFalse();
+            var ncod = f.CreateNullabilityInfo( typeof( NoConstraint<object> ) );
+            ncod.IsNullable.Should().BeTrue();
+            ncod.GenericTypeArguments[0].IsNullable.Should().BeTrue( ":-(" );
 
+            // NotNullConstraint<object?> with a notnull constraint.
             var nncof = f.CreateNullabilityInfo( GetType().GetField( nameof( NotNullConstraintObjectField ) )! );
             nncof.IsNullable.Should().BeFalse();
-            nncof.GenericTypeArguments[0].IsNullable.Should().BeTrue( "The warning is ignored, the actual definition wins against the generic constraint..." );
+            nncof.GenericTypeArguments[0].IsNullable.Should().BeTrue( "The warning is ignored, the actual definition wins against the generic constraint. Good!" );
 
             var nncod = f.CreateNullabilityInfo( NotNullConstraintObjectDirect );
-            nncod.IsNullable.Should().BeFalse();
-            nncod.GenericTypeArguments[0].IsNullable.Should().BeFalse();
+            nncod.IsNullable.Should().BeTrue();
+            nncod.GenericTypeArguments[0].IsNullable.Should().BeTrue( "No surprise." );
         }
 
         // A boxed nullable value type don't exist unless awful tricks are applied.
