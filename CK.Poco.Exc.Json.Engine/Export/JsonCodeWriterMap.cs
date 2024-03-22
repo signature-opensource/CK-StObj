@@ -183,13 +183,15 @@ namespace CK.Setup.PocoJson
             // The good news is that the adapters for T (value types, string and other basic reference types) are
             // specialized HashSet<T>.
             // We want array to use AsSpan(), list to to use CollectionsMarshal.AsSpan and hashset to fall back to the IEnumerable.
-
-            var itemWriter = GetWriter( tI );
+            if( tI is IAnonymousRecordPocoType a )
+            {
+                tI = a.UnnamedRecord;
+            }
             return c.Kind switch
             {
-                PocoTypeKind.Array => GetWriter( $"Array_{itemWriter.Index}", c, ( key, c ) => new ArrayWriter( this, itemWriter, tI ) ),
-                PocoTypeKind.List => GetWriter( $"List_{itemWriter.Index}", c, ( key, c ) => new ListWriter( this, itemWriter, tI ) ),
-                _ => GetWriter( $"Set_{itemWriter.Index}", c, ( key, c ) => new HashSetWriter( this, itemWriter, tI ) ),
+                PocoTypeKind.Array => GetWriter( $"Array_{tI.Index}", c, ( key, c ) => new ArrayWriter( this, tI ) ),
+                PocoTypeKind.List => GetWriter( $"List_{tI.Index}", c, ( key, c ) => new ListWriter( this, tI ) ),
+                _ => GetWriter( $"Set_{tI.Index}", c, ( key, c ) => new HashSetWriter( this, tI ) ),
             };
         }
 

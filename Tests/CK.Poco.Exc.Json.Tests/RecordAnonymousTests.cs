@@ -80,10 +80,30 @@ namespace CK.Poco.Exc.Json.Tests
             var o = f.Create( o =>
             {
                 o.List.Add( ("C1", 3712) );
+                o.ListN.AddRangeArray( ("N1", 42), null );
                 o.Set.Add( ("C2", 42) );
+                o.SetN.AddRangeArray( ("N2", -2), null );
                 o.Dic.Add( "one", ("CodeGen!", 1789) );
+                o.DicN.Add( "two", ("CodeGen!", 12) );
+                o.DicN.Add( "three", null );
             } );
-            o.ToString().Should().Be( """{"List":[["C1",3712]],"Set":[["C2",42]],"Dic":{"one":["CodeGen!",1789]}}""" );
+            o.ToString().Should().Be( """
+                {
+                    "List": [["C1",3712]],
+                    "ListN": [["N1", 42], null],
+                    "Set": [["C2",42]],
+                    "SetN": [["N2",-2], null],
+                    "Dic":
+                        {
+                            "one": ["CodeGen!",1789]
+                        },
+                    "DicN":
+                        {
+                            "two": ["CodeGen!",12],
+                            "three": null
+                        }
+                }
+                """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
 
             JsonTestHelper.Roundtrip( directory, o );
         }

@@ -6,14 +6,12 @@ namespace CK.Setup.PocoJson
 {
     sealed class ListWriter : JsonCodeWriter
     {
-        readonly ExportCodeWriter _itemWriter;
-        readonly IPocoType _itemSample;
+        readonly IPocoType _itemType;
 
-        public ListWriter( ExportCodeWriterMap map, ExportCodeWriter itemWriter, IPocoType itemSample )
-            : base( map, $"List_{itemWriter.Index}" )
+        public ListWriter( ExportCodeWriterMap map, IPocoType itemType )
+            : base( map, $"List_{itemType.Index}" )
         {
-            _itemWriter = itemWriter;
-            _itemSample = itemSample;
+            _itemType = itemType;
         }
 
         public override void RawWrite( ICodeWriter writer, string variableName )
@@ -28,14 +26,14 @@ namespace CK.Setup.PocoJson
                                                      ITypeScope pocoDirectoryType )
         {
             exporterType.Append( "internal static void Write" ).Append( Key!.ToString() )
-                        .Append( "( System.Text.Json.Utf8JsonWriter w, List<" ).Append( _itemSample.ImplTypeName )
+                        .Append( "( System.Text.Json.Utf8JsonWriter w, List<" ).Append( _itemType.ImplTypeName )
                         .Append( "> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
                         .OpenBlock()
                         .Append( "w.WriteStartArray();" ).NewLine()
                         .Append( "var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );" ).NewLine()
                         .Append( "for( int i = 0; i < a.Length; ++i )" )
                         .OpenBlock();
-            _itemWriter.GenerateWrite( exporterType, _itemSample, "a[i]" );
+            writers.GetWriter( _itemType ).GenerateWrite( exporterType, _itemType, "a[i]" );
             exporterType.CloseBlock()
                         .Append( "w.WriteEndArray();" ).NewLine()
                         .CloseBlock();

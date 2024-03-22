@@ -583,10 +583,10 @@ namespace CK.Setup
                                                     tItem,
                                                     obliviousType,
                                                     obliviousType );
-                Throw.DebugAssert( !result.IsNullable );
                 _typeCache.Add( chsarpName, result );
             }
-            return nType.IsNullable ? result : result.NonNullable;
+            Throw.DebugAssert( !result.IsNullable );
+            return nType.IsNullable ? result.Nullable : result;
         }
 
         IPocoType? OnValueType( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )

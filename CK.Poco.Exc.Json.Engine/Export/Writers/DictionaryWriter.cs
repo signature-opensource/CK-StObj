@@ -46,6 +46,7 @@ namespace CK.Setup.PocoJson
                         .OpenBlock();
             IPocoType tKey = _dictionary.ItemTypes[0];
             IPocoType tValue = _dictionary.ItemTypes[1];
+
             // String key: we write it as a JSON object.
             if( tKey.Type == typeof( string ) )
             {

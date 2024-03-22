@@ -79,7 +79,7 @@ namespace CK.Setup.PocoJson
                         switch( index )
                         {
                     """ );
-            var types = writers.NameMap.TypeSet.NonNullableTypes.Where( t => t.IsFinalType );
+            var types = writers.NameMap.TypeSet.Where( t => t.IsFinalType );
             foreach( var t in types )
             {
                 exporterType.Append( "case " ).Append( t.Index >> 1 ).Append( ":" )

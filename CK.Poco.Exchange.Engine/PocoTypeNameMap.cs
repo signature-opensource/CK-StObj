@@ -74,11 +74,13 @@ namespace CK.Setup
                 if( String.IsNullOrWhiteSpace( name ) || String.IsNullOrWhiteSpace( nullableName ) )
                 {
                     var badName = String.IsNullOrWhiteSpace( name ) ? "name" : "nullableName";
-                    Throw.InvalidOperationException( $"Invalid MakeXXX override for '{type}': output '{badName}' is null or whitespace." );
+                    Throw.InvalidOperationException( $"Invalid MakeXXX override for '{type.NonNullable}': output '{badName}' is null or whitespace." );
                 }
-                _names[type.Index] = name;
-                _names[type.Index + 1] = nullableName;
+                _names[type.NonNullable.Index] = name;
+                _names[type.NonNullable.Index + 1] = nullableName;
                 Throw.DebugAssert( n != null );
+                // n references the non nullable name.
+                if( type.IsNullable ) return nullableName;
             }
             return n;
         }

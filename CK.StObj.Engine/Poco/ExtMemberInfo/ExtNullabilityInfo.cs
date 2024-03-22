@@ -84,8 +84,12 @@ namespace CK.Setup
                 }
                 else if( type.IsGenericType )
                 {
-                    var args = type.GetGenericArguments();
-                    _subTypes = CreateFromArgs( args );
+                    var args = CreateFromArgs( type.GetGenericArguments() );
+                    if( type.GetGenericTypeDefinition() == typeof( Dictionary<,> ) )
+                    {
+                        args[0] = args[0].ToNonNullable();
+                    }
+                    _subTypes = args;
                 }
                 else
                 {
@@ -155,7 +159,7 @@ namespace CK.Setup
 
         public bool IsHomogeneous => _homogeneous;
 
-        public IExtNullabilityInfo ToNonNullable()
+        internal ExtNullabilityInfo ToNonNullable()
         {
             if( !_isNullable ) return this;
             var t = _type;
@@ -166,6 +170,8 @@ namespace CK.Setup
             }
             return new ExtNullabilityInfo( t, _subTypes, false, _useReadState, _homogeneous );
         }
+
+        IExtNullabilityInfo IExtNullabilityInfo.ToNonNullable() => ToNonNullable();
 
         public IExtNullabilityInfo ToNullable()
         {

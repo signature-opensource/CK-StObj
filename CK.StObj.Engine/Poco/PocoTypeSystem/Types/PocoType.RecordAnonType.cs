@@ -108,11 +108,12 @@ namespace CK.Setup
                 }
                 _fields = fields;
                 _isReadOnlyCompliant = isReadOnlyCompliant;
-                Throw.DebugAssert( (unnamedRecord != null && unnamedRecord.IsUnnamed)
-                                   || (unnamedRecord == null && _fields.All( f => f.IsUnnamed )) );
                 _unnamedRecord = unnamedRecord ?? this;
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
+
+                Throw.DebugAssert( "An unnamed record has no field name and its subordinated anonymous records are unnamed.",
+                                   !IsUnnamed || (_fields.All( f => f.IsUnnamed && (f.Type is not IAnonymousRecordPocoType a || a.IsUnnamed) ) ) );
             }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;

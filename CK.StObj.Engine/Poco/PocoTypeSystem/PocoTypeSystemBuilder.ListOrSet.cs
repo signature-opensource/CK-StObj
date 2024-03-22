@@ -19,6 +19,17 @@ namespace CK.Setup
             {
                 return null;
             }
+            // The RegularCollection came last in the battle: instead of integrating it in the
+            // existing RegisterListOrSetCore we handle it here. This is not really lovely but this
+            // does the job.
+            IPocoType? anonymousRegular = null;
+            if( tI is IAnonymousRecordPocoType a && !a.IsUnnamed )
+            {
+                var nRegular = isRegular
+                                ? nType
+                                : nType.SetReferenceTypeDefinition( isList ? typeof( List<> ) : typeof( HashSet<> ) );
+                anonymousRegular = RegisterListOrSetCore( monitor, isList, nRegular, true, listOrHashSet, a.UnnamedRecord );
+            }
             return RegisterListOrSetCore( monitor, isList, nType, isRegular, listOrHashSet, tI );
         }
 

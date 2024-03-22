@@ -43,54 +43,55 @@ namespace CK.Poco.Exc.Json.Tests
             var o1 = f.Create( o => o.Result = "This-is-o1!" );
             var o2 = f.Create( o =>
             {
-                o.ArrayOfInt = new int[] { 1, 2 };
+                o.ArrayOfInt = new int[] { 1, 2, 3, 4, 5 };
                 o.ArrayOfObject = new object[] { 1, "Hello" };
                 o.ArrayOfArrayOfLong = new long[][] { new long[] { 1, 2 }, new long[] { 3, 4, 5 } };
                 o.ArrayOfMe = new[] { o1 };
                 o.Result = new object[] { o.ArrayOfInt, o.ArrayOfObject, o.ArrayOfArrayOfLong };
             } );
-            o2.ToString().Should().Be( @"
+            o2.ToString().Should().Be( """
                 {
-                    ""ArrayOfInt"": [1,2],
-                    ""ArrayOfObject"":
+                    "ArrayOfInt": [1,2,3,4,5],
+                    "ArrayOfObject":
                         [
-                            [""int"",1],
-                            [""string"",""Hello""]
+                            ["int",1],
+                            ["string","Hello"]
                         ],
-                    ""ArrayOfArrayOfLong"":
+                    "ArrayOfArrayOfLong":
                         [
-                            [""1"",""2""],
-                            [""3"",""4"",""5""]
+                            ["1","2"],
+                            ["3","4","5"]
                         ],
-                    ""ArrayOfMe"":
+                    "ArrayOfMe":
                         [
                             {
-                                ""ArrayOfInt"": [],
-                                ""ArrayOfObject"": [],
-                                ""ArrayOfArrayOfLong"": [],
-                                ""ArrayOfMe"": null,
-                                ""Result"": [""string"",""This-is-o1!""]
+                                "ArrayOfInt": [],
+                                "ArrayOfObject": [],
+                                "ArrayOfArrayOfLong": [],
+                                "ArrayOfMe": null,
+                                "Result": ["string","This-is-o1!"]
                             }
                         ],
-                    ""Result"": [""A(object)"",
+                    "Result": ["A(object)",
                                     [
-                                        [""A(int)"",[1,2]],
-                                        [""A(object)"",
+                                        ["A(int)",[1,2,3,4,5]],
+                                        ["A(object)",
                                             [
-                                                [""int"",1],
-                                                [""string"",""Hello""]
+                                                ["int",1],
+                                                ["string","Hello"]
                                             ]
                                         ],
-                                        [""A(A(long))"",
+                                        ["A(A(long)?)",
                                             [
-                                                [""1"",""2""],
-                                                [""3"",""4"",""5""]
+                                                ["1","2"],
+                                                ["3","4","5"]
                                             ]
                                         ]
                                     ]
                                 ]
-                }"
-                .Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+                }
+                """
+                .Replace( " ", "" ).ReplaceLineEndings( "" ) );
         }
 
         public interface IWithLists : IPoco
@@ -101,7 +102,8 @@ namespace CK.Poco.Exc.Json.Tests
 
             IList<ExtendedCultureInfo> ListOfEC { get; }
 
-            [RegisterPocoType(typeof(List<int>))]
+            [RegisterPocoType( typeof( List<int> ) )]
+            [RegisterPocoType( typeof( List<object> ) )]
             IList<int> CovariantListImpl { get; }
 
             IList<int?> CovariantListNullableImpl { get; }
@@ -138,23 +140,24 @@ namespace CK.Poco.Exc.Json.Tests
 
             static void CheckToString( IWithLists oD )
             {
-                oD.ToString().Should().Be( @"
-                {
-                    ""ListOfList"": [[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]],
-                    ""ListOfNC"": ["""",""en""],
-                    ""ListOfEC"": [[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,fr,de""]],
-                    ""CovariantListImpl"": [42,3712],
-                    ""CovariantListNullableImpl"": [null,0,null],
-                    ""Result"": [""A(object)"",
-                                    [
-                                        [""L(NormalizedCultureInfo)"", ["""",""en""]],
-                                        [""L(ExtendedCultureInfo)"", [[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,fr,de""]]],
-                                        [""L(object)"",[[""L(int)"", [1,2]],[""L(int)"",[3,4,5]]]],
-                                        [""L(int)"", [42,3712]],
-                                        [""L(int?)"", [null,0,null]]
+                oD.ToString().Should().Be( """
+                    {
+                        "ListOfList": [["L(int)",[1,2]],["L(int)",[3,4,5]]],
+                        "ListOfNC": ["","en"],
+                        "ListOfEC": [["NormalizedCultureInfo","en"],["ExtendedCultureInfo","es,fr,de"]],
+                        "CovariantListImpl": [42,3712],
+                        "CovariantListNullableImpl": [null,0,null],
+                        "Result": ["A(object?)",
+                                        [
+                                            ["L(NormalizedCultureInfo?)", ["","en"]],
+                                            ["L(ExtendedCultureInfo?)", [["NormalizedCultureInfo","en"],["ExtendedCultureInfo","es,fr,de"]]],
+                                            ["L(object?)",[["L(int)", [1,2]],["L(int)",[3,4,5]]]],
+                                            ["L(int)", [42,3712]],
+                                            ["L(int?)", [null,0,null]]
+                                        ]
                                     ]
-                                ]
-                }".Replace( " ", "" ).Replace( "\r", "" ).Replace( "\n", "" ) );
+                    }
+                    """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
             }
         }
 
@@ -277,14 +280,14 @@ namespace CK.Poco.Exc.Json.Tests
                 {
                     ""DicOfDic"":
                         {
-                            ""One"": [""O(object)"",
+                            ""One"": [""O(object?)"",
                                          {
                                            ""Hi..."": [""long"",""42""],
                                            ""Hello"": [""string"",""World!""],
                                            ""Goodbye"": null
                                          }
                                      ],
-                            ""Two"": [""M(int,object)"",
+                            ""Two"": [""M(int,object?)"",
                                          [
                                            [1,[""long"",""-1""]],
                                            [2,[""string"",""World2!""]],
@@ -303,18 +306,18 @@ namespace CK.Poco.Exc.Json.Tests
                             [2,null],
                             [3,false]
                         ],
-                    ""Result"": [""A(object)"",
+                    ""Result"": [""A(object?)"",
                                     [
-                                        [""O(object)"",
+                                        [""O(object?)"",
                                             {
-                                                ""One"": [""O(object)"",
+                                                ""One"": [""O(object?)"",
                                                              {
                                                                ""Hi..."": [""long"",""42""],
                                                                ""Hello"": [""string"",""World!""],
                                                                ""Goodbye"": null
                                                              }
                                                          ],
-                                                ""Two"": [""M(int,object)"",
+                                                ""Two"": [""M(int,object?)"",
                                                              [
                                                                [1,[""long"",""-1""]],
                                                                [2,[""string"",""World2!""]],
@@ -591,19 +594,51 @@ namespace CK.Poco.Exc.Json.Tests
 
             static void CheckToString( IWithDicsA oD )
             {
-                oD.ToString().Should().Be( @"
-                {
-                    ""ListOfAbstract"": [[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]],
-                    ""ListOfConcrete"": [42,3712],
-                    ""CovariantListNullableImpl"": [null,0,null],
-                    ""Result"": [""A(object)"",
-                                    [
-                                        [""L(object)"",[[""L(int)"",[1,2]],[""L(int)"",[3,4,5]]]],
-                                        [""L(int)"",[42,3712]],
-                                        [""L(int?)"",[null,0,null]]
-                                    ]
+                oD.ToString().Should().Be( """
+                    {
+                        "DicOfAbstract":
+                            [
+                                ["es",["Concrete",{"Name":"c"}]],
+                                ["de",["Concrete",{"Name":"s"}]]
+                            ],
+                        "DicOfConcrete":
+                            [
+                                ["es",{"Name":"c"}],
+                                ["de",{"Name":"s"}]
+                            ],
+                        "DicOfSecondary":
+                            [
+                                ["en",{"Name":"s"}]
+                            ],
+                        "DicOfNullableAbstract":
+                            [
+                                [0,null]
+                            ],
+                        "DicOfNullableConcrete":
+                            [
+                                [0,null]
+                            ],
+                        "DicOfNullableSecondary":
+                            [
+                                [0,null]
+                            ],
+                        "Result":
+                            ["A(object?)",
+                                [
+                                    ["M(NormalizedCultureInfo,CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract?)",
+                                        [
+                                            ["es",["Concrete",{"Name":"c"}]],
+                                            ["de",["Concrete",{"Name":"s"}]]
+                                        ]
+                                    ],
+                                    ["M(NormalizedCultureInfo,Concrete?)",[["es",{"Name":"c"}],["de",{"Name":"s"}]]],
+                                    ["M(NormalizedCultureInfo,Concrete?)",[["en",{"Name":"s"}]]],
+                                    ["M(int,CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract?)",[[0,null]]],
+                                    ["M(int,Concrete?)",[[0,null]]],["M(int,Concrete?)",[[0,null]]]
                                 ]
-                }".Replace( " ", "" ).ReplaceLineEndings( "" ) );
+                        ]
+                    }
+                    """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
             }
         }
 

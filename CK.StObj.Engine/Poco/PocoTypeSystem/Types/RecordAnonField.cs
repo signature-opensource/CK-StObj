@@ -31,7 +31,9 @@ namespace CK.Setup
             _index = f._index;
             _name = GetItemName( _index );
             _isUnnamed = true;
-            SetType( isOblivious ? f.Type.ObliviousType : f.Type );
+            SetType( isOblivious
+                        ? f.Type.ObliviousType
+                        : (f.Type is IAnonymousRecordPocoType a ? a.UnnamedRecord : f.Type) );
         }
 
         public RecordAnonField( int index, string? name )

@@ -6,14 +6,12 @@ namespace CK.Setup.PocoJson
 {
     sealed class HashSetWriter : JsonCodeWriter
     {
-        readonly ExportCodeWriter _itemWriter;
-        readonly IPocoType _itemSample;
+        readonly IPocoType _itemType;
 
-        public HashSetWriter( ExportCodeWriterMap map, ExportCodeWriter itemWriter, IPocoType itemSample )
-            : base( map, $"Set_{itemWriter.Index}" )
+        public HashSetWriter( ExportCodeWriterMap map, IPocoType itemType )
+            : base( map, $"Set_{itemType.Index}" )
         {
-            _itemWriter = itemWriter;
-            _itemSample = itemSample;
+            _itemType = itemType;
         }
 
         public override void RawWrite( ICodeWriter writer, string variableName )
@@ -28,21 +26,20 @@ namespace CK.Setup.PocoJson
                                                      ITypeScope pocoDirectoryType )
         {
             exporterType.Append( "internal static void Write" ).Append( Key!.ToString() )
-                        .Append( "( System.Text.Json.Utf8JsonWriter w, HashSet<" ).Append( _itemSample.ImplTypeName )
+                        .Append( "( System.Text.Json.Utf8JsonWriter w, HashSet<" ).Append( _itemType.ImplTypeName )
                         .Append( "> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )" )
                         .OpenBlock()
                         .Append( "w.WriteStartArray();" ).NewLine()
-                        .Append( "var a = System.Runtime.InteropServices.CollectionsMarshal.AsSpan( v );" ).NewLine()
                         .Append( "foreach( var item in v )" )
                         .OpenBlock();
-            if( _itemSample is IRecordPocoType )
+            if( _itemType is IRecordPocoType )
             {
                 exporterType.Append( "var loc = item;" ).NewLine();
-                _itemWriter.GenerateWrite( exporterType, _itemSample, "loc" );
+                writers.GetWriter( _itemType ).GenerateWrite( exporterType, _itemType, "loc" );
             }
             else
             {
-                _itemWriter.GenerateWrite( exporterType, _itemSample, "item" );
+                writers.GetWriter( _itemType ).GenerateWrite( exporterType, _itemType, "item" );
             }
             exporterType.CloseBlock()
                         .Append( "w.WriteEndArray();" ).NewLine()
