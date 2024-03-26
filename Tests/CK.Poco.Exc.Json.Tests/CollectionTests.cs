@@ -72,10 +72,10 @@ namespace CK.Poco.Exc.Json.Tests
                                 "Result": ["string","This-is-o1!"]
                             }
                         ],
-                    "Result": ["A(object)",
+                    "Result": ["A(object?)",
                                     [
                                         ["A(int)",[1,2,3,4,5]],
-                                        ["A(object)",
+                                        ["A(object?)",
                                             [
                                                 ["int",1],
                                                 ["string","Hello"]

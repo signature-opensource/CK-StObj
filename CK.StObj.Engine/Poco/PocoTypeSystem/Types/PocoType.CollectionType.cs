@@ -18,9 +18,18 @@ namespace CK.Setup
                                                                PocoTypeKind kind,
                                                                IPocoType itemType,
                                                                IPocoType? obliviousType,
-                                                               IPocoType? finalType )
+                                                               IPocoType? finalType,
+                                                               IPocoType? regularCollection )
         {
-            return new ListOrSetOrArrayType( s, tCollection, csharpName, implTypeName, kind, itemType, (ICollectionPocoType?)obliviousType, (ICollectionPocoType?)finalType );
+            return new ListOrSetOrArrayType( s,
+                                             tCollection,
+                                             csharpName,
+                                             implTypeName,
+                                             kind,
+                                             itemType,
+                                             (ICollectionPocoType?)obliviousType,
+                                             (ICollectionPocoType?)finalType,
+                                             (ICollectionPocoType?)regularCollection );
         }
 
         internal static DictionaryType CreateDictionary( PocoTypeSystemBuilder s,
@@ -30,9 +39,18 @@ namespace CK.Setup
                                                          IPocoType itemType1,
                                                          IPocoType itemType2,
                                                          IPocoType? obliviousType,
-                                                         IPocoType? finalType )
+                                                         IPocoType? finalType,
+                                                         IPocoType? regularCollectionType )
         {
-            return new DictionaryType( s, tCollection, csharpName, implTypeName, itemType1, itemType2, (ICollectionPocoType?)obliviousType, (ICollectionPocoType?)finalType );
+            return new DictionaryType( s,
+                                       tCollection,
+                                       csharpName,
+                                       implTypeName,
+                                       itemType1,
+                                       itemType2,
+                                       (ICollectionPocoType?)obliviousType,
+                                       (ICollectionPocoType?)finalType,
+                                       (ICollectionPocoType?)regularCollectionType );
         }
 
         internal static AbstractReadOnlyCollectionType CreateAbstractCollection( PocoTypeSystemBuilder s,
@@ -82,6 +100,7 @@ namespace CK.Setup
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
             readonly ICollectionPocoType _finalType;
+            readonly ICollectionPocoType _regularCollection;
             bool _implementationLess;
 
             public ListOrSetOrArrayType( PocoTypeSystemBuilder s,
@@ -91,7 +110,8 @@ namespace CK.Setup
                                          PocoTypeKind kind,
                                          IPocoType itemType,
                                          ICollectionPocoType? obliviousType,
-                                         ICollectionPocoType? finalType )
+                                         ICollectionPocoType? finalType,
+                                         ICollectionPocoType? regularCollection )
                 : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
@@ -108,8 +128,16 @@ namespace CK.Setup
                 {
                     _obliviousType = Nullable;
                 }
-                Throw.DebugAssert( "A final reference type is nullable.", finalType == null || (finalType.IsNullable && finalType.IsStructuralFinalType) );
+                Throw.DebugAssert( "A final reference type is oblivious (and as a reference type, nullable).",
+                                   finalType == null || (finalType.IsNullable && finalType.IsStructuralFinalType && finalType.IsOblivious) );
                 _finalType = finalType ?? Nullable;
+                Throw.DebugAssert( "The regular collection has the same kind and the provided instance is not nullable and not abstract.",
+                                   regularCollection == null || (!regularCollection.IsNullable && regularCollection.Kind == kind && !regularCollection.IsAbstractCollection) );
+                Throw.DebugAssert( "The provided regular collection can have the same item type only if we are abstract.",
+                                   regularCollection == null || (kind != PocoTypeKind.Array && csharpName[0] == 'I') || regularCollection.ItemTypes[0] != itemType );
+                Throw.DebugAssert( "If we are the regular collection, we are not abstract and our item is not an anonymous record with named fields.",
+                                   regularCollection != null || ((kind == PocoTypeKind.Array || csharpName[0] != 'I') && (itemType is not IAnonymousRecordPocoType a || a.IsUnnamed) ) );
+                _regularCollection = regularCollection ?? this;
                 _implTypeName = implTypeName;
                 _itemTypes = new[] { itemType };
                 _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
@@ -203,6 +231,7 @@ namespace CK.Setup
             readonly string _implTypeName;
             readonly ICollectionPocoType _obliviousType;
             readonly ICollectionPocoType _finalType;
+            readonly ICollectionPocoType _regularCollection;
             ICollectionPocoType? _abstractReadOnlyCollection;
             bool _implementationLess;
 
@@ -213,7 +242,8 @@ namespace CK.Setup
                                    IPocoType keyType,
                                    IPocoType valueType,
                                    ICollectionPocoType? obliviousType,
-                                   ICollectionPocoType? finalType )
+                                   ICollectionPocoType? finalType,
+                                   ICollectionPocoType? regularCollection )
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, static t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
@@ -231,8 +261,19 @@ namespace CK.Setup
                 {
                     _obliviousType = Nullable;
                 }
-                Throw.DebugAssert( "A final reference type is nullable.", finalType == null || (finalType.IsNullable && finalType.IsStructuralFinalType) );
+
+                Throw.DebugAssert( "A final reference type is oblivious (and as a reference type, nullable).",
+                                   finalType == null || (finalType.IsNullable && finalType.IsStructuralFinalType && finalType.IsOblivious) );
                 _finalType = finalType ?? Nullable;
+
+                Throw.DebugAssert( "The regular collection if provided is not nullable and not abstract.",
+                                    regularCollection == null || (!regularCollection.IsNullable && !regularCollection.IsAbstractCollection) );
+                Throw.DebugAssert( "The provided regular collection can have the same item type only if we are abstract.",
+                                   regularCollection == null || csharpName[0] == 'I' || regularCollection.ItemTypes[0] != keyType || regularCollection.ItemTypes[1] != valueType );
+                Throw.DebugAssert( "If we are the regular collection, we are not abstract and our items are not an anonymous record with named fields.",
+                                   regularCollection != null || (csharpName[0] != 'I' && (keyType is not IAnonymousRecordPocoType aK || aK.IsUnnamed) && (valueType is not IAnonymousRecordPocoType vK || vK.IsUnnamed)) );
+                _regularCollection = regularCollection ?? this;
+
                 _def = new FieldDefaultValue( $"new {implTypeName}()" );
                 // Register back references (key is embedded, value has its own PocoTypeRef).
                 _nextRefKey = ((PocoType)keyType).AddBackRef( this );

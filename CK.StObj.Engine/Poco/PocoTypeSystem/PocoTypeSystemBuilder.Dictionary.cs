@@ -18,7 +18,17 @@ namespace CK.Setup
                 {
                     return null;
                 }
-                return RegisterDictionaryCore( nType, isRegular, tK, tV );
+                ICollectionPocoType? regularCollection = null;
+                IPocoType tKRegular = tK is IAnonymousRecordPocoType aK ? aK.UnnamedRecord : tK;
+                IPocoType tVRegular = tV is IAnonymousRecordPocoType aV ? aV.UnnamedRecord : tV;
+                if( !isRegular || tK != tKRegular || tV != tVRegular )
+                {
+                    var nRegular = isRegular
+                                    ? nType
+                                    : nType.SetReferenceTypeDefinition( typeof( Dictionary<,> ) );
+                    regularCollection = Unsafe.As<ICollectionPocoType>( RegisterDictionaryCore( nRegular.ToNonNullable(), true, tKRegular, tVRegular, null ) );
+                }
+                return RegisterDictionaryCore( nType, isRegular, tK, tV, regularCollection );
             }
             return null;
         }
@@ -106,7 +116,11 @@ namespace CK.Setup
             return true;
         }
 
-        IPocoType RegisterDictionaryCore( IExtNullabilityInfo nType, bool isRegular, IPocoType tK, IPocoType tV )
+        IPocoType RegisterDictionaryCore( IExtNullabilityInfo nType,
+                                          bool isRegular,
+                                          IPocoType tK,
+                                          IPocoType tV,
+                                          ICollectionPocoType? regularCollection )
         {
             var csharpName = isRegular
                                 ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
@@ -139,11 +153,14 @@ namespace CK.Setup
                     }
                     else
                     {
-
+                        Throw.DebugAssert( "IDictionary: the regular collection has been created.", regularCollection != null );
                         oName = $"IDictionary<{obliviousKeyType.CSharpName},{obliviousValueType.CSharpName}>";
                         oTypeName = GetAbstractionImplTypeSupport( obliviousKeyType, obliviousValueType, out var isFinal );
                         if( !isFinal )
                         {
+                            // The final type is a Dictionary of oblivious key and value.
+                            // When item is an anonymous record, then it is unnamed (oblivious => unnamed).
+                            // The final type is its own RegularCollection.
                             Throw.DebugAssert( oTypeName == oName.Substring( 1 ) );
                             if( !_typeCache.TryGetValue( oTypeName, out finalType ) )
                             {
@@ -155,17 +172,42 @@ namespace CK.Setup
                                                                        obliviousKeyType,
                                                                        obliviousValueType,
                                                                        obliviousType: null,
-                                                                       finalType: null );
+                                                                       finalType: null,
+                                                                       regularCollectionType: null );
                                 Throw.DebugAssert( !finalType.IsNullable );
                                 _typeCache.Add( oTypeName, finalType );
                                 // Final type is oblivious: as reference type it is nullable.
-                                finalType = finalType.Nullable;
                                 _typeCache.Add( tFinal, finalType.Nullable );
                             }
+                            // Both lookup (by name) and creation returns the non nullable.
+                            finalType = finalType.Nullable;
                             Throw.DebugAssert( finalType.IsOblivious && finalType.IsStructuralFinalType
                                                && !(finalType.NonNullable.IsOblivious || finalType.NonNullable.IsStructuralFinalType) );
                         }
                     }
+                    // The regular collection may be available but it is not necessarily the oblivious's one.
+                    // If a final type has been computed (because this oblivious is not final) then the
+                    // oblivious.RegularCollection is the final.
+                    // When no final type is available (because this oblivious is final) it may be the resolved
+                    // regular collection if its item type happens to be oblivious.
+                    var obliviousRegular = finalType?.NonNullable
+                                            ?? (regularCollection?.ItemTypes[0] == obliviousKeyType && regularCollection?.ItemTypes[1] == obliviousValueType
+                                                    ? regularCollection
+                                                    : null);
+
+                    Throw.DebugAssert( "The oblivious item types are necessarily compliant with the regular collection (oblivious => unnamed record).",
+                                        (obliviousKeyType is not IAnonymousRecordPocoType aK || aK.IsUnnamed)
+                                        &&
+                                        (obliviousValueType is not IAnonymousRecordPocoType aV || aV.IsUnnamed) );
+
+                    // The only reason why the oblivious cannot be its own regular collection is because we are building an abstraction.
+                    if( obliviousRegular == null && !isRegular )
+                    {
+                        // We must create the regular collection: recursive call here (but will be only a single reentrancy).
+                        var nRegular = nType.SetReferenceTypeDefinition( typeof( Dictionary<,> ) ).ToNonNullable();
+                        obliviousRegular = RegisterDictionaryCore( nRegular, true, obliviousKeyType, obliviousValueType, null );
+                    }
+
                     obliviousType = PocoType.CreateDictionary( this,
                                                                t,
                                                                oName,
@@ -173,7 +215,8 @@ namespace CK.Setup
                                                                obliviousKeyType,
                                                                obliviousValueType,
                                                                obliviousType: null,
-                                                               finalType ).ObliviousType;
+                                                               finalType,
+                                                               obliviousRegular ).ObliviousType;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }
@@ -191,7 +234,8 @@ namespace CK.Setup
                                                         tK,
                                                         tV,
                                                         obliviousType,
-                                                        obliviousType.StructuralFinalType );
+                                                        obliviousType.StructuralFinalType,
+                                                        regularCollection );
                     _typeCache.Add( csharpName, result );
                 }
             }

@@ -102,7 +102,8 @@ namespace CK.StObj.Engine.Tests.Poco
             const int basicTypesCount = 26; // See IWithAllBasicTypes.
             const int enumTypesCount = 1; // AnEnum
             const int pocoTypesCount = 5 + 1; // The 5 Pocos + the IPoco.
-            const int listTypesCount = 1 + 1; // List<(int,string)> and List<(int Count, string Name)>
+            const int listTypesCount = 1 + 1 + 1 + 1; // IList<(int Count, string Name)>, its RegularCollection List<(int,string)>,
+                                                      // its oblivious IList<(int, string?)> and the oblivious's RegularCollection List<(int,string?)>. 
             const int anonymousTypesCount = 2 + 2 + 2; //(Count,Name) and (Count,Name,Inside) and their respective unnamed and oblivious types.
 
             builder.Count.Should().Be( (basicTypesCount + enumTypesCount + pocoTypesCount + listTypesCount + anonymousTypesCount) * 2 );

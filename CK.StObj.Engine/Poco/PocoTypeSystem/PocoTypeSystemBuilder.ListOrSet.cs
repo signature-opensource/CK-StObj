@@ -1,10 +1,8 @@
 using CK.Core;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System;
-using System.Collections;
 using System.Runtime.CompilerServices;
-using CK.CodeGen;
 
 namespace CK.Setup
 {
@@ -20,17 +18,17 @@ namespace CK.Setup
                 return null;
             }
             // The RegularCollection came last in the battle: instead of integrating it in the
-            // existing RegisterListOrSetCore we handle it here. This is not really lovely but this
-            // does the job.
-            IPocoType? anonymousRegular = null;
-            if( tI is IAnonymousRecordPocoType a && !a.IsUnnamed )
+            // existing RegisterListOrSetCore we handle it here. The good news is that it simplifies the code.
+            ICollectionPocoType? regularCollection = null;
+            IPocoType tIRegular = tI is IAnonymousRecordPocoType a ? a.UnnamedRecord : tI;
+            if( !isRegular || tI != tIRegular )
             {
                 var nRegular = isRegular
                                 ? nType
                                 : nType.SetReferenceTypeDefinition( isList ? typeof( List<> ) : typeof( HashSet<> ) );
-                anonymousRegular = RegisterListOrSetCore( monitor, isList, nRegular, true, listOrHashSet, a.UnnamedRecord );
+                regularCollection = Unsafe.As<ICollectionPocoType>( RegisterListOrSetCore( isList, nRegular.ToNonNullable(), true, listOrHashSet, tIRegular, null ) );
             }
-            return RegisterListOrSetCore( monitor, isList, nType, isRegular, listOrHashSet, tI );
+            return RegisterListOrSetCore( isList, nType, isRegular, listOrHashSet, tI, regularCollection );
         }
 
         static bool CheckHashSetItemType( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, IPocoType tI )
@@ -92,7 +90,12 @@ namespace CK.Setup
             return nType.IsNullable ? result.Nullable : result;
         }
 
-        IPocoType RegisterListOrSetCore( IActivityMonitor monitor, bool isList, IExtNullabilityInfo nType, bool isRegular, string listOrHashSet, IPocoType tI )
+        IPocoType RegisterListOrSetCore( bool isList,
+                                         IExtNullabilityInfo nType,
+                                         bool isRegular,
+                                         string listOrHashSet,
+                                         IPocoType tI,
+                                         ICollectionPocoType? regularCollection )
         {
             var csharpName = isRegular
                                 ? $"{listOrHashSet}<{tI.CSharpName}>"
@@ -120,6 +123,7 @@ namespace CK.Setup
                     }
                     else
                     {
+                        Throw.DebugAssert( "IList or ISet: the regular collection has been created.", regularCollection != null );
                         oName = $"{(isList ? "IList" : "ISet")}<{obliviousItemType.CSharpName}>";
                         oTypeName = GetAbstractionImplTypeSupport( isList, listOrHashSet, obliviousItemType, out var isFinal );
                         if( !isFinal )
@@ -127,6 +131,9 @@ namespace CK.Setup
                             Throw.DebugAssert( oTypeName == $"{listOrHashSet}<{obliviousItemType.CSharpName}>" );
                             if( !_typeCache.TryGetValue( oTypeName, out finalType ) )
                             {
+                                // The final type is a regular List (or HashSet) of oblivious item.
+                                // When the item is an anonymous record, then it is unnamed (oblivious => unnamed).
+                                // The final type is its own RegularCollection.
                                 var tFinal = (isList ? typeof( List<> ) : typeof( HashSet<> ) ).MakeGenericType( obliviousItemType.Type );
                                 finalType = PocoType.CreateCollection( this,
                                                                        tFinal,
@@ -135,16 +142,37 @@ namespace CK.Setup
                                                                        isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                                        obliviousItemType,
                                                                        obliviousType: null,
-                                                                       finalType: null );
+                                                                       finalType: null,
+                                                                       regularCollection: null );
                                 Throw.DebugAssert( !finalType.IsNullable );
                                 _typeCache.Add( oTypeName, finalType );
                                 // Final type is oblivious: as reference type it is nullable.
-                                finalType = finalType.Nullable;
-                                _typeCache.Add( tFinal, finalType );
+                                _typeCache.Add( tFinal, finalType.Nullable );
                             }
+                            // Both lookup (by name) and creation returns the non nullable.
+                            finalType = finalType.Nullable;
                             Throw.DebugAssert( finalType.IsOblivious && finalType.IsStructuralFinalType
                                                && !(finalType.NonNullable.IsOblivious || finalType.NonNullable.IsStructuralFinalType) );
                         }
+                    }
+                    // The regular collection may be available but it is not necessarily the oblivious's one.
+                    // If a final type has been computed (because this oblivious is not final) then the
+                    // oblivious.RegularCollection is the final type.
+                    // When no final type is available (because this oblivious is final) it may be the resolved
+                    // regular collection if its item type happens to be oblivious.
+                    var obliviousRegular = finalType?.NonNullable
+                                           ?? (regularCollection?.ItemTypes[0] == obliviousItemType ? regularCollection : null);
+
+                    Throw.DebugAssert( "The obliviousItemType is necessarily compliant with the regular collection (oblivious => unnamed record).",
+                                       obliviousItemType is not IAnonymousRecordPocoType a1 || a1.IsUnnamed );
+
+                    // The only reason why the oblivious cannot be its own regular collection is because we are building an abstraction:
+                    // bool obliviousWillBeRegular = isRegular;
+                    if( obliviousRegular == null && !isRegular )
+                    {
+                        // We must create the regular collection: recursive call here (but will be only a single reentrancy).
+                        var nRegular = nType.SetReferenceTypeDefinition( isList ? typeof( List<> ) : typeof( HashSet<> ) ).ToNonNullable();
+                        obliviousRegular = RegisterListOrSetCore( isList, nRegular, true, listOrHashSet, obliviousItemType, null );
                     }
                     obliviousType = PocoType.CreateCollection( this,
                                                                t,
@@ -153,7 +181,8 @@ namespace CK.Setup
                                                                isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
                                                                itemType: obliviousItemType,
                                                                obliviousType: null,
-                                                               finalType ).ObliviousType;
+                                                               finalType,
+                                                               obliviousRegular ).ObliviousType;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }
@@ -165,6 +194,8 @@ namespace CK.Setup
                 }
                 else
                 {
+                    // If the regular collection is available, it is the one.
+                    // Otherwise, this is necessarily its own RegularCollection.
                     result = PocoType.CreateCollection( this,
                                                         t,
                                                         csharpName,
@@ -172,7 +203,8 @@ namespace CK.Setup
                                                         obliviousType.Kind,
                                                         tI,
                                                         obliviousType,
-                                                        obliviousType.StructuralFinalType );
+                                                        obliviousType.StructuralFinalType,
+                                                        regularCollection );
                     Throw.DebugAssert( !result.IsNullable );
                     _typeCache.Add( csharpName, result );
                 }

@@ -556,7 +556,8 @@ namespace CK.Setup
             if( !_typeCache.TryGetValue( chsarpName, out var result ) )
             {
                 // The oblivious array type is the array of its oblivious item type
-                // and is the final type.
+                // and is the final type. It is also its own RegularCollection as an oblivious
+                // anonymous record is unnamed.
                 if( !_typeCache.TryGetValue( nType.Type, out var obliviousType ) )
                 {
                     var oName = tItem.ObliviousType.CSharpName + "[]";
@@ -567,6 +568,7 @@ namespace CK.Setup
                                                                PocoTypeKind.Array,
                                                                tItem.ObliviousType,
                                                                null,
+                                                               null,
                                                                null ).ObliviousType;
                     _typeCache.Add( nType.Type, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
@@ -575,6 +577,28 @@ namespace CK.Setup
                 Throw.DebugAssert( obliviousType.IsNullable );
                 if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType : obliviousType.NonNullable;
 
+                // Ensures that the RegularCollection exists if the item type is not compliant.
+                IPocoType? regularType = null;
+                IPocoType tIRegular = tItem is IAnonymousRecordPocoType a ? a.UnnamedRecord : tItem;
+                if( tIRegular != tItem )
+                {
+                    var rName = tIRegular.CSharpName + "[]";
+                    if( !_typeCache.TryGetValue( rName, out regularType ) )
+                    {
+                        regularType = PocoType.CreateCollection( this,
+                                                                 nType.Type,
+                                                                 rName,
+                                                                 rName,
+                                                                 PocoTypeKind.Array,
+                                                                 tIRegular,
+                                                                 obliviousType,
+                                                                 obliviousType,
+                                                                 null );
+                        _typeCache.Add( rName, regularType );
+                    }
+                    Throw.DebugAssert( !regularType.IsNullable );
+                }
+
                 result = PocoType.CreateCollection( this,
                                                     nType.Type,
                                                     chsarpName,
@@ -582,7 +606,8 @@ namespace CK.Setup
                                                     PocoTypeKind.Array,
                                                     tItem,
                                                     obliviousType,
-                                                    obliviousType );
+                                                    obliviousType,
+                                                    regularType );
                 _typeCache.Add( chsarpName, result );
             }
             Throw.DebugAssert( !result.IsNullable );
@@ -898,6 +923,7 @@ namespace CK.Setup
                                                                     null );
                     _typeCache.Add( tNotNullOblivious, obliviousType );
                     _typeCache.Add( tNullOblivious, obliviousType.Nullable );
+                    _typeCache.Add( obliviousName, obliviousType );
                 }
             }
             // We now have the oblivious. Now handle the unnamed.
