@@ -45,7 +45,7 @@ namespace CK.Setup
         /// The field is a regular <c>{ get; set; }</c> property.
         /// Its type can be:
         /// <list type="bullet">
-        /// <item>An array but not any other kind of collection.</item>
+        /// <item>An array or a concrete <see cref="List{T}"/>, <see cref="HashSet{T}"/> or <see cref="Dictionary{TKey, TValue}"/> collection.</item>
         /// <item>A <see cref="IPrimaryPocoType"/> (or <see cref="ISecondaryPocoType"/>).</item>
         /// <item>A basic type, including object (Any).</item>
         /// </list>

@@ -344,7 +344,7 @@ namespace CK.Setup
                     {
                         return false;
                     }
-                    // On success, always check that a collection must not
+                    // On success, always check that an abstract collection must not
                     // have a setter and that any other type must be a regular property.
                     Debug.Assert( _bestReg != null );
                     Debug.Assert( _bestReg is not IRecordPocoType || _bestReg.Type.IsValueType, "IRecordPocoType => ValueType." );
@@ -354,14 +354,11 @@ namespace CK.Setup
                     }
                     else
                     {
-                        if( _bestReg is ICollectionPocoType )
+                        if( _bestReg is ICollectionPocoType c && c.IsAbstractCollection )
                         {
-                            if( _bestReg.Kind != PocoTypeKind.Array )
-                            {
-                                monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a {_bestReg.Kind}, it must be a read only property: " +
-                                               $"'{_bestReg.CSharpName} {p.Name} {{ get; }}'." );
-                                return false;
-                            }
+                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is an abstract {_bestReg.Kind}, it must be a read only property: " +
+                                            $"'{_bestReg.CSharpName} {p.Name} {{ get; }}'." );
+                            return false;
                         }
                         if( p.Type.IsByRef )
                         {
@@ -380,6 +377,7 @@ namespace CK.Setup
 
                 // Secondary and PrimaryPoco, IList, ISet and IDictionary:
                 // real property if it is a non nullable and if it's not a IReadOnlyList/Set/Dictionary.
+                // Error if concrete List, HashSet or Dictionary.
                 if( !reg.IsNullable )
                 {
                     var isSecondaryPoco = reg.Kind is PocoTypeKind.SecondaryPoco;
@@ -393,11 +391,20 @@ namespace CK.Setup
                         _fieldAccessKind = PocoFieldAccessKind.MutableReference;
                         return AddWritable( monitor, p, reg );
                     }
-                    if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary
-                        && !((ICollectionPocoType)reg).IsAbstractReadOnly )
+                    if( reg.Kind is PocoTypeKind.List or PocoTypeKind.HashSet or PocoTypeKind.Dictionary )
                     {
-                        _fieldAccessKind = PocoFieldAccessKind.MutableReference;
-                        return AddWritable( monitor, p, reg );
+                        var c = Unsafe.As<ICollectionPocoType>( reg );
+                        if( !c.IsAbstractCollection )
+                        {
+                            monitor.Error( $"Property '{p.DeclaringType:N}.{p.Name}' is a concrete {reg.Kind} read only property. It must either " +
+                                            $"have a setter {{ get; set; }} or be abstract: 'I{reg.CSharpName} {p.Name} {{ get; }}'." );
+                            return false;
+                        }
+                        if( !c.IsAbstractReadOnly  )
+                        {
+                            _fieldAccessKind = PocoFieldAccessKind.MutableReference;
+                            return AddWritable( monitor, p, reg );
+                        }
                     }
                 }
 

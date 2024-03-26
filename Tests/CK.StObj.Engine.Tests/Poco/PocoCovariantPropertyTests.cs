@@ -49,5 +49,24 @@ namespace CK.StObj.Engine.Tests.Poco
             a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
         }
+
+        public interface IActualRootAConcrete : IRootDefiner
+        {
+            new List<IActualSubA> Lines { get; set; }
+        }
+
+        [Test]
+        public void intrinsic_from_concrete_List_to_IReadOnlyList()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IActualRootAConcrete ), typeof( IActualSubA ) );
+            using var s = TestHelper.CreateAutomaticServices( c ).Services;
+            var d = s.GetRequiredService<PocoDirectory>();
+            var a = d.Create<IActualRootAConcrete>();
+            a.Lines.Should().BeAssignableTo<IList<IActualSubA>>();
+            a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
+            a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
+            a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
+        }
+
     }
 }

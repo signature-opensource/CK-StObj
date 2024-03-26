@@ -25,7 +25,7 @@ namespace CK.Setup
             {
                 Throw.DebugAssert( isPocoField );
                 _isPocoField = true;
-                _forbidConcreteCollections = true;
+                //_forbidConcreteCollections = true;
                 _root = root;
             }
 

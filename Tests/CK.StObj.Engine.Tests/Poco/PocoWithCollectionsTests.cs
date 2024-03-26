@@ -97,12 +97,24 @@ namespace CK.StObj.Engine.Tests.Poco
             List<int> NoWay { get; }
         }
 
+        public interface IValidConcreteList : IPoco
+        {
+            List<int>? Concrete { get; set; }
+        }
+
         [Test]
-        public void invalid_List_Poco_field()
+        public void List_Poco_field_with_auto_instantiation_is_invalid()
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidConcreteList ) );
             TestHelper.GetFailedResult( c,
-                "Invalid concrete collection 'List<int>' in Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidConcreteList.NoWay'. Only IList<>, ISet<> and IDictionary<,> must be used for Poco fields." );
+                "Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidConcreteList.NoWay' is a concrete List read only property. It must either have a setter { get; set; } or be abstract: 'IList<int> NoWay { get; }'." );
+        }
+
+        [Test]
+        public void List_Poco_field_with_setter_is_valid()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IValidConcreteList ) );
+            TestHelper.GetSuccessfulResult( c );
         }
 
     }
