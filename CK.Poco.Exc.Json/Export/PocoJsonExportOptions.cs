@@ -7,7 +7,11 @@ using System.Text.Json;
 namespace CK.Poco.Exc.Json
 {
     /// <summary>
-    /// Describes immutable dynamic serialization options.
+    /// Describes immutable dynamic serialization options. Two default singletons are available:
+    /// <list type="bullet">
+    /// <item><term><see cref="Default"/></term><description>Use "AllExchangeable" <see cref="TypeFilterName"/> and standard Json options.</description></item>
+    /// <item><term><see cref="ToStringDefault"/></term><description>Use "AllSerialisable" TypeFilterName and relaxed (less safe) Json options.</description></item>
+    /// </list>
     /// </summary>
     public sealed class PocoJsonExportOptions
     {

@@ -191,7 +191,7 @@ namespace CK.Setup
                                   .Append( "if( !" ).Append( f.PrivateFieldName ).Append( "Allowed" )
                                   .Append( ".Any( t => t.IsAssignableFrom( tV ) ) )" )
                                     .OpenBlock()
-                                    .Append( "Throw.ArgumentException( \"value\", $\"Unexpected Type '{tV.ToCSharpName()}' in UnionType. Allowed types are: '" )
+                                    .Append( "Throw.ArgumentException( \"value\", $\"Unexpected Type '{tV}' in UnionType. Allowed types are: '" )
                                     .Append( uT.AllowedTypes.Select( tU => tU.CSharpName ).Concatenate( "', '" ) )
                                     .Append( "'.\");" )
                                     .CloseBlock();
@@ -619,6 +619,17 @@ namespace CK.Setup
                 return new CSCodeGenerationResult( nameof( CheckNoMoreRegisteredPocoTypes ) );
             }
             monitor.Info( $"PocoTypeSystemBuilder has no new types, code generation that requires the PocoTypeSystem can start." );
+            // This is the mess (again) of the attribute cache...
+            // This MUST disappear with ReaDI: the attribute Impl should simply depends on the IPocoTypeSystemBuilder
+            // and the constructor can even do the job inline (errors would then be tracked through the monitor) or
+            // a Execute method should be implemented...
+            foreach( var a in _context.CurrentRun.EngineMap.AllTypesAttributesCache.Values.SelectMany( c => c.GetAllCustomAttributes( typeof( RegisterPocoTypeAttribute ) ) ) )
+            {
+                if( _typeSystemBuilder.RegisterOblivious( monitor, ((RegisterPocoTypeAttribute)a).Type ) == null )
+                {
+                    return CSCodeGenerationResult.Failed;
+                }
+            }
             IPocoTypeSystem ts = _typeSystemBuilder.Lock( monitor );
 
             _finalTypeIndex.GeneratedByComment( "Public access for code generator (will be a Frozen, readonly dictionary in .NET8)." )

@@ -347,7 +347,7 @@ namespace CK.Setup
                 Throw.DebugAssert( $"Rule 2, Type = {t}.", set.Contains( t.ObliviousType ) );
                 Throw.DebugAssert( $"Rule 3, Type = {t}.", t is not IUnionPocoType u3 || u3.AllowedTypes.Any( set.Contains ) );
                 Throw.DebugAssert( $"Rule 4, Type = {t}.", t is not IBasicRefPocoType r4 || r4.BaseTypes.All( set.Contains ) );
-                Throw.DebugAssert( $"Rule 5, Type = {t}.", t is not IAnonymousRecordPocoType a5 || set.Contains( a5.UnnamedRecord ) );
+                Throw.DebugAssert( $"Rule 5, Type = {t}.", t.IsRegular || t.RegularType == null || set.Contains( t.RegularType ) );
                 Throw.DebugAssert( $"Rule 6, Type = {t}.", t is not ICollectionPocoType c6 || c6.ItemTypes.All( set.Contains ) );
                 Throw.DebugAssert( $"Rule 7, Type = {t}.", t is not IEnumPocoType e7 || set.Contains( e7.UnderlyingType ) );
                 Throw.DebugAssert( $"Rule 8, Type = {t}.", t is not IAbstractPocoType a8 || a8.GenericArguments.All( a => set.Contains( a.Type ) ) );

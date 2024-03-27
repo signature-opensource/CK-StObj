@@ -17,7 +17,7 @@ namespace CK.Setup.PocoJson
             public ReaderMap( IPocoTypeNameMap nameMap )
             {
                 _nameMap = nameMap;
-                _readers = new CodeReader[nameMap.TypeSet.NonNullableTypes.Count];
+                _readers = new CodeReader[nameMap.TypeSystem.AllNonNullableTypes.Count];
             }
 
             public IPocoTypeNameMap NameMap => _nameMap;
@@ -134,7 +134,8 @@ namespace CK.Setup.PocoJson
                             break;
                         case PocoTypeKind.Record:
                         case PocoTypeKind.AnonymousRecord:
-                            r = GetRecordCodeReader( type );
+                            Throw.DebugAssert("Record always have a regular type.",type.RegularType!=null);
+                            r = type.IsRegular ? GetRecordCodeReader( type ) : GetReader( type.RegularType, functionMap );
                             break;
                         case PocoTypeKind.Enum:
                             {

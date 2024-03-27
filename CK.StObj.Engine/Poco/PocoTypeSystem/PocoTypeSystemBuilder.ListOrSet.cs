@@ -19,14 +19,18 @@ namespace CK.Setup
             }
             // The RegularCollection came last in the battle: instead of integrating it in the
             // existing RegisterListOrSetCore we handle it here. The good news is that it simplifies the code.
+            Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection item",
+                               tI.RegularType != null );
+
             ICollectionPocoType? regularCollection = null;
-            IPocoType tIRegular = tI is IAnonymousRecordPocoType a ? a.UnnamedRecord : tI;
+            IPocoType tIRegular = tI.RegularType;
             if( !isRegular || tI != tIRegular )
             {
                 var nRegular = isRegular
                                 ? nType
                                 : nType.SetReferenceTypeDefinition( isList ? typeof( List<> ) : typeof( HashSet<> ) );
-                regularCollection = Unsafe.As<ICollectionPocoType>( RegisterListOrSetCore( isList, nRegular.ToNonNullable(), true, listOrHashSet, tIRegular, null ) );
+                // nRegular may be nullable. Take the non nullable.
+                regularCollection = Unsafe.As<ICollectionPocoType>( RegisterListOrSetCore( isList, nRegular, true, listOrHashSet, tIRegular, null ).NonNullable );
             }
             return RegisterListOrSetCore( isList, nType, isRegular, listOrHashSet, tI, regularCollection );
         }
@@ -163,8 +167,9 @@ namespace CK.Setup
                     var obliviousRegular = finalType?.NonNullable
                                            ?? (regularCollection?.ItemTypes[0] == obliviousItemType ? regularCollection : null);
 
-                    Throw.DebugAssert( "The obliviousItemType is necessarily compliant with the regular collection (oblivious => unnamed record).",
-                                       obliviousItemType is not IAnonymousRecordPocoType a1 || a1.IsUnnamed );
+                    Throw.DebugAssert( "The oblivious item types are necessarily compliant with the regular collection: " +
+                                 "oblivious => regular (or null regular for abstract read only but we are not in this case).",
+                                  obliviousItemType.IsRegular );
 
                     // The only reason why the oblivious cannot be its own regular collection is because we are building an abstraction:
                     // bool obliviousWillBeRegular = isRegular;

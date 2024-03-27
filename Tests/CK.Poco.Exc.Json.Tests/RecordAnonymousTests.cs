@@ -108,7 +108,7 @@ namespace CK.Poco.Exc.Json.Tests
             JsonTestHelper.Roundtrip( directory, o );
         }
 
-        public record struct Rec( List<(int, Guid)> List, HashSet<(int, Guid)> Set, Dictionary<string, (int, Guid)> Dic );
+        public record struct Rec( List<(int A, Guid)> List, HashSet<(int, Guid B)> Set, Dictionary<string, (int, Guid)> Dic );
 
         public interface IWithRecord : IPoco
         {

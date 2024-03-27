@@ -15,7 +15,7 @@ namespace CK.Setup
     ///     <item>Any type =&gt; its <see cref="IPocoType.ObliviousType"/></item>
     ///     <item>A <see cref="IUnionPocoType"/> =&gt; at least one of its <see cref="IOneOfPocoType.AllowedTypes"/></item>
     ///     <item>A <see cref="IBasicRefPocoType"/> =&gt; all its <see cref="IBasicRefPocoType.BaseTypes"/>.</item>
-    ///     <item>A <see cref="IAnonymousRecordPocoType"/> =&gt; its <see cref="IAnonymousRecordPocoType.UnnamedRecord"/>.</item>
+    ///     <item>Any type =&gt; its <see cref="IPocoType.RegularType"/>.</item>
     ///     <item>Any collection =&gt; all its <see cref="ICollectionPocoType.ItemTypes"/></item>
     ///     <item>An enum type =&gt; its <see cref="IEnumPocoType.UnderlyingType"/></item>
     ///     <item>A generic <see cref="IAbstractPocoType"/> =&gt; all its <see cref="IAbstractPocoType.GenericArguments"/></item>

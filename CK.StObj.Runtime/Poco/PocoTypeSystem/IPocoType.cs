@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
@@ -55,6 +56,7 @@ namespace CK.Setup
         /// are not).
         /// </para>
         /// </summary>
+        [MemberNotNullWhen(true,nameof(StructuralFinalType))]
         bool IsPolymorphic { get; }
 
         /// <summary>
@@ -103,7 +105,7 @@ namespace CK.Setup
         string ImplTypeName { get; }
 
         /// <summary>
-        /// Gets whether this type oblivious. See <see cref="ObliviousType"/>.
+        /// Gets whether this type is oblivious. See <see cref="ObliviousType"/>.
         /// </summary>
         bool IsOblivious { get; }
 
@@ -149,6 +151,31 @@ namespace CK.Setup
         IPocoType ObliviousType { get; }
 
         /// <summary>
+        /// Gets whether this type is regular. See <see cref="RegularType"/>.
+        /// </summary>
+        bool IsRegular { get; }
+
+        /// <summary>
+        /// Gets the regular type (this instance if <see cref="IsRegular"/> is true) with the same nullablility as this one.
+        /// Types are generally their own regular except for:
+        /// <list type="bullet">
+        ///     <item>
+        ///     <term>Anonymous records (value tuples)</term>
+        ///     <description>Their regular has no field names and their field types are regular.</description>
+        ///     </item>
+        ///     <item>
+        ///     <term>Collection</term>
+        ///     <description>Their regular are concrete collections (array, List, HashSet and Dictionary) and their generic parameters are regular.</description>
+        ///     </item>
+        ///     <item>
+        ///     <term>Abstract read-only Collection</term>
+        ///     <description>Their regular is null (like their <see cref="StructuralFinalType"/>).</description>
+        ///     </item>
+        /// </list>
+        /// </summary>
+        IPocoType? RegularType { get; }
+
+        /// <summary>
         /// Gets whether this is a final type. See <see cref="StructuralFinalType"/>.
         /// </summary>
         bool IsStructuralFinalType { get; }
@@ -159,7 +186,7 @@ namespace CK.Setup
         /// <para>
         /// Usually <see cref="FinalType"/>, that considers only false <see cref="ImplementationLess"/>, should be used.
         /// </para>
-        /// The set of the Final types is a subset of the Oblivious types.
+        /// This is never null when <see cref="IsPolymorphic"/> is false. The set of the Final types is a subset of the Oblivious types.
         /// <list type="bullet">
         ///     <item>Final type of a value type is its non nullable.</item>
         ///     <item>Final type of a reference type is either null or its nullable (oblivious reference types are nullable).</item>
@@ -179,6 +206,11 @@ namespace CK.Setup
         /// <para>
         /// A final type can be based on types that are not final: <c>List&lt;object&gt;</c> or <c>List&lt;int?&gt;</c> are final
         /// types even if <c>object</c> and <c>int?</c> are not.
+        /// </para>
+        /// <para>
+        /// As Oblivious types, Final types correspond to C# types but are more restrictive as they capture the types that can
+        /// be discovered on a non null object instance: they are the subset of types that can be mapped to the result of a
+        /// call to <see cref="object.GetType()"/>.
         /// </para>
         /// </summary>
         IPocoType? StructuralFinalType { get; }

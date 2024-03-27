@@ -1,14 +1,13 @@
-using System;
 using CK.Core;
-using NUnit.Framework;
-using Microsoft.Extensions.DependencyInjection;
 using CK.CrisLike;
-using System.Collections.Generic;
 using FluentAssertions;
-using static CK.Testing.StObjEngineTestHelper;
+using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.Collections;
 using System.Text.Json;
+using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests.CrisLike
 {
@@ -126,7 +125,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         }
 
         [Test]
-        public void set_restrictions_cannot_be_spoofed()
+        public void PocoTypeSet_restrictions_cannot_be_spoofed_for_Poco_and_Record_fields()
         {
             var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
@@ -169,7 +168,7 @@ namespace CK.Poco.Exc.Json.Tests.CrisLike
         }
 
         [Test]
-        public void set_restrictions_cannot_be_spoofed_with_anonymous()
+        public void PocoTypeSet_restrictions_cannot_be_spoofed_for_anonymous_records_fields()
         {
             var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( ICannotBeSpoofed2 ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;

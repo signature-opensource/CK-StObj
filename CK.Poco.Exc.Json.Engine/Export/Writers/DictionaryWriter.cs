@@ -77,7 +77,7 @@ namespace CK.Setup.PocoJson
                     }
                     exporterType.Append( """
                             int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( e.GetType(), -1 );
-                            if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {e.GetType().ToCSharpName(false)}" );
+                            if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {e.GetType()}" );
                             if( !wCtx.RuntimeFilter.Contains( index >> 1 ) ) continue;
                             w.WritePropertyName( k );
                             CK.Poco.Exc.JsonGen.Exporter.WriteNonNullableFinalType( w, wCtx, index, e );
@@ -94,7 +94,7 @@ namespace CK.Setup.PocoJson
             }
             else
             {
-                // A dictionary key canno be polymorphic: this is the same as the JSON object above (the value may be polymorphic)
+                // A dictionary key cannot be polymorphic: this is the same as the JSON object above (the value may be polymorphic)
                 // except that we write an array of arrays.
                 Throw.DebugAssert( !tKey.IsPolymorphic );
 
@@ -124,7 +124,7 @@ namespace CK.Setup.PocoJson
                     }
                     exporterType.Append( """
                                 int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( e.GetType(), -1 );
-                                if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {e.GetType().ToCSharpName(false)}" );
+                                if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {e.GetType()}" );
                                 if( !wCtx.RuntimeFilter.Contains( index >> 1 ) ) continue;
                                 """ );
                     WriteStartEntry( exporterType, writers, tKey );

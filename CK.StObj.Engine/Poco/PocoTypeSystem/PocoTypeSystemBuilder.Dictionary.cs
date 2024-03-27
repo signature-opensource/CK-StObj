@@ -18,9 +18,12 @@ namespace CK.Setup
                 {
                     return null;
                 }
+                Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a key or a value",
+                                   tK.RegularType != null && tV.RegularType != null );
+
                 ICollectionPocoType? regularCollection = null;
-                IPocoType tKRegular = tK is IAnonymousRecordPocoType aK ? aK.UnnamedRecord : tK;
-                IPocoType tVRegular = tV is IAnonymousRecordPocoType aV ? aV.UnnamedRecord : tV;
+                IPocoType tKRegular = tK.RegularType;
+                IPocoType tVRegular = tV.RegularType;
                 if( !isRegular || tK != tKRegular || tV != tVRegular )
                 {
                     var nRegular = isRegular
@@ -195,10 +198,9 @@ namespace CK.Setup
                                                     ? regularCollection
                                                     : null);
 
-                    Throw.DebugAssert( "The oblivious item types are necessarily compliant with the regular collection (oblivious => unnamed record).",
-                                        (obliviousKeyType is not IAnonymousRecordPocoType aK || aK.IsUnnamed)
-                                        &&
-                                        (obliviousValueType is not IAnonymousRecordPocoType aV || aV.IsUnnamed) );
+                    Throw.DebugAssert( "The oblivious item types are necessarily compliant with the regular collection: " +
+                                       "oblivious => regular (or null regular for abstract read only but we are not in this case).",
+                                        obliviousKeyType.IsRegular && obliviousValueType.IsRegular );
 
                     // The only reason why the oblivious cannot be its own regular collection is because we are building an abstraction.
                     if( obliviousRegular == null && !isRegular )

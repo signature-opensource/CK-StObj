@@ -5,9 +5,9 @@ namespace CK.Setup.PocoJson
 {
     sealed class AnonymousRecordWriter : JsonCodeWriter
     {
-        readonly IAnonymousRecordPocoType _record;
+        readonly IRecordPocoType _record;
 
-        public AnonymousRecordWriter( ExportCodeWriterMap map, IAnonymousRecordPocoType record )
+        public AnonymousRecordWriter( ExportCodeWriterMap map, IRecordPocoType record )
             : base( map )
         {
             _record = record;

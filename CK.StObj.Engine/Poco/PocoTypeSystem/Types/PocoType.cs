@@ -52,14 +52,26 @@ namespace CK.Setup
 
             public bool IsOblivious => ObliviousType == this;
 
-            public bool IsStructuralFinalType => StructuralFinalType == this;
-
-            public bool IsFinalType => FinalType == this;
-
             /// <summary>
             /// Returning "NonNullable.ObliviousType" by default (that can be this instance: oblivious reference type are always nullable).
             /// </summary>
             public virtual IPocoType ObliviousType => _nonNullable.ObliviousType;
+
+            public bool IsRegular => RegularType == this;
+
+            public virtual IPocoType? RegularType
+            {
+                get
+                {
+                    Throw.DebugAssert( "Collections override.", this is not ICollectionPocoType );
+                    return this;
+                }
+            }
+
+
+            public bool IsStructuralFinalType => StructuralFinalType == this;
+
+            public bool IsFinalType => FinalType == this;
 
             /// <summary>
             /// Returning "NonNullable.FinalType": it is the non nullable implementation that handles it,
@@ -154,6 +166,17 @@ namespace CK.Setup
                 get
                 {
                     Throw.DebugAssert( "Other types override.", Kind == PocoTypeKind.Basic || Kind == PocoTypeKind.Enum );
+                    return this;
+                }
+            }
+
+            public bool IsRegular => RegularType == this;
+
+            public virtual IPocoType? RegularType
+            {
+                get
+                {
+                    Throw.DebugAssert( "Anonymous records override.", Kind != PocoTypeKind.AnonymousRecord );
                     return this;
                 }
             }
@@ -330,6 +353,18 @@ namespace CK.Setup
                 return Kind == PocoTypeKind.Basic ? this : Nullable;
             }
         }
+
+        public bool IsRegular => RegularType == this;
+
+        public virtual IPocoType? RegularType
+        {
+            get
+            {
+                Throw.DebugAssert( "Anonymous records and collection handle thier Regular type.", Kind != PocoTypeKind.AnonymousRecord && this is not ICollectionPocoType );
+                return this;
+            }
+        }
+
 
         public bool IsFinalType => !ImplementationLess && IsStructuralFinalType;
 

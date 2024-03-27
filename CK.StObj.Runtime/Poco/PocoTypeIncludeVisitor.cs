@@ -13,11 +13,10 @@ namespace CK.Setup
     ///         Nullable types visit their <see cref="IPocoType.NonNullable"/> (same as base <see cref="PocoTypeVisitor"/>).
     ///     </item>
     ///     <item>
-    ///         All <see cref="IPocoType.ObliviousType"/> are visited.
+    ///         All <see cref="IPocoType.ObliviousType"/> and <see cref="IPocoType.RegularType"/> are visited.
     ///     </item>
     ///     <item>
     ///         <see cref="IRecordPocoType"/> visits its <see cref="IRecordPocoField"/> (same as base <see cref="PocoTypeVisitor"/>).
-    ///         <see cref="IAnonymousRecordPocoType"/> visits its <see cref="IAnonymousRecordPocoType.UnnamedRecord"/>.
     ///     </item>
     ///     <item>
     ///         <see cref="IPrimaryPocoType"/> visits its <see cref="IPrimaryPocoField"/> and its <see cref="IPrimaryPocoType.SecondaryTypes"/>.
@@ -104,7 +103,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Overridden to first call the include filter predicate, visit the <see cref="IPocoType.ObliviousType"/> and
+        /// Overridden to visit the <see cref="IPocoType.ObliviousType"/>, <see cref="IPocoType.RegularType"/> and
         /// visit referencing collections if needed.
         /// </summary>
         /// <param name="t">The type to visit.</param>
@@ -116,6 +115,11 @@ namespace CK.Setup
             if( !t.IsOblivious && t.Kind != PocoTypeKind.SecondaryPoco )
             {
                 Visit( t.ObliviousType );
+            }
+            var r = t.RegularType;
+            if( r != null && r != t && r != t.ObliviousType )
+            {
+                Visit( r );
             }
             if( _visitVisitableCollections )
             {
@@ -133,20 +137,6 @@ namespace CK.Setup
                 }
             }
             return true;
-        }
-
-        /// <summary>
-        /// Visits the <see cref="IRecordPocoType.Fields"/> and if the record is a <see cref="IAnonymousRecordPocoType"/>,
-        /// its <see cref="IAnonymousRecordPocoType.UnnamedRecord"/>.
-        /// </summary>
-        /// <param name="record">A record type.</param>
-        protected override void VisitRecord( IRecordPocoType record )
-        {
-            base.VisitRecord( record );
-            if( record is IAnonymousRecordPocoType a && !a.IsUnnamed )
-            {
-                Visit( a.UnnamedRecord );
-            }
         }
 
         /// <summary>

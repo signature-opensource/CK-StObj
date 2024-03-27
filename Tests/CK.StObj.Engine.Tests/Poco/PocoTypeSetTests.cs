@@ -25,6 +25,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public record struct NamedRecord( Guid UId, string Name );
 
+        [RegisterPocoType( typeof( List<NamedRecord> ) )]
         public interface IPoco1 : IPoco
         {
             string Name { get; set; }
@@ -32,7 +33,6 @@ namespace CK.StObj.Engine.Tests.Poco
             bool IsAdmin { get; set; }
             IList<IEmptyPoco> ListEmptyPoco { get; }
 
-            [RegisterPocoType( typeof( List<NamedRecord> ) )]
             IList<NamedRecord> ListNamedRecord { get; }
         }
 

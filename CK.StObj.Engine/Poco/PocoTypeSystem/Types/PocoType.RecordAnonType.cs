@@ -15,7 +15,7 @@ namespace CK.Setup
                                                               string typeName,
                                                               RecordAnonField[] fields,
                                                               bool isReadOnlyCompliant,
-                                                              IPocoType? unnamedRecord,
+                                                              IPocoType? regularType,
                                                               IPocoType? obliviousType )
         {
             return new RecordAnonType( s,
@@ -24,13 +24,13 @@ namespace CK.Setup
                                        typeName,
                                        fields,
                                        isReadOnlyCompliant,
-                                       (IAnonymousRecordPocoType?)unnamedRecord,
-                                       (IAnonymousRecordPocoType?)obliviousType );
+                                       (IRecordPocoType?)regularType,
+                                       (IRecordPocoType?)obliviousType );
         }
 
-        internal sealed class RecordAnonType : PocoType, IAnonymousRecordPocoType
+        internal sealed class RecordAnonType : PocoType, IRecordPocoType
         {
-            sealed class Null : NullValueType, IAnonymousRecordPocoType
+            sealed class Null : NullValueType, IRecordPocoType
             {
                 public Null( IPocoType notNullable, Type tNull )
                     : base( notNullable, tNull )
@@ -41,16 +41,14 @@ namespace CK.Setup
 
                 public bool IsAnonymous => true;
 
-                public override IAnonymousRecordPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
+                public override IRecordPocoType ObliviousType => NonNullable.ObliviousType.Nullable;
                 ICompositePocoType ICompositePocoType.ObliviousType => NonNullable.ObliviousType.Nullable;
-                IRecordPocoType IRecordPocoType.ObliviousType => NonNullable.ObliviousType.Nullable;
+
+                public override IRecordPocoType RegularType => NonNullable.RegularType.Nullable;
 
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
-
-                IAnonymousRecordPocoType IAnonymousRecordPocoType.Nullable => this;
-                IAnonymousRecordPocoType IAnonymousRecordPocoType.NonNullable => NonNullable;
 
                 IRecordPocoType IRecordPocoType.Nullable => this;
                 IRecordPocoType IRecordPocoType.NonNullable => NonNullable;
@@ -65,15 +63,11 @@ namespace CK.Setup
 
                 // No external name for anonymous records: simply use the nullable CSharpName.
                 public string ExternalOrCSharpName => CSharpName;
-
-                public bool IsUnnamed => NonNullable.IsUnnamed;
-
-                public IAnonymousRecordPocoType UnnamedRecord => NonNullable.UnnamedRecord.Nullable;
             }
 
             readonly RecordAnonField[] _fields;
-            readonly IAnonymousRecordPocoType _obliviousType;
-            readonly IAnonymousRecordPocoType _unnamedRecord;
+            readonly IRecordPocoType _obliviousType;
+            readonly IRecordPocoType _regularType;
             readonly DefaultValueInfo _defInfo;
             readonly bool _isReadOnlyCompliant;
 
@@ -83,8 +77,8 @@ namespace CK.Setup
                                    string typeName,
                                    RecordAnonField[] fields,
                                    bool isReadOnlyCompliant,
-                                   IAnonymousRecordPocoType? unnamedRecord,
-                                   IAnonymousRecordPocoType? obliviousType )
+                                   IRecordPocoType? regularType,
+                                   IRecordPocoType? obliviousType )
                 : base( s,
                         tNotNull,
                         typeName,
@@ -97,23 +91,27 @@ namespace CK.Setup
                     _obliviousType = obliviousType;
                     // Registers the back reference to the unnamed if there is an unnamed or
                     // to the oblivious type if we are the unnamed.
-                    _ = new PocoTypeRef( this, unnamedRecord ?? obliviousType, -1 );
+                    _ = new PocoTypeRef( this, regularType ?? obliviousType, -1 );
                 }
                 else
                 {
                     Throw.DebugAssert( fields.All( f => f.IsUnnamed && f.Type.IsOblivious ) );
-                    Throw.DebugAssert( "The oblivious is unnamed.", unnamedRecord == null );
+                    Throw.DebugAssert( "The oblivious is unnamed.", regularType == null );
                     // For value type, oblivious is the non nullable.
                     _obliviousType = this;
                 }
                 _fields = fields;
                 _isReadOnlyCompliant = isReadOnlyCompliant;
-                _unnamedRecord = unnamedRecord ?? this;
+
+                Throw.DebugAssert( "The regular has no field names and all its field types are regular.",
+                                   regularType == null || regularType.Fields.All( f => f.IsUnnamed && f.Type.IsRegular ) );
+                Throw.DebugAssert( "If we are the regular, we have no field names and all our field types are regular.",
+                                   regularType != null || _fields.All( f => f.IsUnnamed && f.Type.IsRegular ) );
+                _regularType = regularType ?? this;
+
                 foreach( var f in fields ) f.SetOwner( this );
                 _defInfo = CompositeHelper.CreateDefaultValueInfo( s.StringBuilderPool, this );
 
-                Throw.DebugAssert( "An unnamed record has no field name and its subordinated anonymous records are unnamed.",
-                                   !IsUnnamed || (_fields.All( f => f.IsUnnamed && (f.Type is not IAnonymousRecordPocoType a || a.IsUnnamed) ) ) );
             }
 
             public override DefaultValueInfo DefaultValueInfo => _defInfo;
@@ -126,23 +124,17 @@ namespace CK.Setup
 
             public override bool IsReadOnlyCompliant => _isReadOnlyCompliant;
 
-            public override IAnonymousRecordPocoType ObliviousType => _obliviousType;
+            public override IRecordPocoType ObliviousType => _obliviousType;
             // Required... C# "Covariant return type" can do better...
-            IRecordPocoType IRecordPocoType.ObliviousType => _obliviousType;
             ICompositePocoType ICompositePocoType.ObliviousType => _obliviousType;
 
-            public bool IsUnnamed => _unnamedRecord == this;
-
-            public IAnonymousRecordPocoType UnnamedRecord => _unnamedRecord;
+            public override IRecordPocoType RegularType => _regularType;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            public bool IsAnonymous => Kind == PocoTypeKind.AnonymousRecord;
-
-            IAnonymousRecordPocoType IAnonymousRecordPocoType.Nullable => Nullable;
-            IAnonymousRecordPocoType IAnonymousRecordPocoType.NonNullable => this;
+            public bool IsAnonymous => true;
 
             IRecordPocoType IRecordPocoType.Nullable => Nullable;
             IRecordPocoType IRecordPocoType.NonNullable => this;

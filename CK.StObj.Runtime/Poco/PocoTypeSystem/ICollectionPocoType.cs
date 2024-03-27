@@ -33,6 +33,17 @@ namespace CK.Setup
         /// <inheritdoc cref="IPocoType.ObliviousType" />
         new ICollectionPocoType ObliviousType { get; }
 
+        /// <summary>
+        /// If <see cref="IsAbstractReadOnly"/> is true, this is null.
+        /// <para>
+        /// Gets the associated regular collection: whether <see cref="IsAbstractCollection"/> is true or not,
+        /// this is the <see cref="List{T}"/>, <see cref="HashSet{T}"/> or <see cref="Dictionary{TKey, TValue}"/>
+        /// where the generic parameters are regular types (anonymous records have no field names and subordinated
+        /// collections are regular).
+        /// </para>
+        /// </summary>
+        new ICollectionPocoType? RegularType { get; }
+
         /// <inheritdoc cref="IPocoType.StructuralFinalType" />
         /// <remarks>
         /// This is null when <see cref="IsAbstractReadOnly"/> is true.

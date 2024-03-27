@@ -184,7 +184,7 @@ namespace CK.Setup
             /// If, one day, a more aggressive approach is possible, this would require to also handle this
             /// for Abstract Poco: an AbstractPoco that has a single implementation would not be polymorphic.
             /// But this would have to be computed in the context of a PocoTypeSet: one could have the same
-            /// PocoType polymorphic in one set and non polymorphic in another one.
+            /// PocoType be polymorphic in one set and non polymorphic in another one.
             /// </para>
             /// </summary>
             public override bool IsPolymorphic => _isPolymorphic;

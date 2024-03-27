@@ -1,15 +1,11 @@
 using CK.Core;
-using CK.Setup;
-using CommunityToolkit.HighPerformance;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Text.Json.Serialization;
-using static CK.Poco.Exc.Json.Tests.CollectionTests;
+using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
@@ -18,11 +14,11 @@ namespace CK.Poco.Exc.Json.Tests
     public partial class CollectionTests
     {
         [ExternalName( "IWithArray" )]
+        [RegisterPocoType( typeof( string ) )]
         public interface IWithArray : IPoco
         {
             int[] ArrayOfInt { get; set; }
 
-            [RegisterPocoType( typeof( string ) )]
             object[] ArrayOfObject { get; set; }
 
             long[][] ArrayOfArrayOfLong { get; set; }
@@ -94,6 +90,9 @@ namespace CK.Poco.Exc.Json.Tests
                 .Replace( " ", "" ).ReplaceLineEndings( "" ) );
         }
 
+        [RegisterPocoType( typeof( List<int> ) )]
+        [RegisterPocoType( typeof( List<object> ) )]
+        [RegisterPocoType( typeof(object[]) ) ]
         public interface IWithLists : IPoco
         {
             IList<object> ListOfList { get; }
@@ -102,13 +101,10 @@ namespace CK.Poco.Exc.Json.Tests
 
             IList<ExtendedCultureInfo> ListOfEC { get; }
 
-            [RegisterPocoType( typeof( List<int> ) )]
-            [RegisterPocoType( typeof( List<object> ) )]
             IList<int> CovariantListImpl { get; }
 
             IList<int?> CovariantListNullableImpl { get; }
 
-            [RegisterPocoType( typeof(object[]) ) ]
             object? Result { get; set; }
         }
 
@@ -176,6 +172,7 @@ namespace CK.Poco.Exc.Json.Tests
         {
         }
 
+        [RegisterPocoType( typeof( object[] ) )]
         public interface IWithSets : IPoco
         {
             ISet<NormalizedCultureInfo> SetOfNC { get; }
@@ -186,7 +183,6 @@ namespace CK.Poco.Exc.Json.Tests
 
             ISet<int?> CovariantSetNullableImpl { get; }
 
-            [RegisterPocoType( typeof( object[] ) )]
             object? Result { get; set; }
         }
 
@@ -222,10 +218,10 @@ namespace CK.Poco.Exc.Json.Tests
                     ""SetOfEC"":[[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,de,fr""]],
                     ""CovariantSetImpl"":[42,3712],
                     ""CovariantSetNullableImpl"":[null,0,1],
-                    ""Result"": [""A(object)"",
+                    ""Result"": [""A(object?)"",
                                     [
-                                        [""S(NormalizedCultureInfo)"",["""",""en""]],
-                                        [""S(ExtendedCultureInfo)"",[[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,de,fr""]]],
+                                        [""S(NormalizedCultureInfo?)"",["""",""en""]],
+                                        [""S(ExtendedCultureInfo?)"",[[""NormalizedCultureInfo"",""en""],[""ExtendedCultureInfo"",""es,de,fr""]]],
                                         [""S(int)"",[42,3712]],
                                         [""S(int?)"",[null,0,1]]
                                     ]
@@ -235,18 +231,18 @@ namespace CK.Poco.Exc.Json.Tests
             }
         }
 
+        [RegisterPocoType( typeof( long ) )]
+        [RegisterPocoType( typeof( Dictionary<string, object> ) )]
+        [RegisterPocoType( typeof( Dictionary<int,object> ) )]
+        [RegisterPocoType( typeof( object[] ) )]
         public interface IWithDictionaries : IPoco
         {
-            [RegisterPocoType( typeof( long ) )]
-            [RegisterPocoType( typeof( Dictionary<string, object> ) )]
-            [RegisterPocoType( typeof( Dictionary<int,object> ) )]
             IDictionary<string, object> DicOfDic { get; }
 
             IDictionary<int, int> CovariantDicImpl { get; }
 
             IDictionary<int, bool?> CovariantDicNullableImpl { get; }
 
-            [RegisterPocoType( typeof( object[] ) )]
             object? Result { get; set; }
         }
 
@@ -381,9 +377,9 @@ namespace CK.Poco.Exc.Json.Tests
 
         public record struct Rec( object Obj );
 
+        [RegisterPocoType( typeof( Rec ) )]
         public interface IAllCollectionOfObjects : IPoco
         {
-            [RegisterPocoType( typeof( Rec ) )]
             IList<object> List { get; }
 
             IDictionary<int, object> Dictionary { get; }
@@ -397,7 +393,7 @@ namespace CK.Poco.Exc.Json.Tests
         }
 
         [Test]
-        public void PocoTypeSet_filters_out_instances_from_collections()
+        public void PocoTypeSet_filtering_can_lead_to_invalid_Poco()
         {
             var c = TestHelper.CreateStObjCollector( typeof( CommonPocoJsonSupport ), typeof( IAllCollectionOfObjects ), typeof( IThing ) );
             using var s = TestHelper.CreateAutomaticServices( c ).Services;
@@ -410,7 +406,7 @@ namespace CK.Poco.Exc.Json.Tests
                 o.List.Add( 1 );
                 o.List.Add( oneThing );
                 o.List.Add( new Rec( oneThing ) );
-                o.List.Add( new Rec( "a string" ) );
+                o.List.Add( new Rec( "a-string" ) );
 
                 o.Dictionary.Add( 1, 1 );
                 o.Dictionary.Add( 2, "One" );
@@ -433,7 +429,7 @@ namespace CK.Poco.Exc.Json.Tests
                             ["int",1],
                             ["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}],
                             ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]}],
-                            ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":"a string"}]
+                            ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["string","a-string"]}]
                         ],
                     "dictionary":
                         [
@@ -441,8 +437,8 @@ namespace CK.Poco.Exc.Json.Tests
                             [2,["string","One"]],
                             [3,["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"World!","power":0}]],
                             [4,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["CK.Poco.Exc.Json.Tests.CollectionTests.IThing",{"name":"Here","power":42}]}]],
-                            [5,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":3712}]]
-                        ],
+                            [5,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["int",3712]}]]
+                        ]
                 }]
                 """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
                 o2.List.Should().HaveCount( 5 );
@@ -450,25 +446,49 @@ namespace CK.Poco.Exc.Json.Tests
             }
 
             var excW = new PocoJsonExportOptions() { TypeFilterName = "AllExchangeable" };
-            var excR = new PocoJsonImportOptions() { TypeFilterName = "AllExchangeable" };
-            {
-                string? sText = null;
-                var o2 = JsonTestHelper.Roundtrip( directory, o, excW, excR, text => sText = text );
-                sText.Should().Be( """
+            var filtered = Encoding.UTF8.GetString( o.WriteJson( withType:true, options: excW ).Span );
+            filtered.Should().Be( """
                 ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
                 {
-                    "list":[["string","One"],["int",1]],
-                    "set":[["string","One"],["int",1]],
-                    "dictionary":[
-                        [["string","One"],["int",1]],
-                        [["int",1],["string","One"]]]
+                    "list":
+                        [
+                            ["string","One"],
+                            ["int",1],
+                            ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{}],
+                            ["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["string","a-string"]}]
+                        ],
+                    "dictionary":
+                        [
+                            [1,["int",1]],
+                            [2,["string","One"]],
+                            [4,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{}]],
+                            [5,["CK.Poco.Exc.Json.Tests.CollectionTests.Rec",{"obj":["int",3712]}]]
+                        ]
                 }]
                 """.Replace( " ", "" ).ReplaceLineEndings( "" ) );
-                o2.List.Should().HaveCount( 2 );
-                o2.Dictionary.Should().HaveCount( 2 );
-            }
+            // The filtered output can be read back but it is invalid:
+            // - The two Rec that have a IThing as their `Obj` will have no `Obj` reference.
+            // - The Rec.Obj is a not null `object`.
+            // => The result is invalid.
+            //
+            // One may handle this case: it is possible to predict that filtering out a value of a non nullable field
+            // will lead to an invalid object. But this can be done only for basic validation rules, there is no way
+            // for ad-hoc CheckValid to be handled.
+            // 
+            // Filtering Poco type cannot offer any guaranty in terms of data validity. Here, writing back the result
+            // throws and this is "normal".
+            //
+            var excR = new PocoJsonImportOptions() { TypeFilterName = "AllExchangeable" };
+            var o3 = directory.ReadJson( filtered, excR ) as IAllCollectionOfObjects;
+            Throw.DebugAssert( o3 != null );
+            var invalid1 = (Rec)o3.List[2];
+            invalid1.Obj.Should().BeNull();
+            var invalid2 = (Rec)o3.Dictionary[4];
+            invalid2.Obj.Should().BeNull();
+            FluentActions.Invoking( () => o3.WriteJson() ).Should().Throw<Exception>();
         }
 
+        [RegisterPocoType( typeof( object[] ) )]
         public interface IWithListsA : IPoco
         {
             IList<ISomeAbstract> ListOfAbstract { get; }
@@ -483,7 +503,6 @@ namespace CK.Poco.Exc.Json.Tests
 
             IList<ISecondary?> ListOfNullableSecondary { get; }
 
-            [RegisterPocoType( typeof( object[] ) )]
             object? Result { get; set; }
         }
 
@@ -526,19 +545,19 @@ namespace CK.Poco.Exc.Json.Tests
                     "ListOfNullableConcrete":[null],
                     "ListOfNullableSecondary":[null],
                     "Result":
-                        ["A(object)",
+                        ["A(object?)",
                             [
-                                ["L(CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract)",
+                                ["L(CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract?)",
                                     [
                                         ["Concrete",{"Name":"c"}],
                                         ["Concrete",{"Name":"s"}]
                                     ]
                                 ],
-                                ["L(Concrete)",[{"Name":"c"},{"Name":"s"}]],
-                                ["L(Concrete)",[{"Name":"s"}]],
-                                ["L(CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract)",[null]],
-                                ["L(Concrete)",[null]],
-                                ["L(Concrete)",[null]]
+                                ["L(Concrete?)",[{"Name":"c"},{"Name":"s"}]],
+                                ["L(Concrete?)",[{"Name":"s"}]],
+                                ["L(CK.Poco.Exc.Json.Tests.CollectionTests.ISomeAbstract?)",[null]],
+                                ["L(Concrete?)",[null]],
+                                ["L(Concrete?)",[null]]
                             ]
                         ]
                 }
@@ -546,6 +565,7 @@ namespace CK.Poco.Exc.Json.Tests
             }
         }
 
+        [RegisterPocoType( typeof( object[] ) )]
         public interface IWithDicsA : IPoco
         {
             IDictionary<NormalizedCultureInfo,ISomeAbstract> DicOfAbstract { get; }
@@ -560,7 +580,6 @@ namespace CK.Poco.Exc.Json.Tests
 
             IDictionary<int,ISecondary?> DicOfNullableSecondary { get; }
 
-            [RegisterPocoType( typeof( object[] ) )]
             object? Result { get; set; }
         }
 

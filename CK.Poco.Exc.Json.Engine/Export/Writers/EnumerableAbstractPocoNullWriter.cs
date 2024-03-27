@@ -23,7 +23,7 @@ namespace CK.Setup.PocoJson
                                                      ITypeScope pocoDirectoryType )
         {
             exporterType.Append( """
-                internal static void WriteEnumerableAbstractNullPocoNull( System.Text.Json.Utf8JsonWriter w, IEnumerable<IPoco?> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
+                internal static void WriteEnumerableAbstractPocoNull( System.Text.Json.Utf8JsonWriter w, IEnumerable<IPoco?> v, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
                 {
                    w.WriteStartArray();
                    foreach( var e in v )

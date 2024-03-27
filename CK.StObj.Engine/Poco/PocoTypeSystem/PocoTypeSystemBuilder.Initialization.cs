@@ -194,8 +194,7 @@ namespace CK.Setup
                 // constructor code.
                 if( success ) p.ComputeCtorCode( StringBuilderPool );
             }
-            // On success, registers any extra [RegisterPocoType] that may have been collected from IPoco roots.
-            return success && RegisterPocoTypeAttributeTypes( monitor );
+            return success;
         }
 
         IPocoType EnsureAbstract( IActivityMonitor monitor,

@@ -8,24 +8,22 @@ namespace CK.Setup.PocoJson
     {
         void GenerateReadAny( ReaderFunctionMap functionMap )
         {
-            // Configures the _typeReaders dictionary in the type initializer.
+            // Configures the _anyReaders dictionary in the type initializer.
             var ctor = _importerType.FindOrCreateFunction( "static Importer()" );
 
             ctor.GeneratedByComment().NewLine()
                 .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
 
-            foreach( var t in _nameMap.TypeSet.Where( t => t.IsFinalType ).Select( t => t.Type.IsValueType ? t : t.NonNullable ) )
+            foreach( var t in _nameMap.TypeSet.Where( t => t.IsFinalType && t.IsRegular ).Select( t => t.Type.IsValueType ? t : t.NonNullable ) )
             {
-                if( t.Kind == PocoTypeKind.Any
-                    || t.Kind == PocoTypeKind.AbstractPoco
-                    || t.Kind == PocoTypeKind.UnionType ) continue;
+                Throw.DebugAssert( t.Kind is not PocoTypeKind.Any and not PocoTypeKind.AbstractPoco and not PocoTypeKind.UnionType );
 
-                // We cannot directly use the GetReadFunctionName for value types if the type is a value type: the ReaderFunction
-                // here returns an object: it has to be explicitly boxed.
                 var typeName = _nameMap.GetName( t );
                 var readFunction = functionMap.GetReadFunctionName( t );
                 if( t.Type.IsValueType )
                 {
+                    // We cannot directly use the GetReadFunctionName for value types when the type is a value type: the ReaderFunction
+                    // here returns an object: it has to be explicitly boxed.
                     ctor.OpenBlock()
                         .Append( "// Type: " ).Append( t.ImplTypeName ).NewLine()
                         .Append( "static object d(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )

@@ -14,7 +14,7 @@ namespace CK.Setup.PocoJson
 
             public ReaderFunctionMap( IPocoTypeNameMap nameMap, ReaderMap readerMap, ITypeScopePart readerFunctionsPart )
             {
-                _names = new string[nameMap.TypeSet.Count];
+                _names = new string[nameMap.TypeSystem.AllTypes.Count];
                 _readerMap = readerMap;
                 _readerFunctionsPart = readerFunctionsPart;
             }
@@ -36,15 +36,15 @@ namespace CK.Setup.PocoJson
                         }
                         else
                         {
-                            _readerFunctionsPart.Append( "internal static " ).Append( t.ImplTypeName ).Append( " FRead_" ).Append( t.Index )
-                                                .Append( "(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
-                                                .OpenBlock();
-                            _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
-                            _readerMap.GenerateRead( _readerFunctionsPart, t, "o", true );
-                            _readerFunctionsPart.NewLine()
-                                .Append( "return o;" );
-                            _readerFunctionsPart.CloseBlock();
-                            name = $"CK.Poco.Exc.JsonGen.Importer.FRead_{t.Index}";
+                            // Map to regular type.
+                            Throw.DebugAssert( "No abstract read-only collection here.", t.RegularType != null );
+                            var target = t.RegularType;
+                            Throw.DebugAssert( target.IsNullable == t.IsNullable );
+                            name = _names[target.Index];
+                            if( name == null )
+                            {
+                                name = GenerateReadFunction( t );
+                            }
                         }
                     }
                     _names[t.Index] = name;
@@ -52,6 +52,18 @@ namespace CK.Setup.PocoJson
                 return name;
             }
 
+            string GenerateReadFunction( IPocoType t )
+            {
+                _readerFunctionsPart.Append( "internal static " ).Append( t.ImplTypeName ).Append( " FRead_" ).Append( t.Index )
+                                                                .Append( "(ref System.Text.Json.Utf8JsonReader r,CK.Poco.Exc.Json.PocoJsonReadContext rCtx)" )
+                                                                .OpenBlock();
+                _readerFunctionsPart.Append( t.ImplTypeName ).Append( " o;" ).NewLine();
+                _readerMap.GenerateRead( _readerFunctionsPart, t, "o", requiresInit: true );
+                _readerFunctionsPart.NewLine()
+                    .Append( "return o;" );
+                _readerFunctionsPart.CloseBlock();
+                return $"CK.Poco.Exc.JsonGen.Importer.FRead_{t.Index}";
+            }
         }
     }
 }

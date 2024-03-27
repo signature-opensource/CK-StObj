@@ -50,10 +50,10 @@ namespace CK.Setup.PocoJson
                 case PocoTypeKind.Record:
                     return new NamedRecordWriter( this, Unsafe.As<IRecordPocoType>( t ) );
                 case PocoTypeKind.AnonymousRecord:
-                    var a = Unsafe.As<IAnonymousRecordPocoType>( t );
-                    return a.IsUnnamed
-                            ? new AnonymousRecordWriter( this, a )
-                            : GetWriter( a.UnnamedRecord );
+                    var r = Unsafe.As<IRecordPocoType>( t );
+                    return r.IsRegular
+                            ? new AnonymousRecordWriter( this, r )
+                            : GetWriter( r.RegularType );
                 case PocoTypeKind.Enum:
                     {
                         var tE = (IEnumPocoType)t;
@@ -181,12 +181,10 @@ namespace CK.Setup.PocoJson
             // value types, string and other basic reference types.
             //
             // The good news is that the adapters for T (value types, string and other basic reference types) are
-            // specialized HashSet<T>.
+            // specialized HashSet<T>: we can map to the Regular type (as we handle only regular anonymous record types). 
             // We want array to use AsSpan(), list to to use CollectionsMarshal.AsSpan and hashset to fall back to the IEnumerable.
-            if( tI is IAnonymousRecordPocoType a )
-            {
-                tI = a.UnnamedRecord;
-            }
+            Throw.DebugAssert( "Only abstract readonly collections have no regular and we don't work with them here.", tI.RegularType != null );
+            tI = tI.RegularType;
             return c.Kind switch
             {
                 PocoTypeKind.Array => GetWriter( $"Array_{tI.Index}", c, ( key, c ) => new ArrayWriter( this, tI ) ),

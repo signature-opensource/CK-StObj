@@ -40,8 +40,6 @@ namespace CK.Setup
         readonly bool _autoRegisterListForAbstractPocoTypes;
         readonly bool _autoRegisterListForSecondaryPocoTypes;
 
-        // RegisterPocoTypeAttribute types.
-        List<(IExtMemberInfo, Type)>? _registerAttributes;
         // Types marked with [NotSerializable] or flagged by SetNotSerializable if any.
         HashSet<IPocoType>? _notSerializable;
         // Types marked with [NonExchangeable] or flagged by SetExchangeable if any.
@@ -94,10 +92,6 @@ namespace CK.Setup
         {
             if( _result == null )
             {
-                if( !RegisterPocoTypeAttributeTypes( monitor ) )
-                {
-                    Throw.CKException( "Unable to create a valid PocoTypeSystem." );
-                }
                 var finalTypeBuilder = ImmutableArray.CreateBuilder<IPocoType>();
                 int initialCount = _nonNullableTypes.Count;
                 for( int i = 0; i < initialCount; i++ )
@@ -228,46 +222,6 @@ namespace CK.Setup
             }
         }
 
-        bool CollectRegisterPocoTypeAttribute( IActivityMonitor monitor, IExtMemberInfo m )
-        {
-            var all = m.CustomAttributesData.Where( a => a.AttributeType.Namespace == "CK.Core"
-                                                         && a.AttributeType.Name == "RegisterPocoTypeAttribute" );
-            var success = true;
-            foreach( var a in all )
-            {
-                var oT = a.ConstructorArguments[0].Value as Type;
-                if( oT == null )
-                {
-                    monitor.Warn( $"Unable to extract a non null Type from attribute [RegisterPocoType] on '{m}'." );
-                    success = false;
-                }
-                else if( !_typeCache.ContainsKey( oT ) )
-                {
-                    _registerAttributes ??= new List<(IExtMemberInfo,Type)>();
-                    _registerAttributes.Add( (m, oT) );
-                }
-            }
-            return success;
-        }
-
-        bool RegisterPocoTypeAttributeTypes( IActivityMonitor monitor )
-        {
-            bool success = true;
-            if( _registerAttributes != null )
-            {
-                foreach( var (m,t) in _registerAttributes )
-                {
-                    if( RegisterOblivious( monitor, t ) == null )
-                    {
-                        monitor.Error( $"While registering type '{t:C}' from [RegisterPocoType] on '{m}'." );
-                        success = false;
-                    }
-                }
-                _registerAttributes.Clear();
-            }
-            return success;
-        }
-
         public IPocoType? RegisterOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
@@ -300,10 +254,6 @@ namespace CK.Setup
                                   ? OnValueType( monitor, nInfo, ctx )
                                   : OnReferenceType( monitor, nInfo, ctx );
             Throw.DebugAssert( result == null || result.IsNullable == nInfo.IsNullable );
-            if( result != null )
-            {
-                CollectRegisterPocoTypeAttribute( monitor, ctx.Root );
-            }
             return result;
         }
 
@@ -578,8 +528,10 @@ namespace CK.Setup
                 if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType : obliviousType.NonNullable;
 
                 // Ensures that the RegularCollection exists if the item type is not compliant.
+                Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be an item",
+                                   tItem.RegularType != null );
                 IPocoType? regularType = null;
-                IPocoType tIRegular = tItem is IAnonymousRecordPocoType a ? a.UnnamedRecord : tItem;
+                IPocoType tIRegular = tItem.RegularType;
                 if( tIRegular != tItem )
                 {
                     var rName = tIRegular.CSharpName + "[]";

@@ -59,10 +59,6 @@ namespace CK.Setup
             RegisterExchangeableRuntimeFilter( monitor, "AllSerializable", _pocoTypeSystem.SetManager.AllSerializable );
             RegisterExchangeableRuntimeFilter( monitor, "AllExchangeable", _pocoTypeSystem.SetManager.AllExchangeable );
 
-            //// Now that we have the name map we can generate the GetWritableTypeIndex function.
-            //Throw.DebugAssert( _pocoDirectory != null );
-            //GenerateGetWritableTypeIndexAndName( _pocoDirectory, _nameMap );
-
             c.CurrentRun.ServiceContainer.Add<IPocoSerializationServiceEngine>( this );
             return CSCodeGenerationResult.Success;
         }

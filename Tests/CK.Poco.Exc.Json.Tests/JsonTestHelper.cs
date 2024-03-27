@@ -43,7 +43,7 @@ namespace CK.Poco.Exc.Json.Tests
                     text?.Invoke( bin1Text );
                     if( bin1.Length == 0 )
                     {
-                        // Filtered out by the option's TypeFilterName.
+                        // Filtered out by the exportOptions.TypeFilterName.
                         return null;
                     }
                 }

@@ -249,11 +249,11 @@ namespace CK.Setup
         {
             var fromCache = _all.Where( e => e.Attr is T && (!memberOnly || e.M != Type) ).Select( e => (T)e.Attr );
             var fromMembers = _typeMembers.SelectMany( m => m.GetCustomAttributes( false ) )
-                                            .Where( a => !(a is IAttributeContextBound) && a is T )
-                                            .Select( a => (T)(object)a );
+                                            .Where( a => a is not IAttributeContextBound && a is T )
+                                            .Select( a => (T)a );
             if( memberOnly ) return fromCache.Concat( fromMembers );
             var fromType = Type.GetCustomAttributes( _includeBaseClasses )
-                                .Where( a => !(a is IAttributeContextBound) && a is T ).Select( a => (T)(object)a );
+                                .Where( a => a is not IAttributeContextBound && a is T ).Select( a => (T)(object)a );
             return fromCache.Concat( fromType ).Concat( fromMembers );
         }
 
@@ -266,7 +266,7 @@ namespace CK.Setup
         public IEnumerable<object> GetTypeCustomAttributes( Type attributeType )
         {
             var fromCache = _all.Where( e => e.M == Type && attributeType.IsAssignableFrom( e.Attr.GetType() ) ).Select( e => e.Attr );
-            var fromType = Type.GetCustomAttributes( _includeBaseClasses ).Where( a => !(a is IAttributeContextBound) && attributeType.IsAssignableFrom( a.GetType() ) );
+            var fromType = Type.GetCustomAttributes( _includeBaseClasses ).Where( a => a is not IAttributeContextBound && attributeType.IsAssignableFrom( a.GetType() ) );
             return fromCache.Concat( fromType );
         }
 

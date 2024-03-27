@@ -38,6 +38,8 @@ namespace CK.Setup
                 // Required... C# "Covariant return type" cand do better...
                 ICompositePocoType ICompositePocoType.ObliviousType => this;
 
+                public override IRecordPocoType RegularType => this;
+
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
@@ -103,6 +105,8 @@ namespace CK.Setup
             public override IRecordPocoType ObliviousType => this;
             // Required... C# "Covariant return type" can do better.
             ICompositePocoType ICompositePocoType.ObliviousType => this;
+
+            public override IRecordPocoType RegularType => this;
 
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 

@@ -121,17 +121,16 @@ namespace CK.StObj.Engine.Tests.Poco
             IPrimaryPocoType wR = builder.FindByType<IPrimaryPocoType>( typeof( IPartWithRecAnonymous ) )!;
             ((IRecordPocoType)wR.Fields[0].Type).Fields[2].Type.Should().BeSameAs( countAndName );
 
-            var tAnonymous = ((IRecordPocoType)tRec).Fields.Single( f => f.Name == "Inside" ).Type as IAnonymousRecordPocoType;
+            var tAnonymous = ((IRecordPocoType)tRec).Fields.Single( f => f.Name == "Inside" ).Type as IRecordPocoType;
             Throw.DebugAssert( tAnonymous != null );
             tAnonymous.IsOblivious.Should().BeFalse();
-            tAnonymous.IsUnnamed.Should().BeFalse();
-            tAnonymous.UnnamedRecord.Should().NotBeSameAs( tAnonymous );
-            tAnonymous.UnnamedRecord.IsUnnamed.Should().BeTrue();
-            tAnonymous.UnnamedRecord.IsOblivious.Should().BeFalse();
+            tAnonymous.IsAnonymous.Should().BeTrue();
+            tAnonymous.RegularType.Should().NotBeSameAs( tAnonymous );
+            tAnonymous.RegularType.Fields.All( f => f.IsUnnamed && f.Type.IsRegular ).Should().BeTrue();
+            tAnonymous.RegularType.IsOblivious.Should().BeFalse();
 
-            tAnonymous.UnnamedRecord.ObliviousType.Should().NotBeSameAs( tAnonymous ).And.NotBeSameAs( tAnonymous.UnnamedRecord );
-            tAnonymous.UnnamedRecord.ObliviousType.Should().BeSameAs( tAnonymous.ObliviousType );
-            tAnonymous.ObliviousType.IsUnnamed.Should().BeTrue();
+            tAnonymous.RegularType.ObliviousType.Should().NotBeSameAs( tAnonymous ).And.NotBeSameAs( tAnonymous.RegularType );
+            tAnonymous.RegularType.ObliviousType.Should().BeSameAs( tAnonymous.ObliviousType );
         }
 
 
