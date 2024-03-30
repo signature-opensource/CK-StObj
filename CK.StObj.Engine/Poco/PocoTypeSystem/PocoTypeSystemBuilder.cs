@@ -473,7 +473,7 @@ namespace CK.Setup
                 if( !_typeCache.TryGetValue( nType.Type, out var obliviousType ) )
                 {
                     var oName = tItem.ObliviousType.CSharpName + "[]";
-                    obliviousType = PocoType.CreateCollection( this,
+                    obliviousType = PocoType.CreateListOrSetOrArray( this,
                                                                nType.Type,
                                                                oName,
                                                                oName,
@@ -499,7 +499,7 @@ namespace CK.Setup
                     var rName = tIRegular.CSharpName + "[]";
                     if( !_typeCache.TryGetValue( rName, out regularType ) )
                     {
-                        regularType = PocoType.CreateCollection( this,
+                        regularType = PocoType.CreateListOrSetOrArray( this,
                                                                  nType.Type,
                                                                  rName,
                                                                  rName,
@@ -513,7 +513,7 @@ namespace CK.Setup
                     Throw.DebugAssert( !regularType.IsNullable );
                 }
 
-                result = PocoType.CreateCollection( this,
+                result = PocoType.CreateListOrSetOrArray( this,
                                                     nType.Type,
                                                     chsarpName,
                                                     chsarpName,

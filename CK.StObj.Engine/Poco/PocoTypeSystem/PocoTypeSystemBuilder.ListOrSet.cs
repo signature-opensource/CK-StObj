@@ -17,21 +17,23 @@ namespace CK.Setup
             {
                 return null;
             }
-            // The RegularCollection came last in the battle: instead of integrating it in the
-            // existing RegisterListOrSetCore we handle it here. The good news is that it simplifies the code.
-            Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection item",
-                               tI.RegularType != null );
-
-            IPocoType tIRegular = tI.RegularType;
-            ICollectionPocoType? regularCollection = null;
-            var nTypeConcrete = isConcrete ? nType : nType.SetReferenceTypeDefinition( isList ? typeof( List<> ) : typeof( HashSet<> ) );
-            if( tI != tIRegular )
+            var t = nType.Type;
+            if( isConcrete )
             {
-                // nTypeConcrete may be nullable. Take the non nullable.
-                regularCollection = Unsafe.As<ICollectionPocoType>( RegisterConcreteListOrSet( isList, nTypeConcrete, listOrHashSet, tIRegular, null ).NonNullable );
+                var c = RegisterConcreteListOrSet( isList, t, listOrHashSet, tI );
+                return nType.IsNullable ? c.Nullable : c;
             }
-            var concreteType = RegisterConcreteListOrSet( isList, nTypeConcrete, listOrHashSet, tI, regularCollection );
-            return isConcrete ? concreteType : RegisterAbstractListOrSet( isList, nType, listOrHashSet, tI, concreteType.NonNullable );
+
+            // Type erasure of SecondaryPoco to PrimaryPoco for abstract collection only.
+            if( tI.Kind == PocoTypeKind.SecondaryPoco )
+            {
+                tI = Unsafe.As<ISecondaryPocoType>( tI ).PrimaryPocoType;
+                t = (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( tI.Type );
+            }
+            var concreteType = (isList ? typeof( List<> ) : typeof( HashSet<> )).MakeGenericType( tI.Type );
+            var concreteCollection = RegisterConcreteListOrSet( isList, concreteType, listOrHashSet, tI );
+            var result = RegisterAbstractListOrSet( isList, t, listOrHashSet, tI, concreteCollection );
+            return nType.IsNullable ? result.Nullable : result;
         }
 
         IPocoType? RegisterItemType( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, bool isConcrete, string listOrHashSet )
@@ -100,16 +102,28 @@ namespace CK.Setup
             return nType.IsNullable ? result.Nullable : result;
         }
 
-        IPocoType RegisterConcreteListOrSet( bool isList,
-                                             IExtNullabilityInfo nType,
-                                             string listOrHashSet,
-                                             IPocoType tI,
-                                             ICollectionPocoType? regularCollection )
+        IPocoType RegisterConcreteListOrSet( bool isList, Type t, string listOrHashSet, IPocoType tI )
+        {
+            Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection item",
+                               tI.RegularType != null );
+            IPocoType tIRegular = tI.RegularType;
+            ICollectionPocoType? regularCollection = null;
+            if( tI != tIRegular )
+            {
+                regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tIRegular, null ) );
+            }
+            return DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tI, regularCollection );
+        }
+
+        IPocoType DoRegisterConcreteListOrSet( bool isList,
+                                               Type t,
+                                               string listOrHashSet,
+                                               IPocoType tI,
+                                               ICollectionPocoType? regularCollection )
         {
             var csharpName = $"{listOrHashSet}<{tI.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
             {
-                Type t = nType.Type;
                 var obliviousItemType = tI.ObliviousType;
                 if( !_typeCache.TryGetValue( t, out var obliviousType ) )
                 {
@@ -123,46 +137,49 @@ namespace CK.Setup
                                        "oblivious => regular (or null regular for abstract read only but we are not in this case).",
                                        obliviousItemType.IsRegular );
 
-                    obliviousType = PocoType.CreateCollection( this,
-                                                               t,
-                                                               oName,
-                                                               oName,
-                                                               isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
-                                                               itemType: obliviousItemType,
-                                                               obliviousType: null,
-                                                               finalType: null,
-                                                               obliviousRegular ).ObliviousType;
+                    result = PocoType.CreateListOrSetOrArray( this,
+                                                              t,
+                                                              oName,
+                                                              oName,
+                                                              isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
+                                                              itemType: obliviousItemType,
+                                                              obliviousType: null,
+                                                              finalType: null,
+                                                              obliviousRegular );
+                    Throw.DebugAssert( !result.IsNullable );
+                    _typeCache.Add( oName, result );
+                    obliviousType = result.Nullable;
                     _typeCache.Add( t, obliviousType );
-                    _typeCache.Add( oName, obliviousType.NonNullable );
                 }
                 Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.IsNullable );
-                // We are the oblivious if the item is oblivious (whatever isRegular is).
+                // We are the oblivious if the item is oblivious.
                 if( tI.IsOblivious )
                 {
-                    result = obliviousType;
+                    result = obliviousType.NonNullable;
                 }
                 else
                 {
                     // If the regular collection is available, it is the one.
                     // Otherwise, this is necessarily its own RegularCollection.
-                    result = PocoType.CreateCollection( this,
-                                                        t,
-                                                        csharpName,
-                                                        obliviousType.ImplTypeName,
-                                                        obliviousType.Kind,
-                                                        tI,
-                                                        obliviousType,
-                                                        obliviousType.StructuralFinalType,
-                                                        regularCollection );
+                    result = PocoType.CreateListOrSetOrArray( this,
+                                                              t,
+                                                              csharpName,
+                                                              obliviousType.ImplTypeName,
+                                                              obliviousType.Kind,
+                                                              tI,
+                                                              obliviousType,
+                                                              obliviousType.StructuralFinalType,
+                                                              regularCollection );
                     Throw.DebugAssert( !result.IsNullable );
                     _typeCache.Add( csharpName, result );
                 }
             }
-            return nType.IsNullable ? result.Nullable : result.NonNullable;
+            Throw.DebugAssert( !result.IsNullable );
+            return result;
         }
 
         IPocoType RegisterAbstractListOrSet( bool isList,
-                                             IExtNullabilityInfo nType,
+                                             Type t,
                                              string listOrHashSet,
                                              IPocoType tI,
                                              IPocoType concreteCollection )
@@ -170,60 +187,46 @@ namespace CK.Setup
             var csharpName = $"{(isList ? "IList" : "ISet")}<{tI.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
             {
-                Type t = nType.Type;
-                // Type erasure of SecondaryPoco to PrimaryPoco for abstract collection only.
                 var obliviousItemType = tI.ObliviousType;
-                if( obliviousItemType.Kind == PocoTypeKind.SecondaryPoco )
-                {
-                    obliviousItemType = Unsafe.As<ISecondaryPocoType>( obliviousItemType ).PrimaryPocoType;
-                    Throw.DebugAssert( obliviousItemType.IsOblivious );
-                    t = (isList ? typeof( IList<> ) : typeof( ISet<> )).MakeGenericType( obliviousItemType.Type );
-                }
                 if( !_typeCache.TryGetValue( t, out var obliviousType ) )
                 {
                     var oName = $"{(isList ? "IList" : "ISet")}<{obliviousItemType.CSharpName}>";
                     var oTypeName = GetAbstractionImplTypeSupport( isList, listOrHashSet, obliviousItemType );
-                    // If an adapter is required, this is the final type, otherwise it is the concrete's one.
-                    IPocoType? finalType = null;
-                    if( oTypeName == null )
-                    {
-                        oTypeName = concreteCollection.ImplTypeName;
-                        finalType = concreteCollection.FinalType;
-                    }
-                    obliviousType = PocoType.CreateCollection( this,
+                    result = PocoType.CreateAbstractListOrSet( this,
                                                                t,
                                                                oName,
-                                                               oTypeName,
+                                                               oTypeName ?? concreteCollection.ImplTypeName,
                                                                isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
-                                                               itemType: obliviousItemType,
+                                                               concreteCollection: concreteCollection.ObliviousType.NonNullable,
                                                                obliviousType: null,
-                                                               finalType,
-                                                               concreteCollection.RegularType ).ObliviousType;
+                                                               oTypeName == null ? concreteCollection.StructuralFinalType : null );
+                    Throw.DebugAssert( !result.IsNullable );
+                    _typeCache.Add( oName, result );
+                    obliviousType = result.Nullable;
                     _typeCache.Add( t, obliviousType );
-                    _typeCache.Add( oName, obliviousType.NonNullable );
                 }
                 Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.IsNullable );
                 // We are the oblivious if the item is oblivious.
                 if( tI.IsOblivious )
                 {
-                    result = obliviousType;
+                    result = obliviousType.NonNullable;
                 }
                 else
                 {
-                    result = PocoType.CreateCollection( this,
-                                                        t,
-                                                        csharpName,
-                                                        obliviousType.ImplTypeName,
-                                                        obliviousType.Kind,
-                                                        tI,
-                                                        obliviousType,
-                                                        obliviousType.StructuralFinalType,
-                                                        concreteCollection.RegularType );
+                    result = PocoType.CreateAbstractListOrSet( this,
+                                                               t,
+                                                               csharpName,
+                                                               obliviousType.ImplTypeName,
+                                                               obliviousType.Kind,
+                                                               concreteCollection,
+                                                               obliviousType,
+                                                               obliviousType.StructuralFinalType );
+                    Throw.DebugAssert( result.ImplTypeName != null && result.ImplTypeName == obliviousType.ImplTypeName );
                     Throw.DebugAssert( !result.IsNullable );
                     _typeCache.Add( csharpName, result );
                 }
             }
-            return nType.IsNullable ? result.Nullable : result.NonNullable;
+            return result;
 
             string? GetAbstractionImplTypeSupport( bool isList, string listOrHashSet, IPocoType tI )
             {
