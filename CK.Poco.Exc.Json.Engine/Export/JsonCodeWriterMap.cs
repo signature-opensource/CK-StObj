@@ -105,6 +105,8 @@ namespace CK.Setup.PocoJson
             }
             else if( type.Type == typeof( TimeSpan ) )
             {
+                // See here why we don't use ISO 8601 for TimeSpan.
+                // https://github.com/dotnet/runtime/issues/28862#issuecomment-1273503317
                 return new BasicWriter( map, ( writer, v ) => writer.Append( "w.WriteStringValue( " )
                                                                          .Append( v )
                                                                          .Append( ".Ticks.ToString( System.Globalization.NumberFormatInfo.InvariantInfo ) );" ) );

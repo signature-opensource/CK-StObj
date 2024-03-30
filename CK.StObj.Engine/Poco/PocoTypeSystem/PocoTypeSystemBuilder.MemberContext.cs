@@ -44,9 +44,9 @@ namespace CK.Setup
                 _tupleIndex = 0;
             }
 
-            public bool EnterListSetOrDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isRegular, string concreteType )
+            public bool EnterListSetOrDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isConcrete, string concreteType )
             {
-                if( !CheckForbidden( monitor, nType, isRegular, concreteType ) )
+                if( !CheckForbidden( monitor, nType, isConcrete, concreteType ) )
                 {
                     return false;
                 }
@@ -66,7 +66,7 @@ namespace CK.Setup
                 return _root.Type.IsArray || CheckForbidden( monitor, nType, true, "" );
             }
 
-            bool CheckForbidden( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isRegular, string concreteType )
+            bool CheckForbidden( IActivityMonitor monitor, IExtNullabilityInfo nType, bool isConcrete, string concreteType )
             {
                 if( _forbidConcreteCollections && _forbidAbstractCollections )
                 {
@@ -75,7 +75,7 @@ namespace CK.Setup
                 }
                 else if( _forbidConcreteCollections )
                 {
-                    if( isRegular )
+                    if( isConcrete )
                     {
                         monitor.Error( $"Invalid concrete collection '{nType.Type:C}' in {ToString()}. Only IList<>, ISet<> and IDictionary<,> must be used for Poco fields." );
                         return false;
@@ -83,7 +83,7 @@ namespace CK.Setup
                 }
                 else if( _forbidAbstractCollections )
                 {
-                    if( !isRegular )
+                    if( !isConcrete )
                     {
                         monitor.Error( $"Invalid abstract collection '{nType.Type:C}' in {ToString()}. It must be a {concreteType}." );
                         return false;

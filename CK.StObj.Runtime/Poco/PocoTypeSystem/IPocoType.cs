@@ -56,7 +56,7 @@ namespace CK.Setup
         /// are not).
         /// </para>
         /// </summary>
-        [MemberNotNullWhen(true,nameof(StructuralFinalType))]
+        [MemberNotNullWhen(false,nameof(StructuralFinalType))]
         bool IsPolymorphic { get; }
 
         /// <summary>
@@ -153,6 +153,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether this type is regular. See <see cref="RegularType"/>.
         /// </summary>
+        [MemberNotNullWhen( true, nameof( RegularType ) )]
         bool IsRegular { get; }
 
         /// <summary>
@@ -177,16 +178,19 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether this is a final type. See <see cref="StructuralFinalType"/>.
+        /// Only non nullable value type and nullable reference type can be final.
         /// </summary>
+        [MemberNotNullWhen( true, nameof( StructuralFinalType ) )]
         bool IsStructuralFinalType { get; }
 
         /// <summary>
         /// Gets the final type associated to this type (this instance if <see cref="IsStructuralFinalType"/> is true)
         /// even if <see cref="ImplementationLess"/> is true.
-        /// <para>
         /// Usually <see cref="FinalType"/>, that considers only false <see cref="ImplementationLess"/>, should be used.
+        /// <para>
+        /// This is never null when <see cref="IsPolymorphic"/> is false.
         /// </para>
-        /// This is never null when <see cref="IsPolymorphic"/> is false. The set of the Final types is a subset of the Oblivious types.
+        /// The set of the Final types is a subset of the Oblivious types.
         /// <list type="bullet">
         ///     <item>Final type of a value type is its non nullable.</item>
         ///     <item>Final type of a reference type is either null or its nullable (oblivious reference types are nullable).</item>
@@ -198,7 +202,7 @@ namespace CK.Setup
         ///     equivalent type with oblivious generic parameters.
         ///     </item>
         ///     <item>
-        ///     <see cref="ISecondaryPocoType.StructuralFinalType"/> is its <see cref="IPrimaryPocoType"/> (that is oblivious, hence nullable).
+        ///     For <see cref="ISecondaryPocoType"/> is its <see cref="IPrimaryPocoType"/> (that is oblivious, hence nullable).
         ///     </item>
         ///     <item>For <see cref="PocoTypeKind.Enum"/>, <see cref="PocoTypeKind.Record"/> it is their non nullable.</item>
         ///     <item>For <see cref="PocoTypeKind.AnonymousRecord"/> it is the oblivious's non nullable.</item>
@@ -217,7 +221,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether this type is it its own <see cref="FinalType"/>.
+        /// Only non nullable value type and nullable reference type can be final.
         /// </summary>
+        [MemberNotNullWhen( true, nameof( FinalType ) )]
         bool IsFinalType { get; }
 
         /// <summary>
@@ -303,7 +309,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the head of a linked list of the <see cref="IPocoField"/>, <see cref="ICollectionPocoType.ItemTypes"/>
-        /// or <see cref="IOneOfPocoType.AllowedTypes"/> that directly reference this type.
+        /// or <see cref="IOneOfPocoType.AllowedTypes"/> that directly references this type.
         /// </summary>
         ITypeRef? FirstBackReference { get; }
 

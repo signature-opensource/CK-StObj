@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Globalization;
 using System.Numerics;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -160,6 +161,5 @@ namespace CK.Poco.Exc.Json.Tests
             var nMin2 = JsonTestHelper.Roundtrip( directory, nMin, text: t => TestHelper.Monitor.Info( $"IAllNullableBasicTypes (min) serialization: " + t ) );
             nMin2.Should().BeEquivalentTo( nMin );
         }
-
     }
 }
