@@ -3,37 +3,37 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
 using System;
-using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Collections;
 
 namespace CK.Setup
 {
     public sealed partial class PocoTypeSystemBuilder
     {
-        IPocoType? RegisterDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, bool isRegular )
+        IPocoType? RegisterDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx, bool isConcrete )
         {
-            if( RegisterKeyAndValueTypes( monitor, nType, ctx, isRegular, out var tK, out var tV ) )
+            if( !RegisterKeyAndValueTypes( monitor, nType, ctx, isConcrete, out var tK, out var tV )
+                || !CheckDictionaryKeyType( monitor, nType, ctx, tK ) )
             {
-                if( !CheckDictionaryKeyType( monitor, nType, ctx, tK ) )
-                {
-                    return null;
-                }
-                Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a key or a value",
-                                   tK.RegularType != null && tV.RegularType != null );
-
-                ICollectionPocoType? regularCollection = null;
-                IPocoType tKRegular = tK.RegularType;
-                IPocoType tVRegular = tV.RegularType;
-                if( !isRegular || tK != tKRegular || tV != tVRegular )
-                {
-                    var nRegular = isRegular
-                                    ? nType
-                                    : nType.SetReferenceTypeDefinition( typeof( Dictionary<,> ) );
-                    regularCollection = Unsafe.As<ICollectionPocoType>( RegisterDictionaryCore( nRegular.ToNonNullable(), true, tKRegular, tVRegular, null ) );
-                }
-                return RegisterDictionaryCore( nType, isRegular, tK, tV, regularCollection );
+                return null;
             }
-            return null;
+            var t = nType.Type;
+            if( isConcrete )
+            {
+                var c = RegisterConcreteDictionary( t, tK, tV );
+                return nType.IsNullable ? c.Nullable : c;
+            }
+
+            // Type erasure of SecondaryPoco to PrimaryPoco for abstract collection only.
+            if( tV.Kind == PocoTypeKind.SecondaryPoco )
+            {
+                tV = Unsafe.As<ISecondaryPocoType>( tV ).PrimaryPocoType;
+                t = typeof( IDictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+            }
+            var concreteType = typeof( Dictionary<,> ).MakeGenericType( tK.Type, tV.Type );
+            var concreteCollection = RegisterConcreteDictionary( concreteType, tK, tV );
+            var result = RegisterAbstractDictionary( t, tK, tV, concreteCollection );
+            return nType.IsNullable ? result.Nullable : result;
         }
 
         IPocoType? RegisterReadOnlyDictionary( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
@@ -119,113 +119,67 @@ namespace CK.Setup
             return true;
         }
 
-        IPocoType RegisterDictionaryCore( IExtNullabilityInfo nType,
-                                          bool isRegular,
-                                          IPocoType tK,
-                                          IPocoType tV,
-                                          ICollectionPocoType? regularCollection )
+
+        IPocoType RegisterConcreteDictionary( Type t, IPocoType tK, IPocoType tV )
         {
-            var csharpName = isRegular
-                                ? $"Dictionary<{tK.CSharpName},{tV.CSharpName}>"
-                                : $"IDictionary<{tK.CSharpName},{tV.CSharpName}>";
+            Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection key or value",
+                               tK.RegularType != null && tV.RegularType != null );
+            IPocoType tKRegular = tK.RegularType;
+            IPocoType tVRegular = tV.RegularType;
+            ICollectionPocoType? regularCollection = null;
+            if( tK != tKRegular || tV != tVRegular )
+            {
+                regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, tVRegular, null ) );
+            }
+            return DoRegisterConcreteDictionary( t, tK, tV, regularCollection );
+        }
+
+        IPocoType DoRegisterConcreteDictionary( Type t,
+                                                IPocoType tK,
+                                                IPocoType tV,
+                                                ICollectionPocoType? regularCollection )
+        {
+            var csharpName = $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
             {
-                Type t = nType.Type;
-                // Type erasure of SecondaryPoco to PrimaryPoco for abstract collection only.
-                var obliviousValueType = tV.ObliviousType;
-                if( !isRegular && obliviousValueType.Kind == PocoTypeKind.SecondaryPoco )
-                {
-                    obliviousValueType = Unsafe.As<ISecondaryPocoType>( obliviousValueType ).PrimaryPocoType;
-                    Throw.DebugAssert( obliviousValueType.IsOblivious );
-                    t = typeof( IDictionary<,> ).MakeGenericType( tK.Type, obliviousValueType.Type );
-                }
                 if( !_typeCache.TryGetValue( t, out var obliviousType ) )
                 {
-                    IPocoType? finalType = null;
-                    string oName, oTypeName;
                     // The dictionary key is not necessarily oblivious: it must always be not null.
                     // For anonymous record, we need to consider the oblivious (and this one, as a value type) is non nullable,
                     // but for reference type, we must take the non nullable.
                     // Following ObliviousType.NonNullable always correctly adapts the key type.
                     var obliviousKeyType = tK.ObliviousType.NonNullable;
-                    if( isRegular )
-                    {
-                        // The regular is Oblivious and Final.
-                        oName = $"Dictionary<{obliviousKeyType.CSharpName},{obliviousValueType.CSharpName}>";
-                        oTypeName = oName;
-                    }
-                    else
-                    {
-                        Throw.DebugAssert( "IDictionary: the regular collection has been created.", regularCollection != null );
-                        oName = $"IDictionary<{obliviousKeyType.CSharpName},{obliviousValueType.CSharpName}>";
-                        oTypeName = GetAbstractionImplTypeSupport( obliviousKeyType, obliviousValueType, out var isFinal );
-                        if( !isFinal )
-                        {
-                            // The final type is a Dictionary of oblivious key and value.
-                            // When item is an anonymous record, then it is unnamed (oblivious => unnamed).
-                            // The final type is its own RegularCollection.
-                            Throw.DebugAssert( oTypeName == oName.Substring( 1 ) );
-                            if( !_typeCache.TryGetValue( oTypeName, out finalType ) )
-                            {
-                                var tFinal = typeof( Dictionary<,> ).MakeGenericType( tK.Type, obliviousValueType.Type );
-                                finalType = PocoType.CreateDictionary( this,
-                                                                       tFinal,
-                                                                       oTypeName,
-                                                                       oTypeName,
-                                                                       obliviousKeyType,
-                                                                       obliviousValueType,
-                                                                       obliviousType: null,
-                                                                       finalType: null,
-                                                                       regularCollectionType: null );
-                                Throw.DebugAssert( !finalType.IsNullable );
-                                _typeCache.Add( oTypeName, finalType );
-                                // Final type is oblivious: as reference type it is nullable.
-                                _typeCache.Add( tFinal, finalType.Nullable );
-                            }
-                            // Both lookup (by name) and creation returns the non nullable.
-                            finalType = finalType.Nullable;
-                            Throw.DebugAssert( finalType.IsOblivious && finalType.IsStructuralFinalType
-                                               && !(finalType.NonNullable.IsOblivious || finalType.NonNullable.IsStructuralFinalType) );
-                        }
-                    }
-                    // The regular collection may be available but it is not necessarily the oblivious's one.
-                    // If a final type has been computed (because this oblivious is not final) then the
-                    // oblivious.RegularCollection is the final.
-                    // When no final type is available (because this oblivious is final) it may be the resolved
-                    // regular collection if its item type happens to be oblivious.
-                    var obliviousRegular = finalType?.NonNullable
-                                            ?? (regularCollection?.ItemTypes[0] == obliviousKeyType && regularCollection?.ItemTypes[1] == obliviousValueType
-                                                    ? regularCollection
-                                                    : null);
+                    var obliviousValueType = tV.ObliviousType;
+                    // The regular is Oblivious and Final.
+                    var oName = $"Dictionary<{obliviousKeyType.CSharpName},{obliviousValueType.CSharpName}>";
+
+                    // If the regular collection is available and its item type happens to be oblivious then
+                    // it is the regular collection.
+                    var obliviousRegular = regularCollection?.ItemTypes[0] == obliviousKeyType && regularCollection?.ItemTypes[1] == obliviousValueType
+                                                ? regularCollection
+                                                : null;
 
                     Throw.DebugAssert( "The oblivious item types are necessarily compliant with the regular collection: " +
                                        "oblivious => regular (or null regular for abstract read only but we are not in this case).",
                                         obliviousKeyType.IsRegular && obliviousValueType.IsRegular );
 
-                    // The only reason why the oblivious cannot be its own regular collection is because we are building an abstraction.
-                    if( obliviousRegular == null && !isRegular )
-                    {
-                        // We must create the regular collection: recursive call here (but will be only a single reentrancy).
-                        var nRegular = nType.SetReferenceTypeDefinition( typeof( Dictionary<,> ) ).ToNonNullable();
-                        obliviousRegular = RegisterDictionaryCore( nRegular, true, obliviousKeyType, obliviousValueType, null );
-                    }
-
                     obliviousType = PocoType.CreateDictionary( this,
                                                                t,
                                                                oName,
-                                                               oTypeName,
+                                                               oName,
                                                                obliviousKeyType,
                                                                obliviousValueType,
                                                                obliviousType: null,
-                                                               finalType,
-                                                               obliviousRegular ).ObliviousType;
+                                                               finalType: null,
+                                                               obliviousRegular ).Nullable;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }
-                // We are the oblivious if the value is oblivious (whatever the isRegular is).
+                Throw.DebugAssert( obliviousType.IsOblivious && obliviousType.IsNullable );
+                // We are the oblivious if the value is oblivious.
                 if( tV.IsOblivious )
                 {
-                    result = obliviousType;
+                    result = obliviousType.NonNullable;
                 }
                 else
                 {
@@ -241,9 +195,61 @@ namespace CK.Setup
                     _typeCache.Add( csharpName, result );
                 }
             }
-            return nType.IsNullable ? result.Nullable : result.NonNullable;
+            Throw.DebugAssert( !result.IsNullable );
+            return result;
+        }
 
-            string GetAbstractionImplTypeSupport( IPocoType tK, IPocoType tV, out bool isFinal )
+
+        IPocoType RegisterAbstractDictionary( Type t,
+                                              IPocoType tK,
+                                              IPocoType tV,
+                                              IPocoType concreteCollection )
+        {
+            var csharpName = $"IDictionary<{tK.CSharpName},{tV.CSharpName}>";
+            if( !_typeCache.TryGetValue( csharpName, out var result ) )
+            {
+                if( !_typeCache.TryGetValue( t, out var obliviousType ) )
+                {
+                    var obliviousKeyType = tK.ObliviousType.NonNullable;
+                    var obliviousValueType = tV.ObliviousType;
+                    var oName = $"IDictionary<{obliviousKeyType.CSharpName},{obliviousValueType.CSharpName}>";
+                    var oTypeName = GetAbstractionImplTypeSupport( obliviousKeyType, obliviousValueType );
+                    result = PocoType.CreateAbstractCollection( this,
+                                                                t,
+                                                                oName,
+                                                                oTypeName ?? concreteCollection.ImplTypeName,
+                                                                PocoTypeKind.Dictionary,
+                                                                concreteCollection: concreteCollection.ObliviousType.NonNullable,
+                                                                obliviousType: null,
+                                                                oTypeName == null ? concreteCollection.StructuralFinalType : null );
+                    Throw.DebugAssert( !result.IsNullable );
+                    _typeCache.Add( oName, result );
+                    obliviousType = result.Nullable;
+                    _typeCache.Add( t, obliviousType );
+                }
+                // We are the oblivious if the value is oblivious.
+                if( tV.IsOblivious )
+                {
+                    result = obliviousType.NonNullable;
+                }
+                else
+                {
+                    result = PocoType.CreateAbstractCollection( this,
+                                                                t,
+                                                                csharpName,
+                                                                obliviousType.ImplTypeName,
+                                                                obliviousType.Kind,
+                                                                concreteCollection,
+                                                                obliviousType,
+                                                                obliviousType.StructuralFinalType );
+                    Throw.DebugAssert( result.ImplTypeName != null && result.ImplTypeName == obliviousType.ImplTypeName );
+                    Throw.DebugAssert( !result.IsNullable );
+                    _typeCache.Add( csharpName, result );
+                }
+            }
+            return result;
+
+            string? GetAbstractionImplTypeSupport( IPocoType tK, IPocoType tV )
             {
                 string? typeName = null;
                 if( tV.Type.IsValueType )
@@ -282,14 +288,7 @@ namespace CK.Setup
                         }
                     }
                 }
-                // If there is no specific support implementation, the regular and final Dictionary is
-                // the implementation type.
-                isFinal = typeName != null;
-                if( !isFinal )
-                {
-                    typeName = $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
-                }
-                return typeName!;
+                return typeName;
             }
 
 

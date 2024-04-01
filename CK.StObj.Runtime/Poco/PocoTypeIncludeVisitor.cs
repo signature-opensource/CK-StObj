@@ -43,7 +43,8 @@ namespace CK.Setup
     ///         </para>
     ///     </item>
     ///     <item>
-    ///         Collections visit their <see cref="ICollectionPocoType.ItemTypes"/>.
+    ///         Collections visit their <see cref="ICollectionPocoType.ItemTypes"/> and abstract collection visit
+    ///         their <see cref="ICollectionPocoType.ConcreteCollection"/>.
     ///     </item>
     ///     <item>
     ///         <see cref="IUnionPocoType"/> visits its <see cref="IOneOfPocoType.AllowedTypes"/> (same as base <see cref="PocoTypeVisitor"/>).
@@ -217,6 +218,18 @@ namespace CK.Setup
                     Visit( f.Type );
                 }
             }
+        }
+
+        /// <summary>
+        /// Overridden to also visit the <see cref="ICollectionPocoType.ConcreteCollection"/>.
+        /// </summary>
+        /// <param name="collection">The collection type.</param>
+        protected override void VisitCollection( ICollectionPocoType collection )
+        {
+            // Visit the item types.
+            base.VisitCollection( collection );
+            var c = collection.ConcreteCollection;
+            if( c != null && c != collection ) Visit( c );
         }
 
         /// <summary>

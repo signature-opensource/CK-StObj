@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Setup
 {
@@ -23,6 +24,7 @@ namespace CK.Setup
         /// <see cref="IsAbstractCollection"/> is true. Such type can only appear in IPoco fields.
         /// </para>
         /// </summary>
+        [MemberNotNullWhen( false, nameof( ConcreteCollection ), nameof( RegularType ), nameof( StructuralFinalType ) )]
         bool IsAbstractReadOnly { get; }
 
         /// <summary>
@@ -34,19 +36,28 @@ namespace CK.Setup
         new ICollectionPocoType ObliviousType { get; }
 
         /// <summary>
-        /// If <see cref="IsAbstractReadOnly"/> is true, this is null.
-        /// <para>
         /// Gets the associated regular collection: whether <see cref="IsAbstractCollection"/> is true or not,
         /// this is the <see cref="List{T}"/>, <see cref="HashSet{T}"/> or <see cref="Dictionary{TKey, TValue}"/>
         /// where the generic parameters are regular types (anonymous records have no field names and subordinated
         /// collections are regular).
+        /// <para>
+        /// This is never null except when <see cref="IsAbstractReadOnly"/> is true.
         /// </para>
         /// </summary>
         new ICollectionPocoType? RegularType { get; }
 
+        /// <summary>
+        /// Gets the concrete <see cref="List{T}"/>, <see cref="HashSet{T}"/> or <see cref="Dictionary{TKey, TValue}"/>
+        /// collection with the same nullability.
+        /// <para>
+        /// This is never null except when <see cref="IsAbstractReadOnly"/> is true.
+        /// </para>
+        /// </summary>
+        ICollectionPocoType? ConcreteCollection { get; }
+
         /// <inheritdoc cref="IPocoType.StructuralFinalType" />
         /// <remarks>
-        /// This is null when <see cref="IsAbstractReadOnly"/> is true.
+        /// This is never null except when <see cref="IsAbstractReadOnly"/> is true.
         /// </remarks>
         new ICollectionPocoType? StructuralFinalType { get; }
 
