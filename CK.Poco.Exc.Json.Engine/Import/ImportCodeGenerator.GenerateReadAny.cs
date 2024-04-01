@@ -14,7 +14,7 @@ namespace CK.Setup.PocoJson
             ctor.GeneratedByComment().NewLine()
                 .Append( "_anyReaders = new Dictionary<string, ObjectReader>();" ).NewLine();
 
-            foreach( var t in _nameMap.TypeSet.Where( t => t.IsFinalType && t.IsRegular ).Select( t => t.Type.IsValueType ? t : t.NonNullable ) )
+            foreach( var t in _nameMap.SerializedObservableTypes )
             {
                 Throw.DebugAssert( t.IsSerializedObservable );
                 Throw.DebugAssert( t.Kind is not PocoTypeKind.Any and not PocoTypeKind.AbstractPoco and not PocoTypeKind.UnionType );

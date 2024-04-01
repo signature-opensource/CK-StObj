@@ -234,7 +234,18 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets whether this type exists in its serializable form: it is non nullable, regular
-        /// and is either final or its nullable is final.
+        /// and is either final or its nullable is final. <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/>
+        /// and <see cref="PocoTypeKind.UnionType"/> are never observable (thay have no final type).
+        /// <para>
+        /// There is no <c>SerializedObservableType</c> and this is intended as it would introduce an ambiguity
+        /// regarding the final type that will be selected for abstract collection (<see cref="ICollectionPocoType.IsAbstractCollection"/>):
+        /// the final type of an abstract collection is itself when the collection is implemented by an adapter, but this final type is
+        /// not observable in the serialization, it is it's <see cref="Regular"/> associated collection that is observable.
+        /// </para>
+        /// <para>
+        /// To obtain the "serialized observable" type, one can always use <c>Regular?.FinalType?.NonNullable</c>. 
+        /// This makes the regular type mapping explicit.
+        /// </para>
         /// </summary>
         bool IsSerializedObservable { get; }
 
