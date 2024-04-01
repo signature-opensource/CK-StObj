@@ -24,7 +24,7 @@ namespace CK.Setup
         /// <see cref="IsAbstractCollection"/> is true. Such type can only appear in IPoco fields.
         /// </para>
         /// </summary>
-        [MemberNotNullWhen( false, nameof( ConcreteCollection ), nameof( RegularType ), nameof( StructuralFinalType ) )]
+        [MemberNotNullWhen( false, nameof( ConcreteCollection ), nameof( RegularType ), nameof( StructuralFinalType ), nameof( NonSecondaryConcreteCollection ) )]
         bool IsAbstractReadOnly { get; }
 
         /// <summary>
@@ -54,6 +54,16 @@ namespace CK.Setup
         /// </para>
         /// </summary>
         ICollectionPocoType? ConcreteCollection { get; }
+
+        /// <summary>
+        /// Gets the concrete <see cref="List{T}"/>, <see cref="HashSet{T}"/> or <see cref="Dictionary{TKey, TValue}"/>
+        /// collection with the same nullability where <c>T</c> or <c>TValue</c> is the <see cref="ISecondaryPocoType.PrimaryPocoType"/>
+        /// if this <c>T</c> or <c>TValue</c> is a secondary poco.
+        /// <para>
+        /// This is never null except when <see cref="IsAbstractReadOnly"/> is true.
+        /// </para>
+        /// </summary>
+        ICollectionPocoType? NonSecondaryConcreteCollection { get; }
 
         /// <inheritdoc cref="IPocoType.StructuralFinalType" />
         /// <remarks>

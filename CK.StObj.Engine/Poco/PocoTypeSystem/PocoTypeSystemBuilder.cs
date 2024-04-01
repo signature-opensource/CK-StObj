@@ -224,7 +224,7 @@ namespace CK.Setup
             Type t = nType.Type;
             if( t.IsSZArray )
             {
-                return OnArray( monitor, nType, ctx );
+                return RegisterArray( monitor, nType, ctx );
             }
             if( t.IsGenericType )
             {
@@ -453,79 +453,6 @@ namespace CK.Setup
             }
             Throw.DebugAssert( result is IAbstractPocoType or ISecondaryPocoType or IPrimaryPocoType );
             return result;
-        }
-
-        IPocoType? OnArray( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )
-        {
-            Debug.Assert( nType.ElementType != null );
-
-            bool valid = ctx.EnterArray( monitor, nType );
-
-            var tItem = Register( monitor, ctx, nType.ElementType );
-            if( tItem == null || !valid ) return null;
-
-            var chsarpName = tItem.CSharpName + "[]";
-            if( !_typeCache.TryGetValue( chsarpName, out var result ) )
-            {
-                // The oblivious array type is the array of its oblivious item type
-                // and is the final type. It is also its own RegularCollection as an oblivious
-                // anonymous record is unnamed.
-                if( !_typeCache.TryGetValue( nType.Type, out var obliviousType ) )
-                {
-                    var oName = tItem.ObliviousType.CSharpName + "[]";
-                    obliviousType = PocoType.CreateListOrSetOrArray( this,
-                                                               nType.Type,
-                                                               oName,
-                                                               oName,
-                                                               PocoTypeKind.Array,
-                                                               tItem.ObliviousType,
-                                                               null,
-                                                               null,
-                                                               null ).ObliviousType;
-                    _typeCache.Add( nType.Type, obliviousType );
-                    _typeCache.Add( oName, obliviousType.NonNullable );
-                }
-                // If the item is oblivious then, it is the oblivious array.
-                Throw.DebugAssert( obliviousType.IsNullable );
-                if( tItem.IsOblivious ) return nType.IsNullable ? obliviousType : obliviousType.NonNullable;
-
-                // Ensures that the RegularCollection exists if the item type is not compliant.
-                Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be an item",
-                                   tItem.RegularType != null );
-                IPocoType? regularType = null;
-                IPocoType tIRegular = tItem.RegularType;
-                if( tIRegular != tItem )
-                {
-                    var rName = tIRegular.CSharpName + "[]";
-                    if( !_typeCache.TryGetValue( rName, out regularType ) )
-                    {
-                        regularType = PocoType.CreateListOrSetOrArray( this,
-                                                                 nType.Type,
-                                                                 rName,
-                                                                 rName,
-                                                                 PocoTypeKind.Array,
-                                                                 tIRegular,
-                                                                 obliviousType,
-                                                                 obliviousType,
-                                                                 null );
-                        _typeCache.Add( rName, regularType );
-                    }
-                    Throw.DebugAssert( !regularType.IsNullable );
-                }
-
-                result = PocoType.CreateListOrSetOrArray( this,
-                                                    nType.Type,
-                                                    chsarpName,
-                                                    chsarpName,
-                                                    PocoTypeKind.Array,
-                                                    tItem,
-                                                    obliviousType,
-                                                    obliviousType,
-                                                    regularType );
-                _typeCache.Add( chsarpName, result );
-            }
-            Throw.DebugAssert( !result.IsNullable );
-            return nType.IsNullable ? result.Nullable : result;
         }
 
         IPocoType? OnValueType( IActivityMonitor monitor, IExtNullabilityInfo nType, MemberContext ctx )

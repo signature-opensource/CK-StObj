@@ -104,22 +104,32 @@ namespace CK.Setup
 
         IPocoType RegisterConcreteListOrSet( bool isList, Type t, string listOrHashSet, IPocoType tI )
         {
-            Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection item",
-                               tI.RegularType != null );
-            IPocoType tIRegular = tI.RegularType;
+            IPocoType? nonSecondaryConcreteCollection = null;
             ICollectionPocoType? regularCollection = null;
-            if( tI != tIRegular )
+            if( tI is ISecondaryPocoType sec )
             {
-                regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tIRegular, null ) );
+                nonSecondaryConcreteCollection = DoRegisterConcreteListOrSet( isList, t, listOrHashSet, sec.PrimaryPocoType, null, null );
+                Throw.DebugAssert( sec.IsRegular );
             }
-            return DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tI, regularCollection );
+            else
+            {
+                Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection item",
+                                   tI.RegularType != null );
+                IPocoType tIRegular = tI.RegularType;
+                if( tI != tIRegular )
+                {
+                    regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tIRegular, null, nonSecondaryConcreteCollection ) );
+                }
+            }
+            return DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tI, regularCollection, nonSecondaryConcreteCollection );
         }
 
         IPocoType DoRegisterConcreteListOrSet( bool isList,
                                                Type t,
                                                string listOrHashSet,
                                                IPocoType tI,
-                                               ICollectionPocoType? regularCollection )
+                                               ICollectionPocoType? regularCollection,
+                                               IPocoType? nonSecondaryConcreteCollection )
         {
             var csharpName = $"{listOrHashSet}<{tI.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
@@ -138,14 +148,15 @@ namespace CK.Setup
                                        obliviousItemType.IsRegular );
 
                     obliviousType = PocoType.CreateListOrSetOrArray( this,
-                                                              t,
-                                                              oName,
-                                                              oName,
-                                                              isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
-                                                              itemType: obliviousItemType,
-                                                              obliviousType: null,
-                                                              finalType: null,
-                                                              obliviousRegular ).Nullable;
+                                                                     t,
+                                                                     oName,
+                                                                     oName,
+                                                                     isList ? PocoTypeKind.List : PocoTypeKind.HashSet,
+                                                                     itemType: obliviousItemType,
+                                                                     obliviousType: null,
+                                                                     finalType: null,
+                                                                     obliviousRegular,
+                                                                     nonSecondaryConcreteCollection?.ObliviousType ).Nullable;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }
@@ -167,7 +178,8 @@ namespace CK.Setup
                                                               tI,
                                                               obliviousType,
                                                               obliviousType.StructuralFinalType,
-                                                              regularCollection );
+                                                              regularCollection,
+                                                              nonSecondaryConcreteCollection );
                     Throw.DebugAssert( !result.IsNullable );
                     _typeCache.Add( csharpName, result );
                 }

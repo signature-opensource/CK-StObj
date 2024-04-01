@@ -24,17 +24,20 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
 
         public interface IPocoWithDictionaryOfPrimary : IPoco, IWithDictionary
         {
-            new IDictionary<int,IVerySimplePoco> Dictionary { get; }
+            new IDictionary<int, IVerySimplePoco> Dictionary { get; }
+            Dictionary<int, IVerySimplePoco> ConcreteDictionary { get; set; }
         }
 
         public interface IPocoWithDictionaryOfSecondary : IPoco, IWithDictionary, IWithReadOnlyDictionary
         {
             new IDictionary<int, ISecondaryVerySimplePoco> Dictionary { get; }
+            Dictionary<int, ISecondaryVerySimplePoco> ConcreteDictionary { get; set; }
         }
 
         public interface IPocoWithDictionaryOfOtherSecondary : IPoco, IWithDictionary, IWithReadOnlyDictionary
         {
             new IDictionary<int, IOtherSecondaryVerySimplePoco> Dictionary { get; }
+            Dictionary<int, IOtherSecondaryVerySimplePoco> ConcreteDictionary { get; set; }
         }
 
         [TestCase( typeof( IPocoWithDictionaryOfPrimary ) )]

@@ -124,20 +124,35 @@ namespace CK.Setup
         {
             Throw.DebugAssert( "Only abstract read only collections can have a null regular and a read only collection cannot be a collection key or value",
                                tK.RegularType != null && tV.RegularType != null );
-            IPocoType tKRegular = tK.RegularType;
-            IPocoType tVRegular = tV.RegularType;
+            IPocoType? nonSecondaryConcreteCollection = null;
             ICollectionPocoType? regularCollection = null;
-            if( tK != tKRegular || tV != tVRegular )
+            IPocoType tKRegular = tK.RegularType;
+            if( tV is ISecondaryPocoType sec )
             {
-                regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, tVRegular, null ) );
+                ICollectionPocoType? nsRegularCollection = null;
+                if( tK != tKRegular )
+                {
+                    nsRegularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, sec.PrimaryPocoType, null, null ) );
+                    regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, tV, null, nsRegularCollection ) );
+                }
+                nonSecondaryConcreteCollection = DoRegisterConcreteDictionary( t, tK, sec.PrimaryPocoType, nsRegularCollection, null );
             }
-            return DoRegisterConcreteDictionary( t, tK, tV, regularCollection );
+            else
+            {
+                IPocoType tVRegular = tV.RegularType;
+                if( tK != tKRegular || tV != tVRegular )
+                {
+                    regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, tVRegular, null, null ) );
+                }
+            }
+            return DoRegisterConcreteDictionary( t, tK, tV, regularCollection, nonSecondaryConcreteCollection );
         }
 
         IPocoType DoRegisterConcreteDictionary( Type t,
                                                 IPocoType tK,
                                                 IPocoType tV,
-                                                ICollectionPocoType? regularCollection )
+                                                ICollectionPocoType? regularCollection,
+                                                IPocoType? nonSecondaryConcreteCollection )
         {
             var csharpName = $"Dictionary<{tK.CSharpName},{tV.CSharpName}>";
             if( !_typeCache.TryGetValue( csharpName, out var result ) )
@@ -171,7 +186,8 @@ namespace CK.Setup
                                                                obliviousValueType,
                                                                obliviousType: null,
                                                                finalType: null,
-                                                               obliviousRegular ).Nullable;
+                                                               obliviousRegular,
+                                                               nonSecondaryConcreteCollection?.ObliviousType ).Nullable;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }
@@ -191,7 +207,8 @@ namespace CK.Setup
                                                         tV,
                                                         obliviousType,
                                                         obliviousType.StructuralFinalType,
-                                                        regularCollection );
+                                                        regularCollection,
+                                                        nonSecondaryConcreteCollection );
                     _typeCache.Add( csharpName, result );
                 }
             }

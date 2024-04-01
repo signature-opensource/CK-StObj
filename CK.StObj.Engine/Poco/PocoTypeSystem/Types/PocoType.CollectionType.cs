@@ -17,7 +17,8 @@ namespace CK.Setup
                                                           IPocoType itemType,
                                                           IPocoType? obliviousType,
                                                           IPocoType? finalType,
-                                                          IPocoType? regularCollection )
+                                                          IPocoType? regularCollection,
+                                                          IPocoType? nonSecondaryConcreteCollection )
         {
             return new ListOrSetOrArrayType( s,
                                              tCollection,
@@ -27,7 +28,8 @@ namespace CK.Setup
                                              itemType,
                                              (ICollectionPocoType?)obliviousType,
                                              (ICollectionPocoType?)finalType,
-                                             (ICollectionPocoType?)regularCollection );
+                                             (ICollectionPocoType?)regularCollection,
+                                             (ICollectionPocoType?)nonSecondaryConcreteCollection );
         }
 
         internal static IPocoType CreateAbstractCollection( PocoTypeSystemBuilder s,
@@ -57,7 +59,8 @@ namespace CK.Setup
                                                          IPocoType itemType2,
                                                          IPocoType? obliviousType,
                                                          IPocoType? finalType,
-                                                         IPocoType? regularCollectionType )
+                                                         IPocoType? regularCollectionType,
+                                                         IPocoType? nonSecondaryConcreteCollection )
         {
             return new DictionaryType( s,
                                        tCollection,
@@ -67,7 +70,8 @@ namespace CK.Setup
                                        itemType2,
                                        (ICollectionPocoType?)obliviousType,
                                        (ICollectionPocoType?)finalType,
-                                       (ICollectionPocoType?)regularCollectionType );
+                                       (ICollectionPocoType?)regularCollectionType,
+                                       (ICollectionPocoType?)nonSecondaryConcreteCollection );
         }
 
         internal static AbstractReadOnlyCollectionType CreateAbstractCollection( PocoTypeSystemBuilder s,
@@ -102,6 +106,8 @@ namespace CK.Setup
 
             public ICollectionPocoType? ConcreteCollection => NonNullable.ConcreteCollection?.Nullable;
 
+            public ICollectionPocoType? NonSecondaryConcreteCollection => NonNullable.NonSecondaryConcreteCollection?.Nullable;
+
             ICollectionPocoType ICollectionPocoType.NonNullable => NonNullable;
 
             ICollectionPocoType ICollectionPocoType.Nullable => this;
@@ -122,6 +128,7 @@ namespace CK.Setup
             readonly ICollectionPocoType _obliviousType;
             readonly ICollectionPocoType _finalType;
             readonly ICollectionPocoType _regularType;
+            readonly ICollectionPocoType _nonSecondaryConcreteCollection;
             bool _implementationLess;
 
             public ListOrSetOrArrayType( PocoTypeSystemBuilder s,
@@ -132,7 +139,8 @@ namespace CK.Setup
                                          IPocoType itemType,
                                          ICollectionPocoType? obliviousType,
                                          ICollectionPocoType? finalType,
-                                         ICollectionPocoType? regularType )
+                                         ICollectionPocoType? regularType,
+                                         ICollectionPocoType? nonSecondaryConcreteCollection )
                 : base( s, tCollection, csharpName, kind, static t => new NullCollection( t ) )
             {
                 Debug.Assert( kind == PocoTypeKind.List || kind == PocoTypeKind.HashSet || kind == PocoTypeKind.Array );
@@ -154,11 +162,14 @@ namespace CK.Setup
                 _finalType = finalType ?? Nullable;
                 Throw.DebugAssert( "The regular collection has the same kind and the provided instance is not nullable and not abstract.",
                                    regularType == null || (!regularType.IsNullable && regularType.Kind == kind && !regularType.IsAbstractCollection) );
-                Throw.DebugAssert( "The provided regular collection can have the same item type only if we are abstract.",
-                                   regularType == null || (kind != PocoTypeKind.Array && csharpName[0] == 'I') || regularType.ItemTypes[0] != itemType );
-                Throw.DebugAssert( "If we are the regular collection, we are not abstract and our item is regular.",
-                                   regularType != null || ((kind == PocoTypeKind.Array || csharpName[0] != 'I') && itemType.IsRegular) );
+                Throw.DebugAssert( "If we are the regular collection, our item is regular.",
+                                   regularType != null || itemType.IsRegular );
                 _regularType = regularType ?? this;
+
+                Throw.DebugAssert( nonSecondaryConcreteCollection == null || (itemType is ISecondaryPocoType sec && sec.PrimaryPocoType == nonSecondaryConcreteCollection.ItemTypes[0]) );
+                Throw.DebugAssert( itemType is ISecondaryPocoType == (nonSecondaryConcreteCollection != null) );
+                _nonSecondaryConcreteCollection = nonSecondaryConcreteCollection ?? this;
+
                 _implTypeName = implTypeName;
                 _itemTypes = new[] { itemType };
                 _nextRef = ((PocoType)itemType.NonNullable).AddBackRef( this );
@@ -181,9 +192,11 @@ namespace CK.Setup
 
             public ICollectionPocoType ConcreteCollection => this;
 
+            public ICollectionPocoType NonSecondaryConcreteCollection => _nonSecondaryConcreteCollection;
+
             ICollectionPocoType? ICollectionPocoType.FinalType => _implementationLess ? null : _finalType;
 
-            public bool IsAbstractCollection => Kind != PocoTypeKind.Array && CSharpName[0] == 'I';
+            public bool IsAbstractCollection => false;
 
             public bool IsAbstractReadOnly => false;
 
@@ -310,6 +323,8 @@ namespace CK.Setup
 
             ICollectionPocoType? ICollectionPocoType.FinalType => _concreteCollection.ImplementationLess ? null : StructuralFinalType;
 
+            public ICollectionPocoType? NonSecondaryConcreteCollection => _concreteCollection.NonSecondaryConcreteCollection;
+
             public bool IsAbstractCollection => true;
 
             public bool IsAbstractReadOnly => false;
@@ -357,6 +372,8 @@ namespace CK.Setup
             readonly ICollectionPocoType _obliviousType;
             readonly ICollectionPocoType _finalType;
             readonly ICollectionPocoType _regularType;
+            readonly ICollectionPocoType _nonSecondaryConcreteCollection;
+
             bool _implementationLess;
 
             public DictionaryType( PocoTypeSystemBuilder s,
@@ -367,7 +384,8 @@ namespace CK.Setup
                                    IPocoType valueType,
                                    ICollectionPocoType? obliviousType,
                                    ICollectionPocoType? finalType,
-                                   ICollectionPocoType? regularType )
+                                   ICollectionPocoType? regularType,
+                                   ICollectionPocoType? nonSecondaryConcreteCollection )
                 : base( s, tCollection, csharpName, PocoTypeKind.Dictionary, static t => new NullCollection( t ) )
             {
                 _itemTypes = new[] { keyType, valueType };
@@ -398,6 +416,13 @@ namespace CK.Setup
                                    regularType != null || (csharpName[0] != 'I' && keyType.IsRegular && valueType.IsRegular) );
                 _regularType = regularType ?? this;
 
+                Throw.DebugAssert( nonSecondaryConcreteCollection == null
+                                    || (valueType is ISecondaryPocoType sec
+                                        && sec.PrimaryPocoType == nonSecondaryConcreteCollection.ItemTypes[1]
+                                        && keyType == nonSecondaryConcreteCollection.ItemTypes[0]) );
+                Throw.DebugAssert( valueType is ISecondaryPocoType == (nonSecondaryConcreteCollection != null) );
+                _nonSecondaryConcreteCollection = nonSecondaryConcreteCollection ?? this;
+                
                 _def = new FieldDefaultValue( $"new {implTypeName}()" );
                 // Register back references (key is embedded, value has its own PocoTypeRef).
                 _nextRefKey = ((PocoType)keyType).AddBackRef( this );
@@ -423,7 +448,9 @@ namespace CK.Setup
 
             ICollectionPocoType? ICollectionPocoType.FinalType => _implementationLess ? null : _finalType;
 
-            public bool IsAbstractCollection => CSharpName[0] == 'I';
+            public ICollectionPocoType NonSecondaryConcreteCollection => _nonSecondaryConcreteCollection;
+
+            public bool IsAbstractCollection => false;
 
             public bool IsAbstractReadOnly => false;
 
@@ -532,9 +559,9 @@ namespace CK.Setup
             public override bool ImplementationLess => true;
 
             // Abstract ReadOnly collections have no final type.
-            public override IPocoType? StructuralFinalType => null;
+            public override ICollectionPocoType? StructuralFinalType => null;
 
-            ICollectionPocoType? ICollectionPocoType.StructuralFinalType => null;
+            public ICollectionPocoType? NonSecondaryConcreteCollection => null;
 
             ICollectionPocoType? ICollectionPocoType.FinalType => null;
 
