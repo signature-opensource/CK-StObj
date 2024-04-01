@@ -61,6 +61,9 @@ namespace CK.Setup
         public IPocoTypeSet TypeSet => _typeSet;
 
         /// <inheritdoc />
+        public IEnumerable<IPocoType> SerializedObservableTypes => _typeSet.Where( t => t.IsFinalType && t.IsRegular ).Select( t => t.Type.IsValueType ? t : t.NonNullable );
+
+        /// <inheritdoc />
         public string GetName( IPocoType type )
         {
             ref var n = ref _names[type.Index];

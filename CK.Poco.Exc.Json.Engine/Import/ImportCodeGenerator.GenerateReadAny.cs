@@ -16,6 +16,7 @@ namespace CK.Setup.PocoJson
 
             foreach( var t in _nameMap.TypeSet.Where( t => t.IsFinalType && t.IsRegular ).Select( t => t.Type.IsValueType ? t : t.NonNullable ) )
             {
+                Throw.DebugAssert( t.IsSerializedObservable );
                 Throw.DebugAssert( t.Kind is not PocoTypeKind.Any and not PocoTypeKind.AbstractPoco and not PocoTypeKind.UnionType );
 
                 var typeName = _nameMap.GetName( t );

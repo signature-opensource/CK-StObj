@@ -44,6 +44,9 @@ namespace CK.Setup
 
             public bool ImplementationLess => _nonNullable.ImplementationLess;
 
+            // A null cannot be observed.
+            public bool IsSerializedObservable => false;
+
             public IPocoType Nullable => this;
 
             public IPocoType NonNullable => _nonNullable;
@@ -184,6 +187,8 @@ namespace CK.Setup
             // For value type, a final type is always non nullable.
             public bool IsStructuralFinalType => false;
             public bool IsFinalType => false;
+            // A null cannot be observed.
+            public bool IsSerializedObservable => false;
 
             public IPocoType? StructuralFinalType => _nonNullable.StructuralFinalType;
 
@@ -365,7 +370,6 @@ namespace CK.Setup
             }
         }
 
-
         public bool IsFinalType => !ImplementationLess && IsStructuralFinalType;
 
         public IPocoType? FinalType => ImplementationLess ? null : StructuralFinalType;
@@ -381,6 +385,8 @@ namespace CK.Setup
         /// only ones to have their own final type.
         /// </summary>
         public virtual IPocoType? StructuralFinalType => _kind != PocoTypeKind.Any ? ObliviousType : null;
+
+        public bool IsSerializedObservable => IsRegular && (IsFinalType || Nullable.IsFinalType);
 
         /// <summary>
         /// All Basic types are allowed (DateTime and string are BasicTypeWithDefaultValue that

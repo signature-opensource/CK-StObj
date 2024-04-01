@@ -83,6 +83,12 @@ namespace CK.Setup
                                    "(and contraposition) !IsPolymorphic => StructuralFinalType != null.",
                                    _allTypes.All( t => t.IsPolymorphic || t.StructuralFinalType != null ) );
 
+                monitor.Info( _allTypes.Where( t => !t.IsRegular && (t.IsStructuralFinalType && (t is not ICollectionPocoType c || !c.IsAbstractCollection) ) )
+                                       .Select( t => $"{t} - {t.IsRegular}, {t.IsStructuralFinalType && (t is not ICollectionPocoType c || !c.IsAbstractCollection)}" )
+                                       .Concatenate( Environment.NewLine ) );
+                Throw.DebugAssert( "IsStructuralFinalType && !Abstract collection => IsRegularType",
+                                   _allTypes.All( t => !(t.IsStructuralFinalType && (t is not ICollectionPocoType c || !c.IsAbstractCollection)) || t.IsRegular ) );
+
                 var finalTypeBuilder = ImmutableArray.CreateBuilder<IPocoType>();
                 int initialCount = _nonNullableTypes.Count;
                 for( int i = 0; i < initialCount; i++ )

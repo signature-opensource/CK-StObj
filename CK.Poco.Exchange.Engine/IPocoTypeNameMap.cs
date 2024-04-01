@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace CK.Setup
 {
     /// <summary>
@@ -28,6 +30,11 @@ namespace CK.Setup
         /// <param name="type">The type.</param>
         /// <returns>The type name.</returns>
         string GetName( IPocoType type );
+
+        /// <summary>
+        /// Gets the <see cref="IPocoType.IsSerializedObservable"/> types from this <see cref="TypeSet"/>.
+        /// </summary>
+        IEnumerable<IPocoType> SerializedObservableTypes { get; }
 
         /// <summary>
         /// Clones this name map for another type set that can be a super or sub set.

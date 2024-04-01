@@ -233,6 +233,12 @@ namespace CK.Setup
         IPocoType? FinalType { get; }
 
         /// <summary>
+        /// Gets whether this type exists in its serializable form: it is non nullable, regular
+        /// and is either final or its nullable is final.
+        /// </summary>
+        bool IsSerializedObservable { get; }
+
+        /// <summary>
         /// Gets the nullable associated type (this if <see cref="IsNullable"/> is true).
         /// </summary>
         IPocoType Nullable { get; }
