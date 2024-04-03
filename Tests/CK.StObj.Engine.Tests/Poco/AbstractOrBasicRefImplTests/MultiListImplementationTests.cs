@@ -14,32 +14,42 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public interface IWithList : IPoco
         {
             object List { get; }
+            // Abstract read-only property that enables to check that a
+            // default non nullable List has been created.
+            object ConcreteList { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithReadOnlyList : IPoco
         {
             IReadOnlyList<IAbstractBase> List { get; }
+            // Abstract read-only property that enables to check that a
+            // default non nullable List has been created.
+            object ConcreteList { get; }
         }
 
         public interface IPocoWithListOfPrimary : IPoco, IWithList
         {
             new IList<IVerySimplePoco> List { get; }
+            new List<IVerySimplePoco> ConcreteList { get; set; }
         }
 
         public interface IPocoWithListOfSecondary : IPoco, IWithList, IWithReadOnlyList
         {
             new IList<ISecondaryVerySimplePoco> List { get; }
+            new List<ISecondaryVerySimplePoco> ConcreteList { get; set; }
         }
 
         public interface IPocoWithListOfOtherSecondary : IPoco, IWithList, IWithReadOnlyList
         {
             new IList<IOtherSecondaryVerySimplePoco> List { get; }
+            new List<IOtherSecondaryVerySimplePoco> ConcreteList { get; set; }
         }
 
         public interface IPocoWithListOfAbstract : IPoco, IWithList, IWithReadOnlyList
         {
             new IList<IAbstract2> List { get; }
+            new List<IAbstract2> ConcreteList { get; set; }
         }
 
         [TestCase( typeof( IPocoWithListOfPrimary ) )]
@@ -58,6 +68,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
             p.List.Should()
                 .BeAssignableTo<IReadOnlyList<object>>()
                 .And.BeAssignableTo<IReadOnlyList<IPoco>>();
+            p.ConcreteList.GetType().Name.Should().Be( "List`1" );
 
             if( type != typeof( IPocoWithListOfAbstract ) )
             {
@@ -85,7 +96,6 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
                 }
             }
         }
-
 
         public interface IPocoWithListOfAbstractBase : IPoco
         {

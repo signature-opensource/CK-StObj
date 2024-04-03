@@ -14,30 +14,34 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         public interface IWithDictionary : IPoco
         {
             object Dictionary { get; }
+            // Abstract read-only property that enables to check that a
+            // default non nullable Dictionary has been created.
+            object ConcreteDictionary { get; }
         }
 
         [CKTypeDefiner]
         public interface IWithReadOnlyDictionary : IPoco
         {
             IReadOnlyDictionary<int,IAbstractBase> Dictionary { get; }
+            object ConcreteDictionary { get; }
         }
 
         public interface IPocoWithDictionaryOfPrimary : IPoco, IWithDictionary
         {
             new IDictionary<int, IVerySimplePoco> Dictionary { get; }
-            Dictionary<int, IVerySimplePoco> ConcreteDictionary { get; set; }
+            new Dictionary<int, IVerySimplePoco> ConcreteDictionary { get; set; }
         }
 
         public interface IPocoWithDictionaryOfSecondary : IPoco, IWithDictionary, IWithReadOnlyDictionary
         {
             new IDictionary<int, ISecondaryVerySimplePoco> Dictionary { get; }
-            Dictionary<int, ISecondaryVerySimplePoco> ConcreteDictionary { get; set; }
+            new Dictionary<int, ISecondaryVerySimplePoco> ConcreteDictionary { get; set; }
         }
 
         public interface IPocoWithDictionaryOfOtherSecondary : IPoco, IWithDictionary, IWithReadOnlyDictionary
         {
             new IDictionary<int, IOtherSecondaryVerySimplePoco> Dictionary { get; }
-            Dictionary<int, IOtherSecondaryVerySimplePoco> ConcreteDictionary { get; set; }
+            new Dictionary<int, IOtherSecondaryVerySimplePoco> ConcreteDictionary { get; set; }
         }
 
         [TestCase( typeof( IPocoWithDictionaryOfPrimary ) )]
@@ -60,6 +64,7 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
                 .And.BeAssignableTo<IReadOnlyDictionary<int, IVerySimplePoco>>()
                 .And.BeAssignableTo<IReadOnlyDictionary<int, ISecondaryVerySimplePoco>>()
                 .And.BeAssignableTo<IReadOnlyDictionary<int, IOtherSecondaryVerySimplePoco>>();
+            p.ConcreteDictionary.GetType().Name.Should().Be( "Dictionary`2" );
 
             if( type != typeof( IPocoWithDictionaryOfPrimary ) )
             {
