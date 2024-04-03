@@ -56,6 +56,10 @@ namespace CK.Setup
 
             public override ISecondaryPocoType ObliviousType => Nullable;
 
+            public override string ImplTypeName => _primary.ImplTypeName;
+
+            public override IPocoType StructuralFinalType => _primary;
+
             // This conflicts (warning) with the nested PocoType.PrimaryPocoType class.
             // Using explicit implementation (could also have used new masking operator).
             IPrimaryPocoType ISecondaryPocoType.PrimaryPocoType => _primary;

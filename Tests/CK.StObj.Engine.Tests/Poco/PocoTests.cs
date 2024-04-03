@@ -257,6 +257,15 @@ namespace CK.StObj.Engine.Tests.Poco
             string SubBestMessage { get; set; }
         }
 
+        public interface IRootAbsoluteBestTest : IRootBestTest
+        {
+            new ISubBetterTest Sub { get; set; }
+        }
+
+        public interface IRootBuggyOtherFamily : IRootTest
+        {
+            new IDefBase Sub { get; set; }
+        }
 
         [Test]
         public void same_Poco_properties_can_be_of_any_type_as_long_as_they_belong_to_the_same_Poco_family()
@@ -300,16 +309,6 @@ namespace CK.StObj.Engine.Tests.Poco
                                                          typeof( IDefBase ) );
                 TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub': Type must be 'CK.StObj.Engine.Tests.Poco.PocoTests.ISubTest' since 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub' defines it." );
             }
-        }
-
-        public interface IRootAbsoluteBestTest : IRootBestTest
-        {
-            new ISubBetterTest Sub { get; set; }
-        }
-
-        public interface IRootBuggyOtherFamily : IRootTest
-        {
-            new IDefBase Sub { get; set; }
         }
 
 

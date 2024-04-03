@@ -10,6 +10,7 @@ using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.Poco.Exc.Json.Tests
 {
+
     [TestFixture]
     public partial class CollectionTests
     {
