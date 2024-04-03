@@ -158,7 +158,7 @@ namespace CK.Setup
                                                                      obliviousType: null,
                                                                      finalType: null,
                                                                      obliviousRegular,
-                                                                     nonSecondaryConcreteCollection?.ObliviousType ).Nullable;
+                                                                     nonSecondaryConcreteCollection?.ObliviousType.NonNullable ).Nullable;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }

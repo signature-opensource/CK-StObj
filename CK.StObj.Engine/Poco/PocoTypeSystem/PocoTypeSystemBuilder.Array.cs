@@ -45,7 +45,7 @@ namespace CK.Setup
                                                                      null,
                                                                      null,
                                                                      null,
-                                                                     nonSecondaryConcreteCollection?.ObliviousType ).Nullable;
+                                                                     nonSecondaryConcreteCollection?.ObliviousType.NonNullable ).Nullable;
                     _typeCache.Add( t, obliviousType );
                     _typeCache.Add( oName, obliviousType.NonNullable );
                 }

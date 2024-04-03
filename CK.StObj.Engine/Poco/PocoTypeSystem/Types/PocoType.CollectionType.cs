@@ -166,7 +166,8 @@ namespace CK.Setup
                                    regularType != null || itemType.IsRegular );
                 _regularType = regularType ?? this;
 
-                Throw.DebugAssert( nonSecondaryConcreteCollection == null || (itemType is ISecondaryPocoType sec && sec.PrimaryPocoType == nonSecondaryConcreteCollection.ItemTypes[0]) );
+                Throw.DebugAssert( nonSecondaryConcreteCollection == null
+                                    || (!nonSecondaryConcreteCollection.IsNullable && itemType is ISecondaryPocoType sec && sec.PrimaryPocoType == nonSecondaryConcreteCollection.ItemTypes[0]) );
                 Throw.DebugAssert( itemType is ISecondaryPocoType == (nonSecondaryConcreteCollection != null) );
                 _nonSecondaryConcreteCollection = nonSecondaryConcreteCollection ?? this;
 
@@ -417,7 +418,8 @@ namespace CK.Setup
                 _regularType = regularType ?? this;
 
                 Throw.DebugAssert( nonSecondaryConcreteCollection == null
-                                    || (valueType is ISecondaryPocoType sec
+                                    || (!nonSecondaryConcreteCollection.IsNullable
+                                        && valueType is ISecondaryPocoType sec
                                         && sec.PrimaryPocoType == nonSecondaryConcreteCollection.ItemTypes[1]
                                         && keyType == nonSecondaryConcreteCollection.ItemTypes[0]) );
                 Throw.DebugAssert( valueType is ISecondaryPocoType == (nonSecondaryConcreteCollection != null) );
