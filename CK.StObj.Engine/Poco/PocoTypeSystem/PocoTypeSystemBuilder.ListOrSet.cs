@@ -108,7 +108,8 @@ namespace CK.Setup
             ICollectionPocoType? regularCollection = null;
             if( tI is ISecondaryPocoType sec )
             {
-                nonSecondaryConcreteCollection = DoRegisterConcreteListOrSet( isList, t, listOrHashSet, sec.PrimaryPocoType, null, null );
+                var tListPrimary = (isList ? typeof(List<>) : typeof(HashSet<>) ).MakeGenericType( sec.PrimaryPocoType.Type );
+                nonSecondaryConcreteCollection = DoRegisterConcreteListOrSet( isList, tListPrimary, listOrHashSet, sec.PrimaryPocoType, null, null );
                 Throw.DebugAssert( sec.IsRegular );
             }
             else
@@ -118,6 +119,7 @@ namespace CK.Setup
                 IPocoType tIRegular = tI.RegularType;
                 if( tI != tIRegular )
                 {
+                    Throw.DebugAssert( "C# type is the same.", tI.Type == tIRegular.Type );
                     regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteListOrSet( isList, t, listOrHashSet, tIRegular, null, nonSecondaryConcreteCollection ) );
                 }
             }

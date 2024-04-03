@@ -34,6 +34,9 @@ namespace CK.StObj.Engine.Tests.Poco
         public List<IVerySimplePoco> ListPR = null!; 
         public List<IVerySimplePoco?> ListPNR = null!;// Oblivious
 
+        public List<ISecondaryVerySimplePoco> ListSecPR = null!;
+        public List<ISecondaryVerySimplePoco?> ListSecPNR = null!;// Oblivious
+
         public interface IProperListDefinition : IPoco
         {
             IList<int?> IListNV { get; }
@@ -86,9 +89,22 @@ namespace CK.StObj.Engine.Tests.Poco
                 ICollectionPocoType? tPINR = IList_PocoN( revert, ts, n );
                 // IList<IVerySimplePoco> (non oblivious, non final)
                 ICollectionPocoType? tPIR = IList_Poco( revert, ts, n, tPINR );
+
+                var nSec = typeof( ISecondaryVerySimplePoco ).ToCSharpName();
+                // List<ISecondaryVerySimplePoco?> (oblivious, final)
+                ICollectionPocoType? tSPRNR = List_SecPocoN( revert, ts, nSec );
+                // List<ISecondaryVerySimplePoco> (non oblivious, non final)
+                ICollectionPocoType? tSPRR = List_SecPoco( ts, nSec, tSPRNR );
+
             }
             else
             {
+                var nSec = typeof( ISecondaryVerySimplePoco ).ToCSharpName();
+                // List<ISecondaryVerySimplePoco (non oblivious, non final)
+                ICollectionPocoType? tSPRR = List_SecPoco( ts, nSec, null! );
+                // List<ISecondaryVerySimplePoco?> (oblivious, final)
+                ICollectionPocoType? tSPRNR = List_SecPocoN( revert, ts, nSec );
+
                 // List of Reference type but IVerySimplePoco.
                 var n = typeof( IVerySimplePoco ).ToCSharpName();
                 // IList<IVerySimplePoco> (non oblivious, non final)
@@ -100,6 +116,8 @@ namespace CK.StObj.Engine.Tests.Poco
                 // List<IVerySimplePoco?> (oblivious, final)
                 ICollectionPocoType? tPRNR = List_PocoN( revert, ts, n );
 
+                tSPRR.ObliviousType.Should().BeSameAs( tSPRNR.Nullable );
+                tSPRR.StructuralFinalType.Should().BeSameAs( tSPRNR.Nullable );
                 tPRR.ObliviousType.Should().BeSameAs( tPRNR.Nullable );
                 tPRR.StructuralFinalType.Should().BeSameAs( tPRNR.Nullable );
                 tPIR.ObliviousType.Should().BeSameAs( tPINR.Nullable );
@@ -256,6 +274,31 @@ namespace CK.StObj.Engine.Tests.Poco
                 }
                 return tIR;
             }
+
+            ICollectionPocoType List_SecPocoN( bool revert, IPocoTypeSystemBuilder ts, string n )
+            {
+                var tSPRNR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListSecPNR ) )! );
+                Debug.Assert( tSPRNR != null );
+                tSPRNR.IsOblivious.Should().BeFalse();
+                tSPRNR.CSharpName.Should().Be( $"List<{n}?>" );
+                tSPRNR.ImplTypeName.Should().Be( $"List<{n}?>" );
+                return tSPRNR;
+            }
+
+            ICollectionPocoType List_SecPoco( IPocoTypeSystemBuilder ts, string n, ICollectionPocoType tSPRNR )
+            {
+                var tSPRR = (ICollectionPocoType?)ts.Register( TestHelper.Monitor, GetType().GetField( nameof( ListSecPR ) )! );
+                Debug.Assert( tSPRR != null );
+                tSPRR.IsOblivious.Should().BeFalse();
+                tSPRR.CSharpName.Should().Be( $"List<{n}>" );
+                tSPRR.ImplTypeName.Should().Be( $"List<{n}?>" );
+                if( !revert )
+                {
+                    tSPRR.ObliviousType.Should().BeSameAs( tSPRNR.Nullable );
+                }
+                return tSPRR;
+            }
+
 
             ICollectionPocoType List_PocoN( bool revert, IPocoTypeSystemBuilder ts, string n )
             {

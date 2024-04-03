@@ -129,19 +129,24 @@ namespace CK.Setup
             IPocoType tKRegular = tK.RegularType;
             if( tV is ISecondaryPocoType sec )
             {
+                Throw.DebugAssert( "C# type is the same.", tK.Type == tKRegular.Type );
+                var tDicPrimary = typeof( Dictionary<,> ).MakeGenericType( tK.Type, sec.PrimaryPocoType.Type );
+
                 ICollectionPocoType? nsRegularCollection = null;
                 if( tK != tKRegular )
                 {
-                    nsRegularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, sec.PrimaryPocoType, null, null ) );
+                    nsRegularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( tDicPrimary, tKRegular, sec.PrimaryPocoType, null, null ) );
+
                     regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, tV, null, nsRegularCollection ) );
                 }
-                nonSecondaryConcreteCollection = DoRegisterConcreteDictionary( t, tK, sec.PrimaryPocoType, nsRegularCollection, null );
+                nonSecondaryConcreteCollection = DoRegisterConcreteDictionary( tDicPrimary, tK, sec.PrimaryPocoType, nsRegularCollection, null );
             }
             else
             {
                 IPocoType tVRegular = tV.RegularType;
                 if( tK != tKRegular || tV != tVRegular )
                 {
+                    Throw.DebugAssert( "C# types are the same.", tK.Type == tKRegular.Type && tV.Type == tVRegular.Type );
                     regularCollection = Unsafe.As<ICollectionPocoType>( DoRegisterConcreteDictionary( t, tKRegular, tVRegular, null, null ) );
                 }
             }
