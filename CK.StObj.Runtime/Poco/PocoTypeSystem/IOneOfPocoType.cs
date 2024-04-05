@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace CK.Setup
 {
     /// <summary>
-    /// Union type of a given <typeparamref name="T"/> Poco type.
+    /// Union type of Poco type.
     /// This applies to <see cref="IAbstractPocoType"/> and <see cref="IUnionPocoType"/>.
     /// </summary>
     public interface IOneOfPocoType : IPocoType

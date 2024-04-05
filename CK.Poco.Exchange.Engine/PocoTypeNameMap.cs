@@ -12,8 +12,8 @@ namespace CK.Setup
     /// <list type="bullet">
     ///   <item>
     ///   For <see cref="PocoTypeKind.Basic"/>, <see cref="PocoTypeKind.Any"/>, <see cref="PocoTypeKind.AbstractPoco"/> and
-    ///   <see cref="PocoTypeKind.SecondaryPoco"/> it defaults to the <see cref="CSharpName"/> ("object, "int", "CK.Cris.ICommand", etc.).
-    ///   This can be changed by overriding <see cref="MakeCSharpName"/>.
+    ///   <see cref="PocoTypeKind.SecondaryPoco"/> it defaults to the <see cref="IPocoType.CSharpName"/> or <see cref="INamedPocoType.ExternalName"/>
+    ///   ("object, "int", "CK.Cris.ICommand", etc.). This can be changed by overriding <see cref="MakeCSharpName"/>.
     ///   </item>
     ///   <item>
     ///   For <see cref="PocoTypeKind.AnonymousRecord"/> it is "(T1,T2,T3:Name,T4,...)". The ":Name" only appears when named field has a name.
@@ -164,7 +164,7 @@ namespace CK.Setup
         /// <summary>
         /// Makes a name for a <see cref="INamedPocoType"/>.
         /// </summary>
-        /// <param name="t">The non nullable named type.</param>
+        /// <param name="namedType">The non nullable named type.</param>
         /// <param name="name">Name for the non nullable type.</param>
         /// <param name="nullableName">Name for the nullable type.</param>
         protected virtual void MakeNamedType( INamedPocoType namedType, out string name, out string nullableName )
@@ -177,6 +177,7 @@ namespace CK.Setup
         /// Makes a name for a <see cref="IUnionPocoType"/>.
         /// </summary>
         /// <param name="t">The non nullable union type.</param>
+        /// <param name="allowedTypes">The allowed types filtered by the <see cref="TypeSet"/>.</param>
         /// <param name="name">Name for the non nullable type.</param>
         /// <param name="nullableName">Name for the nullable type.</param>
         protected virtual void MakeUnionType( IUnionPocoType t, IEnumerable<IPocoType> allowedTypes, out string name, out string nullableName )

@@ -7,7 +7,6 @@ namespace CK.Core
     /// Enables a Poco type to explicitly register a Poco compliant type that is not
     /// necessarily reachable from any <see cref="IPoco"/>.
     /// </summary>
-    /// <typeparam name="T">The type to register.</typeparam>
     [AttributeUsage( AttributeTargets.Class|AttributeTargets.Interface|AttributeTargets.Struct|AttributeTargets.Enum, AllowMultiple = true )]
     public sealed class RegisterPocoTypeAttribute : Attribute, IAttributeContextBound
     {

@@ -17,7 +17,6 @@ namespace CK.Testing
     public class StObjSetupTestHelper : IStObjSetupTestHelperCore, ITestHelperResolvedCallback
     {
         readonly ICKSetupTestHelper _ckSetup;
-        readonly IStObjMapTestHelper _stObjMap;
         IStObjSetupTestHelper? _mixin;
         EventHandler<StObjSetupRunningEventArgs>? _stObjSetupRunning;
         bool _generateSourceFiles;
@@ -27,7 +26,6 @@ namespace CK.Testing
         internal StObjSetupTestHelper( TestHelperConfiguration config, ICKSetupTestHelper ckSetup, IStObjMapTestHelper stObjMap )
         {
             _ckSetup = ckSetup;
-            _stObjMap = stObjMap;
             stObjMap.StObjMapLoading += OnStObjMapLoading;
 
             _generateSourceFiles = config.DeclareBoolean( "StObjSetup/StObjGenerateSourceFiles",
@@ -55,6 +53,7 @@ namespace CK.Testing
         /// Low level helper that initializes a new <see cref="StObjEngineConfiguration"/> and computes the force setup flag
         /// that can be used by other helpers that need to run a setup.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="helper">The <see cref="IStObjSetupTestHelper"/> helper.</param>
         /// <returns>The configuration and the flag.</returns>
         static public (StObjEngineConfiguration Configuration, ForceSetupLevel ForceSetup) CreateDefaultConfiguration( IActivityMonitor monitor,
@@ -118,8 +117,10 @@ namespace CK.Testing
                 {
                     var ev = new StObjSetupRunningEventArgs( stObjConf, forceSetup );
                     _stObjSetupRunning?.Invoke( this, ev );
-                    var ckSetupConf = new SetupConfiguration( new XDocument( ev.StObjEngineConfiguration.ToXml() ), "CK.Setup.StObjEngine, CK.StObj.Engine" );
-                    ckSetupConf.CKSetupName = _ckSetup.TestProjectName;
+                    var ckSetupConf = new SetupConfiguration( new XDocument( ev.StObjEngineConfiguration.ToXml() ), "CK.Setup.StObjEngine, CK.StObj.Engine" )
+                    {
+                        CKSetupName = _ckSetup.TestProjectName
+                    };
                     return _ckSetup.CKSetup.Run( ckSetupConf, forceSetup: ev.ForceSetup );
                 }
                 catch( Exception ex )

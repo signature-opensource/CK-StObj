@@ -91,6 +91,7 @@ namespace CK.Setup
         /// is thrown.
         /// </para>
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="embeddedIfPossible">
         /// False to skip an available map and load it from the generated assembly.
         /// By default, the map is searched in available ones before loading the assembly.
@@ -107,6 +108,7 @@ namespace CK.Setup
         /// is thrown.
         /// </para>
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="embeddedIfPossible">
         /// False to skip an available map and load it from the generated assembly.
         /// By default, the map is searched in available ones before loading the assembly.

@@ -12,6 +12,7 @@ namespace CK.Setup
     /// </summary>
     public sealed class EndpointUbiquitousInfoImpl : CSCodeGeneratorType
     {
+        /// <inheritdoc />
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
             Debug.Assert( scope.FullName == "CK.Core.EndpointUbiquitousInfo_CK" );

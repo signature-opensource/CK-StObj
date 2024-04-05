@@ -36,7 +36,6 @@ namespace CK.Setup
         /// <summary>
         /// Initializes a new <see cref="CKTypeCollector"/> instance.
         /// </summary>
-        /// <param name="monitor">The monitor to use.</param>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
         /// <param name="tempAssembly">The temporary <see cref="IDynamicAssembly"/>.</param>
         /// <param name="typeFilter">Optional type filter.</param>
@@ -205,6 +204,7 @@ namespace CK.Setup
         /// Registers an assembly for which at least one type has been handled.
         /// This is required for code generation: such assemblies are dependencies.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The registered type.</param>
         public void RegisterAssembly( IActivityMonitor monitor, Type t )
         {

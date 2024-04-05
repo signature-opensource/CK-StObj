@@ -240,11 +240,11 @@ namespace CK.Setup
 
         }
 
-        protected PocoType( PocoTypeSystemBuilder s,
-                            Type notNullable,
-                            string csharpName,
-                            PocoTypeKind kind,
-                            Func<PocoType, IPocoType> nullFactory )
+        private protected PocoType( PocoTypeSystemBuilder s,
+                                    Type notNullable,
+                                    string csharpName,
+                                    PocoTypeKind kind,
+                                    Func<PocoType, IPocoType> nullFactory )
         {
             Throw.DebugAssert( !notNullable.IsValueType || System.Nullable.GetUnderlyingType( notNullable ) == null );
             Throw.DebugAssert( !csharpName.EndsWith( '?' ) );
@@ -258,14 +258,19 @@ namespace CK.Setup
             s.AddNew( this );
         }
 
+        /// <inheritdoc/>
         public int Index => _index;
 
+        /// <inheritdoc/>
         public Type Type => _type;
 
+        /// <inheritdoc/>
         public PocoTypeKind Kind => _kind;
 
+        /// <inheritdoc/>
         public bool IsNullable => false;
 
+        /// <inheritdoc/>
         public string CSharpName => _csharpName;
 
         /// <summary>
@@ -296,7 +301,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Overridden by <see cref="BasicRefType"/> (true for Extended and NormalizedCultureInfo),
-        /// <see cref="RecordNamedType"/> and <see cref="RecordAnonType"/> (true if <see cref="IRecordPocoType.IsReadOnlyCompliant"/>).
+        /// <see cref="RecordNamedType.IsReadOnlyCompliant"/> and <see cref="RecordAnonType.IsReadOnlyCompliant"/>.
         /// </summary>
         public virtual bool IsReadOnlyCompliant => _kind == PocoTypeKind.Basic;
 
@@ -321,7 +326,7 @@ namespace CK.Setup
             }
         }
 
-        protected virtual void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+        private protected virtual void OnBackRefImplementationLess( IPocoType.ITypeRef r )
         {
             Throw.DebugAssert( ImplementationLess is false );
             Throw.DebugAssert( "These type must override.",
@@ -339,6 +344,7 @@ namespace CK.Setup
         /// </summary>
         public virtual bool IsPolymorphic => _kind is PocoTypeKind.Any or PocoTypeKind.AbstractPoco or PocoTypeKind.UnionType;
 
+        /// <inheritdoc/>
         public bool IsOblivious => ObliviousType == this;
 
         /// <summary>
@@ -359,8 +365,10 @@ namespace CK.Setup
             }
         }
 
+        /// <inheritdoc/>
         public bool IsRegular => RegularType == this;
 
+        /// <inheritdoc/>
         public virtual IPocoType? RegularType
         {
             get
@@ -370,10 +378,13 @@ namespace CK.Setup
             }
         }
 
+        /// <inheritdoc/>
         public bool IsFinalType => !ImplementationLess && IsStructuralFinalType;
 
+        /// <inheritdoc/>
         public IPocoType? FinalType => ImplementationLess ? null : StructuralFinalType;
 
+        /// <inheritdoc/>
         public bool IsStructuralFinalType => StructuralFinalType == this;
 
         /// <summary>
@@ -386,6 +397,7 @@ namespace CK.Setup
         /// </summary>
         public virtual IPocoType? StructuralFinalType => _kind != PocoTypeKind.Any ? ObliviousType : null;
 
+        /// <inheritdoc/>
         public bool IsSerializedObservable => IsRegular && (IsFinalType || Nullable.IsFinalType);
 
         /// <summary>
@@ -416,10 +428,13 @@ namespace CK.Setup
             }
         }
 
+        /// <inheritdoc/>
         public IPocoType Nullable => _nullable;
 
+        /// <inheritdoc/>
         public IPocoType NonNullable => this;
 
+        /// <inheritdoc/>
         public IPocoType.ITypeRef? FirstBackReference => _firstRef;
 
         internal IPocoType.ITypeRef? AddBackRef( IPocoType.ITypeRef r )
@@ -430,6 +445,7 @@ namespace CK.Setup
             return f;
         }
 
+        /// <inheritdoc/>
         public bool IsSamePocoType( IPocoType type ) => IsSamePocoType( this, type );
 
         static bool IsSamePocoType( IPocoType t1, IPocoType t2 )
@@ -455,24 +471,36 @@ namespace CK.Setup
             return type.Kind == PocoTypeKind.Any || type.NonNullable == this || type.Type.IsAssignableFrom( Type );
         }
 
+        /// <inheritdoc/>
         public virtual bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
 
         static string ToString( IPocoType t ) => $"[{t.Kind}]{t.CSharpName}";
 
+        /// <summary>
+        /// Overridden to return [Kind]CSharpName.
+        /// </summary>
+        /// <returns>The kind and type.</returns>
         public override sealed string ToString() => ToString( this );
 
+        /// <inheritdoc/>
         public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
 
+        /// <inheritdoc/>
         public object? Annotation( Type type ) => _annotations.Annotation( type );
 
+        /// <inheritdoc/>
         public T? Annotation<T>() where T : class => _annotations.Annotation<T>();
 
+        /// <inheritdoc/>
         public IEnumerable<object> Annotations( Type type ) => _annotations.Annotations( type );
 
+        /// <inheritdoc/>
         public IEnumerable<T> Annotations<T>() where T : class => _annotations.Annotations<T>();
 
+        /// <inheritdoc/>
         public void RemoveAnnotations( Type type ) => _annotations.RemoveAnnotations( type );
 
+        /// <inheritdoc/>
         public void RemoveAnnotations<T>() where T : class => _annotations.RemoveAnnotations<T>();
 
     }

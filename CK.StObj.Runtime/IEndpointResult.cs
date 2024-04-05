@@ -11,7 +11,7 @@ namespace CK.Setup
     public interface IEndpointResult
     {
         /// <summary>
-        /// Gets all the <see cref="EndpointContext"/>. The first one is the <see cref="DefaultEndpointContext"/>.
+        /// Gets all the <see cref="IEndpointContext"/>.
         /// </summary>
         IReadOnlyList<IEndpointContext> EndpointContexts { get; }
 
@@ -27,8 +27,8 @@ namespace CK.Setup
 
         /// <summary>
         /// Lists all the ubiquitous service types where <see cref="IAutoService"/> inheritance chains
-        /// are expanded. See <see cref="UbiquitousMapping"/>. Order matters: consecutive entries with
-        /// the same <see cref="UbiquitousMapping.MappingIndex"/> belong to the same auto service inheritance
+        /// are expanded. See <see cref="EndpointTypeManager.UbiquitousMapping"/>. Order matters: consecutive entries with
+        /// the same <see cref="EndpointTypeManager.UbiquitousMapping.MappingIndex"/> belong to the same auto service inheritance
         /// chain.
         /// </summary>
         IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings { get; }

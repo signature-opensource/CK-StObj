@@ -5,7 +5,7 @@ using System.Text;
 namespace CK.Setup
 {
     /// <summary>
-    /// Extends <see cref="IDynamicAssembly.Memory"/> or <see cref="ICodeGenerationContext.GlobalMemory"/> with helpers.
+    /// Extends <see cref="IDynamicAssembly.Memory"/> or <see cref="IGeneratedBinPath.Memory"/> with helpers.
     /// </summary>
     public static class DictionaryMemoryExtension
     {

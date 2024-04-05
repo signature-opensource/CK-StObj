@@ -24,7 +24,7 @@ namespace CK.Setup
         /// but this is not required. Name is usually also unique.
         /// <para>
         /// What should be enforced by the implementations is that the type must be an element of
-        /// the <see cref="TypeSet"/> otherwise an <see cref="ArgumentException"/> must be thrown.
+        /// the <see cref="TypeSet"/> otherwise a <see cref="System.ArgumentException"/> must be thrown.
         /// </para>
         /// </summary>
         /// <param name="type">The type.</param>

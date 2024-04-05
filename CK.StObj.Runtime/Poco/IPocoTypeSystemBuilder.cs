@@ -28,9 +28,8 @@ namespace CK.Setup
         /// <para>
         /// Notably, collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c> and their IReadOnly)
         /// cannot be found by this method. 
-        /// <para>
-        /// This can find only the <see cref="IPocoType.IsOblivious"/> types and <see cref="ISecondaryPocoType"/> types.
         /// </para>
+        /// This can find only the <see cref="IPocoType.IsOblivious"/> types and <see cref="ISecondaryPocoType"/> types.
         /// </summary>
         /// <param name="type">The type to find.</param>
         /// <returns>The Poco type or null.</returns>
@@ -42,9 +41,8 @@ namespace CK.Setup
         /// <para>
         /// Notably, collection abstractions (<c>IList&lt;T&gt;</c>, <c>ISet&lt;T&gt;</c>, <c>IDictionary&lt;TKey,TValue&gt;</c> and their IReadOnly)
         /// cannot be found by this method. 
-        /// <para>
-        /// This can find only the <see cref="IPocoType.IsOblivious"/> types and <see cref="ISecondaryPocoType"/> types.
         /// </para>
+        /// This can find only the <see cref="IPocoType.IsOblivious"/> types and <see cref="ISecondaryPocoType"/> types.
         /// </summary>
         /// <typeparam name="T">The expected <see cref="IPocoType"/>.</typeparam>
         /// <param name="type">The type to find.</param>
@@ -55,7 +53,7 @@ namespace CK.Setup
         /// Finds an open generic definition of <see cref="IAbstractPocoType"/>.
         /// The type must be used by at least one <see cref="IPocoGenericTypeDefinition.Instances"/>.
         /// </summary>
-        /// <param name="type">Type to find. Must be an open generic type (<c>typeof( ICommand<> )</c>).</param>
+        /// <param name="type">Type to find. Must be an open generic type (like <c>typeof( ICommand&lt;&gt; )</c>).</param>
         /// <returns>The type definition or null.</returns>
         IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type );
 
@@ -83,7 +81,6 @@ namespace CK.Setup
         /// <summary>
         /// Forbids a type to be exchangeable. This is the same as using the <see cref="NotExchangeableAttribute"/>
         /// on the type except that this can be called on anonymous records and even basic types.
-        /// </para>
         /// <para>
         /// If <paramref name="type"/> is a <see cref="PocoTypeKind.SecondaryPoco"/> this makes its <see cref="IPrimaryPocoType"/>
         /// not exchangeable. Similarly, a <see cref="IAbstractPocoType"/> applies to all its <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.
@@ -96,7 +93,6 @@ namespace CK.Setup
         /// <summary>
         /// Forbids a type to be serializable. This is the same as using the <see cref="NotSerializableAttribute"/>
         /// on the type except that this can be called with anonymous records and even basic types.
-        /// </para>
         /// <para>
         /// If <paramref name="type"/> is a <see cref="PocoTypeKind.SecondaryPoco"/> this makes its <see cref="IPrimaryPocoType"/>
         /// not serializable. Similarly, a <see cref="IAbstractPocoType"/> applies to all its <see cref="IAbstractPocoType.PrimaryPocoTypes"/>.

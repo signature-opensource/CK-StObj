@@ -37,6 +37,7 @@ namespace CK.Core
         /// </code>
         /// </summary>
         /// <param name="services">Container to configure.</param>
+        /// <param name="scopeData">Accessor to the current scoped data.</param>
         /// <param name="globalServiceExists">Provides a way to detect if a service is available.</param>
         public abstract void ConfigureEndpointServices( IServiceCollection services,
                                                         Func<IServiceProvider,TScopeData> scopeData,     

@@ -1,5 +1,8 @@
-﻿namespace CK.Setup
+namespace CK.Setup
 {
+    /// <summary>
+    /// Extends <see cref="IExtMemberInfo"/>.
+    /// </summary>
     public interface IExtTypeInfo : IExtMemberInfo
     {
         /// <summary>

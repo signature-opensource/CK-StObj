@@ -211,7 +211,7 @@ namespace CK.Setup
                 base.SetImplementationLess();
             }
 
-            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            private protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
             {
                 Throw.DebugAssert( r.Owner == this && r.Type == ItemTypes[0] || r.Type == _obliviousType );
                 if( !_implementationLess ) SetImplementationLess();
@@ -334,7 +334,7 @@ namespace CK.Setup
 
             public override bool ImplementationLess => _concreteCollection.ImplementationLess;
 
-            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            private protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
             {
                 Throw.DebugAssert( r.Owner == this && r.Type == _concreteCollection || r.Type == _obliviousType );
                 // Don't challenge _concreteCollection.ImplementationLess here because it is alreay true: always
@@ -466,7 +466,7 @@ namespace CK.Setup
                 base.SetImplementationLess();
             }
 
-            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            private protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
             {
                 Throw.DebugAssert( r.Owner == this && (r.Type == ItemTypes[0] || r.Type == ItemTypes[1] || r.Type == _obliviousType) );
                 if( !_implementationLess ) SetImplementationLess();

@@ -62,8 +62,10 @@ namespace CK.Setup
             _typeCache = new Dictionary<object, IPocoType>( 8192 );
         }
 
+        /// <inheritdoc/>
         public bool IsLocked => _result != null;
 
+        /// <inheritdoc/>
         public IPocoTypeSystem Lock( IActivityMonitor monitor )
         {
             if( _result == null )
@@ -117,10 +119,13 @@ namespace CK.Setup
             return _result;
         }
 
+        /// <inheritdoc/>
         public IPocoDirectory PocoDirectory => _pocoDirectory;
 
+        /// <inheritdoc/>
         public int Count => _nonNullableTypes.Count << 1;
 
+        /// <inheritdoc/>
         public IReadOnlyCollection<IPocoRequiredSupportType> RequiredSupportTypes => _requiredSupportTypes.Values;
 
         internal void AddNew( PocoType t )
@@ -131,21 +136,25 @@ namespace CK.Setup
             _nonNullableTypes.Add( t );
         }
 
+        /// <inheritdoc/>
         public IPocoType? FindByType( Type type )
         {
             return _typeCache.GetValueOrDefault( type );
         }
 
+        /// <inheritdoc/>
         public T? FindByType<T>( Type type ) where T : class, IPocoType
         {
             return _typeCache.GetValueOrDefault( type ) as T;
         }
 
+        /// <inheritdoc/>
         public IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type )
         {
             return _typeDefinitions.GetValueOrDefault( type );
         }
 
+        /// <inheritdoc/>
         public void SetNotSerializable( IActivityMonitor monitor, IPocoType type )
         {
             Throw.CheckState( !IsLocked );
@@ -161,6 +170,7 @@ namespace CK.Setup
             _notSerializable.Add( type.NonNullable );
         }
 
+        /// <inheritdoc/>
         public void SetNotExchangeable( IActivityMonitor monitor, IPocoType type )
         {
             Throw.CheckState( !IsLocked );
@@ -190,14 +200,19 @@ namespace CK.Setup
             }
         }
 
+        /// <inheritdoc/>
         public IPocoType? RegisterOblivious( IActivityMonitor monitor, Type t ) => Register( monitor, _memberInfoFactory.CreateNullOblivious( t ) );
 
+        /// <inheritdoc/>
         public IPocoType? Register( IActivityMonitor monitor, PropertyInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
+        /// <inheritdoc/>
         public IPocoType? Register( IActivityMonitor monitor, FieldInfo f ) => Register( monitor, _memberInfoFactory.Create( f ) );
 
+        /// <inheritdoc/>
         public IPocoType? Register( IActivityMonitor monitor, ParameterInfo p ) => Register( monitor, _memberInfoFactory.Create( p ) );
 
+        /// <inheritdoc/>
         public IPocoType? Register( IActivityMonitor monitor, IExtMemberInfo memberInfo )
         {
             Throw.CheckState( !IsLocked );

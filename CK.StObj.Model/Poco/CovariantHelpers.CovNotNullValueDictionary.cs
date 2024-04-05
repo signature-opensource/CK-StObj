@@ -3,6 +3,9 @@ using System.Linq;
 
 namespace CK.Core
 {
+    /// <summary>
+    /// Defines covariant collection types.
+    /// </summary>
     public static partial class CovariantHelpers
     {
         /// <summary>

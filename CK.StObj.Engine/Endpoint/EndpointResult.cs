@@ -13,7 +13,7 @@ namespace CK.Setup
 {
     /// <summary>
     /// Captures the information about endpoint services: this is a reverse index of the
-    /// <see cref="CKTypeEndpointServiceInfo"/> based on existing <see cref="EndpointDefinition"/>.
+    /// <see cref="EndpointContext"/> based on existing <see cref="EndpointDefinition"/>.
     /// </summary>
     public sealed class EndpointResult : IEndpointResult
     {
@@ -35,6 +35,7 @@ namespace CK.Setup
         /// <inheritdoc />
         public IReadOnlyList<EndpointTypeManager.UbiquitousMapping> UbiquitousMappings => _ubiquitousMappings;
 
+        /// <inheritdoc />
         public IReadOnlyList<IEndpointResult.UbiquitousDefault> DefaultUbiquitousValueProviders => _ubiquitousDefaults;
 
         EndpointResult( IReadOnlyList<EndpointContext> contexts,

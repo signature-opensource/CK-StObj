@@ -4,10 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CK.Setup.PocoJson
 {
-
+    /// <summary>
+    /// Implements CK.Poco.Exc.JsonGen.Exporter and Importer static classes.
+    /// </summary>
     public sealed class CommonImpl : ICSCodeGenerator
     {
-        public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext ctx )
+        CSCodeGenerationResult ICSCodeGenerator.Implement( IActivityMonitor monitor, ICSCodeGenerationContext ctx )
         {
             // We can skip any serialization code generation if this run in the Pure Unified.
             if( ctx.CurrentRun.ConfigurationGroup.IsUnifiedPure )

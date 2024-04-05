@@ -1,9 +1,11 @@
 using CK.Core;
 using System;
-using System.Collections.Generic;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Defines a endpoint.
+    /// </summary>
     public interface IEndpointContext
     {
         /// <summary>

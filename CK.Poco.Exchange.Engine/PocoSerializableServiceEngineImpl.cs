@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    public sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGenerator, IPocoSerializationServiceEngine
+    sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGenerator, IPocoSerializationServiceEngine
     {
         ITypeScope? _pocoDirectory;
         IPocoTypeSystem? _pocoTypeSystem;
@@ -16,6 +16,10 @@ namespace CK.Setup
         ITypeScopePart? _filterPart;
         List<(string, IPocoTypeSet)>? _registeredFilters;
 
+        /// <inheritdoc />
+        /// <remarks>
+        /// Starting point that creates the PocoDirectory_CK type and then <see cref="WaitForLockedTypeSystem"/>.
+        /// </remarks>
         public CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext c )
         {
             _pocoDirectory = c.Assembly.Code.Global.FindOrCreateAutoImplementedClass( monitor, typeof( PocoDirectory ) );
@@ -73,6 +77,7 @@ namespace CK.Setup
 
         string IPocoSerializationServiceEngine.GetExchangeableRuntimeFilterStaticFunctionName => _getExchangeableRuntimeFilterFuncName!;
 
+        /// <inheritdoc/>
         public bool RegisterExchangeableRuntimeFilter( IActivityMonitor monitor, string name, IPocoTypeSet typeSet )
         {
             Throw.CheckNotNullOrWhiteSpaceArgument( name );

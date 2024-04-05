@@ -8,25 +8,51 @@ namespace CK.Core
     /// <summary>
     /// Helper scoped service that captures all the ubiquitous information services from a current
     /// service provider so they can be overridden and marshalled to other <see cref="IEndpointType{TScopeData}"/>
-    /// containers through the <see cref="EndpointDefinition.ScopedData"/>.
+    /// containers through their <see cref="EndpointDefinition.IScopedData"/>.
     /// </summary>
     [Setup.ContextBoundDelegation( "CK.Setup.EndpointUbiquitousInfoImpl, CK.StObj.Engine" )]
     public abstract class EndpointUbiquitousInfo : IScopedAutoService
     {
+        /// <summary>
+        /// Used by generated code.
+        /// </summary>
         protected struct Mapper
         {
+            /// <summary>
+            /// Initial service instance.
+            /// </summary>
             public readonly object Initial;
+
+            /// <summary>
+            /// Current service instance.
+            /// </summary>
             public object Current;
+
+            /// <summary>
+            /// Gets whether current has changed.
+            /// </summary>
             public readonly bool IsDirty => Initial != Current;
 
+            /// <summary>
+            /// Initializes a new mapper.
+            /// </summary>
+            /// <param name="initial">The initial and current service.</param>
             public Mapper( object initial )
             {
                 Initial = initial;
                 Current = initial;
             }
         }
+
+        /// <summary>
+        /// Used by generated code.
+        /// </summary>
         [AllowNull]
         protected static EndpointTypeManager.UbiquitousMapping[] _entries;
+
+        /// <summary>
+        /// Used by generated code.
+        /// </summary>
         protected readonly Mapper[] _mappers;
         bool _locked;
 
@@ -123,7 +149,6 @@ namespace CK.Core
             Throw.CheckArgument( type.IsAssignableFrom( instance.GetType() ) );
             DoOverride( type, instance );
         }
-
 
         /// <summary>
         /// Code generated.

@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1822 // Mark members as static
+
 namespace CK.StObj.Engine.Tests.Poco
 {
     [TestFixture]
@@ -220,6 +222,7 @@ namespace CK.StObj.Engine.Tests.Poco
             nncod.GenericTypeArguments[0].IsNullable.Should().BeTrue( "No surprise." );
         }
 
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
         // A boxed nullable value type don't exist unless awful tricks are applied.
         [Test]
         public void object_reference_cannot_hold_a_nullable_value_type()
@@ -235,5 +238,6 @@ namespace CK.StObj.Engine.Tests.Poco
             o.Should().BeNull();
 
         }
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
     }
 }

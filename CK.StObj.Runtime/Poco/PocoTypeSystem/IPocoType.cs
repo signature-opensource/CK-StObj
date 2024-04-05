@@ -12,7 +12,7 @@ namespace CK.Setup
     {
         /// <summary>
         /// Compact index that uniquely identifies this type
-        /// in the <see cref="IPocoTypeSystemBuilder.AllTypes"/> list.
+        /// in the <see cref="IPocoTypeSystem.AllTypes"/> list.
         /// </summary>
         int Index { get; }
 
@@ -240,7 +240,7 @@ namespace CK.Setup
         /// There is no <c>SerializedObservableType</c> and this is intended as it would introduce an ambiguity
         /// regarding the final type that will be selected for abstract collection (<see cref="ICollectionPocoType.IsAbstractCollection"/>):
         /// the final type of an abstract collection is itself when the collection is implemented by an adapter, but this final type is
-        /// not observable in the serialization, it is it's <see cref="Regular"/> associated collection that is observable.
+        /// not observable in the serialization, it is it's <see cref="RegularType"/> associated collection that is observable.
         /// </para>
         /// <para>
         /// To obtain the "serialized observable" type, one can always use <c>Regular?.FinalType?.NonNullable</c>. 

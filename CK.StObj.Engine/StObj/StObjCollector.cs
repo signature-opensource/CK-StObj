@@ -29,8 +29,8 @@ namespace CK.Setup
         /// Initializes a new <see cref="StObjCollector"/>.
         /// </summary>
         /// <param name="serviceProvider">Service provider used for attribute constructor injection. Must not be null.</param>
-        /// <param name="traceDependencySorterInput">True to trace in <paramref name="monitor"/> the input of dependency graph.</param>
-        /// <param name="traceDependencySorterOutput">True to trace in <paramref name="monitor"/> the sorted dependency graph.</param>
+        /// <param name="traceDependencySorterInput">True to trace the input of dependency graph.</param>
+        /// <param name="traceDependencySorterOutput">True to trace the sorted dependency graph.</param>
         /// <param name="typeFilter">Optional type filter.</param>
         /// <param name="configurator">Used to configure items. See <see cref="IStObjStructuralConfigurator"/>.</param>
         /// <param name="valueResolver">
@@ -71,15 +71,15 @@ namespace CK.Setup
         /// <summary>
         /// Sets <see cref="AutoServiceKind"/> combination (that must not be <see cref="AutoServiceKind.None"/>.
         /// <para>
-        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits mus be set
-        /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>) an the type
-        /// is registered as an endpoint service in the <see cref="DefaultEndpointDefinition"/>.
+        /// If the <see cref="AutoServiceKind.IsEndpointService"/> bit set, one of the lifetime bits must be set
+        /// (<see cref="AutoServiceKind.IsScoped"/> xor <see cref="AutoServiceKind.IsSingleton"/>).
         /// </para>
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
         /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
         /// </para>
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="type">The type to register.</param>
         /// <param name="kind">The kind of service. Must not be <see cref="AutoServiceKind.None"/>.</param>
         /// <returns>True on success, false on error.</returns>
@@ -104,6 +104,7 @@ namespace CK.Setup
         /// Can be called multiple times as long as no contradictory registration already exists (for instance, a <see cref="IRealObject"/>
         /// cannot be a Front service).
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeName">The assembly qualified type name to register.</param>
         /// <param name="kind">The kind of service. Can be <see cref="AutoServiceKind.None"/> (nothing is done except the type resolution).</param>
         /// <param name="isOptional">True to warn if the type is not found instead of logging an error and returning false.</param>
@@ -130,8 +131,9 @@ namespace CK.Setup
         /// <summary>
         /// Registers types from multiple assemblies.
         /// Only classes and IPoco interfaces are considered.
-        /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
+        /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="assemblyNames">The assembly names to register.</param>
         /// <returns>The number of new discovered classes.</returns>
         public int RegisterAssemblyTypes( IActivityMonitor monitor, IReadOnlyCollection<string> assemblyNames )
@@ -171,8 +173,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Registers a type that may be a CK type (<see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>).
-        /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
+        /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">Type to register. Must not be null.</param>
         public void RegisterType( IActivityMonitor monitor, Type t )
         {
@@ -190,8 +193,9 @@ namespace CK.Setup
 
         /// <summary>
         /// Explicitly registers a set of CK types (<see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>).
-        /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
+        /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="types">Types to register.</param>
         public void RegisterTypes( IActivityMonitor monitor, IReadOnlyCollection<Type> types )
         {
@@ -204,8 +208,9 @@ namespace CK.Setup
         /// <summary>
         /// Explicitly registers a set of CK types (<see cref="IPoco"/>, <see cref="IAutoService"/> or <see cref="IRealObject"/>) by their
         /// assembly qualified names.
-        /// Once the first type is registered, no more call to <see cref="SetAutoServiceKind(Type, AutoServiceKind)"/> is allowed.
+        /// Once the first type is registered, no more call to SetAutoServiceKind methods is allowed.
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="typeNames">Assembly qualified names of the types to register.</param>
         public void RegisterTypes( IActivityMonitor monitor, IReadOnlyCollection<string> typeNames )
         {
@@ -269,7 +274,7 @@ namespace CK.Setup
         /// <summary>
         /// Builds and returns a <see cref="StObjCollectorResult"/> if no error occurred during type registration.
         /// On error, <see cref="StObjCollectorResult.HasFatalError"/> is true and this result should be discarded.
-        /// If <see cref="RegisteringFatalOrErrorCount"/> is not equal to 0, this throws a <see cref="InvalidOperationException"/>.
+        /// If there are <see cref="FatalOrErrors"/>, this throws a <see cref="InvalidOperationException"/>.
         /// </summary>
         /// <returns>The result.</returns>
         public StObjCollectorResult GetResult( IActivityMonitor monitor )

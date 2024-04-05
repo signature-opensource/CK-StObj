@@ -83,6 +83,10 @@ namespace CK.Setup
         /// </summary>
         public IPocoFieldDefaultValue? DefaultValue => _def;
 
+        /// <summary>
+        /// Overridden to return the default value.
+        /// </summary>
+        /// <returns>A readable string.</returns>
         public override string ToString()
         {
             if( RequiresInit ) return $"(Default: '{DefaultValue.ValueCSharpSource}')";

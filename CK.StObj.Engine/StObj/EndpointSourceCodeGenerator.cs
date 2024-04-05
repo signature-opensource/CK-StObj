@@ -1064,7 +1064,7 @@ namespace CK.Setup
         /// <summary>
         /// Always generate the IEndpointTypeInternal interface code (The EndpointTypeManager_CK needs it)
         /// and TypedServiceDescriptor code (the FillStObjMappings function needs it) but only
-        /// add CK.StObj.EndpointType<TScopeData>, and the static EndpointHelper if at least one
+        /// add CK.StObj.EndpointType&lt;TScopeData&gt;, and the static EndpointHelper if at least one
         /// EndpointType exists.
         /// </summary>
         /// <param name="codeWorkspace">The code workspace.</param>

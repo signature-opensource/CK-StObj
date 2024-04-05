@@ -20,12 +20,12 @@ namespace CK.Setup
         bool IsNullable { get; }
 
         /// <summary>
-        /// If the member type is an array, gives the <see cref="NullabilityInfo" /> of the elements of the array, null otherwise
+        /// If the member type is an array, gives the <see cref="IExtNullabilityInfo" /> of the elements of the array, null otherwise
         /// </summary>
         IExtNullabilityInfo? ElementType { get; }
 
         /// <summary>
-        /// If the member type is a generic type, gives the array of <see cref="NullabilityInfo" /> for each type parameter
+        /// If the member type is a generic type, gives the array of <see cref="IExtNullabilityInfo" /> for each type parameter
         /// </summary>
         IReadOnlyList<IExtNullabilityInfo> GenericTypeArguments { get; }
 

@@ -171,7 +171,7 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Visits the <see cref="IPocoField.Type"/>, calling <see cref="Visit(IPocoType)"/>.
+        /// Visits the field's type, calling <see cref="Visit(IPocoType)"/>.
         /// </summary>
         /// <param name="field">The record or poco field.</param>
         protected virtual void VisitField( IPocoField field )
@@ -190,9 +190,6 @@ namespace CK.Setup
         /// <summary>
         /// Visits the <see cref="ICollectionPocoType.ItemTypes"/>, calling <see cref="Visit(IPocoType)"/>
         /// for the collection type arguments.
-        /// <para>
-        /// This doesn't follow the <see cref="ICollectionPocoType.MutableCollection"/>: the arguments are the same.
-        /// </para>
         /// </summary>
         /// <param name="collection">The collection to visit.</param>
         protected virtual void VisitCollection( ICollectionPocoType collection )

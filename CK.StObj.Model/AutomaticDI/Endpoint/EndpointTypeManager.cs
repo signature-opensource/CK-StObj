@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 
@@ -14,6 +15,9 @@ namespace CK.Core
     [Setup.ContextBoundDelegation( "CK.Setup.EndpointTypeManagerImpl, CK.StObj.Engine" )]
     public abstract class EndpointTypeManager : ISingletonAutoService
     {
+        /// <summary>
+        /// Used by the generated code.
+        /// </summary>
         protected IServiceProvider? _global;
 
         /// <summary>
@@ -70,11 +74,14 @@ namespace CK.Core
             /// </summary>
             public int MappingIndex { get; }
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+            [EditorBrowsable(EditorBrowsableState.Never)]
             public void Deconstruct( out Type t, out int i )
             {
                 t = UbiquitousType;
                 i = MappingIndex;
             }
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
         }
 
         /// <summary>

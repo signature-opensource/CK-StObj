@@ -325,7 +325,7 @@ namespace CK.Setup
 
             public override bool ImplementationLess => _primaries.Count == 0;
 
-            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            private protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
             {
                 if( _primaries.Count != 0 ) SetImplementationLess();
             }

@@ -16,14 +16,24 @@ namespace CK.Setup
     {
         readonly EndpointDefinitionAttribute _attr;
 
+        /// <summary>
+        /// Initializes a new endpoint definition implementor.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="decorated">The <see cref="EndpointDefinition"/> type.</param>
+        /// <param name="attr">This attribute.</param>
         public EndpointDefinitionImpl( IActivityMonitor monitor, Type decorated, EndpointDefinitionAttribute attr )
         {
             EndpointContext.CheckEndPointDefinition( monitor, decorated );
             _attr = attr;
         }
 
+        /// <summary>
+        /// Gets the <see cref="EndpointDefinitionAttribute.Kind"/>.
+        /// </summary>
         public EndpointKind Kind => _attr.Kind;
 
+        /// <inheritdoc />
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {
             if( c.ActualSourceCodeIsUseless ) return CSCodeGenerationResult.Success;

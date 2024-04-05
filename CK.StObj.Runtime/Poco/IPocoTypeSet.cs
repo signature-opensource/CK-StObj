@@ -54,7 +54,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets whether when including new types, collections of these types are automatically included.
         /// This is almost always true.
-        /// To work with sets that don't have this behavior, use <see cref="IPocoTypeSetManager.CreateAll(bool, Func{IPocoType, bool})"/>
+        /// To work with sets that don't have this behavior, use <see cref="IPocoTypeSetManager.CreateAll(bool, bool, bool, Func{IPocoType, bool})"/>
         /// or <see cref="IPocoTypeSetManager.CreateNone(bool, bool, bool, Func{IPocoType, bool})"/>.
         /// </summary>
         bool AutoIncludeCollections { get; }

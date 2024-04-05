@@ -13,7 +13,7 @@ namespace CK.Setup
     ///     <item>A dedicated type must be instantiated (with dependencies injection support): use the <see cref="CSCodeGenerationResult(Type)"/> constructor. See <see cref="ImplementorType"/>.</item>
     ///     <item>Another method on the same object (with parameter dependencies injection support) must be called: use the <see cref="CSCodeGenerationResult(string)"/> constructor with the method name.</item>
     /// </list>
-    /// This trampoline mechanism allows constructor or method parameter injection and avoids a direct lookup (service locator anti-pattern) into the <see cref="ICodeGenerationContext.GlobalServiceContainer"/>
+    /// This trampoline mechanism allows constructor or method parameter injection and avoids a direct lookup (service locator anti-pattern) into the <see cref="IGeneratedBinPath.ServiceContainer"/>
     /// or the <see cref="IGeneratedBinPath.ServiceContainer"/> of th current run.
     /// </summary>
     public readonly struct CSCodeGenerationResult
@@ -41,7 +41,7 @@ namespace CK.Setup
         /// that must be the same as the initial implementor.
         /// <para>
         /// This type can have constructor parameters that will be resolved from the available services: the current run <see cref="IGeneratedBinPath.ServiceContainer"/>
-        /// and <see cref="ICodeGenerationContext.GlobalServiceContainer"/>.
+        /// and <see cref="ICodeGenerationContext.CurrentRun"/>'s <see cref="IGeneratedBinPath.ServiceContainer"/>.
         /// </para>
         /// </summary>
         public Type? ImplementorType { get; }
@@ -51,7 +51,7 @@ namespace CK.Setup
         /// (Note that this method can redirect to yet another method.)
         /// <para>
         /// This method can have parameters that will be resolved from the available services: the current run <see cref="IGeneratedBinPath.ServiceContainer"/>
-        /// and <see cref="ICodeGenerationContext.GlobalServiceContainer"/>.
+        /// and <see cref="ICodeGenerationContext.CurrentRun"/>'s <see cref="IGeneratedBinPath.ServiceContainer"/>.
         /// </para>
         /// </summary>
         public string? MethodName { get; }

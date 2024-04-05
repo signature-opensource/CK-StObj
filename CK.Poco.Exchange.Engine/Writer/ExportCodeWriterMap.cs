@@ -39,7 +39,6 @@ namespace CK.Setup
         /// Gets the <see cref="ExportCodeWriter"/> to use for untyped object.
         /// This is available even if the <see cref="PocoTypeKind.Any"/> is not in the <see cref="NameMap"/>.
         /// </summary>
-        /// <param name="type">The type to handle.</param>
         /// <returns>The writer to use.</returns>
         public ExportCodeWriter GetAnyWriter()
         {
@@ -155,6 +154,14 @@ namespace CK.Setup
         /// <returns>The generic writer to use for untyped object.</returns>
         protected abstract ExportCodeWriter CreateAnyWriter();
 
+        /// <summary>
+        /// Runs this generator.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="generationContext">The current code generation context.</param>
+        /// <param name="exporterType">The exporter type.</param>
+        /// <param name="pocoDirectoryType">The PocoDirectory_CK.</param>
+        /// <returns></returns>
         public virtual bool Run( IActivityMonitor monitor,
                                  ICSCodeGenerationContext generationContext,
                                  ITypeScope exporterType,

@@ -116,7 +116,7 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Implements <see cref="ISet{T}.Overlaps(IEnumerable{T})(IEnumerable{T})"/> but against any other type of items.
+        /// Implements <see cref="ISet{T}.Overlaps(IEnumerable{T})"/> but against any other type of items.
         /// </summary>
         /// <typeparam name="T">The type of the HashSet item.</typeparam>
         /// <typeparam name="TA">The type of the other collection.</typeparam>
@@ -285,7 +285,7 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Implements <see cref="ISet{T}.Overlaps(IEnumerable{T})(IEnumerable{T})"/> where null
+        /// Implements <see cref="ISet{T}.Overlaps(IEnumerable{T})"/> where null
         /// can appear in the set, against any other type of nullable items.
         /// </summary>
         /// <typeparam name="T">The type of the HashSet item.</typeparam>

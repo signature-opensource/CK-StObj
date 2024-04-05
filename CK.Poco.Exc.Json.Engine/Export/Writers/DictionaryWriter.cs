@@ -3,11 +3,13 @@ using CK.Core;
 
 namespace CK.Setup.PocoJson
 {
+
+
     /// <summary>
-    /// IReadOnlyDictionary<TKey,TValue> is NOT covariant on TValue.
+    /// IReadOnlyDictionary&lt;TKey,TValueégt; is NOT covariant on TValue.
     /// When TValue is polymorphic we cannot use a IReadOnlyDictionary parameter
     /// in a simple "generic" helper.
-    /// One solution could be to use both IEnumerable<TKey> Keys and IEnumerable<TValue> Values parameters
+    /// One solution could be to use both IEnumerable&lt;TKey&gt; Keys and IEnumerable&lt;TValue&gt; Values parameters
     /// but we prefer to handle only one parameter and we also want to avoid the projection of the values
     /// by the adapters.
     ///

@@ -216,7 +216,7 @@ namespace CK.StObj.Engine.Tests.Poco
             CheckIsTuple( setValue, "F", "G" );
         }
 
-        IRecordPocoType CheckIsTuple( IPocoType? t, params string[] names )
+        static IRecordPocoType CheckIsTuple( IPocoType? t, params string[] names )
         {
             Throw.DebugAssert( t != null && t is IRecordPocoType );
             var r = (IRecordPocoType)t;

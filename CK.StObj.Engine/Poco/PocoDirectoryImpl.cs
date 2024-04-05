@@ -33,7 +33,7 @@ namespace CK.Setup
         /// <param name="scope">The PocoDirectory_CK type scope.</param>
         /// <returns>
         /// Always a continuation on a private CheckNoMoreRegisteredPocoTypes that monitors the IPocoTypeSystemBuilder for new types
-        /// and calls <see cref="IPocoTypeSystemBuilder.Lock()"/> when no new types appeared.
+        /// and calls <see cref="IPocoTypeSystemBuilder.Lock(IActivityMonitor)"/> when no new types appeared.
         /// </returns>
         public override CSCodeGenerationResult Implement( IActivityMonitor monitor, Type classType, ICSCodeGenerationContext c, ITypeScope scope )
         {

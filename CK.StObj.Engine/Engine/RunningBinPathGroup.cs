@@ -52,7 +52,7 @@ namespace CK.Setup
             _names = "(Unified)";
         }
 
-        GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "G0.cs" ) );
+        static GeneratedG0Artifact CreateG0( BinPathConfiguration c ) => new GeneratedG0Artifact( c.ProjectPath.AppendPart( "G0.cs" ) );
 
         GeneratedFileArtifactWithTextSignature CreateAssembly( BinPathConfiguration c ) => new GeneratedFileArtifactWithTextSignature( c.OutputPath.AppendPart( _generatedDllName ) );
 
@@ -161,26 +161,13 @@ namespace CK.Setup
         /// <inheritdoc />
         public string Names => _names;
 
-        /// <summary>
-        /// Tries to load the <see cref="IStObjMap"/> from <see cref="IRunningBinPathGroup.RunSignature"/> SHA1 from
-        /// already available maps (see <see cref="StObjContextRoot.Load(SHA1Value, IActivityMonitor?)"/>)
-        /// or from the <see cref="IRunningBinPathGroup.GeneratedAssembly"/>.
-        /// <para>
-        /// This must not be called on the <see cref="IRunningBinPathGroup.IsUnifiedPure"/> otherwise an <see cref="InvalidOperationException"/>
-        /// is thrown.
-        /// </para>
-        /// </summary>
-        /// <param name="g">This group from which the map must be obtain.</param>
-        /// <param name="embeddedIfPossible">
-        /// False to skip an available map and load it from the generated assembly.
-        /// By default, the map is searched in available ones before loading the assembly.
-        /// </param>
-        /// <returns>The map or null.</returns>
+        /// <inheritdoc/>
         public IStObjMap? TryLoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true )
         {
             return TryLoadStObjMap( monitor, embeddedIfPossible, false );
         }
 
+        /// <inheritdoc/>
         public IStObjMap LoadStObjMap( IActivityMonitor monitor, bool embeddedIfPossible = true )
         {
             return TryLoadStObjMap( monitor, embeddedIfPossible, true )!;

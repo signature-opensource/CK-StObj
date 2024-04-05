@@ -39,7 +39,7 @@ namespace CK.Setup
         /// <param name="names">The final map names.</param>
         /// <param name="allSpecializations">
         /// Pre-dimensioned array that will be filled with actual
-        /// mutable items by <see cref="StObjCollector.GetResult()"/>.
+        /// mutable items by <see cref="StObjCollector.GetResult(IActivityMonitor)"/>.
         /// </param>
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
         internal StObjObjectEngineMap( IReadOnlyList<string> names,

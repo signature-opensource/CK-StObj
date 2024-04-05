@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 
 namespace CK.Setup
 {
@@ -62,7 +61,7 @@ namespace CK.Setup
         /// Finds an open generic definition of <see cref="IAbstractPocoType"/>.
         /// The type must be used by at least one <see cref="IPocoGenericTypeDefinition.Instances"/>.
         /// </summary>
-        /// <param name="type">Type to find. Must be an open generic type (<c>typeof( ICommand<> )</c>).</param>
+        /// <param name="type">Type to find. Must be an open generic type (like <c>typeof( ICommand&lt;&gt; )</c>).</param>
         /// <returns>The type definition or null.</returns>
         IPocoGenericTypeDefinition? FindGenericTypeDefinition( Type type );
 

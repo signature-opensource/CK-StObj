@@ -13,7 +13,7 @@ namespace CK.Testing.StObjEngine
 {
 
     /// <summary>
-    /// Captures the result of <see cref="IStObjEngineTestHelperCore.CreateAutomaticServices(StObjCollector, Func{StObjEngineConfiguration, StObjEngineConfiguration}?, SimpleServiceContainer?, Action{StObjContextRoot.ServiceRegister}?)"/>.
+    /// Captures the result of <see cref="IStObjEngineTestHelperCore.CreateAutomaticServices"/>.
     /// </summary>
     public sealed class AutomaticServicesResult
     {

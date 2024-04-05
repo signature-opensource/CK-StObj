@@ -10,7 +10,7 @@ namespace CK.Setup.PocoJson
     /// <summary>
     /// Handles map of <see cref="JsonCodeWriter"/>.
     /// </summary>
-    public sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
+    sealed class JsonCodeWriterMap : Setup.ExportCodeWriterMap
     {
         public JsonCodeWriterMap( IPocoTypeNameMap nameMap )
             : base( nameMap )

@@ -7,8 +7,6 @@ using System.Text.Json;
 
 namespace CK.Core
 {
-
-
     /// <summary>
     /// Simple registry of available <see cref="IPocoImporter"/> and <see cref="IPocoExporter"/>
     /// and resolver of such importers/exporters thanks to available <see cref="IPocoImporterFactory"/>

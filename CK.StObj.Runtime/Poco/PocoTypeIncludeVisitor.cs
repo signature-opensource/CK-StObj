@@ -7,16 +7,16 @@ using System.Runtime.CompilerServices;
 namespace CK.Setup
 {
     /// <summary>
-    /// Extends <see cref="PocoTypeVisitor"/> to visit the closure of a set of types that are typically <see cref="IPrimaryPocoType"/>.
+    /// Extends <see cref="PocoTypeVisitor{T}"/> to visit the closure of a set of types that are typically <see cref="IPrimaryPocoType"/>.
     /// <list type="bullet">
     ///     <item>
-    ///         Nullable types visit their <see cref="IPocoType.NonNullable"/> (same as base <see cref="PocoTypeVisitor"/>).
+    ///         Nullable types visit their <see cref="IPocoType.NonNullable"/> (same as base <see cref="PocoTypeVisitor{T}"/>).
     ///     </item>
     ///     <item>
     ///         All <see cref="IPocoType.ObliviousType"/> and <see cref="IPocoType.RegularType"/> are visited.
     ///     </item>
     ///     <item>
-    ///         <see cref="IRecordPocoType"/> visits its <see cref="IRecordPocoField"/> (same as base <see cref="PocoTypeVisitor"/>).
+    ///         <see cref="IRecordPocoType"/> visits its <see cref="IRecordPocoField"/> (same as base <see cref="PocoTypeVisitor{T}"/>).
     ///     </item>
     ///     <item>
     ///         <see cref="IPrimaryPocoType"/> visits its <see cref="IPrimaryPocoField"/> and its <see cref="IPrimaryPocoType.SecondaryTypes"/>.
@@ -26,7 +26,7 @@ namespace CK.Setup
     ///         </para>
     ///     </item>
     ///     <item>
-    ///         <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/> (same as base <see cref="PocoTypeVisitor"/>).
+    ///         <see cref="ISecondaryPocoType"/> visits their <see cref="ISecondaryPocoType.PrimaryPocoType"/> (same as base <see cref="PocoTypeVisitor{T}"/>).
     ///     </item>
     ///     <item>
     ///         An implemented <see cref="IAbstractPocoType"/> visits its <see cref="IAbstractPocoType.GenericArguments"/>, its <see cref="IAbstractPocoType.Generalizations"/>
@@ -47,7 +47,7 @@ namespace CK.Setup
     ///         their <see cref="ICollectionPocoType.ConcreteCollection"/>.
     ///     </item>
     ///     <item>
-    ///         <see cref="IUnionPocoType"/> visits its <see cref="IOneOfPocoType.AllowedTypes"/> (same as base <see cref="PocoTypeVisitor"/>).
+    ///         <see cref="IUnionPocoType"/> visits its <see cref="IOneOfPocoType.AllowedTypes"/> (same as base <see cref="PocoTypeVisitor{T}"/>).
     ///     </item>
     ///     <item>
     ///         <see cref="IEnumPocoType"/> visits its <see cref="IEnumPocoType.UnderlyingType"/>.
@@ -71,7 +71,7 @@ namespace CK.Setup
         IPocoType? _iPoco;
 
         /// <summary>
-        /// Initializes a new <see cref="PocoTypeIncludeVisitor"/>.
+        /// Initializes a new <see cref="PocoTypeIncludeVisitor{T}"/>.
         /// </summary>
         /// <param name="typeSystem">The type system that must define the visited types.</param>
         /// <param name="alreadyVisited">Already visited set of types.</param>
@@ -98,6 +98,10 @@ namespace CK.Setup
         // If we need it, it exists in the TypeSystem.
         IPocoType Poco => _iPoco ??= _typeSystem.FindByType( typeof( IPoco ) )!;
 
+        /// <summary>
+        /// Captures the root to handle the visit differently for it.
+        /// </summary>
+        /// <param name="root">The visited root.</param>
         protected override void OnStartVisit( IPocoType root )
         {
             _visitedRoot = root;

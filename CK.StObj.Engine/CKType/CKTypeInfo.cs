@@ -254,7 +254,7 @@ namespace CK.Setup
             Debug.Assert( t.IsAssignableFrom( Type ), $"Unique mapping '{t}' must be assignable from {ToString()}!" );
             Debug.Assert( _uniqueMappings == null || !_uniqueMappings.Contains( t ), $"Unique mapping '{t}' already registered in {ToString()}." );
             Debug.Assert( _multipleMappings == null || !_multipleMappings.Contains( t ), $"Unique mapping '{t}' already registered in MULTIPLE mappings of {ToString()}." );
-            if( _uniqueMappings == null ) _uniqueMappings = new List<Type>();
+            _uniqueMappings ??= new List<Type>();
             _uniqueMappings.Add( t );
         }
 
@@ -263,6 +263,7 @@ namespace CK.Setup
         /// Must be called on a leaf (<see cref="IsSpecialized"/> must be false). The final type must be assignable to t, but must not be the type t itself.
         /// The type t must not already be registered (it can, of course be mapped to other final types).
         /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The type that must be associated to this most specialized type.</param>
         /// <param name="k">The kind from the <see cref="CKTypeKindDetector"/>.</param>
         /// <param name="collector">The type collector.</param>

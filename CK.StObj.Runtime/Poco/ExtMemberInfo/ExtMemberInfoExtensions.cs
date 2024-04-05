@@ -16,6 +16,7 @@ namespace CK.Setup
         /// the <see cref="NullabilityInfo.WriteState"/>: no [AllowNull], [DisallowNull] or
         /// other nullability attributes must exist: an error log is emitted in such case.
         /// </summary>
+        /// <param name="this">This member info.</param>
         /// <param name="monitor">The monitor to use.</param>
         /// <returns>Null if Read/Write nullabilities differ.</returns>
         public static IExtNullabilityInfo? GetHomogeneousNullabilityInfo( this IExtMemberInfo @this, IActivityMonitor monitor )

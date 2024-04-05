@@ -10,7 +10,7 @@ namespace CK.Core
     {
         /// <summary>
         /// This interface is automatically supported by IPoco.
-        /// The <see cref="PocoJsonExportSupport.WriteJson"/> extension methods exposes it.
+        /// The WriteJson extension methods (<see cref="PocoJsonExportExtensions"/>) exposes it.
         /// </summary>
         public interface IWriter
         {

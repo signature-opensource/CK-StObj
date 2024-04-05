@@ -1,7 +1,10 @@
-﻿using System.Reflection;
+using System.Reflection;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Extends <see cref="IExtMemberInfo"/>.
+    /// </summary>
     public interface IExtPropertyInfo : IExtMemberInfo
     {
         /// <summary>

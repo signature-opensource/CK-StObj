@@ -9,7 +9,7 @@ namespace CK.Setup
     /// </summary>
     public interface IReadOnlyPocoTypeSet : IReadOnlyCollection<IPocoType>
     {
-        sealed class E : IReadOnlyPocoTypeSet
+        private sealed class EmptySet : IReadOnlyPocoTypeSet
         {
             public int Count => 0;
 
@@ -23,7 +23,7 @@ namespace CK.Setup
         /// <summary>
         /// An immutable empty singleton type set.
         /// </summary>
-        public static readonly IReadOnlyPocoTypeSet Empty = new E();
+        public static readonly IReadOnlyPocoTypeSet Empty = new EmptySet();
 
         /// <summary>
         /// Gets whether the given type is contained in this set.

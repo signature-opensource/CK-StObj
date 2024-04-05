@@ -1,27 +1,32 @@
-using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Threading;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Implements <see cref="IExtMemberInfoFactory"/>.
+    /// </summary>
     public sealed class ExtMemberInfoFactory : IExtMemberInfoFactory
     {
         readonly TEMPNullabilityInfoContext _nullabilityContext;
 
+        /// <summary>
+        /// Initializes a new factory.
+        /// </summary>
         public ExtMemberInfoFactory()
         {
             _nullabilityContext = new TEMPNullabilityInfoContext();
         }
 
+        /// <inheritdoc />
         public IExtTypeInfo CreateNullOblivious( Type type )
         {
             Throw.CheckNotNullArgument( type );
             return new ExtTypeInfo( this, type );
         }
 
+        /// <inheritdoc />
         public IExtMemberInfo Create( MemberInfo memberInfo )
         {
             Throw.CheckNotNullArgument( memberInfo );
@@ -36,24 +41,28 @@ namespace CK.Setup
         }
 
 
+        /// <inheritdoc />
         public IExtParameterInfo Create( ParameterInfo parameterInfo )
         {
             Throw.CheckNotNullArgument( parameterInfo );
             return new ExtParameterInfo( this, parameterInfo );
         }
 
+        /// <inheritdoc />
         public IExtPropertyInfo Create( PropertyInfo propertyInfo )
         {
             Throw.CheckNotNullArgument( propertyInfo );
             return new ExtPropertyInfo( this, propertyInfo );
         }
 
+        /// <inheritdoc />
         public IExtFieldInfo Create( FieldInfo fieldInfo )
         {
             Throw.CheckNotNullArgument( fieldInfo );
             return new ExtFieldInfo( this, fieldInfo );
         }
 
+        /// <inheritdoc />
         public IExtPropertyInfo CreateFake( PropertyInfo p,
                                             IExtNullabilityInfo homogeneousInfo,
                                             object[]? customAttributes,
@@ -64,24 +73,28 @@ namespace CK.Setup
             return new ExtPropertyInfo( this, p, homogeneousInfo, customAttributes, customAttributesData );
         }
 
+        /// <inheritdoc />
         public IExtNullabilityInfo CreateNullabilityInfo( Type t )
         {
             Throw.CheckNotNullArgument( t );
             return new ExtNullabilityInfo( t );
         }
 
+        /// <inheritdoc />
         public IExtEventInfo Create( EventInfo eventInfo )
         {
             Throw.CheckNotNullArgument( eventInfo );
             return new ExtEventInfo( this, eventInfo );
         }
 
+        /// <inheritdoc />
         public IExtNullabilityInfo CreateNullabilityInfo( ParameterInfo parameterInfo, bool useReadState = true )
         {
             var i = _nullabilityContext.Create( parameterInfo );
             return new ExtNullabilityInfo( i, useReadState, false );
         }
 
+        /// <inheritdoc />
         public IExtNullabilityInfo CreateNullabilityInfo( PropertyInfo propertyInfo, bool useReadState = true )
         {
             var i = _nullabilityContext.Create( propertyInfo );
@@ -100,12 +113,14 @@ namespace CK.Setup
             return new ExtNullabilityInfo( i, useReadState, singleState );
         }
 
+        /// <inheritdoc />
         public IExtNullabilityInfo CreateNullabilityInfo( FieldInfo fieldInfo, bool useReadState = true )
         {
             var i = _nullabilityContext.Create( fieldInfo );
             return new ExtNullabilityInfo( i, useReadState, false );
         }
 
+        /// <inheritdoc />
         public IExtNullabilityInfo CreateNullabilityInfo( EventInfo eventInfo )
         {
             var i = _nullabilityContext.Create( eventInfo );

@@ -21,7 +21,7 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the root poco information indexed by their <see cref="IPocoFamilyInfo.Name"/>
-        /// and <see cref="IPocoFamilyInfo.PreviousNames"/>.
+        /// and <see cref="IPocoFamilyInfo.ExternalName"/> previous names if any.
         /// </summary>
         IReadOnlyDictionary<string, IPocoFamilyInfo> NamedFamilies { get; }
 

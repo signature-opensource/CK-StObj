@@ -7,7 +7,7 @@ namespace CK.Setup
     /// <summary>
     /// A generic definition type is not a <see cref="IPocoType"/>.
     /// It models open generics like <c>ICommand&lt;out TResult&gt;</c> and is accessible only
-    /// from <see cref="IAbstractPocoType.GenerericTypeDefinition"/>.
+    /// from <see cref="IAbstractPocoType.GenericTypeDefinition"/>.
     /// </summary>
     public interface IPocoGenericTypeDefinition
     {

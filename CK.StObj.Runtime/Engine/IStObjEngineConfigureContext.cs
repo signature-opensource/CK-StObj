@@ -19,7 +19,7 @@ namespace CK.Setup
         /// This can only transition from true to false (setting it to true if it's false has no effect).
         /// <para>
         /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
-        /// <see cref="RunningBinPathGroup.GeneratedAssembly"/> and <see cref="RunningBinPathGroup.GeneratedSource"/>
+        /// <see cref="IRunningBinPathGroup.GeneratedAssembly"/> and <see cref="IRunningBinPathGroup.GeneratedSource"/>
         /// availability.
         /// </para>
         /// </summary>
@@ -40,7 +40,7 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// At the end of the process, this container is used as the base service provider of code generation (see
-        /// <see cref="ICodeGenerationContext.GlobalServiceContainer"/>).
+        /// <see cref="IGeneratedBinPath.ServiceContainer"/>).
         /// </para>
         /// </summary>
         ISimpleServiceContainer ServiceContainer { get; }

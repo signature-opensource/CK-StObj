@@ -161,6 +161,7 @@ namespace CK.Testing.StObjEngine
         /// </para>
         /// </param>
         /// <param name="startupServices">Optional startup services: see <see cref="StObjContextRoot.ServiceRegister.StartupServices"/>.</param>
+        /// <param name="configureServices">Optional services configuration.</param>
         /// <returns>The (failed) service register.</returns>
         StObjContextRoot.ServiceRegister GetFailedAutomaticServicesConfiguration( StObjCollector c,
                                                                                   string message,

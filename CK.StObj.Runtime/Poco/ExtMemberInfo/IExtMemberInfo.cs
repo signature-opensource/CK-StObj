@@ -46,7 +46,7 @@ namespace CK.Setup
         /// This is the empty string for a returned <see cref="ParameterInfo"/> by a method.
         /// </para>
         /// <para>
-        /// This is the <see cref="Type.Name"/> for a <see cref="IExtTypeInfo"/>.
+        /// This is the <see cref="MemberInfo.Name"/> for a <see cref="IExtTypeInfo"/>.
         /// </para>
         /// </summary>
         string Name { get; }

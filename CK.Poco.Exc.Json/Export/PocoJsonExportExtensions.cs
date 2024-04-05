@@ -90,10 +90,9 @@ namespace CK.Core
         }
 
         /// <summary>
-        /// Throws a <see cref="JsonException"/> with .
+        /// Throws a <see cref="JsonException"/> with "Unexpected null value for a non nullable." message.
         /// </summary>
         /// <param name="writer">This writer.</param>
-        /// <param name="message">The exception message.</param>
         [DoesNotReturn]
         public static void ThrowJsonNullWriteException( this Utf8JsonWriter writer )
         {

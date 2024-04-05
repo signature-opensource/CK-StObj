@@ -18,6 +18,12 @@ namespace CK.Poco.Exc.Json
         /// </summary>
         public string ProtocolName => "Json";
 
+        /// <summary>
+        /// Writes a poco in <see cref="PocoJsonExportOptions.Default"/> format.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="output">The target output.</param>
+        /// <param name="data">The data to write.</param>
         public void Write( IActivityMonitor monitor, Stream output, IPoco? data )
         {
             using Utf8JsonWriter w = new Utf8JsonWriter( output );
@@ -27,6 +33,13 @@ namespace CK.Poco.Exc.Json
             }
         }
 
+        /// <summary>
+        /// Asynchronously writes a poco in <see cref="PocoJsonExportOptions.Default"/> format.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="output">The target output.</param>
+        /// <param name="data">The data to write.</param>
+        /// <param name="cancel">Optional cancellation token.</param>
         public Task WriteAsync( IActivityMonitor monitor, Stream output, IPoco? data, CancellationToken cancel = default )
         {
             using Utf8JsonWriter w = new Utf8JsonWriter( output );

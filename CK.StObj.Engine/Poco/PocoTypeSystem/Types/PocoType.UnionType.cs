@@ -113,7 +113,7 @@ namespace CK.Setup
 
             public override bool ImplementationLess => _implementationCount == 0;
 
-            protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
+            private protected override void OnBackRefImplementationLess( IPocoType.ITypeRef r )
             {
                 Throw.DebugAssert( r.Owner == this && _k.Types.Contains( r.Type ) );
                 if( --_implementationCount == 0 ) SetImplementationLess();

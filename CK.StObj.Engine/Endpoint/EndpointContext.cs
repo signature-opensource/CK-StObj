@@ -23,12 +23,16 @@ namespace CK.Setup
             _endpointDefinition = endpointDefinition;
         }
 
+        /// <inheritdoc />
         public IStObjResult EndpointDefinition => _endpointDefinition;
 
+        /// <inheritdoc />
         public string Name => _name;
 
+        /// <inheritdoc />
         public Type? ScopeDataType => _instanceDataType;
 
+        /// <inheritdoc />
         public EndpointKind Kind => _kind;
 
         internal static ReadOnlySpan<char> DefinitionName( Type definition ) => definition.Name.AsSpan( 0, definition.Name.Length - 18 );

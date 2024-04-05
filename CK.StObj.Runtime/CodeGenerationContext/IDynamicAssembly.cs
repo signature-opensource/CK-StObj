@@ -12,13 +12,13 @@ namespace CK.Setup
     /// </summary>
     public interface IDynamicAssembly
     {
-        static class PurelyGenerated { }
+        private static class PurelyGenerated { }
 
         /// <summary>
         /// Gets a fake type that can be used to denote a purely generated type
         /// that has no dynamically emitted counterpart in a dynamic assembly.
         /// </summary>
-        static Type PurelyGeneratedType = typeof( PurelyGenerated );
+        static readonly Type PurelyGeneratedType = typeof( PurelyGenerated );
         
         /// <summary>
         /// Provides a new unique number that can be used for generating unique names inside this dynamic assembly.
@@ -29,7 +29,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets a shared dictionary associated to this dynamic assembly. 
         /// Methods that generate code can rely on this to store shared information as required by their generation process.
-        /// If information has to be shared among different <see cref="IGeneratedBinPath"/> contexts, then the <see cref="ICodeGenerationContext.GlobalMemory"/>
+        /// If information has to be shared among different <see cref="IGeneratedBinPath"/> contexts, then the <see cref="IGeneratedBinPath.Memory"/>
         /// must be used.
         /// </summary>
         Dictionary<object, object?> Memory { get; }
