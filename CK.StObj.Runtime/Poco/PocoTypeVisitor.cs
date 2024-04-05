@@ -4,16 +4,16 @@ namespace CK.Setup
 {
     /// <summary>
     /// Safe <see cref="IPocoType"/> base visitor (a type is visited only once), visited types
-    /// are available in <see cref="LastVisited"/> that is a <see cref="IMinimalPocoTypeSet"/>.
+    /// are available in <see cref="LastVisited"/> that is a <see cref="ILightPocoTypeSet"/>.
     /// <para>
-    /// The behavior regarding nullability depends on the <see cref="LastVisited"/> <see cref="IMinimalPocoTypeSet"/>
+    /// The behavior regarding nullability depends on the <see cref="LastVisited"/> <see cref="ILightPocoTypeSet"/>
     /// implementation: if the set tracks nullables and non nullables differently then both will be visited (<c>int?</c> and <c>int</c>).
     /// In practice, sets handle half of the types (only the non nullables): visiting a nullable is the same as visiting its non nullable
     /// associated type. As a safety net, visit methods are always called with non nullable types by default (this can be changed by the
     /// constructor <c>allowNullableVisit</c> parameter).
     /// </para>
     /// <para>
-    /// To visit the nullables as distinct types, a "nullable aware" <see cref="IMinimalPocoTypeSet"/> must be provided and <c>allowNullableVisit</c>
+    /// To visit the nullables as distinct types, a "nullable aware" <see cref="ILightPocoTypeSet"/> must be provided and <c>allowNullableVisit</c>
     /// should be set to true.
     /// </para>
     /// <para>
@@ -51,7 +51,7 @@ namespace CK.Setup
     /// </list>
     /// </para>
     /// </summary>
-    public class PocoTypeVisitor<T> where T : class, IMinimalPocoTypeSet
+    public class PocoTypeVisitor<T> where T : class, ILightPocoTypeSet
     {
         readonly T _visited;
         readonly bool _allowNullableVisit;

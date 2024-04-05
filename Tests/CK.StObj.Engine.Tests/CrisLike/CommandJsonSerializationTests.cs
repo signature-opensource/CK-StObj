@@ -4,9 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -97,7 +95,7 @@ namespace CK.StObj.Engine.Tests.CrisLike
 
                 using var readContext = new PocoJsonReadContext( directory );
 
-                T ReadFunc( ref Utf8JsonReader r, IUtf8JsonReaderContext ctx)
+                T ReadFunc( ref Utf8JsonReader r, IUtf8JsonReaderContext ctx )
                 {
                     return factory.ReadJson( ref r, (PocoJsonReadContext)ctx )!;
                 };

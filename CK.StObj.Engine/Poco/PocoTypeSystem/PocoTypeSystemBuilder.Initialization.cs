@@ -56,12 +56,19 @@ namespace CK.Setup
                 Throw.DebugAssert( family.Interfaces[0].PocoInterface == primary.Type );
                 _typeCache.Add( primary.Type, primary.ObliviousType );
                 _typeCache.Add( primary.CSharpName, primary );
-                foreach( var i in family.Interfaces.Skip( 1 ) )
+                if( family.Interfaces.Count  > 1 )
                 {
-                    var sec = PocoType.CreateSecondaryPocoType( this, i.PocoInterface, primary );
-                    HandleNotSerializableAndNotExchangeableAttributes( monitor, sec );
-                    _typeCache.Add( i.PocoInterface, sec.ObliviousType );
-                    _typeCache.Add( sec.CSharpName, sec );
+                    var secondaries = new ISecondaryPocoType[family.Interfaces.Count - 1];
+                    int iSecondary = 0;
+                    foreach( var i in family.Interfaces.Skip( 1 ) )
+                    {
+                        var sec = PocoType.CreateSecondaryPocoType( this, i.PocoInterface, primary );
+                        HandleNotSerializableAndNotExchangeableAttributes( monitor, sec );
+                        _typeCache.Add( i.PocoInterface, sec.ObliviousType );
+                        _typeCache.Add( sec.CSharpName, sec );
+                        secondaries[iSecondary++] = sec;
+                    }
+                    primary.SetSecondaryTypes( secondaries );
                 }
                 // Extra registration for the implementation class type.
                 _typeCache.Add( family.PocoClass, primary.ObliviousType );

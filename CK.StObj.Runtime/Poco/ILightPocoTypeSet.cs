@@ -1,11 +1,9 @@
 namespace CK.Setup
 {
-
-
     /// <summary>
     /// Minimal set of type required by the <see cref="PocoTypeVisitor{T}"/>.
     /// </summary>
-    public interface IMinimalPocoTypeSet
+    public interface ILightPocoTypeSet
     {
         /// <summary>
         /// Gets whether the given type is contained in this set.
@@ -26,5 +24,4 @@ namespace CK.Setup
         /// </summary>
         void Clear();
     }
-
 }

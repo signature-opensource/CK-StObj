@@ -12,7 +12,7 @@ namespace CK.Setup
     /// Basic set backed by a bit flag used as a faster <see cref="HashSet{T}"/> that handles
     /// both nullable and non nullable types at the same time (the <see cref="Count"/> is always even).
     /// </summary>
-    public sealed class PocoTypeRawSet : IReadOnlyPocoTypeSet, IMinimalPocoTypeSet
+    public sealed class PocoTypeRawSet : IReadOnlyPocoTypeSet, ILightPocoTypeSet
     {
         // Only TypeSet IPocoTypeSet implementation access to this array to expose
         // it as an immutable array: a IPocoTypeSet is a immutable object that protects

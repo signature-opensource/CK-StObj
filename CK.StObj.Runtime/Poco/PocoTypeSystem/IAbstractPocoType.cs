@@ -38,20 +38,15 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the minimal set of <see cref="Generalizations"/> (no implementation less abstract poco),
-        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/> and
-        /// <see cref="IPocoType.CanWriteTo(IPocoType)"/>.
+        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/>.
+        /// <para>
+        /// This uses and caches <see cref="PocoTypeExtensions.ComputeMinimal{T}(IEnumerable{T})"/>.
+        /// </para>
         /// <para>
         /// The returned types are nullable if this one is the <see cref="Nullable"/>.
         /// </para>
         /// </summary>
         IEnumerable<IAbstractPocoType> MinimalGeneralizations { get; }
-
-        /// <summary>
-        /// Gets the minimal set of <see cref="Generalizations"/> based on a set that restricts the possibilities.
-        /// </summary>
-        /// <param name="typeSet">The type set to consider.</param>
-        /// <returns>The set of minimal generalizations considering the <paramref name="typeSet"/>.</returns>
-        IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet );
 
         /// <summary>
         /// Gets whether this interface is a generic type.

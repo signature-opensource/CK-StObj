@@ -39,20 +39,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets the minimal set of <see cref="AbstractTypes"/> (no implementation less abstract poco),
-        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/> and
-        /// <see cref="IPocoType.CanWriteTo(IPocoType)"/>.
+        /// considering inheritance, generic parameter variance based on <see cref="IPocoType.CanReadFrom(IPocoType)"/>.
         /// <para>
         /// The returned types are nullable if this one is the <see cref="Nullable"/>.
         /// </para>
         /// </summary>
         IEnumerable<IAbstractPocoType> MinimalAbstractTypes { get; }
-
-        /// <summary>
-        /// Gets the minimal set of <see cref="AbstractTypes"/> based on a set that restricts the possibilities.
-        /// </summary>
-        /// <param name="typeSet">The type set to consider.</param>
-        /// <returns>The set of minimal abstract types considering the <paramref name="typeSet"/>.</returns>
-        IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet );
 
         /// <summary>
         /// Gets the secondary interfaces with the same nullability as this one.

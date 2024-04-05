@@ -100,8 +100,6 @@ namespace CK.Setup
                 return type.IsNullable && _nonNullable.CanReadFrom( type );
             }
 
-            public bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
-
             public override string ToString() => PocoType.ToString( this );
 
             public void AddAnnotation( object annotation ) => _annotations.AddAnnotation( annotation );
@@ -219,8 +217,6 @@ namespace CK.Setup
                 // simply relay the type here.
                 return type.IsNullable && _nonNullable.CanReadFrom( type );
             }
-
-            public bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
 
             public override string ToString() => PocoType.ToString( this );
 
@@ -470,9 +466,6 @@ namespace CK.Setup
             Throw.DebugAssert( "Value Type nullable <: not nullable is kindly handled by .Net.", typeof( int? ).IsAssignableFrom( typeof( int ) ) );
             return type.Kind == PocoTypeKind.Any || type.NonNullable == this || type.Type.IsAssignableFrom( Type );
         }
-
-        /// <inheritdoc/>
-        public virtual bool CanWriteTo( IPocoType type ) => type.CanReadFrom( this );
 
         static string ToString( IPocoType t ) => $"[{t.Kind}]{t.CSharpName}";
 

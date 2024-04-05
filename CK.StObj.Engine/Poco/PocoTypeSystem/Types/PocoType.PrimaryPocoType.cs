@@ -64,8 +64,6 @@ namespace CK.Setup
 
                 public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => NonNullable.MinimalAbstractTypes.Select( a => a.Nullable );
 
-                public IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet ) => NonNullable.GetMinimalAbstractTypes( typeSet ).Select( t => t.Nullable );
-
                 #region Auto implementation of AbstractTypes
                 int IReadOnlyCollection<IAbstractPocoType>.Count => NonNullable.AbstractTypes.Count;
 
@@ -87,7 +85,7 @@ namespace CK.Setup
             /// </summary>
             sealed class AllAbstractHolder : IReadOnlyList<IAbstractPocoType>
             {
-                IAbstractPocoType[] _allAbstractTypes;
+                readonly IAbstractPocoType[] _allAbstractTypes;
                 ArraySegment<IAbstractPocoType> _abstractTypes;
 
                 public AllAbstractHolder( IAbstractPocoType[] allAbstractTypes )
@@ -121,6 +119,7 @@ namespace CK.Setup
             readonly IPocoFieldDefaultValue _def;
             readonly IPocoFamilyInfo _familyInfo;
             [AllowNull] PrimaryPocoField[] _fields;
+            ISecondaryPocoType[] _secondaryTypes;
             string _ctorCode;
             IReadOnlyList<IAbstractPocoType>? _minimalAbstractTypes;
             [AllowNull] AllAbstractHolder _allAbstractHolder;
@@ -134,6 +133,7 @@ namespace CK.Setup
                 // The full name is the ImplTypeName. This works because the generated type is not a nested type (and not a generic of course).
                 Throw.DebugAssert( !family.PocoClass.FullName!.Contains( '+' ) );
                 _def = new FieldDefaultValue( $"new {family.PocoClass.FullName}()" );
+                _secondaryTypes = Array.Empty<ISecondaryPocoType>();
                 // Constructor will remain the empty string when all fields are DefaultValueInfo.IsAllowed (their C# default value).
                 _ctorCode = string.Empty;
                 if( _familyInfo.ExternalName != null )
@@ -198,18 +198,9 @@ namespace CK.Setup
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
-            public IEnumerable<ISecondaryPocoType> SecondaryTypes
-            {
-                get
-                {
-                    var b = FirstBackReference;
-                    while( b != null )
-                    {
-                        if( b is ISecondaryPocoType sec ) yield return sec;
-                        b = b.NextRef;
-                    }
-                }
-            }
+            public IEnumerable<ISecondaryPocoType> SecondaryTypes => _secondaryTypes;
+
+            internal void SetSecondaryTypes( ISecondaryPocoType[] secondaryTypes ) => _secondaryTypes = secondaryTypes;
 
             public override bool CanReadFrom( IPocoType type )
             {
@@ -242,13 +233,7 @@ namespace CK.Setup
                 _allAbstractHolder.OnAbstractImplementationLess( a );
             }
 
-            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= AbstractPocoType.ComputeMinimal( _allAbstractHolder.AbstractTypes );
-
-            public IEnumerable<IAbstractPocoType> GetMinimalAbstractTypes( IPocoTypeSet typeSet )
-            {
-                Throw.CheckNotNullArgument( typeSet );
-                return AbstractPocoType.ComputeMinimal( _allAbstractHolder.AbstractTypes.Where( typeSet.Contains ) );
-            }
+            public IEnumerable<IAbstractPocoType> MinimalAbstractTypes => _minimalAbstractTypes ??= _allAbstractHolder.AbstractTypes.ComputeMinimal();
 
             ICompositePocoType ICompositePocoType.Nullable => Nullable;
             ICompositePocoType ICompositePocoType.NonNullable => this;

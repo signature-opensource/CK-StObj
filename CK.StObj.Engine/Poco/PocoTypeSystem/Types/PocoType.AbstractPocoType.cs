@@ -58,8 +58,6 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => NonNullable.MinimalGeneralizations.Select( a => a.Nullable );
 
-            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet ) => NonNullable.GetMinimalGeneralizations( typeSet ).Select( t => t.Nullable );
-
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => this;
 
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
@@ -169,42 +167,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> Generalizations => AllGeneralizations.Where( g => !g.ImplementationLess );
 
-            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= ComputeMinimal( Generalizations );
-
-            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet )
-            {
-                Throw.CheckNotNullArgument( typeSet );
-                return ComputeMinimal( Generalizations.Where( typeSet.Contains ) );
-            }
-
-            internal static List<IAbstractPocoType> ComputeMinimal( IEnumerable<IAbstractPocoType> abstractTypes )
-            {
-                var result = new List<IAbstractPocoType>( abstractTypes );
-                for( int i = 0; i < result.Count; i++ )
-                {
-                    var a = result[i];
-                    int j = 0;
-                    while( j < i )
-                    {
-                        if( result[j].CanReadFrom( a ) )
-                        {
-                            result.RemoveAt( i-- );
-                            goto skip;
-                        }
-                        ++j;
-                    }
-                    while( ++j < result.Count )
-                    {
-                        if( result[j].CanReadFrom( a ) )
-                        {
-                            result.RemoveAt( i-- );
-                            goto skip;
-                        }
-                    }
-                    skip:;
-                }
-                return result;
-            }
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= Generalizations.ComputeMinimal();
 
             sealed class Field : IAbstractPocoField
             {
@@ -296,7 +259,7 @@ namespace CK.Setup
                         }
                         else if( (a.Parameter.Attributes & GenericParameterAttributes.Contravariant) != 0 )
                         {
-                            if( !a.Type.CanWriteTo( other.GenericArguments[i].Type ) ) return false;
+                            if( !other.GenericArguments[i].Type.CanReadFrom( a.Type ) ) return false;
                         }
                         else if( a.Type != other.GenericArguments[i].Type ) return false;
                     }
@@ -377,8 +340,6 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> MinimalGeneralizations => Array.Empty<IAbstractPocoType>();
 
-            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet ) => Array.Empty<IAbstractPocoType>();
-
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
@@ -444,13 +405,7 @@ namespace CK.Setup
 
             public IEnumerable<IAbstractPocoType> AllGeneralizations => _allGeneralizations;
 
-            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= AbstractPocoType.ComputeMinimal( Generalizations );
-
-            public IEnumerable<IAbstractPocoType> GetMinimalGeneralizations( IPocoTypeSet typeSet )
-            {
-                Throw.CheckNotNullArgument( typeSet );
-                return AbstractPocoType.ComputeMinimal( Generalizations.Where( typeSet.Contains ) );
-            }
+            public IEnumerable<IAbstractPocoType> MinimalGeneralizations => _minimalGeneralizations ??= Generalizations.ComputeMinimal();
 
             public bool IsGenericType => _genericTypeDefinition != null;
 

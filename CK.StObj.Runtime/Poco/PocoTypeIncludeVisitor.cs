@@ -61,7 +61,7 @@ namespace CK.Setup
     /// By default this visitor visits the <see cref="ICollectionPocoType"/> that CAN be visited because their <see cref="ICollectionPocoType.ItemTypes"/>
     /// have been visited. This applies to all types (including <see cref="PocoTypeKind.Any"/>).
     /// </summary>
-    public class PocoTypeIncludeVisitor<T> : PocoTypeVisitor<T> where T : class, IMinimalPocoTypeSet
+    public class PocoTypeIncludeVisitor<T> : PocoTypeVisitor<T> where T : class, ILightPocoTypeSet
     {
         readonly IPocoTypeSystem _typeSystem;
         readonly bool _visitVisitableCollections;

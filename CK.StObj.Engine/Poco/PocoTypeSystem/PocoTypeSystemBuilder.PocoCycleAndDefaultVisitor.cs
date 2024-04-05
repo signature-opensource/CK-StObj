@@ -10,7 +10,7 @@ namespace CK.Setup
     partial class PocoTypeSystemBuilder
     {
         // Minimal set implementation for PocoCycleAndDefaultVisitor.
-        sealed class MiniTypeSet : IMinimalPocoTypeSet
+        sealed class MiniTypeSet : ILightPocoTypeSet
         {
             readonly BitArray _flags;
 

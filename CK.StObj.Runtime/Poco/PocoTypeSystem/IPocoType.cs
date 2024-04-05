@@ -349,13 +349,6 @@ namespace CK.Setup
         bool CanReadFrom( IPocoType type );
 
         /// <summary>
-        /// Gets whether the given type is contravariant with this one.
-        /// </summary>
-        /// <param name="type">The type to check.</param>
-        /// <returns>True if the type is contravariant, false otherwise.</returns>
-        bool CanWriteTo( IPocoType type );
-
-        /// <summary>
         /// Returns "[<see cref="Kind"/>]<see cref="CSharpName"/>".
         /// </summary>
         /// <returns>The "[Kind]CSharpName".</returns>

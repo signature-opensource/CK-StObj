@@ -180,7 +180,7 @@ namespace CK.Setup
                                         success = false;
                                     }
                                 }
-                                else if( tE.CanWriteTo( oneType ) )
+                                else if( oneType.CanReadFrom( tE ) )
                                 {
                                     if( prop.UnionTypeDefinition.CanBeExtended )
                                     {
