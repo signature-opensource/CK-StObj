@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Immutable;
 using System.Reflection;
 
@@ -15,16 +16,19 @@ namespace CK.Core
     {
         readonly string _name;
         readonly ImmutableArray<int> _flags;
+        readonly PocoDirectory _pocoDirectory;
 
         /// <summary>
         /// Not to be used directly: this is initialized by generated code.
         /// </summary>
+        /// <param name="pocoDirectory">The Poco directory.</param>
         /// <param name="name">The filter <see cref="Name"/>.</param>
         /// <param name="flags">The opaque flags used to filter types.</param>
-        public ExchangeableRuntimeFilter( string name, int[] flags )
+        public ExchangeableRuntimeFilter( PocoDirectory pocoDirectory, string name, int[] flags )
         {
             _name = name;
             _flags = ImmutableArray.Create( flags );
+            _pocoDirectory = pocoDirectory;
         }
 
         /// <summary>
@@ -36,6 +40,17 @@ namespace CK.Core
         /// Gets the opaque filter flags.
         /// </summary>
         public ImmutableArray<int> Flags => _flags;
+
+        /// <summary>
+        /// Gets whether a type can be exported or imported by this filter.
+        /// </summary>
+        /// <param name="t">The type to test.</param>
+        /// <returns>True if this filter allows the type to be exported and imported. False otherwise.</returns>
+        public bool Contains( Type t )
+        {
+            int idx = _pocoDirectory.GetNonNullableFinalTypeIndex( t );
+            return idx >= 0 ? Contains( idx ) : false;
+        }
 
         /// <summary>
         /// Gets whether a type can be exported or imported.

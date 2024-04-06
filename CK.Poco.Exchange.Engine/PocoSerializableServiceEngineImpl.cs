@@ -6,15 +6,15 @@ using System.Linq;
 
 namespace CK.Setup
 {
-    sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGenerator, IPocoSerializationServiceEngine
+    sealed partial class PocoSerializableServiceEngineImpl : ICSCodeGeneratorWithFinalization, IPocoSerializationServiceEngine
     {
         ITypeScope? _pocoDirectory;
         IPocoTypeSystem? _pocoTypeSystem;
         PocoTypeNameMap? _nameMap;
         string? _getExchangeableRuntimeFilterFuncName;
         int[]? _indexes;
-        ITypeScopePart? _filterPart;
-        List<(string, IPocoTypeSet)>? _registeredFilters;
+        ITypeScopePart? _filterPartCount;
+        List<(int Idx, string Name, IPocoTypeSet Set)>? _registeredFilters;
 
         /// <inheritdoc />
         /// <remarks>
@@ -28,9 +28,9 @@ namespace CK.Setup
             _getExchangeableRuntimeFilterFuncName = _pocoDirectory.FullName + ".GetExchangeableRuntimeFilter";
             using( _pocoDirectory.Region() )
             {
-                _pocoDirectory.Append( "public static readonly ExchangeableRuntimeFilter[] _exRTFilter = new ExchangeableRuntimeFilter[] {" ).NewLine()
-                             .CreatePart( out _filterPart )
-                             .Append( "};" ).NewLine();
+                _pocoDirectory.Append( "public static readonly ExchangeableRuntimeFilter[] _exRTFilter = new ExchangeableRuntimeFilter[" )
+                             .CreatePart( out _filterPartCount )
+                             .Append( "];" ).NewLine();
 
                 _pocoDirectory.Append( "public static ExchangeableRuntimeFilter GetExchangeableRuntimeFilter( string name )" )
                              .OpenBlock()
@@ -53,7 +53,7 @@ namespace CK.Setup
                 return new CSCodeGenerationResult( nameof( WaitForLockedTypeSystem ) );
             }
             monitor.Trace( $"PocoTypeSystemBuilder is locked: Registering the IPocoSerializableServiceEngine. Serialization code generation can start." );
-            _registeredFilters = new List<(string, IPocoTypeSet)>();
+            _registeredFilters = new List<(int, string, IPocoTypeSet)>();
             _indexes = null;
             // Gets the type system by locking again the builder.
             _pocoTypeSystem = typeSystemBuilder.Lock( monitor );
@@ -83,7 +83,7 @@ namespace CK.Setup
             Throw.CheckNotNullOrWhiteSpaceArgument( name );
             Throw.CheckNotNullArgument( typeSet );
 
-            Throw.DebugAssert( _nameMap != null && _registeredFilters != null && _filterPart != null );
+            Throw.DebugAssert( _nameMap != null && _registeredFilters != null && _filterPartCount != null );
 
             var allSerializable = _nameMap!.TypeSet;
             if( !allSerializable.IsSupersetOf( typeSet ) )
@@ -92,10 +92,10 @@ namespace CK.Setup
                 return false;
             }
 
-            var exists = _registeredFilters.FirstOrDefault( f => name.Equals( f.Item1, StringComparison.OrdinalIgnoreCase ) );
-            if( exists.Item1 != null  )
+            var exists = _registeredFilters.FirstOrDefault( f => name.Equals( f.Name, StringComparison.OrdinalIgnoreCase ) );
+            if( exists.Name != null  )
             {
-                if( !typeSet.SameContentAs( exists.Item2 ) )
+                if( typeSet != exists.Set )
                 {
                     monitor.Error( $"Trying to register a ExchangeableRuntimeFilter named '{name}' that is already registered with a different type set." );
                     return false;
@@ -103,14 +103,50 @@ namespace CK.Setup
                 monitor.Warn( $"The ExchangeableRuntimeFilter named '{name}' has already been registered with the same type set." );
                 return true;
             }
-            _filterPart.Append( "new ExchangeableRuntimeFilter( " )
-                       .AppendSourceString( name ).Append( ", " )
-                       .AppendArray( typeSet.FlagArray )
-                       .Append( " )," ).NewLine();
-
-            _registeredFilters.Add( (name,typeSet) );
+            _registeredFilters.Add( (_registeredFilters.Count, name, typeSet) );
             return true;
         }
+
+        bool ICSCodeGeneratorWithFinalization.FinalImplement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext )
+        {
+            Throw.DebugAssert( _pocoDirectory != null && _registeredFilters  != null && _filterPartCount != null );
+            _filterPartCount.Append( _registeredFilters.Count );
+            var pocoDirectoryCtor = _pocoDirectory.FindOrCreateFunction( "internal PocoDirectory_CK()" );
+
+            pocoDirectoryCtor.GeneratedByComment();
+            var shared = _registeredFilters.GroupBy( f => _registeredFilters.Take( f.Idx )
+                                                                            .FirstOrDefault( x => x.Set.SameContentAs( f.Set ), f ) );
+            var sharedPart = pocoDirectoryCtor.CreatePart();
+            foreach( var g in shared )
+            {
+                if( g.Count() == 1 )
+                {
+                    foreach( var f in g )
+                    {
+                        pocoDirectoryCtor.Append( "_exRTFilter[" ).Append( f.Idx ).Append( "] = " )
+                           .Append( "new ExchangeableRuntimeFilter( this, " )
+                           .AppendSourceString( f.Name ).Append( ", " )
+                           .AppendArray( f.Set.FlagArray )
+                           .Append( " );" ).NewLine();
+                    }
+                }
+                else
+                {
+                    sharedPart.Append( "var excSetFlags" ).Append( g.Key.Idx ).Append( " = " ).AppendArray( g.Key.Set.FlagArray ).Append( ";" ).NewLine();
+                    foreach( var f in g )
+                    {
+                        pocoDirectoryCtor.Append( "_exRTFilter[" ).Append( f.Idx ).Append( "] = " )
+                           .Append( "new ExchangeableRuntimeFilter( this, " )
+                           .AppendSourceString( f.Name )
+                           .Append( ", excSetFlags" ).Append( g.Key.Idx ).Append( " );" ).NewLine();
+                    }
+                }
+            }
+
+            return true;
+        }
+
+
 
         int IPocoSerializationServiceEngine.GetSerializableIndex( IPocoType t )
         {
