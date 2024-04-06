@@ -21,12 +21,13 @@ namespace CK.Setup
                                           string? informationalVersion,
                                           IEnumerable<ICSCodeGenerator> aspectsGenerators )
         {
-            List<MultiPassCodeGeneration> secondPasses = new List<MultiPassCodeGeneration>();
-            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, secondPasses, aspectsGenerators ) )
+            var secondPasses = new List<MultiPassCodeGeneration>();
+            var allGenerators = new List<ICSCodeGeneratorWithFinalization>();
+            if( !GenerateSourceCodeFirstPass( monitor, g, informationalVersion, aspectsGenerators, secondPasses, allGenerators ) )
             {
                 return false;
             }
-            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses );
+            var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses, allGenerators );
             if( success )
             {
                 Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
@@ -38,8 +39,9 @@ namespace CK.Setup
         bool GenerateSourceCodeFirstPass( IActivityMonitor monitor,
                                           ICSCodeGenerationContext codeGenContext,
                                           string? informationalVersion,
-                                          List<MultiPassCodeGeneration> collector,
-                                          IEnumerable<ICSCodeGenerator> aspectsGenerators )
+                                          IEnumerable<ICSCodeGenerator> aspectsGenerators,
+                                          List<MultiPassCodeGeneration> secondPassCollector,
+                                          List<ICSCodeGeneratorWithFinalization> finalGen )
         {
             Debug.Assert( EngineMap != null );
             Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
@@ -123,14 +125,14 @@ namespace CK.Setup
                         foreach( var g in EngineMap.AllTypesAttributesCache.Values.SelectMany( attr => attr.GetAllCustomAttributes<ICSCodeGenerator>() )
                                                    .Concat( aspectsGenerators ) )
                         {
-                            ++count;
-                            using( monitor.OpenTrace( $"ICSCodeGenerator n°{count} - {g.GetType():C}." ) )
+                            if( g is ICSCodeGeneratorWithFinalization f ) finalGen.Add( f );
+                            using( monitor.OpenTrace( $"ICSCodeGenerator n°{++count} - {g.GetType():C}." ) )
                             {
                                 var second = MultiPassCodeGeneration.FirstPass( monitor, g, codeGenContext ).SecondPass;
                                 if( second != null )
                                 {
                                     ++count2ndPass;
-                                    collector.Add( second );
+                                    secondPassCollector.Add( second );
                                 }
                             }
                         }
@@ -144,15 +146,15 @@ namespace CK.Setup
                     using( monitor.OpenTrace( "Calls all Type implementor items." ) )
                     {
                         int count = 0;
-                        int count2ndPass = collector.Count;
+                        int count2ndPass = secondPassCollector.Count;
                         foreach( var t in _typeResult.TypesToImplement )
                         {
                             using( monitor.OpenTrace( $"Type implementor n°{count} - {t.GetType():C}." ) )
                             {
-                                t.RunFirstPass( monitor, codeGenContext, collector );
+                                t.RunFirstPass( monitor, codeGenContext, secondPassCollector );
                             }
                         }
-                        monitor.CloseGroup( $"{count} Type implementors, {collector.Count - count2ndPass} second passes required." );
+                        monitor.CloseGroup( $"{count} Type implementors, {secondPassCollector.Count - count2ndPass} second passes required." );
                     }
                     if( entries.Count != 0 )
                     {
@@ -177,7 +179,8 @@ namespace CK.Setup
 
         (bool Success, SHA1Value RunSignature) GenerateSourceCodeSecondPass( IActivityMonitor monitor,
                                                                              ICSCodeGenerationContext codeGenContext,
-                                                                             List<MultiPassCodeGeneration> secondPass )
+                                                                             List<MultiPassCodeGeneration> secondPass,
+                                                                             List<ICSCodeGeneratorWithFinalization> finalGen )
         {
             Debug.Assert( EngineMap != null );
             Debug.Assert( codeGenContext.Assembly == _tempAssembly, "CodeGenerationContext mismatch." );
@@ -190,6 +193,14 @@ namespace CK.Setup
                 using( monitor.CollectEntries( out var entries ) )
                 {
                     MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
+                    foreach( var g in finalGen )
+                    {
+                        if( !g.FinalImplement( monitor, codeGenContext ) )
+                        {
+                            // Ensure that an error is logged.
+                            monitor.Error( $"Generator '{g.GetType():C}': FinalImplement method failed." );
+                        }
+                    }
                     if( entries.Count != 0 )
                     {
                         using( monitor.OpenFatal( $"{entries.Count} error(s). Summary:" ) )
