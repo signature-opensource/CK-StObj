@@ -1,5 +1,6 @@
 using CK.CodeGen;
 using CK.Core;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup.PocoJson
 {
@@ -29,19 +30,30 @@ namespace CK.Setup.PocoJson
         void SupportPocoDirectoryJsonExportGenerated( ITypeScope pocoDirectory )
         {
             pocoDirectory.Definition.BaseTypes.Add( new ExtendedTypeName( "CK.Core.IPocoDirectoryJsonExportGenerated" ) );
-            var read = pocoDirectory
+            var wAny = pocoDirectory
                             .CreateFunction( "void CK.Core.IPocoDirectoryJsonExportGenerated.WriteAnyJson( " +
                                                         "System.Text.Json.Utf8JsonWriter w, " +
                                                         "object? o, " +
                                                         "Poco.Exc.Json.PocoJsonExportOptions? options)" );
 
-            read.GeneratedByComment()
+            wAny.GeneratedByComment()
                 .Append( "if( o == null ) w.WriteNullValue();" ).NewLine()
                 .Append( "else" )
                 .OpenBlock()
-                .Append( "var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( this, options );" ).NewLine()
+                .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( this, options );" ).NewLine()
                 .Append( _exporterType.FullName ).Append( ".WriteAny( w, o, wCtx );" )
                 .CloseBlock();
+
+            var wPoco = pocoDirectory
+                            .CreateFunction( "bool CK.Core.IPocoDirectoryJsonExportGenerated.WriteJson( " +
+                                                        "System.Text.Json.Utf8JsonWriter w, " +
+                                                        "IPoco? o, " +
+                                                        "Poco.Exc.Json.PocoJsonExportOptions? options)" );
+
+            wPoco.GeneratedByComment()
+                .Append( "if( o == null ) { w.WriteNullValue(); return true; }" ).NewLine()
+                .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( this, options );" ).NewLine()
+                .Append( "return System.Runtime.CompilerServices.Unsafe.As<PocoJsonExportSupport.IWriter>( o ).WriteJson( w, wCtx, true );" );
         }
 
     }
