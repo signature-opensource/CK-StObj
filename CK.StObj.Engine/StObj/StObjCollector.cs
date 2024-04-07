@@ -91,12 +91,9 @@ namespace CK.Setup
             {
                 Throw.InvalidOperationException( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            else if( _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null )
-            {
-                _cc.RegisterAssembly( monitor, type );
-                return true;
-            }
-            return false;
+            // Don't register assembly for these types: we don't want external assemblies like Microsoft.AspNetCore.SignalR.Core
+            // because we configured the Microsoft.AspNetCore.SignalR.IHubContext<> to be a singleton. 
+            return _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null;
         }
 
         /// <summary>

@@ -8,33 +8,34 @@ namespace CK.Core
     /// </summary>
     public readonly struct VFeature : IEquatable<VFeature>, IComparable<VFeature>
     {
+        readonly string _name;
+        readonly SVersion _version;
+
         /// <summary>
         /// Initializes a new <see cref="VFeature"/>.
         /// </summary>
-        /// <param name="name">The feature name. Can not be null.</param>
+        /// <param name="name">The feature name. Cannot be null or white space.</param>
         /// <param name="version">
         /// The version. Can not be null and must be <see cref="SVersion.IsValid"/>.
         /// If it happens to be a <see cref="CSVersion"/>, <see cref="CSVersion.ToNormalizedForm()"/> is called.
         /// </param>
         public VFeature( string name, SVersion version )
         {
-            if( String.IsNullOrWhiteSpace( name ) ) throw new ArgumentException( "Must not be null or whitespace.", nameof( name ) );
-            Name = name;
-            if( version == null || !version.IsValid ) throw new ArgumentException( "Must be a valid SVersion.", nameof( version ) );
-            Version = version.AsCSVersion?.ToNormalizedForm() ?? version;
+            Throw.CheckNotNullOrWhiteSpaceArgument( name );
+            Throw.CheckArgument( version != null && version.IsValid );
+            _name = name;
+            _version = version.AsCSVersion?.ToNormalizedForm() ?? version;
         }
 
+        /// <summary>
+        /// Gets the name (empty if <see cref="IsValid"/> is false).
+        /// </summary>
+        public string Name => _name ?? string.Empty;
 
         /// <summary>
-        /// Gets the name (never null except if <see cref="IsValid"/> is false).
+        /// Gets the version that is necessarily valid (<see cref="SVersion.ZeroVersion"/> if <see cref="IsValid"/> is false).
         /// </summary>
-        public string Name { get; }
-
-        /// <summary>
-        /// Gets the version that is necessarily valid (except if <see cref="IsValid"/> is false).
-        /// It must be in normalized (short) form.
-        /// </summary>
-        public SVersion Version { get; }
+        public SVersion Version => _version ?? SVersion.ZeroVersion;
 
         /// <summary>
         /// Gets whether this instance is valid: both <see cref="Name"/> and <see cref="Version"/> are valid.

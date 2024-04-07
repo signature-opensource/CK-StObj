@@ -76,7 +76,7 @@ namespace CK.Setup
                 // If we are on the unified pure BinPath, we have nothing to do.
                 Throw.DebugAssert( _saveSource == SaveSourceLevel.None
                                    && _compileOption == CompileOption.None
-                                   && _similarConfigurations.Single() == Configuration
+                                   && _similarConfigurations.Single() == _configuration
                                    && _runSignature.IsZero );
                 return true;
             }
