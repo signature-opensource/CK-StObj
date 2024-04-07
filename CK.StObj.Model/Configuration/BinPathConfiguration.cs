@@ -1,6 +1,7 @@
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml;
@@ -225,51 +226,64 @@ namespace CK.Setup
 
         /// <summary>
         /// Gets a mutable set of <see cref="XElement"/> that are configurations for aspects.
-        /// Element names should match aspect's name (see <see cref="GetAspectConfiguration(string)"/>).
+        /// Element names are the keys here: a "TypeScriptAspectConfiguration" should handle "TypeScript" elements.
+        /// <para>
+        /// See <see cref="GetAspectConfigurationNames(string)"/>.
+        /// </para>
         /// </summary>
         public List<XElement> AspectConfigurations { get; }
 
         /// <summary>
-        /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect type.
-        /// See <see cref="GetAspectConfiguration(string)"/>.
+        /// Helper that attempts to find the first element in <see cref="AspectConfigurations"/> based on aspect type's name.
+        /// See <see cref="GetAspectConfigurationNames(string)"/>.
         /// </summary>
         /// <param name="aspect">The aspect's type.</param>
         /// <returns>The element or null.</returns>
         public XElement? GetAspectConfiguration( Type aspect ) => GetAspectConfiguration( aspect.Name );
 
         /// <summary>
-        /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect type.
-        /// See <see cref="GetAspectConfiguration(string)"/>.
+        /// Helper that attempts to find the first element in <see cref="AspectConfigurations"/> based on aspect type's name.
+        /// See <see cref="GetAspectConfigurationNames(string)"/>.
         /// </summary>
         /// <typeparam name="T">The aspect's type.</typeparam>
         /// <returns>The element or null.</returns>
         public XElement? GetAspectConfiguration<T>() => GetAspectConfiguration( typeof( T ).Name );
 
         /// <summary>
-        /// Helper that attempts to find an element in <see cref="AspectConfigurations"/> based on an aspect name:
-        /// combinations of "Configurations", "Configuration", "Config" suffixes and "Aspect" substring are removed.
+        /// Helper that attempts to find the first element in <see cref="AspectConfigurations"/> based on an aspect name.
+        /// See <see cref="GetAspectConfigurationNames(string)"/>.
         /// </summary>
         /// <param name="aspectName">The name of the aspect.</param>
         /// <returns>The element or null.</returns>
         public XElement? GetAspectConfiguration( string aspectName )
         {
-            XElement? e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == aspectName );
-            if( e != null ) return e;
+            var names = GetAspectConfigurationNames( aspectName );
+            return AspectConfigurations.FirstOrDefault( e => names.Contains( e.Name.LocalName ) );
+        }
+
+        /// <summary>
+        /// Helper that derives multiple names based on an aspect name: combinations of "Configurations", "Configuration", "Config" suffixes and "Aspect"
+        /// substring are removed. This helps locating one (or more) aspect configurations in <see cref="AspectConfigurations"/>.
+        /// </summary>
+        /// <param name="aspectName">The name of the aspect.</param>
+        /// <returns>The set of canditate names for the configuration element.</returns>
+        public static ImmutableArray<string> GetAspectConfigurationNames( string aspectName )
+        {
+            var b = ImmutableArray.CreateBuilder<string>( 4 );
             string? noConf = null;
             if( aspectName.EndsWith( "Configurations", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 14 );
             else if( aspectName.EndsWith( "Configuration", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 13 );
             else if( aspectName.EndsWith( "Config", StringComparison.OrdinalIgnoreCase ) ) noConf = aspectName.Substring( 0, aspectName.Length - 6 );
+            string noAspect = aspectName.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
             if( noConf != null )
             {
-                e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == noConf );
-                if( e != null ) return e;
+                string noAspectConf = noConf.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
+                if( noAspectConf != noConf ) b.Add( noAspectConf );
             }
-            aspectName = aspectName.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
-            e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == aspectName );
-            if( e != null ) return e;
-            if( noConf != null ) noConf = noConf.Replace( "Aspect", "", StringComparison.OrdinalIgnoreCase );
-            e = AspectConfigurations.FirstOrDefault( e => e.Name.LocalName == noConf );
-            return e;
+            if( noAspect != aspectName ) b.Add( noAspect );
+            if( noConf != null ) b.Add( noConf );
+            b.Add( aspectName );
+            return b.Count == 4 ? b.MoveToImmutable() : b.ToImmutable();
         }
     }
 }
