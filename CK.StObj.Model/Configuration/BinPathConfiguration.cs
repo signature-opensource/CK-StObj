@@ -18,12 +18,12 @@ namespace CK.Setup
     /// after its work and before calling the StObj engine.
     /// </para>
     /// </summary>
-    public class BinPathConfiguration
+    public sealed class BinPathConfiguration
     {
         /// <summary>
         /// Models the &lt;Type&gt; elements that are children of &lt;Types&gt;.
         /// </summary>
-        public class TypeConfiguration
+        public sealed class TypeConfiguration
         {
             /// <summary>
             /// Initializes a new <see cref="TypeConfiguration"/> from a Xml element.

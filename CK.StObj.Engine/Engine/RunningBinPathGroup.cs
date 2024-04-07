@@ -16,7 +16,15 @@ namespace CK.Setup
     {
         readonly string _generatedDllName;
         readonly string _names;
+        readonly StObjEngineConfiguration _engineConfiguration;
+        readonly BinPathConfiguration _configuration;
+        readonly bool _isUnifiedPure;
+        readonly IReadOnlyCollection<BinPathConfiguration> _similarConfigurations;
+        readonly GeneratedFileArtifactWithTextSignature? _generatedAssembly;
+        readonly GeneratedG0Artifact? _generatedSource;
         SaveSourceLevel _saveSource;
+        SHA1Value _runSignature;
+        CompileOption _compileOption;
 
         internal enum SaveSourceLevel
         {
@@ -25,30 +33,35 @@ namespace CK.Setup
             SaveSource
         }
 
-        internal RunningBinPathGroup( string generatedAssemblyName, BinPathConfiguration head, BinPathConfiguration[] similars, SHA1Value sha )
+        internal RunningBinPathGroup( StObjEngineConfiguration engineConfiguration,
+                                      BinPathConfiguration head,
+                                      BinPathConfiguration[] similars,
+                                      SHA1Value sha )
         {
-            Debug.Assert( generatedAssemblyName != null && generatedAssemblyName.StartsWith( StObjContextRoot.GeneratedAssemblyName ) );
-            Debug.Assert( similars != null && similars.Length > 0 && similars[0] == head );
-            _generatedDllName = $"{generatedAssemblyName}-{head.Name}.dll";
-            Configuration = head;
-            SimilarConfigurations = similars;
-            RunSignature = sha;
-            GeneratedSource = CreateG0( head );
-            GeneratedAssembly = CreateAssembly( head );
+            Throw.DebugAssert( engineConfiguration.GeneratedAssemblyName != null && engineConfiguration.GeneratedAssemblyName.StartsWith( StObjContextRoot.GeneratedAssemblyName ) );
+            Throw.DebugAssert( similars != null && similars.Length > 0 && similars[0] == head );
+            _generatedDllName = $"{engineConfiguration.GeneratedAssemblyName}-{head.Name}.dll";
+            _engineConfiguration = engineConfiguration;
+            _configuration = head;
+            _similarConfigurations = similars;
+            _runSignature = sha;
+            _generatedSource = CreateG0( head );
+            _generatedAssembly = CreateAssembly( head );
             _names = similars.Select( c => c.Name ).Concatenate();
         }
 
-        internal RunningBinPathGroup( string generatedAssemblyName, BinPathConfiguration head, SHA1Value sha )
-            : this( generatedAssemblyName, head, new[] { head }, sha )
+        internal RunningBinPathGroup( StObjEngineConfiguration engineConfiguration, BinPathConfiguration head, SHA1Value sha )
+            : this( engineConfiguration, head, new[] { head }, sha )
         {
         }
 
-        internal RunningBinPathGroup( BinPathConfiguration unifiedPure )
+        internal RunningBinPathGroup( StObjEngineConfiguration engineConfiguration, BinPathConfiguration unifiedPure )
         {
-            IsUnifiedPure = true;
+            _isUnifiedPure = true;
             _generatedDllName = String.Empty;
-            Configuration = unifiedPure;
-            SimilarConfigurations = new[] { unifiedPure };
+            _engineConfiguration = engineConfiguration;
+            _configuration = unifiedPure;
+            _similarConfigurations = new[] { unifiedPure };
             _names = "(Unified)";
         }
 
@@ -60,24 +73,24 @@ namespace CK.Setup
         {
             if( IsUnifiedPure )
             {
-                // If we are on the unified pure BinPath.
-                Debug.Assert( _saveSource == SaveSourceLevel.None
-                              && CompileOption == CompileOption.None
-                              && SimilarConfigurations.Single() == Configuration
-                              && RunSignature.IsZero );
+                // If we are on the unified pure BinPath, we have nothing to do.
+                Throw.DebugAssert( _saveSource == SaveSourceLevel.None
+                                   && _compileOption == CompileOption.None
+                                   && _similarConfigurations.Single() == Configuration
+                                   && _runSignature.IsZero );
                 return true;
             }
             CompileOption compile = CompileOption.None;
             bool source = false;
-            foreach( var b in SimilarConfigurations )
+            foreach( var b in _similarConfigurations )
             {
                 compile = (CompileOption)Math.Max( (int)compile, (int)b.CompileOption );
                 source |= b.GenerateSourceFiles;
             }
-            CompileOption = compile;
+            _compileOption = compile;
             _saveSource = source ? SaveSourceLevel.SaveSource : SaveSourceLevel.None;
 
-            if( RunSignature.IsZero )
+            if( _runSignature.IsZero )
             {
                 // No known code base SHA1.
                 // We are not called by CKSetup: the StObjEngine is run in-process, typically
@@ -112,51 +125,54 @@ namespace CK.Setup
                 {
                     monitor.Info( $"An existing StObjMap with the signature is already loaded: setting SaveSource to false and CompileOption to None for BinPaths {Names}." );
                     _saveSource = SaveSourceLevel.None;
-                    CompileOption = CompileOption.None;
+                    _compileOption = CompileOption.None;
                 }
                 else
                 {
-                    if( _saveSource != SaveSourceLevel.None && GeneratedSource.GetSignature( monitor ) == RunSignature )
+                    if( _saveSource != SaveSourceLevel.None && _generatedSource.GetSignature( monitor ) == _runSignature )
                     {
-                        monitor.Info( $"Source '{GeneratedSource}' is up to date. Setting SaveSource to false for BinPaths {Names}." );
+                        monitor.Info( $"Source '{_generatedSource}' is up to date. Setting SaveSource to false for BinPaths {Names}." );
                         _saveSource = SaveSourceLevel.None;
                     }
                     if( compile != CompileOption.None && GeneratedAssembly.GetSignature( monitor ) == RunSignature )
                     {
                         monitor.Info( $"Assembly '{GeneratedAssembly}' is up to date. Setting CompileOption to None for BinPaths {Names}." );
-                        CompileOption = CompileOption.None;
+                        _compileOption = CompileOption.None;
                     }
                 }
-                canSkipRun &= _saveSource == SaveSourceLevel.None && CompileOption == CompileOption.None;
+                canSkipRun &= _saveSource == SaveSourceLevel.None && _compileOption == CompileOption.None;
             }
             return true;
         }
 
         /// <inheritdoc />
-        public BinPathConfiguration Configuration { get; }
+        public StObjEngineConfiguration EngineConfiguration => _engineConfiguration;
 
         /// <inheritdoc />
-        [MemberNotNullWhen( false, nameof( GeneratedSource ), nameof( GeneratedAssembly ) )]
-        public bool IsUnifiedPure { get; }
+        public BinPathConfiguration Configuration => _configuration;
 
         /// <inheritdoc />
-        public IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations { get; }
+        [MemberNotNullWhen( false, nameof( _generatedSource ), nameof( _generatedAssembly ), nameof( GeneratedSource ), nameof( GeneratedAssembly ) )]
+        public bool IsUnifiedPure => _isUnifiedPure;
 
         /// <inheritdoc />
-        public SHA1Value RunSignature { get; internal set; }
+        public IReadOnlyCollection<BinPathConfiguration> SimilarConfigurations => _similarConfigurations;
 
         /// <inheritdoc />
-        [MemberNotNullWhen( true, nameof( GeneratedSource ) )]
+        public SHA1Value RunSignature { get => _runSignature; internal set => _runSignature = value; }
+
+        /// <inheritdoc />
+        [MemberNotNullWhen( true, nameof( GeneratedSource ), nameof( _generatedSource ) )]
         public bool SaveSource => _saveSource == SaveSourceLevel.SaveSource;
 
         /// <inheritdoc />
-        public CompileOption CompileOption { get; private set; }
+        public CompileOption CompileOption => _compileOption;
 
         /// <inheritdoc />
-        public GeneratedFileArtifactWithTextSignature? GeneratedAssembly { get; }
+        public GeneratedFileArtifactWithTextSignature? GeneratedAssembly => _generatedAssembly;
 
         /// <inheritdoc />
-        public GeneratedG0Artifact? GeneratedSource { get; }
+        public GeneratedG0Artifact? GeneratedSource => _generatedSource;
 
         /// <inheritdoc />
         public string Names => _names;
@@ -214,19 +230,19 @@ namespace CK.Setup
         internal bool UpdateSimilarArtifactsFromHead( IActivityMonitor monitor )
         {
             Debug.Assert( !IsUnifiedPure );
-            bool source = _saveSource == SaveSourceLevel.SaveSource && GeneratedSource.Exists();
-            bool compile = CompileOption == CompileOption.Compile && GeneratedAssembly.Exists();
+            bool source = _saveSource == SaveSourceLevel.SaveSource && _generatedSource.Exists();
+            bool compile = _compileOption == CompileOption.Compile && _generatedAssembly.Exists();
             if( !source && !compile ) return true;
 
-            foreach( var b in SimilarConfigurations.Skip( 1 ) )
+            foreach( var b in _similarConfigurations.Skip( 1 ) )
             {
                 if( source && b.GenerateSourceFiles )
                 {
-                    if( !Update( monitor, GeneratedSource.Path, CreateG0( b ) ) ) return false;
+                    if( !Update( monitor, _generatedSource.Path, CreateG0( b ) ) ) return false;
                 }
                 if( compile && b.CompileOption == CompileOption.Compile )
                 {
-                    if( !Update( monitor, GeneratedSource.Path, CreateAssembly( b ) ) ) return false;
+                    if( !Update( monitor, _generatedSource.Path, CreateAssembly( b ) ) ) return false;
                 }
             }
             return true;
@@ -234,7 +250,7 @@ namespace CK.Setup
 
         bool Update( IActivityMonitor monitor, NormalizedPath source, IGeneratedArtifact t )
         {
-            if( source != t.Path && t.GetSignature( monitor ) != RunSignature )
+            if( source != t.Path && t.GetSignature( monitor ) != _runSignature )
             {
                 return t.UpdateFrom( monitor, source );
             }

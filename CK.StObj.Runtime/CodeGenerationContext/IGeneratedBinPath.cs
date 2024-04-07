@@ -19,7 +19,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the groups of similar <see cref="BinPathConfiguration"/>.
         /// <para>
-        /// Configuration objects exposed here must not be altered.
+        /// Configuration objects exposed here (including the root <see cref="IRunningBinPathGroup.EngineConfiguration"/>) must not be altered.
         /// </para>
         /// </summary>
         IRunningBinPathGroup ConfigurationGroup { get; }

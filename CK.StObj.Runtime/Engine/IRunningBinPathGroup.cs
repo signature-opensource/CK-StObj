@@ -15,6 +15,11 @@ namespace CK.Setup
     public interface IRunningBinPathGroup
     {
         /// <summary>
+        /// Gets the root engine configuration.
+        /// </summary>
+        StObjEngineConfiguration EngineConfiguration { get; }
+
+        /// <summary>
         /// Gets the first configuration in the <see cref="SimilarConfigurations"/>.
         /// </summary>
         BinPathConfiguration Configuration { get; }

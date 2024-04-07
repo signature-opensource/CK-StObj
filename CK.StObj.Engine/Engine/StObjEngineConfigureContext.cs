@@ -79,20 +79,12 @@ namespace CK.Setup
 
         public void AddExplicitRegisteredType( Type type )
         {
-            if( type == null ) throw new ArgumentNullException();
-            if( _explicitRegisteredTypes == null ) _explicitRegisteredTypes = new List<Type>();
+            Throw.CheckNotNullArgument( type );
+            _explicitRegisteredTypes ??= new List<Type>();
             _explicitRegisteredTypes.Add( type );
         }
 
-        /// <summary>
-        /// Gets or sets whether the run can be sipped.
-        /// This can only transition from true to false (setting it to true if it's false has no effect).
-        /// <para>
-        /// It's initial value is determined by <see cref="StObjEngineConfiguration.ForceRun"/> and by each
-        /// <see cref="RunningBinPathGroup.GeneratedAssembly"/> and <see cref="RunningBinPathGroup.GeneratedSource"/>
-        /// availability.
-        /// </para>
-        /// </summary>
+        /// <inheritdoc/>
         public bool CanSkipRun
         {
             get => _canSkipRun;

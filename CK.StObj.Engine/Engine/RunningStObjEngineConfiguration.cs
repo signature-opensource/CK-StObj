@@ -209,7 +209,7 @@ namespace CK.Setup
             {
                 var b = Configuration.BinPaths[0];
                 b.ExcludedTypes.AddRange( Configuration.GlobalExcludedTypes );
-                _binPathGroups.Add( new RunningBinPathGroup( Configuration.GeneratedAssemblyName, b, Configuration.BaseSHA1 ) );
+                _binPathGroups.Add( new RunningBinPathGroup( Configuration, b, Configuration.BaseSHA1 ) );
                 monitor.Trace( $"No unification required (single BinPath)." );
             }
             else
@@ -240,7 +240,7 @@ namespace CK.Setup
                 var shaGroup = Configuration.BaseSHA1.IsZero
                                 ? SHA1Value.Zero
                                 : SHA1Value.ComputeHash( Configuration.BaseSHA1.ToString() + similar[0].Path );
-                var group = new RunningBinPathGroup( Configuration.GeneratedAssemblyName, similar[0], similar, shaGroup );
+                var group = new RunningBinPathGroup( Configuration, similar[0], similar, shaGroup );
                 _binPathGroups.Add( group );
             }
             if( _binPathGroups.Count > 1 )
@@ -260,7 +260,7 @@ namespace CK.Setup
                 }
                 else
                 {
-                    primaryRun = new RunningBinPathGroup( unifiedBinPath );
+                    primaryRun = new RunningBinPathGroup( Configuration, unifiedBinPath );
                     monitor.Info( $"Unified group is required." );
                 }
                 // Ensures that it is the first in the list of BinPaths to process:

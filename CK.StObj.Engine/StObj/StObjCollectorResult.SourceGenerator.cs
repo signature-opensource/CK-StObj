@@ -30,7 +30,7 @@ namespace CK.Setup
             var (success, runSignature) = GenerateSourceCodeSecondPass( monitor, g, secondPasses, allGenerators );
             if( success )
             {
-                Debug.Assert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
+                Throw.DebugAssert( g.ConfigurationGroup.RunSignature.IsZero || runSignature == g.ConfigurationGroup.RunSignature );
                 g.ConfigurationGroup.RunSignature = runSignature;
             }
             return success;
