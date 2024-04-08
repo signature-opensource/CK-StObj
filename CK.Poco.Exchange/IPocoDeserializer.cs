@@ -1,3 +1,5 @@
+using System;
+using System.Buffers;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,6 +11,15 @@ namespace CK.Core
     /// </summary>
     public interface IPocoDeserializer
     {
+        /// <summary>
+        /// Synchronous deserialization.
+        /// </summary>
+        /// <param name="monitor">The monitor that may be used.</param>
+        /// <param name="input">The input bytes.</param>
+        /// <param name="data">The read Poco. May be null.</param>
+        /// <returns>True on success, false on error.</returns>
+        bool TryRead( IActivityMonitor monitor, ReadOnlySequence<byte> input, out IPoco? data );
+
         /// <summary>
         /// Synchronous deserialization.
         /// </summary>

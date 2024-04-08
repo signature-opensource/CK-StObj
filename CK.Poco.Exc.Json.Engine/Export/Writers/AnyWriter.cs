@@ -14,7 +14,7 @@ namespace CK.Setup.PocoJson
 
         public override void RawWrite( ICodeWriter writer, string variableName )
         {
-            writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteAny( w, " ).Append( variableName ).Append( ", wCtx );" );
+            writer.Append( "CK.Poco.Exc.JsonGen.Exporter.WriteAnyOrThrow( w, " ).Append( variableName ).Append( ", wCtx );" );
         }
 
         protected override void GenerateSupportCode( IActivityMonitor monitor,
@@ -108,7 +108,8 @@ namespace CK.Setup.PocoJson
             exporterType
                 .GeneratedByComment()
                 .Append( """
-                    internal static void WriteAny( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
+                    // Used internally: type filtering must have already been done.
+                    internal static void WriteAnyOrThrow( System.Text.Json.Utf8JsonWriter w, object o, CK.Poco.Exc.Json.PocoJsonWriteContext wCtx )
                     {
                         int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( o.GetType(), -1 );
                         if( index < 0 ) w.ThrowJsonException( $"Non serializable type: {o.GetType().ToCSharpName(false)}" );
@@ -117,6 +118,23 @@ namespace CK.Setup.PocoJson
                             WriteNonNullableFinalType( w, wCtx, index, o );
                         }
                     }
+
+                    internal static bool WriteAny( System.Text.Json.Utf8JsonWriter w, object? o, Poco.Exc.Json.PocoJsonWriteContext wCtx )  
+                    {
+                        if( o == null )
+                        {
+                            w.WriteNullValue();
+                            return true;
+                        }
+                        int index = PocoDirectory_CK.NonNullableFinalTypes.GetValueOrDefault( o.GetType(), -1 );
+                        if( index >= 0 && wCtx.RuntimeFilter.Contains( index >> 1 ) )
+                        {
+                            WriteNonNullableFinalType( w, wCtx, index, o );
+                            return true;
+                        }
+                        return false;
+                    }
+                    
                     """ );
 
         }

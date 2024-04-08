@@ -29,15 +29,28 @@ namespace CK.Poco.Exc.Json.Tests
                                        Action<string>? text = null )
             where T : class, IPoco
         {
-            byte[] bin1;
-            string bin1Text;
-            using( var m = Util.RecyclableStreamManager.GetStream() )
+            using( var recyclableStream = Util.RecyclableStreamManager.GetStream() )
             {
-                using Utf8JsonWriter w = new Utf8JsonWriter( m );
+                DoRoundTrip( directory, o, exportOptions, importOptions, text, recyclableStream );
+            }
+            using( var memoryStream = new MemoryStream() )
+            {
+                return DoRoundTrip( directory, o, exportOptions, importOptions, text, memoryStream );
+            }
+
+            static T? DoRoundTrip( PocoDirectory directory,
+                                   T? o,
+                                   PocoJsonExportOptions? exportOptions,
+                                   PocoJsonImportOptions? importOptions,
+                                   Action<string>? text,
+                                   MemoryStream m )
+            {
+                byte[] bin1;
+                string bin1Text;
                 try
                 {
-                    o.WriteJson( w, true, exportOptions );
-                    w.Flush();
+                    directory.WriteJson( m, o, true, exportOptions );
+                    m.Flush();
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
                     text?.Invoke( bin1Text );
@@ -49,7 +62,7 @@ namespace CK.Poco.Exc.Json.Tests
                 }
                 catch( Exception )
                 {
-                    w.Flush();
+                    m.Flush();
                     bin1 = m.ToArray();
                     bin1Text = Encoding.UTF8.GetString( bin1 );
                     // On error, bin1 and bin1Text can be inspected here.
@@ -57,17 +70,22 @@ namespace CK.Poco.Exc.Json.Tests
                 }
 
                 var o2 = directory.ReadJson( bin1, importOptions );
-
                 m.Position = 0;
-                using( var w2 = new Utf8JsonWriter( m ) )
-                {
-                    o2.WriteJson( w2, true, exportOptions );
-                    w2.Flush();
-                }
+                directory.WriteJson( m, o, true, exportOptions );
                 var bin2 = m.ToArray();
+                bin2.Should().BeEquivalentTo( bin1 );
 
-                bin1.Should().BeEquivalentTo( bin2 );
-                return (T?)o2;
+                // Check the extension method on IPocoFactory.ReadJson and IPoco.WriteJson.
+                var o3 = directory.Find<T>()!.ReadJson( bin2, importOptions );
+                Throw.DebugAssert( (o3 == null) == (o == null) );
+                if( o3 != null )
+                {
+                    m.Position = 0;
+                    o3.WriteJson( m, true, exportOptions ).Should().BeTrue();
+                    var bin3 = m.ToArray();
+                    bin3.Should().BeEquivalentTo( bin1 );
+                }
+                return (T?)o3;
             }
         }
     }

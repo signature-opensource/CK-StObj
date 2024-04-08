@@ -78,22 +78,11 @@ namespace CK.Setup.PocoJson
                          } )
                          .Append( "w.WriteEndObject();" ).NewLine()
                          .CloseBlock();
-            }
-            var toString = FunctionDefinition.Parse( "public override string ToString()" );
-            if( pocoClass.FindFunction( toString.Key, false ) == null )
-            {
-                using( pocoClass.Region() )
+                var toString = FunctionDefinition.Parse( "public override string ToString()" );
+                if( pocoClass.FindFunction( toString.Key, false ) == null )
                 {
-                    pocoClass
-                        .CreateFunction( toString )
-                        .Append( "var m = new System.Buffers.ArrayBufferWriter<byte>();" ).NewLine()
-                        .Append( "using( var w = new System.Text.Json.Utf8JsonWriter( m ) )" ).NewLine()
-                        .OpenBlock()
-                        .Append( "using var wCtx = new CK.Poco.Exc.Json.PocoJsonWriteContext( PocoDirectory_CK.Instance, CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault );" ).NewLine()
-                        .Append( "WriteJson( w, wCtx );" ).NewLine()
-                        .Append( "w.Flush();" ).NewLine()
-                        .CloseBlock()
-                        .Append( "return Encoding.UTF8.GetString( m.WrittenMemory.Span );" );
+                    pocoClass.CreateFunction( toString )
+                             .Append( "=> PocoJsonExportExtensions.ToString( this, CK.Poco.Exc.Json.PocoJsonExportOptions.ToStringDefault, false );" );
                 }
             }
         }

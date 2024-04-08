@@ -447,7 +447,7 @@ namespace CK.Poco.Exc.Json.Tests
             }
 
             var excW = new PocoJsonExportOptions() { TypeFilterName = "AllExchangeable" };
-            var filtered = Encoding.UTF8.GetString( o.WriteJson( withType:true, options: excW ).Span );
+            var filtered = o.ToString( excW, withType: true );
             filtered.Should().Be( """
                 ["CK.Poco.Exc.Json.Tests.CollectionTests.IAllCollectionOfObjects",
                 {
@@ -486,7 +486,7 @@ namespace CK.Poco.Exc.Json.Tests
             invalid1.Obj.Should().BeNull();
             var invalid2 = (Rec)o3.Dictionary[4];
             invalid2.Obj.Should().BeNull();
-            FluentActions.Invoking( () => o3.WriteJson() ).Should().Throw<Exception>();
+            FluentActions.Invoking( () => o3.ToString( excW ) ).Should().Throw<Exception>();
         }
 
         [RegisterPocoType( typeof( object[] ) )]

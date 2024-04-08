@@ -3,8 +3,9 @@ using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
-using static CK.Core.PocoJsonExportSupport;
 
 namespace CK.Core
 {
@@ -13,70 +14,172 @@ namespace CK.Core
     /// </summary>
     public static class PocoJsonExportExtensions
     {
-        /// <inheritdoc cref="IPocoDirectoryJsonExportGenerated.WriteAnyJson(Utf8JsonWriter, object?, PocoJsonExportOptions?)"/>
-        public static void WriteAnyJson( this PocoDirectory @this, Utf8JsonWriter w, object? o, PocoJsonExportOptions? options = null )
-        {
-            ((IPocoDirectoryJsonExportGenerated)@this).WriteAnyJson( w, o, options );
-        }
-
         /// <summary>
-        /// Serializes this Poco (that can be null) into UTF-8 Json bytes.
-        /// <para>
-        /// If this Poco is not in the <see cref="PocoJsonExportOptions.TypeFilterName"/>, nothing is written,
-        /// the result is empty.
-        /// </para>
+        /// Exports this Poco in Json according to the export options.
+        /// This returns an empty string when filtered out because of <see cref="PocoJsonExportOptions.TypeFilterName"/>). 
         /// </summary>
-        /// <param name="this">The poco (can be null).</param>
-        /// <param name="withType">True to emit this Poco type.</param>
-        /// <param name="options">Optional export options.</param>
-        /// <returns>The Utf8 bytes.</returns>
-        public static ReadOnlyMemory<byte> WriteJson( this IPoco? @this, bool withType = true, PocoJsonExportOptions? options = null )
+        /// <param name="this">This Poco.</param>
+        /// <param name="options">The Json export options.</param>
+        /// <param name="withType">
+        /// When true, a 2-cells array contains the Poco's name first and then the Poco's value.
+        /// When false, the Poco's value object is directly written.
+        /// <para>
+        /// This overrides (for the root object only), the <see cref="PocoJsonExportOptions.TypeLess"/>
+        /// option.
+        /// </para>
+        /// </param>
+        /// <returns>The Json string or an empty string.</returns>
+        public static string ToString( this IPoco @this, PocoJsonExportOptions options, bool withType = false )
         {
             var m = new ArrayBufferWriter<byte>();
-            using( var w = new Utf8JsonWriter( m ) )
-            {
-                WriteJson( @this, w, withType, options );
-            }
-            return m.WrittenMemory;
+            WriteJson( @this, m, withType, options );
+            return Encoding.UTF8.GetString( m.WrittenMemory.Span );
+        }
+
+        #region PocoDirectory.WriteAnyJson to Utf8JsonWriter and PocoJsonWriteContext (relay to generated code), IBufferWriter<byte> and Stream.
+        /// <inheritdoc cref="IPocoDirectoryJsonExportGenerated.WriteAnyJson(Utf8JsonWriter, object?, PocoJsonWriteContext?)"/>
+        public static bool WriteAnyJson( this PocoDirectory @this, Utf8JsonWriter writer, object? o, PocoJsonWriteContext context )
+        {
+            return ((IPocoDirectoryJsonExportGenerated)@this).WriteAnyJson( writer, o, context );
         }
 
         /// <summary>
-        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/> if it is null
-        /// or allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+        /// Writes any Poco compliants types (types must have been registered in the Poco Type System).
         /// </summary>
-        /// <param name="this">The poco (can be null).</param>
-        /// <param name="w">The target writer.</param>
-        /// <param name="withType">True to emit this Poco type.</param>
-        /// <param name="options">Optional export options.</param>
-        /// <returns>True if this Poco (or <c>null</c>) has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
-        public static bool WriteJson( this IPoco? @this, Utf8JsonWriter w, bool withType = true, PocoJsonExportOptions? options = null )
+        /// <param name="this">This Poco directory.</param>
+        /// <param name="output">The target output.</param>
+        /// <param name="o">The object to write.</param>
+        /// <param name="options">Optional export options: defaults to <see cref="PocoJsonExportOptions.Default"/>.</param>
+        /// <returns>True if this object has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+        public static bool WriteAnyJson( this PocoDirectory @this, IBufferWriter<byte> output, object? o, PocoJsonExportOptions? options = null )
         {
-            if( @this == null ) w.WriteNullValue();
-            else
+            var pW = (IPocoDirectoryJsonExportGenerated)@this;
+            using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+            using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
             {
-                using var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options );
-                return ((IWriter)@this).WriteJson( w, wCtx, withType );
+                // Utf8JsonWriter.Dispose calls its Flush().
+                return pW.WriteAnyJson( w, o, wCtx );
             }
-            return true;
+        }
+
+        /// <inheritdoc cref="WriteJson(PocoDirectory, IBufferWriter{byte}, IPoco?, bool, PocoJsonExportOptions?)"/>
+        public static bool WriteAnyJson( this PocoDirectory @this, Stream output, object? o, PocoJsonExportOptions? options = null )
+        {
+            var pW = (IPocoDirectoryJsonExportGenerated)@this;
+            using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+            using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
+            {
+                // Utf8JsonWriter.Dispose calls its Flush().
+                return pW.WriteAnyJson( w, o, wCtx );
+            }
+        }
+
+        #endregion
+
+        #region PocoDirectory.WriteJson for nullable IPoco to Utf8JsonWriter and PocoJsonWriteContext (relay to generated code), IBufferWriter<byte> and Stream.
+        /// <inheritdoc cref="IPocoDirectoryJsonExportGenerated.WriteJson(Utf8JsonWriter, IPoco?, PocoJsonWriteContext, bool)"/>
+        public static bool WriteJson( this PocoDirectory @this, Utf8JsonWriter writer, IPoco? o, PocoJsonWriteContext context, bool withType )
+        {
+            return ((IPocoDirectoryJsonExportGenerated)@this).WriteJson( writer, o, context, withType );
         }
 
         /// <summary>
-        /// Serializes this Poco (that can be null) into a <see cref="Utf8JsonWriter"/> if it is null
-        /// or allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+        /// Writes a <see cref="IPoco"/> (that can be null) and returns whether either "null"
+        /// or the Poco has been written (or filtered out because of <see cref="PocoJsonExportOptions.TypeFilterName"/>).
         /// </summary>
-        /// <param name="this">The poco (can be null).</param>
-        /// <param name="utf8JsonStream">The target stream.</param>
-        /// <param name="withType">True to emit this Poco type.</param>
-        /// <param name="options">Optional export options.</param>
-        /// <returns>The Utf8 bytes.</returns>
-        /// <returns>True if this Poco (or <c>null</c>) has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
-        public static bool WriteJson( this IPoco? @this, Stream utf8JsonStream, bool withType = true, PocoJsonExportOptions? options = null )
+        /// <param name="this">This Poco directory.</param>
+        /// <param name="output">The target output.</param>
+        /// <param name="o">The object to write.</param>
+        /// <param name="withType">
+        /// When true, a 2-cells array contains the Poco's name first and then the Poco's value.
+        /// When false, the Poco's value object is directly written.
+        /// <para>
+        /// This overrides (for the root object only), the <see cref="PocoJsonExportOptions.TypeLess"/>
+        /// option.
+        /// </para>
+        /// </param>
+        /// <param name="options">Optional export options: defaults to <see cref="PocoJsonExportOptions.Default"/>.</param>
+        /// <returns>True if this Poco has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+        public static bool WriteJson( this PocoDirectory @this, IBufferWriter<byte> output, IPoco? o, bool withType = false, PocoJsonExportOptions? options = null )
         {
-            using( var w = new Utf8JsonWriter( utf8JsonStream ) )
+            var pW = (IPocoDirectoryJsonExportGenerated)@this;
+            using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+            using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
             {
-                return WriteJson( @this, w, withType, options );
+                // Utf8JsonWriter.Dispose calls its Flush().
+                return pW.WriteJson( w, o, wCtx, withType );
             }
         }
+
+        /// <inheritdoc cref="WriteJson(PocoDirectory, IBufferWriter{byte}, IPoco?, bool, PocoJsonExportOptions?)"/>
+        public static bool WriteJson( this PocoDirectory @this, Stream output, IPoco? o, bool withType = false, PocoJsonExportOptions? options = null )
+        {
+            var pW = (IPocoDirectoryJsonExportGenerated)@this;
+            using( var wCtx = new PocoJsonWriteContext( @this, options ) )
+            using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
+            {
+                // Utf8JsonWriter.Dispose calls its Flush().
+                return pW.WriteJson( w, o, wCtx, withType );
+            }
+        }
+
+        #endregion
+
+        /// <inheritdoc cref="PocoJsonExportSupport.IWriter.WriteJson(Utf8JsonWriter, PocoJsonWriteContext,bool)"/>
+        public static bool WriteJson( this IPoco @this, Utf8JsonWriter writer, PocoJsonWriteContext context, bool withType )
+        {
+            Throw.CheckNotNullArgument( @this );
+            return ((PocoJsonExportSupport.IWriter)@this).WriteJson( writer, context, withType );
+        }
+
+        #region IPoco.WriteJson to Utf8JsonWriter and PocoJsonWriteContext (relay to generated code), IBufferWriter<byte> and Stream.
+
+        /// <inheritdoc cref="IWriter.WriteJson(Utf8JsonWriter, PocoJsonWriteContext)"/>
+        public static bool WriteJson( this IPoco @this, Utf8JsonWriter writer, PocoJsonWriteContext context )
+        {
+            Throw.CheckNotNullArgument( @this );
+            return ((PocoJsonExportSupport.IWriter)@this).WriteJson( writer, context );
+        }
+
+        /// <summary>
+        /// Writes this IPoco as Json (with or without its type) if it is allowed by the context's <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+        /// </summary>
+        /// <param name="this">This Poco.</param>
+        /// <param name="output">The target.</param>
+        /// <param name="withType">
+        /// When true, a 2-cells array contains the Poco's name first and then the Poco's value.
+        /// When false, the Poco's value object is directly written.
+        /// <para>
+        /// This overrides (for the root object only), the <see cref="PocoJsonExportOptions.TypeLess"/>
+        /// option.
+        /// </para>
+        /// </param>
+        /// <param name="options">Optional export options: defaults to <see cref="PocoJsonExportOptions.Default"/>.</param>
+        /// <returns>True if this Poco has been written, false it it has been filtered out by <see cref="PocoJsonExportOptions.TypeFilterName"/>.</returns>
+        public static bool WriteJson( IPoco @this, IBufferWriter<byte> output, bool withType = false, PocoJsonExportOptions? options = null )
+        {
+            Throw.CheckNotNullArgument( @this );
+            using( var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options ) )
+            using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
+            {
+                // Utf8JsonWriter.Dispose calls its Flush().
+                var pW = ((PocoJsonExportSupport.IWriter)@this);
+                return withType ? pW.WriteJson( w, wCtx, true ) : pW.WriteJson( w, wCtx );
+            }
+        }
+
+        /// <inheritdoc cref="WriteJson(IPoco, IBufferWriter{byte}, bool, PocoJsonExportOptions?)"/>
+        public static bool WriteJson( this IPoco @this, Stream output, bool withType = false, PocoJsonExportOptions? options = null )
+        {
+            Throw.CheckNotNullArgument( @this );
+            using( var wCtx = new PocoJsonWriteContext( ((IPocoGeneratedClass)@this).Factory.PocoDirectory, options ) )
+            using( var w = new Utf8JsonWriter( output, wCtx.Options.WriterOptions ) )
+            {
+                // Utf8JsonWriter.Dispose calls its Flush().
+                return ((PocoJsonExportSupport.IWriter)@this).WriteJson( w, wCtx, withType );
+            }
+        }
+        #endregion
 
         /// <summary>
         /// Throws a <see cref="JsonException"/>.

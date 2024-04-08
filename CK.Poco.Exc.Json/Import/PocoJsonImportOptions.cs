@@ -50,7 +50,7 @@ namespace CK.Poco.Exc.Json
         }
 
         /// <summary>
-        /// Get the reader options. See <see cref="Default"/>.
+        /// Get the <see cref="Utf8JsonReader"/> options.
         /// </summary>
         public JsonReaderOptions ReaderOptions { get; init; }
 

@@ -94,13 +94,14 @@ namespace CK.StObj.Engine.Tests.CrisLike
                 }
 
                 using var readContext = new PocoJsonReadContext( directory );
+                using var writeContext = new PocoJsonWriteContext( directory );
 
                 T ReadFunc( ref Utf8JsonReader r, IUtf8JsonReaderContext ctx )
                 {
                     return factory.ReadJson( ref r, (PocoJsonReadContext)ctx )!;
                 };
 
-                var cmd2 = TestHelper.JsonIdempotenceCheck( cmd, ( w, c ) => c.WriteJson( w ), ReadFunc, readContext );
+                var cmd2 = TestHelper.JsonIdempotenceCheck( cmd, ( w, c ) => c.WriteJson( w, writeContext ), ReadFunc, readContext );
                 Debug.Assert( cmd2 != null );
 
                 cmd2.GetType().GetProperty( "SimpleValue" )!.GetValue( cmd2 ).Should().Be( "Tested Value" );

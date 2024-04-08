@@ -15,7 +15,14 @@ namespace CK.Core
         public interface IWriter
         {
             /// <summary>
-            /// Writes this IPoco as Json if it is allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+            /// Writes this IPoco as Json if it is allowed by the context's <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+            /// <para>
+            /// This is a low-level method:
+            /// <list type="bullet">
+            ///     <item>The <paramref name="writer"/> should have been initialized with the context's <see cref="PocoJsonExportOptions.WriterOptions"/>.</item>
+            ///     <item>The <see cref="Utf8JsonWriter.Flush()"/> is not called.</item>
+            /// </list>
+            /// </para>
             /// </summary>
             /// <param name="writer">The Json writer.</param>
             /// <param name="context">Writer context.</param>
@@ -31,7 +38,14 @@ namespace CK.Core
             bool WriteJson( Utf8JsonWriter writer, PocoJsonWriteContext context, bool withType );
 
             /// <summary>
-            /// Writes this IPoco as Json without its type if it is allowed by the <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+            /// Writes this IPoco as Json without its type if it is allowed by the context's <see cref="PocoJsonExportOptions.TypeFilterName"/>.
+            /// <para>
+            /// This is a low-level method:
+            /// <list type="bullet">
+            ///     <item>The <paramref name="writer"/> should have been initialized with the context's <see cref="PocoJsonExportOptions.WriterOptions"/>.</item>
+            ///     <item>The <see cref="Utf8JsonWriter.Flush()"/> is not called.</item>
+            /// </list>
+            /// </para>
             /// </summary>
             /// <param name="writer">The Json writer.</param>
             /// <param name="context">Writer context.</param>
