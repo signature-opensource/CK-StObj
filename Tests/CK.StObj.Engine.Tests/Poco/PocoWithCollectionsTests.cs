@@ -3,8 +3,10 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -107,7 +109,8 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( IInvalidConcreteList ) );
             TestHelper.GetFailedResult( c,
-                "Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidConcreteList.NoWay' is a concrete List read only property. It must either have a setter { get; set; } or be abstract: 'IList<int> NoWay { get; }'." );
+                "Property 'CK.StObj.Engine.Tests.Poco.PocoWithCollectionsTests.IInvalidConcreteList.NoWay' is a concrete List read only property. " +
+                "It must either have a setter { get; set; } or be abstract: 'IList<int> NoWay { get; }'." );
         }
 
         [Test]

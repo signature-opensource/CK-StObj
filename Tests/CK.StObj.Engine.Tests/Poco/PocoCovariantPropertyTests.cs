@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Serialization;
 using NUnit.Framework;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -66,6 +67,28 @@ namespace CK.StObj.Engine.Tests.Poco
             a.Lines.Should().BeAssignableTo<IReadOnlyList<IActualSubA>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<ISubDefiner>>();
             a.Lines.Should().BeAssignableTo<IReadOnlyList<object>>();
+        }
+
+        [CKTypeDefiner]
+        public interface IMutableRootDefiner : IPoco
+        {
+            IList<ISubDefiner> Lines { get; }
+        }
+
+        public interface IInvalidActualRootConcrete : IMutableRootDefiner
+        {
+            new List<IActualSubA> Lines { get; set; }
+        }
+
+        [Test]
+        public void invalid_abstract_to_concrete()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IInvalidActualRootConcrete ), typeof( IActualSubA ) );
+            TestHelper.GetFailedResult( c,
+                $"Type conflict between:{Environment.NewLine}" +
+                $"IList<PocoCovariantPropertyTests.ISubDefiner> CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IMutableRootDefiner.Lines{Environment.NewLine}" +
+                $"And:{Environment.NewLine}" +
+                $"List<PocoCovariantPropertyTests.IActualSubA> CK.StObj.Engine.Tests.Poco.PocoCovariantPropertyTests.IInvalidActualRootConcrete.Lines" );
         }
 
     }

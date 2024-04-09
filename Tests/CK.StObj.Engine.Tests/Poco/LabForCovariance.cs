@@ -4,12 +4,9 @@ using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace CK.StObj.Engine.Tests.Poco
 {
@@ -793,6 +790,49 @@ namespace CK.StObj.Engine.Tests.Poco
 
             typeof( IList<Animal> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous (nobody checks the bool IsReadOnly)." );
             typeof( IList<object> ).IsAssignableFrom( typeof( Dog[] ) ).Should().BeTrue( "Dangerous( nobody checks the bool IsReadOnly )." );
+        }
+
+
+        // Possible ReadOnly adaptation.
+        public interface IWithListOfAnonymous : IPoco
+        {
+            List<(int, List<int>)> NoWay { get; set; }
+        }
+
+        public interface IROWithListOfAnonymous
+        {
+            IReadOnlyList<(int, IReadOnlyList<int>)> NoWay { get; }
+        }
+
+        sealed class WithListOfAnonymous_CK : IWithListOfAnonymous, IROWithListOfAnonymous
+        {
+            readonly ROAdapter _adapter;
+
+            public WithListOfAnonymous_CK()
+            {
+                _adapter = new ROAdapter( this );
+            }
+
+            public List<(int, List<int>)> NoWay { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            IReadOnlyList<(int, IReadOnlyList<int>)> IROWithListOfAnonymous.NoWay => _adapter;
+
+            sealed class ROAdapter : IReadOnlyList<(int, IReadOnlyList<int>)>
+            {
+                readonly WithListOfAnonymous_CK _o;
+
+                public ROAdapter( WithListOfAnonymous_CK o ) => _o = o;
+
+                public (int, IReadOnlyList<int>) this[int index] => ToRO( _o.NoWay[index] );
+
+                public int Count => _o.NoWay.Count;
+
+                public IEnumerator<(int, IReadOnlyList<int>)> GetEnumerator() => _o.NoWay.Select( r => ToRO( r ) ).GetEnumerator();
+
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+            }
+
+            static (int, IReadOnlyList<int>) ToRO( (int, List<int>) a ) => (a.Item1, a.Item2);
         }
 
     }

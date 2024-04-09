@@ -146,7 +146,11 @@ namespace CK.StObj.Engine.Tests.Poco
             static void CheckError( Type tError )
             {
                 var c = TestHelper.CreateStObjCollector( tError );
-                TestHelper.GetFailedResult( c, "Type must be '(string? A,(string? S,int I) B,((string? S1,string S2),string? S3)? C)' since " );
+                // Property type conflict between:
+                // (string,(string,int),((string,string),string))& CK.StObj.Engine.Tests.Poco.AnonymousRecordTests.IWithNotNPart0.Thing
+                // And:
+                // (string,(string,int),((string,string),string)?)& CK.StObj.Engine.Tests.Poco.AnonymousRecordTests.IWithN.Thing
+                TestHelper.GetFailedResult( c, "(string,(string,int),((string,string),string)?)& " );
             }
         }
 

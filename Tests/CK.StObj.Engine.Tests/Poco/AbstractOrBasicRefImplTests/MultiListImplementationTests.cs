@@ -152,7 +152,11 @@ namespace CK.StObj.Engine.Tests.Poco.AbstractImplTests
         {
             // ISecondaryVerySimplePoco is required for IAbstractBase and IAbstract1 to be actually registered. 
             var c = TestHelper.CreateStObjCollector( typeof( IAbstractBase ), typeof( IAbstract1 ), typeof( IInvalid ), typeof( ISecondaryVerySimplePoco ) );
-            TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests.IInvalid.List': Type must be 'IList<CK.StObj.Engine.Tests.Poco.AbstractImplTests.CommonTypes.IAbstractBase>' since 'CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests.IPocoWithListOfAbstractBase.List' defines it." );
+            TestHelper.GetFailedResult( c,
+                $"Property type conflict between:{Environment.NewLine}" +
+                $"IList<CommonTypes.IAbstract1> CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests.IInvalid.List{Environment.NewLine}" +
+                $"And:{Environment.NewLine}" +
+                $"IList<CommonTypes.IAbstractBase> CK.StObj.Engine.Tests.Poco.AbstractImplTests.MultiListImplementationTests.IPocoWithListOfAbstractBase.List" );
         }
     }
 }

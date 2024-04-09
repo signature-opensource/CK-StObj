@@ -451,7 +451,7 @@ namespace CK.Setup
                     {
                         return true;
                     }
-                    monitor.Error( $"{p}: Type must be '{_bestReg.CSharpName}' since '{_bestProperty.DeclaringType!:N}.{_bestProperty.Name}' defines it." );
+                    monitor.Error( $"Property type conflict between:{Environment.NewLine}{p.Type:C} {p.DeclaringType!:N}.{p.Name}{Environment.NewLine}And:{Environment.NewLine}{_bestProperty.Type:C} {_bestProperty.DeclaringType!:N}.{_bestProperty.Name}" );
                     return false;
                 }
                 _bestProperty = p;

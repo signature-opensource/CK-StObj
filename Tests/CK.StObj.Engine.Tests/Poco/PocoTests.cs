@@ -145,7 +145,7 @@ namespace CK.StObj.Engine.Tests.Poco
         public void same_Poco_properties_when_not_Poco_family_must_be_exactly_the_same( Type t1, Type t2 )
         {
             var c = TestHelper.CreateStObjCollector( t1, t2 );
-            TestHelper.GetFailedResult( c, "Type must be '", "' since '", "' defines it." );
+            TestHelper.GetFailedResult( c, "Property type conflict between:", "And:" );
         }
 
         public interface IDefTestMaskedBaseProperties : IDefTest
@@ -295,7 +295,11 @@ namespace CK.StObj.Engine.Tests.Poco
                                                          typeof( ISubBestTest ),
                                                          typeof( IRootAbsoluteBestTest ),
                                                          typeof( IRootBuggyOtherFamily ) );
-                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub': Type must be 'CK.StObj.Engine.Tests.Poco.PocoTests.ISubTest' since 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub' defines it." );
+                TestHelper.GetFailedResult( c,
+                    $"Property type conflict between:{Environment.NewLine}" +
+                    $"PocoTests.IDefBase CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub{Environment.NewLine}" +
+                    $"And:{Environment.NewLine}" +
+                    $"PocoTests.ISubTest CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub" );
             }
 
             // With IDefBase Poco registration:
@@ -307,7 +311,11 @@ namespace CK.StObj.Engine.Tests.Poco
                                                          typeof( IRootAbsoluteBestTest ),
                                                          typeof( IRootBuggyOtherFamily ),
                                                          typeof( IDefBase ) );
-                TestHelper.GetFailedResult( c, "Property 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub': Type must be 'CK.StObj.Engine.Tests.Poco.PocoTests.ISubTest' since 'CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub' defines it." );
+                TestHelper.GetFailedResult( c,
+                    $"Property type conflict between:{Environment.NewLine}" +
+                    $"PocoTests.IDefBase CK.StObj.Engine.Tests.Poco.PocoTests.IRootBuggyOtherFamily.Sub{Environment.NewLine}" +
+                    $"And:{Environment.NewLine}" +
+                    $"PocoTests.ISubTest CK.StObj.Engine.Tests.Poco.PocoTests.IRootTest.Sub" );
             }
         }
 
