@@ -312,9 +312,6 @@ namespace CK.Setup
                             }
                         }
                     }
-                    _currentParameterValues[i] = p.HasDefaultValue
-                                    ? (context.CurrentRun.ServiceContainer.GetService( p.ParameterType ) ?? p.DefaultValue)
-                                    : context.CurrentRun.ServiceContainer.GetRequiredService( p.ParameterType );
                 }
             }
             return HasWaitingServices ? RunResult.MadeProgress : RunResult.Success;
