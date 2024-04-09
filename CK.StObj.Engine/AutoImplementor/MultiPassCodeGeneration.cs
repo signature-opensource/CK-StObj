@@ -319,6 +319,7 @@ namespace CK.Setup
 
         RunResult FillWaitingMethodParameters( IActivityMonitor monitor, ICSCodeGenerationContext context )
         {
+            Throw.DebugAssert( _currentParameters != null );
             RunResult result = RunResult.Retry;
             Throw.DebugAssert( HasWaitingServices && _currentParameterValues != null );
             for( int i = _currentWaitingParameters.Count-1; i >= 0; i-- )
@@ -327,7 +328,7 @@ namespace CK.Setup
                 var s = context.CurrentRun.ServiceContainer.GetService( p.ParameterType );
                 if( s != null )
                 {
-                    _currentParameterValues[Array.IndexOf( _currentParameterValues, p )] = s;
+                    _currentParameterValues[Array.IndexOf( _currentParameters, p )] = s;
                     result = RunResult.MadeProgress;
                     _currentWaitingParameters.RemoveAt( i );
                 }
