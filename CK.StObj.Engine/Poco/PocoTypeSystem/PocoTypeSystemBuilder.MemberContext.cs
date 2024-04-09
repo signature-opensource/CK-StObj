@@ -25,7 +25,6 @@ namespace CK.Setup
             {
                 Throw.DebugAssert( isPocoField );
                 _isPocoField = true;
-                //_forbidConcreteCollections = true;
                 _root = root;
             }
 
@@ -38,7 +37,7 @@ namespace CK.Setup
 
             public void Reset()
             {
-                _forbidConcreteCollections = _isPocoField;
+                _forbidConcreteCollections = false;
                 _forbidAbstractCollections = false;
                 _tupleNames = null;
                 _tupleIndex = 0;
