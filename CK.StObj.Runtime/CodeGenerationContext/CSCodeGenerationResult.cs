@@ -1,3 +1,4 @@
+using CK.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,6 +11,7 @@ namespace CK.Setup
     /// <list type="bullet">
     ///     <item>The implementation has been successfully done (use the singleton <see cref="CSCodeGenerationResult.Success"/>).</item>
     ///     <item>The implementation failed (use the singleton <see cref="CSCodeGenerationResult.Failed"/>).</item>
+    ///     <item>The same method must be retried during the next pass (use the singleton <see cref="CSCodeGenerationResult.Retry"/>).</item>
     ///     <item>A dedicated type must be instantiated (with dependencies injection support): use the <see cref="CSCodeGenerationResult(Type)"/> constructor. See <see cref="ImplementorType"/>.</item>
     ///     <item>Another method on the same object (with parameter dependencies injection support) must be called: use the <see cref="CSCodeGenerationResult(string)"/> constructor with the method name.</item>
     /// </list>
@@ -18,62 +20,55 @@ namespace CK.Setup
     /// </summary>
     public readonly struct CSCodeGenerationResult
     {
-        readonly bool _success;
+        readonly string? _methodName;
+        readonly int _flag;
 
         /// <summary>
-        /// Express a successful, final, result.
+        /// Express a failed final result.
         /// </summary>
-        public static readonly CSCodeGenerationResult Success = new CSCodeGenerationResult( true );
+        public static readonly CSCodeGenerationResult Failed = new CSCodeGenerationResult();
 
         /// <summary>
-        /// Express a failed, final, result.
+        /// Express a successful final result.
         /// </summary>
-        public static readonly CSCodeGenerationResult Failed = new CSCodeGenerationResult( false );
+        public static readonly CSCodeGenerationResult Success = new CSCodeGenerationResult( 1 );
+
+        /// <summary>
+        /// Express a failed final result.
+        /// </summary>
+        public static readonly CSCodeGenerationResult Retry = new CSCodeGenerationResult( 2 );
 
         /// <summary>
         /// Gets whether an error occurred. When true, there is nothing more to do.
         /// </summary>
-        public bool HasError => !_success && ImplementorType == null && MethodName == null;
+        public bool HasError => _flag == 0;
 
         /// <summary>
-        /// Gets the type that must be instantiated and that will finalize the generation of the source code.
-        /// This type must be a <see cref="IAutoImplementorMethod"/>, <see cref="IAutoImplementorProperty"/> or <see cref="ICSCodeGeneratorType"/>
-        /// that must be the same as the initial implementor.
-        /// <para>
-        /// This type can have constructor parameters that will be resolved from the available services: the current run <see cref="IGeneratedBinPath.ServiceContainer"/>
-        /// and <see cref="ICodeGenerationContext.CurrentRun"/>'s <see cref="IGeneratedBinPath.ServiceContainer"/>.
-        /// </para>
+        /// Gets whether the call succeed.
         /// </summary>
-        public Type? ImplementorType { get; }
+        public bool IsSuccess => _flag == 1;
 
         /// <summary>
-        /// Gets the name of a method (that can be private) of the initial implementor that will continue the generation of the source code.
+        /// Gets whether the current call should be retried during the next pass.
+        /// </summary>
+        public bool IsRetry => _flag == 2;
+
+        /// <summary>
+        /// Gets the name of a method (that can be private) that will continue the generation of the source code.
         /// (Note that this method can redirect to yet another method.)
         /// <para>
-        /// This method can have parameters that will be resolved from the available services: the current run <see cref="IGeneratedBinPath.ServiceContainer"/>
-        /// and <see cref="ICodeGenerationContext.CurrentRun"/>'s <see cref="IGeneratedBinPath.ServiceContainer"/>.
+        /// This method can have parameters that will be resolved from the available services
+        /// in <see cref="ICodeGenerationContext.CurrentRun"/>'s <see cref="IGeneratedBinPath.ServiceContainer"/>.
         /// </para>
         /// </summary>
-        public string? MethodName { get; }
+        public string? MethodName => _methodName;
 
-        CSCodeGenerationResult( bool success )
+        CSCodeGenerationResult( int f )
         {
-            _success = success;
-            ImplementorType = null;
-            MethodName = null;
+            _methodName = null;
+            _flag = f;
         }
 
-        /// <summary>
-        /// Initializes a new result with a type that must be instantiated.
-        /// See <see cref="ImplementorType"/>.
-        /// </summary>
-        /// <param name="implementor">The type to implement.</param>
-        public CSCodeGenerationResult( Type implementor )
-        {
-            _success = false;
-            ImplementorType = implementor;
-            MethodName = null;
-        }
 
         /// <summary>
         /// Initializes a new result with the name of a method that will be called.
@@ -82,9 +77,9 @@ namespace CK.Setup
         /// <param name="unambiguousMethodName">The name of the method to call.</param>
         public CSCodeGenerationResult( string unambiguousMethodName )
         {
-            _success = false;
-            ImplementorType = null;
-            MethodName = unambiguousMethodName;
+            Throw.CheckNotNullOrWhiteSpaceArgument( unambiguousMethodName );
+            _methodName = unambiguousMethodName;
+            _flag = 4;
         }
 
     }

@@ -32,7 +32,7 @@ namespace CK.Poco.Exc.Json
         /// Gets a singleton default option that is used by IPoco ToString implementation.
         /// Property names are written as-is (<see cref="UseCamelCase"/> is false), <see cref="TypeLess"/> is false,
         /// <see cref="TypeFilterName"/> is "AllSerializable" and <see cref="JsonWriterOptions.Encoder"/>
-        /// is <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/>
+        /// is <see cref="JavaScriptEncoder.UnsafeRelaxedJsonEscaping"/> and <see cref="JsonWriterOptions.SkipValidation"/> is true.
         /// </summary>
         public static readonly PocoJsonExportOptions ToStringDefault = new PocoJsonExportOptions()
         {
