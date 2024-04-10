@@ -1,4 +1,4 @@
-﻿using CK.Core;
+using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
@@ -73,5 +73,59 @@ namespace CK.StObj.Engine.Tests.CrisLike
                 "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<string>"
             } );
         }
+
+
+        public interface IResult : IPoco
+        {
+            int Val { get; set; }
+        }
+
+        /// <summary>
+        /// Extends the basic result with a <see cref="MoreVal"/>.
+        /// </summary>
+        public interface IMoreResult : IResult
+        {
+            /// <summary>
+            /// Gets or sets the More value.
+            /// </summary>
+            int MoreVal { get; set; }
+        }
+
+        public interface IAnotherResult : IResult
+        {
+            int AnotherVal { get; set; }
+        }
+
+        public interface IUnifiedResult : IMoreResult, IAnotherResult { }
+
+        public interface ICommandWithPocoResult : ICommand<IResult> { }
+
+        public interface ICommandWithMorePocoResult : ICommandWithPocoResult, ICommand<IMoreResult> { }
+
+        public interface ICommandWithAnotherPocoResult : ICommandWithPocoResult, ICommand<IAnotherResult> { }
+
+        public interface ICommandUnifiedWithTheResult : ICommandWithMorePocoResult, ICommandWithAnotherPocoResult, ICommand<IUnifiedResult> { }
+
+        [Test]
+        public void multiple_command_result_resolution()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ICommandUnifiedWithTheResult ), typeof( IUnifiedResult ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+            var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+
+            IPocoGenericTypeDefinition? commandWithResultType = ts.FindGenericTypeDefinition( typeof( ICommand<> ) );
+            Throw.DebugAssert( commandWithResultType != null );
+
+            var command = ts.FindByType<IPrimaryPocoType>( typeof( ICommandWithPocoResult ) );
+            Throw.DebugAssert( command != null );
+            command.AllAbstractTypes.Should().HaveCount( 5 );
+            command.AbstractTypes.Should().BeEquivalentTo( command.AllAbstractTypes, "No ImplementationLess since we registered the IUnifiedResult." );
+            // Consider all ICommand<T> and reduce them.
+            var withResult = command.AbstractTypes.Where( a => a.GenericTypeDefinition == commandWithResultType );
+            var reduced = withResult.ComputeMinimal();
+            reduced.Should().HaveCount( 1 );
+            reduced[0].GenericArguments[0].Type.ToString().Should().Be( "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IUnifiedResult?" );
+        }
+
     }
 }

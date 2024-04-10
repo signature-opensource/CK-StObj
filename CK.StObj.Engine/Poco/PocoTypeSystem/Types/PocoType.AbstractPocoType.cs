@@ -280,7 +280,7 @@ namespace CK.Setup
                 }
                 _genericArguments = arguments;
                 // Initial check for implementation less.
-                if( hasImplementationLess && _primaries.Count != 0 )
+                if( hasImplementationLess || _primaries.Count == 0 )
                 {
                     SetImplementationLess();
                 }
