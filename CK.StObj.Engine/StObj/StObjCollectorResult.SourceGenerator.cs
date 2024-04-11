@@ -192,13 +192,23 @@ namespace CK.Setup
                 using( monitor.OpenInfo( $"Generating source code (second pass) for: {configurationGroup.Names}." ) )
                 using( monitor.CollectEntries( out var entries ) )
                 {
-                    MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass );
-                    foreach( var g in finalGen )
+                    if( MultiPassCodeGeneration.RunSecondPass( monitor, codeGenContext, secondPass ) )
                     {
-                        if( !g.FinalImplement( monitor, codeGenContext ) )
+                        foreach( var g in finalGen )
                         {
-                            // Ensure that an error is logged.
-                            monitor.Error( $"Generator '{g.GetType():C}': FinalImplement method failed." );
+                            if( !g.FinalImplement( monitor, codeGenContext ) )
+                            {
+                                // Ensure that an error is logged.
+                                monitor.Error( $"Generator '{g.GetType():C}': FinalImplement method failed." );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Ensure that an error is logged.
+                        if( entries.Count == 0 )
+                        {
+                            monitor.Error( ActivityMonitor.Tags.ToBeInvestigated, "Second pass code generation failed but no errors have been logged." );
                         }
                     }
                     if( entries.Count != 0 )
