@@ -205,6 +205,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The registered type.</param>
+        /// <param name="isVFeature">True if this assembly must be considered a feature.</param>
         public void RegisterAssembly( IActivityMonitor monitor, Type t, bool isVFeature )
         {
             var a = t.Assembly;

@@ -24,11 +24,7 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="codeGenContext">Code generation context with its Dynamic assembly being implemented.</param>
-        /// <returns>
-        /// The <see cref="CSCodeGenerationResult"/>. If a <see cref="CSCodeGenerationResult.ImplementorType"/> is specified,
-        /// it must implement this <see cref="ICSCodeGenerator"/> interface.
-        /// On error, the error must be logged into the <paramref name="monitor"/>.
-        /// </returns>
+        /// <returns>The <see cref="CSCodeGenerationResult"/>.</returns>
         CSCodeGenerationResult Implement( IActivityMonitor monitor, ICSCodeGenerationContext codeGenContext );
     }
 

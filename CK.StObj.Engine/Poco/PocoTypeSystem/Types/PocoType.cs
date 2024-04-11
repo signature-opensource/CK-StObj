@@ -5,6 +5,9 @@ using System.Diagnostics;
 
 namespace CK.Setup
 {
+    /// <summary>
+    /// Base implementation of IPocoType.
+    /// </summary>
     partial class PocoType : IPocoType
     {
         readonly IPocoType _nullable;

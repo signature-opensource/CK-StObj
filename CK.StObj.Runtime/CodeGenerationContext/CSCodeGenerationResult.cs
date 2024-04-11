@@ -12,11 +12,10 @@ namespace CK.Setup
     ///     <item>The implementation has been successfully done (use the singleton <see cref="CSCodeGenerationResult.Success"/>).</item>
     ///     <item>The implementation failed (use the singleton <see cref="CSCodeGenerationResult.Failed"/>).</item>
     ///     <item>The same method must be retried during the next pass (use the singleton <see cref="CSCodeGenerationResult.Retry"/>).</item>
-    ///     <item>A dedicated type must be instantiated (with dependencies injection support): use the <see cref="CSCodeGenerationResult(Type)"/> constructor. See <see cref="ImplementorType"/>.</item>
     ///     <item>Another method on the same object (with parameter dependencies injection support) must be called: use the <see cref="CSCodeGenerationResult(string)"/> constructor with the method name.</item>
     /// </list>
-    /// This trampoline mechanism allows constructor or method parameter injection and avoids a direct lookup (service locator anti-pattern) into the <see cref="IGeneratedBinPath.ServiceContainer"/>
-    /// or the <see cref="IGeneratedBinPath.ServiceContainer"/> of th current run.
+    /// This trampoline mechanism allows method parameter injection and avoids a direct lookup (service locator anti-pattern) into the <see cref="IGeneratedBinPath.ServiceContainer"/>
+    /// of the <see cref="ICodeGenerationContext.CurrentRun"/>.
     /// </summary>
     public readonly struct CSCodeGenerationResult
     {
