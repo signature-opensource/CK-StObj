@@ -91,9 +91,16 @@ namespace CK.Setup
             {
                 Throw.InvalidOperationException( $"Setting external AutoService kind must be done before registering types (there is already {_cc.RegisteredTypeCount} registered types)." );
             }
-            // Don't register assembly for these types: we don't want external assemblies like Microsoft.AspNetCore.SignalR.Core
-            // because we configured the Microsoft.AspNetCore.SignalR.IHubContext<> to be a singleton. 
-            return _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null;
+            else if( _cc.KindDetector.SetAutoServiceKind( monitor, type, kind ) != null )
+            {
+                // Don't register assembly as VFeature for these types: we don't want external assemblies like
+                // Microsoft.AspNetCore.SignalR.Core to ba a VFeature because we configured the Microsoft.AspNetCore.SignalR.IHubContext<>
+                // to be a singleton.
+                // But we need the assembly registration for Roslyn meta data references.
+                _cc.RegisterAssembly( monitor, type, isVFeature: false );
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

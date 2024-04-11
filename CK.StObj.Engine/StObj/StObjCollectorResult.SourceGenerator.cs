@@ -83,7 +83,7 @@ namespace CK.Setup
                     // Model assemblies.
                     if( _typeResult.Assemblies.Count > 0 )
                     {
-                        ws.EnsureAssemblyReference( _typeResult.Assemblies );
+                        ws.EnsureAssemblyReference( _typeResult.Assemblies.Keys );
                     }
                     else
                     {

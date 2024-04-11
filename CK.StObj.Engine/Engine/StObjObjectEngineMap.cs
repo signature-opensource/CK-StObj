@@ -21,7 +21,7 @@ namespace CK.Setup
     {
         readonly Dictionary<object, MutableItem> _map;
         readonly IReadOnlyList<MutableItem> _finaImplementations;
-        readonly IReadOnlyCollection<Assembly> _assemblies;
+        readonly IReadOnlyDictionary<Assembly,bool> _assemblies;
 
         // Ultimate result: StObjCollector.GetResult sets this if no error occurred
         // during Real objects processing.
@@ -44,7 +44,7 @@ namespace CK.Setup
         /// <param name="assemblies">Reference to the set of assemblies used to implement the IStObjMap.Features property.</param>
         internal StObjObjectEngineMap( IReadOnlyList<string> names,
                                        IReadOnlyList<MutableItem> allSpecializations,
-                                       IReadOnlyCollection<Assembly> assemblies )
+                                       IReadOnlyDictionary<Assembly,bool> assemblies )
         {
             Debug.Assert( names != null );
             Names = names;
@@ -174,9 +174,12 @@ namespace CK.Setup
 
         /// <summary>
         /// Dynamically projects <see cref="CKTypeCollectorResult.Assemblies"/> to their <see cref="VFeature"/>
-        /// (ordered by <see cref="VFeature.Name"/> since by design there can not be multiple versions by feature).
+        /// (ordered by <see cref="VFeature.Name"/> since by design there cannot be multiple versions by feature).
         /// </summary>
-        public IReadOnlyCollection<VFeature> Features => _assemblies.Select( ToVFeature ).OrderBy( Util.FuncIdentity ).ToList();
+        public IReadOnlyCollection<VFeature> Features => _assemblies.Where( kv => kv.Value )
+                                                                    .Select( kv => ToVFeature( kv.Key ) )
+                                                                    .OrderBy( Util.FuncIdentity )
+                                                                    .ToList();
 
         static VFeature ToVFeature( Assembly a )
         {

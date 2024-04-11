@@ -20,7 +20,7 @@ namespace CK.Setup
         readonly IServiceProvider _serviceProvider;
         readonly ExtMemberInfoFactory _memberInfoFactory;
         readonly PocoDirectoryBuilder _pocoBuilder;
-        readonly HashSet<Assembly> _assemblies;
+        readonly Dictionary<Assembly,bool> _assemblies;
         readonly Dictionary<Type, RealObjectClassInfo?> _objectCollector;
         readonly Dictionary<Type, TypeAttributesCache?> _regularTypeCollector;
         readonly List<RealObjectClassInfo> _roots;
@@ -50,7 +50,7 @@ namespace CK.Setup
             _typeFilter = typeFilter ?? ((m,type) => type.FullName != null);
             _tempAssembly = tempAssembly;
             _serviceProvider = serviceProvider;
-            _assemblies = new HashSet<Assembly>();
+            _assemblies = new Dictionary<Assembly,bool>();
             _objectCollector = new Dictionary<Type, RealObjectClassInfo?>();
             _regularTypeCollector = new Dictionary<Type, TypeAttributesCache?>();
             _roots = new List<RealObjectClassInfo>();
@@ -113,7 +113,7 @@ namespace CK.Setup
                 {
                     if( _pocoBuilder.RegisterInterface( monitor, type ) )
                     {
-                        RegisterAssembly( monitor, type );
+                        RegisterAssembly( monitor, type, isVFeature: true );
                     }
                     RegisterRegularType( monitor, type );
                 }
@@ -188,12 +188,11 @@ namespace CK.Setup
             RealObjectClassInfo result = new RealObjectClassInfo( monitor, parent, t, _serviceProvider, isExcluded, _alsoRegister );
             if( !result.IsExcluded )
             {
-                RegisterAssembly( monitor, t );
+                RegisterAssembly( monitor, t, isVFeature: true );
                 if( parent == null )
                 {
                     Debug.Assert( !_roots.Contains( result ) );
                     _roots.Add( result );
-                    // This is were the IRealObject interfaces could be enlisted.
                 }
             }
             _objectCollector.Add( t, result );
@@ -206,10 +205,18 @@ namespace CK.Setup
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">The registered type.</param>
-        public void RegisterAssembly( IActivityMonitor monitor, Type t )
+        public void RegisterAssembly( IActivityMonitor monitor, Type t, bool isVFeature )
         {
             var a = t.Assembly;
-            if( !a.IsDynamic ) _assemblies.Add( a );
+            if( !a.IsDynamic )
+            {
+                // Ensures that VFeature is true as soon as one is true.
+                _assemblies.TryGetValue( a, out var f );
+                if( !f )
+                {
+                    _assemblies[a] = f || isVFeature;
+                }
+            }
         }
 
         void RegisterRegularType( IActivityMonitor monitor, Type t )
@@ -221,7 +228,7 @@ namespace CK.Setup
                 if( c != null )
                 {
                     monitor.Trace( $"At least one bound attribute on '{t}' has been registered." );
-                    RegisterAssembly( monitor, t );
+                    RegisterAssembly( monitor, t, isVFeature: true );
                 }
             }
         }

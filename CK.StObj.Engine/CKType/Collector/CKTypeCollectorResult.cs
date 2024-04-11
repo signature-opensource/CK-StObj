@@ -16,7 +16,7 @@ namespace CK.Setup
     {
         readonly IReadOnlyDictionary<Type, TypeAttributesCache?> _regularTypes;
 
-        internal CKTypeCollectorResult( ISet<Assembly> assemblies,
+        internal CKTypeCollectorResult( Dictionary<Assembly,bool> assemblies,
                                         PocoTypeSystemBuilder pocoTypeSystemBuilder,
                                         RealObjectCollectorResult c,
                                         AutoServiceCollectorResult s,
@@ -37,9 +37,11 @@ namespace CK.Setup
         public IPocoTypeSystemBuilder PocoTypeSystemBuilder { get; }
 
         /// <summary>
-        /// Gets the set of assemblies for which at least one type has been registered.
+        /// Gets the map of assemblies for which at least one type has been registered
+        /// associated to a boolean that states whether this is a VFeature or an infrastructure
+        /// assembly (only required by Roslyn compiler as meta data reference).
         /// </summary>
-        public ISet<Assembly> Assemblies { get; }
+        public Dictionary<Assembly,bool> Assemblies { get; }
 
         /// <summary>
         /// Gets the results for <see cref="IRealObject"/> objects.

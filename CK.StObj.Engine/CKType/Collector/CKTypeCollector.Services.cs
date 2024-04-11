@@ -8,10 +8,6 @@ using System.Threading;
 using System.Reflection;
 using System.Data;
 
-#nullable enable
-
-#nullable enable annotations
-
 namespace CK.Setup
 {
     public partial class CKTypeCollector
@@ -27,7 +23,7 @@ namespace CK.Setup
             var serviceInfo = new AutoServiceClassInfo( monitor, _serviceProvider, parent, t, isExcluded, objectInfo, _alsoRegister );
             if( !serviceInfo.TypeInfo.IsExcluded )
             {
-                RegisterAssembly( monitor, t );
+                RegisterAssembly( monitor, t, isVFeature: true );
                 if( serviceInfo.Generalization == null ) _serviceRoots.Add( serviceInfo );
             }
             _serviceCollector.Add( t, serviceInfo );
