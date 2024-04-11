@@ -167,7 +167,7 @@ namespace CK.Setup
         /// <param name="secondary">A secondary poco type.</param>
         protected virtual void VisitSecondaryPoco( ISecondaryPocoType secondary )
         {
-            VisitPrimaryPoco( secondary.PrimaryPocoType );
+            Visit( secondary.PrimaryPocoType );
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
 using System.Linq;
+using static CK.StObj.Engine.Tests.Poco.TypeSystemTests;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.CrisLike
@@ -125,6 +126,36 @@ namespace CK.StObj.Engine.Tests.CrisLike
             var reduced = withResult.ComputeMinimal();
             reduced.Should().HaveCount( 1 );
             reduced[0].GenericArguments[0].Type.ToString().Should().Be( "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IUnifiedResult?" );
+        }
+
+        [Test]
+        public void TypeSet_from_secondary()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ICommandUnifiedWithTheResult ), typeof( IUnifiedResult ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+            var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+
+            var withCommandButNotItsResult = ts.SetManager.EmptyExchangeable.Include( new[] { ts.FindByType( typeof( ICommandUnifiedWithTheResult ) )! } );
+            withCommandButNotItsResult.NonNullableTypes.Select( t => t.ToString() ).Should().HaveCount( 15 )
+                .And.BeEquivalentTo( new[]
+                {
+                    "[PrimaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithPocoResult",
+                    "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithMorePocoResult",
+                    "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandWithAnotherPocoResult",
+                    "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.ICommandUnifiedWithTheResult",
+                    "[PrimaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IResult",
+                    "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IMoreResult",
+                    "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IAnotherResult",
+                    "[SecondaryPoco]CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IUnifiedResult",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IUnifiedResult>",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IMoreResult>",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IAnotherResult>",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand<CK.StObj.Engine.Tests.CrisLike.CommandLikeTests.IResult>",
+                    "[AbstractPoco]CK.StObj.Engine.Tests.CrisLike.ICommand",
+                    "[AbstractPoco]CK.Core.IPoco",
+                    "[Basic]int"
+                } );
+
         }
 
     }
