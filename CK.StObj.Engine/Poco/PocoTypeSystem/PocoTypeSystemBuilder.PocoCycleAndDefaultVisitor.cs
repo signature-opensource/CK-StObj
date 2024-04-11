@@ -110,6 +110,13 @@ namespace CK.Setup
                 // or a [UnionType<T>( IsDefault = true)] (yet?).
             }
 
+            protected override void VisitSecondaryPoco( ISecondaryPocoType secondary )
+            {
+                // Do not visit the Primary, only its fields: this acts as an alias without
+                // considering the PrimaryPoco itself in a potential cycle.
+                VisitPrimaryPoco( secondary.PrimaryPocoType );
+            }
+
             protected override void VisitField( IPocoField field )
             {
                 if( _cycleFound || _missingDefault ) return;
