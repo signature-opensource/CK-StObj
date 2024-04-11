@@ -2,6 +2,8 @@ using CK.Core;
 using CK.Setup;
 using FluentAssertions;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System;
 using System.Linq;
 using static CK.StObj.Engine.Tests.Poco.TypeSystemTests;
 using static CK.Testing.StObjEngineTestHelper;

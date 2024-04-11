@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace CK.Setup
 {
@@ -41,6 +42,7 @@ namespace CK.Setup
             // Both will stop the visit.
             bool _cycleFound;
             bool _missingDefault;
+            private IPocoType _visitedRoot;
 
             public PocoCycleAndDefaultVisitor( int nonNullableCount )
                 : base( new MiniTypeSet( nonNullableCount ) ) 
@@ -53,12 +55,6 @@ namespace CK.Setup
                 if( _typedPathCount > 0 )
                 {
                     Throw.DebugAssert( _cycleFound || _missingDefault );
-                    if( _cycleFound && !cycleError )
-                    {
-                        cycleError = true;
-                        var cycle = _path.Select( c => $"{Environment.NewLine}'[{c[0].Owner.Kind}]{c[0].Owner.CSharpName}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' => " );
-                        monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'[{_path[0][0].Owner.Kind}]{_path[0][0].Owner.CSharpName}'." );
-                    }
                     if( _missingDefault )
                     {
                         // Keep only the disallowed fields.
@@ -72,6 +68,12 @@ namespace CK.Setup
                                        $"{Environment.NewLine}{missing.Concatenate( $"{Environment.NewLine}Because " )}" +
                                        $"{Environment.NewLine}No default can be synthesized for non nullable '[{last.Type.Kind}]{last.Type.CSharpName}'." );
                     }
+                    else if( _cycleFound && !cycleError )
+                    {
+                        cycleError = true;
+                        var cycle = _path.Select( c => $"{Environment.NewLine}'[{c[0].Owner.Kind}]{c[0].Owner.CSharpName}', field: '{c.Select( f => f.Name ).Concatenate( "." )}' => " );
+                        monitor.Error( $"Detected an instantiation cycle in Poco: {cycle.Concatenate( "" )}'[{_path[0][0].Owner.Kind}]{_path[0][0].Owner.CSharpName}'." );
+                    }
                     return false;
                 }
                 return true;
@@ -79,11 +81,13 @@ namespace CK.Setup
 
             protected override void OnStartVisit( IPocoType root )
             {
+                Throw.DebugAssert( "This is designed to start from a Primary.", root is IPrimaryPocoType );
                 // Reuse the allocated lists as much as possible.
                 for( int i = 0; i < _typedPathCount; i++ ) _path[i].Clear();
                 _typedPathCount = 0;
                 _cycleFound = false;
                 _missingDefault = false;
+                _visitedRoot = root;
             }
 
             protected override bool Visit( IPocoType t )
@@ -95,7 +99,33 @@ namespace CK.Setup
 
             protected override void OnAlreadyVisited( IPocoType t )
             {
-                _cycleFound |= t.Kind == PocoTypeKind.PrimaryPoco | t.Kind == PocoTypeKind.SecondaryPoco;
+                if( !_cycleFound )
+                {
+                    bool isSecondary = t.Kind == PocoTypeKind.SecondaryPoco;
+                    if( isSecondary || t.Kind == PocoTypeKind.PrimaryPoco )
+                    {
+                        var tP = isSecondary ? Unsafe.As<ISecondaryPocoType>( t ).PrimaryPocoType : t;
+                        if( tP == _visitedRoot )
+                        {
+                            _cycleFound = true;
+                        }
+                        else for( int i = 0; i < _typedPathCount; ++i )
+                        {
+                            int max = _path[i].Count;
+                            if( i == _typedPathCount - 1 ) --max;
+                            for( int iField = 0; iField < max; iField++ )
+                            {
+                                IPocoField? f = _path[i][iField];
+                                IPocoType tFP = f.Type;
+                                if( tFP is ISecondaryPocoType s ) tFP = s.PrimaryPocoType;
+                                if( tP == tFP )
+                                {
+                                    _cycleFound = true;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             protected override void VisitCollection( ICollectionPocoType collection )
