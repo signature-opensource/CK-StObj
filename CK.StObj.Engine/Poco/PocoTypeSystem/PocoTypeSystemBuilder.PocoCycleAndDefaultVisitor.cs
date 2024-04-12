@@ -42,7 +42,7 @@ namespace CK.Setup
             // Both will stop the visit.
             bool _cycleFound;
             bool _missingDefault;
-            private IPocoType _visitedRoot;
+            IPocoType? _visitedRoot;
 
             public PocoCycleAndDefaultVisitor( int nonNullableCount )
                 : base( new MiniTypeSet( nonNullableCount ) ) 

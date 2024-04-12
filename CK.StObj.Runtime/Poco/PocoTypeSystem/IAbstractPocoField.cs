@@ -9,18 +9,8 @@ namespace CK.Setup
     /// Only fields that have at least one <see cref="Implementations"/> exist.
     /// </para>
     /// </summary>
-    public interface IAbstractPocoField
+    public interface IAbstractPocoField : IBasePocoField
     {
-        /// <summary>
-        /// Gets the field name.
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// Gets the field main type.
-        /// </summary>
-        IPocoType Type { get; }
-
         /// <summary>
         /// Gets whether the field is read only: it is not a <c>{ get; set; }</c> nor
         /// a <c>ref { get; }</c> property.
@@ -33,7 +23,7 @@ namespace CK.Setup
         IEnumerable<IPrimaryPocoField> Implementations { get; }
 
         /// <summary>
-        /// Gets the property info that define this field.
+        /// Gets the property info that defines this field.
         /// </summary>
         PropertyInfo Originator { get; }
     }

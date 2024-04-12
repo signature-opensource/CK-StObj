@@ -7,7 +7,7 @@ namespace CK.Setup
     /// This is a <see cref="IPocoType.ITypeRef"/>: every field has an <see cref="IPocoType.ITypeRef.Index"/>
     /// in its <see cref="Owner"/>.
     /// </summary>
-    public interface IPocoField : IPocoType.ITypeRef
+    public interface IPocoField : IBasePocoField, IPocoType.ITypeRef
     {
         /// <summary>
         /// Gets the owner of this field.
@@ -15,9 +15,9 @@ namespace CK.Setup
         new ICompositePocoType Owner { get; }
 
         /// <summary>
-        /// Gets the field name.
+        /// Gets the field type.
         /// </summary>
-        string Name { get; }
+        new IPocoType Type { get; }
 
         /// <summary>
         /// Gets the reflection object that defines this field. It can be a <see cref="PropertyInfo"/>, a <see cref="FieldInfo"/>

@@ -1,6 +1,7 @@
 using CK.Core;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using static CK.Testing.StObjEngineTestHelper;
 
 namespace CK.StObj.Engine.Tests.Poco
@@ -166,6 +167,34 @@ namespace CK.StObj.Engine.Tests.Poco
             var c = TestHelper.CreateStObjCollector( typeof( IDirectErrorPrimary ), typeof( IDirectErrorSecondary ) );
             TestHelper.GetFailedResult( c, "Detected an instantiation cycle in Poco:" );
         }
+
+        #region Real life case that exhibited a stupid bug in initialization cycle detection (PocoCycleAndDefaultVisitor).
+        public interface IPocoAuthenticationInfo : IPoco
+        {
+            IPocoUserInfo User { get; }
+            IPocoUserInfo UnsafeUser { get; }
+            IPocoUserInfo ActualUser { get; }
+            bool IsImpersonated { get; set; }
+            DateTime? Expires { get; set; }
+            DateTime? CriticalExpires { get; set; }
+        }
+
+        public interface IPocoUserInfo : IPoco
+        {
+            string UserName { get; set; }
+            int UserId { get; set; }
+            IList<(string Scheme, DateTime LastUsed)> Schemes { get; }
+        }
+
+        [Test]
+        public void multiple_fields_with_the_same_type_are_not_cycles()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( IPocoAuthenticationInfo ), typeof( IPocoUserInfo ) );
+            var r = TestHelper.GetSuccessfulResult( c );
+
+        }
+        #endregion
+
 
     }
 }
