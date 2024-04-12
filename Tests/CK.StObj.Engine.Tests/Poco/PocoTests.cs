@@ -8,6 +8,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using static CK.Testing.StObjEngineTestHelper;
 
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
@@ -319,6 +320,40 @@ namespace CK.StObj.Engine.Tests.Poco
             }
         }
 
+        sealed class SpecialAttributeImpl
+        {
+            public static Type GotType;
+            public static PropertyInfo GotProperty;
+
+            public SpecialAttributeImpl( SpecialAttribute attr, Type t, PropertyInfo p )
+            {
+                GotType = t;
+                GotProperty = p;
+            }
+        }
+
+        public sealed class SpecialAttribute : ContextBoundDelegationAttribute
+        {
+            public SpecialAttribute()
+                : base( "CK.StObj.Engine.Tests.Poco.PocoTests+SpecialAttributeImpl, CK.StObj.Engine.Tests" )
+            {
+            }
+        }
+
+        public interface ISome : IPoco
+        {
+            [Special]
+            int Prop { get; set; }
+        }
+
+        [Test]
+        public void Poco_properties_can_carry_context_bound_attributes()
+        {
+            var c = TestHelper.CreateStObjCollector( typeof( ISome ) );
+            TestHelper.GetSuccessfulResult( c );
+            SpecialAttributeImpl.GotType.Should().Be( typeof(ISome ) );
+            SpecialAttributeImpl.GotProperty.Name.Should().Be( "Prop" );
+        }
 
     }
 }

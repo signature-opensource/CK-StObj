@@ -4,6 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Reflection;
 using CK.Core;
+using Microsoft.CodeAnalysis;
 
 #nullable enable
 
@@ -111,15 +112,16 @@ namespace CK.Setup
                 }
                 else if( type.IsInterface )
                 {
-                    if( _pocoBuilder.RegisterInterface( monitor, type ) )
+                    bool isPoco;
+                    if( isPoco = _pocoBuilder.RegisterInterface( monitor, type ) )
                     {
                         RegisterAssembly( monitor, type, isVFeature: true );
                     }
-                    RegisterRegularType( monitor, type );
+                    RegisterRegularType( monitor, type, isPoco );
                 }
                 else
                 {
-                    RegisterRegularType( monitor, type );
+                    RegisterRegularType( monitor, type, false );
                 }
             }
         }
@@ -178,7 +180,7 @@ namespace CK.Setup
             if( objectInfo == null && serviceInfo == null )
             {
                 _objectCollector.Add( t, null );
-                if( (lt & CKTypeKind.IsExcludedType) == 0 ) RegisterRegularType( monitor, t );
+                if( (lt & CKTypeKind.IsExcludedType) == 0 ) RegisterRegularType( monitor, t, false );
             }
             return true;
         }
@@ -220,11 +222,11 @@ namespace CK.Setup
             }
         }
 
-        void RegisterRegularType( IActivityMonitor monitor, Type t )
+        void RegisterRegularType( IActivityMonitor monitor, Type t, bool alwaysCreateBoundAttributeCache )
         {
             if( !_regularTypeCollector.ContainsKey( t ) )
             {
-                var c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t, _alsoRegister );
+                var c = TypeAttributesCache.CreateOnRegularType( monitor, _serviceProvider, t, _alsoRegister, alwaysCreateBoundAttributeCache );
                 _regularTypeCollector.Add( t, c );
                 if( c != null )
                 {

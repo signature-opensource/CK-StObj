@@ -135,18 +135,26 @@ namespace CK.Setup
         }
 
         /// <summary>
-        /// Creates a cache only if at least one <see cref="IAttributeContextBound"/> exists on the type.
-        /// If such an attribute exists, all its members are handled as usual.
+        /// Creates a cache only if at least one <see cref="IAttributeContextBound"/> exists on the type unless
+        /// <paramref name="alwaysCreate"/> is true.
+        /// If such an attribute exists or if alwaysCreate is true, all its members are handled as usual.
         /// </summary>
         /// <param name="monitor">Monitor to use.</param>
         /// <param name="services">Available services that will be used for delegated attribute constructor injection.</param>
         /// <param name="type">Type for which attributes must be cached.</param>
         /// <param name="alsoRegister">Enables a <see cref="IAttributeContextBoundInitializer.Initialize"/> to register types (typically nested types).</param>
+        /// <param name="alwaysCreate">True to process attribute on members even if no IAttributeContextBound exist on the type itself.</param>
         /// <returns>The cache or null.</returns>
-        public static TypeAttributesCache? CreateOnRegularType( IActivityMonitor monitor, IServiceProvider services, Type type, Action<Type> alsoRegister )
+        public static TypeAttributesCache? CreateOnRegularType( IActivityMonitor monitor,
+                                                                IServiceProvider services,
+                                                                Type type,
+                                                                Action<Type> alsoRegister,
+                                                                bool alwaysCreate )
         {
             var attr = (IAttributeContextBound[])type.GetCustomAttributes( typeof( IAttributeContextBound ), false );
-            return attr.Length > 0 ? new TypeAttributesCache( monitor, type, attr, services, false, alsoRegister ) : null;
+            return alwaysCreate || attr.Length > 0
+                        ? new TypeAttributesCache( monitor, type, attr, services, false, alsoRegister )
+                        : null;
         }
 
         /// <summary>
