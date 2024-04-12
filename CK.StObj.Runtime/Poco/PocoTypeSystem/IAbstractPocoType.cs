@@ -8,7 +8,7 @@ namespace CK.Setup
     /// <summary>
     /// An abstract <see cref="IPoco"/>. See <see cref="IPocoDirectory.OtherInterfaces"/>.
     /// </summary>
-    public interface IAbstractPocoType : IOneOfPocoType
+    public interface IAbstractPocoType : IOneOfPocoType, IBaseCompositeType
     {
         /// <summary>
         /// Gets the set of all other abstract IPoco types that specialize this one.
@@ -80,7 +80,7 @@ namespace CK.Setup
         /// <summary>
         /// Gets the fields.
         /// </summary>
-        ImmutableArray<IAbstractPocoField> Fields { get; }
+        new ImmutableArray<IAbstractPocoField> Fields { get; }
 
         /// <inheritdoc cref="IPocoType.Nullable" />
         new IAbstractPocoType Nullable { get; }

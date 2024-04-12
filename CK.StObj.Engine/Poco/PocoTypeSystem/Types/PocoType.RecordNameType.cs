@@ -43,6 +43,7 @@ namespace CK.Setup
                 public IReadOnlyList<IRecordPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
+                IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => NonNullable.Fields;
 
                 IRecordPocoType IRecordPocoType.Nullable => this;
                 IRecordPocoType IRecordPocoType.NonNullable => NonNullable;
@@ -111,6 +112,7 @@ namespace CK.Setup
             public IReadOnlyList<IRecordPocoField> Fields => _fields;
 
             IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
+            IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => _fields;
 
             public bool IsAnonymous => false;
 

@@ -6,12 +6,12 @@ namespace CK.Setup
     /// Common type of <see cref="IPrimaryPocoType"/> and <see cref="IRecordPocoType"/>.
     /// A composite has one or more <see cref="IPocoField"/> named and indexed fields.
     /// </summary>
-    public interface ICompositePocoType : IPocoType, INamedPocoType
+    public interface ICompositePocoType : IBaseCompositeType, INamedPocoType
     {
         /// <summary>
         /// Gets the list of fields.
         /// </summary>
-        IReadOnlyList<IPocoField> Fields { get; }
+        new IReadOnlyList<IPocoField> Fields { get; }
 
         /// <inheritdoc cref="IPocoType.ObliviousType"/>
         new ICompositePocoType ObliviousType { get; }

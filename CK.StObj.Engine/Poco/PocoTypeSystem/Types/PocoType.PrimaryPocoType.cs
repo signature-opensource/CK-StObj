@@ -39,6 +39,7 @@ namespace CK.Setup
                 public IReadOnlyList<IPrimaryPocoField> Fields => NonNullable.Fields;
 
                 IReadOnlyList<IPocoField> ICompositePocoType.Fields => NonNullable.Fields;
+                IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => NonNullable.Fields;
 
                 public IEnumerable<ISecondaryPocoType> SecondaryTypes => NonNullable.SecondaryTypes.Select( s => s.Nullable );
 
@@ -168,6 +169,9 @@ namespace CK.Setup
 
             public IReadOnlyList<IPrimaryPocoField> Fields => _fields;
 
+            IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
+            IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => _fields;
+
             internal void SetFields( PrimaryPocoField[] fields ) => _fields = fields;
 
             internal void ComputeCtorCode( PocoTypeSystemBuilder.IStringBuilderPool sbPool )
@@ -195,8 +199,6 @@ namespace CK.Setup
                 }
                 sbPool.Return( b );
             }
-
-            IReadOnlyList<IPocoField> ICompositePocoType.Fields => _fields;
 
             public IEnumerable<ISecondaryPocoType> SecondaryTypes => _secondaryTypes;
 

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using static CK.CodeGen.TupleTypeName;
 
 namespace CK.Setup
 {
@@ -63,6 +64,7 @@ namespace CK.Setup
             public IEnumerable<IPocoType> AllowedTypes => NonNullable.AllowedTypes.Concat( NonNullable.AllowedTypes.Select( a => a.Nullable ) );
 
             public ImmutableArray<IAbstractPocoField> Fields => NonNullable.Fields;
+            IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => NonNullable.Fields;
 
             public bool IsGenericType => NonNullable.IsGenericType;
 
@@ -194,6 +196,7 @@ namespace CK.Setup
             }
 
             public ImmutableArray<IAbstractPocoField> Fields => _fields;
+            IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => _fields;
 
             internal bool CreateFields( IActivityMonitor monitor, PocoTypeSystemBuilder pocoTypeSystem )
             {
@@ -343,6 +346,7 @@ namespace CK.Setup
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => _primaries;
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
+            IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
             public override IAbstractPocoType ObliviousType => Nullable;
 
@@ -416,6 +420,7 @@ namespace CK.Setup
             public IReadOnlyList<IPrimaryPocoType> PrimaryPocoTypes => Array.Empty<IPrimaryPocoType>();
 
             public ImmutableArray<IAbstractPocoField> Fields => ImmutableArray<IAbstractPocoField>.Empty;
+            IReadOnlyList<IBasePocoField> IBaseCompositeType.Fields => ImmutableArray<IAbstractPocoField>.Empty;
 
             public IEnumerable<IPocoType> AllowedTypes => AllSpecializations;
 
