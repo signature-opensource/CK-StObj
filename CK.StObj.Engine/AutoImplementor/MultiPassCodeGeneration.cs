@@ -128,20 +128,19 @@ namespace CK.Setup
         /// <summary>
         /// Gets the implementor name.
         /// </summary>
-        string ImplementorName => $"Method '{_owner.GetType().Name}.{(_currentMethod != null ? _currentMethod.Name : "Implement")}";
+        public string ImplementorName => $"Method '{_owner.GetType().Name}.{(_currentMethod != null ? _currentMethod.Name : "Implement")}";
 
         [MemberNotNullWhen( true, nameof( _currentWaitingParameters ) )]
         bool HasWaitingServices => _currentWaitingParameters != null && _currentWaitingParameters.Count > 0;
 
-        void DumpAllErrorServiceResolution( IActivityMonitor monitor )
+        bool DumpAllErrorServiceResolution( IActivityMonitor monitor )
         {
-            if( _currentWaitingParameters != null )
+            if( _currentWaitingParameters == null ) return false;
+            foreach( var p in _currentWaitingParameters )
             {
-                foreach( var p in _currentWaitingParameters )
-                {
-                    DumpErrorServiceResolution( monitor, p );
-                }
+                DumpErrorServiceResolution( monitor, p );
             }
+            return true;
         }
 
         void DumpErrorServiceResolution( IActivityMonitor monitor, ParameterInfo p )
@@ -195,7 +194,13 @@ namespace CK.Setup
                     {
                         foreach( var p in next )
                         {
-                            p.DumpAllErrorServiceResolution( monitor );
+                            madeProgress |= p.DumpAllErrorServiceResolution( monitor );
+                        }
+                        // No dump of waiting services: it is one or more Retry that are not satisfied.
+                        if( !madeProgress )
+                        {
+                            monitor.Error( $"Stopping since {next.Count} pass are retrying without any progress:{Environment.NewLine}" +
+                                           $"{next.Select( p => p.ImplementorName ).Concatenate()}" );
                         }
                         return false;
                     }
