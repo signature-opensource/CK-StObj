@@ -143,7 +143,7 @@ namespace CK.Setup
         /// <returns>An error message or null.</returns>
         public static string? GetCombinationError( this CKTypeKind @this, bool isClass )
         {
-            Throw.CheckArgument( @this >= 0 && @this <= CKTypeKindDetector.MaskPublicInfo );
+            Throw.CheckArgument( @this >= 0 && @this <= CachedType.MaskPublicInfo );
             // Pure predicates: checks are made against them.
             bool isAuto = (@this & CKTypeKind.IsAutoService) != 0;
             bool isScoped = (@this & CKTypeKind.IsScoped) != 0;

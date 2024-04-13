@@ -1,7 +1,9 @@
 using CK.Core;
+using CK.StObj.Model;
 using FluentAssertions;
 using NUnit.Framework;
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using static CK.Testing.StObjEngineTestHelper;
 
@@ -20,9 +22,16 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class MService1NoAutoService : Model.IMarshaller<ProcessService1>
         {
-            public ProcessService1 Read( ICKBinaryReader reader, IServiceProvider services ) => null!;
+            public bool CanMarshallTo( IMarshallTarget target ) => true;
 
-            public void Write( ICKBinaryWriter writer, ProcessService1 service ) { }
+            public void WriteMarshallInfo( IActivityMonitor monitor, IMarshallTarget source, IBufferWriter<byte> buffer, ProcessService1 service )
+            {
+            }
+
+            public ProcessService1 ReadMarshallInfo( IActivityMonitor monitor, IMarshallTarget source, ReadOnlySequence<byte> buffer )
+            {
+                return null!;
+            }
         }
 
         [Test]
@@ -31,7 +40,7 @@ namespace CK.StObj.Engine.Tests.Service
             var collector = TestHelper.CreateStObjCollector( typeof( MService1NoAutoService ) );
 
             var map = TestHelper.GetSuccessfulResult( collector ).EngineMap;
-            Debug.Assert( map != null, "No initialization error." );
+            Throw.DebugAssert( "No initialization error.", map != null );
             map.Services.Mappings.ContainsKey( typeof( MService1NoAutoService ) ).Should().BeFalse();
         }
 
@@ -135,9 +144,16 @@ namespace CK.StObj.Engine.Tests.Service
 
         public class MarshalAnyway : Model.IMarshaller<IAmNotAService>, IAutoService
         {
-            public IAmNotAService Read( ICKBinaryReader reader, IServiceProvider services ) => null!;
+            public bool CanMarshallTo( IMarshallTarget target ) => true;
 
-            public void Write( ICKBinaryWriter writer, IAmNotAService service ) { }
+            public void WriteMarshallInfo( IActivityMonitor monitor, IMarshallTarget source, IBufferWriter<byte> buffer, IAmNotAService service )
+            {
+            }
+
+            public IAmNotAService ReadMarshallInfo( IActivityMonitor monitor, IMarshallTarget source, ReadOnlySequence<byte> buffer )
+            {
+                throw new NotImplementedException();
+            }
         }
 
         [Test]

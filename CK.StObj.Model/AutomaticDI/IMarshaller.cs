@@ -1,8 +1,21 @@
 using CK.Core;
 using System;
+using System.Buffers;
 
 namespace CK.StObj.Model
 {
+    /// <summary>
+    /// Abstraction of any service marshall target.
+    /// The only constraint is that a marshall target should have a name that identifies it.
+    /// </summary>
+    public interface IMarshallTarget
+    {
+        /// <summary>
+        /// Gets the name of this target.
+        /// </summary>
+        string TargetName { get; }
+    }
+
     /// <summary>
     /// Allows <see cref="IAutoService"/> implementation to be marshalled by value
     /// thanks to any serialization/deserialization mechanism.
@@ -15,19 +28,29 @@ namespace CK.StObj.Model
     public interface IMarshaller<T>
     {
         /// <summary>
-        /// Writes any information to the binary writer that <see cref="Read(ICKBinaryReader, IServiceProvider)"/> will use to
-        /// instantiate a copy of the <paramref name="service"/>.
+        /// Gets whether <typeparamref name="T"/> can be marshalled to the target.
         /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="service">The service to marshal.</param>
-        void Write( ICKBinaryWriter writer, T service );
+        /// <param name="target">The target.</param>
+        /// <returns>True if the service can be marshalled, false otherwise.</returns>
+        bool CanMarshallTo( IMarshallTarget target );
 
         /// <summary>
-        /// Reads previously written data and recreate a service instance.
+        /// Writes any information to the binary writer that <see cref="ReadMarshallInfo(ICKBinaryReader, IServiceProvider)"/> will use to
+        /// instantiate a copy of the <paramref name="service"/>.
         /// </summary>
-        /// <param name="reader">The binary reader to use.</param>
-        /// <param name="services">The service provider.</param>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="target">The marshalling target.</param>
+        /// <param name="buffer">The buffer to write the marshall info to.</param>
+        /// <param name="service">The service to marshal.</param>
+        void WriteMarshallInfo( IActivityMonitor monitor, IMarshallTarget target, IBufferWriter<byte> buffer, T service );
+
+        /// <summary>
+        /// Reads previously written info and recreates a service instance.
+        /// </summary>
+        /// <param name="monitor">The monitor to use.</param>
+        /// <param name="source">The source marshaller.</param>
+        /// <param name="buffer">The buffer to deserialize.</param>
         /// <returns>The marshalled service.</returns>
-        T Read( ICKBinaryReader reader, IServiceProvider services );
+        T ReadMarshallInfo( IActivityMonitor monitor, IMarshallTarget source, ReadOnlySequence<byte> buffer );
     }
 }

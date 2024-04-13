@@ -98,7 +98,7 @@ namespace CK.Setup
         {
             if( !_typeFilter( monitor, t ) )
             {
-                monitor.Warn( $"Poco interface '{t.AssemblyQualifiedName}' is excluded." );
+                monitor.Warn( $"Poco interface '{t:N}' is excluded." );
                 return null;
             }
             InterfaceEntry? singlePrimary = null;
@@ -190,7 +190,7 @@ namespace CK.Setup
             var tB = moduleB.DefineType( pocoTypeName, TypeAttributes.Sealed );
 
             // The factory also ends with "_CK": it is a generated type.
-            var tBF = moduleB.DefineType( pocoTypeName + "Factory_CK", TypeAttributes.Sealed );
+            var tBF = moduleB.DefineType( pocoTypeName + "Factory_CK", TypeAttributes.Public | TypeAttributes.Sealed );
 
             // The IPocoFactory base implementation.
             tBF.AddInterfaceImplementation( typeof( IPocoFactory ) );

@@ -24,6 +24,7 @@ namespace CK.Setup
     /// </summary>
     public class TypeAttributesCache : ITypeAttributesCache
     {
+        readonly Type _type;
         readonly struct Entry
         {
             public Entry( MemberInfo m, object a )
@@ -69,7 +70,7 @@ namespace CK.Setup
 
             // This is ready to be injected in the delegated attribute constructor: no other attributes are visible.
             // If other attributes must be accessed, then the IAttributeContextBoundInitializer interface must be used.
-            Type = type;
+            _type = type;
             _all = Array.Empty<Entry>();
 
             var all = new List<Entry>();
@@ -160,7 +161,7 @@ namespace CK.Setup
         /// <summary>
         /// Get the Type that is managed by this cache.
         /// </summary>
-        public Type Type { get; } 
+        public Type Type => _type;
 
         /// <summary>
         /// Gets all <see cref="MemberInfo"/> that this <see cref="ICKCustomAttributeMultiProvider"/> handles.
