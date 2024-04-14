@@ -24,7 +24,7 @@ namespace CK.StObj.Engine.Tests
             }
         }
 
-        class FromContainerAndThenGeneralization
+        public class FromContainerAndThenGeneralization
         {
             [AmbientPropertySet( PropertyName = "OneStringValue", PropertyValue = "OnBaseObject" )]
             [StObj( ItemKind = DependentItemKindSpec.Container )]
@@ -131,7 +131,7 @@ namespace CK.StObj.Engine.Tests
 
         }
 
-        class FromGeneralizationAndThenContainer
+        public class FromGeneralizationAndThenContainer
         {
             [StObj( ItemKind = DependentItemKindSpec.Container )]
             public class BaseObjectAmbient : IRealObject
