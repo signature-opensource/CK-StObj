@@ -15,7 +15,7 @@ namespace CK.StObj.Engine.Tests
             _typeFilter = typefilter;
         }
 
-        public bool TypeFilter( IActivityMonitor monitor, Type t )
+        public bool TypeFilter( IActivityLineEmitter monitor, Type t )
         {
             return _typeFilter?.Invoke( t ) ?? true;
         }

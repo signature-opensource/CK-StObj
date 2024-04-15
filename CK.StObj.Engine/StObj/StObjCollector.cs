@@ -48,7 +48,7 @@ namespace CK.Setup
         {
             _errorEntries = new List<string>();
             _tempAssembly = new DynamicAssembly();
-            Func<IActivityMonitor, Type, bool>? tFilter = null;
+            Func<IActivityLineEmitter, Type, bool>? tFilter = null;
             if( typeFilter != null ) tFilter = typeFilter.TypeFilter;
             _cc = new CKTypeCollector( serviceProvider, _tempAssembly, tFilter, names );
             _configurator = configurator;

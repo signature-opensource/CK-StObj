@@ -13,7 +13,7 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
 
         public static CKTypeCollector CreateCKTypeCollector( Func<Type, bool>? typeFilter = null )
         {
-            Func<IActivityMonitor, Type, bool>? f = null;
+            Func<IActivityLineEmitter, Type, bool>? f = null;
             if( typeFilter != null ) f = ( m, t ) => typeFilter( t );
             return new CKTypeCollector( new SimpleServiceContainer(), new DynamicAssembly(), f );
         }

@@ -1,6 +1,6 @@
 namespace CK.Setup
 {
-    public sealed partial class CachedType
+    public sealed partial class CKTypeKindDetector
     {
         const int _privateStartKind = 4096;
 
@@ -34,6 +34,8 @@ namespace CK.Setup
 
         // The IsMultiple reason is an external definition.
         internal const CKTypeKind IsMultipleReasonExternal = (CKTypeKind)(_privateStartKind << 8);
+
+        internal const CKTypeKind HasBaseType = (CKTypeKind)(_privateStartKind << 9);
 
         internal static string ToStringFull( CKTypeKind t )
         {

@@ -126,6 +126,7 @@ namespace CK.Setup
                         finalAttributeToUse = a.GetType() == typeof( ContextBoundDelegationAttribute )
                                             ? sLocal.SimpleObjectCreate( monitor, dT )
                                             : sLocal.SimpleObjectCreate( monitor, dT, a );
+                        
                     }
                     if( finalAttributeToUse == null ) continue;
                 }

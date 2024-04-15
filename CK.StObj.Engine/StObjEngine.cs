@@ -259,7 +259,7 @@ namespace CK.Setup
                 _isUnifiedPure = g.IsUnifiedPure;
             }
 
-            bool IStObjTypeFilter.TypeFilter( IActivityMonitor monitor, Type t )
+            bool IStObjTypeFilter.TypeFilter( IActivityLineEmitter monitor, Type t )
             {
                 // Type.FullName is null if the current instance represents a generic type parameter, an array
                 // type, pointer type, or byref type based on a type parameter, or a generic type

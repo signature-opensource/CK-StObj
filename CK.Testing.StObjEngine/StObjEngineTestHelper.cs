@@ -33,7 +33,7 @@ namespace CK.Testing
                 _typeFilter = typeFilter;
             }
 
-            bool IStObjTypeFilter.TypeFilter( IActivityMonitor monitor, Type t )
+            bool IStObjTypeFilter.TypeFilter( IActivityLineEmitter monitor, Type t )
             {
                 return _typeFilter.Invoke( t );
             }

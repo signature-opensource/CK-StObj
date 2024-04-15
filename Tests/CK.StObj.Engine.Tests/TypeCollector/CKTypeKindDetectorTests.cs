@@ -294,5 +294,21 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).Should().Be( "IsScopedService|IsProcessService" );
         }
 
+        public class Base<T, U> { }
+
+        public class G<T> { }
+
+        public class Derived<V> : Base<string, V>
+        {
+            public G<Derived<V>>? F;
+        }
+
+        [Test]
+        public void semi_open_generic_definition()
+        {
+            var cache = new CKTypeKindDetector();
+            var closed = cache.GetCachedType( typeof( Derived<int> ) );
+
+        }
     }
 }

@@ -43,7 +43,7 @@ namespace CK.Setup
         /// <param name="names">Optional list of names for the final StObjMap. When null or empty, a single empty string is the default name.</param>
         public CKTypeCollector( IServiceProvider serviceProvider,
                                 IDynamicAssembly tempAssembly,
-                                Func<IActivityMonitor, Type, bool>? typeFilter = null,
+                                Func<IActivityLineEmitter, Type, bool>? typeFilter = null,
                                 IEnumerable<string>? names = null )
         {
             Throw.CheckNotNullArgument( serviceProvider );
@@ -104,7 +104,9 @@ namespace CK.Setup
         public void RegisterType( IActivityMonitor monitor, Type type )
         {
             Throw.CheckNotNullArgument( type );
-            if( type != typeof( object ) )
+            // Ignores non visible types at this level: explicit registered internal types
+            // are silently ignored.
+            if( type.IsVisible && type != typeof( object ) )
             {
                 if( type.IsClass )
                 {

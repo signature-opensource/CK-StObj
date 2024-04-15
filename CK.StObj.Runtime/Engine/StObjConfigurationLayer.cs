@@ -43,7 +43,7 @@ namespace CK.Setup
         /// <param name="monitor">The monitor to use.</param>
         /// <param name="t">Type to accept ot not.</param>
         /// <returns>True to keep the type, false to exclude it.</returns>
-        public virtual bool TypeFilter( IActivityMonitor monitor, Type t )
+        public virtual bool TypeFilter( IActivityLineEmitter monitor, Type t )
         {
             return _next != null ? _next.TypeFilter( monitor, t ) : true;
         }
