@@ -95,6 +95,7 @@ namespace CK.Setup
                           .EnsureUsing( "CK.Core" )
                           .EnsureUsing( "System" )
                           .EnsureUsing( "System.Collections.Generic" )
+                          .EnsureUsing( "System.Collections.Immutable" )
                           .EnsureUsing( "System.Linq" )
                           .EnsureUsing( "System.Threading.Tasks" )
                           .EnsureUsing( "System.Text" )

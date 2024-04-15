@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CK.Core
@@ -47,13 +48,8 @@ namespace CK.Core
         /// <summary>
         /// Used by generated code.
         /// </summary>
-        [AllowNull]
-        protected static EndpointTypeManager.UbiquitousMapping[] _entries;
-
-        /// <summary>
-        /// Used by generated code.
-        /// </summary>
         protected readonly Mapper[] _mappers;
+        readonly ImmutableArray<EndpointTypeManager.UbiquitousMapping> _entries;
         bool _locked;
 
         /// <summary>
@@ -62,16 +58,18 @@ namespace CK.Core
         /// <param name="services">The current service provider (must be a scoped container).</param>
         public EndpointUbiquitousInfo( IServiceProvider services )
         {
-            _mappers = Initialize( services );
+            _mappers = Initialize( services, out _entries );
         }
 
         /// <summary>
         /// Called by generated code.
         /// </summary>
         /// <param name="mappers">Ready to use clean mappers.</param>
-        protected EndpointUbiquitousInfo( Mapper[] mappers )
+        /// <param name="entries">The ubiquitous services mapping.</param>
+        protected EndpointUbiquitousInfo( Mapper[] mappers, ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries )
         {
             _mappers = mappers;
+            _entries = entries;
         }
 
         /// <summary>
@@ -154,15 +152,16 @@ namespace CK.Core
         /// Code generated.
         /// </summary>
         /// <param name="services">The current service provider (must be a scoped container).</param>
+        /// <param name="entries">The ubiquitous services mapping.</param>
         /// <returns>The initial mapped values.</returns>
-        protected abstract Mapper[] Initialize( IServiceProvider services );
+        protected abstract Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries );
 
         ref Mapper Get( Type t )
         {
             return ref _mappers[_entries[GetTypeIndex( t )].MappingIndex];
         }
 
-        static int GetTypeIndex( Type t )
+        int GetTypeIndex( Type t )
         {
             for( int i = 0; i < _entries.Length; ++i )
             {
@@ -184,7 +183,7 @@ namespace CK.Core
 
             // This concerns only IAutoService.
             // Regular (non IAutoService) have no mappings.
-            static void CheckSpecialization( int i, Type tInstance )
+            void CheckSpecialization( int i, Type tInstance )
             {
                 int iIndex = _entries[i].MappingIndex;
                 int iImpl = i;

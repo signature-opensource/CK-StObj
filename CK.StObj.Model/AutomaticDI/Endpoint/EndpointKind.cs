@@ -1,4 +1,4 @@
-﻿namespace CK.Core
+namespace CK.Core
 {
     /// <summary>
     /// Categorizes the two possible kind of endpoints.
@@ -6,7 +6,7 @@
     public enum EndpointKind
     {
         /// <summary>
-        /// This kind of endpoint is called from another endpoint: a service provider
+        /// This kind of endpoints are called from another endpoint: a service provider
         /// is available and all ubiquitous information services are resolved (even if it
         /// is with their default values provided by <see cref="IEndpointUbiquitousServiceDefault{T}"/>
         /// <para>
@@ -17,7 +17,7 @@
         Back,
 
         /// <summary>
-        /// This kind of endpoint are called "out of the blue": no existing DI context exists, they must
+        /// This kind of endpoints are called "out of the blue": no existing DI context exists, they must
         /// resolve all the required services including ubiquitous information services without relying
         /// on the <see cref="EndpointUbiquitousInfo"/>.
         /// <para>

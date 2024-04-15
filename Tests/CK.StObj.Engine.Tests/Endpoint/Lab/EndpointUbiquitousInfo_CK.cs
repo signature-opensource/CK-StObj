@@ -1,6 +1,7 @@
 using CK.Core;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
+using System.Collections.Immutable;
 
 namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 {
@@ -20,7 +21,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             // are listed that points to the same Mapper (here the first one).
             // This is not the case of IFakeAuthenticationInfo/FakeAuthenticationInfo: these are
             // de facto 2 independent services (standard DI behavior).
-            _entries = EndpointTypeManager_CK._ubiquitousMappings;
             _descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {
                 new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(IFakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
                 new Microsoft.Extensions.DependencyInjection.ServiceDescriptor( typeof(FakeTenantInfo), sp => ScopeDataHolder.GetUbiquitous( sp, 0 ), Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped ),
@@ -30,14 +30,14 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
             };
         }
 
-        protected override Mapper[] Initialize( IServiceProvider services )
+        protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries )
         {
-            return new Mapper[]
-            {
+            entries = EndpointTypeManager_CK._ubiquitousMappings;
+            return new Mapper[] {
                 new Mapper( Required( services, typeof(IFakeTenantInfo) ) ),
                 new Mapper( Required( services, typeof(IFakeAuthenticationInfo) ) ),
                 new Mapper( Required( services, typeof(FakeAuthenticationInfo) ) ),
-                new Mapper( Required( services, typeof(FakeCultureInfo) ) ),
+                new Mapper( Required( services, typeof(FakeCultureInfo) ) )
             };
 
             static object Required( IServiceProvider services, Type type )
@@ -50,7 +50,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
 
         internal object At( int index ) => _mappers[index].Current;
 
-        EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers ) { }
+        EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
 
         public override EndpointUbiquitousInfo CleanClone()
         {

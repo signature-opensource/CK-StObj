@@ -3,6 +3,7 @@ using CK.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using static CK.Core.ActivityMonitorSimpleCollector;
 using static CK.Core.EndpointTypeManager;
 using static System.Formats.Asn1.AsnWriter;
@@ -15,7 +16,7 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         // EndpointDefinition are IRealObject: they are static and resolved from
         // the GeneratedRootContext.GenStObj.
         static readonly EndpointDefinition[] _endpoints;
-        internal static readonly UbiquitousMapping[] _ubiquitousMappings;
+        internal static readonly ImmutableArray<UbiquitousMapping> _ubiquitousMappings;
         internal static Dictionary<Type,AutoServiceKind> _endpointServices;
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;
         internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;
@@ -35,14 +36,13 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(FakeCultureInfo), AutoServiceKind.IsEndpointService | AutoServiceKind.IsScoped },
             };
             _endpoints = new EndpointDefinition[] { new FakeBackEndpointDefinition_CK() };
-            _ubiquitousMappings = new UbiquitousMapping[]
-            {
+            _ubiquitousMappings = ImmutableArray.Create( 
                 new UbiquitousMapping( typeof(IFakeTenantInfo), 0 ),
                 new UbiquitousMapping( typeof(FakeTenantInfo), 0 ),
                 new UbiquitousMapping( typeof(IFakeAuthenticationInfo), 1 ),
                 new UbiquitousMapping( typeof(FakeAuthenticationInfo), 2 ),
                 new UbiquitousMapping( typeof(FakeCultureInfo), 3 )
-            };
+            );
             Func<IServiceProvider, object> back0 = sp => ScopeDataHolder.GetUbiquitous( sp, 0 );
             Func<IServiceProvider, object> back1 = sp => ScopeDataHolder.GetUbiquitous( sp, 1 );
             Func<IServiceProvider, object> back2 = sp => ScopeDataHolder.GetUbiquitous( sp, 2 );
