@@ -45,11 +45,11 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a Endpoint service (type is a class)." );
+                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a Endpoint service" );
             }
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );
-                TestHelper.GetFailedResult( collector , "RealObject cannot be a Endpoint or Process service (type is a class)." );
+                TestHelper.GetFailedResult( collector , "IRealObject interface cannot be marked as a Multiple service" );
             }
         }
 

@@ -160,6 +160,7 @@ namespace CK.Setup
                     if( !isSingleton ) AddConflict( "RealObject must be a Singleton" );
                     // If IsMultiple, then this is an interface, not a class: a IRealObject interface cannot be IsMultiple.
                     if( isScoped ) AddConflict( "RealObject cannot have a Scoped lifetime" );
+                    if( isEndPoint ) AddConflict( "RealObject cannot be a Endpoint service" );
                     if( isMultiple ) AddConflict( "IRealObject interface cannot be marked as a Multiple service" );
                     if( isAuto && !isClass ) AddConflict( "IRealObject interface cannot be a IAutoService" );
                 }
