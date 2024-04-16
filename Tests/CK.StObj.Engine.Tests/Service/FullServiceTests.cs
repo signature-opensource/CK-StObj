@@ -602,6 +602,83 @@ namespace CK.StObj.Engine.Tests.Service
             TestHelper.GetSuccessfulResult( collector );
         }
 
+        public interface IMayBeHere : IAutoService { }
+
+        public class HereIAm : IMayBeHere { }
+
+        public class Consumer : IAutoService
+        {
+            readonly IMayBeHere? _hope;
+
+            public Consumer( IMayBeHere? hope = null )
+            {
+                _hope = hope;
+            }
+
+            public bool Eat( IActivityMonitor monitor )
+            {
+                if( _hope is null )
+                {
+                    monitor.Warn( "No hope :(" );
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [Test]
+        public void excluding_optional_service_implementation()
+        {
+            // Available.
+            {
+                var collector = TestHelper.CreateStObjCollector( typeof( Consumer ), typeof( HereIAm ) );
+                using var services = TestHelper.CreateAutomaticServices( collector ).Services;
+                var consumer = services.GetRequiredService<Consumer>();
+                consumer.Eat( TestHelper.Monitor ).Should().BeTrue();
+            }
+            // Not registered at all.
+            {
+                var collector = TestHelper.CreateStObjCollector( typeof( Consumer ) );
+                using var services = TestHelper.CreateAutomaticServices( collector ).Services;
+                var consumer = services.GetRequiredService<Consumer>();
+                consumer.Eat( TestHelper.Monitor ).Should().BeFalse();
+            }
+            // Excluded by GlobalExcludedTypes configuration.
+            {
+                const string typeName = "CK.StObj.Engine.Tests.Service.FullServiceTests+HereIAm, CK.StObj.Engine.Tests";
+                Throw.DebugAssert( SimpleTypeFinder.WeakenAssemblyQualifiedName( typeof( HereIAm ).AssemblyQualifiedName!, out var weak )
+                                   && weak == typeName );
+
+                var collector = TestHelper.CreateStObjCollector( typeof( Consumer ), typeof( HereIAm ) );
+                static StObjEngineConfiguration Configure( StObjEngineConfiguration configuration )
+                {
+                    configuration.GlobalExcludedTypes.Add( typeName );
+                    return configuration;
+                }
+
+                using var services = TestHelper.CreateAutomaticServices( collector, Configure ).Services;
+                var consumer = services.GetRequiredService<Consumer>();
+                consumer.Eat( TestHelper.Monitor ).Should().BeFalse();
+            }
+            // Excluded by BinPaths.ExcludedTypes configuration.
+            {
+                const string typeName = "CK.StObj.Engine.Tests.Service.FullServiceTests+HereIAm, CK.StObj.Engine.Tests";
+                Throw.DebugAssert( SimpleTypeFinder.WeakenAssemblyQualifiedName( typeof( HereIAm ).AssemblyQualifiedName!, out var weak )
+                                   && weak == typeName );
+
+                var collector = TestHelper.CreateStObjCollector( typeof( Consumer ), typeof( HereIAm ) );
+                static StObjEngineConfiguration Configure( StObjEngineConfiguration configuration )
+                {
+                    configuration.BinPaths[0].ExcludedTypes.Add( typeName );
+                    return configuration;
+                }
+
+                using var services = TestHelper.CreateAutomaticServices( collector, Configure ).Services;
+                var consumer = services.GetRequiredService<Consumer>();
+                consumer.Eat( TestHelper.Monitor ).Should().BeFalse();
+            }
+        }
+
 
     }
 }

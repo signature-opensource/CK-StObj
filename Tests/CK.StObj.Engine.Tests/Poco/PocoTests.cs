@@ -151,7 +151,7 @@ namespace CK.StObj.Engine.Tests.Poco
 
         public interface IDefTestMaskedBaseProperties : IDefTest
         {
-            [DefaultValue( 3713 )]
+            [DefaultValue( 3712 + 1 )]
             new int PDef { get; }
 
             [DefaultValue( "Hello World!" )]
@@ -351,8 +351,56 @@ namespace CK.StObj.Engine.Tests.Poco
         {
             var c = TestHelper.CreateStObjCollector( typeof( ISome ) );
             TestHelper.GetSuccessfulResult( c );
-            SpecialAttributeImpl.GotType.Should().Be( typeof(ISome ) );
+            SpecialAttributeImpl.GotType.Should().Be( typeof( ISome ) );
             SpecialAttributeImpl.GotProperty.Name.Should().Be( "Prop" );
+        }
+
+        public interface IMayNotBeHere : IPoco { }
+
+        public interface IAmHere1 : IPoco
+        {
+            IMayNotBeHere? Hole { get; }
+        }
+
+        public interface IAmHere2 : IPoco
+        {
+            IMayNotBeHere? Hole { get; }
+        }
+
+        public interface INeedHim1 : IPoco
+        {
+            IMayNotBeHere Hole { get; }
+        }
+
+        public interface INeedHim2 : IPoco
+        {
+            IMayNotBeHere Hole { get; set; }
+        }
+
+        [TestCase( typeof( IAmHere1 ), typeof(INeedHim1) )]
+        [TestCase( typeof( IAmHere2 ), typeof( INeedHim2 ) )]
+        public void Poco_property_type_may_not_be_registered_but_it_must_be_nullable( Type withNullableProp, Type notNullable )
+        {
+            {
+                var c = TestHelper.CreateStObjCollector( withNullableProp );
+                var r = TestHelper.GetSuccessfulResult( c );
+                var ts = r.PocoTypeSystemBuilder.Lock( TestHelper.Monitor );
+
+                var working = ts.FindByType( withNullableProp );
+                Throw.DebugAssert( working != null );
+                working.Kind.Should().Be( PocoTypeKind.PrimaryPoco );
+
+                var notRegistered = ts.FindByType( typeof( IMayNotBeHere ) );
+                Throw.DebugAssert( notRegistered != null );
+                notRegistered.Kind.Should().Be( PocoTypeKind.AbstractPoco, "Excluding PocoType is considered an Abstract..." );
+                notRegistered.ImplementationLess.Should().BeTrue( "...implementation less." );
+            }
+            {
+                var c = TestHelper.CreateStObjCollector( notNullable );
+                TestHelper.GetFailedResult( c,
+                    "'[PrimaryPoco]CK.StObj.Engine.Tests.Poco.PocoTests.INeedHim", "', field: 'Hole' has no default value.",
+                    "No default can be synthesized for non nullable '[AbstractPoco]CK.StObj.Engine.Tests.Poco.PocoTests.IMayNotBeHere'." );
+            }
         }
 
     }

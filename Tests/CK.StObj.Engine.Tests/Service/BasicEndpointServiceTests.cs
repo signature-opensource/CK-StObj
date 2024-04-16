@@ -45,7 +45,7 @@ namespace CK.StObj.Engine.Tests.Service
         {
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible0 ) );
-                TestHelper.GetFailedResult( collector, "RealObject cannot have a Scoped lifetime, RealObject cannot be a Endpoint service (type is a class)." );
+                TestHelper.GetFailedResult( collector, "Invalid class 'CK.StObj.Engine.Tests.Service.BasicEndpointServiceTests.Impossible0' kind: Invalid CK type combination 'IsScopedService|IsSingleton|IsRealObject|IsEndpointService': RealObject cannot have a Scoped lifetime (type is a class)." );
             }
             {
                 var collector = TestHelper.CreateStObjCollector( typeof( Impossible1 ) );
