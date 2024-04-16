@@ -232,17 +232,6 @@ namespace CK.Setup
         public IReadOnlyList<CtorParameter>? ConstructorParameters { get; private set; }
 
         /// <summary>
-        /// Gets the types that must be marshalled for this Auto service to be marshallable.
-        /// This is null until the EnsureCtorBinding internal method has been called.
-        /// This is empty (if this service is not marshallable), it contains this <see cref="ClassType"/>
-        /// (if it is the one that must have a <see cref="StObj.Model.IMarshaller{T}"/> available), or is a set of one or more types
-        /// that must have a marshaller.
-        /// </summary>
-        public IReadOnlyCollection<Type>? MarshallableTypes { get; private set; }
-
-        IReadOnlyCollection<Type> IStObjServiceClassDescriptor.MarshallableTypes => MarshallableTypes!;
-
-        /// <summary>
         /// Gets the <see cref="ImplementableTypeInfo"/> if this <see cref="CKTypeInfo.Type"/>
         /// is abstract, null otherwise.
         /// </summary>
@@ -408,13 +397,6 @@ namespace CK.Setup
                 Debug.Assert( ConstructorParameters != null );
                 using( m.OpenTrace( $"Computing {ClassType}'s final type based on {ConstructorParameters.Count} parameter(s). Initially '{initial}'." ) )
                 {
-                    HashSet<Type>? allMarshallableTypes = null;
-                    // If this service is not marshallable then all its parameters that are Process services must be marshallable
-                    // so that this service can be "normally" created as long as its required dependencies have been marshalled.
-                    // Lets's be optimistic: all parameters that are Process services (if any) will be marshallable, so this one
-                    // can be used "on the other side" as if it was itself marshallable.
-                    bool isAutomaticallyMarshallable = true;
-
                     if( path.Contains( this ) )
                     {
                         m.Error( $"Service class dependency cycle detected: '{path.Select( c => c.ClassType.Name ).Concatenate( "' -> '" )}'." );
@@ -484,39 +466,6 @@ namespace CK.Setup
                                         final |= AutoServiceKind.IsScoped;
                                     }
                                 }
-                                // Handling ProcessService propagation (EndpointService doesn't propagate).
-                                // If the parameter is not a endpoint or a process service, we can safely ignore it: we don't care of a IsMarshallable only type.
-                                if( (kP & AutoServiceKind.IsProcessService) == 0 ) continue;
-
-                                var newFinal = final | (kP & AutoServiceKind.IsProcessService);
-                                if( newFinal != final )
-                                {
-                                    // Upgrades to ProcessService...
-                                    m.Trace( $"Type '{ClassType}' must be {newFinal & AutoServiceKind.IsProcessService}, because of (at least) constructor's parameter '{p.Name}' of type '{paramTypeName}'." );
-                                    final = newFinal;
-                                }
-                                // If this Service is marshallable at its level OR it is already known to be NOT automatically marshallable,
-                                // we don't have to worry anymore about the parameters marshalling.
-                                if( (final & AutoServiceKind.IsMarshallable) != 0 || !isAutomaticallyMarshallable ) continue;
-
-                                if( (kP & AutoServiceKind.IsMarshallable) == 0 )
-                                {
-                                    m.Warn( $"Type '{ClassType}' is not marked as [IsMarshallable] and the constructor's parameter '{p.Name}' of type '{paramTypeName}' that is a Front service is not marshallable: it cannot be considered as marshallable." );
-                                    isAutomaticallyMarshallable = false;
-                                }
-                                else
-                                {
-                                    allMarshallableTypes ??= new HashSet<Type>();
-                                    if( pC != null )
-                                    {
-                                        Debug.Assert( pC.MarshallableTypes != null, "EnsureCtorBinding has been called." );
-                                        allMarshallableTypes.AddRange( pC.MarshallableTypes );
-                                    }
-                                    else
-                                    {
-                                        allMarshallableTypes.Add( p.ParameterInfo.ParameterType );
-                                    }
-                                }
                             }
                         }
                         path.Pop();
@@ -528,27 +477,6 @@ namespace CK.Setup
                             {
                                 m.Info( $"Nothing prevents the class '{ClassType}' to be a Singleton: this is the most efficient choice." );
                                 final |= AutoServiceKind.IsSingleton;
-                            }
-                            // Conclude about Front aspect.
-                            if( (final & AutoServiceKind.IsMarshallable) != 0 )
-                            {
-                                MarshallableTypes = new[] { ClassType };
-                            }
-                            else
-                            {
-                                if( isAutomaticallyMarshallable && allMarshallableTypes != null )
-                                {
-                                    Debug.Assert( allMarshallableTypes.Count > 0 );
-                                    MarshallableTypes = allMarshallableTypes;
-                                    final |= AutoServiceKind.IsMarshallable;
-                                }
-                                else
-                                {
-                                    // This service is not a Process service OR it is not automatically marshallable.
-                                    // We have nothing special to do: the set of Marshallable types is empty (this is not an error)
-                                    // and this FinalTypeKind will be 'None' or a EndPoint/Process service but without the IsMarshallable bit.
-                                    MarshallableTypes = Type.EmptyTypes;
-                                }
                             }
                         }
                     }

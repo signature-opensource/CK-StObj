@@ -139,7 +139,6 @@ namespace CK.Setup
                 else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
                 else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                 else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
-                else if( t.Name == nameof( IProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsProcessService | IsDefiner | IsReasonMarker;
                 else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
             }
             // If it's not one of the interface marker, we analyze it.
@@ -152,12 +151,10 @@ namespace CK.Setup
                 Throw.DebugAssert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                 Throw.DebugAssert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                 Throw.DebugAssert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                Throw.DebugAssert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
                 Throw.DebugAssert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
                 bool hasSuperDefiner = false;
                 bool hasDefiner = false;
                 bool isMultipleInterface = false;
-                bool hasMarshallable = false;
                 bool hasSingletonService = false;
                 bool isExcludedType = false;
                 bool isEndpointScoped = false;
@@ -188,9 +185,6 @@ namespace CK.Setup
                         case "CKTypeSuperDefinerAttribute":
                             hasSuperDefiner = true;
                             break;
-                        case "IsMarshallableAttribute":
-                            hasMarshallable = true;
-                            break;
                         case "SingletonServiceAttribute":
                             hasSingletonService = true;
                             break;
@@ -218,7 +212,7 @@ namespace CK.Setup
                     // It's time to apply the bases.
                     foreach( var i in directBases )
                     {
-                        var kI = i.InternalKind & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType | IsReasonMarker);
+                        var kI = i.InternalKind & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsExcludedType | IsReasonMarker);
                         if( (k & IsDefiner) == 0 // We are not yet a Definer...
                             && (kI & IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
                         {
@@ -229,7 +223,6 @@ namespace CK.Setup
                     // Applying the direct flags. Any inherited combination error is cleared.
                     k &= ~CKTypeKind.HasError;
                     if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
-                    if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
                     if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                     if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
                     if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
@@ -278,30 +271,8 @@ namespace CK.Setup
                                 monitor.Error( $"Invalid class '{t:N}' kind: {error}" );
                                 k |= CKTypeKind.HasError;
                             }
-                            else if( (k & CKTypeKind.IsAutoService) != 0 )
-                            {
-                                allBases = CachedType.CreateAllBases( directBases, allPublicInterfaces );
-                                foreach( var marshaller in allBases.Where( i => i.IsGenericType && i.GenericDefinition.Type == typeof( CK.StObj.Model.IMarshaller<> ) ) )
-                                {
-                                    var marshallable = marshaller.InternalGenericArguments[0];
-                                    monitor.Info( $"Type '{marshallable:N}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t:N}' that is a IAutoService." );
-                                    SetLifetimeOrProcessType( monitor, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller, marshallable );
 
-                                    // The marshaller interface (the closed generic) is promoted to be a IAutoService since it must be
-                                    // mapped (without ambiguities) on the currently registering class (that is itself a IAutoService).
-                                    if( (marshaller.InternalKind & CKTypeKind.IsAutoService) == 0 )
-                                    {
-                                        if( !marshaller.MergeKind( monitor, CKTypeKind.IsAutoService ) )
-                                        {
-                                            monitor.Error( $"Unable to promote the IMarshaller interface '{marshaller.CSharpName}' as a IAutoService: {error}" );
-                                        }
-                                        else
-                                        {
-                                            monitor.Trace( $"Interface '{marshaller.CSharpName}' is now a IAutoService." );
-                                        }
-                                    }
-                                }
-                            }
+
                         }
                         else
                         {

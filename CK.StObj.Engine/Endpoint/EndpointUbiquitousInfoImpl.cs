@@ -2,6 +2,7 @@ using CK.CodeGen;
 using CK.Core;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
@@ -25,7 +26,6 @@ namespace CK.Setup
             scope.GeneratedByComment( "Static constructor" )
                  .Append( "static EndpointUbiquitousInfo_CK()" )
                  .OpenBlock()
-                 .Append( "_entries = EndpointTypeManager_CK._ubiquitousMappings;" ).NewLine()
                  .Append( "_descriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" )
                  .CreatePart( out var descriptors )
                  .Append( "};" ).NewLine()
@@ -41,9 +41,10 @@ namespace CK.Setup
 
 
             scope.GeneratedByComment( "Constructor initializer" )
-                 .Append( "protected override Mapper[] Initialize( IServiceProvider services )" )
+                 .Append( "protected override Mapper[] Initialize( IServiceProvider services, out ImmutableArray<EndpointTypeManager.UbiquitousMapping> entries )" )
                  .OpenBlock()
-                 .Append( "return new Mapper[] {" );
+                 .Append( "entries = EndpointTypeManager_CK._ubiquitousMappings;" ).NewLine()
+                 .Append( "return new Mapper[] {" ).NewLine();
             int current = -1;
             foreach( var (type, index) in mappings )
             {
@@ -65,7 +66,7 @@ namespace CK.Setup
             scope.Append( """
                            internal object At( int index ) => _mappers[index].Current;
 
-                           EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers ) { }
+                           EndpointUbiquitousInfo_CK( Mapper[] mappers ) : base( mappers, EndpointTypeManager_CK._ubiquitousMappings ) { }
 
                            public override EndpointUbiquitousInfo CleanClone()
                            {

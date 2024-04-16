@@ -19,23 +19,9 @@ namespace CK.Setup
         None,
 
         /// <summary>
-        /// Process service flag indicates a service that has a data/configuration adherence to the
-        /// current process: it requires some sort of marshalling/configuration to be able to do its job
-        /// remotely (out of this process).
-        /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
-        /// </summary>
-        IsProcessService = 1,
-
-        /// <summary>
         /// Service can be overridden by an endpoint. Whether it is a <see cref="IsProcessService"/> or not is independent.
         /// </summary>
         IsEndpointService = 2,
-
-        /// <summary>
-        /// Marshallable service.
-        /// This is independent of <see cref="IsProcessService"/> (but a process service must eventually be marshallable).
-        /// </summary>
-        IsMarshallable = 4,
 
         /// <summary>
         /// Singleton flag.
@@ -151,8 +137,6 @@ namespace CK.Setup
             bool isRealObject = (@this & (CKTypeKind.RealObject & ~CKTypeKind.IsSingleton)) != 0;
             bool isPoco = (@this & CKTypeKind.IsPoco) != 0;
             bool isEndPoint = (@this & CKTypeKind.IsEndpointService) != 0;
-            bool isProcess = (@this & CKTypeKind.IsProcessService) != 0;
-            bool isMarshallable = (@this & CKTypeKind.IsMarshallable) != 0;
             bool isMultiple = (@this & CKTypeKind.IsMultipleService) != 0;
             bool isUbiquitous = (@this & (CKTypeKind.UbiquitousInfo & ~CKTypeKind.IsEndpointService & ~CKTypeKind.IsScoped)) != 0;
 
@@ -178,8 +162,6 @@ namespace CK.Setup
                     if( isScoped ) AddConflict( "RealObject cannot have a Scoped lifetime" );
                     if( isMultiple ) AddConflict( "IRealObject interface cannot be marked as a Multiple service" );
                     if( isAuto && !isClass ) AddConflict( "IRealObject interface cannot be a IAutoService" );
-                    if( isMarshallable ) AddConflict( "RealObject cannot be marked as Marshallable" );
-                    if( isEndPoint | isProcess ) AddConflict( "RealObject cannot be a Endpoint or Process service" );
                 }
             }
             else if( isScoped && isSingleton )
@@ -215,8 +197,6 @@ namespace CK.Setup
                                                  "IsPoco",
                                                  "IsUbiquitous",
                                                  "IsEndpointService",
-                                                 "IsProcessService",
-                                                 "IsMarshallable",
                                                  "IsMultipleService",
                                                  "IsExcludedType",
                                                  "HasError"};
@@ -237,8 +217,6 @@ namespace CK.Setup
                                              || (i == 4 && (@this & CKTypeKind.IsPoco) != 0)
                                              || (i == 5 && isUbiquitous)
                                              || (i == 6 && (@this & CKTypeKind.IsEndpointService) != 0)
-                                             || (i == 7 && (@this & CKTypeKind.IsProcessService) != 0)
-                                             || (i == 8 && (@this & CKTypeKind.IsMarshallable) != 0)
                                              || (i == 9 && (@this & CKTypeKind.IsMultipleService) != 0)
                                              || (i == 10 && (@this & CKTypeKind.IsExcludedType) != 0)
                                              || (i == 11 && (@this & CKTypeKind.HasError) != 0) );

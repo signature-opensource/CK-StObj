@@ -22,7 +22,7 @@ namespace CK.Setup
             // static (Real Objects)
             scope.Append( "internal static readonly EndpointDefinition[] _endpoints;" ).NewLine()
                  .Append( "internal static readonly IReadOnlyDictionary<Type,AutoServiceKind> _endpointServices;" ).NewLine()
-                 .Append( "internal static readonly UbiquitousMapping[] _ubiquitousMappings;" ).NewLine()
+                 .Append( "internal static readonly ImmutableArray<UbiquitousMapping> _ubiquitousMappings;" ).NewLine()
                  .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousFrontDescriptors;" ).NewLine()
                  .Append( "internal static Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] _ubiquitousBackDescriptors;" ).NewLine();
             // instance (bound to the DI world). 
@@ -63,12 +63,14 @@ namespace CK.Setup
             }
             scope.Append("};").NewLine();
 
-            scope.Append( "_ubiquitousMappings = new UbiquitousMapping[] {" ).NewLine();
-            foreach( var e in endpointResult.UbiquitousMappings )
+            scope.Append( "_ubiquitousMappings = ImmutableArray.Create<UbiquitousMapping>( " ).NewLine();
+            for( int i = 0; i < endpointResult.UbiquitousMappings.Count; i++ )
             {
-                scope.Append( "new UbiquitousMapping( " ).AppendTypeOf( e.UbiquitousType ).Append( "," ).Append( e.MappingIndex ).Append( ")," ).NewLine();
+                EndpointTypeManager.UbiquitousMapping e = endpointResult.UbiquitousMappings[i];
+                if( i > 0 ) scope.Append( "," ).NewLine();
+                scope.Append( "new UbiquitousMapping( " ).AppendTypeOf( e.UbiquitousType ).Append( "," ).Append( e.MappingIndex ).Append( ")" );
             }
-            scope.Append( "};" ).NewLine();
+            scope.Append( ");" ).NewLine();
 
             var sharedPart = scope.CreatePart();
             scope.Append( "_ubiquitousBackDescriptors = new Microsoft.Extensions.DependencyInjection.ServiceDescriptor[] {" ).NewLine();

@@ -11,12 +11,11 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
     // This class is generated.
     sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
     {
-        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
+        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
         {
             ClassType = t;
             FinalType = finalType;
             AutoServiceKind = k;
-            MarshallableTypes = marshallableTypes;
             MultipleMappings = mult;
             UniqueMappings = uniq;
         }
@@ -28,8 +27,6 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
         public bool IsScoped => (AutoServiceKind & AutoServiceKind.IsScoped) != 0;
 
         public AutoServiceKind AutoServiceKind { get; }
-
-        public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
         public IReadOnlyCollection<Type> MultipleMappings { get; }
 
@@ -51,19 +48,16 @@ namespace CK.StObj.Engine.Tests.Endpoint.Conformant
                 { typeof(DefaultTenantProvider), new StObjServiceClassDescriptor( typeof(DefaultTenantProvider),
                                                                                   typeof(DefaultTenantProvider),
                                                                                   AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton,
-                                                                                  marshallableTypes: Type.EmptyTypes,
                                                                                   mult: Type.EmptyTypes,
                                                                                   uniq: Type.EmptyTypes) },
                 { typeof(DefaultCultureProvider), new StObjServiceClassDescriptor( typeof(DefaultCultureProvider),
                                                                                    typeof(DefaultCultureProvider),
                                                                                    AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton,
-                                                                                   marshallableTypes: Type.EmptyTypes,
                                                                                    mult: Type.EmptyTypes,
                                                                                    uniq: Type.EmptyTypes) },
                 { typeof(DefaultAuthenticationInfoProvider), new StObjServiceClassDescriptor( typeof(DefaultAuthenticationInfoProvider),
                                                                                               typeof(DefaultAuthenticationInfoProvider),
                                                                                               AutoServiceKind.IsAutoService | AutoServiceKind.IsSingleton,
-                                                                                              marshallableTypes: Type.EmptyTypes,
                                                                                               mult: Type.EmptyTypes,
                                                                                               uniq: Type.EmptyTypes) }
             };

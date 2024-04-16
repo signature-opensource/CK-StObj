@@ -95,6 +95,7 @@ namespace CK.Setup
                           .EnsureUsing( "CK.Core" )
                           .EnsureUsing( "System" )
                           .EnsureUsing( "System.Collections.Generic" )
+                          .EnsureUsing( "System.Collections.Immutable" )
                           .EnsureUsing( "System.Linq" )
                           .EnsureUsing( "System.Threading.Tasks" )
                           .EnsureUsing( "System.Text" )
@@ -369,13 +370,12 @@ namespace CK.Setup
         const string _gMultiple = """
             sealed class GMultiple : IStObjMultipleInterface
             {
-                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im, Type[] m )
+                public GMultiple( bool s, Type i, Type e, IStObjFinalClass[] im )
                 {
                     IsScoped = s;
                     ItemType = i;
                     EnumerableType = e;
                     Implementations = im;
-                    MarshallableTypes = m;
                 }
 
                 public bool IsScoped { get; }
@@ -385,8 +385,6 @@ namespace CK.Setup
                 public Type EnumerableType { get; }
 
                 public IReadOnlyCollection<IStObjFinalClass> Implementations { get; }
-
-                public IReadOnlyCollection<Type> MarshallableTypes { get; }
             }
             """;
 
