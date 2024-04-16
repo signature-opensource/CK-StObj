@@ -14,12 +14,11 @@ namespace CK.Setup
         const string _stObjServiceClassDescriptor = """
                     sealed class StObjServiceClassDescriptor : IStObjServiceClassDescriptor
                     {
-                        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> marshallableTypes, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
+                        public StObjServiceClassDescriptor( Type t, Type finalType, AutoServiceKind k, IReadOnlyCollection<Type> mult, IReadOnlyCollection<Type> uniq )
                         {
                             ClassType = t;
                             FinalType = finalType;
                             AutoServiceKind = k;
-                            MarshallableTypes = marshallableTypes;
                             MultipleMappings = mult;
                             UniqueMappings = uniq;
                        }
@@ -31,8 +30,6 @@ namespace CK.Setup
                         public bool IsScoped => (AutoServiceKind&AutoServiceKind.IsScoped) != 0;
 
                         public AutoServiceKind AutoServiceKind { get; }
-
-                        public IReadOnlyCollection<Type> MarshallableTypes { get; }
 
                         public IReadOnlyCollection<Type> MultipleMappings { get; }
 
@@ -124,8 +121,6 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                                 .Append( ", " )
                                 .Append( d.AutoServiceKind )
                                 .Append( ", " )
-                                .AppendArray( d.MarshallableTypes )
-                                .Append( ", " )
                                 .AppendArray( d.MultipleMappings )
                                 .Append( ", " )
                                 .AppendArray( d.UniqueMappings )
@@ -164,8 +159,7 @@ IReadOnlyList<IStObjServiceClassDescriptor> IStObjServiceMap.MappingList => _ser
                         }
                         _rootCtor.Append( ", " );
                     }
-                    _rootCtor.Append( "}, " ).NewLine()
-                             .AppendArray( m.MarshallableTypes ).Append( ") );" ).NewLine();
+                    _rootCtor.Append( "}) );" ).NewLine();
                 }
             }
         }

@@ -76,7 +76,7 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
+        /// a service cannot be both scoped and singleton).
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor to use.</param>

@@ -85,7 +85,7 @@ namespace CK.Setup
         /// </para>
         /// <para>
         /// Can be called multiple times as long as no contradictory registration already exists (for instance,
-        /// a <see cref="IRealObject"/> cannot be a Endpoint or Process service).
+        /// a service cannot be both scoped and singleton).
         /// </para>
         /// </summary>
         /// <param name="monitor">The monitor.</param>
@@ -104,14 +104,12 @@ namespace CK.Setup
                 monitor.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t:C}'." );
                 return null;
             }
-            bool hasProcess = (kind & AutoServiceKind.IsProcessService) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
             bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
             bool hasEndpoint = (kind & AutoServiceKind.IsEndpointService) != 0;
 
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
-            if( hasProcess ) k |= IsProcessServiceReasonExternal;
             if( hasEndpoint ) k |= IsEndpointServiceReasonExternal;
 
             return SetLifetimeOrProcessType( monitor, t, k );
@@ -135,7 +133,7 @@ namespace CK.Setup
             Debug.Assert( (kind & (IsDefiner | IsSuperDefiner)) == 0, "kind MUST not be a SuperDefiner or a Definer." );
             Debug.Assert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) );
 
-            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsProcessService | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.UbiquitousInfo) != 0,
+            Debug.Assert( (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKind.UbiquitousInfo) != 0,
                             "At least, something must be set." );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
@@ -256,7 +254,6 @@ namespace CK.Setup
                         else if( t.Name == nameof( IAutoService ) ) k = CKTypeKind.IsAutoService | IsDefiner | IsReasonMarker;
                         else if( t.Name == nameof( IScopedAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsScoped | IsDefiner | IsReasonMarker;
                         else if( t.Name == nameof( ISingletonAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsSingleton | IsDefiner | IsReasonMarker;
-                        else if( t.Name == nameof( IProcessAutoService ) ) k = CKTypeKind.IsAutoService | CKTypeKind.IsProcessService | IsDefiner | IsReasonMarker;
                         else if( t == typeof( IPoco ) ) k = CKTypeKind.IsPoco | IsDefiner | IsReasonMarker;
                     }
                     // If it's not one of the interface marker and it's not an internal interface, we analyze it.
@@ -271,12 +268,10 @@ namespace CK.Setup
                         Debug.Assert( typeof( CKTypeSuperDefinerAttribute ).Name == "CKTypeSuperDefinerAttribute" );
                         Debug.Assert( typeof( CKTypeDefinerAttribute ).Name == "CKTypeDefinerAttribute" );
                         Debug.Assert( typeof( IsMultipleAttribute ).Name == "IsMultipleAttribute" );
-                        Debug.Assert( typeof( IsMarshallableAttribute ).Name == "IsMarshallableAttribute" );
                         Debug.Assert( typeof( SingletonServiceAttribute ).Name == "SingletonServiceAttribute" );
                         bool hasSuperDefiner = false;
                         bool hasDefiner = false;
                         bool isMultipleInterface = false;
-                        bool hasMarshallable = false;
                         bool hasSingletonService = false;
                         bool isExcludedType = false;
                         bool isEndpointScoped = false;
@@ -315,9 +310,6 @@ namespace CK.Setup
                                 case "CKTypeSuperDefinerAttribute":
                                     hasSuperDefiner = true;
                                     break;
-                                case "IsMarshallableAttribute":
-                                    hasMarshallable = true;
-                                    break;
                                 case "SingletonServiceAttribute":
                                     hasSingletonService = true;
                                     break;
@@ -350,7 +342,7 @@ namespace CK.Setup
                             }
                             foreach( var i in allBases  )
                             {
-                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.IsExcludedType | IsReasonMarker);
+                                var kI = RawGet( m, i ) & ~(IsDefiner | CKTypeKind.IsMultipleService | CKTypeKind.IsExcludedType | IsReasonMarker);
                                 if( (k & IsDefiner) == 0 // We are not yet a Definer...
                                     && (kI & IsSuperDefiner) != 0 ) // ...but this base is a SuperDefiner.
                                 {
@@ -361,7 +353,6 @@ namespace CK.Setup
                             // Applying the direct flags. Any inherited combination error is cleared.
                             k &= ~CKTypeKind.HasError;
                             if( isMultipleInterface ) k |= CKTypeKind.IsMultipleService;
-                            if( hasMarshallable ) k |= CKTypeKind.IsMarshallable;
                             if( isExcludedType ) k |= CKTypeKind.IsExcludedType;
                             if( hasSingletonService ) k |= CKTypeKind.IsSingleton;
                             if( isEndpointSingleton ) k |= CKTypeKind.IsEndpointService | CKTypeKind.IsSingleton;
@@ -408,30 +399,6 @@ namespace CK.Setup
                                     {
                                         m.Error( $"Invalid class '{t:N}' kind: {error}" );
                                         k |= CKTypeKind.HasError;
-                                    }
-                                    else if( (k & CKTypeKind.IsAutoService) != 0 )
-                                    {
-                                        foreach( var marshaller in allInterfaces.Where( i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof( CK.StObj.Model.IMarshaller<> ) ) )
-                                        {
-                                            Type marshallable = marshaller.GetGenericArguments()[0];
-                                            m.Info( $"Type '{marshallable}' considered as a Marshallable service because a IMarshaller implementation has been found on '{t}' that is a IAutoService." );
-                                            SetLifetimeOrProcessType( m, marshallable, CKTypeKind.IsMarshallable | IsMarshallableReasonMarshaller );
-
-                                            // The marshaller interface (the closed generic) is promoted to be a IAutoService since it must be
-                                            // mapped (without ambiguities) on the currently registering class (that is itself a IAutoService).
-                                            var exists = RawGet( m, marshaller );
-                                            if( (exists & CKTypeKind.IsAutoService) == 0 )
-                                            {
-                                                exists |= CKTypeKind.IsAutoService;
-                                                error = exists.GetCombinationError( false );
-                                                if( error != null ) m.Error( $"Unable to promote the IMarshaller interface {marshaller.Name} as a IAutoService: {error}" );
-                                                else
-                                                {
-                                                    m.Trace( $"Interface {marshaller.Name} is now a IAutoService." );
-                                                    _cache[marshaller] = exists;
-                                                }
-                                            }
-                                        }
                                     }
                                 }
                                 else

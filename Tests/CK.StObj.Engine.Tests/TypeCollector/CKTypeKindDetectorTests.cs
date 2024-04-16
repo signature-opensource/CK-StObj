@@ -238,8 +238,8 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 bool success = true;
                 using( TestHelper.Monitor.OnError( () => success = false ) )
                 {
-                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsProcessService );
-                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsProcessService );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped );
                 }
                 success.Should().BeFalse( "From general to specific: this fails!" );
             }
@@ -248,15 +248,15 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
                 bool success = true;
                 using( TestHelper.Monitor.OnError( () => success = false ) )
                 {
-                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsProcessService );
-                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsProcessService );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped );
+                    a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton );
                 }
                 success.Should().BeTrue( "From specific to general: success!" );
 
                 var baseO = a.GetValidKind( TestHelper.Monitor, typeof( IOptions<> ) );
                 var specO = a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ) );
-                baseO.ToStringClear( false ).Should().Be( "IsSingleton|IsProcessService" );
-                specO.ToStringClear( false ).Should().Be( "IsScopedService|IsProcessService" );
+                baseO.ToStringClear( false ).Should().Be( "IsSingleton" );
+                specO.ToStringClear( false ).Should().Be( "IsScopedService" );
             }
         }
 
@@ -282,16 +282,16 @@ namespace CK.StObj.Engine.Tests.Service.TypeCollector
             bool success = true;
             using( TestHelper.Monitor.OnError( () => success = false ) )
             {
-                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped | AutoServiceKind.IsProcessService );
-                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton | AutoServiceKind.IsProcessService );
+                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptionsSnapshot<> ), AutoServiceKind.IsScoped );
+                a.SetAutoServiceKind( TestHelper.Monitor, typeof( IOptions<> ), AutoServiceKind.IsSingleton );
             }
             success.Should().BeTrue();
 
-            a.GetValidKind( TestHelper.Monitor, typeof( IOptions<object> ) ).ToStringClear( false ).Should().Be( "IsSingleton|IsProcessService" );
-            a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<object> ) ).ToStringClear( false ).Should().Be( "IsScopedService|IsProcessService" );
+            a.GetValidKind( TestHelper.Monitor, typeof( IOptions<object> ) ).ToStringClear( false ).Should().Be( "IsSingleton" );
+            a.GetValidKind( TestHelper.Monitor, typeof( IOptionsSnapshot<object> ) ).ToStringClear( false ).Should().Be( "IsScopedService" );
 
-            a.GetValidKind( TestHelper.Monitor, typeof( Opt ) ).ToStringClear( false ).Should().Be( "IsSingleton|IsProcessService" );
-            a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).Should().Be( "IsScopedService|IsProcessService" );
+            a.GetValidKind( TestHelper.Monitor, typeof( Opt ) ).ToStringClear( false ).Should().Be( "IsSingleton" );
+            a.GetValidKind( TestHelper.Monitor, typeof( OptS ) ).ToStringClear( false ).Should().Be( "IsScopedService" );
         }
 
     }

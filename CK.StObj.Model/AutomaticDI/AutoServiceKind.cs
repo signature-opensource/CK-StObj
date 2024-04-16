@@ -17,23 +17,11 @@ namespace CK.Core
         None = 0,
 
         /// <summary>
-        /// Indicates a service that has a data/configuration adherence to the current process: it requires some
-        /// sort of marshalling/configuration to be able to do its job remotely (out of this process).
-        /// (A typical example is the IOptions&lt;&gt; implementations for instance.) 
-        /// </summary>
-        IsProcessService = 1,
-
-        /// <summary>
         /// This is a service bound to a endpoint: it may not be available in endpoint (a typical example of such service is the
         /// IAuthenticationService that requires an HttpContext) and may not be available in the global DI container (a service
         /// can be specific to a given endpoint or a family of endpoints but cannot live in the global application scope).
         /// </summary>
         IsEndpointService = 2,
-
-        /// <summary>
-        /// This service is marshallable. This is independent of <see cref="IsProcessService"/> or <see cref="IsEndpointService"/>.
-        /// </summary>
-        IsMarshallable = 4,
 
         /// <summary>
         /// This service must be registered as a Singleton.

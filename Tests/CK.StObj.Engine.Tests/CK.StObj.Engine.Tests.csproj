@@ -19,5 +19,8 @@
     <ProjectReference Include="..\..\CK.Poco.Exc.Json.Engine\CK.Poco.Exc.Json.Engine.csproj" />
     <ProjectReference Include="..\..\CK.Testing.StObjEngine\CK.Testing.StObjEngine.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="%24StObjGen\" />
+  </ItemGroup>
 
 </Project>
