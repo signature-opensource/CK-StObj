@@ -342,14 +342,12 @@ namespace CK.Setup
                 monitor.Error( $"Invalid Auto Service kind registration '{k.ToStringFlags()}' for type '{t:C}'." );
                 return null;
             }
-            bool hasProcess = (kind & AutoServiceKind.IsProcessService) != 0;
             bool hasLifetime = (kind & (AutoServiceKind.IsScoped | AutoServiceKind.IsSingleton)) != 0;
             bool hasMultiple = (kind & AutoServiceKind.IsMultipleService) != 0;
             bool hasEndpoint = (kind & AutoServiceKind.IsEndpointService) != 0;
 
             if( hasLifetime ) k |= IsLifetimeReasonExternal;
             if( hasMultiple ) k |= IsMultipleReasonExternal;
-            if( hasProcess ) k |= IsProcessServiceReasonExternal;
             if( hasEndpoint ) k |= IsEndpointServiceReasonExternal;
 
             return SetLifetimeOrProcessType( monitor, t, k );
@@ -379,7 +377,7 @@ namespace CK.Setup
             Throw.DebugAssert( "kind MUST not be a SuperDefiner or a Definer.", (kind & (IsDefiner | IsSuperDefiner)) == 0 );
             Throw.DebugAssert( (kind & MaskPublicInfo).GetCombinationError( t.IsClass )!, (kind & MaskPublicInfo).GetCombinationError( t.IsClass ) == null );
             Throw.DebugAssert( "At least, something must be set.",
-                               (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsProcessService | CKTypeKind.IsMultipleService | CKTypeKind.IsMarshallable | CKTypeKind.UbiquitousInfo) != 0 );
+                               (kind & CKTypeKind.LifetimeMask | CKTypeKind.IsMultipleService | CKTypeKind.UbiquitousInfo) != 0 );
 
             // This registers the type (as long as the Type detection is concerned): there is no difference between Registering first
             // and then defining lifetime or the reverse. (This is not true for the full type registration: SetLifetimeOrFrontType must
